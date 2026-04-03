@@ -1,0 +1,28 @@
+id: risk-factors
+name: RiskFactors
+title: "Diabetes Screening Risk Factors"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: |
+  Discrete risk factor definitions used to identify adults who should be screened
+  for type 2 diabetes regardless of age, per ADA 2024 guidelines. Each factor
+  is expressed as a testable clinical criterion.
+derived_from:
+  - ada-guidelines-2024
+
+clinical_context: |
+  Adults with BMI ≥25 kg/m² (or ≥23 kg/m² in Asian Americans) who have one or
+  more of these risk factors should be screened starting at any age. Adults
+  without risk factors should begin screening at age 35.
+
+references:
+  - "American Diabetes Association. Standards of Medical Care in Diabetes—2024. Diabetes Care 2024;47(Suppl. 1)"
+
+tags:
+  - risk-factors
+  - diabetes
+  - screening
+  - ada-2024
+
+author: "Clinical Informatics Team"

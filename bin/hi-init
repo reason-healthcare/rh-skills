@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# bin/hi-init — Scaffold a new skill
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+  cat <<EOF
+Usage: hi init <skill-name> [options]
+
+Arguments:
+  skill-name   Name of the skill (kebab-case, e.g. diabetes-screening)
+
+Options:
+  --title      Human-readable title (default: derived from skill-name)
+  --description  Brief description of the skill
+  --author     Author name or team (default: git user or "unknown")
+  -h, --help   Print usage
+
+Exit codes:
+  0  Success
+  1  Skill already exists
+  2  Usage error
+
+Examples:
+  hi init diabetes-screening
+  hi init sepsis-detection --title "Sepsis Early Detection" --author "Clinical Informatics Team"
+EOF
+}
+
+main() {
+  if [[ $# -eq 0 || "$1" == "--help" || "$1" == "-h" ]]; then
+    usage; exit 0
+  fi
+
+  local skill_name="$1"; shift
+
+  # Validate skill name
+  if ! hi_kebab_validate "$skill_name"; then
+    hi_log_error "Skill name must be kebab-case (lowercase letters, digits, hyphens only): $skill_name"
+    exit 2
+  fi
+
+  # Parse optional flags
+  local title="" description="" author=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --title)       title="$2";       shift 2 ;;
+      --description) description="$2"; shift 2 ;;
+      --author)      author="$2";      shift 2 ;;
+      -h|--help)     usage; exit 0 ;;
+      *) hi_log_error "Unknown option: $1"; usage; exit 2 ;;
+    esac
+  done
+
+  # Defaults
+  if [[ -z "$title" ]]; then
+    # Convert kebab-case to title case: diabetes-screening → Diabetes Screening
+    title=$(echo "$skill_name" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}')
+  fi
+  if [[ -z "$author" ]]; then
+    author=$(git config user.name 2>/dev/null || echo "unknown")
+  fi
+
+  local skills_root
+  skills_root="$(hi_skills_root)"
+  local skill_dir="$skills_root/$skill_name"
+
+  # Check if skill already exists
+  if [[ -d "$skill_dir" ]]; then
+    hi_log_error "Skill '$skill_name' already exists at $skill_dir"
+    exit 1
+  fi
+
+  # Create directory structure
+  mkdir -p "$skill_dir/l1" "$skill_dir/l2" "$skill_dir/l3" "$skill_dir/fixtures/results"
+
+  local timestamp
+  timestamp="$(hi_timestamp)"
+  local today
+  today="$(hi_date)"
+
+  # Write tracking.yaml
+  cat > "$skill_dir/tracking.yaml" <<YAML
+schema_version: "1.0"
+skill:
+  name: $skill_name
+  title: "$title"
+  description: "${description:-A healthcare informatics skill}"
+  author: "$author"
+  created_at: "$timestamp"
+artifacts:
+  l1: []
+  l2: []
+  l3: []
+events:
+  - timestamp: "$timestamp"
+    type: created
+    description: Skill scaffolded with hi init
+YAML
+
+  # Write SKILL.md following anthropic skills-developer pattern
+  cat > "$skill_dir/SKILL.md" <<MD
+---
+name: "$skill_name"
+description: "${description:-A healthcare informatics skill}"
+compatibility: "hi-skills-framework >= 0.1.0"
+metadata:
+  author: "$author"
+  created: "$today"
+  domain: ""
+---
+
+## Overview
+
+${description:-Describe the clinical purpose and scope of this skill.}
+
+## Usage
+
+This skill progresses through three artifact levels:
+
+- **L1 (Discovery)**: Raw clinical knowledge — guidelines, notes, research extracts
+- **L2 (Semi-structured)**: Structured YAML artifacts derived from L1 content
+- **L3 (Computable)**: Computable YAML artifacts converged from L2, FHIR-compatible
+
+## Instructions
+
+<!-- Describe how an agent or human should reason about and use this skill. -->
+
+## Fixtures
+
+Fixture files are stored in \`fixtures/\` as input/expected-output conversation pairs
+for LLM-based testing via \`hi test\`.
+MD
+
+  # Place L1 template
+  cp "$(hi_templates_dir)/l1/discovery.md" "$skill_dir/l1/.discovery-template.md" 2>/dev/null || true
+
+  hi_log_info "Initialized skill: $skill_name"
+  printf '  Location: %s\n' "$skill_dir"
+  printf '  Structure:\n'
+  printf '    %s/\n' "$skill_name"
+  printf '      l1/    (add raw discovery artifacts here)\n'
+  printf '      l2/    (semi-structured artifacts)\n'
+  printf '      l3/    (computable artifacts)\n'
+  printf '      fixtures/  (LLM test fixtures)\n'
+  printf '      SKILL.md   (skill description)\n'
+  printf '      tracking.yaml  (workflow audit log)\n'
+}
+
+main "$@"

@@ -1,0 +1,13 @@
+system_prompt: |
+  You are a clinical informatics assistant helping identify who should be
+  screened for diabetes using ADA guidelines.
+user_prompt: |
+  A 42-year-old patient has a BMI of 27 kg/m² and a first-degree relative with
+  type 2 diabetes. Should this patient be screened for diabetes? What tests
+  are recommended?
+expected_response: |
+  Yes, this patient should be screened. They are over 35 years old, which alone
+  triggers screening. They also have two additional risk factors: BMI ≥25 kg/m²
+  and a first-degree relative with diabetes. Recommended tests include fasting
+  plasma glucose (FPG) and/or hemoglobin A1C.
+compare_mode: keywords

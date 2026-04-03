@@ -1,0 +1,90 @@
+# L3 Computable Artifact Schema
+# Custom YAML schema designed for FHIR/FHIRPath/CQL compatibility
+# Teams without FHIR use this natively; FHIR export is a future optional extension
+
+schema_version: "1.0"
+
+required_fields:
+  - artifact_schema_version    # must be "1.0"
+  - metadata                   # block — all sub-fields below are required
+  - metadata.id                # kebab-case unique ID
+  - metadata.name              # short machine name
+  - metadata.title             # human-readable title
+  - metadata.version           # semver e.g. "1.0.0"
+  - metadata.status            # draft | active | retired
+  - metadata.domain            # clinical domain
+  - metadata.created_date      # ISO 8601 date
+  - metadata.description       # human-readable description
+  - converged_from             # list of L2 artifact names this converges
+
+optional_sections:
+  pathways:
+    description: Clinical care pathways / workflows
+    fhir_equivalent: PlanDefinition
+    fields:
+      - id
+      - title
+      - description
+      - steps              # list of {id, title, condition?, actions?}
+
+  actions:
+    description: Discrete clinical actions / recommendations
+    fhir_equivalent: ActivityDefinition
+    fields:
+      - id
+      - title
+      - intent             # proposal | plan | directive | order
+      - description
+      - conditions         # list of FHIRPath expressions (string)
+
+  libraries:
+    description: Reusable CQL logic libraries
+    fhir_equivalent: Library
+    fields:
+      - id
+      - title
+      - language           # cql | fhirpath
+      - content            # CQL/FHIRPath expression block
+
+  measures:
+    description: Clinical quality measures
+    fhir_equivalent: Measure
+    fields:
+      - id
+      - title
+      - description
+      - numerator          # FHIRPath or CQL expression
+      - denominator        # FHIRPath or CQL expression
+      - scoring            # proportion | ratio | continuous-variable | cohort
+
+  assessments:
+    description: Clinical assessment instruments
+    fhir_equivalent: Questionnaire
+    fields:
+      - id
+      - title
+      - items              # list of assessment items
+
+  value_sets:
+    description: Coded value sets
+    fhir_equivalent: ValueSet
+    fields:
+      - id
+      - title
+      - description
+      - system             # code system URI e.g. http://snomed.info/sct
+      - codes              # list of {code, display}
+
+  code_systems:
+    description: Code system references
+    fhir_equivalent: CodeSystem
+    fields:
+      - id
+      - title
+      - url                # canonical URL
+      - version
+
+status_values:
+  - draft
+  - active
+  - retired

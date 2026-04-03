@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# bin/hi — Healthcare Informatics Skills Framework CLI dispatcher
+
+set -euo pipefail
+
+HI_VERSION="0.1.0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<EOF
+hi — Healthcare Informatics Skills Framework
+
+Usage: hi <command> [arguments] [flags]
+
+Commands:
+  init      Scaffold a new skill
+  promote   Promote artifact(s) to the next level
+  validate  Validate an artifact against its schema
+  test      Run LLM-based skill tests against fixtures
+  status    Show skill workflow state
+  list      List all skills in the repository
+
+Global Flags:
+  -h, --help      Print usage
+  --version       Print version
+
+Run 'hi <command> --help' for command-specific usage.
+EOF
+}
+
+if [[ $# -eq 0 ]]; then
+  usage
+  exit 0
+fi
+
+case "$1" in
+  --help|-h)
+    usage
+    exit 0
+    ;;
+  --version)
+    echo "hi version $HI_VERSION"
+    exit 0
+    ;;
+  init|promote|validate|test|status|list)
+    cmd="$1"; shift
+    exec "$SCRIPT_DIR/hi-$cmd" "$@"
+    ;;
+  *)
+    echo "hi: unknown command '$1'" >&2
+    echo "Run 'hi --help' for usage." >&2
+    exit 1
+    ;;
+esac

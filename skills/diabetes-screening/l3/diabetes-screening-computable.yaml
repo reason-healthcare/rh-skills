@@ -1,0 +1,98 @@
+artifact_schema_version: "1.0"
+
+metadata:
+  id: diabetes-screening-computable
+  name: DiabetesScreeningComputable
+  title: "Diabetes Screening Computable Artifact"
+  version: "1.0.0"
+  status: draft
+  domain: diabetes
+  created_date: "2026-04-03"
+  description: |
+    Computable artifact defining diabetes screening eligibility, diagnostic thresholds,
+    and a quality measure for screening compliance. Designed for FHIR/FHIRPath/CQL
+    compatibility. Based on ADA Standards of Medical Care in Diabetes 2024.
+
+converged_from:
+  - screening-criteria
+  - risk-factors
+
+pathways:
+  - id: diabetes-screening-pathway
+    title: "Diabetes and Prediabetes Screening Pathway"
+    description: |
+      Identifies adults eligible for diabetes/prediabetes screening and routes
+      them to appropriate diagnostic testing.
+    steps:
+      - id: step-eligibility
+        title: "Determine Screening Eligibility"
+        condition: "Patient.birthDate <= today() - 35 years OR (bmi >= 25 AND hasRiskFactor)"
+        actions:
+          - order-fasting-glucose
+          - order-a1c
+      - id: step-result-interpretation
+        title: "Interpret Screening Results"
+        condition: "screeningResultAvailable"
+        actions:
+          - interpret-diagnostic-thresholds
+
+actions:
+  - id: order-fasting-glucose
+    title: "Order Fasting Plasma Glucose"
+    intent: proposal
+    description: "Order FPG test. Patient must fast for ≥8 hours prior to draw."
+    conditions:
+      - "Patient.age >= 35 or (bmi >= 25 and hasRiskFactor)"
+
+  - id: order-a1c
+    title: "Order Hemoglobin A1C"
+    intent: proposal
+    description: "Order A1C using NGSP-certified, DCCT-standardized method."
+    conditions:
+      - "Patient.age >= 35 or (bmi >= 25 and hasRiskFactor)"
+
+  - id: order-ogtt
+    title: "Order Oral Glucose Tolerance Test (75g)"
+    intent: proposal
+    description: "75g OGTT; measure 2-hour plasma glucose."
+    conditions:
+      - "clinicianDiscretion = true"
+
+measures:
+  - id: diabetes-screening-rate
+    title: "Diabetes Screening Rate"
+    description: |
+      Percentage of eligible adults who received appropriate diabetes screening
+      (FPG or A1C) within the measurement period.
+    numerator: "Patient.age >= 35 and hasLabResult('FPG') or hasLabResult('A1C')"
+    denominator: "Patient.age >= 35 and isActive and noExistingDiabetesDiagnosis"
+    scoring: proportion
+
+value_sets:
+  - id: diabetes-diagnostic-labs
+    title: "Diabetes Diagnostic Laboratory Tests"
+    description: "LOINC codes for diabetes diagnostic testing"
+    system: "http://loinc.org"
+    codes:
+      - code: "4548-4"
+        display: "Hemoglobin A1c/Hemoglobin.total in Blood"
+      - code: "1558-6"
+        display: "Fasting glucose [Mass/volume] in Serum or Plasma"
+      - code: "1504-0"
+        display: "Glucose 2 Hr post-dose OGTT [Mass/volume] in Serum or Plasma"
+      - code: "2345-7"
+        display: "Glucose [Mass/volume] in Serum or Plasma"
+
+  - id: diabetes-risk-conditions
+    title: "Diabetes Risk Conditions"
+    description: "SNOMED CT codes for diabetes-associated risk conditions"
+    system: "http://snomed.info/sct"
+    codes:
+      - code: "237619009"
+        display: "Polycystic ovary syndrome"
+      - code: "38341003"
+        display: "Hypertensive disorder, systemic arterial"
+      - code: "414916001"
+        display: "Obesity"
+      - code: "73211009"
+        display: "Diabetes mellitus"

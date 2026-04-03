@@ -1,0 +1,39 @@
+# Tracking Artifact Schema
+# Maintained by hi CLI commands; not manually edited
+schema_version: "1.0"
+
+structure:
+  schema_version: string    # always "1.0"
+  skill:
+    name: string            # skill name (kebab-case)
+    title: string           # human-readable title
+    description: string     # brief description
+    author: string          # author name or team
+    created_at: string      # ISO 8601 timestamp
+
+  artifacts:
+    l1:                     # list of L1 artifact entries
+      - name: string
+        created_at: string
+    l2:                     # list of L2 artifact entries
+      - name: string
+        created_at: string
+        derived_from: list  # L1 artifact names
+    l3:                     # list of L3 artifact entries
+      - name: string
+        created_at: string
+        converged_from: list  # L2 artifact names
+
+  events:                   # append-only audit log
+    - timestamp: string     # ISO 8601
+      type: string          # see event_types below
+      description: string   # human-readable detail
+
+event_types:
+  - created         # skill scaffolded
+  - l1_added        # L1 artifact added to skill
+  - l2_derived      # L1 → L2 derivation completed
+  - l3_converged    # L2(s) → L3 convergence completed
+  - validated       # validation run completed
+  - tested          # test run completed
+  - promoted        # promotion milestone

@@ -1,0 +1,28 @@
+id: screening-criteria
+name: ScreeningCriteria
+title: "Diabetes Screening Criteria"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: |
+  Evidence-based criteria for identifying adults who should be screened for
+  prediabetes and type 2 diabetes, derived from ADA Standards of Care 2024.
+  Covers age thresholds, BMI cutoffs, and risk factor requirements.
+derived_from:
+  - ada-guidelines-2024
+
+clinical_context: |
+  Screening applies to asymptomatic adults. Symptomatic individuals with
+  random glucose ≥200 mg/dL should be diagnosed without a screening workflow.
+  Rescreening interval is every 3 years if initial result is normal.
+
+references:
+  - "American Diabetes Association. Standards of Medical Care in Diabetes—2024. Diabetes Care 2024;47(Suppl. 1)"
+
+tags:
+  - screening
+  - diabetes
+  - prediabetes
+  - ada-2024
+
+author: "Clinical Informatics Team"

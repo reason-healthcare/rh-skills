@@ -1,0 +1,24 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.tmp
+
+# Node (bats-core via npm)
+node_modules/
+
+# Test output
+tests/output/
+
+# LLM test result artifacts are committed intentionally — no ignore needed
+
+# Shell script temp files
+*.bak

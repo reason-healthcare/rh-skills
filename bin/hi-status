@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# bin/hi-status — Show workflow state of a skill
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+  cat <<EOF
+Usage: hi status <skill> [options]
+
+Arguments:
+  skill        Skill name
+
+Options:
+  --json       Output as JSON instead of human-readable text
+  -h, --help   Print usage
+
+Exit codes:
+  0  Success
+  2  Usage error
+
+Examples:
+  hi status diabetes-screening
+  hi status diabetes-screening --json
+EOF
+}
+
+main() {
+  if [[ $# -eq 0 || "$1" == "--help" || "$1" == "-h" ]]; then
+    usage; exit 0
+  fi
+
+  local skill_name="$1"; shift
+  local json_output=0
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --json)    json_output=1; shift ;;
+      -h|--help) usage; exit 0 ;;
+      *) hi_log_error "Unknown option: $1"; usage; exit 2 ;;
+    esac
+  done
+
+  hi_require_skill "$skill_name"
+  local skill_dir
+  skill_dir="$(hi_skill_dir "$skill_name")"
+  local tracking="$skill_dir/tracking.yaml"
+
+  if [[ ! -f "$tracking" ]]; then
+    hi_log_error "tracking.yaml not found in $skill_dir"
+    exit 2
+  fi
+
+  # Read counts
+  local l1_count l2_count l3_count
+  l1_count=$(yq eval '.artifacts.l1 | length' "$tracking")
+  l2_count=$(yq eval '.artifacts.l2 | length' "$tracking")
+  l3_count=$(yq eval '.artifacts.l3 | length' "$tracking")
+
+  local title author created_at
+  title=$(yq eval '.skill.title // ""'      "$tracking")
+  author=$(yq eval '.skill.author // ""'    "$tracking")
+  created_at=$(yq eval '.skill.created_at // ""' "$tracking")
+
+  local last_event_type last_event_ts
+  last_event_type=$(yq eval '.events[-1].type // ""'      "$tracking")
+  last_event_ts=$(yq eval '.events[-1].timestamp // ""'   "$tracking")
+
+  # Determine lifecycle stage
+  local stage="initialized"
+  if [[ "$l3_count" -gt 0 ]]; then
+    stage="l3-computable"
+  elif [[ "$l2_count" -gt 0 ]]; then
+    stage="l2-semi-structured"
+  elif [[ "$l1_count" -gt 0 ]]; then
+    stage="l1-discovery"
+  fi
+
+  if [[ $json_output -eq 1 ]]; then
+    jq -n \
+      --arg skill "$skill_name" \
+      --arg title "$title" \
+      --arg author "$author" \
+      --arg created_at "$created_at" \
+      --arg stage "$stage" \
+      --argjson l1 "$l1_count" \
+      --argjson l2 "$l2_count" \
+      --argjson l3 "$l3_count" \
+      --arg last_event "$last_event_type" \
+      --arg last_event_ts "$last_event_ts" \
+      '{skill: $skill, title: $title, author: $author, created_at: $created_at,
+        stage: $stage, artifacts: {l1: $l1, l2: $l2, l3: $l3},
+        last_event: {type: $last_event, timestamp: $last_event_ts}}'
+    return
+  fi
+
+  printf 'Skill:    %s\n'  "$skill_name"
+  printf 'Title:    %s\n'  "$title"
+  printf 'Author:   %s\n'  "$author"
+  printf 'Created:  %s\n'  "$created_at"
+  printf 'Stage:    %s\n'  "$stage"
+  printf '\nArtifacts:\n'
+  printf '  L1 (discovery):        %d\n' "$l1_count"
+  printf '  L2 (semi-structured):  %d\n' "$l2_count"
+  printf '  L3 (computable):       %d\n' "$l3_count"
+  printf '\nLast event: %s (%s)\n' "$last_event_type" "$last_event_ts"
+}
+
+main "$@"
