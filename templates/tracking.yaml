@@ -1,15 +1,4 @@
 schema_version: "1.0"
-skill:
-  name: SKILL_NAME
-  title: "SKILL_TITLE"
-  description: "SKILL_DESCRIPTION"
-  author: "SKILL_AUTHOR"
-  created_at: "CREATED_AT"
-artifacts:
-  l1: []
-  l2: []
-  l3: []
-events:
-  - timestamp: "CREATED_AT"
-    type: created
-    description: Skill scaffolded with hi init
+sources: []
+topics: []
+events: []

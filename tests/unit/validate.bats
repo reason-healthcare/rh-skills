@@ -4,8 +4,8 @@
 load '../test_helper'
 
 setup() {
-  setup_skills_dir
-  export HI_SKILLS_ROOT="$SKILLS_DIR"
+  setup_topics_dir
+  export HI_TOPICS_ROOT="$TOPICS_DIR"
   export HI_REPO_ROOT="$REPO_ROOT"
   HI_VALIDATE="$REPO_ROOT/bin/hi-validate"
 }
@@ -14,8 +14,8 @@ setup() {
 
 make_valid_l2() {
   local skill="$1" artifact="${2:-test-artifact}"
-  mkdir -p "$SKILLS_DIR/$skill/l2"
-  cat > "$SKILLS_DIR/$skill/l2/$artifact.yaml" <<YAML
+  mkdir -p "$TOPICS_DIR/$skill/l2"
+  cat > "$TOPICS_DIR/$skill/l2/$artifact.yaml" <<YAML
 id: $artifact
 name: TestArtifact
 title: "Test Artifact Title"
@@ -31,8 +31,8 @@ YAML
 
 make_invalid_l2() {
   local skill="$1" artifact="${2:-bad-artifact}"
-  mkdir -p "$SKILLS_DIR/$skill/l2"
-  cat > "$SKILLS_DIR/$skill/l2/$artifact.yaml" <<YAML
+  mkdir -p "$TOPICS_DIR/$skill/l2"
+  cat > "$TOPICS_DIR/$skill/l2/$artifact.yaml" <<YAML
 # Missing required fields: id, title, version, status, domain, derived_from
 name: BadArtifact
 description: "Incomplete artifact"
@@ -41,8 +41,8 @@ YAML
 
 make_valid_l3() {
   local skill="$1" artifact="${2:-test-l3}"
-  mkdir -p "$SKILLS_DIR/$skill/l3"
-  cat > "$SKILLS_DIR/$skill/l3/$artifact.yaml" <<YAML
+  mkdir -p "$TOPICS_DIR/$skill/l3"
+  cat > "$TOPICS_DIR/$skill/l3/$artifact.yaml" <<YAML
 artifact_schema_version: "1.0"
 metadata:
   id: $artifact
@@ -88,13 +88,13 @@ YAML
 }
 
 @test "hi validate: unknown artifact exits 2" {
-  mkdir -p "$SKILLS_DIR/my-skill"
+  mkdir -p "$TOPICS_DIR/my-skill"
   run "$HI_VALIDATE" my-skill l2 nonexistent-artifact
   [ "$status" -eq 2 ]
 }
 
 @test "hi validate: invalid level exits 2" {
-  mkdir -p "$SKILLS_DIR/my-skill"
+  mkdir -p "$TOPICS_DIR/my-skill"
   run "$HI_VALIDATE" my-skill l1 some-artifact
   [ "$status" -eq 2 ]
 }
@@ -110,8 +110,8 @@ YAML
 
 @test "hi validate: L3 missing artifact_schema_version exits 1" {
   local skill="my-skill" artifact="bad-l3"
-  mkdir -p "$SKILLS_DIR/$skill/l3"
-  cat > "$SKILLS_DIR/$skill/l3/$artifact.yaml" <<YAML
+  mkdir -p "$TOPICS_DIR/$skill/l3"
+  cat > "$TOPICS_DIR/$skill/l3/$artifact.yaml" <<YAML
 metadata:
   id: $artifact
   name: BadL3

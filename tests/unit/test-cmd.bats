@@ -4,8 +4,8 @@
 load '../test_helper'
 
 setup() {
-  setup_skills_dir
-  export HI_SKILLS_ROOT="$SKILLS_DIR"
+  setup_topics_dir
+  export HI_TOPICS_ROOT="$TOPICS_DIR"
   export HI_REPO_ROOT="$REPO_ROOT"
   export LLM_PROVIDER=stub
   HI_TEST="$REPO_ROOT/bin/hi-test"
@@ -13,7 +13,7 @@ setup() {
 
 make_skill_with_fixture() {
   local skill="$1" fixture="${2:-my-fixture}"
-  local skill_dir="$SKILLS_DIR/$skill"
+  local skill_dir="$TOPICS_DIR/$skill"
   mkdir -p "$skill_dir/fixtures/results" "$skill_dir/l1" "$skill_dir/l2" "$skill_dir/l3"
   cat > "$skill_dir/tracking.yaml" <<YAML
 schema_version: "1.0"
@@ -50,7 +50,7 @@ YAML
   make_skill_with_fixture my-skill
   "$HI_TEST" my-skill --mode contains
   local count
-  count=$(find "$SKILLS_DIR/my-skill/fixtures/results" -name '*.json' | wc -l | tr -d ' ')
+  count=$(find "$TOPICS_DIR/my-skill/fixtures/results" -name '*.json' | wc -l | tr -d ' ')
   [ "$count" -ge 1 ]
 }
 
@@ -58,7 +58,7 @@ YAML
   make_skill_with_fixture my-skill
   "$HI_TEST" my-skill --mode contains
   local result_file
-  result_file=$(find "$SKILLS_DIR/my-skill/fixtures/results" -name '*.json' | head -1)
+  result_file=$(find "$TOPICS_DIR/my-skill/fixtures/results" -name '*.json' | head -1)
   local skill_val
   skill_val=$(jq -r '.skill' "$result_file")
   [ "$skill_val" = "my-skill" ]
@@ -68,7 +68,7 @@ YAML
   make_skill_with_fixture my-skill
   "$HI_TEST" my-skill --mode contains
   local result_file
-  result_file=$(find "$SKILLS_DIR/my-skill/fixtures/results" -name '*.json' | head -1)
+  result_file=$(find "$TOPICS_DIR/my-skill/fixtures/results" -name '*.json' | head -1)
   local has_summary
   has_summary=$(jq 'has("summary")' "$result_file")
   [ "$has_summary" = "true" ]
@@ -86,7 +86,7 @@ YAML
   make_skill_with_fixture my-skill
   # Override stub to return something that won't contain "NOMATCH"
   export HI_STUB_RESPONSE="completely different answer"
-  cat > "$SKILLS_DIR/my-skill/fixtures/my-fixture.yaml" <<YAML
+  cat > "$TOPICS_DIR/my-skill/fixtures/my-fixture.yaml" <<YAML
 system_prompt: "You are a clinical assistant."
 user_prompt: "What is HbA1c?"
 expected_response: "NOMATCH_STRING_XYZ"
@@ -96,8 +96,8 @@ YAML
 }
 
 @test "hi test: exits 0 with no fixtures (warns)" {
-  mkdir -p "$SKILLS_DIR/my-skill/fixtures/results" "$SKILLS_DIR/my-skill/l1"
-  cat > "$SKILLS_DIR/my-skill/tracking.yaml" <<YAML
+  mkdir -p "$TOPICS_DIR/my-skill/fixtures/results" "$TOPICS_DIR/my-skill/l1"
+  cat > "$TOPICS_DIR/my-skill/tracking.yaml" <<YAML
 schema_version: "1.0"
 skill:
   name: my-skill

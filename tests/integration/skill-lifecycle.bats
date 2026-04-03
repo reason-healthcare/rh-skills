@@ -5,8 +5,8 @@
 load '../test_helper'
 
 setup() {
-  setup_skills_dir
-  export HI_SKILLS_ROOT="$SKILLS_DIR"
+  setup_topics_dir
+  export HI_TOPICS_ROOT="$TOPICS_DIR"
   export HI_REPO_ROOT="$REPO_ROOT"
   export PATH="$REPO_ROOT/bin:$PATH"
 }
@@ -16,34 +16,34 @@ setup() {
 @test "lifecycle: hi init creates a valid skill scaffold" {
   run hi-init test-workflow-skill
   [ "$status" -eq 0 ]
-  [ -d "$SKILLS_DIR/test-workflow-skill" ]
-  [ -f "$SKILLS_DIR/test-workflow-skill/tracking.yaml" ]
-  [ -f "$SKILLS_DIR/test-workflow-skill/SKILL.md" ]
+  [ -d "$TOPICS_DIR/test-workflow-skill" ]
+  [ -f "$HI_TRACKING_FILE" ]
+  [ -f "$TOPICS_DIR/test-workflow-skill/TOPIC.md" ]
 }
 
 @test "lifecycle: tracking.yaml is valid YAML after init" {
   hi-init test-workflow-skill
-  yq eval '.' "$SKILLS_DIR/test-workflow-skill/tracking.yaml" > /dev/null
+  yq eval '.' "$HI_TRACKING_FILE" > /dev/null
 }
 
 @test "lifecycle: l1 directory ready for artifacts after init" {
   hi-init test-workflow-skill
-  [ -d "$SKILLS_DIR/test-workflow-skill/l1" ]
+  [ -d "$HI_L1_ROOT" ]
 }
 
 # ── Phase 2: L1 artifact ──────────────────────────────────────────────────────
 
 @test "lifecycle: L1 artifact can be added manually" {
   hi-init test-workflow-skill
-  echo "Clinical guideline content." > "$SKILLS_DIR/test-workflow-skill/l1/guideline.md"
-  [ -f "$SKILLS_DIR/test-workflow-skill/l1/guideline.md" ]
+  echo "Clinical guideline content." > "$HI_L1_ROOT/guideline.md"
+  [ -f "$HI_L1_ROOT/guideline.md" ]
 }
 
 # ── Phase 3: L2 promotion (dry-run — no LLM) ─────────────────────────────────
 
 @test "lifecycle: hi promote derive dry-run prints prompt without LLM" {
   hi-init test-workflow-skill
-  echo "Clinical content." > "$SKILLS_DIR/test-workflow-skill/l1/guideline.md"
+  echo "Clinical content." > "$HI_L1_ROOT/guideline.md"
   run hi-promote derive test-workflow-skill --source guideline --name criteria --dry-run
   [ "$status" -eq 0 ]
   [[ "$output" == *"DRY RUN"* ]]
@@ -53,7 +53,7 @@ setup() {
 
 @test "lifecycle: hi validate accepts a well-formed L2 artifact" {
   hi-init test-workflow-skill
-  cat > "$SKILLS_DIR/test-workflow-skill/l2/criteria.yaml" <<YAML
+  cat > "$TOPICS_DIR/test-workflow-skill/l2/criteria.yaml" <<YAML
 id: criteria
 name: Criteria
 title: "Screening Criteria"
@@ -71,7 +71,7 @@ YAML
 
 @test "lifecycle: hi validate rejects L2 artifact missing required fields" {
   hi-init test-workflow-skill
-  cat > "$SKILLS_DIR/test-workflow-skill/l2/bad.yaml" <<YAML
+  cat > "$TOPICS_DIR/test-workflow-skill/l2/bad.yaml" <<YAML
 name: Bad
 YAML
   run hi-validate test-workflow-skill l2 bad
@@ -82,7 +82,7 @@ YAML
 
 @test "lifecycle: hi promote combine dry-run prints prompt without LLM" {
   hi-init test-workflow-skill
-  cat > "$SKILLS_DIR/test-workflow-skill/l2/criteria.yaml" <<YAML
+  cat > "$TOPICS_DIR/test-workflow-skill/l2/criteria.yaml" <<YAML
 id: criteria
 name: Criteria
 title: "Screening Criteria"
@@ -102,7 +102,7 @@ YAML
 
 @test "lifecycle: hi validate accepts a well-formed L3 artifact" {
   hi-init test-workflow-skill
-  cat > "$SKILLS_DIR/test-workflow-skill/l3/computable.yaml" <<YAML
+  cat > "$TOPICS_DIR/test-workflow-skill/l3/computable.yaml" <<YAML
 artifact_schema_version: "1.0"
 metadata:
   id: computable
@@ -126,9 +126,9 @@ YAML
 @test "lifecycle: tracking.yaml l1/l2/l3 arrays are lists" {
   hi-init test-workflow-skill
   local l1_type l2_type l3_type
-  l1_type=$(yq eval '.artifacts.l1 | type' "$SKILLS_DIR/test-workflow-skill/tracking.yaml")
-  l2_type=$(yq eval '.artifacts.l2 | type' "$SKILLS_DIR/test-workflow-skill/tracking.yaml")
-  l3_type=$(yq eval '.artifacts.l3 | type' "$SKILLS_DIR/test-workflow-skill/tracking.yaml")
+  l1_type=$(yq eval '.l1 | type' "$HI_TRACKING_FILE")
+  l2_type=$(yq eval '.topics[] | select(.name == "test-workflow-skill") | .artifacts.l2 | type' "$HI_TRACKING_FILE")
+  l3_type=$(yq eval '.topics[] | select(.name == "test-workflow-skill") | .artifacts.l3 | type' "$HI_TRACKING_FILE")
   [ "$l1_type" = "!!seq" ]
   [ "$l2_type" = "!!seq" ]
   [ "$l3_type" = "!!seq" ]

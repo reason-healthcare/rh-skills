@@ -26,42 +26,42 @@ hi_date() {
   date -u +"%Y-%m-%d"
 }
 
-# ── Skill resolution ──────────────────────────────────────────────────────────
+# ── Topic resolution ─────────────────────────────────────────────────────────
 
-# Resolve the skills root directory (repo root / skills/)
-# Respects HI_SKILLS_ROOT env var for test overrides
-hi_skills_root() {
-  if [[ -n "${HI_SKILLS_ROOT:-}" ]]; then
-    echo "$HI_SKILLS_ROOT"
+# Resolve the topics root directory (repo root / topics/)
+# Respects HI_TOPICS_ROOT env var for test overrides
+hi_topics_root() {
+  if [[ -n "${HI_TOPICS_ROOT:-}" ]]; then
+    echo "$HI_TOPICS_ROOT"
     return
   fi
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  echo "$(dirname "$script_dir")/skills"
+  echo "$(dirname "$script_dir")/topics"
 }
 
-# Validate a skill exists; exit 2 if not (usage error — wrong name given)
-hi_require_skill() {
-  local skill_name="$1"
-  local skills_root
-  skills_root="$(hi_skills_root)"
-  if [[ ! -d "$skills_root/$skill_name" ]]; then
-    hi_log_error "Skill '$skill_name' not found in $skills_root"
+# Validate a topic exists; exit 2 if not (usage error — wrong name given)
+hi_require_topic() {
+  local topic_name="$1"
+  local topics_root
+  topics_root="$(hi_topics_root)"
+  if [[ ! -d "$topics_root/$topic_name" ]]; then
+    hi_log_error "Topic '$topic_name' not found in $topics_root"
     exit 2
   fi
 }
 
-# Return full path to a skill directory
-hi_skill_dir() {
-  local skill_name="$1"
-  local skills_root
-  skills_root="$(hi_skills_root)"
-  echo "$skills_root/$skill_name"
+# Return full path to a topic directory
+hi_topic_dir() {
+  local topic_name="$1"
+  local topics_root
+  topics_root="$(hi_topics_root)"
+  echo "$topics_root/$topic_name"
 }
 
 # ── Name validation ───────────────────────────────────────────────────────────
 
-# Validate skill name is kebab-case (lowercase letters, digits, hyphens only)
+# Validate topic name is kebab-case (lowercase letters, digits, hyphens only)
 hi_kebab_validate() {
   local name="$1"
   if [[ ! "$name" =~ ^[a-z][a-z0-9-]*$ ]]; then
@@ -95,21 +95,57 @@ hi_yq_append() {
 
 # ── Tracking artifact helpers ─────────────────────────────────────────────────
 
-# Append an event to tracking.yaml events list
-# Usage: hi_tracking_append_event <tracking_file> <type> <description> [details_yaml]
+# Return path to the repo-level tracking.yaml
+# Respects HI_TRACKING_FILE env var for test isolation
+hi_tracking_file() {
+  if [[ -n "${HI_TRACKING_FILE:-}" ]]; then
+    echo "$HI_TRACKING_FILE"
+    return
+  fi
+  echo "$(hi_repo_root)/tracking.yaml"
+}
+
+# Append an event to the tracking.yaml events list.
+# When topic_name is empty, appends to root .events list.
+# When topic_name is non-empty, appends to the named topic's .events list.
+# Usage: hi_tracking_append_event <tracking_file> <topic_name> <type> <description>
 hi_tracking_append_event() {
   local tracking_file="$1"
-  local event_type="$2"
-  local description="$3"
+  local topic_name="$2"
+  local event_type="$3"
+  local description="$4"
   local timestamp
   timestamp="$(hi_timestamp)"
 
-  # Build the event block and append via yq
-  yq eval -i ".events += [{\"timestamp\": \"$timestamp\", \"type\": \"$event_type\", \"description\": \"$description\"}]" \
-    "$tracking_file" 2>/dev/null
+  if [[ -z "$topic_name" ]]; then
+    yq eval -i ".events += [{\"timestamp\": \"$timestamp\", \"type\": \"$event_type\", \"description\": \"$description\"}]" \
+      "$tracking_file" 2>/dev/null
+  else
+    yq eval -i "(.topics[] | select(.name == \"$topic_name\") | .events) += [{\"timestamp\": \"$timestamp\", \"type\": \"$event_type\", \"description\": \"$description\"}]" \
+      "$tracking_file" 2>/dev/null
+  fi
+}
+
+# Convenience wrapper: append an event to the root .events list.
+# Usage: hi_tracking_append_root_event <tracking_file> <type> <description>
+hi_tracking_append_root_event() {
+  local tracking_file="$1"
+  local event_type="$2"
+  local description="$3"
+  hi_tracking_append_event "$tracking_file" "" "$event_type" "$description"
 }
 
 # ── Schema / templates root ───────────────────────────────────────────────────
+
+# Return path to the repo-level l1/ directory (shared raw sources)
+# Respects HI_L1_ROOT env var for test isolation
+hi_l1_root() {
+  if [[ -n "${HI_L1_ROOT:-}" ]]; then
+    echo "$HI_L1_ROOT"
+    return
+  fi
+  echo "$(hi_repo_root)/l1"
+}
 
 hi_repo_root() {
   if [[ -n "${HI_REPO_ROOT:-}" ]]; then
@@ -127,4 +163,69 @@ hi_schemas_dir() {
 
 hi_templates_dir() {
   echo "$(hi_repo_root)/templates"
+}
+
+# ── SHA-256 portability ────────────────────────────────────────────────────────
+
+# Compute SHA-256 hex digest of a file (portable: macOS + Linux)
+# Usage: hi_sha256 <file>
+hi_sha256() {
+  local file="$1"
+  if command -v sha256sum > /dev/null 2>&1; then
+    sha256sum "$file" | cut -d' ' -f1
+  else
+    shasum -a 256 "$file" | cut -d' ' -f1
+  fi
+}
+
+# ── Markdown front matter helpers ─────────────────────────────────────────────
+# Front matter is the YAML block between the first and second '---' delimiters.
+
+# Extract the YAML front matter block from a Markdown file (content only, no delimiters)
+# Usage: hi_markdown_get_frontmatter_block <file>
+# Returns: YAML text on stdout; exits 1 if file missing or no front matter found
+hi_markdown_get_frontmatter_block() {
+  local md_file="$1"
+  if [[ ! -f "$md_file" ]]; then
+    return 1
+  fi
+  local count
+  count=$(grep -c "^---$" "$md_file" 2>/dev/null || echo 0)
+  if [[ "$count" -lt 2 ]]; then
+    return 1
+  fi
+  # Print lines between first and second '---'
+  sed -n '1,/^---$/p' "$md_file" | sed '1d;$d'
+}
+
+# Read a single field from a Markdown file's YAML front matter
+# Usage: hi_markdown_get_field <file> <yq-field>
+# Returns: field value on stdout; empty string if missing or null
+hi_markdown_get_field() {
+  local md_file="$1"
+  local field="$2"
+  local front val
+  front=$(hi_markdown_get_frontmatter_block "$md_file") || return 1
+  val=$(printf '%s\n' "$front" | yq eval ".$field" - 2>/dev/null)
+  if [[ "$val" == "null" || -z "$val" ]]; then
+    echo ""
+  else
+    echo "$val"
+  fi
+}
+
+# Get the prose body of a Markdown file (everything after the closing ---)
+# Usage: hi_markdown_get_content <file>
+# Returns: body text on stdout; exits 1 if file missing or no closing ---
+hi_markdown_get_content() {
+  local md_file="$1"
+  if [[ ! -f "$md_file" ]]; then
+    return 1
+  fi
+  local line
+  line=$(grep -n "^---$" "$md_file" | tail -1 | cut -d: -f1)
+  if [[ -z "$line" ]]; then
+    return 1
+  fi
+  tail -n +"$((line + 1))" "$md_file"
 }

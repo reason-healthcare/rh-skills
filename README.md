@@ -58,11 +58,11 @@ OLLAMA_MODEL=llama3.2
 ## Quickstart
 
 ```bash
-# 1. Scaffold a new skill
+# 1. Scaffold a new topic
 hi init diabetes-screening --title "Diabetes Screening" --author "My Team"
 
 # 2. Add a raw L1 artifact (manual step)
-cp my-guideline-extract.md skills/diabetes-screening/l1/ada-guidelines.md
+cp my-guideline-extract.md topics/diabetes-screening/l1/ada-guidelines.md
 
 # 3. Derive an L2 artifact from L1
 hi promote derive diabetes-screening --source ada-guidelines --name screening-criteria
@@ -91,9 +91,9 @@ hi test diabetes-screening
 
 ## Command Reference
 
-### `hi init <skill-name> [options]`
+### `hi init <topic-name> [options]`
 
-Scaffold a new skill with directory structure and tracking.
+Scaffold a new topic with directory structure and tracking.
 
 ```
 Options:
@@ -102,7 +102,7 @@ Options:
   --author        Author or team name
 ```
 
-### `hi promote <mode> <skill> [options]`
+### `hi promote <mode> <topic> [options]`
 
 Promote artifacts to the next level using LLM reasoning.
 
@@ -121,39 +121,40 @@ Promote artifacts to the next level using LLM reasoning.
   --dry-run             Print LLM prompt only; do not invoke
 ```
 
-### `hi validate <skill> <level> <artifact>`
+### `hi validate <topic> <level> <artifact>`
 
 Validate L2 or L3 artifacts against their schema.
 
 - Required field violations → exit 1
 - Optional field gaps → warnings (exit 0)
 
-### `hi test <skill> [options]`
+### `hi test <topic> [options]`
 
-Run LLM-based fixture tests against a skill.
+Run LLM-based fixture tests against a topic.
 
 ```
   --fixture <name>   Run a specific fixture only
   --mode    <mode>   Comparison: exact | normalized | case_insensitive | contains | keywords
 ```
 
-Results written to `skills/<skill>/fixtures/results/<timestamp>-<runid>.json`.
+Results written to `topics/<topic>/fixtures/results/<timestamp>-<runid>.json`.
 
-### `hi status <skill> [--json]`
+### `hi status <topic> [--json]`
 
-Show skill lifecycle stage and artifact counts.
+Show topic lifecycle stage and artifact counts.
 
 ### `hi list [--json] [--stage <stage>]`
 
-List all skills. Filter by stage: `initialized`, `l1-discovery`, `l2-semi-structured`, `l3-computable`.
+List all topics. Filter by stage: `initialized`, `l1-discovery`, `l2-semi-structured`, `l3-computable`.
 
-## Skill Structure
+## Topic Structure
 
 ```
-skills/
-  <skill-name>/
-    SKILL.md                    # Skill description + usage instructions
+topics/
+  <topic-name>/
+    TOPIC.md                    # Topic description + usage instructions
     tracking.yaml               # Append-only audit log
+    plans/                      # Agent planning artifacts
     l1/
       <source>.md               # Raw discovery artifacts
     l2/
@@ -164,6 +165,24 @@ skills/
       <test>.yaml               # LLM test fixtures
       results/                  # Test run results
 ```
+
+## Repository Structure
+
+This is a **skills development repo**. The framework agent skills live under:
+
+```
+skills/
+  .curated/                     # Stable, distributable HI skills
+    hi-discovery/SKILL.md
+    hi-ingest/SKILL.md
+    hi-extract/SKILL.md
+    hi-formalize/SKILL.md
+    hi-verify/SKILL.md
+    hi-status/SKILL.md
+  .experimental/                # Prototype skills under development
+```
+
+These skills are installed into target (clinical team) repos at `.agents/skills/`.
 
 ## L2 Schema
 
@@ -189,9 +208,9 @@ Optional sections with FHIR equivalents:
 
 See `schemas/l3-schema.yaml` for full schema.
 
-## Example Skill
+## Example Project
 
-See `skills/diabetes-screening/` for a complete reference implementation based on ADA 2024 guidelines, including:
+See [`example-project/`](example-project/) for a complete reference implementation of a clinical topic (diabetes screening based on ADA 2024 guidelines), including:
 - L1 guideline extract
 - Two L2 artifacts (screening criteria, risk factors)
 - One L3 computable artifact (pathways, measures, value sets)

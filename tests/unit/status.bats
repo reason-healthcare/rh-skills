@@ -4,8 +4,8 @@
 load '../test_helper'
 
 setup() {
-  setup_skills_dir
-  export HI_SKILLS_ROOT="$SKILLS_DIR"
+  setup_topics_dir
+  export HI_TOPICS_ROOT="$TOPICS_DIR"
   export HI_REPO_ROOT="$REPO_ROOT"
   HI_STATUS="$REPO_ROOT/bin/hi-status"
   HI_LIST="$REPO_ROOT/bin/hi-list"
@@ -13,13 +13,16 @@ setup() {
 
 make_skill() {
   local skill="$1" stage="${2:-initialized}"
-  local skill_dir="$SKILLS_DIR/$skill"
-  mkdir -p "$skill_dir/l1" "$skill_dir/l2" "$skill_dir/l3" "$skill_dir/fixtures/results"
+  local skill_dir="$TOPICS_DIR/$skill"
+  mkdir -p "$skill_dir/l2" "$skill_dir/l3" "$skill_dir/fixtures/results"
 
-  local l1_yaml="[]" l2_yaml="[]" l3_yaml="[]"
+  local l2_yaml="[]" l3_yaml="[]"
   if [[ "$stage" == "l1-discovery" || "$stage" == "l2-semi-structured" || "$stage" == "l3-computable" ]]; then
-    l1_yaml='[{name: discovery-1, created_at: "2026-04-03T00:00:00Z"}]'
-    echo "Raw content" > "$skill_dir/l1/discovery-1.md"
+    echo "Raw content" > "$HI_L1_ROOT/discovery-1.md"
+    if [[ ! -f "$HI_TRACKING_FILE" ]]; then
+      printf 'schema_version: "1.0"\nl1: []\ntopics: []\nevents: []\n' > "$HI_TRACKING_FILE"
+    fi
+    yq eval -i '.l1 += [{"name": "discovery-1", "created_at": "2026-04-03T00:00:00Z"}]' "$HI_TRACKING_FILE"
   fi
   if [[ "$stage" == "l2-semi-structured" || "$stage" == "l3-computable" ]]; then
     l2_yaml='[{name: criteria-1, created_at: "2026-04-03T00:00:00Z", derived_from: [discovery-1]}]'
@@ -28,16 +31,15 @@ make_skill() {
     l3_yaml='[{name: computable-1, created_at: "2026-04-03T00:00:00Z", converged_from: [criteria-1]}]'
   fi
 
-  cat > "$skill_dir/tracking.yaml" <<YAML
-schema_version: "1.0"
-skill:
-  name: $skill
-  title: "Test Skill"
-  description: "A test skill"
-  author: "Test Author"
-  created_at: "2026-04-03T00:00:00Z"
+  # Write topic entry to temp file then merge into repo-level tracking.yaml
+  local _entry="$TOPICS_DIR/._${skill}_entry.yaml"
+  cat > "$_entry" <<YAML
+name: $skill
+title: "Test Topic"
+description: "A test topic"
+author: "Test Author"
+created_at: "2026-04-03T00:00:00Z"
 artifacts:
-  l1: $l1_yaml
   l2: $l2_yaml
   l3: $l3_yaml
 events:
@@ -45,6 +47,16 @@ events:
     type: created
     description: scaffolded
 YAML
+
+  if [[ ! -f "$HI_TRACKING_FILE" ]]; then
+    printf 'schema_version: "1.0"\nl1: []\ntopics: []\nevents: []\n' > "$HI_TRACKING_FILE"
+  fi
+
+  local _merged="$TOPICS_DIR/._${skill}_merged.yaml"
+  yq eval-all 'select(fileIndex==0).topics += [select(fileIndex==1)] | select(fileIndex==0)' \
+    "$HI_TRACKING_FILE" "$_entry" > "$_merged"
+  mv "$_merged" "$HI_TRACKING_FILE"
+  rm -f "$_entry"
 }
 
 # ── hi-status tests ───────────────────────────────────────────────────────────

@@ -9,13 +9,13 @@ source "$SCRIPT_DIR/common.sh"
 
 usage() {
   cat <<EOF
-Usage: hi init <skill-name> [options]
+Usage: hi init <topic-name> [options]
 
 Arguments:
-  skill-name   Name of the skill (kebab-case, e.g. diabetes-screening)
+  topic-name   Name of the skill (kebab-case, e.g. diabetes-screening)
 
 Options:
-  --title      Human-readable title (default: derived from skill-name)
+  --title      Human-readable title (default: derived from topic-name)
   --description  Brief description of the skill
   --author     Author name or team (default: git user or "unknown")
   -h, --help   Print usage
@@ -36,11 +36,11 @@ main() {
     usage; exit 0
   fi
 
-  local skill_name="$1"; shift
+  local topic_name="$1"; shift
 
-  # Validate skill name
-  if ! hi_kebab_validate "$skill_name"; then
-    hi_log_error "Skill name must be kebab-case (lowercase letters, digits, hyphens only): $skill_name"
+  # Validate topic name
+  if ! hi_kebab_validate "$topic_name"; then
+    hi_log_error "Topic name must be kebab-case (lowercase letters, digits, hyphens only): $topic_name"
     exit 2
   fi
 
@@ -59,54 +59,52 @@ main() {
   # Defaults
   if [[ -z "$title" ]]; then
     # Convert kebab-case to title case: diabetes-screening → Diabetes Screening
-    title=$(echo "$skill_name" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}')
+    title=$(echo "$topic_name" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}')
   fi
   if [[ -z "$author" ]]; then
     author=$(git config user.name 2>/dev/null || echo "unknown")
   fi
 
-  local skills_root
-  skills_root="$(hi_skills_root)"
-  local skill_dir="$skills_root/$skill_name"
+  local topics_root
+  topics_root="$(hi_topics_root)"
+  local topic_dir="$topics_root/$topic_name"
 
-  # Check if skill already exists
-  if [[ -d "$skill_dir" ]]; then
-    hi_log_error "Skill '$skill_name' already exists at $skill_dir"
+  # Check if topic already exists
+  if [[ -d "$topic_dir" ]]; then
+    hi_log_error "Topic '$topic_name' already exists at $topic_dir"
     exit 1
   fi
 
   # Create directory structure
-  mkdir -p "$skill_dir/l1" "$skill_dir/l2" "$skill_dir/l3" "$skill_dir/fixtures/results"
+  mkdir -p "$topic_dir/l2" "$topic_dir/l3" "$topic_dir/fixtures/results" "$topic_dir/plans"
+
+  # Ensure root l1/ directory exists
+  mkdir -p "$(hi_l1_root)"
 
   local timestamp
   timestamp="$(hi_timestamp)"
   local today
   today="$(hi_date)"
 
-  # Write tracking.yaml
-  cat > "$skill_dir/tracking.yaml" <<YAML
-schema_version: "1.0"
-skill:
-  name: $skill_name
-  title: "$title"
-  description: "${description:-A healthcare informatics skill}"
-  author: "$author"
-  created_at: "$timestamp"
-artifacts:
-  l1: []
-  l2: []
-  l3: []
-events:
-  - timestamp: "$timestamp"
-    type: created
-    description: Skill scaffolded with hi init
-YAML
+  # Initialize or update repo-level tracking.yaml
+  local tracking
+  tracking="$(hi_tracking_file)"
+  if [[ ! -f "$tracking" ]]; then
+    printf 'schema_version: "1.0"\nl1: []\ntopics: []\nevents: []\n' > "$tracking"
+  fi
 
-  # Write SKILL.md following anthropic skills-developer pattern
-  cat > "$skill_dir/SKILL.md" <<MD
+  # Append new topic entry (topics contain only l2 and l3 artifacts; l1 is at repo root)
+  yq eval -i ".topics += [{\"name\": \"$topic_name\", \"title\": \"$title\", \"description\": \"${description:-A healthcare informatics topic}\", \"author\": \"$author\", \"created_at\": \"$timestamp\", \"artifacts\": {\"l2\": [], \"l3\": []}, \"events\": []}]" \
+    "$tracking"
+
+  # Record initial created event
+  hi_tracking_append_event "$tracking" "$topic_name" "created" "Topic scaffolded with hi init"
+
+  # Write TOPIC.md
+  cat > "$topic_dir/TOPIC.md" <<MD
 ---
-name: "$skill_name"
-description: "${description:-A healthcare informatics skill}"
+name: "$topic_name"
+description: "${description:-A healthcare informatics topic}"
 compatibility: "hi-skills-framework >= 0.1.0"
 metadata:
   author: "$author"
@@ -116,11 +114,9 @@ metadata:
 
 ## Overview
 
-${description:-Describe the clinical purpose and scope of this skill.}
+${description:-Describe the clinical purpose and scope of this topic.}
 
-## Usage
-
-This skill progresses through three artifact levels:
+## Artifact Levels
 
 - **L1 (Discovery)**: Raw clinical knowledge — guidelines, notes, research extracts
 - **L2 (Semi-structured)**: Structured YAML artifacts derived from L1 content
@@ -128,27 +124,21 @@ This skill progresses through three artifact levels:
 
 ## Instructions
 
-<!-- Describe how an agent or human should reason about and use this skill. -->
-
-## Fixtures
-
-Fixture files are stored in \`fixtures/\` as input/expected-output conversation pairs
-for LLM-based testing via \`hi test\`.
+<!-- Describe how an agent or human should reason about and use this topic. -->
 MD
 
-  # Place L1 template
-  cp "$(hi_templates_dir)/l1/discovery.md" "$skill_dir/l1/.discovery-template.md" 2>/dev/null || true
-
-  hi_log_info "Initialized skill: $skill_name"
-  printf '  Location: %s\n' "$skill_dir"
+  hi_log_info "Initialized topic: $topic_name"
+  printf '  Location: %s\n' "$topic_dir"
+  printf '  Tracking: %s\n' "$tracking"
   printf '  Structure:\n'
-  printf '    %s/\n' "$skill_name"
-  printf '      l1/    (add raw discovery artifacts here)\n'
-  printf '      l2/    (semi-structured artifacts)\n'
-  printf '      l3/    (computable artifacts)\n'
+  printf '    l1/        (shared raw sources — repo root)\n'
+  printf '    %s/\n' "$topic_name"
+  printf '      l2/        (semi-structured artifacts)\n'
+  printf '      l3/        (computable artifacts)\n'
+  printf '      plans/     (plan artifacts from framework skills)\n'
   printf '      fixtures/  (LLM test fixtures)\n'
-  printf '      SKILL.md   (skill description)\n'
-  printf '      tracking.yaml  (workflow audit log)\n'
+  printf '      TOPIC.md   (topic description)\n'
+  printf '  tracking.yaml  (repo-level workflow audit log)\n'
 }
 
 main "$@"

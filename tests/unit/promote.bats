@@ -4,8 +4,8 @@
 load '../test_helper'
 
 setup() {
-  setup_skills_dir
-  export HI_SKILLS_ROOT="$SKILLS_DIR"
+  setup_topics_dir
+  export HI_TOPICS_ROOT="$TOPICS_DIR"
   export HI_REPO_ROOT="$REPO_ROOT"
   export LLM_PROVIDER=stub
   HI_PROMOTE="$REPO_ROOT/bin/hi-promote"
@@ -15,18 +15,17 @@ setup() {
 
 make_skill_with_l1() {
   local skill="$1" l1_name="${2:-ada-guidelines}"
-  local skill_dir="$SKILLS_DIR/$skill"
-  mkdir -p "$skill_dir/l1" "$skill_dir/l2" "$skill_dir/l3" "$skill_dir/fixtures/results"
-  cat > "$skill_dir/tracking.yaml" <<YAML
-schema_version: "1.0"
-skill:
-  name: $skill
-  title: Test Skill
-  description: A test skill
-  author: test
-  created_at: "2026-04-03T00:00:00Z"
+  local skill_dir="$TOPICS_DIR/$skill"
+  mkdir -p "$skill_dir/l2" "$skill_dir/l3" "$skill_dir/fixtures/results"
+
+  local _entry="$TOPICS_DIR/._${skill}_entry.yaml"
+  cat > "$_entry" <<YAML
+name: $skill
+title: Test Skill
+description: A test skill
+author: test
+created_at: "2026-04-03T00:00:00Z"
 artifacts:
-  l1: [{name: $l1_name, created_at: "2026-04-03T00:00:00Z"}]
   l2: []
   l3: []
 events:
@@ -34,13 +33,24 @@ events:
     type: created
     description: scaffolded
 YAML
-  echo "Raw clinical content for testing." > "$skill_dir/l1/$l1_name.md"
+
+  if [[ ! -f "$HI_TRACKING_FILE" ]]; then
+    printf 'schema_version: "1.0"\nl1: []\ntopics: []\nevents: []\n' > "$HI_TRACKING_FILE"
+  fi
+
+  local _merged="$TOPICS_DIR/._${skill}_merged.yaml"
+  yq eval-all 'select(fileIndex==0).topics += [select(fileIndex==1)] | select(fileIndex==0)' \
+    "$HI_TRACKING_FILE" "$_entry" > "$_merged"
+  mv "$_merged" "$HI_TRACKING_FILE"
+  rm -f "$_entry"
+
+  echo "Raw clinical content for testing." > "$HI_L1_ROOT/$l1_name.md"
 }
 
 make_skill_with_l2() {
   local skill="$1"
   make_skill_with_l1 "$skill"
-  local skill_dir="$SKILLS_DIR/$skill"
+  local skill_dir="$TOPICS_DIR/$skill"
   for name in l2-artifact-a l2-artifact-b; do
     cat > "$skill_dir/l2/$name.yaml" <<YAML
 id: $name
@@ -54,8 +64,8 @@ description: |
 derived_from:
   - ada-guidelines
 YAML
-    yq eval -i ".artifacts.l2 += [{\"name\": \"$name\", \"created_at\": \"2026-04-03T00:00:00Z\", \"derived_from\": [\"ada-guidelines\"]}]" \
-      "$skill_dir/tracking.yaml"
+    yq eval -i "(.topics[] | select(.name == \"$skill\") | .artifacts.l2) += [{\"name\": \"$name\", \"created_at\": \"2026-04-03T00:00:00Z\", \"derived_from\": [\"ada-guidelines\"]}]" \
+      "$HI_TRACKING_FILE"
   done
 }
 
@@ -65,14 +75,14 @@ YAML
   make_skill_with_l1 my-skill
   run "$HI_PROMOTE" derive my-skill --source ada-guidelines --name criteria
   [ "$status" -eq 0 ]
-  [ -f "$SKILLS_DIR/my-skill/l2/criteria.yaml" ]
+  [ -f "$TOPICS_DIR/my-skill/l2/criteria.yaml" ]
 }
 
 @test "hi promote derive: updates tracking.yaml l2 list" {
   make_skill_with_l1 my-skill
   "$HI_PROMOTE" derive my-skill --source ada-guidelines --name criteria
   local count
-  count=$(yq eval '.artifacts.l2 | length' "$SKILLS_DIR/my-skill/tracking.yaml")
+  count=$(yq eval '.topics[] | select(.name == "my-skill") | .artifacts.l2 | length' "$HI_TRACKING_FILE")
   [ "$count" -eq 1 ]
 }
 
@@ -80,23 +90,23 @@ YAML
   make_skill_with_l1 my-skill
   "$HI_PROMOTE" derive my-skill --source ada-guidelines --name criteria
   local event_type
-  event_type=$(yq eval '.events[-1].type' "$SKILLS_DIR/my-skill/tracking.yaml")
+  event_type=$(yq eval '.topics[] | select(.name == "my-skill") | .events[-1].type' "$HI_TRACKING_FILE")
   [ "$event_type" = "l2_derived" ]
 }
 
 @test "hi promote derive: --count creates N artifacts" {
   make_skill_with_l1 my-skill
   "$HI_PROMOTE" derive my-skill --source ada-guidelines --name risk --count 3
-  [ -f "$SKILLS_DIR/my-skill/l2/risk-1.yaml" ]
-  [ -f "$SKILLS_DIR/my-skill/l2/risk-2.yaml" ]
-  [ -f "$SKILLS_DIR/my-skill/l2/risk-3.yaml" ]
+  [ -f "$TOPICS_DIR/my-skill/l2/risk-1.yaml" ]
+  [ -f "$TOPICS_DIR/my-skill/l2/risk-2.yaml" ]
+  [ -f "$TOPICS_DIR/my-skill/l2/risk-3.yaml" ]
 }
 
 @test "hi promote derive: --dry-run does not create file" {
   make_skill_with_l1 my-skill
   run "$HI_PROMOTE" derive my-skill --source ada-guidelines --name criteria --dry-run
   [ "$status" -eq 0 ]
-  [ ! -f "$SKILLS_DIR/my-skill/l2/criteria.yaml" ]
+  [ ! -f "$TOPICS_DIR/my-skill/l2/criteria.yaml" ]
   [[ "$output" == *"DRY RUN"* ]]
 }
 
@@ -123,14 +133,14 @@ YAML
   make_skill_with_l2 my-skill
   run "$HI_PROMOTE" combine my-skill --sources l2-artifact-a,l2-artifact-b --name computable
   [ "$status" -eq 0 ]
-  [ -f "$SKILLS_DIR/my-skill/l3/computable.yaml" ]
+  [ -f "$TOPICS_DIR/my-skill/l3/computable.yaml" ]
 }
 
 @test "hi promote combine: updates tracking.yaml l3 list" {
   make_skill_with_l2 my-skill
   "$HI_PROMOTE" combine my-skill --sources l2-artifact-a,l2-artifact-b --name computable
   local count
-  count=$(yq eval '.artifacts.l3 | length' "$SKILLS_DIR/my-skill/tracking.yaml")
+  count=$(yq eval '.topics[] | select(.name == "my-skill") | .artifacts.l3 | length' "$HI_TRACKING_FILE")
   [ "$count" -eq 1 ]
 }
 
@@ -138,7 +148,7 @@ YAML
   make_skill_with_l2 my-skill
   "$HI_PROMOTE" combine my-skill --sources l2-artifact-a,l2-artifact-b --name computable
   local event_type
-  event_type=$(yq eval '.events[-1].type' "$SKILLS_DIR/my-skill/tracking.yaml")
+  event_type=$(yq eval '.topics[] | select(.name == "my-skill") | .events[-1].type' "$HI_TRACKING_FILE")
   [ "$event_type" = "l3_converged" ]
 }
 
@@ -146,7 +156,7 @@ YAML
   make_skill_with_l2 my-skill
   "$HI_PROMOTE" combine my-skill --sources l2-artifact-a,l2-artifact-b --name computable
   local count
-  count=$(yq eval '.artifacts.l3[0].converged_from | length' "$SKILLS_DIR/my-skill/tracking.yaml")
+  count=$(yq eval '.topics[] | select(.name == "my-skill") | .artifacts.l3[0].converged_from | length' "$HI_TRACKING_FILE")
   [ "$count" -eq 2 ]
 }
 
@@ -154,7 +164,7 @@ YAML
   make_skill_with_l2 my-skill
   run "$HI_PROMOTE" combine my-skill --sources l2-artifact-a,l2-artifact-b --name computable --dry-run
   [ "$status" -eq 0 ]
-  [ ! -f "$SKILLS_DIR/my-skill/l3/computable.yaml" ]
+  [ ! -f "$TOPICS_DIR/my-skill/l3/computable.yaml" ]
   [[ "$output" == *"DRY RUN"* ]]
 }
 

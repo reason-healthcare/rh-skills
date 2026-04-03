@@ -52,7 +52,7 @@ main() {
 
   local ext="yaml"
   local skill_dir
-  skill_dir="$(hi_skill_dir "$skill_name")"
+  skill_dir="$(hi_topic_dir "$skill_name")"
   local artifact_file="$skill_dir/$level/$artifact_name.$ext"
   local schema_file
   schema_file="$(hi_schemas_dir)/$level-schema.yaml"

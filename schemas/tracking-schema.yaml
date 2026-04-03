@@ -1,39 +1,91 @@
 # Tracking Artifact Schema
+# Single repo-level file: <repo-root>/tracking.yaml
 # Maintained by hi CLI commands; not manually edited
 schema_version: "1.0"
 
+# ── Design rationale ─────────────────────────────────────────────────────────
+# Raw source files live in sources/ at the repo root, shared across all topics.
+# During ingest, agents classify sources and decide which topic(s) to build,
+# prioritizing reuse. Structured (L2) and computable (L3) artifacts live per-topic.
+# A single source can inform multiple topics via derived_from references.
+
+# ── Directory layout ──────────────────────────────────────────────────────────
+# <repo-root>/
+#   sources/                      # Raw source files (PDFs, Word, Markdown, etc.)
+#   topics/
+#     <topic-name>/
+#       TOPIC.md                  # Topic description
+#       structured/               # Semi-structured YAML artifacts (L2)
+#       computable/               # Computable YAML artifacts (L3)
+#       fixtures/                 # LLM test fixtures
+#       plans/                    # Plan artifacts from framework skills
+#   tracking.yaml                 # This file
+
 structure:
-  schema_version: string    # always "1.0"
-  skill:
-    name: string            # skill name (kebab-case)
-    title: string           # human-readable title
-    description: string     # brief description
-    author: string          # author name or team
-    created_at: string      # ISO 8601 timestamp
+  schema_version: string          # always "1.0"
 
-  artifacts:
-    l1:                     # list of L1 artifact entries
-      - name: string
-        created_at: string
-    l2:                     # list of L2 artifact entries
-      - name: string
-        created_at: string
-        derived_from: list  # L1 artifact names
-    l3:                     # list of L3 artifact entries
-      - name: string
-        created_at: string
-        converged_from: list  # L2 artifact names
+  sources:                        # Root-level raw sources — shared across all topics
+    - name: string                # kebab-case identifier (e.g. ada-guidelines-2024)
+      file: string                # repo-relative path (sources/ada-guidelines-2024.md)
+      type: string                # pdf | word | excel | markdown | html | document
+      checksum: string            # SHA-256 hex at registration time (drift detection)
+      ingested_at: string         # ISO 8601 timestamp
+      text_extracted: boolean     # true if companion .txt was extracted
 
-  events:                   # append-only audit log
-    - timestamp: string     # ISO 8601
-      type: string          # see event_types below
-      description: string   # human-readable detail
+  topics:                         # One entry per clinical topic
+    - name: string                # kebab-case (e.g. diabetes-screening)
+      title: string               # human-readable title
+      description: string         # brief description
+      author: string              # author name or team
+      created_at: string          # ISO 8601 timestamp
+
+      structured:                 # Semi-structured artifacts derived from sources (L2)
+        - name: string
+          file: string            # topics/<name>/structured/<name>.yaml
+          created_at: string
+          checksum: string        # SHA-256 hex at creation time
+          derived_from: list      # source names (references root sources[].name)
+
+      computable:                 # Computable artifacts converged from structured (L3)
+        - name: string
+          file: string            # topics/<name>/computable/<name>.yaml
+          created_at: string
+          checksum: string        # SHA-256 hex at creation time
+          converged_from: list    # structured artifact names (within this topic)
+
+      events:                     # Per-topic append-only event log (L2/L3 work)
+        - timestamp: string       # ISO 8601
+          type: string
+          description: string
+
+  events:                         # Root-level append-only event log (ingest work)
+    - timestamp: string           # ISO 8601
+      type: string
+      description: string
 
 event_types:
-  - created         # skill scaffolded
-  - l1_added        # L1 artifact added to skill
-  - l2_derived      # L1 → L2 derivation completed
-  - l3_converged    # L2(s) → L3 convergence completed
-  - validated       # validation run completed
-  - tested          # test run completed
-  - promoted        # promotion milestone
+  root_events:
+    - source_added      # raw source registered into sources/
+    - source_changed    # source checksum drift detected (re-ingested)
+    - topic_created     # topic scaffolded with hi init or agent classification
+  topic_events:
+    - structured_derived   # source → structured artifact derivation completed
+    - computable_converged # structured → computable convergence completed
+    - validated            # validation run completed
+    - tested               # test run completed
+
+# ── yq v4 query patterns ──────────────────────────────────────────────────────
+# Get topic entry:
+#   yq eval '.topics[] | select(.name == "diabetes-screening")' tracking.yaml
+# Count sources:
+#   yq eval '.sources | length' tracking.yaml
+# Count structured artifacts for a topic:
+#   yq eval '.topics[] | select(.name == "diabetes-screening") | .structured | length' tracking.yaml
+# Append a source:
+#   yq eval -i '.sources += [{"name": "foo", "file": "sources/foo.md"}]' tracking.yaml
+# Append structured artifact to a topic:
+#   yq eval -i '(.topics[] | select(.name == "diabetes-screening") | .structured) += [{"name": "bar"}]' tracking.yaml
+# Append root event:
+#   yq eval -i '.events += [{"timestamp": "...", "type": "source_added", "description": "..."}]' tracking.yaml
+# Append topic event:
+#   yq eval -i '(.topics[] | select(.name == "diabetes-screening") | .events) += [{"timestamp": "...", "type": "structured_derived", "description": "..."}]' tracking.yaml

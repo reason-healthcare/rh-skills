@@ -4,8 +4,8 @@
 load '../test_helper'
 
 setup() {
-  setup_skills_dir
-  export HI_SKILLS_ROOT="$SKILLS_DIR"
+  setup_topics_dir
+  export HI_TOPICS_ROOT="$TOPICS_DIR"
   export HI_REPO_ROOT="$REPO_ROOT"
   HI_INIT="$REPO_ROOT/bin/hi-init"
 }
@@ -15,49 +15,49 @@ setup() {
 @test "hi init: creates skill directory structure" {
   run "$HI_INIT" test-skill
   [ "$status" -eq 0 ]
-  [ -d "$SKILLS_DIR/test-skill" ]
-  [ -d "$SKILLS_DIR/test-skill/l1" ]
-  [ -d "$SKILLS_DIR/test-skill/l2" ]
-  [ -d "$SKILLS_DIR/test-skill/l3" ]
-  [ -d "$SKILLS_DIR/test-skill/fixtures" ]
+  [ -d "$TOPICS_DIR/test-skill" ]
+  [ -d "$TOPICS_DIR/test-skill/l2" ]
+  [ -d "$TOPICS_DIR/test-skill/l3" ]
+  [ -d "$TOPICS_DIR/test-skill/fixtures" ]
+  [ -d "$HI_L1_ROOT" ]
 }
 
 @test "hi init: creates tracking.yaml" {
   run "$HI_INIT" test-skill
   [ "$status" -eq 0 ]
-  [ -f "$SKILLS_DIR/test-skill/tracking.yaml" ]
+  [ -f "$HI_TRACKING_FILE" ]
 }
 
 @test "hi init: tracking.yaml has correct schema_version" {
   "$HI_INIT" test-skill
   local val
-  val=$(yq eval '.schema_version' "$SKILLS_DIR/test-skill/tracking.yaml")
+  val=$(yq eval '.schema_version' "$HI_TRACKING_FILE")
   [ "$val" = "1.0" ]
 }
 
 @test "hi init: tracking.yaml records skill name" {
   "$HI_INIT" my-skill
   local val
-  val=$(yq eval '.skill.name' "$SKILLS_DIR/my-skill/tracking.yaml")
+  val=$(yq eval '.topics[] | select(.name == "my-skill") | .name' "$HI_TRACKING_FILE")
   [ "$val" = "my-skill" ]
 }
 
 @test "hi init: tracking.yaml has created event" {
   "$HI_INIT" test-skill
   local event_type
-  event_type=$(yq eval '.events[0].type' "$SKILLS_DIR/test-skill/tracking.yaml")
+  event_type=$(yq eval '.topics[] | select(.name == "test-skill") | .events[0].type' "$HI_TRACKING_FILE")
   [ "$event_type" = "created" ]
 }
 
-@test "hi init: creates SKILL.md" {
+@test "hi init: creates TOPIC.md" {
   run "$HI_INIT" test-skill
   [ "$status" -eq 0 ]
-  [ -f "$SKILLS_DIR/test-skill/SKILL.md" ]
+  [ -f "$TOPICS_DIR/test-skill/TOPIC.md" ]
 }
 
-@test "hi init: SKILL.md contains skill name in frontmatter" {
+@test "hi init: TOPIC.md contains skill name in frontmatter" {
   "$HI_INIT" test-skill
-  grep -q 'name: "test-skill"' "$SKILLS_DIR/test-skill/SKILL.md"
+  grep -q 'name: "test-skill"' "$TOPICS_DIR/test-skill/TOPIC.md"
 }
 
 # ── Flag handling ─────────────────────────────────────────────────────────────
@@ -65,28 +65,28 @@ setup() {
 @test "hi init: --title sets tracking.yaml skill title" {
   "$HI_INIT" test-skill --title "My Custom Title"
   local val
-  val=$(yq eval '.skill.title' "$SKILLS_DIR/test-skill/tracking.yaml")
+  val=$(yq eval '.topics[] | select(.name == "test-skill") | .title' "$HI_TRACKING_FILE")
   [ "$val" = "My Custom Title" ]
 }
 
 @test "hi init: --description sets skill description" {
   "$HI_INIT" test-skill --description "A clinical decision support skill"
   local val
-  val=$(yq eval '.skill.description' "$SKILLS_DIR/test-skill/tracking.yaml")
+  val=$(yq eval '.topics[] | select(.name == "test-skill") | .description' "$HI_TRACKING_FILE")
   [ "$val" = "A clinical decision support skill" ]
 }
 
 @test "hi init: --author sets skill author" {
   "$HI_INIT" test-skill --author "Clinical Informatics Team"
   local val
-  val=$(yq eval '.skill.author' "$SKILLS_DIR/test-skill/tracking.yaml")
+  val=$(yq eval '.topics[] | select(.name == "test-skill") | .author' "$HI_TRACKING_FILE")
   [ "$val" = "Clinical Informatics Team" ]
 }
 
 @test "hi init: default title derived from kebab name" {
   "$HI_INIT" diabetes-screening
   local val
-  val=$(yq eval '.skill.title' "$SKILLS_DIR/diabetes-screening/tracking.yaml")
+  val=$(yq eval '.topics[] | select(.name == "diabetes-screening") | .title' "$HI_TRACKING_FILE")
   [ "$val" = "Diabetes Screening" ]
 }
 

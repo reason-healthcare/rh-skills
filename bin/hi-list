@@ -28,19 +28,14 @@ Examples:
 EOF
 }
 
-# Determine lifecycle stage for a skill directory
+# Determine lifecycle stage from artifact counts
 _skill_stage() {
-  local tracking="$1"
-  local l1_count l2_count l3_count
-  l1_count=$(yq eval '.artifacts.l1 | length' "$tracking" 2>/dev/null || echo 0)
-  l2_count=$(yq eval '.artifacts.l2 | length' "$tracking" 2>/dev/null || echo 0)
-  l3_count=$(yq eval '.artifacts.l3 | length' "$tracking" 2>/dev/null || echo 0)
-
-  if [[ "$l3_count" -gt 0 ]]; then
+  local l1="$1" l2="$2" l3="$3"
+  if [[ "$l3" -gt 0 ]]; then
     echo "l3-computable"
-  elif [[ "$l2_count" -gt 0 ]]; then
+  elif [[ "$l2" -gt 0 ]]; then
     echo "l2-semi-structured"
-  elif [[ "$l1_count" -gt 0 ]]; then
+  elif [[ "$l1" -gt 0 ]]; then
     echo "l1-discovery"
   else
     echo "initialized"
@@ -59,14 +54,14 @@ main() {
     esac
   done
 
-  local skills_root
-  skills_root="$(hi_skills_root)"
+  local tracking
+  tracking="$(hi_tracking_file)"
 
-  if [[ ! -d "$skills_root" ]]; then
+  if [[ ! -f "$tracking" ]]; then
     if [[ $json_output -eq 1 ]]; then
       echo "[]"
     else
-      printf 'No skills directory found at %s\n' "$skills_root"
+      printf 'No tracking.yaml found\n'
     fi
     exit 0
   fi
@@ -74,32 +69,29 @@ main() {
   local skills_json="[]"
   local found=0
 
-  # Iterate over directories in skills root that contain tracking.yaml
-  for skill_dir in "$skills_root"/*/; do
-    [[ -d "$skill_dir" ]] || continue
-    local tracking="$skill_dir/tracking.yaml"
-    [[ -f "$tracking" ]] || continue
+  local topic_count
+  topic_count=$(yq eval '.topics | length' "$tracking" 2>/dev/null || echo 0)
 
-    local skill_name
-    skill_name="$(basename "$skill_dir")"
-    local stage
-    stage="$(_skill_stage "$tracking")"
+  local i=0
+  while [[ "$i" -lt "$topic_count" ]]; do
+    local topic_name title l1_count l2_count l3_count stage
+    topic_name=$(yq eval ".topics[$i].name" "$tracking" 2>/dev/null || echo "")
+    title=$(yq eval ".topics[$i].title // \"\"" "$tracking" 2>/dev/null || echo "")
+    l1_count=$(yq eval ".l1 | length" "$tracking" 2>/dev/null || echo 0)
+    l2_count=$(yq eval ".topics[$i].artifacts.l2 | length" "$tracking" 2>/dev/null || echo 0)
+    l3_count=$(yq eval ".topics[$i].artifacts.l3 | length" "$tracking" 2>/dev/null || echo 0)
+    stage="$(_skill_stage "$l1_count" "$l2_count" "$l3_count")"
 
     # Apply stage filter
     if [[ -n "$stage_filter" && "$stage" != "$stage_filter" ]]; then
+      i=$((i + 1))
       continue
     fi
-
-    local title l1_count l2_count l3_count
-    title=$(yq eval '.skill.title // ""' "$tracking" 2>/dev/null)
-    l1_count=$(yq eval '.artifacts.l1 | length' "$tracking" 2>/dev/null || echo 0)
-    l2_count=$(yq eval '.artifacts.l2 | length' "$tracking" 2>/dev/null || echo 0)
-    l3_count=$(yq eval '.artifacts.l3 | length' "$tracking" 2>/dev/null || echo 0)
 
     if [[ $json_output -eq 1 ]]; then
       local entry
       entry=$(jq -n \
-        --arg name "$skill_name" \
+        --arg name "$topic_name" \
         --arg title "$title" \
         --arg stage "$stage" \
         --argjson l1 "$l1_count" \
@@ -109,15 +101,16 @@ main() {
       skills_json=$(printf '%s' "$skills_json" | jq --argjson e "$entry" '. + [$e]')
     else
       printf '%-30s  %-20s  L1:%-3d L2:%-3d L3:%-3d\n' \
-        "$skill_name" "$stage" "$l1_count" "$l2_count" "$l3_count"
+        "$topic_name" "$stage" "$l1_count" "$l2_count" "$l3_count"
     fi
     found=$((found + 1))
+    i=$((i + 1))
   done
 
   if [[ $json_output -eq 1 ]]; then
     printf '%s\n' "$skills_json"
   elif [[ $found -eq 0 ]]; then
-    printf 'No skills found%s\n' "${stage_filter:+ with stage: $stage_filter}"
+    printf 'No topics found%s\n' "${stage_filter:+ with stage: $stage_filter}"
   fi
 }
 

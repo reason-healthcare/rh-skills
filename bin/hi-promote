@@ -69,10 +69,11 @@ cmd_derive() {
     usage; exit 2
   fi
 
-  hi_require_skill "$skill_name"
+  hi_require_topic "$skill_name"
   local skill_dir
-  skill_dir="$(hi_skill_dir "$skill_name")"
-  local l1_file="$skill_dir/l1/$source_name.md"
+  skill_dir="$(hi_topic_dir "$skill_name")"
+  local l1_file
+  l1_file="$(hi_l1_root)/$source_name.md"
 
   if [[ ! -f "$l1_file" ]]; then
     hi_log_error "L1 artifact not found: $l1_file"
@@ -143,9 +144,12 @@ Generate L2 artifact #$i of $count. Artifact name (id field): $artifact_name"
     # Update tracking
     local timestamp
     timestamp="$(hi_timestamp)"
-    local tracking="$skill_dir/tracking.yaml"
-    yq eval -i ".artifacts.l2 += [{\"name\": \"$artifact_name\", \"created_at\": \"$timestamp\", \"derived_from\": [\"$source_name\"]}]" "$tracking"
-    yq eval -i ".events += [{\"timestamp\": \"$timestamp\", \"type\": \"l2_derived\", \"description\": \"Derived $artifact_name from $source_name\"}]" "$tracking"
+    local tracking
+    tracking="$(hi_tracking_file)"
+    local l2_checksum
+    l2_checksum="$(hi_sha256 "$l2_file")"
+    yq eval -i "(.topics[] | select(.name == \"$skill_name\") | .artifacts.l2) += [{\"name\": \"$artifact_name\", \"file\": \"topics/$skill_name/l2/$artifact_name.yaml\", \"created_at\": \"$timestamp\", \"checksum\": \"$l2_checksum\", \"derived_from\": [\"$source_name\"]}]" "$tracking"
+    yq eval -i "(.topics[] | select(.name == \"$skill_name\") | .events) += [{\"timestamp\": \"$timestamp\", \"type\": \"l2_derived\", \"description\": \"Derived $artifact_name from $source_name\"}]" "$tracking"
 
     hi_log_info "Created: $l2_file"
     i=$((i + 1))
@@ -173,9 +177,9 @@ cmd_combine() {
     usage; exit 2
   fi
 
-  hi_require_skill "$skill_name"
+  hi_require_topic "$skill_name"
   local skill_dir
-  skill_dir="$(hi_skill_dir "$skill_name")"
+  skill_dir="$(hi_topic_dir "$skill_name")"
 
   # Parse comma-separated source list
   local combined_content="" source_names_yaml=""
@@ -262,7 +266,8 @@ $combined_content"
   # Update tracking
   local timestamp
   timestamp="$(hi_timestamp)"
-  local tracking="$skill_dir/tracking.yaml"
+  local tracking
+  tracking="$(hi_tracking_file)"
 
   # Build converged_from array for yq
   local converged_json="["
@@ -278,8 +283,10 @@ $combined_content"
   done
   converged_json="${converged_json}]"
 
-  yq eval -i ".artifacts.l3 += [{\"name\": \"$output_name\", \"created_at\": \"$timestamp\", \"converged_from\": $converged_json}]" "$tracking"
-  yq eval -i ".events += [{\"timestamp\": \"$timestamp\", \"type\": \"l3_converged\", \"description\": \"Converged $output_name from $sources_csv\"}]" "$tracking"
+  local l3_checksum
+  l3_checksum="$(hi_sha256 "$l3_file")"
+  yq eval -i "(.topics[] | select(.name == \"$skill_name\") | .artifacts.l3) += [{\"name\": \"$output_name\", \"file\": \"topics/$skill_name/l3/$output_name.yaml\", \"created_at\": \"$timestamp\", \"checksum\": \"$l3_checksum\", \"converged_from\": $converged_json}]" "$tracking"
+  yq eval -i "(.topics[] | select(.name == \"$skill_name\") | .events) += [{\"timestamp\": \"$timestamp\", \"type\": \"l3_converged\", \"description\": \"Converged $output_name from $sources_csv\"}]" "$tracking"
 
   hi_log_info "Created: $l3_file"
 }
