@@ -103,7 +103,7 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 
 **plan mode**
 
-- **FR-004**: `hi-discovery plan` MUST produce `process/plans/discovery-plan.md`. The file MUST contain: (a) a prose **Domain Advice** section with what to consider for the clinical domain; (b) YAML frontmatter with a `sources[]` list.
+- **FR-004**: `hi-discovery plan` MUST produce `process/plans/discovery-plan.md`. The file MUST contain: (a) a prose **Domain Advice** section with what to consider for the clinical domain; (b) YAML frontmatter with a `sources[]` list; (c) a **Research Expansion Suggestions** section (see FR-025).
 - **FR-005**: Each source entry in `sources[]` MUST have: `name`, `type` (see FR-009), `rationale`, `search_terms[]`, `evidence_level` (see FR-010), `access` (`open | authenticated | manual`). `url` is optional but MUST be present when `access: open`. When `access: authenticated`, the entry MUST include `auth_note` — a plain-English description of how to obtain access (e.g., institutional login, free registration, society membership).
 - **FR-005a**: For `access: authenticated` sources, the agent MUST include a `recommended: true` flag when the source is considered authoritative or high-value for the topic domain, regardless of whether it can be downloaded automatically. The discovery plan is the authoritative recommendation — access difficulty does not reduce a source's priority.
 - **FR-006**: The agent MUST call `hi search pubmed` and at least one other `hi search` subcommand during `plan`; results inform the `sources[]` list. The agent decides which results are relevant.
@@ -134,6 +134,10 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 - **FR-022**: The skill MUST reside at `skills/.curated/hi-discovery/SKILL.md` following the `skills/_template/` three-level progressive disclosure format.
 - **FR-023**: For any topic with a US clinical care or population health angle, the agent MUST actively search and include sources from the US government healthcare ecosystem. Minimum coverage: (a) check CMS eCQM Library and CMIT for existing quality measures; (b) check QPP/MIPS if a clinician performance angle exists; (c) check USPSTF for preventive service grades; (d) assess SDOH relevance using Gravity Project domain taxonomy; (e) check AHRQ for evidence-based practice reports; (f) include CDC surveillance or MMWR if epidemiological evidence is needed.
 - **FR-024**: The domain advice section of `discovery-plan.md` MUST address the `reference.md` Domain Advice Checklist in full, including: CMS program alignment, SDOH relevance (with specific Gravity domains if applicable), health equity lens, and existing quality measure landscape.
+- **FR-025**: After producing the source plan, the agent MUST present a **Research Expansion Suggestions** section in `discovery-plan.md` with 3–7 numbered, clinically-grounded prompts the user can choose to pursue. These are prospective adjacent areas — NOT sources already in the plan. Each suggestion MUST include: the adjacent topic, why it is relevant to the primary topic, and the first `hi` command the user would run to explore it. Suggestions MUST NOT be added to `sources[]` automatically; they are offered for the user to act on.
+- **FR-025a**: Research Expansion Suggestions MUST cover at minimum these categories when applicable: (a) adjacent comorbidities or closely related conditions; (b) a healthcare economics angle (cost of care, disease burden, cost-effectiveness); (c) a health equity or disparate-population angle; (d) an implementation science gap (known barriers to guideline adoption); (e) a data / registry gap (areas with limited evidence or active clinical trial inquiry).
+- **FR-026**: When the topic involves a chronic condition, a preventive intervention, or a CMS quality program, the agent MUST include at least one `health-economics` source in `sources[]`. Minimum content: a cost-of-care or disease-burden estimate source (e.g., HCUP, MEPS, GBD) and, where a clinical intervention is involved, a cost-effectiveness reference (e.g., CEA Registry, NICE HTA).
+- **FR-027**: The agent MUST function as an interactive research assistant throughout the `plan` interaction. After presenting the plan and expansion suggestions, the agent MUST explicitly prompt the user: which expansion areas (if any) to pursue, whether to run `hi-discovery implement` now, and whether to refine the source list before proceeding.
 
 ### Source Type Taxonomy (FR-009)
 
@@ -146,6 +150,7 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 | `measure-library` | CMS eCQMs, HEDIS, MIPS/QPP measures, NQF-endorsed measures, Joint Commission |
 | `fhir-ig` | US Core, QI-Core, CARIN BB, SMART, Gravity SDOH FHIR IG, condition-specific IGs |
 | `sdoh-assessment` | PRAPARE, AHC HRSN Tool, HealthLeads screening, CDC SVI, CDC PLACES |
+| `health-economics` | HCUP, MEPS, GBD, CEA Registry, ICER reports, NICE HTA, CMS National Health Expenditure Data |
 | `government-program` | CMS CMMI model specs, Medicaid state plan amendments, CMS LCD/NCD coverage policies, HRSA program guidance |
 | `cds-library` | CDS Hooks registry, OpenCDS |
 | `registry` | ClinicalTrials.gov, disease registries |
@@ -178,6 +183,8 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 - **SC-004**: `hi search pubmed --query "diabetes screening" --max 10` returns structured JSON output in under 5 seconds.
 - **SC-005**: The SKILL.md passes all `tests/skills/` checks with zero failures.
 - **SC-006**: `--dry-run implement` produces zero downloads and zero `tracking.yaml` events while still reporting which sources would be downloaded vs. flagged manual.
+- **SC-007**: After completing a plan, the agent presents 3–7 Research Expansion Suggestions with specific next `hi` commands, and explicitly prompts the user for direction — demonstrating interactive research assistant behavior.
+- **SC-008**: For a chronic condition topic (e.g., diabetes, hypertension), at least one `health-economics` source appears in `sources[]` and the domain advice section addresses cost-of-care burden.
 
 ---
 
@@ -189,6 +196,18 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 - `hi ingest implement --url` handles redirect following, MIME type detection, and file extension inference from Content-Type headers.
 - All downloaded sources are stored in `sources/` at repo root — the same directory used by manually ingested files.
 - The optional `NCBI_API_KEY` environment variable, if set, is used to increase PubMed rate limits; it is never written to any artifact.
+
+## Architecture Decision: Skill, not Agent
+
+`hi-discovery` is implemented as a **SKILL.md** (not a standalone agent or sub-process) for the following reasons:
+
+1. **Interactive research assistant** — the primary use case is a conversation: the user asks about a topic, the skill guides the LLM to search, reason, and suggest; the user asks follow-up questions mid-session. This is inherently dialogic and is best served by the user's own LLM session reading a SKILL.md.
+2. **Guiding principle** — all deterministic work (API calls, downloads, file writes) is handled by the `hi` CLI. The skill provides reasoning. A standalone agent would duplicate this boundary without adding value.
+3. **Framework consistency** — all six HI framework skills (003–008) follow the SKILL.md pattern established in 002.
+4. **User controls the pace** — the user can ask "tell me more about the economics angle" or "what else should I search?" mid-session and the LLM responds in full context. An autonomous agent cannot do this.
+
+A `hi discovery run` non-interactive CLI entrypoint may be added in a future spec for batch/unattended use without changing the SKILL.md design.
+
 
 
 ## Overview

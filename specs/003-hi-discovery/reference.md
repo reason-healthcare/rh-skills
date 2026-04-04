@@ -272,6 +272,52 @@ Use these exact phrases in `auth_note` fields for consistency:
 
 ---
 
+## Healthcare Economics Sources
+
+Required when the topic involves a chronic condition, preventive intervention, or CMS quality program (FR-026). The agent MUST include at least one cost-of-care / burden source and, where a clinical intervention exists, a cost-effectiveness reference.
+
+### Cost of Care & Disease Burden
+
+| Source | What it provides | URL | Access |
+|--------|-----------------|-----|--------|
+| **AHRQ HCUP** (Healthcare Cost and Utilization Project) | Inpatient, ED, and ambulatory cost and utilization data by condition, payer, demographics | hcupus.ahrq.gov | Open (microdata requires DUA) |
+| **MEPS** (Medical Expenditure Panel Survey) | Household-level healthcare spending and utilization by condition and insurance type | meps.ahrq.gov | Open |
+| **CMS National Health Expenditure Data** | National and state-level health spending by service type and payer | cms.gov/research-statistics-data-and-systems/statistics-trends-and-reports/nationalhealthexpenddata | Open |
+| **Global Burden of Disease (GBD)** | DALYs, YLDs, YLLs by condition, country, age, sex — IHME data | healthdata.org/gbd | Open |
+| **CDC Chronic Disease Cost Calculator** | State-level economic burden estimates for major chronic conditions | cdc.gov/chronicdisease | Open |
+| **CMS Chronic Conditions Warehouse (CCW)** | Medicare/Medicaid claims-based prevalence and cost algorithms for 27+ chronic conditions | ccwdata.org | Open (data access requires application) |
+
+### Cost-Effectiveness & Health Technology Assessment
+
+| Source | What it provides | URL | Access |
+|--------|-----------------|-----|--------|
+| **CEA Registry** (Tufts CEVR) | Curated cost-per-QALY ratios from published cost-effectiveness analyses | cevr.tufts.edu/tools/cea-registry | Free registration |
+| **ICER Reports** | US comparative clinical effectiveness and value-based price benchmarks | icer.org/evidence-reports | Open |
+| **NICE Health Technology Appraisals** | UK HTA decisions and cost-effectiveness thresholds; useful US comparators | nice.org.uk/about/what-we-do/our-programmes/nice-guidance/nice-technology-appraisal-guidance | Open |
+| **WHO-CHOICE** | Cost-effectiveness data for health interventions by world region | who.int/choice | Open |
+| **Cochrane Economics** | Systematic reviews including economic evaluations | cochranelibrary.com | Authenticated |
+
+### Healthcare Economics Journals (all indexed in PubMed)
+
+| Journal | Focus | Open access |
+|---------|-------|-------------|
+| *Value in Health* (ISPOR) | Pharmacoeconomics, HTA, outcomes research | Mixed |
+| *Health Affairs* | US health policy and economics | Mixed |
+| *PharmacoEconomics* | Drug cost-effectiveness | Subscription |
+| *American Journal of Managed Care* | Managed care, payer economics | Open |
+| *Medical Care* | Health services research, costs | Subscription |
+| *JAMA Health Forum* | US health system economics | ✅ Open |
+| *American Journal of Health Economics* | Health economics research | Subscription |
+
+**PubMed search pattern for economics evidence:**
+```
+<condition> AND ("cost-effectiveness"[Title/Abstract] OR "economic burden"[Title/Abstract] OR "cost of illness"[Title/Abstract] OR "healthcare costs"[Title/Abstract])
+```
+
+Use `type: health-economics` in `sources[]` for all cost, burden, and HTA source entries.
+
+---
+
 ## Domain Advice Checklist (for SKILL.md reasoning)
 
 When the agent produces a discovery plan, it MUST advise on:
