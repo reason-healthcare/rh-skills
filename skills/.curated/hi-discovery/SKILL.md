@@ -9,16 +9,13 @@ description: >
   sources to build an evidence-based discovery plan (L1 → L2 lifecycle stage).
   Modes: session · verify.
 compatibility: "hi-skills-framework >= 0.1.0"
-version: "1.0.0"
-modes:
-  - session
-  - verify
 context_files:
   - reference.md          # domain advice checklist, source taxonomies, US gov coverage
   - examples/plan.md      # worked example: diabetes-ccm discovery-plan.md
   - examples/output.md    # worked example: session transcript excerpt
 metadata:
   author: "HI Skills Framework"
+  version: "1.0.0"
   source: "skills/.curated/hi-discovery/SKILL.md"
   lifecycle_stage: "l1-discovery"
   reads_from:

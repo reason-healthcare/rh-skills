@@ -9,17 +9,13 @@ description: >
   <One sentence: what this skill does and for whom.>
   Modes: plan · implement · verify.
 compatibility: "hi-skills-framework >= 0.1.0"
-version: "1.0.0"
-modes:
-  - plan
-  - implement
-  - verify
 context_files:
   - reference.md        # full schemas, field definitions, validation rules
   - examples/plan.md    # worked example of a plan artifact
   - examples/output.md  # worked example of an output artifact
 metadata:
   author: "<Author Name or Team>"
+  version: "1.0.0"
   source: "skills/.curated/<skill-name>/SKILL.md"
   lifecycle_stage: "<l1-discovery | l2-semi-structured | l3-computable>"
   reads_from:
