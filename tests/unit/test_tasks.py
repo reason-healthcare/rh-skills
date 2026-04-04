@@ -10,7 +10,7 @@ from hi.commands.tasks import tasks
 def setup_topic_with_tasks(tmp_repo, topic_name="my-topic"):
     """Create a topic with a pre-populated tasks.md."""
     td = tmp_repo / "topics" / topic_name
-    (td / "plans").mkdir(parents=True, exist_ok=True)
+    (td / "process" / "plans").mkdir(parents=True, exist_ok=True)
     (td / "structured").mkdir(parents=True, exist_ok=True)
     (td / "computable").mkdir(parents=True, exist_ok=True)
 
@@ -31,7 +31,7 @@ def setup_topic_with_tasks(tmp_repo, topic_name="my-topic"):
         with open(tracking_path, "w") as f:
             y.dump(tracking, f)
 
-    tasks_file = td / "plans" / "tasks.md"
+    tasks_file = td / "process" / "plans" / "tasks.md"
     tasks_file.write_text("""\
 ---
 topic: "my-topic"
@@ -99,7 +99,7 @@ def test_tasks_list_creates_tasks_file_if_missing(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(tasks, ["list", "my-topic"])
     assert result.exit_code == 0
-    assert (td / "plans" / "tasks.md").exists()
+    assert (td / "process" / "plans" / "tasks.md").exists()
 
 
 def test_tasks_add_appends_pending_task(tmp_repo):
@@ -107,7 +107,7 @@ def test_tasks_add_appends_pending_task(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(tasks, ["add", "New task description", "my-topic"])
     assert result.exit_code == 0
-    tasks_file = tmp_repo / "topics" / "my-topic" / "plans" / "tasks.md"
+    tasks_file = tmp_repo / "topics" / "my-topic" / "process" / "plans" / "tasks.md"
     content = tasks_file.read_text()
     assert "- [ ] New task description" in content
 
@@ -117,7 +117,7 @@ def test_tasks_complete_marks_task_done(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(tasks, ["complete", "1", "my-topic"])
     assert result.exit_code == 0
-    tasks_file = tmp_repo / "topics" / "my-topic" / "plans" / "tasks.md"
+    tasks_file = tmp_repo / "topics" / "my-topic" / "process" / "plans" / "tasks.md"
     content = tasks_file.read_text()
     assert "- [x] First task" in content
 

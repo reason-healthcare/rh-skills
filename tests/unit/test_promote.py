@@ -20,7 +20,7 @@ def setup_topic_with_source(tmp_repo, topic_name="my-skill", source_name="ada-gu
     td = tmp_repo / "topics" / topic_name
     (td / "structured").mkdir(parents=True, exist_ok=True)
     (td / "computable").mkdir(parents=True, exist_ok=True)
-    (td / "fixtures" / "results").mkdir(parents=True, exist_ok=True)
+    (td / "process" / "fixtures" / "results").mkdir(parents=True, exist_ok=True)
 
     # Create source file in sources/
     src_file = tmp_repo / "sources" / f"{source_name}.md"

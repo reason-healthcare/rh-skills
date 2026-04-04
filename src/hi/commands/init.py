@@ -66,7 +66,7 @@ def init(topic, title, description, author):
     # Create directory structure
     for subdir in [
         "structured", "computable",
-        "fixtures/results", "plans", "contracts", "checklists",
+        "process/fixtures/results", "process/plans", "process/contracts", "process/checklists",
     ]:
         (td / subdir).mkdir(parents=True, exist_ok=True)
 
@@ -112,7 +112,7 @@ def init(topic, title, description, author):
         y.dump(tracking, f)
 
     # Write research.md
-    (td / "research.md").write_text(f"""\
+    (td / "process" / "research.md").write_text(f"""\
 ---
 topic: "{topic}"
 updated: "{today}"
@@ -132,7 +132,7 @@ updated: "{today}"
 """)
 
     # Write conflicts.md
-    (td / "conflicts.md").write_text(f"""\
+    (td / "process" / "conflicts.md").write_text(f"""\
 ---
 topic: "{topic}"
 updated: "{today}"
@@ -152,8 +152,8 @@ updated: "{today}"
 <!-- Move resolved conflicts here with the resolution decision. -->
 """)
 
-    # Write plans/tasks.md
-    (td / "plans" / "tasks.md").write_text(f"""\
+    # Write process/plans/tasks.md
+    (td / "process" / "plans" / "tasks.md").write_text(f"""\
 ---
 topic: "{topic}"
 updated: "{today}"
@@ -207,10 +207,11 @@ metadata:
     click.echo(f"    {topic}/")
     click.echo("      structured/  (semi-structured artifacts)")
     click.echo("      computable/  (computable artifacts)")
-    click.echo("      contracts/   (YAML assertions for validation)")
-    click.echo("      checklists/  (clinical review checklists)")
-    click.echo("      plans/       (tasks and plan artifacts)")
-    click.echo("      fixtures/    (LLM test fixtures)")
+    click.echo("      process/")
+    click.echo("        contracts/   (YAML assertions for validation)")
+    click.echo("        checklists/  (clinical review checklists)")
+    click.echo("        plans/       (tasks and plan artifacts)")
+    click.echo("        fixtures/    (LLM test fixtures)")
+    click.echo("        research.md  (evidence and citations)")
+    click.echo("        conflicts.md (source contradictions)")
     click.echo("      TOPIC.md     (topic description)")
-    click.echo("      research.md  (evidence and citations)")
-    click.echo("      conflicts.md (source contradictions)")

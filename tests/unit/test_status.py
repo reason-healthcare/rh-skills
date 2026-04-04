@@ -21,7 +21,7 @@ def make_topic(tmp_repo, name, stage="initialized"):
     td = tmp_repo / "topics" / name
     (td / "structured").mkdir(parents=True, exist_ok=True)
     (td / "computable").mkdir(parents=True, exist_ok=True)
-    (td / "fixtures" / "results").mkdir(parents=True, exist_ok=True)
+    (td / "process" / "fixtures" / "results").mkdir(parents=True, exist_ok=True)
 
     tracking_path = tmp_repo / "tracking.yaml"
     y = YAML()

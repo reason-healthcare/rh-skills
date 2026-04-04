@@ -76,7 +76,7 @@ A clinical informaticist starting a new topic for "sepsis early detection" needs
 
 **Acceptance Scenarios**:
 
-1. **Given** a new initialized topic with no source artifacts, **When** `hi-discovery plan` is invoked, **Then** a discovery plan is written to `topics/<name>/plans/discovery-plan.md` with suggested source types and specific examples for the topic's domain.
+1. **Given** a new initialized topic with no source artifacts, **When** `hi-discovery plan` is invoked, **Then** a discovery plan is written to `topics/<name>/process/plans/discovery-plan.md` with suggested source types and specific examples for the topic's domain.
 2. **Given** a discovery plan has been reviewed and approved, **When** `hi-discovery implement` is invoked, **Then** each source in the plan becomes a tracked ingest task in `plans/ingest-plan.md` — no files are registered yet.
 3. **Given** a discovery plan artifact exists, **When** `hi-discovery plan` is re-invoked after the domain description changes, **Then** only new or changed source suggestions are added without duplicating existing ones.
 
@@ -109,7 +109,7 @@ After ingesting ADA guideline PDFs and extracting text, a clinical informaticist
 
 **Acceptance Scenarios**:
 
-1. **Given** a topic with one or more source artifacts, **When** `hi-extract plan` is invoked, **Then** a list of candidate structured artifact names and their intended content is written to `topics/<name>/plans/extract-plan.md` for review.
+1. **Given** a topic with one or more source artifacts, **When** `hi-extract plan` is invoked, **Then** a list of candidate structured artifact names and their intended content is written to `topics/<name>/process/plans/extract-plan.md` for review.
 2. **Given** an extract plan has been reviewed, **When** `hi-extract implement` is invoked, **Then** `hi promote derive` is called for each planned artifact and results are validated with `hi validate`.
 3. **Given** `hi-extract implement` runs and a validation failure occurs, **Then** the failure is surfaced with the specific missing fields and no tracking event is written for that artifact.
 
@@ -125,7 +125,7 @@ A team has produced several structured (L2) artifacts across screening criteria,
 
 **Acceptance Scenarios**:
 
-1. **Given** a topic with two or more validated structured artifacts, **When** `hi-formalize plan` is invoked, **Then** a convergence plan is written to `topics/<name>/plans/formalize-plan.md` showing which structured artifacts will be combined and a draft outline of the computable artifact's sections.
+1. **Given** a topic with two or more validated structured artifacts, **When** `hi-formalize plan` is invoked, **Then** a convergence plan is written to `topics/<name>/process/plans/formalize-plan.md` showing which structured artifacts will be combined and a draft outline of the computable artifact's sections.
 2. **Given** a formalize plan has been reviewed, **When** `hi-formalize implement` is invoked, **Then** `hi promote combine` is called and the resulting computable artifact is validated with `hi validate`.
 3. **Given** the formalize step completes, **When** `hi-formalize verify` is invoked, **Then** FHIR-compatible section completeness is confirmed (value sets have codes, measures have numerator/denominator).
 
@@ -164,26 +164,26 @@ A team lead wants a quick summary of where a skill stands and what action should
 
 **Discovery Skill (`hi-discovery`)**
 
-- **FR-001**: `hi-discovery plan` MUST produce a structured list of suggested source types and specific examples relevant to the topic's domain, saved as `topics/<name>/plans/discovery-plan.md`. No other files may be created or modified.
-- **FR-002**: `hi-discovery implement` MUST read `topics/<name>/plans/discovery-plan.md` and convert each source into a tracked ingest task in `topics/<name>/plans/ingest-plan.md`. It MUST fail with a clear error if no discovery plan exists.
+- **FR-001**: `hi-discovery plan` MUST produce a structured list of suggested source types and specific examples relevant to the topic's domain, saved as `topics/<name>/process/plans/discovery-plan.md`. No other files may be created or modified.
+- **FR-002**: `hi-discovery implement` MUST read `topics/<name>/process/plans/discovery-plan.md` and convert each source into a tracked ingest task in `topics/<name>/process/plans/ingest-plan.md`. It MUST fail with a clear error if no discovery plan exists.
 
 **Ingest Skill (`hi-ingest`)**
 
-- **FR-003**: `hi-ingest plan` MUST list all sources to be ingested (from the discovery plan or user-provided) as a reviewable `topics/<name>/plans/ingest-plan.md` with YAML front matter listing source paths/URLs before any files are registered.
-- **FR-004**: `hi-ingest implement` MUST read `topics/<name>/plans/ingest-plan.md` YAML front matter and register each source by recording: file path or URL, file type, ingestion timestamp, and SHA-256 checksum in tracking.yaml. It MUST fail if no ingest plan exists.
+- **FR-003**: `hi-ingest plan` MUST list all sources to be ingested (from the discovery plan or user-provided) as a reviewable `topics/<name>/process/plans/ingest-plan.md` with YAML front matter listing source paths/URLs before any files are registered.
+- **FR-004**: `hi-ingest implement` MUST read `topics/<name>/process/plans/ingest-plan.md` YAML front matter and register each source by recording: file path or URL, file type, ingestion timestamp, and SHA-256 checksum in tracking.yaml. It MUST fail if no ingest plan exists.
 - **FR-005**: Supported ingest source types MUST include: PDF, Microsoft Word (.docx), Microsoft Excel (.xlsx), plain text, Markdown, and online article URLs. For PDF, text extraction requires `pdftotext` (poppler); for Word/Excel, `pandoc`. If the required tool is absent, ingest MUST register metadata and checksum but emit a warning that text extraction was skipped — it MUST NOT fail hard.
 - **FR-006**: `hi-ingest verify` MUST confirm that all registered sources are still present on disk with matching checksums, reporting any missing or changed files.
 
 **Extract Skill (`hi-extract`)**
 
-- **FR-007**: `hi-extract plan` MUST analyze existing source artifacts and write a `topics/<name>/plans/extract-plan.md` proposing a named list of structured (L2) artifacts with a one-sentence description of each artifact's intended content.
-- **FR-008**: `hi-extract implement` MUST NOT proceed without a valid `topics/<name>/plans/extract-plan.md`; it MUST call `hi promote derive` for each planned structured artifact.
+- **FR-007**: `hi-extract plan` MUST analyze existing source artifacts and write a `topics/<name>/process/plans/extract-plan.md` proposing a named list of structured (L2) artifacts with a one-sentence description of each artifact's intended content.
+- **FR-008**: `hi-extract implement` MUST NOT proceed without a valid `topics/<name>/process/plans/extract-plan.md`; it MUST call `hi promote derive` for each planned structured artifact.
 - **FR-009**: `hi-extract verify` MUST run `hi validate` on each L2 artifact produced in the last extract-implement run and report pass/fail per artifact.
 
 **Formalize Skill (`hi-formalize`)**
 
-- **FR-010**: `hi-formalize plan` MUST identify which structured (L2) artifacts will be combined and write a `topics/<name>/plans/formalize-plan.md` with a draft outline of the computable (L3) artifact's sections (pathways, measures, value sets, etc.) for human review.
-- **FR-011**: `hi-formalize implement` MUST NOT proceed without a valid `topics/<name>/plans/formalize-plan.md`; it MUST call `hi promote combine` with the sources listed in the plan.
+- **FR-010**: `hi-formalize plan` MUST identify which structured (L2) artifacts will be combined and write a `topics/<name>/process/plans/formalize-plan.md` with a draft outline of the computable (L3) artifact's sections (pathways, measures, value sets, etc.) for human review.
+- **FR-011**: `hi-formalize implement` MUST NOT proceed without a valid `topics/<name>/process/plans/formalize-plan.md`; it MUST call `hi promote combine` with the sources listed in the plan.
 - **FR-012**: `hi-formalize verify` MUST validate the L3 artifact and check that FHIR-compatible sections (measures, value_sets) contain the minimum required sub-fields.
 
 **Verify Skill (`hi-verify`)**
@@ -199,7 +199,7 @@ A team lead wants a quick summary of where a skill stands and what action should
 
 **General**
 
-- **FR-018**: Every `plan` mode MUST write its output to `topics/<name>/plans/<skill>-plan.md` using **structured Markdown with a YAML front matter block**. The YAML front matter MUST contain all machine-readable fields needed by the corresponding `implement` mode. The Markdown body MUST contain human-readable prose for clinician review. No files outside `topics/<name>/plans/` may be created or modified.
+- **FR-018**: Every `plan` mode MUST write its output to `topics/<name>/process/plans/<skill>-plan.md` using **structured Markdown with a YAML front matter block**. The YAML front matter MUST contain all machine-readable fields needed by the corresponding `implement` mode. The Markdown body MUST contain human-readable prose for clinician review. No files outside `topics/<name>/process/plans/` may be created or modified.
 - **FR-019**: Every `implement` mode MUST parse the YAML front matter from its corresponding plan file and MUST fail immediately with a clear error if that file does not exist.
 - **FR-020**: Every `plan` or `implement` mode MUST warn and stop if its expected output already exists, and MUST support a `--force` flag to overwrite.
 - **FR-021**: Every skill mode that modifies the skill state MUST append an event to tracking.yaml.
@@ -212,7 +212,7 @@ A team lead wants a quick summary of where a skill stands and what action should
 - **Topic**: A clinical knowledge domain managed under `topics/<name>/`. Contains source files, structured artifacts, computable artifacts, plans, contracts, checklists, research, and conflicts.
 - **Skill** (agent skill): A SKILL.md file in `skills/.curated/<name>/` that an LLM agent invokes. Contains instructions for a specific stage and mode. Six skills total: `hi-discovery`, `hi-ingest`, `hi-extract`, `hi-formalize`, `hi-verify`, `hi-status`.
 - **Mode**: The operational phase within a skill — `plan`, `implement`, or `verify` for workflow skills; `progress`, `next-steps`, or `check-changes` for `hi-status`.
-- **Plan Artifact**: A human-reviewable Markdown file written by a `plan` mode to `topics/<name>/plans/<skill>-plan.md`. Required input for the corresponding `implement` mode.
+- **Plan Artifact**: A human-reviewable Markdown file written by a `plan` mode to `topics/<name>/process/plans/<skill>-plan.md`. Required input for the corresponding `implement` mode.
 - **Source Artifact (L1)**: A raw input file (PDF, Word, web snapshot, etc.) registered in `sources/` via `hi-ingest`. Tracked by path, type, SHA-256 checksum, and timestamp.
 - **Structured Artifact (L2)**: A semi-structured YAML file in `topics/<name>/structured/` produced by `hi promote derive`. Captures clinical concepts in a human-editable but machine-readable format.
 - **Computable Artifact (L3)**: A fully structured YAML file in `topics/<name>/computable/` produced by `hi promote combine`. Contains FHIR-compatible pathways, measures, and value sets.

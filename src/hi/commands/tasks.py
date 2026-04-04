@@ -21,7 +21,7 @@ from hi.common import (
 def _tasks_file(topic: str | None) -> Path:
     """Return the tasks file path for a topic or repo root."""
     if topic:
-        return topic_dir(topic) / "plans" / "tasks.md"
+        return topic_dir(topic) / "process" / "plans" / "tasks.md"
     return repo_root() / "plans" / "tasks.md"
 
 

@@ -28,7 +28,7 @@ Output:
   plans/ingest-plan.md  (YAML front matter + Markdown prose)
 
 Reads:
-  topics/<name>/plans/discovery-plan.md  (if available, for context)
+  topics/<name>/process/plans/discovery-plan.md  (if available, for context)
 ```
 
 ### `hi ingest implement <file> [--force]`
@@ -112,7 +112,7 @@ Output (human-readable):
 All plan artifacts share this interface, consumed by `implement` mode scripts.
 
 ### File Location
-`topics/<name>/plans/<plan-type>-plan.md`
+`topics/<name>/process/plans/<plan-type>-plan.md`
 
 ### Front Matter Fields by Plan Type
 

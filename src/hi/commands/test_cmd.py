@@ -64,7 +64,7 @@ def test(topic, fixture, mode):
     require_topic(tracking, topic)
 
     td = topic_dir(topic)
-    fixtures_dir = td / "fixtures"
+    fixtures_dir = td / "process" / "fixtures"
     results_dir = fixtures_dir / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
 

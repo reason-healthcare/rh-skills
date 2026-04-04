@@ -12,7 +12,7 @@ from hi.commands.test_cmd import test
 def setup_skill_with_fixture(tmp_repo, skill="my-skill", fixture_name="my-fixture"):
     """Create skill + tracking entry + fixture file."""
     skill_dir = tmp_repo / "topics" / skill
-    (skill_dir / "fixtures" / "results").mkdir(parents=True, exist_ok=True)
+    (skill_dir / "process" / "fixtures" / "results").mkdir(parents=True, exist_ok=True)
     (skill_dir / "structured").mkdir(parents=True, exist_ok=True)
     (skill_dir / "computable").mkdir(parents=True, exist_ok=True)
 
@@ -35,7 +35,7 @@ def setup_skill_with_fixture(tmp_repo, skill="my-skill", fixture_name="my-fixtur
         with open(tracking_path, "w") as f:
             y.dump(tracking, f)
 
-    fixture_file = skill_dir / "fixtures" / f"{fixture_name}.yaml"
+    fixture_file = skill_dir / "process" / "fixtures" / f"{fixture_name}.yaml"
     fixture_file.write_text("""\
 system_prompt: "You are a clinical assistant."
 user_prompt: "What is HbA1c used for?"
@@ -62,7 +62,7 @@ def test_test_writes_results_json(tmp_repo, monkeypatch):
     setup_skill_with_fixture(tmp_repo)
     runner = CliRunner()
     runner.invoke(test, ["my-skill", "--mode", "contains"])
-    results_dir = tmp_repo / "topics" / "my-skill" / "fixtures" / "results"
+    results_dir = tmp_repo / "topics" / "my-skill" / "process" / "fixtures" / "results"
     json_files = list(results_dir.glob("*.json"))
     assert len(json_files) >= 1
 
@@ -73,7 +73,7 @@ def test_test_result_json_has_correct_structure(tmp_repo, monkeypatch):
     setup_skill_with_fixture(tmp_repo)
     runner = CliRunner()
     runner.invoke(test, ["my-skill", "--mode", "contains"])
-    results_dir = tmp_repo / "topics" / "my-skill" / "fixtures" / "results"
+    results_dir = tmp_repo / "topics" / "my-skill" / "process" / "fixtures" / "results"
     result_file = sorted(results_dir.glob("*.json"))[0]
     data = json.loads(result_file.read_text())
     assert data["topic"] == "my-skill"
@@ -85,7 +85,7 @@ def test_test_result_json_has_summary(tmp_repo, monkeypatch):
     setup_skill_with_fixture(tmp_repo)
     runner = CliRunner()
     runner.invoke(test, ["my-skill", "--mode", "contains"])
-    results_dir = tmp_repo / "topics" / "my-skill" / "fixtures" / "results"
+    results_dir = tmp_repo / "topics" / "my-skill" / "process" / "fixtures" / "results"
     result_file = sorted(results_dir.glob("*.json"))[0]
     data = json.loads(result_file.read_text())
     assert "summary" in data
@@ -110,7 +110,7 @@ def test_test_exits_1_when_fixture_fails(tmp_repo, monkeypatch):
     monkeypatch.setenv("HI_STUB_RESPONSE", "completely different answer")
     setup_skill_with_fixture(tmp_repo)
     # Overwrite fixture with a non-matching expected
-    fixture_file = tmp_repo / "topics" / "my-skill" / "fixtures" / "my-fixture.yaml"
+    fixture_file = tmp_repo / "topics" / "my-skill" / "process" / "fixtures" / "my-fixture.yaml"
     fixture_file.write_text("""\
 system_prompt: "You are a clinical assistant."
 user_prompt: "What is HbA1c?"
@@ -124,7 +124,7 @@ expected_response: "NOMATCH_STRING_XYZ"
 def test_test_exits_0_with_no_fixtures(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     skill_dir = tmp_repo / "topics" / "my-skill"
-    (skill_dir / "fixtures" / "results").mkdir(parents=True, exist_ok=True)
+    (skill_dir / "process" / "fixtures" / "results").mkdir(parents=True, exist_ok=True)
     (skill_dir / "structured").mkdir(parents=True, exist_ok=True)
 
     tracking_path = tmp_repo / "tracking.yaml"

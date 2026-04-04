@@ -32,7 +32,7 @@ hi init diabetes-screening \
   --author "Clinical Informatics Team"
 ```
 
-Creates `topics/diabetes-screening/` with `TOPIC.md`, `research.md`, `conflicts.md`, `structured/`, `computable/`, `fixtures/`, `plans/`, `contracts/`, `checklists/`. Also ensures `sources/` exists at the repo root and registers the topic in `tracking.yaml`.
+Creates `topics/diabetes-screening/` with `TOPIC.md`, `structured/`, `computable/`, `process/` (`plans/`, `contracts/`, `checklists/`, `fixtures/`, `research.md`, `conflicts.md`). Also ensures `sources/` exists at the repo root and registers the topic in `tracking.yaml`.
 
 ---
 
@@ -42,21 +42,21 @@ Invoke the `hi-discovery` skill in **plan** mode. The agent generates a research
 
 **Agent invokes**: `hi-discovery plan`  
 **Reads**: `tracking.yaml` (domain: `diabetes`)  
-**Writes**: `topics/diabetes-screening/plans/discovery-plan.md`
+**Writes**: `topics/diabetes-screening/process/plans/discovery-plan.md`
 
-**Human review**: Open `topics/diabetes-screening/plans/discovery-plan.md`. Edit the YAML front matter to remove sources you don't need, add any you know of. The prose body explains each source — review it, then proceed.
+**Human review**: Open `topics/diabetes-screening/process/plans/discovery-plan.md`. Edit the YAML front matter to remove sources you don't need, add any you know of. The prose body explains each source — review it, then proceed.
 
 Then invoke **implement** mode to convert the plan into ingest tasks:
 
 **Agent invokes**: `hi-discovery implement`  
-**Reads**: `topics/diabetes-screening/plans/discovery-plan.md`  
-**Writes**: `topics/diabetes-screening/plans/ingest-plan.md`
+**Reads**: `topics/diabetes-screening/process/plans/discovery-plan.md`  
+**Writes**: `topics/diabetes-screening/process/plans/ingest-plan.md`
 
 ---
 
 ## Step 2: Ingest — register your raw sources
 
-You've downloaded `ada-care-2024.pdf`. Review and edit `topics/diabetes-screening/plans/ingest-plan.md` — update file paths to match where your files actually are.
+You've downloaded `ada-care-2024.pdf`. Review and edit `topics/diabetes-screening/process/plans/ingest-plan.md` — update file paths to match where your files actually are.
 
 **Agent invokes**: `hi ingest implement <file>`  
 **Reads**: file path argument  
@@ -79,14 +79,14 @@ hi ingest verify
 
 **Agent invokes**: `hi-extract plan`  
 **Reads**: `sources/`  
-**Writes**: `topics/diabetes-screening/plans/extract-plan.md`
+**Writes**: `topics/diabetes-screening/process/plans/extract-plan.md`
 
-**Human review**: Open `topics/diabetes-screening/plans/extract-plan.md`. The YAML front matter lists proposed structured artifact names and which source file each derives from. Edit names, add artifacts, remove proposals that aren't needed. The prose explains the clinical intent of each.
+**Human review**: Open `topics/diabetes-screening/process/plans/extract-plan.md`. The YAML front matter lists proposed structured artifact names and which source file each derives from. Edit names, add artifacts, remove proposals that aren't needed. The prose explains the clinical intent of each.
 
 Then implement:
 
 **Agent invokes**: `hi-extract implement`  
-**Reads**: `topics/diabetes-screening/plans/extract-plan.md`  
+**Reads**: `topics/diabetes-screening/process/plans/extract-plan.md`  
 **Executes**: `hi promote derive` for each artifact  
 **Writes**: `topics/diabetes-screening/structured/screening-criteria.yaml`, `topics/diabetes-screening/structured/risk-factors.yaml`
 
@@ -108,14 +108,14 @@ VALID (with 2 optional field warning(s))
 
 **Agent invokes**: `hi-formalize plan`  
 **Reads**: `topics/diabetes-screening/structured/`  
-**Writes**: `topics/diabetes-screening/plans/formalize-plan.md`
+**Writes**: `topics/diabetes-screening/process/plans/formalize-plan.md`
 
-**Human review**: Edit `topics/diabetes-screening/plans/formalize-plan.md`. The YAML front matter lists which structured artifacts to combine and which sections to include (pathways, measures, value_sets, etc.). Edit the outline prose to guide the LLM on what the computable artifact should emphasize.
+**Human review**: Edit `topics/diabetes-screening/process/plans/formalize-plan.md`. The YAML front matter lists which structured artifacts to combine and which sections to include (pathways, measures, value_sets, etc.). Edit the outline prose to guide the LLM on what the computable artifact should emphasize.
 
 Then implement:
 
 **Agent invokes**: `hi-formalize implement`  
-**Reads**: `topics/diabetes-screening/plans/formalize-plan.md`  
+**Reads**: `topics/diabetes-screening/process/plans/formalize-plan.md`  
 **Executes**: `hi promote combine diabetes-screening screening-criteria risk-factors diabetes-screening-computable`  
 **Writes**: `topics/diabetes-screening/computable/diabetes-screening-computable.yaml`
 

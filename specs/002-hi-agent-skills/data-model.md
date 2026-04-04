@@ -13,19 +13,20 @@ The `topics/<name>/` directory structure holds all artifacts for a clinical topi
 ```
 topics/<name>/
   TOPIC.md            # topic description (created by hi init)
-  research.md         # evidence and citations stub
-  conflicts.md        # source contradictions stub
   structured/         # semi-structured L2 artifacts
   computable/         # computable L3 artifacts
-  fixtures/           # LLM test fixtures
-  contracts/          # YAML assertions for validation
-  checklists/         # clinical review checklists
-  plans/              # plan artifacts from framework skills
-    discovery-plan.md
-    ingest-plan.md
-    extract-plan.md
-    formalize-plan.md
-    tasks.md
+  process/
+    research.md       # evidence and citations stub
+    conflicts.md      # source contradictions stub
+    fixtures/         # LLM test fixtures
+    contracts/        # YAML assertions for validation
+    checklists/       # clinical review checklists
+    plans/            # plan artifacts from framework skills
+      discovery-plan.md
+      ingest-plan.md
+      extract-plan.md
+      formalize-plan.md
+      tasks.md
 
 sources/              # Raw source files (repo root, shared across topics)
   ada-guidelines-2024.md
@@ -37,7 +38,7 @@ sources/              # Raw source files (repo root, shared across topics)
 
 A human-reviewable Markdown file with YAML front matter produced by a `plan` mode. Consumed by the corresponding `implement` mode.
 
-**File path**: `topics/<name>/plans/<skill>-plan.md`
+**File path**: `topics/<name>/process/plans/<skill>-plan.md`
 
 **Format**:
 ```markdown
@@ -195,20 +196,20 @@ metadata:
 
 | Skill | Mode | Reads | Writes |
 |-------|------|-------|--------|
-| `hi-discovery` | `plan` | tracking.yaml (domain) | `topics/<name>/plans/discovery-plan.md` |
-| `hi-discovery` | `implement` | `topics/<name>/plans/discovery-plan.md` | `topics/<name>/plans/ingest-plan.md` |
-| `hi-ingest` | `plan` | `topics/<name>/plans/discovery-plan.md` or user input | `plans/ingest-plan.md` |
+| `hi-discovery` | `plan` | tracking.yaml (domain) | `topics/<name>/process/plans/discovery-plan.md` |
+| `hi-discovery` | `implement` | `topics/<name>/process/plans/discovery-plan.md` | `topics/<name>/process/plans/ingest-plan.md` |
+| `hi-ingest` | `plan` | `topics/<name>/process/plans/discovery-plan.md` or user input | `plans/ingest-plan.md` |
 | `hi-ingest` | `implement` | `<file>` (path argument) | `sources/*`, tracking.yaml `sources[]` |
 | `hi-ingest` | `verify` | tracking.yaml `sources[]` | *(none — read-only)* |
-| `hi-extract` | `plan` | `sources/*`, tracking.yaml | `topics/<name>/plans/extract-plan.md` |
-| `hi-extract` | `implement` | `topics/<name>/plans/extract-plan.md` | `topics/<name>/structured/*` via `hi promote derive` |
+| `hi-extract` | `plan` | `sources/*`, tracking.yaml | `topics/<name>/process/plans/extract-plan.md` |
+| `hi-extract` | `implement` | `topics/<name>/process/plans/extract-plan.md` | `topics/<name>/structured/*` via `hi promote derive` |
 | `hi-extract` | `verify` | `topics/<name>/structured/*` | *(none)* via `hi validate` |
-| `hi-formalize` | `plan` | `topics/<name>/structured/*`, tracking.yaml | `topics/<name>/plans/formalize-plan.md` |
-| `hi-formalize` | `implement` | `topics/<name>/plans/formalize-plan.md` | `topics/<name>/computable/*` via `hi promote combine` |
+| `hi-formalize` | `plan` | `topics/<name>/structured/*`, tracking.yaml | `topics/<name>/process/plans/formalize-plan.md` |
+| `hi-formalize` | `implement` | `topics/<name>/process/plans/formalize-plan.md` | `topics/<name>/computable/*` via `hi promote combine` |
 | `hi-formalize` | `verify` | `topics/<name>/computable/*` | *(none)* via `hi validate` |
 | `hi-verify` | *(standalone)* | `topics/<name>/structured/*` or `topics/<name>/computable/*` | *(none)* |
 | `hi-status` | `progress` | tracking.yaml | *(none)* |
-| `hi-status` | `next-steps` | tracking.yaml, `topics/<name>/plans/*`, `sources/*`, `structured/*`, `computable/*` | *(none)* |
+| `hi-status` | `next-steps` | tracking.yaml, `topics/<name>/process/plans/*`, `sources/*`, `structured/*`, `computable/*` | *(none)* |
 | `hi-status` | `check-changes` | tracking.yaml `sources[]`, disk files | *(none)* |
 
 ---
