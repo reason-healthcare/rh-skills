@@ -1,5 +1,5 @@
 import click
-from hi.commands import init, status, list_cmd, promote, validate, ingest, tasks, test_cmd
+from hi.commands import init, status, list_cmd, promote, validate, ingest, tasks, test_cmd, search
 
 
 @click.group()
@@ -16,3 +16,4 @@ main.add_command(validate.validate)
 main.add_command(ingest.ingest)
 main.add_command(tasks.tasks)
 main.add_command(test_cmd.test)
+main.add_command(search.search)

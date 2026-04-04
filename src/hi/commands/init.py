@@ -12,6 +12,7 @@ from hi.common import (
     append_topic_event,
     log_info,
     now_iso,
+    repo_root,
     sources_root,
     today_date,
     topic_dir,
@@ -111,24 +112,33 @@ def init(topic, title, description, author):
     with open(tf, "w") as f:
         y.dump(tracking, f)
 
-    # Write research.md
+    # Write research.md — per-topic source disposition (three-table format for discovery skill)
     (td / "process" / "research.md").write_text(f"""\
----
-topic: "{topic}"
-updated: "{today}"
----
+# Research Notes: {topic}
 
-## Background
+> Source rows managed by `hi` — CLI appends only, never deletes.
+> Add notes in the Notes column. Maintain Open Questions and Related Topics manually.
 
-<!-- Clinical background, evidence base, and relevant literature for this topic. -->
+## Sources
 
-## Evidence Sources
+### Ruled In
 
-<!-- List key guidelines, studies, and authoritative references. -->
+| Source | File | Type | Evidence Level | Added | Notes |
+|--------|------|------|---------------|-------|-------|
 
-## Evidence Grading
+### Ruled Out
 
-<!-- Grade the quality of evidence for key clinical assertions (e.g., GRADE, AHA levels). -->
+| Source | Reason | Date |
+|--------|--------|------|
+
+### Pending Review
+
+| Source | Location | Added |
+|--------|----------|-------|
+
+## Open Questions
+
+## Related Topics
 """)
 
     # Write conflicts.md
@@ -200,6 +210,7 @@ metadata:
 """)
 
     log_info(f"Initialized topic: {topic}")
+    _init_research_portfolio(topic, today)
     click.echo(f"  Location: {td}")
     click.echo(f"  Tracking: {tf}")
     click.echo("  Structure:")
@@ -212,6 +223,61 @@ metadata:
     click.echo("        checklists/  (clinical review checklists)")
     click.echo("        plans/       (tasks and plan artifacts)")
     click.echo("        fixtures/    (LLM test fixtures)")
-    click.echo("        research.md  (evidence and citations)")
+    click.echo("        research.md  (source disposition tracking)")
     click.echo("        conflicts.md (source contradictions)")
     click.echo("      TOPIC.md     (topic description)")
+    click.echo("    RESEARCH.md  (root research portfolio)")
+
+
+def _init_research_portfolio(topic: str, today: str) -> None:
+    """Create or update root RESEARCH.md and confirm research.md created."""
+    root = repo_root()
+    portfolio = root / "RESEARCH.md"
+
+    if not portfolio.exists():
+        portfolio.write_text("""\
+# Research Portfolio
+
+> Managed by `hi` — CLI appends rows; human edits the Notes column.
+
+## Active Topics
+
+| Topic | Stage | Sources | Initialized | Updated | Notes |
+|-------|-------|---------|-------------|---------|-------|
+
+## Completed Topics
+
+| Topic | Stage | Sources | Completed | Notes |
+|-------|-------|---------|-----------|-------|
+
+## Deferred Topics
+
+| Topic | Reason | Deferred | Notes |
+|-------|--------|----------|-------|
+""")
+        log_info("Created: RESEARCH.md")
+
+    # Append row to Active Topics table (idempotent — skip if topic already present)
+    content = portfolio.read_text()
+    if f"| {topic} |" not in content:
+        new_row = f"| {topic} | initialized | 0 | {today} | {today} | |\n"
+        # Insert before the first blank line after the Active Topics header row
+        lines = content.splitlines(keepends=True)
+        insert_idx = None
+        in_active = False
+        for i, line in enumerate(lines):
+            if "## Active Topics" in line:
+                in_active = True
+            if in_active and line.startswith("| Topic |"):
+                # Skip the header and separator
+                continue
+            if in_active and line.startswith("|---"):
+                insert_idx = i + 1
+                break
+        if insert_idx is not None:
+            lines.insert(insert_idx, new_row)
+            portfolio.write_text("".join(lines))
+        else:
+            # Append after table header if structure not found
+            portfolio.write_text(content + new_row)
+        log_info(f"✓ Research tracking initialized for topic: {topic}")

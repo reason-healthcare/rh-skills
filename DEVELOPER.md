@@ -147,6 +147,42 @@ CLI commands live in `src/hi/commands/`. Each command:
 - Has unit tests in `tests/unit/test_<command>.py`
 - Appends a named event on state-changing operations
 
+### hi search
+
+Search biomedical databases and return structured results for use in discovery sessions.
+
+```sh
+hi search pubmed --query "<terms>" --max 20 [--json]
+hi search pmc   --query "<terms>" --max 20 [--json]
+hi search clinicaltrials --query "<terms>" --max 20 [--json]
+```
+
+- `--json`: output a JSON array of result objects (id, title, authors, year, journal, abstract, url, open_access)
+- `--max`: maximum results to return (default 20)
+- Set `NCBI_API_KEY` env var for higher PubMed rate limits (10 req/s vs 3 req/s)
+- PubMed uses Entrez esearch→efetch two-step; ClinicalTrials uses REST API v2
+
+### hi ingest implement --url
+
+Download a source file from a URL and register it in tracking.yaml.
+
+```sh
+hi ingest implement --url <url> --name <slug> [--type <mime>] --topic <topic>
+```
+
+Exit codes: `0` success · `1` network/HTTP error · `2` file already exists · `3` auth redirect detected
+
+### hi validate --plan
+
+Validate a discovery plan YAML frontmatter for completeness and correctness.
+
+```sh
+hi validate --plan topics/<topic>/process/plans/discovery-plan.md
+```
+
+Checks: YAML parseable · 5–25 sources · terminology source present · all rationale non-empty ·
+all search_terms non-empty · valid evidence_level · known source type (warning) · health-economics source (warning).
+
 ## Branches & Commits
 
 - Feature branches: `00N-<spec-name>` (e.g., `003-hi-discovery`)
