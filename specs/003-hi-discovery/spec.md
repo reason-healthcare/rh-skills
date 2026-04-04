@@ -107,7 +107,7 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 - **FR-005**: Each source entry in `sources[]` MUST have: `name`, `type` (see FR-009), `rationale`, `search_terms[]`, `evidence_level` (see FR-010), `access` (`open | authenticated | manual`). `url` is optional but MUST be present when `access: open`. When `access: authenticated`, the entry MUST include `auth_note` — a plain-English description of how to obtain access (e.g., institutional login, free registration, society membership).
 - **FR-005a**: For `access: authenticated` sources, the agent MUST include a `recommended: true` flag when the source is considered authoritative or high-value for the topic domain, regardless of whether it can be downloaded automatically. The discovery plan is the authoritative recommendation — access difficulty does not reduce a source's priority.
 - **FR-006**: The agent MUST call `hi search pubmed` and at least one other `hi search` subcommand during `plan`; results inform the `sources[]` list. The agent decides which results are relevant.
-- **FR-007**: `plan` MUST create `process/research.md` and `process/conflicts.md` stubs (create-unless-exists). Existing files MUST NOT be modified.
+- **FR-007**: `plan` MUST populate `process/research.md` Pending Review table with all `sources[]` entries from the discovery plan (name, URL or "TBD", date added). `plan` MUST also create `process/conflicts.md` stub (create-unless-exists). Existing files MUST NOT be modified (only the Pending Review table is appended).
 - **FR-008**: If `discovery-plan.md` already exists, `plan` MUST warn and stop unless `--force` is passed. Successful `plan` (non-dry-run) MUST append `discovery_planned` to `tracking.yaml`.
 
 **implement mode**
@@ -120,7 +120,7 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 - **FR-014**: `implement` MUST create `process/research.md` stub (create-unless-exists).
 - **FR-015**: If `discovery-plan.md` does not exist, `implement` MUST exit non-zero: `discovery-plan.md not found — run hi-discovery plan first`.
 - **FR-016**: If `sources[]` is empty, `implement` MUST exit non-zero before attempting any download.
-- **FR-017**: Successful `implement` MUST append `discovery_implemented` event to `tracking.yaml` with payload: `{ downloaded: N, manual_pending: M, failed: F }`.
+- **FR-017**: Successful `implement` MUST append `discovery_implemented` event to `tracking.yaml` with payload: `{ downloaded: N, manual_pending: M, failed: F }`. It MUST also update `process/research.md`: move each downloaded source from Pending Review → Ruled In; move each manual/failed source from Pending Review → Ruled Out (with reason). It MUST update `RESEARCH.md` root portfolio: source count and updated date for this topic.
 
 **verify mode**
 
@@ -167,10 +167,11 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 
 ### Key Entities
 
-- **Discovery Plan** (`discovery-plan.md`): YAML frontmatter + Markdown prose. Contains domain advice and `sources[]`. Human-editable between `plan` and `implement`.
+- **Discovery Plan** (`discovery-plan.md`): YAML frontmatter + Markdown prose. Contains domain advice, `sources[]`, and Research Expansion Suggestions. Human-editable between `plan` and `implement`.
 - **Source Entry**: One item in `sources[]` with `name`, `type`, `rationale`, `search_terms[]`, `evidence_level`, `access` (`open | authenticated | manual`), optional `url`, optional `auth_note` (required when `access: authenticated`), optional `recommended` (bool, for high-value authenticated sources).
+- **Research Portfolio** (`RESEARCH.md` at repo root): Cross-topic portfolio log. CLI-managed table of all topics with stage, source count, and dates. Human-editable Notes column and prose.
+- **Per-Topic Research Notes** (`process/research.md`): Source-level disposition tracking — Ruled In, Ruled Out (with reason), Pending Review. CLI appends rows; humans maintain Open Questions and Related Topics sections.
 - **Ingest Plan** (`ingest-plan.md`): Populated by `implement` with manual-acquisition sources. Consumed by `hi-ingest` (004) for any remaining local-file registration.
-- **Research Stub** (`research.md`): Created-unless-exists. Human-maintained evidence notes.
 - **Conflicts Stub** (`conflicts.md`): Created-unless-exists. Human-maintained guideline contradictions.
 
 ---

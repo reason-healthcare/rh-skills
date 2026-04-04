@@ -29,6 +29,7 @@ Each of the six HI agent skills has its own specification:
 ## Repository Layout
 
 ```text
+RESEARCH.md                  # Root portfolio log — all topics, their stages, cross-topic relationships
 sources/                     # Raw source files (L1), repo-wide
 plans/                       # Repo-level plan artifacts (hi ingest plan, etc.)
 topics/<name>/
@@ -45,7 +46,7 @@ topics/<name>/
     checklists/              # Clinical review checklists
     fixtures/                # LLM test fixtures
       results/               # Test run results
-    research.md              # Evidence and citations
+    research.md              # Per-topic source tracking (ruled in/out) + open questions
     conflicts.md             # Source contradictions
 skills/.curated/             # Framework-level agent skills (excluded from hi list)
   hi-discovery/SKILL.md
@@ -56,6 +57,70 @@ skills/.curated/             # Framework-level agent skills (excluded from hi li
   hi-status/SKILL.md
 tracking.yaml                # Single source of truth for lifecycle state
 ```
+
+### `RESEARCH.md` — Root Portfolio Log
+
+`RESEARCH.md` is the **human-readable cross-topic portfolio view**. It is automatically maintained by `hi` at lifecycle events but is also human-editable (the Notes column and any prose below topic blocks).
+
+```markdown
+# Research Portfolio
+
+> Managed by `hi`. Add notes freely in the Notes column or below each topic block.
+> Do not reorder table rows manually — use `hi research defer <topic>` to move entries.
+
+## Active Topics
+
+| Topic | Stage | Sources | Started | Updated | Notes |
+|-------|-------|---------|---------|---------|-------|
+| diabetes-screening | L1 Discovery | 12 | 2026-04-01 | 2026-04-04 | USPSTF A/B focus |
+
+## Completed Topics
+
+| Topic | Stage | Sources | Completed | Summary |
+|-------|-------|---------|-----------|---------|
+
+## Deferred / Abandoned Topics
+
+| Topic | Reason | Date |
+|-------|--------|------|
+```
+
+### `process/research.md` — Per-Topic Source Tracking
+
+The per-topic `research.md` tracks which sources were evaluated for this topic and their disposition. `hi` appends rows at discovery and ingest events; humans add notes in the Notes column and maintain the Open Questions and Related Topics sections.
+
+```markdown
+# Research Notes: <topic>
+
+> Source rows managed by `hi` — CLI appends only, never deletes.
+> Add notes in the Notes column. Maintain Open Questions and Related Topics manually.
+
+## Sources
+
+### Ruled In
+
+| Source | File | Type | Evidence Level | Added | Notes |
+|--------|------|------|---------------|-------|-------|
+
+### Ruled Out
+
+| Source | Reason | Date |
+|--------|--------|------|
+
+### Pending Review
+
+| Source | Location | Added |
+|--------|----------|-------|
+
+## Open Questions
+
+_Human-maintained. Record unresolved questions for future research._
+
+## Related Topics
+
+_Human-maintained. Reference other topics in this portfolio and their relationship._
+```
+
 
 `structured/` and `computable/` are at the topic root for immediate visibility. Process support files are grouped under `process/`.
 
@@ -241,6 +306,13 @@ A skill author implements `hi-extract` by copying `skills/_template/`, filling i
 **Topic Status**
 
 - **FR-015**: `hi status show <topic>` MUST display current lifecycle state from tracking.yaml: source count, structured artifact count, computable artifact count, current stage, and last event timestamp. `hi status progress <topic>` MUST display a pipeline bar, completeness percentage, and per-level artifact counts. `hi status next-steps <topic>` MUST output a single recommended next action and the exact `hi` or skill command to run. `hi status check-changes <topic>` MUST re-checksum all registered sources and report any changed or missing files (exit 1) and any structured artifacts derived from changed sources (stale downstream). `hi status check-changes` MUST be read-only — it MUST NOT modify tracking.yaml or any artifact.
+
+**Research Tracking**
+
+- **FR-027**: `hi init <topic>` MUST create `RESEARCH.md` at the repo root if it does not already exist (initializing with the canonical header and three empty section tables: Active Topics, Completed Topics, Deferred/Abandoned). It MUST then append a new row to the Active Topics table with: topic name, initial stage (`initialized`), source count (0), started date, updated date, and an empty Notes column.
+- **FR-028**: Any `hi` command that transitions a topic's stage MUST update the topic's row in `RESEARCH.md` — specifically the Stage and Updated columns. When a topic reaches a terminal state (completed or abandoned), the CLI MUST move its row from Active Topics to the appropriate section. `RESEARCH.md` row moves MUST be idempotent (running twice produces no duplicate rows).
+- **FR-029**: `hi init <topic>` MUST also create `topics/<topic>/process/research.md` with the canonical per-topic format: three source tables (Ruled In, Ruled Out, Pending Review) plus empty Open Questions and Related Topics sections. The file MUST include a header comment noting that source rows are CLI-managed.
+- **FR-030**: `hi` commands that register or disposition a source MUST update `process/research.md` by appending rows — never deleting or modifying existing rows. Sources newly registered via `hi ingest implement` are added to Ruled In. Sources flagged as manual-acquisition or download failures are added to Ruled Out (with reason). Sources in a discovery plan not yet acted on are added to Pending Review.
 
 **Framework Contracts for Skills**
 
