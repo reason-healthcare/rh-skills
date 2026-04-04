@@ -266,6 +266,7 @@ A skill author implements `hi-extract` by copying `skills/_template/`, filling i
 - **NFR-003**: Exit codes: 0 = success, 1 = user error, 2 = usage error. Consistent across all commands.
 - **NFR-004**: All curated skills must pass the pytest skill test suite in `tests/skills/` before merging. The suite covers schema validation (FR-023–FR-024), security audit (FR-025–FR-026), and framework contract compliance (FR-016–FR-022). Tests are parametrized and activate automatically as each skill is implemented.
 - **NFR-005**: The `tests/skills/` suite must always pass in CI with zero FAIL-level findings. New skills added to `skills/.curated/` that fail schema, security, or contract tests must not be merged.
+- **NFR-006**: The repository MUST maintain two distinct root-level documentation entry points: `README.md` targeting **end users** (clinical teams consuming the skills — install, configure, quickstart, command reference) and `DEVELOPER.md` targeting **contributors** (skill authors and framework developers — dev setup, test suite, skill authoring workflow, spec structure). Content appropriate to one audience MUST NOT be co-mingled into the other file.
 
 ### Key Entities
 
