@@ -1,8 +1,10 @@
 """Shared utilities for the hi CLI."""
 
+import contextlib
+import fcntl
 import hashlib
 import os
-import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -98,10 +100,44 @@ def load_tracking() -> dict:
 
 
 def save_tracking(data: dict) -> None:
-    """Write data to tracking.yaml."""
+    """Write data to tracking.yaml atomically (temp file + os.replace)."""
+    tf = tracking_file()
     y = _yaml_rt()
-    with open(tracking_file(), "w") as f:
-        y.dump(data, f)
+    with tempfile.NamedTemporaryFile(
+        mode="w", dir=tf.parent, suffix=".tmp", delete=False, encoding="utf-8"
+    ) as tmp:
+        y.dump(data, tmp)
+        tmp_path = tmp.name
+    os.replace(tmp_path, tf)
+
+
+@contextlib.contextmanager
+def _tracking_lock():
+    """Hold an exclusive advisory lock on tracking.yaml for the duration of the block.
+
+    Uses a sibling .lock file so the lock is independent of the YAML file
+    itself; the lock file is never removed (harmless, idempotent).
+    """
+    lock_path = tracking_file().with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
+
+
+def locked_update_tracking(fn) -> None:
+    """Load tracking.yaml, call fn(tracking), then save atomically — all under an exclusive lock.
+
+    Use this for every read-modify-write cycle to prevent concurrent ingest
+    processes from racing on tracking.yaml.
+    """
+    with _tracking_lock():
+        tracking = require_tracking()
+        fn(tracking)
+        save_tracking(tracking)
 
 
 def require_tracking() -> dict:

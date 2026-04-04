@@ -10,6 +10,7 @@ import httpx
 
 from hi.common import (
     append_root_event,
+    locked_update_tracking,
     log_info,
     log_warn,
     now_iso,
@@ -115,28 +116,28 @@ def _implement_file(src_path: Path, source_type: str = "document") -> None:
     ingested_at = now_iso()
 
     _ensure_tracking()
-    tracking = require_tracking()
 
-    existing = {s["name"] for s in tracking.get("sources", [])}
-    if source_name in existing:
-        log_warn(f"{source_name} already registered. Re-registering with updated checksum.")
-        for s in tracking["sources"]:
-            if s["name"] == source_name:
-                s["checksum"] = checksum
-                s["ingested_at"] = ingested_at
-        append_root_event(tracking, "source_changed", f"Re-ingested source: {source_name}")
-    else:
-        tracking["sources"].append({
-            "name": source_name,
-            "file": f"sources/{src_path.name}",
-            "type": source_type,
-            "checksum": checksum,
-            "ingested_at": ingested_at,
-            "text_extracted": False,
-        })
-        append_root_event(tracking, "source_added", f"Ingested source: {source_name}")
+    def _update(tracking):
+        existing = {s["name"] for s in tracking.get("sources", [])}
+        if source_name in existing:
+            log_warn(f"{source_name} already registered. Re-registering with updated checksum.")
+            for s in tracking["sources"]:
+                if s["name"] == source_name:
+                    s["checksum"] = checksum
+                    s["ingested_at"] = ingested_at
+            append_root_event(tracking, "source_changed", f"Re-ingested source: {source_name}")
+        else:
+            tracking["sources"].append({
+                "name": source_name,
+                "file": f"sources/{src_path.name}",
+                "type": source_type,
+                "checksum": checksum,
+                "ingested_at": ingested_at,
+                "text_extracted": False,
+            })
+            append_root_event(tracking, "source_added", f"Ingested source: {source_name}")
 
-    save_tracking(tracking)
+    locked_update_tracking(_update)
     log_info(f"Registered: {source_name} (checksum: {checksum[:12]}...)")
 
 
@@ -186,31 +187,31 @@ def _implement_url(url: str, source_name: str | None, source_type: str = "docume
     ingested_at = now_iso()
 
     _ensure_tracking()
-    tracking = require_tracking()
 
-    existing = {s["name"] for s in tracking.get("sources", [])}
-    if source_name in existing:
-        log_warn(f"{source_name} already registered — updating checksum.")
-        for s in tracking["sources"]:
-            if s["name"] == source_name:
-                s["checksum"] = checksum
-                s["ingested_at"] = ingested_at
-                s["url"] = url
-        append_root_event(tracking, "source_changed", f"Re-downloaded source: {source_name}")
-    else:
-        tracking["sources"].append({
-            "name": source_name,
-            "file": f"sources/{source_name}{ext}",
-            "type": source_type,
-            "url": url,
-            "checksum": checksum,
-            "ingested_at": ingested_at,
-            "text_extracted": False,
-            "downloaded": True,
-        })
-        append_root_event(tracking, "source_ingested", f"Downloaded source: {source_name}")
+    def _update(tracking):
+        existing = {s["name"] for s in tracking.get("sources", [])}
+        if source_name in existing:
+            log_warn(f"{source_name} already registered — updating checksum.")
+            for s in tracking["sources"]:
+                if s["name"] == source_name:
+                    s["checksum"] = checksum
+                    s["ingested_at"] = ingested_at
+                    s["url"] = url
+            append_root_event(tracking, "source_changed", f"Re-downloaded source: {source_name}")
+        else:
+            tracking["sources"].append({
+                "name": source_name,
+                "file": f"sources/{source_name}{ext}",
+                "type": source_type,
+                "url": url,
+                "checksum": checksum,
+                "ingested_at": ingested_at,
+                "text_extracted": False,
+                "downloaded": True,
+            })
+            append_root_event(tracking, "source_ingested", f"Downloaded source: {source_name}")
 
-    save_tracking(tracking)
+    locked_update_tracking(_update)
     click.echo(f"✓ Downloaded: sources/{source_name}{ext}")
     click.echo(f"  SHA-256: {checksum}")
     click.echo(f"  MIME: {content_type or 'unknown'}")
@@ -218,18 +219,20 @@ def _implement_url(url: str, source_name: str | None, source_type: str = "docume
 
 
 def _ensure_tracking() -> None:
-    """Create tracking.yaml skeleton if it doesn't exist."""
+    """Create tracking.yaml skeleton if it doesn't exist (safe under concurrent calls)."""
     tf = tracking_file()
-    if not tf.exists():
-        from ruamel.yaml import YAML
-        y = YAML()
-        y.default_flow_style = False
-        y.dump({
-            "schema_version": "1.0",
-            "sources": [],
-            "topics": [],
-            "events": [],
-        }, tf)
+    if tf.exists():
+        return
+    from ruamel.yaml import YAML
+    y = YAML()
+    y.default_flow_style = False
+    skeleton = {"schema_version": "1.0", "sources": [], "topics": [], "events": []}
+    try:
+        # 'x' mode is an atomic exclusive create — only one concurrent caller wins
+        with open(tf, "x") as f:
+            y.dump(skeleton, f)
+    except FileExistsError:
+        pass  # another process beat us to it; that's fine
 
 
 @ingest.command()
