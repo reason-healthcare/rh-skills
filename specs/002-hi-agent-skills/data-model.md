@@ -246,6 +246,19 @@ A SKILL.md file in `skills/.curated/<name>/SKILL.md`. Not a clinical skill — e
 
 The canonical SKILL.md template is at `skills/.curated/_template/SKILL.md` in this repo and follows the [anthropic skills-developer](https://github.com/anthropics/anthropic-cookbook) format. Contributors creating new framework skills MUST copy and fill in this template.
 
+**Skill directory structure** (progressive disclosure architecture):
+```
+skills/.curated/<skill-name>/
+  SKILL.md          ← Level 2: primary instructions (loaded when skill triggers)
+  reference.md      ← Level 3: full schemas, field definitions, validation rules
+  examples/
+    plan.md         ← Level 3: worked example plan artifact
+    output.md       ← Level 3: worked example output artifact(s)
+```
+
+Level 3 files are **loaded on demand** by the agent only when the primary SKILL.md
+instructs it to read them — keeping the core context window lean.
+
 **Frontmatter**:
 ```yaml
 name: "hi-extract"
