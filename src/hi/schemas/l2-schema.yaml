@@ -1,0 +1,27 @@
+# L2 Semi-Structured Artifact Schema
+# Validation reference for hi-validate command
+# Required fields → exit 1 if missing
+# Optional fields → warn if missing
+
+schema_version: "1.0"
+
+required_fields:
+  - id              # unique artifact identifier (kebab-case)
+  - name            # short machine name
+  - title           # human-readable title
+  - version         # semver string e.g. "1.0.0"
+  - status          # lifecycle: draft | active | retired
+  - domain          # clinical domain e.g. "diabetes" | "sepsis"
+  - description     # human-readable description (≥1 sentence)
+  - derived_from    # list of L1 artifact names this was derived from
+
+optional_fields:
+  - clinical_context   # additional clinical narrative
+  - references         # list of reference strings (PMIDs, URLs, guidelines)
+  - tags               # list of free-text tags
+  - author             # author name or team
+
+status_values:
+  - draft
+  - active
+  - retired

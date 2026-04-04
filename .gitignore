@@ -15,6 +15,16 @@
 # Node (bats-core via npm)
 node_modules/
 
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+.coverage
+
 # Test output
 tests/output/
 

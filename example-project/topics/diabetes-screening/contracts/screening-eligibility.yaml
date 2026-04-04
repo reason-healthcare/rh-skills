@@ -1,0 +1,18 @@
+# Contract: Screening Eligibility
+# Assertions that the computable artifact must satisfy
+name: screening-eligibility
+description: "Computable artifact must define screening eligibility criteria"
+version: "1.0"
+assertions:
+  - id: has-age-criteria
+    description: "Must define minimum screening age"
+    path: "criteria[?(@.type=='age')]"
+    required: true
+  - id: has-risk-factors
+    description: "Must enumerate at least one risk factor"
+    path: "risk_factors"
+    required: true
+  - id: has-frequency
+    description: "Must specify screening frequency"
+    path: "frequency"
+    required: true
