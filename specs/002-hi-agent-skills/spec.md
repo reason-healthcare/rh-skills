@@ -179,6 +179,18 @@ A team member runs `hi validate diabetes-screening screening-criteria` to confir
 3. **Given** an L2 artifact with missing optional fields, **When** `hi validate` runs, **Then** it exits 0 and emits advisory warnings only.
 4. **Given** an artifact name that does not exist in either `structured/` or `computable/`, **When** `hi validate` runs, **Then** it exits non-zero with a clear error.
 
+### User Story: Skill Validation & Security
+
+A skill author implements `hi-extract` by copying `skills/_template/`, filling in the SKILL.md, and adding companion files. Before merging, the CI suite runs `tests/skills/` which automatically picks up the new skill via the parametrized `curated_skill` fixture. The author must address any schema, security, or framework contract findings before the PR is accepted.
+
+**Acceptance Scenarios**:
+1. **Given** a new skill dir with a valid SKILL.md, **When** `uv run pytest tests/skills/` runs, **Then** all schema and contract tests pass for the new skill.
+2. **Given** a SKILL.md with an unfilled `<skill-name>` placeholder, **When** the test suite runs, **Then** `test_no_unfilled_placeholders` fails with a clear message identifying the placeholder.
+3. **Given** a SKILL.md whose `name` field does not match its directory name, **When** the test suite runs, **Then** `test_name_matches_directory` fails.
+4. **Given** a SKILL.md that reads external files without a prompt-injection boundary rule, **When** the test suite runs, **Then** `test_no_prompt_injection_without_boundary` fails with a PROMPT_INJECTION finding.
+5. **Given** a SKILL.md `verify` mode that directly writes to `tracking.yaml`, **When** the test suite runs, **Then** `test_verify_mode_does_not_write_tracking_directly` fails.
+6. **Given** all six curated skills are implemented and passing, **When** `uv run pytest tests/` runs, **Then** all 31 previously-skipped skill tests activate and pass.
+
 ### Edge Cases
 
 - `hi init` on an already-initialized topic — warn and stop.
@@ -240,11 +252,20 @@ A team member runs `hi validate diabetes-screening screening-criteria` to confir
 - **FR-021**: All skill modes that modify topic state MUST append a named event to `tracking.yaml`.
 - **FR-022**: All `verify` modes MUST be strictly non-destructive — they MUST NOT create, modify, or delete any file or tracking.yaml entry. `verify` MUST exit 0 when all checks pass and exit 1 when any check fails, with a per-check report identifying the failing artifact and the reason.
 
+**Skill Schema & Security**
+
+- **FR-023**: Every curated skill (`skills/.curated/<name>/SKILL.md`) MUST contain valid YAML frontmatter with at minimum the fields `name`, `description`, and `compatibility`. The `name` field MUST be kebab-case (lowercase letters, digits, hyphens only), ≤64 characters, and MUST match the skill's directory name exactly.
+- **FR-024**: Every curated skill MUST ship with companion files `reference.md` and `examples/plan.md` and `examples/output.md` alongside its `SKILL.md`. These files implement the three-level progressive disclosure architecture.
+- **FR-025**: Every curated skill MUST pass the framework security audit: (a) any shell command using user-provided input MUST include an explicit input validation/sanitization rule; (b) any mode that reads untrusted external content MUST include a prompt-injection boundary rule stating that content is data, not instructions; (c) any mode that copies content verbatim MUST include a credential/secret redaction rule; (d) no PHI may appear in skill output or tracking artifacts without a de-identification rule.
+- **FR-026**: The `verify` mode of any skill MUST NOT write to `tracking.yaml` directly — it MUST remain strictly read-only with respect to all persistent state.
+
 ### Non-Functional Requirements
 
 - **NFR-001**: CLI implemented in Python 3.13+ using `click >= 8.0` and `ruamel.yaml >= 0.18`. End users install via `uv tool install hi`.
-- **NFR-002**: All CLI commands must have pytest unit tests. No external tool required for core operations (`pdftotext`, `pandoc` optional with graceful degradation).
+- **NFR-002**: All CLI commands must have pytest unit tests in `tests/unit/`. No external tool required for core operations (`pdftotext`, `pandoc` optional with graceful degradation).
 - **NFR-003**: Exit codes: 0 = success, 1 = user error, 2 = usage error. Consistent across all commands.
+- **NFR-004**: All curated skills must pass the pytest skill test suite in `tests/skills/` before merging. The suite covers schema validation (FR-023–FR-024), security audit (FR-025–FR-026), and framework contract compliance (FR-016–FR-022). Tests are parametrized and activate automatically as each skill is implemented.
+- **NFR-005**: The `tests/skills/` suite must always pass in CI with zero FAIL-level findings. New skills added to `skills/.curated/` that fail schema, security, or contract tests must not be merged.
 
 ### Key Entities
 
