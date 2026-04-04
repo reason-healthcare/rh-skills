@@ -2,7 +2,7 @@
 
 This is an abbreviated worked example of a `session` mode interaction for the
 topic `diabetes-ccm`. It illustrates the interactive research assistant loop,
-inline downloads, and the save checkpoint.
+access advisories, and the save checkpoint.
 
 ---
 
@@ -106,44 +106,34 @@ User: hi-discovery session diabetes-ccm
 
 > Here is the proposed source plan (10 sources identified):
 >
-> | # | Name | Type | Evidence | Access | Action |
-> |---|------|------|----------|--------|--------|
-> | 1 | ADA Standards of Care 2024 | guideline | grade-a | open | ↓ |
-> | 2 | SNOMED CT — Diabetes Hierarchy | terminology | reference-standard | open | ↓ |
-> | 3 | CMS eCQM CMS122 | measure-library | n/a | open | ↓ |
-> | 4 | USPSTF Diabetes Screening | guideline | uspstf-b | open | ↓ |
-> | 5 | Gravity SDOH FHIR IG | fhir-ig | reference-standard | open | ↓ |
-> | 6 | HCUP NIS — Diabetes Hospitalizations | health-economics | n/a | open | ↓ |
-> | 7 | Cochrane — Intensive Glycemic Control | systematic-review | grade-a | authenticated | ⊘ |
-> | 8 | LOINC HbA1c / Glucose codes | terminology | reference-standard | open | ↓ |
-> | 9 | Diabetes Care Journal (CCM articles) | pubmed-article | grade-b | authenticated | ⊘ |
-> |10 | ICD-10-CM E08–E13 | terminology | reference-standard | open | ↓ |
+> | # | Name | Type | Evidence | Access | Notes |
+> |---|------|------|----------|--------|-------|
+> | 1 | ADA Standards of Care 2024 | guideline | grade-a | open | URL provided |
+> | 2 | SNOMED CT — Diabetes Hierarchy | terminology | reference-standard | open | URL provided |
+> | 3 | CMS eCQM CMS122 | measure-library | n/a | open | URL provided |
+> | 4 | USPSTF Diabetes Screening | guideline | uspstf-b | open | URL provided |
+> | 5 | Gravity SDOH FHIR IG | fhir-ig | reference-standard | open | URL provided |
+> | 6 | HCUP NIS — Diabetes Hospitalizations | health-economics | n/a | open | URL provided |
+> | 7 | Cochrane — Intensive Glycemic Control | systematic-review | grade-a | authenticated | library proxy |
+> | 8 | LOINC HbA1c / Glucose codes | terminology | reference-standard | open | URL provided |
+> | 9 | Diabetes Care Journal (CCM articles) | pubmed-article | grade-b | authenticated | library proxy |
+> |10 | ICD-10-CM E08–E13 | terminology | reference-standard | open | URL provided |
 >
-> Do you approve this list? Any changes?
+> All open-access sources have URLs recorded. Authenticated sources are flagged
+> with access advisories below. `hi-ingest` will handle all downloads and
+> registration. Do you approve this list? Any changes?
 
 **User:** Looks good, go ahead.
 
 ---
 
-## Step 8 — Downloads and Access Advisories
+## Step 8 — Access Advisories
 
 **Agent:**
 
-> Downloading open-access sources...
->
-> ```
-> hi ingest implement --url "https://diabetesjournals.org/care/issue/47/Supplement_1" \
->   --name "ada-standards-2024"
-> ✓ Downloaded: sources/ada-standards-2024.pdf (SHA-256: a3f2...)
-> ```
->
-> ```
-> hi ingest implement --url "https://ecqi.healthit.gov/ecqm/ec/2024/cms0122fhir" \
->   --name "cms122-hecqm-2024"
-> ✓ Downloaded: sources/cms122-hecqm-2024.html (SHA-256: 9b1c...)
-> ```
->
-> *(... 4 more downloads succeed ...)*
+> All 8 open-access sources have URLs recorded in the plan and will be fetched
+> by `hi-ingest`. Here are the access advisories for sources requiring
+> authentication or manual retrieval:
 >
 > ---
 > ⊘ **Cochrane Review — Intensive Glycemic Control T2D**
@@ -157,6 +147,10 @@ User: hi-discovery session diabetes-ccm
 >    Access URL:   https://diabetesjournals.org/care
 >    Auth method:  Institutional access or library proxy; use PubMed for abstracts
 >    Search terms: "chronic care model diabetes effectiveness team-based"
+>
+> Once you have retrieved the authenticated sources, place them in `sources/`
+> and run `hi-ingest session diabetes-ccm` — it will read this discovery plan
+> and register everything in one pass.
 
 ---
 
@@ -209,21 +203,18 @@ User: hi-discovery session diabetes-ccm
 > Saving discovery plan...
 >
 > ✓ Written: `topics/diabetes-ccm/process/plans/discovery-plan.md`
->   (10 sources: 8 open, 2 authenticated; 6 downloaded, 2 manual-pending)
+>   (10 sources: 8 open, 2 authenticated)
 >
 > ✓ Updated: `topics/diabetes-ccm/process/research.md`
->   (6 sources → Ruled In; 2 → Pending Review)
+>   (10 sources → Pending Review, awaiting hi-ingest)
 >
 > ✓ Updated: `RESEARCH.md` (row for diabetes-ccm: sources=10, updated=2026-04-15)
 >
 > ✓ Created: `topics/diabetes-ccm/process/conflicts.md` (stub)
 >
-> ✓ Created: `topics/diabetes-ccm/process/plans/ingest-plan.md`
->   (2 manual-pending sources listed)
->
 > ---
-> Run `hi-discovery verify diabetes-ccm` to validate the plan before proceeding
-> to `hi-ingest`.
+> Run `hi-discovery verify diabetes-ccm` to validate the plan, then
+> `hi-ingest session diabetes-ccm` to fetch and register all sources.
 
 ---
 

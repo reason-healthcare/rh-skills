@@ -26,7 +26,6 @@ metadata:
     - "hi search pubmed"
     - "hi search pmc"
     - "hi search clinicaltrials"
-    - "hi ingest implement --url"
     - "hi init"
     - "hi validate --plan"
 ---
@@ -42,17 +41,21 @@ metadata:
 `hi-discovery` is the **L1 evidence discovery** stage of the HI lifecycle. It
 guides a clinical informaticist through finding, evaluating, and documenting
 evidence-based source material for a healthcare informatics topic. The result is
-a `discovery-plan.md` that downstream skills (`hi-ingest`, `hi-extract`,
-`hi-formalize`) consume to advance artifacts toward L2 and L3.
+a `discovery-plan.md` that `hi-ingest` consumes to acquire and register all
+sources, and that downstream skills (`hi-extract`, `hi-formalize`) use to
+advance artifacts toward L2 and L3.
 
 The skill acts as an **interactive research assistant** — it does not stop at a
 single search pass. After each pass the agent explicitly prompts the user with
 expansion suggestions and awaits direction. The plan is a **living document**
 written to disk only when the user approves it.
 
-**Guiding principle**: All file I/O, API calls, downloads, and YAML writes are
-delegated to `hi` CLI commands. All clinical reasoning, source evaluation, and
-research synthesis happen in this skill.
+**Guiding principle**: Discovery is a pure research and planning activity.
+All searches are delegated to `hi` CLI commands. All clinical reasoning, source
+evaluation, and research synthesis happen in this skill. Discovery does **not**
+download or register any source files — that is entirely `hi-ingest`'s
+responsibility. This means the plan can be re-run, revised, and reviewed before
+any file-system side effects occur.
 
 ---
 
@@ -96,14 +99,6 @@ ls topics/<topic>/process/plans/discovery-plan.md 2>/dev/null
   for continuation or start fresh with `--force`. Wait for the user's choice.
 - If it exists **and** `--force` was passed: proceed, overwriting on save.
 - If it does not exist: proceed normally.
-
----
-
-## Guiding Principles
-
-All file I/O, API calls, checksums, downloads, and YAML writes are delegated to
-`hi` CLI commands. All clinical reasoning, source evaluation, evidence synthesis,
-and research strategy happen in this skill. The agent never writes files directly.
 
 ---
 
@@ -208,35 +203,25 @@ compile the list applying these rules:
 Present a formatted summary table of proposed sources:
 
 ```
-| # | Name | Type | Evidence | Access | Action |
-|---|------|------|----------|--------|--------|
-| 1 | ADA Standards of Care | guideline | grade-a | open | ↓ |
-| 2 | NEJM article ... | pubmed-article | grade-b | authenticated | ⊘ |
+| # | Name | Type | Evidence | Access | Notes |
+|---|------|------|----------|--------|-------|
+| 1 | ADA Standards of Care | guideline | grade-a | open | URL provided |
+| 2 | NEJM article ... | pubmed-article | grade-b | authenticated | requires login |
 ...
 ```
 
-For each `access: open` source with a URL, indicate "↓" — will be
-fetched via `hi ingest implement --url`. For authenticated sources, indicate
-"⊘" and print the per-source access advisory (Step 8b).
+For `access: open` sources, confirm a URL is recorded. For `access: authenticated`
+sources, note the auth method. For `access: manual` sources, note what the user
+must retrieve. None of these are downloaded here — all acquisition happens in
+`hi-ingest`.
 
 Ask the user: approve all, modify the list, or add/remove sources?
 Incorporate feedback and loop back if needed.
 
-### Step 8 — Downloads and Access Advisories
+### Step 8 — Access Advisories
 
-For each **approved** `access: open` source with a valid URL:
-
-```sh
-hi ingest implement --url <url> --name <name>
-```
-
-Report success or failure per source. On failure (exit 1, 2, or 3):
-- Exit 3 (auth redirect): reclassify source as `access: authenticated`, add
-  `auth_note`, set `recommended: true` if appropriate
-- Exit 1 (network error): reclassify as `access: manual`, note failure reason
-- Exit 2 (already exists): note as already ingested, keep in plan as `open`
-
-For each **approved** `access: authenticated` source, print the access advisory:
+For each **approved** `access: authenticated` or `access: manual` source, print
+an access advisory so the user knows what to gather before running `hi-ingest`:
 
 ```
 ⊘ <Source Name>
@@ -245,6 +230,9 @@ For each **approved** `access: authenticated` source, print the access advisory:
    Auth method:  <institutional login | free registration | society membership | library proxy>
    Search terms: <specific terms to use once authenticated>
 ```
+
+For `access: manual` sources without a URL, describe where to find the artifact
+and what filename convention to use when placing it in `sources/`.
 
 ### Step 9 — Research Expansion Suggestions
 
@@ -283,12 +271,10 @@ When the user approves saving:
 
 1. Write `topics/<topic>/process/plans/discovery-plan.md` (see Level 3 below
    for the required format)
-2. Update `process/research.md` — move downloaded sources to Ruled In table;
-   failed/manual sources to Pending Review; rejected sources to Ruled Out
+2. Update `process/research.md` — move all approved sources to Pending Review
+   (awaiting `hi-ingest`); move rejected sources to Ruled Out
 3. Update `RESEARCH.md` root portfolio row for the topic (source count, date)
 4. Create `process/conflicts.md` stub (create-unless-exists)
-5. Create `process/plans/ingest-plan.md` with all `access: manual` sources
-   listed as pending manual entries
 
 After saving, recommend:
 
@@ -299,7 +285,9 @@ hi-discovery verify <topic>
 ### Step 12 — Verify Recommendation
 
 Remind the user that `verify` mode runs non-destructive checks on the saved
-plan and should be run before proceeding to `hi-ingest`.
+plan. Once it passes, the plan is ready to hand off to `hi-ingest`, which
+handles all source acquisition (downloading open sources, registering manual
+files) in a single dedicated step.
 
 ---
 
@@ -314,7 +302,8 @@ hi validate --plan topics/<topic>/process/plans/discovery-plan.md
 Report the output verbatim. Exit with the same code as `hi validate --plan`.
 
 If `hi validate --plan` exits 0: inform the user the plan is ready for
-`hi-ingest`. If it exits 1: present the failing checks and suggest fixes.
+`hi-ingest`, which will handle all source acquisition. If it exits 1: present
+the failing checks and suggest fixes.
 
 ---
 
@@ -368,7 +357,5 @@ See `examples/plan.md` for a complete worked example.
 | `hi status show` exits non-zero | Print error, suggest `hi init <topic>`, exit |
 | Fewer than 5 sources after all searches | Search additional databases; do not save |
 | More than 25 sources | Select top 25, log extras in expansion suggestions |
-| `hi ingest implement --url` exits 3 | Reclassify as `access: authenticated` |
-| `hi ingest implement --url` exits 1 | Reclassify as `access: manual` |
 | `hi validate --plan` exits 1 | Report failures; do not proceed to ingest |
 | Plan already exists (no `--force`) | Offer continuation or fresh start |
