@@ -244,7 +244,7 @@ Events marked **root scope** are appended to the top-level `events[]`. Events ma
 
 A SKILL.md file in `skills/.curated/<name>/SKILL.md`. Not a clinical skill — excluded from `hi list` output via dot-prefix convention.
 
-The canonical SKILL.md template is at `skills/.curated/_template/SKILL.md` in this repo and follows the [anthropic skills-developer](https://github.com/anthropics/anthropic-cookbook) format. Contributors creating new framework skills MUST copy and fill in this template.
+The canonical SKILL.md template is at `skills/_template/SKILL.md` in this repo and follows the [anthropic skills-developer](https://github.com/anthropics/anthropic-cookbook) format. Contributors creating new framework skills MUST copy and fill in this template.
 
 **Skill directory structure** (progressive disclosure architecture):
 ```

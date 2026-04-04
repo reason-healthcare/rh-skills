@@ -1,7 +1,7 @@
 # Skill Authoring Guide
 
 This guide explains how to author a new HI framework skill using the canonical
-template at `skills/.curated/_template/`.
+template at `skills/_template/`.
 
 ---
 
@@ -69,7 +69,7 @@ skills/.curated/<skill-name>/
 ### Step 1: Copy the template
 
 ```bash
-cp -r skills/.curated/_template skills/.curated/<skill-name>
+cp -r skills/_template skills/.curated/<skill-name>
 ```
 
 ### Step 2: Fill in SKILL.md frontmatter
