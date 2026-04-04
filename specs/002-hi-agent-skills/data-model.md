@@ -6,23 +6,29 @@
 
 ## Core Entities
 
-### SkillDirectory (existing, extended)
+### TopicDirectory
 
-The existing `skills/<name>/` directory structure gains a new `plans/` subdirectory.
+The `topics/<name>/` directory structure holds all artifacts for a clinical topic. Raw source files are shared at the repo root in `sources/`.
 
 ```
-skills/<name>/
-  SKILL.md            # clinical skill description (existing)
-  tracking.yaml       # audit log (existing, extended with sources[])
-  l1/                 # raw L1 artifacts (existing)
-  l2/                 # semi-structured L2 artifacts (existing)
-  l3/                 # computable L3 artifacts (existing)
-  fixtures/           # LLM test fixtures (existing)
-  plans/              # NEW: plan artifacts from framework skills
+topics/<name>/
+  TOPIC.md            # topic description (created by hi init)
+  research.md         # evidence and citations stub
+  conflicts.md        # source contradictions stub
+  structured/         # semi-structured L2 artifacts
+  computable/         # computable L3 artifacts
+  fixtures/           # LLM test fixtures
+  contracts/          # YAML assertions for validation
+  checklists/         # clinical review checklists
+  plans/              # plan artifacts from framework skills
     discovery-plan.md
     ingest-plan.md
     extract-plan.md
     formalize-plan.md
+    tasks.md
+
+sources/              # Raw source files (repo root, shared across topics)
+  ada-guidelines-2024.md
 ```
 
 ---
@@ -31,13 +37,13 @@ skills/<name>/
 
 A human-reviewable Markdown file with YAML front matter produced by a `plan` mode. Consumed by the corresponding `implement` mode.
 
-**File path**: `skills/<name>/plans/<skill>-plan.md`
+**File path**: `topics/<name>/plans/<skill>-plan.md`
 
 **Format**:
 ```markdown
 ---
 # YAML front matter — machine-readable, parsed by implement mode
-skill: <skill-name>            # string, required
+topic: <topic-name>            # string, required
 plan_type: <discovery|ingest|extract|formalize>  # string, required
 version: "1.0"                 # string, required
 created: "<ISO-8601>"          # string, required
@@ -61,7 +67,7 @@ force_overwrite: false         # bool, optional, default false
 
 **Front matter schema**:
 ```yaml
-skill: diabetes-screening
+topic: diabetes-screening
 plan_type: discovery
 version: "1.0"
 created: "2026-04-03T19:00:00Z"
@@ -84,16 +90,16 @@ sources:
 
 **Front matter schema**:
 ```yaml
-skill: diabetes-screening
+topic: diabetes-screening
 plan_type: ingest
 version: "1.0"
 created: "2026-04-03T19:00:00Z"
 items:
-  - name: ada-guidelines-2024       # kebab-case, becomes l1 artifact name
+  - name: ada-guidelines-2024       # kebab-case, becomes source artifact name
     path: ~/Downloads/ada-care-2024.pdf   # local file path or URL
     type: pdf                       # pdf | docx | xlsx | txt | md | url
     extract_text: true              # whether to attempt text extraction
-    target: l1/ada-guidelines-2024  # destination path (without extension)
+    target: sources/ada-guidelines-2024  # destination path in sources/ (optional)
 ```
 
 ---
@@ -102,16 +108,16 @@ items:
 
 **Front matter schema**:
 ```yaml
-skill: diabetes-screening
+topic: diabetes-screening
 plan_type: extract
 version: "1.0"
 created: "2026-04-03T19:00:00Z"
 artifacts:
-  - name: screening-criteria        # kebab-case L2 artifact name
-    source: ada-guidelines-2024     # L1 artifact name (without extension)
+  - name: screening-criteria        # kebab-case structured artifact name
+    source_file: ada-guidelines-2024     # file in sources/ (without extension)
     description: "Discrete criteria for identifying adults who should be screened"
   - name: risk-factors
-    source: ada-guidelines-2024
+    source_file: ada-guidelines-2024
     description: "Enumerated risk factor definitions with clinical thresholds"
 ```
 
@@ -121,15 +127,15 @@ artifacts:
 
 **Front matter schema**:
 ```yaml
-skill: diabetes-screening
+topic: diabetes-screening
 plan_type: formalize
 version: "1.0"
 created: "2026-04-03T19:00:00Z"
-output_name: diabetes-screening-computable   # L3 artifact name
-sources:                                     # L2 artifact names to combine
+output_name: diabetes-screening-computable   # computable artifact name
+sources:                                     # structured artifact names to combine
   - screening-criteria
   - risk-factors
-sections:                                    # L3 sections to include
+sections:                                    # computable sections to include
   - pathways
   - measures
   - value_sets
@@ -143,60 +149,66 @@ outline: |
 
 ### IngestRecord (tracking.yaml extension)
 
-New `sources[]` array added to `tracking.yaml` to store ingest metadata. Existing `artifacts` block tracks L1/L2/L3; `sources` tracks registered raw files.
+Root-level `sources[]` array in `tracking.yaml` stores ingest metadata. The `topics[].structured` and `topics[].computable` arrays track derived artifacts.
 
 ```yaml
-# tracking.yaml — new sources block
-sources:
-  - name: ada-guidelines-2024       # matches ingest plan item name
-    path: skills/diabetes-screening/l1/ada-guidelines-2024.md
-    original_path: ~/Downloads/ada-care-2024.pdf   # source before copy
-    type: pdf                       # pdf | docx | xlsx | txt | md | url
+# tracking.yaml — current structure
+schema_version: "1.0"
+sources:                          # root-level: registered raw source files
+  - name: ada-guidelines-2024     # kebab-case, unique
+    file: sources/ada-guidelines-2024.md  # path relative to repo root
+    type: document                # pdf | docx | xlsx | txt | md | url
     ingested_at: "2026-04-03T19:00:00Z"
-    checksum: "e3b0c44298fc1c..."   # SHA-256 of file at ingest time
-    text_extracted: true            # false if pdftotext/pandoc unavailable
-    url: null                       # populated for URL-type sources
+    checksum: "e3b0c44298fc1c..."  # SHA-256 of file at ingest time
+    text_extracted: false         # false if pdftotext/pandoc unavailable
+topics:
+  - name: diabetes-screening
+    title: Diabetes Screening
+    structured: []                # L2 artifact entries
+    computable: []                # L3 artifact entries
+    events: []
+events: []                        # root-level events
 ```
 
-**Checksum comparison** (used by `hi-status check-changes`):
-- At ingest: compute `checksum = sha256(file)`, store in `sources[].checksum`
-- At check-changes: compute `sha256(current_file)`, compare to stored value
-- If mismatch: flag as CHANGED; list downstream L2 artifacts from `artifacts.l2[].derived_from`
+**Checksum comparison** (used by `hi ingest verify`):
+- At ingest: compute `checksum = hashlib.sha256(file)`, store in `sources[].checksum`
+- At verify: compute `sha256(current_file)`, compare to stored value
+- If mismatch: flag as CHANGED
 
 ---
 
 ### FrameworkSkill
 
-A SKILL.md file in `skills/_framework/<name>/SKILL.md`. Not a clinical skill — excluded from `hi list` output.
+A SKILL.md file in `skills/.curated/<name>/SKILL.md`. Not a clinical skill — excluded from `hi list` output via dot-prefix convention.
 
 **Frontmatter**:
 ```yaml
 name: "hi-extract"
-description: "Extract L2 artifacts from L1 sources. Modes: plan | implement | verify"
+description: "Extract structured artifacts from sources. Modes: plan | implement | verify"
 compatibility: "hi-skills-framework >= 0.1.0"
 metadata:
   author: "Clinical Informatics Team"
-  source: "skills/_framework/hi-extract/SKILL.md"
+  source: "skills/.curated/hi-extract/SKILL.md"
 ```
 
 **Modes** (dispatched via `$ARGUMENTS` first positional arg):
 
 | Skill | Mode | Reads | Writes |
 |-------|------|-------|--------|
-| `hi-discovery` | `plan` | tracking.yaml (domain) | `plans/discovery-plan.md` |
-| `hi-discovery` | `implement` | `plans/discovery-plan.md` | `plans/ingest-plan.md` |
-| `hi-ingest` | `plan` | `plans/discovery-plan.md` or user input | `plans/ingest-plan.md` |
-| `hi-ingest` | `implement` | `plans/ingest-plan.md` | `l1/*`, tracking.yaml `sources[]` |
+| `hi-discovery` | `plan` | tracking.yaml (domain) | `topics/<name>/plans/discovery-plan.md` |
+| `hi-discovery` | `implement` | `topics/<name>/plans/discovery-plan.md` | `topics/<name>/plans/ingest-plan.md` |
+| `hi-ingest` | `plan` | `topics/<name>/plans/discovery-plan.md` or user input | `plans/ingest-plan.md` |
+| `hi-ingest` | `implement` | `<file>` (path argument) | `sources/*`, tracking.yaml `sources[]` |
 | `hi-ingest` | `verify` | tracking.yaml `sources[]` | *(none — read-only)* |
-| `hi-extract` | `plan` | `l1/*`, tracking.yaml | `plans/extract-plan.md` |
-| `hi-extract` | `implement` | `plans/extract-plan.md` | `l2/*` via `hi promote derive` |
-| `hi-extract` | `verify` | `l2/*` | *(none)* via `hi validate` |
-| `hi-formalize` | `plan` | `l2/*`, tracking.yaml | `plans/formalize-plan.md` |
-| `hi-formalize` | `implement` | `plans/formalize-plan.md` | `l3/*` via `hi promote combine` |
-| `hi-formalize` | `verify` | `l3/*` | *(none)* via `hi validate` |
-| `hi-verify` | *(standalone)* | `l2/*` or `l3/*` | *(none)* |
+| `hi-extract` | `plan` | `sources/*`, tracking.yaml | `topics/<name>/plans/extract-plan.md` |
+| `hi-extract` | `implement` | `topics/<name>/plans/extract-plan.md` | `topics/<name>/structured/*` via `hi promote derive` |
+| `hi-extract` | `verify` | `topics/<name>/structured/*` | *(none)* via `hi validate` |
+| `hi-formalize` | `plan` | `topics/<name>/structured/*`, tracking.yaml | `topics/<name>/plans/formalize-plan.md` |
+| `hi-formalize` | `implement` | `topics/<name>/plans/formalize-plan.md` | `topics/<name>/computable/*` via `hi promote combine` |
+| `hi-formalize` | `verify` | `topics/<name>/computable/*` | *(none)* via `hi validate` |
+| `hi-verify` | *(standalone)* | `topics/<name>/structured/*` or `topics/<name>/computable/*` | *(none)* |
 | `hi-status` | `progress` | tracking.yaml | *(none)* |
-| `hi-status` | `next-steps` | tracking.yaml, `plans/*`, `l1/*`, `l2/*`, `l3/*` | *(none)* |
+| `hi-status` | `next-steps` | tracking.yaml, `topics/<name>/plans/*`, `sources/*`, `structured/*`, `computable/*` | *(none)* |
 | `hi-status` | `check-changes` | tracking.yaml `sources[]`, disk files | *(none)* |
 
 ---
@@ -213,35 +225,35 @@ metadata:
 [ingest-tasks-ready]
     │
     ▼ hi-ingest implement
-[l1-ingested]
+[sources-ingested]
     │
     ▼ hi-extract plan
 [extract-planned]
     │
     ▼ hi-extract implement
-[l2-extracted]
+[structured-extracted]
     │
     ▼ hi-extract verify
-[l2-verified]
+[structured-verified]
     │
     ▼ hi-formalize plan
 [formalize-planned]
     │
     ▼ hi-formalize implement
-[l3-formalized]
+[computable-formalized]
     │
     ▼ hi-formalize verify
-[l3-verified] ← terminal "computable" state
+[computable-verified] ← terminal "computable" state
 ```
 
-At any stage: `hi-status check-changes` may surface CHANGED sources → re-run from `hi-ingest implement`
+At any stage: `hi ingest verify` may surface CHANGED sources → re-run from `hi ingest implement`
 
 ---
 
 ## Validation Rules
 
 ### PlanArtifact
-- `skill` must match an existing directory under `skills/`
+- `topic` must match an existing directory under `topics/`
 - `plan_type` must be one of: `discovery | ingest | extract | formalize`
 - `created` must be ISO-8601
 - Plan-type-specific required fields (see subtypes above)
@@ -251,6 +263,7 @@ At any stage: `hi-status check-changes` may surface CHANGED sources → re-run f
 - `type` must be one of: `pdf | docx | xlsx | txt | md | url`
 - `checksum` must be 64-char hex string (SHA-256)
 - `ingested_at` must be ISO-8601
+- `file` path must be under `sources/`
 
 ### FrameworkSkill (SKILL.md)
 - Frontmatter `name` must match directory name (e.g., `hi-extract`)
@@ -262,11 +275,10 @@ At any stage: `hi-status check-changes` may surface CHANGED sources → re-run f
 ## Relationships
 
 ```
-SkillDirectory (1) ──── (0..4) PlanArtifact
-SkillDirectory (1) ──── (0..*) IngestRecord    [in tracking.yaml sources[]]
-SkillDirectory (1) ──── (0..*) L1Artifact
-L1Artifact     (1) ──── (0..*) L2Artifact      [via derived_from]
-L2Artifact     (1..*)──── (0..*) L3Artifact    [via converged_from]
-IngestRecord   (1) ──── (0..1) L1Artifact      [same name]
-IngestRecord   (1) ──── (0..*) L2Artifact      [via l1→l2 derived_from chain]
+TopicDirectory (1) ──── (0..4) PlanArtifact
+TopicDirectory (1) ──── (0..*) StructuredArtifact   [in topics/<name>/structured/]
+TopicDirectory (1) ──── (0..*) ComputableArtifact   [in topics/<name>/computable/]
+SourceFile     (1) ──── (0..*) StructuredArtifact   [via tracking sources → structured.derived_from]
+StructuredArtifact (1..*)──── (0..*) ComputableArtifact [via tracking computable.converged_from]
+IngestRecord   (1) ──── (0..1) SourceFile            [same name in sources/]
 ```

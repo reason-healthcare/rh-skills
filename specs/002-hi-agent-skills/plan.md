@@ -5,18 +5,18 @@
 
 ## Summary
 
-Build 6 framework-level agent skills (`hi-discovery`, `hi-ingest`, `hi-extract`, `hi-formalize`, `hi-verify`, `hi-status`) that guide users through the full clinical knowledge lifecycle — from literature discovery through L1 ingest, L2 extraction, and L3 formalization — with a mandatory plan → implement → verify pattern and human review gates at each step. Skills live at `skills/_framework/<skill>/SKILL.md` and invoke `hi` CLI commands for all deterministic work. Plan artifacts use structured Markdown with YAML front matter for machine parseability and human readability.
+Build 6 framework-level agent skills (`hi-discovery`, `hi-ingest`, `hi-extract`, `hi-formalize`, `hi-verify`, `hi-status`) that guide users through the full clinical knowledge lifecycle — from literature discovery through source ingest, structured extraction, and computable formalization — with a mandatory plan → implement → verify pattern and human review gates at each step. Skills live at `skills/.curated/<skill>/SKILL.md` and invoke `hi` CLI commands for all deterministic work. Plan artifacts use structured Markdown with YAML front matter for machine parseability and human readability.
 
 ## Technical Context
 
-**Language/Version**: Bash 3.2+ (portable macOS/Linux)
-**Primary Dependencies**: `yq` (Go binary), `jq`, `curl`, `bash 3.2+` — same as existing `hi` CLI stack. Optional: `pdftotext` (poppler), `pandoc` for binary file extraction.
-**Storage**: YAML (`tracking.yaml` per skill, plan artifacts as `.md` files with YAML front matter in `plans/` subdir)
-**Testing**: bats-core 1.13.0 (via npm) — same as existing test suite
-**Target Platform**: macOS (bash 3.2 / BSD tools) + Linux (GNU tools) — no GNU-isms
-**Project Type**: Agent skills (SKILL.md prompt files) + CLI command extensions (bash scripts in `bin/`)
+**Language/Version**: Python 3.13.4
+**Primary Dependencies**: `click >= 8.0`, `ruamel.yaml >= 0.18`, `uv 0.10.3`. Optional: `pdftotext` (poppler), `pandoc` for binary file extraction.
+**Storage**: YAML (`tracking.yaml` at repo root, plan artifacts as `.md` files with YAML front matter in `topics/<name>/plans/` subdir)
+**Testing**: pytest 8.0+ (via uv)
+**Target Platform**: macOS + Linux
+**Project Type**: Agent skills (SKILL.md prompt files) + CLI command extensions (Python modules in `src/hi/commands/`)
 **Performance Goals**: No LLM calls in plan mode — plan generation is pure LLM reasoning in SKILL.md context; implement mode calls existing `hi promote` commands
-**Constraints**: BSD/Linux portable bash 3.2+; no new mandatory runtime deps; graceful degradation for optional tools; SKILL.md follows anthropic skills-developer template
+**Constraints**: Python 3.13+ required; uv for package management; graceful degradation for optional tools; SKILL.md follows anthropic skills-developer template
 **Scale/Scope**: 6 SKILL.md files + supporting CLI subcommands; skills apply to all clinical skills in the repo
 
 ## Constitution Check
@@ -24,10 +24,10 @@ Build 6 framework-level agent skills (`hi-discovery`, `hi-ingest`, `hi-extract`,
 *No project constitution defined — standard quality gates apply:*
 
 - [X] No PHI in any artifact
-- [X] All scripts portable bash 3.2+ (BSD + Linux)
+- [X] All code Python 3.13+ (click + ruamel.yaml)
 - [X] Deterministic work in `hi` CLI commands; reasoning in SKILL.md prompts
 - [X] New CLI commands follow existing exit code contract (0/1/2)
-- [X] All new commands have bats unit tests
+- [X] All new commands have pytest unit tests
 - [X] No new mandatory dependencies (optional tools degrade gracefully)
 
 ## Project Structure
@@ -47,7 +47,7 @@ specs/002-hi-agent-skills/
 ### Source Code (repository root)
 
 ```text
-skills/_framework/           # New: framework-level agent skills
+skills/.curated/             # Framework-level agent skills
   hi-discovery/
     SKILL.md                 # plan | implement modes
   hi-ingest/
@@ -61,24 +61,27 @@ skills/_framework/           # New: framework-level agent skills
   hi-status/
     SKILL.md                 # progress | next-steps | check-changes modes
 
-bin/
-  hi-ingest                  # New: ingest command (plan/implement/verify subcommands)
-  hi-ingest-lib.sh           # New: checksum + file registration helpers
+src/hi/commands/
+  ingest.py                  # hi ingest subcommands (plan/implement/verify)
 
-skills/<name>/
-  plans/                     # New: per-skill plan artifacts directory
+sources/                     # Raw source files (repo root, shared across topics)
+
+topics/<name>/
+  plans/                     # Per-topic plan artifacts
     discovery-plan.md        # YAML front matter + prose
     ingest-plan.md
     extract-plan.md
     formalize-plan.md
+  structured/                # Semi-structured L2 artifacts
+  computable/                # Computable L3 artifacts
 
 tests/unit/
-  ingest.bats                # New: unit tests for hi-ingest
+  test_ingest.py             # Unit tests for hi ingest
 tests/integration/
-  agent-skills-lifecycle.bats # New: end-to-end lifecycle with stub LLM
+  test_lifecycle.py          # End-to-end lifecycle with stub LLM
 ```
 
-**Structure Decision**: Single-project layout extending the existing `bin/` + `skills/` + `tests/` tree. Framework skills live under `skills/_framework/` (separate namespace from clinical skills). New CLI functionality goes in `bin/hi-ingest` following the existing dispatcher pattern.
+**Structure Decision**: Single-project layout extending the existing `src/hi/commands/` + `skills/` + `tests/` tree. Framework skills live under `skills/.curated/` (separate namespace from clinical skills, dot-prefix excluded from topic listings). New CLI functionality goes in `src/hi/commands/ingest.py` as a click command group.
 
 
 ---
@@ -89,9 +92,9 @@ See [research.md](research.md) for all decisions. No NEEDS CLARIFICATION items r
 
 **Key decisions**:
 1. SKILL.md modes dispatched via `$ARGUMENTS` first positional arg + narrative conditionals
-2. Plan artifacts: YAML front matter + Markdown prose; extracted via `awk` + `yq`
-3. Skill location: `skills/_framework/<name>/SKILL.md`
-4. SHA-256: runtime detect `sha256sum` vs `shasum -a 256` (bash 3.2 compatible)
+2. Plan artifacts: YAML front matter + Markdown prose; extracted via `ruamel.yaml`
+3. Skill location: `skills/.curated/<name>/SKILL.md`
+4. SHA-256: Python `hashlib.sha256` — no external tools required
 5. Optional tools: `pdftotext`, `pandoc` — degrade gracefully, `text_extracted: false`
 6. Re-run: warn + stop; `--force` to override
 

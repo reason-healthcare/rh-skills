@@ -6,70 +6,63 @@
 
 ## New Command: `hi ingest`
 
-Follows the existing `bin/hi-{command}` dispatcher pattern. All exit codes match the existing contract.
+Follows the existing click command group pattern. All exit codes match the existing contract.
 
-### `hi ingest plan <skill> [--force]`
+### `hi ingest plan [--force]`
 
-Register a list of sources to ingest into a reviewable plan.
+Generate an ingest plan template at `plans/ingest-plan.md` (root-level plans directory).
 
 ```
-Usage: hi ingest plan <skill> [--force]
-
-Arguments:
-  skill       Skill name (kebab-case)
+Usage: hi ingest plan [--force]
 
 Options:
   --force     Overwrite existing ingest-plan.md
   -h, --help  Print usage
 
 Exit codes:
-  0  Plan written to skills/<skill>/plans/ingest-plan.md
+  0  Plan written to plans/ingest-plan.md
   0  Plan already exists (warns, suggests --force)
-  1  Source file listed in discovery-plan.md does not exist on disk
-  2  Usage error (missing args, unknown skill)
+  2  Usage error
 
 Output:
-  skills/<skill>/plans/ingest-plan.md  (YAML front matter + Markdown prose)
+  plans/ingest-plan.md  (YAML front matter + Markdown prose)
+
+Reads:
+  topics/<name>/plans/discovery-plan.md  (if available, for context)
 ```
 
-### `hi ingest implement <skill> [--force]`
+### `hi ingest implement <file> [--force]`
 
-Register each source from the ingest plan: copy to `l1/`, compute SHA-256 checksum, record in tracking.yaml.
+Copy FILE to `sources/` and register in tracking.yaml. FILE is a path to any local file.
 
 ```
-Usage: hi ingest implement <skill> [--force]
+Usage: hi ingest implement <file> [--force]
 
 Arguments:
-  skill       Skill name (kebab-case)
+  file        Path to the local source file to ingest
 
 Options:
-  --force     Re-ingest sources even if already registered
+  --force     Re-ingest source even if already registered
   -h, --help  Print usage
 
 Exit codes:
-  0  All sources registered successfully
-  0  Source skipped (already registered and --force not set)
+  0  Source registered successfully
+  0  Source already registered (updates checksum with warning)
   1  Source file not found on disk
-  1  Checksum computation failed
-  2  No ingest plan found (plans/ingest-plan.md missing)
   2  Usage error
 
 Side effects:
-  - Copies source files to skills/<skill>/l1/
-  - Appends sources[] entries to skills/<skill>/tracking.yaml
-  - Appends l1_added events to tracking.yaml
-  - Extracts text (optional: requires pdftotext/pandoc; warns if absent)
+  - Copies source file to sources/<filename>
+  - Appends or updates sources[] entry in tracking.yaml (SHA-256 via hashlib)
+  - Appends source_added or source_changed event to tracking.yaml
 ```
 
-### `hi ingest verify <skill>`
+### `hi ingest verify`
 
 Verify all registered sources are still present and checksums match.
 
 ```
-Usage: hi ingest verify <skill>
-
-Arguments:
-  skill       Skill name (kebab-case)
+Usage: hi ingest verify
 
 Exit codes:
   0  All sources present and checksums match
@@ -77,74 +70,40 @@ Exit codes:
   2  Usage error
 
 Output (stdout):
-  ✓ ada-guidelines-2024  OK
-  ✗ risk-factors-paper   CHANGED (stored: abc123..., current: def456...)
-  ! clinical-notes       MISSING (was: skills/diabetes-screening/l1/clinical-notes.md)
+  ✓ ada-guidelines-2024            OK
+  ✗ risk-factors-paper             CHANGED (was: abc123..., now: def456...)
+  ✗ clinical-notes                 MISSING
 ```
 
 ---
 
 ## Extended Command: `hi status`
 
-Existing `hi-status` gains three modes dispatched by subcommand argument.
-
-### `hi status progress <skill>`
+### `hi status <topic>`
 
 ```
-Usage: hi status progress <skill>
+Usage: hi status <topic> [--json]
 
 Exit codes:
   0  Summary printed
-  2  Usage error / unknown skill
+  2  Usage error / unknown topic
 
 Output (human-readable):
-  ── diabetes-screening ──────────────────────────────
-  Stage:       l2-semi-structured
-  Sources:     2 registered (2 checksums OK)
-  L1 artifacts: 1
-  L2 artifacts: 2 (1 validated, 1 unvalidated)
-  L3 artifacts: 0
-  Last event:  2026-04-03T19:05:00Z  l2_derived
-  Completeness: 60%
+  Topic:    diabetes-screening
+  Title:    Diabetes Screening
+  Author:   Clinical Informatics Team
+  Created:  2026-04-03T19:00:00Z
+  Stage:    l2-semi-structured
+
+  Artifacts:
+    L1 (discovery):        2
+    L2 (semi-structured):  2
+    L3 (computable):       0
+
+  Last event: structured_derived (2026-04-03T19:05:00Z)
 ```
 
-### `hi status next-steps <skill>`
-
-```
-Usage: hi status next-steps <skill>
-
-Exit codes:
-  0  Recommendation printed
-  2  Usage error / unknown skill
-
-Output (human-readable):
-  Next recommended action:
-  ▶ Validate unvalidated L2 artifact:
-      hi validate diabetes-screening l2 risk-factors
-
-  Or run hi-extract verify for a full L2 validation pass.
-```
-
-### `hi status check-changes <skill>`
-
-```
-Usage: hi status check-changes <skill>
-
-Exit codes:
-  0  No changes detected
-  1  One or more sources have changed, are missing, or are new
-  2  Usage error / unknown skill
-
-Output (human-readable, exit 1 example):
-  ✗ CHANGED: ada-guidelines-2024
-    Path:     skills/diabetes-screening/l1/ada-guidelines-2024.md
-    Stored:   e3b0c442...
-    Current:  9f86d081...
-    ⚠ Potentially stale L2 artifacts: screening-criteria, risk-factors
-
-  ! MISSING: clinical-notes
-    Was: skills/diabetes-screening/l1/clinical-notes.md
-```
+> **Note**: `hi status progress`, `hi status next-steps`, and `hi status check-changes` are planned features (tasks T030–T032) and **not yet implemented**. The current `hi status <topic>` provides basic lifecycle info.
 
 ---
 
@@ -153,14 +112,14 @@ Output (human-readable, exit 1 example):
 All plan artifacts share this interface, consumed by `implement` mode scripts.
 
 ### File Location
-`skills/<name>/plans/<plan-type>-plan.md`
+`topics/<name>/plans/<plan-type>-plan.md`
 
 ### Front Matter Fields by Plan Type
 
 #### discovery-plan.md
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `skill` | string | ✅ | Skill name |
+| `topic` | string | ✅ | Topic name |
 | `plan_type` | `"discovery"` | ✅ | Must be literal `"discovery"` |
 | `version` | string | ✅ | `"1.0"` |
 | `created` | ISO-8601 | ✅ | Creation timestamp |
@@ -174,7 +133,7 @@ All plan artifacts share this interface, consumed by `implement` mode scripts.
 #### ingest-plan.md
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `skill` | string | ✅ | Skill name |
+| `topic` | string | ✅ | Topic name |
 | `plan_type` | `"ingest"` | ✅ | Must be literal `"ingest"` |
 | `version` | string | ✅ | `"1.0"` |
 | `created` | ISO-8601 | ✅ | Creation timestamp |
@@ -182,54 +141,60 @@ All plan artifacts share this interface, consumed by `implement` mode scripts.
 | `items[].path` | string | ✅ | File path or URL |
 | `items[].type` | enum | ✅ | `pdf\|docx\|xlsx\|txt\|md\|url` |
 | `items[].extract_text` | bool | ❌ | Default `true` |
-| `items[].target` | string | ❌ | Override destination path |
+| `items[].target` | string | ❌ | Override destination in `sources/` |
 
 #### extract-plan.md
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `skill` | string | ✅ | Skill name |
+| `topic` | string | ✅ | Topic name |
 | `plan_type` | `"extract"` | ✅ | Must be literal `"extract"` |
 | `version` | string | ✅ | `"1.0"` |
 | `created` | ISO-8601 | ✅ | Creation timestamp |
-| `artifacts[].name` | string | ✅ | Kebab-case L2 artifact name |
-| `artifacts[].source` | string | ✅ | L1 artifact name |
+| `artifacts[].name` | string | ✅ | Kebab-case structured artifact name |
+| `artifacts[].source_file` | string | ✅ | File in `sources/` (without extension) |
 | `artifacts[].description` | string | ✅ | One-sentence description |
 
 #### formalize-plan.md
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `skill` | string | ✅ | Skill name |
+| `topic` | string | ✅ | Topic name |
 | `plan_type` | `"formalize"` | ✅ | Must be literal `"formalize"` |
 | `version` | string | ✅ | `"1.0"` |
 | `created` | ISO-8601 | ✅ | Creation timestamp |
-| `output_name` | string | ✅ | Kebab-case L3 artifact name |
-| `sources[]` | string[] | ✅ | L2 artifact names to combine |
-| `sections[]` | string[] | ✅ | L3 sections to include |
+| `output_name` | string | ✅ | Kebab-case computable artifact name |
+| `sources[]` | string[] | ✅ | Structured artifact names to combine |
+| `sections[]` | string[] | ✅ | Computable sections to include |
 | `outline` | string | ❌ | Human prose outline |
 
 ---
 
 ## Tracking.yaml Extension Contract
 
-The existing `tracking.yaml` gains a `sources[]` array. Existing fields are unchanged.
+The `tracking.yaml` at the repo root uses the following structure. All fields are set by `hi init` and extended by subsequent commands.
 
 ```yaml
-# Existing fields (unchanged)
+# Current tracking.yaml structure
 schema_version: "1.0"
-skill: { name, title, ... }
-artifacts: { l1: [], l2: [], l3: [] }
-events: []
+sources: []           # list of registered raw source files (root level)
+topics:
+  - name: string
+    title: string
+    description: string
+    author: string
+    created_at: string
+    structured: []    # L2 artifact entries
+    computable: []    # L3 artifact entries
+    events: []
+events: []            # root-level events
 
-# New field
+# sources[] entry schema (added by hi ingest implement):
 sources:
-  - name: string          # kebab-case, unique within skill
-    path: string          # path relative to repo root
-    original_path: string # source path before copy (may be absolute)
-    type: string          # pdf|docx|xlsx|txt|md|url
+  - name: string          # kebab-case, unique
+    file: string          # path relative to repo root, in sources/
+    type: string          # pdf|docx|xlsx|txt|md|url|document
     ingested_at: string   # ISO-8601
     checksum: string      # SHA-256 hex (64 chars)
     text_extracted: bool  # true if text extraction succeeded
-    url: string|null      # populated for url-type sources
 ```
 
 ---
@@ -245,7 +210,7 @@ Required frontmatter:
   compatibility:  "hi-skills-framework >= 0.1.0"
   metadata:
     author:       string
-    source:       "skills/_framework/hi-<skill>/SKILL.md"
+    source:       "skills/.curated/hi-<skill>/SKILL.md"
 
 Required body sections:
   ## User Input        ($ARGUMENTS block + MUST-consider directive)

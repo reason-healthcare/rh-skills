@@ -9,22 +9,22 @@ This quickstart walks through the full lifecycle for a new `diabetes-screening` 
 ## Prerequisites
 
 ```bash
-# Existing framework stack
-brew install yq jq curl   # or apt equivalents
+# Install the hi CLI (end users)
+uv tool install hi
+
+# Or for development
+git clone ... && cd reason-skills-2
+uv sync
+export PATH="$PATH:$(pwd)/bin"  # or use: uv run hi
 
 # Optional (for binary file ingest)
 brew install poppler      # provides pdftotext (PDF text extraction)
 brew install pandoc       # Word/Excel text extraction
-
-# Test suite
-npm install               # installs bats-core
-
-export PATH="$PATH:$(pwd)/bin"
 ```
 
 ---
 
-## Step 0: Initialize the skill
+## Step 0: Initialize the topic
 
 ```bash
 hi init diabetes-screening \
@@ -32,7 +32,7 @@ hi init diabetes-screening \
   --author "Clinical Informatics Team"
 ```
 
-Creates `skills/diabetes-screening/` with `SKILL.md`, `tracking.yaml`, `l1/`, `l2/`, `l3/`, `fixtures/`, `plans/`.
+Creates `topics/diabetes-screening/` with `TOPIC.md`, `research.md`, `conflicts.md`, `structured/`, `computable/`, `fixtures/`, `plans/`, `contracts/`, `checklists/`. Also ensures `sources/` exists at the repo root and registers the topic in `tracking.yaml`.
 
 ---
 
@@ -41,78 +41,83 @@ Creates `skills/diabetes-screening/` with `SKILL.md`, `tracking.yaml`, `l1/`, `l
 Invoke the `hi-discovery` skill in **plan** mode. The agent generates a research plan for the domain.
 
 **Agent invokes**: `hi-discovery plan`  
-**Reads**: `skills/diabetes-screening/tracking.yaml` (domain: `diabetes`)  
-**Writes**: `skills/diabetes-screening/plans/discovery-plan.md`
+**Reads**: `tracking.yaml` (domain: `diabetes`)  
+**Writes**: `topics/diabetes-screening/plans/discovery-plan.md`
 
-**Human review**: Open `plans/discovery-plan.md`. Edit the YAML front matter to remove sources you don't need, add any you know of. The prose body explains each source — review it, then proceed.
+**Human review**: Open `topics/diabetes-screening/plans/discovery-plan.md`. Edit the YAML front matter to remove sources you don't need, add any you know of. The prose body explains each source — review it, then proceed.
 
 Then invoke **implement** mode to convert the plan into ingest tasks:
 
 **Agent invokes**: `hi-discovery implement`  
-**Reads**: `plans/discovery-plan.md`  
-**Writes**: `skills/diabetes-screening/plans/ingest-plan.md`
+**Reads**: `topics/diabetes-screening/plans/discovery-plan.md`  
+**Writes**: `topics/diabetes-screening/plans/ingest-plan.md`
 
 ---
 
 ## Step 2: Ingest — register your raw sources
 
-You've downloaded `ada-care-2024.pdf`. The ingest plan lists it. Review and edit `plans/ingest-plan.md` — update file paths to match where your files actually are.
+You've downloaded `ada-care-2024.pdf`. Review and edit `topics/diabetes-screening/plans/ingest-plan.md` — update file paths to match where your files actually are.
 
-**Agent invokes**: `hi-ingest implement`  
-**Reads**: `plans/ingest-plan.md`  
+**Agent invokes**: `hi ingest implement <file>`  
+**Reads**: file path argument  
 **Writes**:
-- `skills/diabetes-screening/l1/ada-guidelines-2024.md` (text extracted from PDF)
-- `tracking.yaml` `sources[]` entry with SHA-256 checksum
+- `sources/ada-guidelines-2024.md` (copy of the source file)
+- `tracking.yaml` root `sources[]` entry with SHA-256 checksum
 
 ```bash
+# Ingest a source file
+hi ingest implement ~/Downloads/ada-care-2024.pdf
+
 # Verify all sources are registered correctly
-hi ingest verify diabetes-screening
-# ✓ ada-guidelines-2024  OK
+hi ingest verify
+# ✓ ada-guidelines-2024            OK
 ```
 
 ---
 
-## Step 3: Extract — derive L2 artifacts
+## Step 3: Extract — derive structured artifacts
 
 **Agent invokes**: `hi-extract plan`  
-**Reads**: `skills/diabetes-screening/l1/`  
-**Writes**: `skills/diabetes-screening/plans/extract-plan.md`
+**Reads**: `sources/`  
+**Writes**: `topics/diabetes-screening/plans/extract-plan.md`
 
-**Human review**: Open `plans/extract-plan.md`. The YAML front matter lists proposed L2 artifact names and which L1 source each derives from. Edit names, add artifacts, remove proposals that aren't needed. The prose explains the clinical intent of each.
+**Human review**: Open `topics/diabetes-screening/plans/extract-plan.md`. The YAML front matter lists proposed structured artifact names and which source file each derives from. Edit names, add artifacts, remove proposals that aren't needed. The prose explains the clinical intent of each.
 
 Then implement:
 
 **Agent invokes**: `hi-extract implement`  
-**Reads**: `plans/extract-plan.md`  
+**Reads**: `topics/diabetes-screening/plans/extract-plan.md`  
 **Executes**: `hi promote derive` for each artifact  
-**Writes**: `skills/diabetes-screening/l2/screening-criteria.yaml`, `l2/risk-factors.yaml`
+**Writes**: `topics/diabetes-screening/structured/screening-criteria.yaml`, `topics/diabetes-screening/structured/risk-factors.yaml`
 
 Verify:
 
 **Agent invokes**: `hi-extract verify`  
-**Executes**: `hi validate diabetes-screening l2 <each artifact>`
+**Executes**: `hi validate diabetes-screening structured <each artifact>`
 
 ```
-✓ screening-criteria  VALID
-✓ risk-factors        VALID (2 optional field warnings)
+✓ Validating diabetes-screening/structured/screening-criteria...
+VALID — topics/diabetes-screening/structured/screening-criteria.yaml
+✓ Validating diabetes-screening/structured/risk-factors...
+VALID (with 2 optional field warning(s))
 ```
 
 ---
 
-## Step 4: Formalize — converge to L3
+## Step 4: Formalize — converge to computable artifact
 
 **Agent invokes**: `hi-formalize plan`  
-**Reads**: `skills/diabetes-screening/l2/`  
-**Writes**: `skills/diabetes-screening/plans/formalize-plan.md`
+**Reads**: `topics/diabetes-screening/structured/`  
+**Writes**: `topics/diabetes-screening/plans/formalize-plan.md`
 
-**Human review**: Edit `plans/formalize-plan.md`. The YAML front matter lists which L2 artifacts to combine and which L3 sections to include (pathways, measures, value_sets, etc.). Edit the outline prose to guide the LLM on what the L3 should emphasize.
+**Human review**: Edit `topics/diabetes-screening/plans/formalize-plan.md`. The YAML front matter lists which structured artifacts to combine and which sections to include (pathways, measures, value_sets, etc.). Edit the outline prose to guide the LLM on what the computable artifact should emphasize.
 
 Then implement:
 
 **Agent invokes**: `hi-formalize implement`  
-**Reads**: `plans/formalize-plan.md`  
-**Executes**: `hi promote combine --sources screening-criteria,risk-factors --name diabetes-screening-computable`  
-**Writes**: `skills/diabetes-screening/l3/diabetes-screening-computable.yaml`
+**Reads**: `topics/diabetes-screening/plans/formalize-plan.md`  
+**Executes**: `hi promote combine diabetes-screening screening-criteria risk-factors diabetes-screening-computable`  
+**Writes**: `topics/diabetes-screening/computable/diabetes-screening-computable.yaml`
 
 Verify:
 
@@ -124,15 +129,11 @@ Verify:
 ## Step 5: Check status at any time
 
 ```bash
-# Where is this skill in its lifecycle?
-hi status progress diabetes-screening
-
-# What should I do next?
-hi status next-steps diabetes-screening
-
-# Have any source files changed since ingest?
-hi status check-changes diabetes-screening
+# Where is this topic in its lifecycle?
+hi status diabetes-screening
 ```
+
+> **Note**: `hi status progress`, `hi status next-steps`, and `hi status check-changes` are planned features (tasks T030-T032) and not yet implemented. The current `hi status <topic>` provides basic lifecycle info (stage, artifact counts, last event).
 
 ---
 
@@ -141,16 +142,16 @@ hi status check-changes diabetes-screening
 Six months later, ADA publishes updated guidelines. You download the new PDF.
 
 ```bash
-hi status check-changes diabetes-screening
-# ✗ CHANGED: ada-guidelines-2024
-#   ⚠ Potentially stale L2: screening-criteria, risk-factors
+hi ingest verify
+# ✗ ada-guidelines-2024            CHANGED
+#   was: e3b0c442...
+#   now: 9f86d081...
 ```
 
 Re-ingest the updated file:
 
 ```bash
-# Update the ingest plan with the new file path, then:
-hi ingest implement diabetes-screening --force
+hi ingest implement ~/Downloads/ada-care-2024-updated.pdf --force
 ```
 
 Then re-extract and re-formalize affected artifacts following Steps 3–4.
@@ -170,11 +171,11 @@ All `plan` and `implement` modes are **safe by default**:
 ## Framework skill locations
 
 ```
-skills/_framework/
+skills/.curated/
   hi-discovery/SKILL.md   → invoke for literature search planning
   hi-ingest/SKILL.md      → invoke for source registration
-  hi-extract/SKILL.md     → invoke for L2 derivation
-  hi-formalize/SKILL.md   → invoke for L3 convergence
+  hi-extract/SKILL.md     → invoke for structured derivation
+  hi-formalize/SKILL.md   → invoke for computable convergence
   hi-verify/SKILL.md      → invoke for on-demand artifact validation
   hi-status/SKILL.md      → invoke for progress/next-steps/change-detection
 ```
