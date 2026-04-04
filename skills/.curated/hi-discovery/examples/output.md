@@ -108,16 +108,16 @@ User: hi-discovery session diabetes-ccm
 >
 > | # | Name | Type | Evidence | Access | Action |
 > |---|------|------|----------|--------|--------|
-> | 1 | ADA Standards of Care 2024 | guideline | grade-a | open | [dl] |
-> | 2 | SNOMED CT — Diabetes Hierarchy | terminology | reference-standard | open | [dl] |
-> | 3 | CMS eCQM CMS122 | measure-library | n/a | open | [dl] |
-> | 4 | USPSTF Diabetes Screening | guideline | uspstf-b | open | [dl] |
-> | 5 | Gravity SDOH FHIR IG | fhir-ig | reference-standard | open | [dl] |
-> | 6 | HCUP NIS — Diabetes Hospitalizations | health-economics | n/a | open | [dl] |
-> | 7 | Cochrane — Intensive Glycemic Control | systematic-review | grade-a | authenticated | [auth] |
-> | 8 | LOINC HbA1c / Glucose codes | terminology | reference-standard | open | [dl] |
-> | 9 | Diabetes Care Journal (CCM articles) | pubmed-article | grade-b | authenticated | [auth] |
-> |10 | ICD-10-CM E08–E13 | terminology | reference-standard | open | [dl] |
+> | 1 | ADA Standards of Care 2024 | guideline | grade-a | open | ↓ |
+> | 2 | SNOMED CT — Diabetes Hierarchy | terminology | reference-standard | open | ↓ |
+> | 3 | CMS eCQM CMS122 | measure-library | n/a | open | ↓ |
+> | 4 | USPSTF Diabetes Screening | guideline | uspstf-b | open | ↓ |
+> | 5 | Gravity SDOH FHIR IG | fhir-ig | reference-standard | open | ↓ |
+> | 6 | HCUP NIS — Diabetes Hospitalizations | health-economics | n/a | open | ↓ |
+> | 7 | Cochrane — Intensive Glycemic Control | systematic-review | grade-a | authenticated | ⊘ |
+> | 8 | LOINC HbA1c / Glucose codes | terminology | reference-standard | open | ↓ |
+> | 9 | Diabetes Care Journal (CCM articles) | pubmed-article | grade-b | authenticated | ⊘ |
+> |10 | ICD-10-CM E08–E13 | terminology | reference-standard | open | ↓ |
 >
 > Do you approve this list? Any changes?
 
@@ -146,13 +146,13 @@ User: hi-discovery session diabetes-ccm
 > *(... 4 more downloads succeed ...)*
 >
 > ---
-> [AUTH] **Cochrane Review — Intensive Glycemic Control T2D**
+> ⊘ **Cochrane Review — Intensive Glycemic Control T2D**
 >    Why relevant: Definitive systematic review for CCM glycemic target setting
 >    Access URL:   https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD008143.pub2
 >    Auth method:  Institutional access via library proxy
 >    Search terms: "intensive glycemic control type 2 diabetes cardiovascular"
 >
-> [AUTH] **Diabetes Care Journal**
+> ⊘ **Diabetes Care Journal**
 >    Why relevant: Primary specialty journal; key CCM RCTs published here
 >    Access URL:   https://diabetesjournals.org/care
 >    Auth method:  Institutional access or library proxy; use PubMed for abstracts

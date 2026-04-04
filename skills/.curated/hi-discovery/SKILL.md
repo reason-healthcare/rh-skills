@@ -210,14 +210,14 @@ Present a formatted summary table of proposed sources:
 ```
 | # | Name | Type | Evidence | Access | Action |
 |---|------|------|----------|--------|--------|
-| 1 | ADA Standards of Care | guideline | grade-a | open | [dl] |
-| 2 | NEJM article ... | pubmed-article | grade-b | authenticated | [auth] |
+| 1 | ADA Standards of Care | guideline | grade-a | open | ↓ |
+| 2 | NEJM article ... | pubmed-article | grade-b | authenticated | ⊘ |
 ...
 ```
 
-For each `access: open` source with a URL, indicate "[dl]" — will be
+For each `access: open` source with a URL, indicate "↓" — will be
 fetched via `hi ingest implement --url`. For authenticated sources, indicate
-"[auth]" and print the per-source access advisory (Step 8b).
+"⊘" and print the per-source access advisory (Step 8b).
 
 Ask the user: approve all, modify the list, or add/remove sources?
 Incorporate feedback and loop back if needed.
@@ -239,7 +239,7 @@ Report success or failure per source. On failure (exit 1, 2, or 3):
 For each **approved** `access: authenticated` source, print the access advisory:
 
 ```
-[AUTH] <Source Name>
+⊘ <Source Name>
    Why relevant: <rationale for this topic>
    Access URL:   <url>
    Auth method:  <institutional login | free registration | society membership | library proxy>
