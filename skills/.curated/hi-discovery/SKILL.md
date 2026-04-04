@@ -102,6 +102,35 @@ ls topics/<topic>/process/plans/discovery-plan.md 2>/dev/null
 
 ---
 
+## Output Contract
+
+Every agent response during a `session` MUST end with a status block in this
+exact format:
+
+```
+─── hi-discovery · <topic> ──────────────────────────────────
+  Step:   <N> — <Step Name>
+  Plan:   <N source(s) in memory | saved · <N> sources>
+  Next:   <concrete command or choice presented to the user>
+─────────────────────────────────────────────────────────────
+```
+
+Rules:
+- **Always present** — every response, without exception. The user must never
+  have to ask "what do I do next?"
+- **Step** reflects the current step number and name from the session workflow.
+  Use `Complete` suffix once a step is fully done (e.g., `3 — ClinicalTrials
+  Search · Complete`).
+- **Plan** shows live source count while unsaved; switches to `saved ·` once
+  `discovery-plan.md` has been written.
+- **Next** must be a concrete, copy-pasteable command OR a specific choice
+  prompt (e.g., `approve list / modify / add sources`). Never vague.
+- After `verify` mode, the block uses `Mode: verify` and `Result: PASS / FAIL`
+  in place of Step/Plan, and `Next` gives the exact `hi-ingest` command on
+  PASS or the specific fix required on FAIL.
+
+---
+
 ## session Mode
 
 The session is an **interactive research loop**. Complete all steps; prompt the
@@ -123,6 +152,13 @@ guidance for `<topic>`, addressing all checklist items relevant to the domain:
 This advice is captured in the **Domain Advice** section of `discovery-plan.md`
 and guides which sources to prioritize.
 
+Emit status block:
+```
+  Step:   1 — Domain Advice · Complete
+  Plan:   0 sources in memory
+  Next:   Step 2 — run PubMed/PMC searches
+```
+
 ### Step 2 — PubMed Search
 
 ```sh
@@ -141,6 +177,13 @@ Parse the JSON results. For each result evaluate:
 - **Access**: PMC articles are `open`; PubMed abstracts are `open` (URL to
   abstract); full-text may require institutional access → `authenticated`
 
+Emit status block:
+```
+  Step:   2 — PubMed/PMC Search · Complete
+  Plan:   <N> sources in memory
+  Next:   Step 3 — ClinicalTrials.gov search
+```
+
 ### Step 3 — ClinicalTrials.gov Search
 
 ```sh
@@ -149,6 +192,13 @@ hi search clinicaltrials --query "<terms>" --max 20 --json
 
 Include active or completed trials relevant to the topic. These are `registry`
 type with `evidence_level: n/a` (trials are not yet evidence until published).
+
+Emit status block:
+```
+  Step:   3 — ClinicalTrials.gov Search · Complete
+  Plan:   <N> sources in memory
+  Next:   Step 4 — US government sources
+```
 
 ### Step 4 — US Government Healthcare Sources
 
@@ -169,6 +219,13 @@ present URLs for the user to confirm):
 See `reference.md` → **US Government Healthcare Coverage** for full URLs and
 guidance.
 
+Emit status block:
+```
+  Step:   4 — US Government Sources · Complete
+  Plan:   <N> sources in memory
+  Next:   Step 5 — medical society and journal sources
+```
+
 ### Step 5 — Medical Society and Journal Sources
 
 Identify the relevant medical societies and journals for the topic. Present
@@ -182,6 +239,13 @@ these with recommended search terms even if they require authentication:
 Do not attempt to download authenticated sources — flag them in the plan with
 `recommended: true` where they are high-value, and include an inline access
 advisory (FR-011a/FR-011b).
+
+Emit status block:
+```
+  Step:   5 — Medical Society Sources · Complete
+  Plan:   <N> sources in memory
+  Next:   Step 6 — compile and validate source list
+```
 
 ### Step 6 — Build the Living Plan
 
@@ -197,6 +261,13 @@ compile the list applying these rules:
   preventive interventions, or CMS programs
 - All mandatory fields per FR-005: `name`, `type`, `rationale`, `search_terms[]`,
   `evidence_level`, `access`. Plus `url` when `access: open`.
+
+Emit status block:
+```
+  Step:   6 — Source List · Complete
+  Plan:   <N> sources in memory
+  Next:   Step 7 — present list for approval
+```
 
 ### Step 7 — Present to User
 
@@ -218,6 +289,13 @@ must retrieve. None of these are downloaded here — all acquisition happens in
 Ask the user: approve all, modify the list, or add/remove sources?
 Incorporate feedback and loop back if needed.
 
+Emit status block:
+```
+  Step:   7 — Source Review
+  Plan:   <N> sources in memory
+  Next:   approve list / modify / add sources
+```
+
 ### Step 8 — Access Advisories
 
 For each **approved** `access: authenticated` or `access: manual` source, print
@@ -233,6 +311,13 @@ an access advisory so the user knows what to gather before running `hi-ingest`:
 
 For `access: manual` sources without a URL, describe where to find the artifact
 and what filename convention to use when placing it in `sources/`.
+
+Emit status block:
+```
+  Step:   8 — Access Advisories · Complete
+  Plan:   <N> sources in memory
+  Next:   Step 9 — expansion suggestions
+```
 
 ### Step 9 — Research Expansion Suggestions
 
@@ -254,6 +339,13 @@ Cover at minimum (when applicable):
 **Do NOT add suggestions to `sources[]` automatically.** They are offered for
 the user to act on.
 
+Emit status block:
+```
+  Step:   9 — Expansion Suggestions · Complete
+  Plan:   <N> sources in memory
+  Next:   explore an expansion area / save the plan
+```
+
 ### Step 10 — Interactive Prompt
 
 After presenting the plan and suggestions, explicitly ask:
@@ -264,6 +356,13 @@ After presenting the plan and suggestions, explicitly ask:
 
 If the user wants to explore an expansion area, loop back to Steps 2–9 for that
 area and merge the findings into the living plan.
+
+Emit status block reflecting current state, e.g.:
+```
+  Step:   10 — Awaiting Direction
+  Plan:   <N> sources in memory
+  Next:   explore "<area>" / save the plan / modify list
+```
 
 ### Step 11 — Save Checkpoint
 
@@ -280,6 +379,13 @@ After saving, recommend:
 
 ```sh
 hi-discovery verify <topic>
+```
+
+Emit status block:
+```
+  Step:   11 — Save Checkpoint · Complete
+  Plan:   saved · <N> sources
+  Next:   hi-discovery verify <topic>
 ```
 
 ### Step 12 — Verify Recommendation
@@ -301,9 +407,23 @@ hi validate --plan topics/<topic>/process/plans/discovery-plan.md
 
 Report the output verbatim. Exit with the same code as `hi validate --plan`.
 
-If `hi validate --plan` exits 0: inform the user the plan is ready for
-`hi-ingest`, which will handle all source acquisition. If it exits 1: present
-the failing checks and suggest fixes.
+On exit 0, emit:
+```
+─── hi-discovery · <topic> ──────────────────────────────────
+  Mode:   verify
+  Result: PASS
+  Next:   hi-ingest session <topic>
+─────────────────────────────────────────────────────────────
+```
+
+On exit 1, emit:
+```
+─── hi-discovery · <topic> ──────────────────────────────────
+  Mode:   verify
+  Result: FAIL — <N> check(s) failed
+  Next:   fix: <specific issue(s) listed above>, then re-run verify
+─────────────────────────────────────────────────────────────
+```
 
 ---
 

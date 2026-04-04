@@ -97,6 +97,14 @@ User: hi-discovery session diabetes-ccm
 > - **USPSTF Diabetes Screening** — Grade B recommendation, open access
 > - **HCUP NIS** — cost data, open access summary statistics
 > - **Gravity SDOH FHIR IG** — open access
+>
+> ```
+> ─── hi-discovery · diabetes-ccm ─────────────────────────────
+>   Step:   4 — US Government Sources · Complete
+>   Plan:   8 sources in memory
+>   Next:   Step 5 — medical society and journal sources
+> ─────────────────────────────────────────────────────────────
+> ```
 
 ---
 
@@ -122,6 +130,14 @@ User: hi-discovery session diabetes-ccm
 > All open-access sources have URLs recorded. Authenticated sources are flagged
 > with access advisories below. `hi-ingest` will handle all downloads and
 > registration. Do you approve this list? Any changes?
+>
+> ```
+> ─── hi-discovery · diabetes-ccm ─────────────────────────────
+>   Step:   7 — Source Review
+>   Plan:   10 sources in memory
+>   Next:   approve list / modify / add sources
+> ─────────────────────────────────────────────────────────────
+> ```
 
 **User:** Looks good, go ahead.
 
@@ -190,7 +206,14 @@ User: hi-discovery session diabetes-ccm
 > A) Explore an expansion area (tell me which number)
 > B) Modify the source list
 > C) Save the current plan
-> D) Run verify after saving
+>
+> ```
+> ─── hi-discovery · diabetes-ccm ─────────────────────────────
+>   Step:   10 — Awaiting Direction
+>   Plan:   10 sources in memory
+>   Next:   A) explore expansion  B) modify list  C) save plan
+> ─────────────────────────────────────────────────────────────
+> ```
 
 **User:** C — save the plan.
 
@@ -212,9 +235,13 @@ User: hi-discovery session diabetes-ccm
 >
 > ✓ Created: `topics/diabetes-ccm/process/conflicts.md` (stub)
 >
-> ---
-> Run `hi-discovery verify diabetes-ccm` to validate the plan, then
-> `hi-ingest session diabetes-ccm` to fetch and register all sources.
+> ```
+> ─── hi-discovery · diabetes-ccm ─────────────────────────────
+>   Step:   11 — Save Checkpoint · Complete
+>   Plan:   saved · 10 sources
+>   Next:   hi-discovery verify diabetes-ccm
+> ─────────────────────────────────────────────────────────────
+> ```
 
 ---
 
@@ -243,4 +270,10 @@ Validating: topics/diabetes-ccm/process/plans/discovery-plan.md
 Overall: PASS (1 warning)
 ```
 
-> Plan passed validation with 1 warning. You may proceed to `hi-ingest`.
+> ```
+> ─── hi-discovery · diabetes-ccm ─────────────────────────────
+>   Mode:   verify
+>   Result: PASS (1 warning)
+>   Next:   hi-ingest session diabetes-ccm
+> ─────────────────────────────────────────────────────────────
+> ```
