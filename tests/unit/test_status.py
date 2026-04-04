@@ -68,49 +68,49 @@ def make_topic(tmp_repo, name, stage="initialized"):
 def test_status_exits_0_for_valid_skill(tmp_repo):
     make_topic(tmp_repo, "my-skill")
     runner = CliRunner()
-    result = runner.invoke(status, ["my-skill"])
+    result = runner.invoke(status, ["show", "my-skill"])
     assert result.exit_code == 0
 
 
 def test_status_shows_skill_name(tmp_repo):
     make_topic(tmp_repo, "my-skill")
     runner = CliRunner()
-    result = runner.invoke(status, ["my-skill"])
+    result = runner.invoke(status, ["show", "my-skill"])
     assert "my-skill" in result.output
 
 
 def test_status_shows_stage_initialized(tmp_repo):
     make_topic(tmp_repo, "my-skill", "initialized")
     runner = CliRunner()
-    result = runner.invoke(status, ["my-skill"])
+    result = runner.invoke(status, ["show", "my-skill"])
     assert "initialized" in result.output
 
 
 def test_status_shows_stage_l1_discovery(tmp_repo):
     make_topic(tmp_repo, "my-skill", "l1-discovery")
     runner = CliRunner()
-    result = runner.invoke(status, ["my-skill"])
+    result = runner.invoke(status, ["show", "my-skill"])
     assert "l1-discovery" in result.output
 
 
 def test_status_shows_stage_l2_semi_structured(tmp_repo):
     make_topic(tmp_repo, "my-skill", "l2-semi-structured")
     runner = CliRunner()
-    result = runner.invoke(status, ["my-skill"])
+    result = runner.invoke(status, ["show", "my-skill"])
     assert "l2-semi-structured" in result.output
 
 
 def test_status_shows_stage_l3_computable(tmp_repo):
     make_topic(tmp_repo, "my-skill", "l3-computable")
     runner = CliRunner()
-    result = runner.invoke(status, ["my-skill"])
+    result = runner.invoke(status, ["show", "my-skill"])
     assert "l3-computable" in result.output
 
 
 def test_status_json_outputs_valid_json(tmp_repo):
     make_topic(tmp_repo, "my-skill", "l2-semi-structured")
     runner = CliRunner()
-    result = runner.invoke(status, ["my-skill", "--json"])
+    result = runner.invoke(status, ["show", "my-skill", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert isinstance(data, dict)
@@ -119,14 +119,14 @@ def test_status_json_outputs_valid_json(tmp_repo):
 def test_status_json_includes_artifact_counts(tmp_repo):
     make_topic(tmp_repo, "my-skill", "l2-semi-structured")
     runner = CliRunner()
-    result = runner.invoke(status, ["my-skill", "--json"])
+    result = runner.invoke(status, ["show", "my-skill", "--json"])
     data = json.loads(result.output)
     assert data["structured"] == 1
 
 
 def test_status_exits_2_for_unknown_skill(tmp_repo):
     runner = CliRunner()
-    result = runner.invoke(status, ["ghost-skill"])
+    result = runner.invoke(status, ["show", "ghost-skill"])
     assert result.exit_code == 2
 
 
@@ -189,3 +189,14 @@ def test_list_no_tracking_exits_0(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(list_, [])
     assert result.exit_code == 0
+
+
+def test_list_excludes_curated_skill_dirs(tmp_repo):
+    """skills/.curated/ dirs must never appear in hi list output (never in tracking.yaml)."""
+    # Simulate a .curated dir existing on disk
+    (tmp_repo / "topics" / ".curated").mkdir(parents=True, exist_ok=True)
+    make_topic(tmp_repo, "real-topic")
+    runner = CliRunner()
+    result = runner.invoke(list_, [])
+    assert ".curated" not in result.output
+    assert "real-topic" in result.output
