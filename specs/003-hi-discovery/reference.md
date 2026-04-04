@@ -158,9 +158,77 @@ Key filters:
 - `--status recruiting|completed|active` — focus on completed for evidence
 - Use condition MeSH terms as query terms for precision
 
+## US Government Healthcare Sources
+
+The US federal government produces a large body of open-access, authoritative material. The agent MUST actively search these for any topic with a US clinical care or population health angle.
+
+### CMS Programs & Quality Reporting
+
+| Source | What it provides | URL | Access |
+|--------|-----------------|-----|--------|
+| **CMS eCQM Library** | FHIR-computable electronic clinical quality measures for hospitals and clinicians | ecqi.healthit.gov | Open |
+| **QPP / MIPS** | Merit-Based Incentive Payment System quality measures, improvement activities, promoting interoperability | qpp.cms.gov | Open |
+| **CMS Measures Inventory Tool (CMIT)** | Full inventory of all CMS-required quality measures across programs | cmit.cms.gov | Open |
+| **Hospital Quality Reporting (IQR)** | Inpatient quality measures, hospital compare data | cms.gov/Medicare/Quality-Initiatives | Open |
+| **CMS Value-Based Programs** | VBP, HACRP, HRRP, SNF VBP, ESRD QIP measure specifications | cms.gov/Medicare/Quality-Initiatives | Open |
+| **CMS Innovation Center (CMMI)** | Alternative payment models, care transformation initiatives, model specifications | innovation.cms.gov | Open |
+| **Medicaid Quality Measures** | Core set of Medicaid quality measures (child & adult), CHIP | medicaid.gov/medicaid/quality-of-care | Open |
+| **CMS Chronic Conditions Data Warehouse** | Medicare/Medicaid claims data documentation and condition algorithms | ccwdata.org | Open (data access requires application) |
+| **CMS ICD-10-CM Code Files** | Official annual diagnosis code releases and guidelines | cms.gov/medicare/coding-billing | Open |
+
+**PubMed filter for CMS-authored guidance:**
+```
+"Centers for Medicare and Medicaid Services"[Corporate Author]
+```
+
+### SDOH & Health Equity
+
+| Source | What it provides | URL | Access |
+|--------|-----------------|-----|--------|
+| **Gravity Project** | SDOH FHIR IG, standardized SDOH value sets, screening → intervention workflow | hl7.org/fhir/us/sdoh-clinicalcare | Open |
+| **AHC HRSN Screening Tool** | Accountable Health Communities Health-Related Social Needs 10-question screening tool (CMS model) | innovation.cms.gov/files/worksheets/ahcm-screeningtool | Open |
+| **PRAPARE** | Protocol for Responding to and Assessing Patients' Assets, Risks, and Experiences; LOINC-coded | nachc.org/research-and-data/prapare | Open |
+| **HealthLeads SDOH Screening** | Validated SDOH screening with domain taxonomy | healthleadsusa.org | Open |
+| **Healthy People 2030** | National health objectives, SDOH framework, data sources by domain | health.gov/healthypeople | Open |
+| **CDC PLACES** | Local-level chronic disease, health behaviors, SDOH estimates for census tracts and counties | cdc.gov/places | Open |
+| **CDC Social Vulnerability Index (SVI)** | Census-tract SDOH vulnerability scores | atsdr.cdc.gov/placeandhealth/svi | Open |
+| **CMS Health Equity Programs** | Health equity measures, stratification requirements, underserved population definitions | cms.gov/health-equity | Open |
+| **AHRQ SDOH Compendium** | SDOH measures, survey instruments, and data sources for research | ahrq.gov | Open |
+
+**SDOH domain taxonomy (Gravity Project)** — use these terms when generating search terms:
+
+```
+Food insecurity, Housing instability, Transportation insecurity,
+Interpersonal safety, Social isolation, Financial strain,
+Utilities, Education, Employment, Digital access
+```
+
+### Other Federal Agencies
+
+| Agency | Key resource | URL | Access |
+|--------|-------------|-----|--------|
+| **USPSTF** | Grade A/B/C/D/I preventive service recommendations | uspreventiveservicestaskforce.org | Open |
+| **AHRQ** | Evidence-based practice reports, clinical guidelines, patient safety | ahrq.gov | Open |
+| **CDC** | Disease surveillance, MMWR, clinical guidelines, ACIP recommendations | cdc.gov | Open |
+| **NIH / NLM** | PubMed, PMC, MedlinePlus, VSAC, UMLS | nlm.nih.gov | Open (UMLS requires free license) |
+| **ONC (HealthIT.gov)** | USCDI data standards, interoperability regulations, FHIR policy | healthit.gov | Open |
+| **FDA** | Drug approvals, device clearances, REMS programs, product labeling | fda.gov | Open |
+| **HRSA** | Federally Qualified Health Center data, maternal health, workforce | hrsa.gov | Open |
+| **VA / DoD CPGs** | VA/DoD joint clinical practice guidelines (military/veteran populations) | healthquality.va.gov | Open |
+| **CMS MACStats** | Medicare/Medicaid enrollment and spending statistics | cms.gov/research-statistics-data-and-systems | Open |
+
+### National Quality Forum & Measure Stewardship
+
+| Source | What it provides | URL | Access |
+|--------|-----------------|-----|--------|
+| **NQF Quality Positioning System** | Endorsed quality measure specifications | qualityforum.org | Free registration |
+| **AMA PCPI** (via Physician Consortium) | Physician performance measures | ama-assn.org | Free |
+| **HL7 FHIR Measures Repository** | FHIR-encoded measure resources | fhir.org/guides/cqf/qdm | Open |
+| **NCQA HEDIS** | Commercial/Medicare/Medicaid plan measures (most widely used in managed care) | ncqa.org | Subscription for full specs |
+
 ---
 
-## Authenticated Source Advisories
+
 
 When a source requires authentication, the agent MUST recommend it if it is authoritative for the topic and produce an advisory with these fields. Access difficulty never reduces a source's recommendation priority.
 
@@ -213,8 +281,11 @@ When the agent produces a discovery plan, it MUST advise on:
 3. **Intervention landscape** — screening intervals, treatment thresholds, first-line vs. second-line
 4. **Contraindications and exceptions** — when NOT to apply the guideline
 5. **Evidence gaps** — areas where guidelines differ or evidence is sparse
-6. **Existing measures** — are there eCQMs or HEDIS measures already? How does this topic relate?
-7. **Coding landscape** — which terminology systems are authoritative for this domain?
-8. **FHIR alignment** — are there existing implementation guides or profiles?
-9. **Regulatory context** — CMS coverage, FDA approvals, USPSTF grade
-10. **Recency** — when were the current guidelines last updated? Are updates pending?
+6. **Existing measures** — are there eCQMs, HEDIS, MIPS, or NQF-endorsed measures? Which CMS programs reference them?
+7. **SDOH relevance** — do social determinants affect screening eligibility, outcomes, or disparities for this topic? Reference Gravity Project domains.
+8. **CMS program alignment** — does this topic intersect with a CMS value-based program (MIPS, VBP, HACRP, CMMI model)? Is there a CMS condition-specific initiative (e.g., Million Hearts, Making Care Primary)?
+9. **Coding landscape** — which terminology systems are authoritative for this domain?
+10. **FHIR alignment** — are there existing implementation guides or profiles (US Core, QI-Core, condition-specific IGs)?
+11. **Regulatory context** — CMS coverage/LCD/NCD, FDA approvals, USPSTF grade, Medicaid state plan requirements
+12. **Health equity lens** — are there CMS health equity stratification requirements? Are disparate populations identified in the literature?
+13. **Recency** — when were the current guidelines last updated? Are updates pending (check USPSTF draft recommendations)?

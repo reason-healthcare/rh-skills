@@ -132,6 +132,8 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 
 - **FR-021**: All modes accept `TOPIC` positional argument and `--dry-run`. `plan` and `implement` accept `--force`.
 - **FR-022**: The skill MUST reside at `skills/.curated/hi-discovery/SKILL.md` following the `skills/_template/` three-level progressive disclosure format.
+- **FR-023**: For any topic with a US clinical care or population health angle, the agent MUST actively search and include sources from the US government healthcare ecosystem. Minimum coverage: (a) check CMS eCQM Library and CMIT for existing quality measures; (b) check QPP/MIPS if a clinician performance angle exists; (c) check USPSTF for preventive service grades; (d) assess SDOH relevance using Gravity Project domain taxonomy; (e) check AHRQ for evidence-based practice reports; (f) include CDC surveillance or MMWR if epidemiological evidence is needed.
+- **FR-024**: The domain advice section of `discovery-plan.md` MUST address the `reference.md` Domain Advice Checklist in full, including: CMS program alignment, SDOH relevance (with specific Gravity domains if applicable), health equity lens, and existing quality measure landscape.
 
 ### Source Type Taxonomy (FR-009)
 
@@ -141,8 +143,10 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 | `systematic-review` | Cochrane reviews, AHRQ evidence reports |
 | `terminology` | SNOMED CT, LOINC, ICD-10-CM, RxNorm, UCUM |
 | `value-set` | VSAC (NLM), FHIR value sets, PHIN VADS |
-| `measure-library` | CMS eCQMs, HEDIS, PCPI, Joint Commission |
-| `fhir-ig` | US Core, QI-Core, CARIN BB, SMART, condition-specific IGs |
+| `measure-library` | CMS eCQMs, HEDIS, MIPS/QPP measures, NQF-endorsed measures, Joint Commission |
+| `fhir-ig` | US Core, QI-Core, CARIN BB, SMART, Gravity SDOH FHIR IG, condition-specific IGs |
+| `sdoh-assessment` | PRAPARE, AHC HRSN Tool, HealthLeads screening, CDC SVI, CDC PLACES |
+| `government-program` | CMS CMMI model specs, Medicaid state plan amendments, CMS LCD/NCD coverage policies, HRSA program guidance |
 | `cds-library` | CDS Hooks registry, OpenCDS |
 | `registry` | ClinicalTrials.gov, disease registries |
 | `pubmed-article` | PubMed / PMC research articles |
