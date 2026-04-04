@@ -12,15 +12,24 @@ The HI framework guides clinical knowledge through three artifact levels:
 | **L2** | YAML | Structured — discrete clinical criteria, coded concepts |
 | **L3** | YAML | Computable — pathways, measures, value sets (FHIR-compatible) |
 
-An LLM agent, directed by the HI skills, does the reasoning. The `hi` CLI handles all deterministic work (file I/O, validation, tracking).
-
 The relationships are many-to-many: one L1 source can yield several L2 artifacts; multiple L2 artifacts can converge into a single L3.
+
+## Usage Modes
+
+The framework supports two modes — both use the `hi` CLI for deterministic work and an agent for reasoning:
+
+| Mode | How it works | Best for |
+|------|-------------|----------|
+| **CLI-first** | You call `hi` commands directly; use any LLM provider (including local models) | Full control, CI/CD, bring-your-own-model |
+| **Agent-native** | Your AI agent (Copilot, Claude, Gemini) reads the HI skills and calls `hi` on your behalf | Conversational UX, clinical teams |
+
+→ See [docs/USAGE_MODES.md](docs/USAGE_MODES.md) for a full comparison, platform support, and LLM configuration.
 
 ## Prerequisites
 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- An LLM provider (local Ollama recommended, or Anthropic / OpenAI)
+- An LLM provider — local Ollama, Anthropic, OpenAI, or any OpenAI-compatible endpoint (CLI-first mode); or your existing agent platform (agent-native mode)
 
 ## Installation
 
@@ -29,19 +38,10 @@ uv tool install hi
 hi --help
 ```
 
-## LLM Configuration
+Configure your LLM provider:
 
 ```bash
-cp .env.example .env   # then edit .env
-```
-
-```dotenv
-LLM_PROVIDER=ollama            # ollama | anthropic | openai
-OLLAMA_ENDPOINT=http://localhost:11434
-OLLAMA_MODEL=mistral
-
-# ANTHROPIC_API_KEY=sk-ant-...
-# OPENAI_API_KEY=sk-...
+cp .env.example .env   # set LLM_PROVIDER, model, and API key
 ```
 
 ## Quickstart
@@ -175,6 +175,7 @@ See [`example-project/`](example-project/) for a complete diabetes-screening wal
 
 ## Further reading
 
+- [Usage Modes](docs/USAGE_MODES.md) — CLI-first vs agent-native, LLM configuration, platform support
 - [Getting Started](docs/GETTING_STARTED.md) — step-by-step first topic walkthrough
 - [Workflow](docs/WORKFLOW.md) — lifecycle diagram and many-to-many artifact topology
 - [Command Reference](docs/COMMANDS.md) — full CLI reference with all flags

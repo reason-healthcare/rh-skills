@@ -155,6 +155,7 @@ CLI commands live in `src/hi/commands/`. Each command:
 
 ## Further Reading
 
+- [Usage Modes](docs/USAGE_MODES.md) — CLI-first vs agent-native, LLM configuration, platform support
 - [Workflow](docs/WORKFLOW.md) — artifact lifecycle and many-to-many topology
 - [Skill Authoring Guide](docs/SKILL_AUTHORING.md) — detailed per-step instructions
 - [Command Reference](docs/COMMANDS.md) — full `hi` CLI reference
