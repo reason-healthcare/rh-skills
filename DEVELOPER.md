@@ -169,7 +169,7 @@ hi search clinicaltrials --query "<terms>" --max 20 [--json]
 Download a source file from a URL and register it in tracking.yaml.
 
 ```sh
-hi ingest implement --url <url> --name <slug> [--type <mime>] --topic <topic>
+hi ingest implement --url <url> --name <slug> [--type <mime>]
 ```
 
 Exit codes: `0` success · `1` network/HTTP error · `2` file already exists · `3` auth redirect detected

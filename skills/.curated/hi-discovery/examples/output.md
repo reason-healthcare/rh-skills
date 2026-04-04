@@ -133,13 +133,13 @@ User: hi-discovery session diabetes-ccm
 >
 > ```
 > hi ingest implement --url "https://diabetesjournals.org/care/issue/47/Supplement_1" \
->   --name "ada-standards-2024" --topic diabetes-ccm
+>   --name "ada-standards-2024"
 > ✓ Downloaded: sources/ada-standards-2024.pdf (SHA-256: a3f2...)
 > ```
 >
 > ```
 > hi ingest implement --url "https://ecqi.healthit.gov/ecqm/ec/2024/cms0122fhir" \
->   --name "cms122-hecqm-2024" --topic diabetes-ccm
+>   --name "cms122-hecqm-2024"
 > ✓ Downloaded: sources/cms122-hecqm-2024.html (SHA-256: 9b1c...)
 > ```
 >

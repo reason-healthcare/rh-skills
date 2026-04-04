@@ -227,7 +227,7 @@ Incorporate feedback and loop back if needed.
 For each **approved** `access: open` source with a valid URL:
 
 ```sh
-hi ingest implement --url <url> --name <name> --topic <topic>
+hi ingest implement --url <url> --name <name>
 ```
 
 Report success or failure per source. On failure (exit 1, 2, or 3):
