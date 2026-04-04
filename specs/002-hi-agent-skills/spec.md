@@ -107,7 +107,10 @@ The `hi` CLI handles all deterministic operations. Skills invoke these; they nev
 | `hi promote derive <topic> <name>` | Create L2 structured artifact scaffold |
 | `hi promote combine <topic> <sources…> <target>` | Merge L2 artifacts into L3 computable artifact |
 | `hi validate <topic> <artifact>` | Schema-validate any named artifact |
-| `hi status <topic>` | Show lifecycle state from tracking.yaml |
+| `hi status show <topic>` | Show lifecycle state from tracking.yaml |
+| `hi status progress <topic>` | Pipeline bar + completeness % |
+| `hi status next-steps <topic>` | Recommend single next action with exact command |
+| `hi status check-changes <topic>` | Re-checksum sources; report drift and stale artifacts |
 | `hi tasks list [<topic>]` | List tasks from tasks.md |
 | `hi tasks add <topic> <task>` | Append a task |
 | `hi tasks complete <topic> <task-id>` | Mark task complete |
@@ -156,12 +159,34 @@ A team member registers a downloaded PDF directly with the CLI. `hi ingest imple
 2. **Given** an ingested file is modified, **When** `hi ingest verify` runs, **Then** the file is flagged with original vs. current checksum.
 3. **Given** a file path does not exist, **When** `hi ingest implement <file>` runs, **Then** it exits non-zero with a clear error.
 
+### User Story: Artifact Promotion
+
+A team member runs `hi promote derive diabetes-screening screening-criteria` to scaffold a new L2 structured artifact. After editing the YAML file, they run `hi promote combine diabetes-screening screening-criteria risk-factors diabetes-pathway` to create the L3 computable artifact.
+
+**Acceptance Scenarios**:
+1. **Given** a topic exists, **When** `hi promote derive <topic> <name>` runs, **Then** `topics/<topic>/structured/<name>.yaml` is created with a schema-valid scaffold and the topic's `structured[]` array in tracking.yaml is updated.
+2. **Given** a structured artifact already exists, **When** `hi promote derive <topic> <name>` runs **without** `--force`, **Then** it warns and exits non-zero without modifying the existing file.
+3. **Given** structured artifacts exist, **When** `hi promote combine <topic> <sources…> <target>` runs, **Then** `topics/<topic>/computable/<target>.yaml` is created and tracking.yaml `computable[]` is updated with the source artifact names listed in `converged_from`.
+4. **Given** a named source artifact does not exist, **When** `hi promote combine` runs, **Then** it exits non-zero with a clear error identifying the missing artifact.
+
+### User Story: Artifact Validation
+
+A team member runs `hi validate diabetes-screening screening-criteria` to confirm the L2 artifact meets schema requirements before proceeding to formalize.
+
+**Acceptance Scenarios**:
+1. **Given** a valid L2 artifact, **When** `hi validate <topic> <artifact>` runs, **Then** it exits 0 and prints a pass summary.
+2. **Given** an L2 artifact with missing required fields, **When** `hi validate` runs, **Then** it exits 1 and reports each missing required field with its location.
+3. **Given** an L2 artifact with missing optional fields, **When** `hi validate` runs, **Then** it exits 0 and emits advisory warnings only.
+4. **Given** an artifact name that does not exist in either `structured/` or `computable/`, **When** `hi validate` runs, **Then** it exits non-zero with a clear error.
+
 ### Edge Cases
 
 - `hi init` on an already-initialized topic — warn and stop.
 - `hi promote derive` for an artifact that already exists — warn and stop.
 - `hi validate` for a non-existent artifact — exit with clear error.
 - `hi ingest verify` when tracking.yaml has no sources — exit cleanly with informational message.
+- `hi list` when no `tracking.yaml` exists — exit 0 with informational message; do not create the file.
+- `hi status show` / `hi status progress` for a topic not in tracking.yaml — exit non-zero with clear error identifying the unknown topic.
 
 ---
 
@@ -203,7 +228,7 @@ A team member registers a downloaded PDF directly with the CLI. `hi ingest imple
 
 **Topic Status**
 
-- **FR-015**: `hi status <topic>` MUST display current lifecycle state from tracking.yaml: source count, structured artifact count, computable artifact count, and last event timestamp.
+- **FR-015**: `hi status show <topic>` MUST display current lifecycle state from tracking.yaml: source count, structured artifact count, computable artifact count, current stage, and last event timestamp. `hi status progress <topic>` MUST display a pipeline bar, completeness percentage, and per-level artifact counts. `hi status next-steps <topic>` MUST output a single recommended next action and the exact `hi` or skill command to run. `hi status check-changes <topic>` MUST re-checksum all registered sources and report any changed or missing files (exit 1) and any structured artifacts derived from changed sources (stale downstream). `hi status check-changes` MUST be read-only — it MUST NOT modify tracking.yaml or any artifact.
 
 **Framework Contracts for Skills**
 
@@ -213,6 +238,7 @@ A team member registers a downloaded PDF directly with the CLI. `hi ingest imple
 - **FR-019**: All `implement` modes MUST fail immediately with a clear error if the corresponding plan artifact does not exist.
 - **FR-020**: All `plan` and `implement` modes MUST warn and stop if expected output already exists, and MUST support `--force` to overwrite.
 - **FR-021**: All skill modes that modify topic state MUST append a named event to `tracking.yaml`.
+- **FR-022**: All `verify` modes MUST be strictly non-destructive — they MUST NOT create, modify, or delete any file or tracking.yaml entry. `verify` MUST exit 0 when all checks pass and exit 1 when any check fails, with a per-check report identifying the failing artifact and the reason.
 
 ### Non-Functional Requirements
 

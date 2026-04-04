@@ -153,7 +153,7 @@ outline: |
 Root-level `sources[]` array in `tracking.yaml` stores ingest metadata. The `topics[].structured` and `topics[].computable` arrays track derived artifacts.
 
 ```yaml
-# tracking.yaml — current structure
+# tracking.yaml — full structure
 schema_version: "1.0"
 sources:                          # root-level: registered raw source files
   - name: ada-guidelines-2024     # kebab-case, unique
@@ -165,11 +165,37 @@ sources:                          # root-level: registered raw source files
 topics:
   - name: diabetes-screening
     title: Diabetes Screening
-    structured: []                # L2 artifact entries
-    computable: []                # L3 artifact entries
-    events: []
-events: []                        # root-level events
+    description: ""
+    author: ""
+    created_at: "2026-04-03T19:00:00Z"
+    stage: initialized            # computed: initialized | l1-discovery | l2-semi-structured | l3-computable
+    structured:                   # L2 artifact entries
+      - name: screening-criteria          # kebab-case, matches filename without .yaml
+        file: topics/diabetes-screening/structured/screening-criteria.yaml
+        derived_from:                     # source file names this artifact was extracted from
+          - ada-guidelines-2024
+        created_at: "2026-04-03T20:00:00Z"
+    computable:                   # L3 artifact entries
+      - name: diabetes-pathway            # kebab-case, matches filename without .yaml
+        file: topics/diabetes-screening/computable/diabetes-pathway.yaml
+        converged_from:                   # structured artifact names combined into this L3 artifact
+          - screening-criteria
+          - risk-factors
+        created_at: "2026-04-03T21:00:00Z"
+    events: []                    # topic-scoped lifecycle events (see Event schema below)
+events: []                        # repo-level events (see Event schema below)
 ```
+
+**Stage values** (computed from artifact counts — not stored in tracking.yaml, derived at read time):
+
+| Stage value | Condition |
+|-------------|-----------|
+| `initialized` | No sources registered |
+| `l1-discovery` | At least 1 source, no structured artifacts |
+| `l2-semi-structured` | At least 1 structured artifact, no computable artifacts |
+| `l3-computable` | At least 1 computable artifact |
+
+**schema_version strategy**: The value `"1.0"` is bumped to `"2.0"` only on breaking structural changes (field renames, required field additions, removal of fields). Additive changes (new optional fields) do not require a version bump. The `hi` CLI always writes the version it was built for; no migration tool is provided in v1.
 
 **Checksum comparison** (used by `hi ingest verify`):
 - At ingest: compute `checksum = hashlib.sha256(file)`, store in `sources[].checksum`
@@ -178,9 +204,47 @@ events: []                        # root-level events
 
 ---
 
+### Event
+
+Every state-changing `hi` CLI command or skill mode appends a named event to `tracking.yaml`. Events are append-only and never modified after creation.
+
+**Schema** (applies to both root-level `events[]` and topic-level `topics[].events[]`):
+
+```yaml
+- event: topic_created            # string: event name (see table below)
+  timestamp: "2026-04-03T19:00:00Z"  # ISO-8601
+  actor: "jane.smith"             # string: user identifier (optional; from git config if available)
+  payload: {}                     # object: event-specific data (optional, varies by event type)
+```
+
+**Named events** (all events currently emitted by `hi` CLI and skills):
+
+| Event name | Emitted by | Scope | Payload fields |
+|------------|-----------|-------|----------------|
+| `topic_created` | `hi init` | topic | `name`, `title`, `author` |
+| `source_added` | `hi ingest implement` | root | `name`, `file`, `type`, `checksum` |
+| `source_changed` | `hi ingest implement` (re-registration) | root | `name`, `old_checksum`, `new_checksum` |
+| `structured_derived` | `hi promote derive` | topic | `name`, `file`, `derived_from[]` |
+| `computable_converged` | `hi promote combine` | topic | `name`, `file`, `converged_from[]` |
+| `validated` | `hi validate` (pass) | topic | `artifact`, `level` (`l2`\|`l3`) |
+| `task_completed` | `hi tasks complete` | topic | `task_id`, `task_text` |
+| `discovery_planned` | `hi-discovery plan` | topic | `plan_file` |
+| `discovery_implemented` | `hi-discovery implement` | topic | `items_count` |
+| `ingest_planned` | `hi-ingest plan` | root | `plan_file` |
+| `extract_planned` | `hi-extract plan` | topic | `plan_file`, `artifact_count` |
+| `extract_implemented` | `hi-extract implement` | topic | `artifacts[]` |
+| `formalize_planned` | `hi-formalize plan` | topic | `plan_file`, `output_name` |
+| `formalize_implemented` | `hi-formalize implement` | topic | `name`, `converged_from[]` |
+
+Events marked **root scope** are appended to the top-level `events[]`. Events marked **topic scope** are appended to `topics[<name>].events[]`.
+
+---
+
 ### FrameworkSkill
 
 A SKILL.md file in `skills/.curated/<name>/SKILL.md`. Not a clinical skill — excluded from `hi list` output via dot-prefix convention.
+
+The canonical SKILL.md template is at `skills/.curated/_template/SKILL.md` in this repo and follows the [anthropic skills-developer](https://github.com/anthropics/anthropic-cookbook) format. Contributors creating new framework skills MUST copy and fill in this template.
 
 **Frontmatter**:
 ```yaml
@@ -215,6 +279,20 @@ metadata:
 ---
 
 ## State Machine: Skill Lifecycle
+
+The state machine below describes the full granular progression. The four **stage values** stored in `tracking.yaml` (and shown by `hi list`) represent coarser checkpoints that collapse multiple state machine states:
+
+| Stage value | Covers states |
+|-------------|--------------|
+| `initialized` | `[initialized]` |
+| `l1-discovery` | `[discovery-planned]` → `[ingest-tasks-ready]` → `[sources-ingested]` |
+| `l2-semi-structured` | `[extract-planned]` → `[structured-extracted]` → `[structured-verified]` |
+| `l3-computable` | `[formalize-planned]` → `[computable-formalized]` → `[computable-verified]` |
+
+**Stage transition logic** (computed by `_compute_stage()` in `list_cmd.py` and `status.py`):
+- `initialized` → `l1-discovery`: when `len(sources) > 0`
+- `l1-discovery` → `l2-semi-structured`: when `len(structured) > 0`
+- `l2-semi-structured` → `l3-computable`: when `len(computable) > 0`
 
 ```
 [initialized]
@@ -265,6 +343,24 @@ At any stage: `hi ingest verify` may surface CHANGED sources → re-run from `hi
 - `checksum` must be 64-char hex string (SHA-256)
 - `ingested_at` must be ISO-8601
 - `file` path must be under `sources/`
+
+### StructuredArtifactEntry (topics[].structured[])
+- `name` must be kebab-case and match the file basename (without `.yaml`)
+- `file` path must be under `topics/<name>/structured/`
+- `derived_from` must be a non-empty list of names present in root `sources[]`
+- `created_at` must be ISO-8601
+
+### ComputableArtifactEntry (topics[].computable[])
+- `name` must be kebab-case and match the file basename (without `.yaml`)
+- `file` path must be under `topics/<name>/computable/`
+- `converged_from` must be a non-empty list of names present in `topics[].structured[]`
+- `created_at` must be ISO-8601
+
+### Event
+- `event` must be one of the named events in the Named Events table above
+- `timestamp` must be ISO-8601
+- `actor` is optional; if present, must be a non-empty string
+- `payload` is optional; fields vary by event type (see Named Events table)
 
 ### FrameworkSkill (SKILL.md)
 - Frontmatter `name` must match directory name (e.g., `hi-extract`)
