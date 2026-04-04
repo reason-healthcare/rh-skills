@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-hi-agent-skills`  
 **Created**: 2026-04-03 | **Updated**: 2026-04-04  
-**Status**: In Progress
+**Status**: ✅ Complete (T040 integration test deferred to skill specs)
 
 ## Overview
 
@@ -285,3 +285,42 @@ A skill author implements `hi-extract` by copying `skills/_template/`, filling i
 - `pdftotext` and `pandoc` are optional — their absence is detected at runtime and handled gracefully.
 - All clinical content stays inside the repo; no PHI in any artifact.
 - All topics are scoped to this repo; multi-repo federation is out of scope.
+
+---
+
+## Deliverables
+
+All items below are implemented and committed on branch `002-hi-agent-skills`.
+
+### CLI (`src/hi/commands/`)
+- `init.py` — `hi init`
+- `list_cmd.py` — `hi list`
+- `status.py` — `hi status` group: `show`, `progress`, `next-steps`, `check-changes`
+- `ingest.py` — `hi ingest` group: `plan`, `implement`, `verify`
+- `promote.py` — `hi promote` group: `derive`, `combine`
+- `validate.py` — `hi validate`
+- `test_cmd.py` — `hi test`
+
+### Tests (`tests/`)
+- `unit/test_init.py`, `test_list.py`, `test_status.py`, `test_status_extended.py`
+- `unit/test_ingest.py`, `test_promote.py`, `test_validate.py`, `test_test_cmd.py`
+- `skills/conftest.py` — shared skill test fixtures
+- `skills/test_skill_schema.py` — schema + template validation (FR-023, FR-024)
+- `skills/test_skill_security.py` — security audit (FR-025, FR-026)
+- `skills/test_skill_audit.py` — framework contract compliance (FR-016–FR-022)
+
+### Skill Template (`skills/_template/`)
+- `SKILL.md` — canonical three-level progressive disclosure template
+- `reference.md` — Level 3: schemas, clinical standards, glossary
+- `examples/plan.md`, `examples/output.md` — worked examples
+
+### Documentation
+- `README.md` — end-user guide (install, quickstart, command reference)
+- `DEVELOPER.md` — contributor guide (dev setup, skill authoring, test suite)
+- `docs/GETTING_STARTED.md` — first topic walkthrough
+- `docs/WORKFLOW.md` — lifecycle diagram, many-to-many artifact topology
+- `docs/COMMANDS.md` — full `hi` CLI reference
+- `docs/SKILL_AUTHORING.md` — step-by-step skill implementation guide
+
+### Open (deferred)
+- **T040** — End-to-end integration test (`hi init` → `hi ingest` → `hi promote` → `hi validate` with `diabetes-screening` fixture). Deferred; will be revisited once skill specs 003–008 are in place.
