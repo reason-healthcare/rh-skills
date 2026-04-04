@@ -13,12 +13,36 @@ from hi.common import (
     topic_dir,
 )
 
-VALID_EVIDENCE_LEVELS = {"ia", "ib", "iia", "iib", "iii", "iv", "v", "expert-consensus"}
+VALID_EVIDENCE_LEVELS = {
+    # GRADE letter grades (reference.md primary taxonomy)
+    "grade-a", "grade-b", "grade-c", "grade-d",
+    # USPSTF grades
+    "uspstf-a", "uspstf-b", "uspstf-c", "uspstf-d", "uspstf-i",
+    # Study-level Oxford numeric grades
+    "ia", "ib", "iia", "iib", "iii", "iv", "v",
+    # Other
+    "expert-consensus", "reference-standard", "n/a",
+}
 VALID_SOURCE_TYPES = {
-    "clinical-guideline", "systematic-review", "rct", "cohort-study",
-    "case-control", "cross-sectional", "case-report", "expert-opinion",
-    "textbook", "government-program", "quality-measure", "terminology",
-    "fhir-ig", "sdoh-assessment", "health-economics", "document",
+    # Guidelines and standards
+    "guideline", "clinical-guideline",
+    # Study types
+    "systematic-review", "rct", "cohort-study", "case-control",
+    "cross-sectional", "case-report", "expert-opinion",
+    # Terminology and value sets
+    "terminology", "value-set",
+    # Measures and programs
+    "measure-library", "quality-measure", "government-program",
+    # FHIR and interoperability
+    "fhir-ig", "cds-library",
+    # Social determinants
+    "sdoh-assessment",
+    # Economics and registries
+    "health-economics", "registry",
+    # Literature
+    "pubmed-article",
+    # Catchall
+    "textbook", "document", "other",
 }
 
 

@@ -137,17 +137,27 @@ For a comprehensive list see: https://en.wikipedia.org/wiki/List_of_medical_jour
 | `type` value | Examples |
 |---|---|
 | `guideline` | ADA Standards, ACC/AHA guidelines, USPSTF recommendations, NICE guidance |
+| `clinical-guideline` | Alias for `guideline` |
 | `systematic-review` | Cochrane reviews, AHRQ evidence reports |
+| `rct` | Randomized controlled trials |
+| `cohort-study` | Prospective or retrospective cohort studies |
+| `case-control` | Case-control studies |
+| `cross-sectional` | Cross-sectional surveys and prevalence studies |
+| `case-report` | Case reports and case series |
+| `expert-opinion` | Expert opinion, editorial, or commentary |
 | `terminology` | SNOMED CT, LOINC, ICD-10-CM, RxNorm, UCUM |
 | `value-set` | VSAC (NLM), FHIR value sets, PHIN VADS |
 | `measure-library` | CMS eCQMs, HEDIS, MIPS/QPP measures, NQF-endorsed measures |
+| `quality-measure` | Alias for `measure-library` |
 | `fhir-ig` | US Core, QI-Core, CARIN BB, Gravity SDOH FHIR IG |
+| `cds-library` | CDS Hooks registry, OpenCDS |
 | `sdoh-assessment` | PRAPARE, AHC HRSN Tool, CDC SVI, CDC PLACES |
 | `health-economics` | HCUP, MEPS, GBD, CEA Registry, ICER, NICE HTA |
 | `government-program` | CMS CMMI models, Medicaid state plans, CMS LCD/NCD, HRSA |
-| `cds-library` | CDS Hooks registry, OpenCDS |
 | `registry` | ClinicalTrials.gov, disease registries |
 | `pubmed-article` | PubMed / PMC research articles |
+| `textbook` | Textbooks and reference manuals |
+| `document` | General documents not covered above |
 | `other` | Anything not covered above |
 
 **At least one `terminology` entry is required** for any plan that passes `verify`.
@@ -167,6 +177,13 @@ For a comprehensive list see: https://en.wikipedia.org/wiki/List_of_medical_jour
 | `uspstf-c` | USPSTF Grade C (moderate certainty of small net benefit) |
 | `uspstf-d` | USPSTF Grade D (moderate/high certainty of no net benefit or harm) |
 | `uspstf-i` | USPSTF Grade I (insufficient evidence) |
+| `ia` | Oxford Level 1a — systematic review of RCTs |
+| `ib` | Oxford Level 1b — individual RCT |
+| `iia` | Oxford Level 2a — systematic review of cohort studies |
+| `iib` | Oxford Level 2b — individual cohort study |
+| `iii` | Oxford Level 3 — case-control study |
+| `iv` | Oxford Level 4 — case series |
+| `v` | Oxford Level 5 — expert opinion |
 | `expert-consensus` | No formal systematic review; expert opinion or consensus statement |
 | `reference-standard` | Authoritative reference (terminology, value set, coding system) |
 | `n/a` | Not applicable (e.g., clinical trials, registries, government data sets) |
