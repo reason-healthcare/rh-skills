@@ -15,14 +15,16 @@ git clone <repo-url> reason-skills-2
 cd reason-skills-2
 uv sync                  # install all dependencies into .venv
 uv run hi --help         # run hi from the local source
+make install             # install hi into ~/.local/bin (editable)
 ```
 
 ## Running Tests
 
 ```bash
-uv run pytest                        # full suite
-uv run pytest tests/unit/            # CLI unit tests only
-uv run pytest tests/skills/          # skill schema, security, contract tests
+make test                              # full suite
+make test-unit                         # CLI unit tests only
+make test-skills                       # skill schema, security, contract tests
+make test-integration                  # integration tests
 uv run pytest tests/unit/test_init.py  # single file
 ```
 

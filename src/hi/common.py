@@ -50,6 +50,18 @@ def topic_dir(name: str) -> Path:
     return topics_root() / name
 
 
+def bundled_skills_dir() -> Path:
+    """Return path to bundled curated skills.
+
+    Prefers the package-bundled copy (works after uv tool install / wheel install).
+    Falls back to the source repo's skills/.curated/ for editable installs.
+    """
+    bundled = Path(__file__).parent / "skills"
+    if bundled.exists():
+        return bundled
+    return repo_root() / "skills" / ".curated"
+
+
 def schemas_dir() -> Path:
     """Return path to schemas directory.
 
