@@ -1,241 +1,181 @@
 # HI Skills Framework
 
-A CLI-driven framework for building healthcare informatics skills that progress from raw discovery through structured criteria to computable artifacts.
+Agent skills for building clinical knowledge artifacts — from raw sources through structured criteria to computable, FHIR-aligned outputs.
 
-## Artifact Levels
+## What it does
+
+The HI framework guides clinical knowledge through three artifact levels:
 
 | Level | Format | Description |
 |-------|--------|-------------|
-| **L1** | Markdown | Raw discovery — guideline extracts, clinical notes, literature |
-| **L2** | YAML | Semi-structured — discrete clinical criteria, coded concepts |
-| **L3** | YAML | Computable — pathways, measures, value sets, FHIR-compatible |
+| **L1** | Markdown | Raw sources — guideline extracts, clinical notes, literature |
+| **L2** | YAML | Structured — discrete clinical criteria, coded concepts |
+| **L3** | YAML | Computable — pathways, measures, value sets (FHIR-compatible) |
 
-The topology is many-to-many: one L1 can yield multiple L2 artifacts; multiple L2 artifacts can converge into a single L3.
+An LLM agent, directed by the HI skills, does the reasoning. The `hi` CLI handles all deterministic work (file I/O, validation, tracking).
+
+The relationships are many-to-many: one L1 source can yield several L2 artifacts; multiple L2 artifacts can converge into a single L3.
 
 ## Prerequisites
 
-| Tool | Purpose | Install |
-|------|---------|---------|
-| `bash 3.2+` | Core runtime | Pre-installed on macOS/Linux |
-| `yq` | YAML parsing | `brew install yq` / `snap install yq` |
-| `jq` | JSON parsing | `brew install jq` / `apt install jq` |
-| `curl` | LLM HTTP calls | `brew install curl` / `apt install curl` |
-
-For testing:
-```bash
-npm install          # installs bats-core via npm
-```
+- Python 3.13+
+- [uv](https://docs.astral.sh/uv/) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- An LLM provider (local Ollama recommended, or Anthropic / OpenAI)
 
 ## Installation
 
 ```bash
-git clone <repo-url> hi-skills
-cd hi-skills
-npm install
-export PATH="$PATH:$(pwd)/bin"
+uv tool install hi
+hi --help
 ```
 
 ## LLM Configuration
 
-Copy `.env.example` and configure your LLM provider:
-
 ```bash
-cp .env.example .env
+cp .env.example .env   # then edit .env
 ```
 
 ```dotenv
-# .env
-LLM_PROVIDER=ollama           # ollama | anthropic | openai | stub
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=llama3.2
+LLM_PROVIDER=ollama            # ollama | anthropic | openai
+OLLAMA_ENDPOINT=http://localhost:11434
+OLLAMA_MODEL=mistral
 
 # ANTHROPIC_API_KEY=sk-ant-...
 # OPENAI_API_KEY=sk-...
 ```
 
-`LLM_PROVIDER=stub` is available for testing without a live LLM.
-
 ## Quickstart
 
 ```bash
-# 1. Scaffold a new topic
+# 1. Initialize a clinical topic
 hi init diabetes-screening --title "Diabetes Screening" --author "My Team"
 
-# 2. Add a raw L1 artifact (manual step)
-cp my-guideline-extract.md topics/diabetes-screening/l1/ada-guidelines.md
+# 2. Discover and ingest source materials (agent-guided)
+#    hi-discovery and hi-ingest skills handle this step
 
-# 3. Derive an L2 artifact from L1
+# 3. Check where the topic stands
+hi status show diabetes-screening
+
+# 4. Extract structured L2 artifacts from ingested sources
 hi promote derive diabetes-screening --source ada-guidelines --name screening-criteria
-
-# 4. Derive another L2 from the same L1 source
 hi promote derive diabetes-screening --source ada-guidelines --name risk-factors
 
 # 5. Validate the L2 artifacts
 hi validate diabetes-screening l2 screening-criteria
-hi validate diabetes-screening l2 risk-factors
 
-# 6. Converge two L2 artifacts into an L3
+# 6. Converge L2 artifacts into a computable L3
 hi promote combine diabetes-screening \
   --sources screening-criteria,risk-factors \
-  --name diabetes-screening-computable
+  --name diabetes-screening-pathway
 
 # 7. Validate the L3 artifact
-hi validate diabetes-screening l3 diabetes-screening-computable
+hi validate diabetes-screening l3 diabetes-screening-pathway
 
-# 8. Check skill status
-hi status diabetes-screening
-
-# 9. Run LLM fixture tests
-hi test diabetes-screening
+# 8. See all topics and their stages
+hi list
 ```
 
 ## Command Reference
 
-### `hi init <topic-name> [options]`
-
-Scaffold a new topic with directory structure and tracking.
+### `hi init <name>`
+Scaffold a new topic. Creates the directory structure and registers the topic in `tracking.yaml`.
 
 ```
 Options:
-  --title         Human-readable title
-  --description   Brief description
-  --author        Author or team name
+  --title TEXT    Human-readable title
+  --author TEXT   Author or team name
 ```
 
-### `hi promote <mode> <topic> [options]`
+### `hi list`
+List all topics and their lifecycle stages.
 
-Promote artifacts to the next level using LLM reasoning.
-
-**Derive mode** (L1 → L2):
 ```
-  --source <l1-name>    Source L1 artifact name (required)
-  --name   <l2-name>    Output L2 artifact name (required)
-  --count  <n>          Number of L2 artifacts to generate (default: 1)
-  --dry-run             Print LLM prompt only; do not invoke
+Options:
+  --json          Output as JSON
+  --stage STAGE   Filter: initialized | l1-discovery | l2-semi-structured | l3-computable
 ```
 
-**Combine mode** (L2 → L3):
+### `hi status <subcommand> <topic>`
+Inspect a topic's current state.
+
+| Subcommand | Description |
+|------------|-------------|
+| `show` | Summary table: stage, source count, artifact counts |
+| `progress` | Completeness percentage toward L3 |
+| `next-steps` | Recommended next action |
+| `check-changes` | Detect files changed since last tracking event |
+
+### `hi ingest <mode> <topic>`
+Register source files (L1) with checksums in `tracking.yaml`.
+
 ```
-  --sources <a,b,c>     Comma-separated L2 artifact names (required)
-  --name    <l3-name>   Output L3 artifact name (required)
-  --dry-run             Print LLM prompt only; do not invoke
+Modes: plan | implement | verify
+Options:
+  --source PATH   Path to source file or URL
+  --name TEXT     Artifact name
+  --force         Overwrite existing output
 ```
+
+### `hi promote <mode> <topic>`
+Promote artifacts to the next level.
+
+**`derive`** — L1 → L2 (one or more structured artifacts from a single source):
+```
+  --source TEXT     Source artifact name (required)
+  --name TEXT       Output artifact name (required)
+```
+
+**`combine`** — L2 → L3 (one computable artifact from multiple structured inputs):
+```
+  --sources TEXT    Comma-separated artifact names (required)
+  --name TEXT       Output artifact name (required)
+```
+
+Both modes support `--dry-run` (print prompt only) and `--force` (overwrite existing).
 
 ### `hi validate <topic> <level> <artifact>`
+Validate an artifact against its schema. Required field violations exit 1; optional field gaps are warnings.
 
-Validate L2 or L3 artifacts against their schema.
-
-- Required field violations → exit 1
-- Optional field gaps → warnings (exit 0)
-
-### `hi test <topic> [options]`
-
-Run LLM-based fixture tests against a topic.
-
-```
-  --fixture <name>   Run a specific fixture only
-  --mode    <mode>   Comparison: exact | normalized | case_insensitive | contains | keywords
-```
-
-Results written to `topics/<topic>/process/fixtures/results/<timestamp>-<runid>.json`.
-
-### `hi status <topic> [--json]`
-
-Show topic lifecycle stage and artifact counts.
-
-### `hi list [--json] [--stage <stage>]`
-
-List all topics. Filter by stage: `initialized`, `l1-discovery`, `l2-semi-structured`, `l3-computable`.
+### `hi test <topic> <skill>`
+Run a skill against test fixtures. Results written to `topics/<topic>/process/fixtures/results/`.
 
 ## Topic Structure
 
 ```
-sources/
-  <source>.md                   # Raw ingested source files
-
 topics/
-  <topic-name>/
-    structured/                 # Semi-structured (L2) YAML artifacts
-      <artifact>.yaml
-    computable/                 # Computable (L3) YAML artifacts
-      <artifact>.yaml
+  <name>/
+    structured/         ← L2 YAML artifacts
+    computable/         ← L3 YAML artifacts
     process/
-      plans/                    # Agent planning artifacts + tasks.md
-      contracts/                # YAML validation contracts
-      checklists/               # Clinical review checklists
-      fixtures/                 # LLM test fixtures
-        results/                # Test run results
-      research.md               # Evidence and citations
-      conflicts.md              # Source contradictions
+      plans/            ← skill plan artifacts
+      contracts/        ← validation contracts
+      checklists/       ← clinical review checklists
+      fixtures/         ← test fixtures + results
+      research.md
+      conflicts.md
+
+sources/
+  <name>.<ext>          ← ingested L1 source files
+
+tracking.yaml           ← append-only event log (repo root)
 ```
 
-## Repository Structure
+## L2 / L3 Schemas
 
-This is a **skills development repo**. The framework agent skills live under:
+| Schema | Required fields | Reference |
+|--------|----------------|-----------|
+| L2 | `id`, `name`, `title`, `version`, `status`, `domain`, `description`, `derived_from` | `schemas/l2-schema.yaml` |
+| L3 | `artifact_schema_version`, `metadata.*`, `converged_from` | `schemas/l3-schema.yaml` |
 
-```
-skills/
-  .curated/                     # Stable, distributable HI skills
-    hi-discovery/SKILL.md
-    hi-ingest/SKILL.md
-    hi-extract/SKILL.md
-    hi-formalize/SKILL.md
-    hi-verify/SKILL.md
-    hi-status/SKILL.md
-  .experimental/                # Prototype skills under development
-```
+L3 sections map to FHIR R4/R5 resources (`PlanDefinition`, `Measure`, `ValueSet`, etc.). See `schemas/l3-schema.yaml` for the full mapping.
 
-These skills are installed into target (clinical team) repos at `.agents/skills/`.
+## Example
 
-## L2 Schema
+See [`example-project/`](example-project/) for a complete diabetes-screening walkthrough with L1 source, two L2 artifacts, and a converged L3 artifact.
 
-Required fields: `id`, `name`, `title`, `version`, `status`, `domain`, `description`, `derived_from`
+## Further reading
 
-See `schemas/l2-schema.yaml` for full schema.
-
-## L3 Schema
-
-Required: `artifact_schema_version`, `metadata` block (8 sub-fields), `converged_from`
-
-Optional sections with FHIR equivalents:
-
-| Section | FHIR R4/R5 Equivalent |
-|---------|----------------------|
-| `pathways` | `PlanDefinition` |
-| `actions` | `RequestGroup` |
-| `libraries` | `Library` |
-| `measures` | `Measure` |
-| `assessments` | `Questionnaire` |
-| `value_sets` | `ValueSet` |
-| `code_systems` | `CodeSystem` |
-
-See `schemas/l3-schema.yaml` for full schema.
-
-## Example Project
-
-See [`example-project/`](example-project/) for a complete reference implementation of a clinical topic (diabetes screening based on ADA 2024 guidelines), including:
-- L1 guideline extract
-- Two L2 artifacts (screening criteria, risk factors)
-- One L3 computable artifact (pathways, measures, value sets)
-- A fixture for LLM testing
-
-## Running Tests
-
-```bash
-npm test                                    # all tests
-npx bats tests/unit/                        # unit tests only
-npx bats tests/integration/                 # integration tests only
-npx bats tests/unit/init.bats               # single file
-```
-
-## Design Principles
-
-- **Deterministic work to commands** — all file I/O, schema validation, tracking, and routing is handled by CLI commands
-- **Reasoning to agents** — LLM is invoked only for L1→L2 and L2→L3 promotion
-- **Portable** — scripts work on macOS (bash 3.2) and Linux; no GNU-isms
-- **Lenient promotion** — optional fields produce warnings, not errors; strict mode only for required fields
-- **Audit trail** — `tracking.yaml` is append-only; every action is recorded with timestamps
-
-## For more
-
-See [`specs/001-hi-skills-framework/`](specs/001-hi-skills-framework/) for full specification, data model, and quickstart guide.
+- [Getting Started](docs/GETTING_STARTED.md) — step-by-step first topic walkthrough
+- [Workflow](docs/WORKFLOW.md) — lifecycle diagram and many-to-many artifact topology
+- [Command Reference](docs/COMMANDS.md) — full CLI reference with all flags
+- [Developer Guide](DEVELOPER.md) — contributing skills and framework code
