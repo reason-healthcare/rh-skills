@@ -7,6 +7,188 @@
 
 ## Overview
 
+`hi-discovery` is an active **information-gathering and research guidance tool** for clinical informaticists starting a new topic. It does three things:
+
+1. **Domain advice** — reasons about the clinical domain and tells the user what to consider (diagnostic criteria, population characteristics, existing measures, regulatory context, evidence gaps)
+2. **Source identification** — searches PubMed, PubMed Central, ClinicalTrials.gov, and known medical society URL patterns to surface relevant guidelines, systematic reviews, terminology systems, and measure libraries
+3. **Source acquisition** — optionally downloads discovered sources into `sources/` and registers them in `tracking.yaml` via `hi ingest implement`
+
+**Guiding principle**: all deterministic work (API calls, downloads, file registration, checksum) via `hi` CLI; all reasoning (domain advice, relevance judgement, evidence prioritisation) by the agent.
+
+The skill has three modes:
+
+| Mode | Agent role | `hi` CLI called | Output |
+|------|-----------|----------------|--------|
+| `plan` | Advises on domain; searches databases; produces structured source plan | `hi search pubmed`, `hi search clinicaltrials`, `hi search pmc` | `process/plans/discovery-plan.md`, `process/research.md` stub, `process/conflicts.md` stub |
+| `implement` | Iterates approved plan; decides which sources to download now vs. defer | `hi ingest implement --url` (per downloadable source) | Sources downloaded to `sources/`; registered in `tracking.yaml`; `process/plans/ingest-plan.md` populated |
+| `verify` | Validates plan quality and coverage | (read-only) | Per-check report; no file writes |
+
+---
+
+## User Scenarios & Testing
+
+### User Story 1 — Research a clinical topic from scratch (Priority: P1)
+
+A clinical informaticist starts a new topic "sepsis-early-detection" and has no idea where to begin. They invoke `hi-discovery plan`. The agent:
+- Explains what to consider in sepsis informatics (diagnostic criteria like qSOFA/SOFA, organ dysfunction coding, time-sensitive treatment windows, population subtypes, existing SEP-1 measure)
+- Searches PubMed for recent systematic reviews and guidelines
+- Searches ClinicalTrials.gov for active/completed relevant trials
+- Produces a structured discovery plan with specific sources, evidence levels, and search strategies
+
+**Acceptance Scenarios**:
+
+1. **Given** an initialised topic, **When** `hi-discovery plan` runs, **Then** `process/plans/discovery-plan.md` is written with: (a) a prose domain advice section, (b) a `sources[]` YAML list with name, type, rationale, evidence_level, search_terms, and optional url per entry.
+2. **Given** plan mode runs, **Then** `hi search pubmed` is called with topic-relevant terms; results are used to populate the `sources[]` list.
+3. **Given** plan mode runs, **Then** `process/research.md` and `process/conflicts.md` stubs are created (create-unless-exists).
+4. **Given** `discovery-plan.md` already exists without `--force`, **When** plan runs, **Then** the skill warns and stops; no files modified.
+5. **Given** `--dry-run`, **When** plan runs, **Then** the proposed plan and domain advice are printed; no files written and no events appended.
+6. **Given** plan completes, **Then** a `discovery_planned` event is appended to `tracking.yaml`.
+
+---
+
+### User Story 2 — Download discovered sources (Priority: P1)
+
+After reviewing the plan and approving the source list, the informaticist runs `hi-discovery implement`. The agent iterates the approved sources, downloads those with accessible URLs via `hi ingest implement --url`, and notes which sources require manual acquisition (paywalled journals, society portals requiring login).
+
+**Acceptance Scenarios**:
+
+1. **Given** a valid `discovery-plan.md`, **When** `hi-discovery implement` runs, **Then** for each source entry with a `url`: `hi ingest implement --url <url> --name <name> --topic <topic>` is called; the source is downloaded to `sources/` and registered in `tracking.yaml`.
+2. **Given** a source entry with no `url` or `access: manual`, **When** `implement` runs, **Then** the agent notes the source as requiring manual acquisition and adds it to `process/plans/ingest-plan.md` as a pending manual entry — no download is attempted.
+3. **Given** a download fails (network error, 404, auth required), **When** `implement` runs, **Then** the failure is logged per-source; the skill continues with remaining sources; exit 1 at the end if any download failed.
+4. **Given** no `discovery-plan.md` exists, **When** `implement` runs, **Then** exit non-zero: `discovery-plan.md not found — run hi-discovery plan first`.
+5. **Given** `implement` completes, **Then** a `discovery_implemented` event is appended to `tracking.yaml` with counts: downloaded, manual-pending, failed.
+6. **Given** the plan contains `access: authenticated` sources, **When** `implement` runs, **Then** the agent prints a formatted access advisory for each — name, relevance to the topic, URL, authentication method, and suggested search terms — before starting any downloads.
+7. **Given** Cochrane Library is in the plan as an authenticated source, **When** `implement` prints its advisory, **Then** it specifies: `cochranelibrary.com`, access method ("institutional login or free personal registration"), and topic-specific search terms.
+6. **Given** `--dry-run`, **When** `implement` runs, **Then** the agent lists which sources would be downloaded and which would be flagged manual; no downloads, no events.
+
+---
+
+### User Story 3 — Verify discovery coverage (Priority: P2)
+
+Before proceeding to ingest, the informaticist runs `hi-discovery verify` to confirm the plan is well-formed and covers required evidence categories.
+
+**Acceptance Scenarios**:
+
+1. **Given** a complete plan, **When** `verify` runs, **Then** exit 0 with a per-check report: `✓ frontmatter valid`, `✓ terminology source present`, `✓ all entries have rationale and evidence_level`, etc.
+2. **Given** a plan with no terminology source, **When** `verify` runs, **Then** exit 1: `✗ No terminology source (SNOMED/LOINC/ICD/RxNorm) — required for L3 computable output`.
+3. **Given** a plan entry missing `rationale` or `evidence_level`, **When** `verify` runs, **Then** exit 1 naming the source and missing field.
+4. **Given** `verify` runs under any condition, **Then** no files are written and `tracking.yaml` is not modified.
+
+---
+
+### Edge Cases
+
+- PubMed API returns zero results — agent falls back to domain knowledge and known society URL patterns; warns user that search was sparse.
+- Source URL returns a redirect to a login page — download fails gracefully; source is flagged as `access: manual`.
+- Plan `sources[]` is empty — `implement` exits non-zero before downloading anything.
+- Plan YAML frontmatter is malformed — `implement` and `verify` fail at parse time with a line-level error.
+- A source file is already present in `sources/` with matching checksum — `hi ingest implement` skips re-download (idempotent).
+- Topic name not found in `tracking.yaml` — all modes exit non-zero with: `topic '<name>' not initialised — run hi init first`.
+- Network unavailable during `implement` — all URL downloads fail gracefully; manual-acquisition list is produced; exit 1.
+
+---
+
+## Requirements
+
+### Functional Requirements
+
+**`hi` CLI extensions required by this skill**
+
+- **FR-001**: A new `hi search` command group MUST be implemented with the following subcommands:
+  - `hi search pubmed --query <terms> [--max N] [--json]` — calls PubMed Entrez esearch + efetch APIs; returns structured list of results (PMID, title, authors, journal, year, abstract, DOI, open-access flag).
+  - `hi search pmc --query <terms> [--max N] [--json]` — searches PubMed Central for open-access full-text articles.
+  - `hi search clinicaltrials --query <terms> [--max N] [--status <status>] [--json]` — calls ClinicalTrials.gov API v2; returns NCT ID, title, status, phase, conditions, interventions.
+- **FR-002**: `hi ingest implement` MUST accept `--url <url>` as an alternative to a local file path. When `--url` is given, the CLI downloads the resource to `sources/<name>.<ext>`, computes its SHA-256, and registers it in `tracking.yaml` identically to a local file ingest.
+- **FR-003**: `hi search` subcommands MUST require no API key for PubMed and ClinicalTrials.gov (both are free/public). A `NCBI_API_KEY` environment variable MAY be set to increase PubMed rate limits (10 req/s vs. 3 req/s).
+
+**plan mode**
+
+- **FR-004**: `hi-discovery plan` MUST produce `process/plans/discovery-plan.md`. The file MUST contain: (a) a prose **Domain Advice** section with what to consider for the clinical domain; (b) YAML frontmatter with a `sources[]` list.
+- **FR-005**: Each source entry in `sources[]` MUST have: `name`, `type` (see FR-009), `rationale`, `search_terms[]`, `evidence_level` (see FR-010), `access` (`open | authenticated | manual`). `url` is optional but MUST be present when `access: open`. When `access: authenticated`, the entry MUST include `auth_note` — a plain-English description of how to obtain access (e.g., institutional login, free registration, society membership).
+- **FR-005a**: For `access: authenticated` sources, the agent MUST include a `recommended: true` flag when the source is considered authoritative or high-value for the topic domain, regardless of whether it can be downloaded automatically. The discovery plan is the authoritative recommendation — access difficulty does not reduce a source's priority.
+- **FR-006**: The agent MUST call `hi search pubmed` and at least one other `hi search` subcommand during `plan`; results inform the `sources[]` list. The agent decides which results are relevant.
+- **FR-007**: `plan` MUST create `process/research.md` and `process/conflicts.md` stubs (create-unless-exists). Existing files MUST NOT be modified.
+- **FR-008**: If `discovery-plan.md` already exists, `plan` MUST warn and stop unless `--force` is passed. Successful `plan` (non-dry-run) MUST append `discovery_planned` to `tracking.yaml`.
+
+**implement mode**
+
+- **FR-011**: `hi-discovery implement` MUST read `discovery-plan.md` and for each source with `access: open` and a `url`: call `hi ingest implement --url <url> --name <name> --topic <topic>`.
+- **FR-011a**: For sources with `access: authenticated`, the agent MUST print a formatted per-source access advisory to stdout — naming the source, explaining why it is recommended for this topic, and providing the specific URL, login mechanism, and what to search for once authenticated. These advisories MUST appear before any download activity so the user can act on them in parallel.
+- **FR-011b**: The access advisory format MUST include: source name, why it is relevant, access URL, authentication method (institutional login / free registration / society membership / library proxy), and suggested search terms to use once inside.
+- **FR-012**: Sources with `access: manual` or no `url` MUST be added to `process/plans/ingest-plan.md` as pending manual entries. No download is attempted.
+- **FR-013**: Download failures (non-2xx HTTP, network error, auth redirect) MUST be caught per-source; the skill continues with remaining sources and reports a summary at completion. Exit 1 if any download failed.
+- **FR-014**: `implement` MUST create `process/research.md` stub (create-unless-exists).
+- **FR-015**: If `discovery-plan.md` does not exist, `implement` MUST exit non-zero: `discovery-plan.md not found — run hi-discovery plan first`.
+- **FR-016**: If `sources[]` is empty, `implement` MUST exit non-zero before attempting any download.
+- **FR-017**: Successful `implement` MUST append `discovery_implemented` event to `tracking.yaml` with payload: `{ downloaded: N, manual_pending: M, failed: F }`.
+
+**verify mode**
+
+- **FR-018**: `hi-discovery verify` MUST be strictly read-only (no file writes, no `tracking.yaml` modifications).
+- **FR-019**: `verify` MUST check: (a) `discovery-plan.md` exists and parses as valid YAML; (b) `sources[]` is non-empty; (c) at least one entry has `type: terminology`; (d) every entry has non-empty `rationale`; (e) every entry has non-empty `search_terms[]`; (f) every `evidence_level` is from the allowed set; (g) every `type` is from the allowed set (unknown types → warning only).
+- **FR-020**: `verify` MUST exit 0 iff all checks pass; exit 1 otherwise. Per-check output uses `✓` / `✗`.
+
+**general**
+
+- **FR-021**: All modes accept `TOPIC` positional argument and `--dry-run`. `plan` and `implement` accept `--force`.
+- **FR-022**: The skill MUST reside at `skills/.curated/hi-discovery/SKILL.md` following the `skills/_template/` three-level progressive disclosure format.
+
+### Source Type Taxonomy (FR-009)
+
+| `type` value | Examples |
+|---|---|
+| `guideline` | ADA Standards, ACC/AHA guidelines, USPSTF recommendations, NICE guidance, WHO protocols |
+| `systematic-review` | Cochrane reviews, AHRQ evidence reports |
+| `terminology` | SNOMED CT, LOINC, ICD-10-CM, RxNorm, UCUM |
+| `value-set` | VSAC (NLM), FHIR value sets, PHIN VADS |
+| `measure-library` | CMS eCQMs, HEDIS, PCPI, Joint Commission |
+| `fhir-ig` | US Core, QI-Core, CARIN BB, SMART, condition-specific IGs |
+| `cds-library` | CDS Hooks registry, OpenCDS |
+| `registry` | ClinicalTrials.gov, disease registries |
+| `pubmed-article` | PubMed / PMC research articles |
+| `other` | Anything not covered above |
+
+At least one `terminology` entry is required for any plan that passes `verify`.
+
+### Evidence Level Taxonomy (FR-010)
+
+GRADE: `grade-a`, `grade-b`, `grade-c`, `grade-d`
+USPSTF: `uspstf-a`, `uspstf-b`, `uspstf-c`, `uspstf-d`, `uspstf-i`
+Other: `expert-consensus`, `reference-standard`, `n/a`
+
+### Key Entities
+
+- **Discovery Plan** (`discovery-plan.md`): YAML frontmatter + Markdown prose. Contains domain advice and `sources[]`. Human-editable between `plan` and `implement`.
+- **Source Entry**: One item in `sources[]` with `name`, `type`, `rationale`, `search_terms[]`, `evidence_level`, `access` (`open | authenticated | manual`), optional `url`, optional `auth_note` (required when `access: authenticated`), optional `recommended` (bool, for high-value authenticated sources).
+- **Ingest Plan** (`ingest-plan.md`): Populated by `implement` with manual-acquisition sources. Consumed by `hi-ingest` (004) for any remaining local-file registration.
+- **Research Stub** (`research.md`): Created-unless-exists. Human-maintained evidence notes.
+- **Conflicts Stub** (`conflicts.md`): Created-unless-exists. Human-maintained guideline contradictions.
+
+---
+
+## Success Criteria
+
+- **SC-001**: A clinical informaticist with no prior knowledge of a domain receives actionable domain advice and a populated source list from a single `hi-discovery plan` invocation.
+- **SC-002**: Running `hi-discovery implement` on a plan with five open-access sources downloads all five to `sources/`, registers them in `tracking.yaml`, and reports any failures per-source.
+- **SC-003**: `verify` catches a missing terminology source and exits 1 with an actionable message.
+- **SC-004**: `hi search pubmed --query "diabetes screening" --max 10` returns structured JSON output in under 5 seconds.
+- **SC-005**: The SKILL.md passes all `tests/skills/` checks with zero failures.
+- **SC-006**: `--dry-run implement` produces zero downloads and zero `tracking.yaml` events while still reporting which sources would be downloaded vs. flagged manual.
+
+---
+
+## Assumptions
+
+- PubMed Entrez and ClinicalTrials.gov v2 APIs are free and publicly accessible without authentication.
+- NICE, Cochrane, and most society portals require manual download; the skill marks these `access: manual` and does not attempt programmatic fetch.
+- The agent has sufficient domain knowledge to provide useful clinical advice without internet access; `hi search` results augment rather than replace that knowledge.
+- `hi ingest implement --url` handles redirect following, MIME type detection, and file extension inference from Content-Type headers.
+- All downloaded sources are stored in `sources/` at repo root — the same directory used by manually ingested files.
+- The optional `NCBI_API_KEY` environment variable, if set, is used to increase PubMed rate limits; it is never written to any artifact.
+
+
+## Overview
+
 `hi-discovery` is the entry point skill for every new clinical topic. It guides an agent through structured source discovery — establishing the evidence landscape before any files are registered or extracted.
 
 **Guiding principle**: all deterministic work via `hi` CLI; all reasoning by the agent.
