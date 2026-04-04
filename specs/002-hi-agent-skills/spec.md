@@ -22,7 +22,7 @@ The HI Skills Framework ships a set of **agent skills** — structured prompts i
 
 ### Mode semantics
 
-- **`plan`** — Produces a human-reviewable plan artifact at `skills/<name>/plans/<skill>-plan.md`. Format is **structured Markdown with a YAML front matter block** (machine-parseable header for `implement` + human-readable prose body for clinician review). No files outside `plans/` are created or modified. If a plan already exists, the skill warns and stops — use `--force` to overwrite.
+- **`plan`** — Produces a human-reviewable plan artifact at `topics/<name>/process/plans/<skill>-plan.md`. Format is **structured Markdown with a YAML front matter block** (machine-parseable header for `implement` + human-readable prose body for clinician review). No files outside `topics/<name>/process/plans/` are created or modified. If a plan already exists, the skill warns and stops — use `--force` to overwrite.
 - **`implement`** — Reads the YAML front matter from the plan artifact and executes it by calling `hi` CLI commands. Fails immediately if no plan artifact exists. If outputs already exist (e.g. L2 files), warns and stops — use `--force` to overwrite.
 - **`verify`** — Runs non-destructive validation against existing artifacts. Never modifies any file.
 

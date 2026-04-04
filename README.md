@@ -137,7 +137,7 @@ Run LLM-based fixture tests against a topic.
   --mode    <mode>   Comparison: exact | normalized | case_insensitive | contains | keywords
 ```
 
-Results written to `topics/<topic>/fixtures/results/<timestamp>-<runid>.json`.
+Results written to `topics/<topic>/process/fixtures/results/<timestamp>-<runid>.json`.
 
 ### `hi status <topic> [--json]`
 
@@ -150,20 +150,23 @@ List all topics. Filter by stage: `initialized`, `l1-discovery`, `l2-semi-struct
 ## Topic Structure
 
 ```
+sources/
+  <source>.md                   # Raw ingested source files
+
 topics/
   <topic-name>/
-    TOPIC.md                    # Topic description + usage instructions
-    tracking.yaml               # Append-only audit log
-    plans/                      # Agent planning artifacts
-    l1/
-      <source>.md               # Raw discovery artifacts
-    l2/
-      <artifact>.yaml           # Semi-structured criteria
-    l3/
-      <artifact>.yaml           # Computable artifact
-    fixtures/
-      <test>.yaml               # LLM test fixtures
-      results/                  # Test run results
+    structured/                 # Semi-structured (L2) YAML artifacts
+      <artifact>.yaml
+    computable/                 # Computable (L3) YAML artifacts
+      <artifact>.yaml
+    process/
+      plans/                    # Agent planning artifacts + tasks.md
+      contracts/                # YAML validation contracts
+      checklists/               # Clinical review checklists
+      fixtures/                 # LLM test fixtures
+        results/                # Test run results
+      research.md               # Evidence and citations
+      conflicts.md              # Source contradictions
 ```
 
 ## Repository Structure

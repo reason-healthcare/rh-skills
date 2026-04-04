@@ -11,7 +11,7 @@ Build 6 framework-level agent skills (`hi-discovery`, `hi-ingest`, `hi-extract`,
 
 **Language/Version**: Python 3.13.4
 **Primary Dependencies**: `click >= 8.0`, `ruamel.yaml >= 0.18`, `uv 0.10.3`. Optional: `pdftotext` (poppler), `pandoc` for binary file extraction.
-**Storage**: YAML (`tracking.yaml` at repo root, plan artifacts as `.md` files with YAML front matter in `topics/<name>/plans/` subdir)
+**Storage**: YAML (`tracking.yaml` at repo root, plan artifacts as `.md` files with YAML front matter in `topics/<name>/process/plans/` subdir)
 **Testing**: pytest 8.0+ (via uv)
 **Target Platform**: macOS + Linux
 **Project Type**: Agent skills (SKILL.md prompt files) + CLI command extensions (Python modules in `src/hi/commands/`)
@@ -67,13 +67,21 @@ src/hi/commands/
 sources/                     # Raw source files (repo root, shared across topics)
 
 topics/<name>/
-  plans/                     # Per-topic plan artifacts
-    discovery-plan.md        # YAML front matter + prose
-    ingest-plan.md
-    extract-plan.md
-    formalize-plan.md
-  structured/                # Semi-structured L2 artifacts
-  computable/                # Computable L3 artifacts
+  structured/                # Semi-structured L2 artifacts (prominent)
+  computable/                # Computable L3 artifacts (prominent)
+  process/
+    plans/                   # Per-topic plan artifacts
+      discovery-plan.md      # YAML front matter + prose
+      ingest-plan.md
+      extract-plan.md
+      formalize-plan.md
+      tasks.md               # hi tasks tracking
+    contracts/               # YAML validation contracts
+    checklists/              # Clinical review checklists
+    fixtures/                # LLM test fixtures
+      results/               # Test run results
+    research.md              # Evidence and citations
+    conflicts.md             # Source contradictions
 
 tests/unit/
   test_ingest.py             # Unit tests for hi ingest
