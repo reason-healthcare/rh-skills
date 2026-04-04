@@ -5,7 +5,7 @@
 
 ## Summary
 
-Build 6 framework-level agent skills (`hi-discovery`, `hi-ingest`, `hi-extract`, `hi-formalize`, `hi-verify`, `hi-status`) that guide users through the full clinical knowledge lifecycle — from literature discovery through source ingest, structured extraction, and computable formalization — with a mandatory plan → implement → verify pattern and human review gates at each step. Skills live at `skills/.curated/<skill>/SKILL.md` and invoke `hi` CLI commands for all deterministic work. Plan artifacts use structured Markdown with YAML front matter for machine parseability and human readability.
+Build the deterministic infrastructure for the HI skills framework: the repository layout (`topics/<name>/structured/`, `computable/`, `process/`), the `hi` CLI commands (`init`, `list`, `ingest`, `promote`, `validate`, `status`, `tasks`, `test`), and `tracking.yaml`. This spec covers framework infrastructure only. Each of the six HI agent skills (`hi-discovery` through `hi-status`) has its own specification (003–008) covering SKILL.md authoring. The guiding principle: all deterministic work in `hi` CLI commands; all reasoning in SKILL.md agent prompts.
 
 ## Technical Context
 
@@ -41,7 +41,14 @@ specs/002-hi-agent-skills/
 ├── data-model.md        # Phase 1 output
 ├── quickstart.md        # Phase 1 output
 ├── contracts/           # Phase 1 output
-└── tasks.md             # Phase 2 output (speckit-tasks)
+└── tasks.md             # Phase 2 output (framework CLI tasks only)
+
+specs/003-hi-discovery/spec.md   # hi-discovery skill spec
+specs/004-hi-ingest/spec.md      # hi-ingest skill spec
+specs/005-hi-extract/spec.md     # hi-extract skill spec
+specs/006-hi-formalize/spec.md   # hi-formalize skill spec
+specs/007-hi-verify/spec.md      # hi-verify skill spec
+specs/008-hi-status/spec.md      # hi-status skill spec
 ```
 
 ### Source Code (repository root)
