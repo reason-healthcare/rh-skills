@@ -42,11 +42,10 @@ Reading `topics/young-adult-hypertension/process/plans/discovery-plan.yaml`…
 Shall I proceed to implement mode?
 
 ```
-─── hi-ingest · young-adult-hypertension ─────────────────────────────────────
-Stage: plan — complete
-Sources: 3 open · 1 authenticated · 0 manual
-Next: confirm to proceed → hi-ingest implement young-adult-hypertension
-─────────────────────────────────────────────────────────────
+▸ hi-ingest  young-adult-hypertension
+  Stage:    plan — complete
+  Sources:  3 open · 1 authenticated · 0 manual
+  Next:     confirm to proceed → hi-ingest implement young-adult-hypertension
 ```
 
 ---
@@ -236,11 +235,10 @@ hi ingest annotate jnc8-hypertension-management \
 ```
 
 ```
-─── hi-ingest · young-adult-hypertension ─────────────────────────────────────
-Stage: implement — complete
-Sources: 3 downloaded · 3 normalized · 3 classified · 3 annotated
-Next: hi-ingest verify young-adult-hypertension
-─────────────────────────────────────────────────────────────
+▸ hi-ingest  young-adult-hypertension
+  Stage:    implement — complete
+  Sources:  3 downloaded · 3 normalized · 3 classified · 3 annotated
+  Next:     hi-ingest verify young-adult-hypertension
 ```
 
 ---
@@ -269,9 +267,8 @@ hi ingest verify
 **concepts.yaml validation:** ✓ 10 concepts, all with name/type/sources[]
 
 ```
-─── hi-ingest · young-adult-hypertension ─────────────────────────────────────
-Stage: verify — PASS
-Sources: 3 sources · 3 fully annotated · 0 issues
-Next: proceed to hi-extract young-adult-hypertension
-─────────────────────────────────────────────────────────────
+▸ hi-ingest  young-adult-hypertension
+  Stage:    verify — PASS
+  Sources:  3 sources · 3 fully annotated · 0 issues
+  Next:     proceed to hi-extract young-adult-hypertension
 ```

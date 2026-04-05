@@ -134,11 +134,10 @@ advise the user to run `hi-discovery session <topic>` first and exit.
 
 Status block format:
 ```
-─── hi-ingest · <topic> ──────────────────────────────────────────────────────
-Stage: plan — complete
-Sources: <N open> open · <M authenticated> authenticated · <P manual> manual
-Next: confirm to proceed → hi-ingest implement <topic>
-─────────────────────────────────────────────────────────────
+▸ hi-ingest  <topic>
+  Stage:    plan — complete
+  Sources:  <N open> open · <M authenticated> authenticated · <P manual> manual
+  Next:     confirm to proceed → hi-ingest implement <topic>
 ```
 
 ---
@@ -210,11 +209,10 @@ After all sources complete, emit final status block.
 
 **Final status block:**
 ```
-─── hi-ingest · <topic> ──────────────────────────────────────────────────────
-Stage: implement — complete
-Sources: <N downloaded> downloaded · <M normalized> normalized · <P classified> classified · <Q annotated> annotated
-Next: hi-ingest verify <topic>
-─────────────────────────────────────────────────────────────
+▸ hi-ingest  <topic>
+  Stage:    implement — complete
+  Sources:  <N downloaded> downloaded · <M normalized> normalized · <P classified> classified · <Q annotated> annotated
+  Next:     hi-ingest verify <topic>
 ```
 
 ---
@@ -241,11 +239,10 @@ write any files or events; all tracking writes go via `hi` CLI in implement mode
 
 5. Emit status block:
 ```
-─── hi-ingest · <topic> ──────────────────────────────────────────────────────
-Stage: verify — <PASS|FAIL>
-Sources: <N> sources · <M> fully annotated · <P> issues
-Next: <fix issues or proceed to hi-extract>
-─────────────────────────────────────────────────────────────
+▸ hi-ingest  <topic>
+  Stage:    verify — <PASS|FAIL>
+  Sources:  <N> sources · <M> fully annotated · <P> issues
+  Next:     <fix issues or proceed to hi-extract>
 ```
 
 ---
@@ -256,11 +253,10 @@ After every response, emit a status block as the **last thing** in the response.
 No text after the status block.
 
 ```
-─── hi-ingest · <topic> ──────────────────────────────────────────────────────
-Stage: <current stage> — <status>
-Sources: <N downloaded> downloaded · <M normalized> normalized · <P classified> classified · <Q annotated> annotated
-Next: <action>
-─────────────────────────────────────────────────────────────
+▸ hi-ingest  <topic>
+  Stage:    <current stage> — <status>
+  Sources:  <N downloaded> downloaded · <M normalized> normalized · <P classified> classified · <Q annotated> annotated
+  Next:     <action>
 ```
 
 ---

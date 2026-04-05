@@ -99,11 +99,10 @@ User: hi-discovery session diabetes-ccm
 > - **Gravity SDOH FHIR IG** — open access
 >
 > ```
-> ─── hi-discovery · diabetes-ccm ─────────────────────────────
->   Step:   4 — US Government Sources · Complete
->   Plan:   8 sources in memory
->   Next:   Step 5 — medical society and journal sources
-> ─────────────────────────────────────────────────────────────
+> ▸ hi-discovery  diabetes-ccm
+>   Step:  4 — US Government Sources · Complete
+>   Plan:  8 sources in memory
+>   Next:  Step 5 — medical society and journal sources
 > ```
 
 ---
@@ -132,11 +131,10 @@ User: hi-discovery session diabetes-ccm
 > registration. Do you approve this list? Any changes?
 >
 > ```
-> ─── hi-discovery · diabetes-ccm ─────────────────────────────
->   Step:   7 — Source Review
->   Plan:   10 sources in memory
->   Next:   approve list / modify / add sources
-> ─────────────────────────────────────────────────────────────
+> ▸ hi-discovery  diabetes-ccm
+>   Step:  7 — Source Review
+>   Plan:  10 sources in memory
+>   Next:  approve list / modify / add sources
 > ```
 
 **User:** Looks good, go ahead.
@@ -208,11 +206,10 @@ User: hi-discovery session diabetes-ccm
 > C) Save the plan and move on to `hi-ingest`
 >
 > ```
-> ─── hi-discovery · diabetes-ccm ─────────────────────────────
->   Step:   10 — Awaiting Direction
->   Plan:   10 sources in memory
->   Next:   A) explore expansion  B) modify list  C) save plan
-> ─────────────────────────────────────────────────────────────
+> ▸ hi-discovery  diabetes-ccm
+>   Step:  10 — Awaiting Direction
+>   Plan:  10 sources in memory
+>   Next:  A) explore expansion  B) modify list  C) save plan
 > ```
 
 **User:** C — save the plan.
@@ -236,11 +233,10 @@ User: hi-discovery session diabetes-ccm
 > ✓ Created: `topics/diabetes-ccm/process/notes.md` (stub — add open questions and decisions here)
 >
 > ```
-> ─── hi-discovery · diabetes-ccm ─────────────────────────────
->   Step:   11 — Save Checkpoint · Complete
->   Plan:   saved · 10 sources
->   Next:   hi-discovery verify diabetes-ccm
-> ─────────────────────────────────────────────────────────────
+> ▸ hi-discovery  diabetes-ccm
+>   Step:  11 — Save Checkpoint · Complete
+>   Plan:  saved · 10 sources
+>   Next:  hi-discovery verify diabetes-ccm
 > ```
 
 ---
@@ -271,9 +267,8 @@ Overall: PASS (1 warning)
 ```
 
 > ```
-> ─── hi-discovery · diabetes-ccm ─────────────────────────────
->   Mode:   verify
->   Result: PASS (1 warning)
->   Next:   hi-ingest session diabetes-ccm
-> ─────────────────────────────────────────────────────────────
+> ▸ hi-discovery  diabetes-ccm
+>   Mode:    verify
+>   Result:  PASS (1 warning)
+>   Next:    hi-ingest session diabetes-ccm
 > ```

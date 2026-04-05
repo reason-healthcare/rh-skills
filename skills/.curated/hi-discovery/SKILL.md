@@ -119,11 +119,10 @@ Every agent response during a `session` MUST end with a status block in this
 exact format:
 
 ```
-─── hi-discovery · <topic> ──────────────────────────────────
-  Step:   <N> — <Step Name>
-  Plan:   <N source(s) in memory | saved · <N> sources>
-  Next:   <concrete command or choice presented to the user>
-─────────────────────────────────────────────────────────────
+▸ hi-discovery  <topic>
+  Step:  <N> — <Step Name>
+  Plan:  <N source(s) in memory | saved · <N> sources>
+  Next:  <concrete command or choice presented to the user>
 ```
 
 Rules:
@@ -132,6 +131,9 @@ Rules:
 - **Status block is the last thing in the response** — no text after it. Do
   not add post-block commentary, predictions about future steps, or guidance
   about choices not yet made.
+- **First line**: `▸ ` then skill name, two spaces, then topic (no dashes, no
+  fill characters). **Subsequent lines**: two-space indent, Title Case key with
+  colon, two spaces, value. No horizontal rules or blank lines inside the block.
 - **Step** reflects the current step number and name from the session workflow.
   Use `Complete` suffix once a step is fully done (e.g., `3 — ClinicalTrials
   Search · Complete`).
@@ -446,20 +448,18 @@ On exit 0, before emitting the status block, tell the user:
 
 Then emit:
 ```
-─── hi-discovery · <topic> ──────────────────────────────────
-  Mode:   verify
-  Result: PASS
-  Next:   hi-ingest plan <topic>
-─────────────────────────────────────────────────────────────
+▸ hi-discovery  <topic>
+  Mode:    verify
+  Result:  PASS
+  Next:    hi-ingest plan <topic>
 ```
 
 On exit 1, emit:
 ```
-─── hi-discovery · <topic> ──────────────────────────────────
-  Mode:   verify
-  Result: FAIL — <N> check(s) failed
-  Next:   fix: <specific issue(s) listed above>, then re-run verify
-─────────────────────────────────────────────────────────────
+▸ hi-discovery  <topic>
+  Mode:    verify
+  Result:  FAIL — <N> check(s) failed
+  Next:    fix: <specific issue(s) listed above>, then re-run verify
 ```
 
 ---
