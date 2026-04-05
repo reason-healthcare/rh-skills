@@ -14,7 +14,7 @@ uv pip install -e .
 hi init diabetes-ccm
 # → creates topics/diabetes-ccm/process/ and tracking.yaml entry
 # → creates RESEARCH.md at repo root (if not exists)
-# → creates topics/diabetes-ccm/process/research.md
+# → creates topics/diabetes-ccm/process/notes.md (stub — human-maintained)
 ```
 
 ---
@@ -142,7 +142,6 @@ Agent writes `topics/diabetes-ccm/process/plans/discovery-plan.yaml` (machine-re
 
 Research tracking updated:
   RESEARCH.md: Active Topics row updated (3 sources, 2026-04-04)
-  process/research.md: 3 sources moved to Ruled In, 11 to Ruled Out
 ```
 
 ---
@@ -178,7 +177,7 @@ topics/diabetes-ccm/process/
 ├── plans/
 │   ├── discovery-plan.yaml
 │   └── discovery-readout.md
-└── research.md              (updated by hi)
+└── notes.md              (stub — human-maintained)
 
 RESEARCH.md                  (updated by hi)
 tracking.yaml                (updated by hi)

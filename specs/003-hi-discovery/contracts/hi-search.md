@@ -172,7 +172,7 @@ Download a URL to `sources/`, compute SHA-256, register in `tracking.yaml`. Exte
 When `hi init <topic>` is run:
 1. Create `RESEARCH.md` at repo root if not present (canonical format from data-model.md Entity 4)
 2. Append one row to the Active Topics table: `| <topic> | initialized | 0 | <date> | <date> | |`
-3. Create `topics/<name>/process/research.md` with canonical three-table format (Entity 5)
+3. Create `topics/<name>/process/notes.md` stub (create-unless-exists) with the canonical format (Entity 5)
 4. Print: `✓ Research tracking initialized for topic: <topic>`
 
 **Exit codes**: Inherits from existing `hi init`; no new exit codes.

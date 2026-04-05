@@ -16,8 +16,8 @@ topics/<name>/
   structured/         # semi-structured L2 artifacts
   computable/         # computable L3 artifacts
   process/
-    research.md       # evidence and citations stub
-    conflicts.md      # source contradictions stub
+    research.md       # evidence and citations stub (NOTE: superseded by notes.md in 003+)
+    notes.md          # open questions, decisions, source conflicts, free notes (human-maintained)
     fixtures/         # LLM test fixtures
     contracts/        # YAML assertions for validation
     checklists/       # clinical review checklists

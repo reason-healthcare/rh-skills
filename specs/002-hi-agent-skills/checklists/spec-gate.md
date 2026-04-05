@@ -11,7 +11,7 @@
 - [ ] CHK001 — Is the layout fully specified such that a developer could recreate the directory tree from the spec alone, without referencing code? [Completeness, Spec §Repository Layout]
 - [ ] CHK002 — Are the distinctions between `structured/`, `computable/`, and `process/` explicitly justified (not just named) so a contributor understands why each artifact level lives where it does? [Clarity, Spec §Repository Layout]
 - [ ] CHK003 — Is the `sources/` directory scope defined? Does the spec clarify whether it holds all L1 files or only those registered via `hi ingest`? [Ambiguity, Spec §Repository Layout]
-- [ ] CHK004 — Are the stub files created by `hi init` (`research.md`, `conflicts.md`, `tasks.md`) specified with their initial content or format (even if empty)? [Completeness, FR-001]
+- [ ] CHK004 — Is the stub file created by `hi init` (`notes.md`, `tasks.md`) specified with its initial content or format (even if empty)? [Completeness, FR-001]
 - [ ] CHK005 — Is the `skills/.curated/` location rationale documented? Is the `.curated/` naming convention explained so contributors don't rename or move it? [Clarity, Spec §Repository Layout]
 - [ ] CHK006 — Are requirements defined for what happens when the `topics/` or `sources/` directories are missing at CLI runtime (pre-`hi init`)? [Edge Case, Gap]
 - [ ] CHK007 — Is the `plans/` directory at the repo root (not inside `topics/`) explained and distinguished from `topics/<name>/process/plans/`? [Clarity, Spec §Repository Layout]

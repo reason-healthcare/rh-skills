@@ -47,8 +47,8 @@ topics/<name>/
     checklists/              # Clinical review checklists
     fixtures/                # LLM test fixtures
       results/               # Test run results
-    research.md              # Per-topic source tracking (ruled in/out) + open questions
-    conflicts.md             # Source contradictions
+    research.md              # Per-topic source tracking (ruled in/out) + open questions (NOTE: superseded by notes.md in 003+)
+    notes.md                 # Open questions, decisions, source conflicts, free notes (human-maintained)
 skills/.curated/             # Framework-level agent skills (excluded from hi list)
   hi-discovery/SKILL.md
   hi-ingest/SKILL.md
@@ -86,40 +86,26 @@ tracking.yaml                # Single source of truth for lifecycle state
 |-------|--------|------|
 ```
 
-### `process/research.md` — Per-Topic Source Tracking
+### `process/notes.md` — Per-Topic Human Annotations
 
-The per-topic `research.md` tracks which sources were evaluated for this topic and their disposition. `hi` appends rows at discovery and ingest events; humans add notes in the Notes column and maintain the Open Questions and Related Topics sections.
+`notes.md` is a **human-maintained** stub created by `hi init`. It provides a structured place to record open questions, key decisions, source conflicts, and free notes for the topic. The CLI creates the stub only; all content is human-authored.
 
 ```markdown
-# Research Notes: <topic>
-
-> Source rows managed by `hi` — CLI appends only, never deletes.
-> Add notes in the Notes column. Maintain Open Questions and Related Topics manually.
-
-## Sources
-
-### Ruled In
-
-| Source | File | Type | Evidence Level | Added | Notes |
-|--------|------|------|---------------|-------|-------|
-
-### Ruled Out
-
-| Source | Reason | Date |
-|--------|--------|------|
-
-### Pending Review
-
-| Source | Location | Added |
-|--------|----------|-------|
+# Research Notes — <topic>
 
 ## Open Questions
+<!-- checkbox bullets -->
+- [ ] 
 
-_Human-maintained. Record unresolved questions for future research._
+## Decisions
+<!-- key choices and why -->
+- 
 
-## Related Topics
+## Source Conflicts
+<!-- contradictions between sources -->
 
-_Human-maintained. Reference other topics in this portfolio and their relationship._
+## Notes
+<!-- free-form -->
 ```
 
 
@@ -274,7 +260,7 @@ A skill author implements `hi-extract` by copying `skills/_template/`, filling i
 
 **Repository Initialization**
 
-- **FR-001**: `hi init <name>` MUST create `topics/<name>/structured/`, `topics/<name>/computable/`, and `topics/<name>/process/` with the full subdirectory scaffold (`plans/`, `contracts/`, `checklists/`, `fixtures/`, `fixtures/results/`). It MUST create stub files: `process/research.md`, `process/conflicts.md`, `process/plans/tasks.md`.
+- **FR-001**: `hi init <name>` MUST create `topics/<name>/structured/`, `topics/<name>/computable/`, and `topics/<name>/process/` with the full subdirectory scaffold (`plans/`, `contracts/`, `checklists/`, `fixtures/`, `fixtures/results/`). It MUST create stub files: `process/notes.md`, `process/plans/tasks.md`.
 - **FR-002**: `hi init <name>` MUST register the new topic in `tracking.yaml` with `name`, `title`, `created_at`, and empty `structured`, `computable`, and `events` lists.
 - **FR-003**: `hi list` MUST enumerate directories under `topics/`, excluding dot-prefixed directories.
 
@@ -312,8 +298,8 @@ A skill author implements `hi-extract` by copying `skills/_template/`, filling i
 
 - **FR-027**: `hi init <topic>` MUST create `RESEARCH.md` at the repo root if it does not already exist (initializing with the canonical header and three empty section tables: Active Topics, Completed Topics, Deferred/Abandoned). It MUST then append a new row to the Active Topics table with: topic name, initial stage (`initialized`), source count (0), started date, updated date, and an empty Notes column.
 - **FR-028**: Any `hi` command that transitions a topic's stage MUST update the topic's row in `RESEARCH.md` — specifically the Stage and Updated columns. When a topic reaches a terminal state (completed or abandoned), the CLI MUST move its row from Active Topics to the appropriate section. `RESEARCH.md` row moves MUST be idempotent (running twice produces no duplicate rows).
-- **FR-029**: `hi init <topic>` MUST also create `topics/<topic>/process/research.md` with the canonical per-topic format: three source tables (Ruled In, Ruled Out, Pending Review) plus empty Open Questions and Related Topics sections. The file MUST include a header comment noting that source rows are CLI-managed.
-- **FR-030**: `hi` commands that register or disposition a source MUST update `process/research.md` by appending rows — never deleting or modifying existing rows. Sources newly registered via `hi ingest implement` are added to Ruled In. Sources flagged as manual-acquisition or download failures are added to Ruled Out (with reason). Sources in a discovery plan not yet acted on are added to Pending Review.
+- **FR-029**: `hi init <topic>` MUST also create `topics/<topic>/process/notes.md` with the canonical stub format: `## Open Questions`, `## Decisions`, `## Source Conflicts`, `## Notes` sections. The file is human-maintained — the CLI creates the stub only (create-unless-exists).
+- **FR-030**: _(Removed — CLI no longer appends source rows to per-topic files. Source disposition tracking is handled via `discovery-plan.yaml` and `RESEARCH.md`. Human annotations go in `process/notes.md`.)_
 
 **Framework Contracts for Skills**
 

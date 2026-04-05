@@ -83,8 +83,7 @@ topics/<name>/
     ├── checklists/              ← clinical review checklists
     ├── fixtures/                ← LLM test fixtures
     │   └── results/             ← test run results
-    ├── research.md              ← evidence and citations
-    └── conflicts.md             ← source contradictions
+    └── notes.md                 ← open questions, decisions, source conflicts, notes (human-maintained)
 
 sources/                         ← L1 raw source files (repo-wide)
 tracking.yaml                    ← lifecycle state for all topics

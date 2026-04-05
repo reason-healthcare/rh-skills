@@ -151,8 +151,7 @@ topics/
       contracts/        ← validation contracts
       checklists/       ← clinical review checklists
       fixtures/         ← test fixtures + results
-      research.md
-      conflicts.md
+      notes.md
 
 sources/
   <name>.<ext>          ← ingested L1 source files

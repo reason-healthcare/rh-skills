@@ -231,9 +231,6 @@ User: hi-discovery session diabetes-ccm
 > ✓ Written: `topics/diabetes-ccm/process/plans/discovery-readout.md`
 >   (domain advice + 5 expansion suggestions)
 >
-> ✓ Updated: `topics/diabetes-ccm/process/research.md`
->   (10 sources → Pending Review, awaiting hi-ingest)
->
 > ✓ Updated: `RESEARCH.md` (row for diabetes-ccm: sources=10, updated=2026-04-15)
 >
 > ✓ Created: `topics/diabetes-ccm/process/notes.md` (stub — add open questions and decisions here)

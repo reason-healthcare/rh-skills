@@ -32,7 +32,7 @@ hi init diabetes-screening \
   --author "Clinical Informatics Team"
 ```
 
-Creates `topics/diabetes-screening/` with `TOPIC.md`, `structured/`, `computable/`, `process/` (`plans/`, `contracts/`, `checklists/`, `fixtures/`, `research.md`, `conflicts.md`). Also ensures `sources/` exists at the repo root and registers the topic in `tracking.yaml`.
+Creates `topics/diabetes-screening/` with `TOPIC.md`, `structured/`, `computable/`, `process/` (`plans/`, `contracts/`, `checklists/`, `fixtures/`, `notes.md`). Also ensures `sources/` exists at the repo root and registers the topic in `tracking.yaml`.
 
 ---
 

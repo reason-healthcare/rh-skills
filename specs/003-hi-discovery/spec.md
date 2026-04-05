@@ -86,7 +86,7 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 ### Edge Cases
 
 - PubMed API returns zero results — agent falls back to domain knowledge and known society URL patterns; warns user that search was sparse.
-- Source URL returns a redirect to a login page — download fails gracefully; source is flagged as `access: manual` with failure reason recorded in `process/research.md` Ruled Out.
+- Source URL returns a redirect to a login page — download fails gracefully; source is flagged as `access: manual` with failure reason recorded in `discovery-plan.yaml`.
 - Plan reaches 25-source cap — agent moves additional candidates to Research Expansion Suggestions rather than silently dropping them.
 - Plan has fewer than 5 sources after all searches — agent explicitly searches additional databases before presenting for approval.
 - Plan YAML is malformed — `verify` fails at parse time with a line-level error.
@@ -117,7 +117,7 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 - **FR-005**: Each source entry in `sources[]` MUST have: `name`, `type` (see FR-009), `rationale`, `search_terms[]`, `evidence_level` (see FR-010), `access` (`open | authenticated | manual`). `url` is optional but MUST be present when `access: open`. When `access: authenticated`, the entry MUST include `auth_note` — a plain-English description of how to obtain access (e.g., institutional login, free registration, society membership).
 - **FR-005a**: For `access: authenticated` sources, the agent MUST include a `recommended: true` flag when the source is considered authoritative or high-value for the topic domain, regardless of whether it can be downloaded automatically. The discovery plan is the authoritative recommendation — access difficulty does not reduce a source's priority.
 - **FR-006**: The agent MUST call `hi search pubmed` and at least one other `hi search` subcommand during `plan`; results inform the `sources[]` list. The agent decides which results are relevant.
-- **FR-007**: `plan` MUST populate `process/research.md` Pending Review table with all `sources[]` entries from the discovery plan (name, URL or "TBD", date added). `plan` MUST also create `process/conflicts.md` stub (create-unless-exists). Existing files MUST NOT be modified (only the Pending Review table is appended).
+- **FR-007**: `plan` MUST create `process/notes.md` stub (create-unless-exists) using the canonical format (Open Questions, Decisions, Source Conflicts, Notes sections). Existing `notes.md` MUST NOT be modified.
 - **FR-008**: If `discovery-plan.yaml` already exists, `plan` MUST warn and stop unless `--force` is passed. Successful `plan` (non-dry-run) MUST append `discovery_planned` to `tracking.yaml`. `--force` applies to both `discovery-plan.yaml` and `discovery-readout.md`.
 
 **session mode — inline download**
@@ -127,7 +127,7 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 - **FR-011b**: The access advisory format MUST include: source name, why it is relevant, access URL, authentication method (institutional login / free registration / society membership / library proxy), and suggested search terms to use once inside.
 - **FR-012**: Sources with `access: manual` or `access: authenticated` MUST be included in `discovery-plan.yaml` with an `auth_note` field describing how to obtain access. `hi-ingest` reads `discovery-plan.yaml` directly to determine which sources require manual retrieval. No `ingest-plan.md` is generated.
 - **FR-013**: Download failures (non-2xx HTTP, network error, auth redirect) MUST be caught per-source during the session; the agent reports the failure inline and continues. Failed sources are flagged in the plan as `access: manual` with the failure reason.
-- **FR-014**: When the user approves the session plan or issues a save checkpoint, the agent MUST write `process/plans/discovery-plan.yaml` and `process/plans/discovery-readout.md`, update `process/research.md` (Pending Review → Ruled In for sources planned for open access; Pending Review → Pending Manual for manual/authenticated sources), and update `RESEARCH.md` root portfolio (source count, updated date).
+- **FR-014**: When the user approves the session plan or issues a save checkpoint, the agent MUST write `process/plans/discovery-plan.yaml` and `process/plans/discovery-readout.md`, and update `RESEARCH.md` root portfolio (source count, updated date). `process/notes.md` is human-maintained and is NOT updated by the CLI.
 - **FR-015**: If `discovery-plan.yaml` already exists when the session starts, the agent MUST warn the user and offer to load it for continuation or start fresh with `--force`.
 - **FR-016**: If no sources are identified after exhausting all search strategies, the session MUST exit with a clear message listing what was searched and suggesting the user try alternate search terms.
 - **FR-017**: Successful session save MUST append `discovery_planned` event to `tracking.yaml` with payload: `{ sources: N, downloaded: D, manual_pending: M }`.
@@ -181,8 +181,7 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 - **Discovery Readout** (`discovery-readout.md`): Generated Markdown narrative derived from `discovery-plan.yaml`. Contains `## Domain Advice` and `## Research Expansion Suggestions` sections. For human/agent reading only — never machine-parsed. Includes a note: "This file is derived from discovery-plan.yaml. Do not edit directly."
 - **Source Entry**: One item in `sources[]` with `name`, `type`, `rationale`, `search_terms[]`, `evidence_level`, `access` (`open | authenticated | manual`), optional `url`, optional `auth_note` (required when `access: authenticated`), optional `recommended` (bool, for high-value authenticated sources).
 - **Research Portfolio** (`RESEARCH.md` at repo root): Cross-topic portfolio log. CLI-managed table of all topics with stage, source count, and dates. Human-editable Notes column and prose.
-- **Per-Topic Research Notes** (`process/research.md`): Source-level disposition tracking — Ruled In, Ruled Out (with reason), Pending Review. CLI appends rows; humans maintain Open Questions and Related Topics sections.
-- **Conflicts Stub** (`conflicts.md`): Created-unless-exists. Human-maintained guideline contradictions.
+- **Per-Topic Human Annotations** (`process/notes.md`): Human-maintained stub created by `hi init`. Sections: Open Questions, Decisions, Source Conflicts, Notes. The CLI creates the stub only — no further writes.
 
 ---
 

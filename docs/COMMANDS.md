@@ -26,8 +26,7 @@ topics/<name>/
   computable/
   process/
     plans/tasks.md
-    research.md
-    conflicts.md
+    notes.md
     contracts/  checklists/  fixtures/fixtures/results/
 ```
 

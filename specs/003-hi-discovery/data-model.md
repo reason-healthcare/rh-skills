@@ -139,42 +139,30 @@ Generated Markdown narrative derived from `discovery-plan.yaml`. **Do not edit d
 
 ---
 
-## Entity 5: `process/research.md` (per-topic source disposition)
+## Entity 5: `process/notes.md` (per-topic human annotations)
+
+Human-maintained stub created by `hi init` (create-unless-exists). The CLI creates this file once and never writes to it again. All content is human-authored.
 
 ```markdown
-# Research Notes: <topic>
-
-> CLI appends only. Human edits Notes, Open Questions, Related Topics.
-
-## Sources
-
-### Ruled In
-
-| Source | File | Type | Evidence Level | Added | Notes |
-|--------|------|------|---------------|-------|-------|
-| <title> | sources/<name>.pdf | guideline | ia | <date> | |
-
-### Ruled Out
-
-| Source | Reason | Date |
-|--------|--------|------|
-| <title> | auth-required; no institutional access | <date> |
-
-### Pending Review
-
-| Source | Location | Added |
-|--------|----------|-------|
-| <title> | https://... | <date> |
+# Research Notes — <topic>
 
 ## Open Questions
+<!-- checkbox bullets -->
+- [ ] 
 
-## Related Topics
+## Decisions
+<!-- key choices and why -->
+- 
+
+## Source Conflicts
+<!-- contradictions between sources -->
+
+## Notes
+<!-- free-form -->
 ```
 
 **CLI write events**:
-- `hi ingest implement --url` success → move source from Pending Review → Ruled In; populate File
-- `hi ingest implement --url` failure (auth redirect/404) → move to Ruled Out with reason
-- Session plan save → add all newly proposed sources to Pending Review
+- `hi init <topic>` → create stub (create-unless-exists); no further CLI writes
 
 ---
 

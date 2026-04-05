@@ -111,14 +111,14 @@ MIME_TO_EXT = {
 
 **Rationale**:
 - `RESEARCH.md` is Markdown with no frontmatter — row appends are simple string operations
-- `process/research.md` has three tables (Ruled In, Ruled Out, Pending Review) — rows appended after the table header+separator, before any prose
+- `process/notes.md` is human-maintained (Open Questions, Decisions, Source Conflicts, Notes sections) — the CLI creates the stub only via `hi init`; no further writes
 - `ruamel.yaml` already used for `tracking.yaml`; table row manipulation is straightforward Python string ops
 - Never modifying existing rows preserves the audit trail (FR-030 from 002 spec)
 
 **Update pattern** for `hi init` (creates stubs):
 1. Check if `RESEARCH.md` exists at repo root; create if not
 2. Append one row to the Active Topics table
-3. Create `topics/<name>/process/research.md` with canonical three-table format
+3. Create `topics/<name>/process/notes.md` stub (create-unless-exists)
 
 **Update pattern** for session save (FR-014):
 1. Move each downloaded source: Pending Review → Ruled In (by name match)
@@ -152,44 +152,34 @@ modes:
 9. For each `access: manual` source: record `auth_note` describing retrieval steps
 10. Present Research Expansion Suggestions (3–7)
 11. Prompt user: expand an area? save now? verify?
-12. On save: write `discovery-plan.yaml` (pure YAML) and `discovery-readout.md` (narrative), update `research.md`, update `RESEARCH.md`, append event
+12. On save: write `discovery-plan.yaml` (pure YAML) and `discovery-readout.md` (narrative), create `notes.md` stub (create-unless-exists), update `RESEARCH.md`, append event
 
 ---
 
 ## Decision 8: `hi init` extensions for research tracking
 
-**Decision**: Extend `hi init` to create `RESEARCH.md` at repo root and `topics/<name>/process/research.md` with canonical formats (FR-027–FR-030 from 002 spec).
+**Decision**: Extend `hi init` to create `RESEARCH.md` at repo root and `topics/<name>/process/notes.md` (canonical stub format).
 
 **`RESEARCH.md` format** (append row to Active Topics table):
 ```markdown
 | <topic> | initialized | 0 | <date> | <date> | |
 ```
 
-**`process/research.md` format** (created fresh per topic):
+**`process/notes.md` format** (created fresh per topic, create-unless-exists):
 ```markdown
-# Research Notes: <topic>
-
-> Source rows managed by `hi` — CLI appends only, never deletes.
-> Add notes in the Notes column. Maintain Open Questions and Related Topics manually.
-
-## Sources
-
-### Ruled In
-
-| Source | File | Type | Evidence Level | Added | Notes |
-|--------|------|------|---------------|-------|-------|
-
-### Ruled Out
-
-| Source | Reason | Date |
-|--------|--------|------|
-
-### Pending Review
-
-| Source | Location | Added |
-|--------|----------|-------|
+# Research Notes — <topic>
 
 ## Open Questions
+<!-- checkbox bullets -->
+- [ ] 
 
-## Related Topics
+## Decisions
+<!-- key choices and why -->
+- 
+
+## Source Conflicts
+<!-- contradictions between sources -->
+
+## Notes
+<!-- free-form -->
 ```

@@ -88,7 +88,7 @@ topics/<name>/
     fixtures/                # LLM test fixtures
       results/               # Test run results
     research.md              # Evidence and citations
-    conflicts.md             # Source contradictions
+    notes.md                 # Human annotations (open questions, decisions, source conflicts)
 
 tests/unit/
   test_ingest.py             # Unit tests for hi ingest

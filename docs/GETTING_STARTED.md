@@ -31,8 +31,7 @@ topics/diabetes-screening/
     contracts/       ← YAML validation contracts
     checklists/      ← clinical review checklists
     fixtures/        ← test fixtures for skill testing
-    research.md      ← evidence and citations
-    conflicts.md     ← source contradictions
+    notes.md         ← open questions, decisions, source conflicts, notes (human-maintained)
 ```
 
 A `tracking.yaml` at the repo root records the topic's metadata and lifecycle events.
