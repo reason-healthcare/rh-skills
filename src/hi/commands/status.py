@@ -41,6 +41,31 @@ def _completeness_pct(sources: int, structured: int, computable: int) -> int:
     return 25
 
 
+def _next_step_options(sources: int, structured: int, computable: int, topic: str) -> list[tuple[str, str]]:
+    """Return ordered list of (description, exact_command) options based on lifecycle state."""
+    if sources == 0:
+        return [
+            ("Plan and discover sources for this topic", f"hi-discovery session {topic}"),
+            ("Ingest sources if you already have a discovery plan", f"hi-ingest plan {topic}"),
+        ]
+    if structured == 0:
+        return [
+            ("Extract structured criteria from ingested sources (L2)", f"hi-extract plan {topic}"),
+            ("Check whether any source files have changed since ingest", f"hi status check-changes {topic}"),
+            ("Re-run ingest if sources need refreshing", f"hi-ingest implement {topic}"),
+        ]
+    if computable == 0:
+        return [
+            ("Formalize structured artifacts into a computable format (L3)", f"hi-formalize plan {topic}"),
+            ("Validate existing structured artifacts", f"hi validate {topic}"),
+            ("Check whether any source files have changed since ingest", f"hi status check-changes {topic}"),
+        ]
+    return [
+        ("Validate all artifacts for this topic", f"hi validate {topic}"),
+        ("Check whether any source files have changed since ingest", f"hi status check-changes {topic}"),
+    ]
+
+
 def _next_step_recommendation(sources: int, structured: int, computable: int) -> tuple[str, str]:
     """Return (description, exact_command) for the single most important next action."""
     if sources == 0:
@@ -143,6 +168,13 @@ def status_progress(topic):
     if events:
         click.echo(f"Total events: {len(events)}")
 
+    options = _next_step_options(sources_count, structured_count, computable_count, topic)
+    click.echo("")
+    click.echo("What to do next:")
+    for i, (desc, cmd) in enumerate(options, start=1):
+        click.echo(f"  {chr(64 + i)}) {desc}")
+        click.echo(f"     {cmd}")
+
 
 @status.command("next-steps")
 @click.argument("topic")
@@ -155,15 +187,21 @@ def status_next_steps(topic):
     structured_count = len(topic_entry.get("structured", []))
     computable_count = len(topic_entry.get("computable", []))
 
-    description, command = _next_step_recommendation(sources_count, structured_count, computable_count)
+    options = _next_step_options(sources_count, structured_count, computable_count, topic)
 
     click.echo(f"Topic: {topic}")
     click.echo("")
     click.echo("Recommended next step:")
-    click.echo(f"  {description}")
+    click.echo(f"  {options[0][0]}")
     click.echo("")
     click.echo("Run:")
-    click.echo(f"  {command}")
+    click.echo(f"  {options[0][1]}")
+    if len(options) > 1:
+        click.echo("")
+        click.echo("Other options:")
+        for opt_desc, opt_cmd in options[1:]:
+            click.echo(f"  • {opt_desc}")
+            click.echo(f"    {opt_cmd}")
 
 
 @status.command("check-changes")
