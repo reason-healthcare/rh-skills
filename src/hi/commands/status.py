@@ -5,6 +5,7 @@ import json
 import click
 
 from hi.common import (
+    load_tracking,
     repo_root,
     require_topic,
     require_tracking,
@@ -82,7 +83,45 @@ def _next_step_recommendation(sources: int, structured: int, computable: int) ->
 def status(ctx):
     """Show workflow state of a topic. Subcommands: show, progress, next-steps, check-changes."""
     if ctx.invoked_subcommand is None:
-        click.echo(ctx.get_help())
+        _portfolio_summary()
+
+
+def _portfolio_summary() -> None:
+    """Print a summary of all topics with stage, completeness, and next steps."""
+    tracking_path = repo_root() / "tracking.yaml"
+    if not tracking_path.exists():
+        click.echo("No tracking.yaml found. Run `hi init <topic>` to start a topic.")
+        return
+
+    tracking = load_tracking()
+    topics = tracking.get("topics", [])
+    global_sources = tracking.get("sources", [])
+
+    if not topics:
+        click.echo("No topics yet. Run `hi init <topic>` to start one.")
+        return
+
+    click.echo(f"Research Portfolio — {len(topics)} topic(s)\n")
+
+    for t in topics:
+        name = t.get("name", "")
+        title = t.get("title", "")
+        structured_count = len(t.get("structured", []))
+        computable_count = len(t.get("computable", []))
+        sources_count = len(global_sources)
+        stage = _compute_stage(sources_count, structured_count, computable_count)
+        pct = _completeness_pct(sources_count, structured_count, computable_count)
+        label = _STAGE_LABELS.get(stage, stage)
+        options = _next_step_options(sources_count, structured_count, computable_count, name)
+
+        click.echo(f"▸ {name}")
+        if title:
+            click.echo(f"  Title:    {title}")
+        click.echo(f"  Stage:    {label}  ({pct}%)")
+        click.echo("  Next steps:")
+        for i, (desc, cmd) in enumerate(options, start=1):
+            click.echo(f"    {chr(64 + i)}) {cmd}")
+        click.echo("")
 
 
 @status.command("show")
