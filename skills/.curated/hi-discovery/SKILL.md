@@ -362,10 +362,8 @@ Emit status block:
 
 ### Step 10 — Interactive Prompt
 
-After presenting the plan and suggestions, present this prompt **verbatim**:
+After presenting the plan and suggestions, present this prompt **verbatim** (no lead-in, no preamble):
 
-> **What would you like to do next?**
->
 > A) Explore an expansion area — tell me the number
 > B) Add, remove, or modify sources
 > C) Save the plan and move on to `hi-ingest`

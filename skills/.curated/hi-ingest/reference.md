@@ -14,6 +14,7 @@ Use these types when calling `hi ingest annotate --concept "<name>:<type>"`.
 | `medication` | Drug, drug class, or therapeutic agent | `Metoprolol`, `ACE Inhibitor` |
 | `procedure` | Clinical procedure or intervention | `Ambulatory Blood Pressure Monitoring` |
 | `measure` | Quality measure or clinical metric | `Systolic Blood Pressure`, `HbA1c` |
+| `lab` | Laboratory test result (concept with value and unit) | `Creatinine 0.8 mg/dL`, `Hemoglobin (Hgb) 15.0 g/dL` |
 | `code` | Terminology code or value set reference | `ICD-10 I10`, `LOINC 8480-6` |
 | `term` | General clinical or domain term (default) | `Primary Hypertension` |
 | `guideline-ref` | Reference to a clinical guideline | `JNC 8`, `ACC/AHA 2017` |
