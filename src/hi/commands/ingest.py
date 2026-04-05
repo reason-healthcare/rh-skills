@@ -240,14 +240,14 @@ def _ensure_tracking() -> None:
 @click.option("--topic", required=True, help="Topic slug")
 @click.option("--name", "source_name", default=None, help="Source name override (default: file stem)")
 def normalize(file, topic, source_name):
-    """Convert a source file to normalized Markdown at sources/<name>/normalized.md."""
+    """Convert a source file to normalized Markdown at sources/normalized/<name>.md."""
     import subprocess
 
     src_path = Path(file)
     name = source_name or src_path.stem
-    out_dir = sources_root() / name
+    out_dir = sources_root() / "normalized"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / "normalized.md"
+    out_file = out_dir / f"{name}.md"
 
     text_extracted = True
     ext = src_path.suffix.lower()
@@ -285,41 +285,8 @@ def normalize(file, topic, source_name):
             else:
                 content = result.stdout
     elif ext in (".html", ".htm"):
-        if shutil.which("pandoc") is not None:
-            result = subprocess.run(
-                ["pandoc", str(src_path), "-f", "html", "-t", "markdown"],
-                capture_output=True, text=True,
-            )
-            if result.returncode != 0:
-                log_warn(f"pandoc failed: {result.stderr.strip()}")
-                # Fall back to stdlib html.parser
-                import html.parser as _hp
-                class _Stripper(_hp.HTMLParser):
-                    def __init__(self):
-                        super().__init__()
-                        self._parts = []
-                    def handle_data(self, data):
-                        self._parts.append(data)
-                    def get_text(self):
-                        return "".join(self._parts)
-                stripper = _Stripper()
-                stripper.feed(src_path.read_text(errors="replace"))
-                content = stripper.get_text()
-            else:
-                content = result.stdout
-        else:
-            import html.parser as _hp
-            class _Stripper(_hp.HTMLParser):
-                def __init__(self):
-                    super().__init__()
-                    self._parts = []
-                def handle_data(self, data):
-                    self._parts.append(data)
-                def get_text(self):
-                    return "".join(self._parts)
-            stripper = _Stripper()
-            stripper.feed(src_path.read_text(errors="replace"))
-            content = stripper.get_text()
+        from markdownify import markdownify as md
+        content = md(src_path.read_text(errors="replace"), heading_style="ATX")
     else:
         content = src_path.read_text(errors="replace")
 
@@ -352,7 +319,7 @@ def normalize(file, topic, source_name):
         def _update(tracking):
             for s in tracking.get("sources", []):
                 if s.get("name") == name:
-                    s["normalized"] = f"sources/{name}/normalized.md"
+                    s["normalized"] = f"sources/normalized/{name}.md"
                     s["text_extracted"] = text_extracted
             append_root_event(tracking, "source_normalized", f"Normalized: {name}")
         locked_update_tracking(_update)
@@ -366,9 +333,9 @@ def normalize(file, topic, source_name):
             pass
 
     if text_extracted:
-        click.echo(f"✓ Normalized: sources/{name}/normalized.md")
+        click.echo(f"✓ Normalized: sources/normalized/{name}.md")
     else:
-        click.echo(f"⚠ Normalized (text not extracted): sources/{name}/normalized.md")
+        click.echo(f"⚠ Normalized (text not extracted): sources/normalized/{name}.md")
 
 
 @ingest.command()
@@ -421,10 +388,10 @@ def annotate(name, topic, concepts):
     from ruamel.yaml import YAML as _YAML
     import io
 
-    normalized_md = sources_root() / name / "normalized.md"
+    normalized_md = sources_root() / "normalized" / f"{name}.md"
     if not normalized_md.exists():
         raise click.ClickException(
-            f"normalized.md not found for '{name}'. "
+            f"sources/normalized/{name}.md not found. "
             f"Run: hi ingest normalize <file> --topic {topic} first."
         )
 

@@ -66,7 +66,7 @@ def test_normalize_txt(tmp_repo):
         "normalize", str(src), "--topic", "test-topic",
     ])
     assert result.exit_code == 0, result.output
-    norm = tmp_repo / "sources" / "my-source" / "normalized.md"
+    norm = tmp_repo / "sources" / "normalized" / "my-source.md"
     assert norm.exists()
     content = norm.read_text()
     fm = _parse_frontmatter(content)
@@ -87,7 +87,7 @@ def test_normalize_md(tmp_repo):
         "normalize", str(src), "--topic", "health-topic",
     ])
     assert result.exit_code == 0, result.output
-    norm = tmp_repo / "sources" / "guide" / "normalized.md"
+    norm = tmp_repo / "sources" / "normalized" / "guide.md"
     assert norm.exists()
     fm = _parse_frontmatter(norm.read_text())
     assert fm["text_extracted"] is True
@@ -112,7 +112,7 @@ def test_normalize_pdf_pdftotext_available(tmp_repo):
         ])
 
     assert result.exit_code == 0, result.output
-    norm = tmp_repo / "sources" / "report" / "normalized.md"
+    norm = tmp_repo / "sources" / "normalized" / "report.md"
     fm = _parse_frontmatter(norm.read_text())
     assert fm["text_extracted"] is True
     assert "Extracted PDF content" in norm.read_text()
@@ -131,7 +131,7 @@ def test_normalize_pdf_pdftotext_absent(tmp_repo):
         ])
 
     assert result.exit_code == 0, result.output
-    norm = tmp_repo / "sources" / "report" / "normalized.md"
+    norm = tmp_repo / "sources" / "normalized" / "report.md"
     assert norm.exists()
     fm = _parse_frontmatter(norm.read_text())
     assert fm["text_extracted"] is False
@@ -155,7 +155,7 @@ def test_normalize_docx_pandoc_available(tmp_repo):
         ])
 
     assert result.exit_code == 0, result.output
-    norm = tmp_repo / "sources" / "doc" / "normalized.md"
+    norm = tmp_repo / "sources" / "normalized" / "doc.md"
     fm = _parse_frontmatter(norm.read_text())
     assert fm["text_extracted"] is True
 
@@ -173,7 +173,7 @@ def test_normalize_docx_pandoc_absent(tmp_repo):
         ])
 
     assert result.exit_code == 0, result.output
-    norm = tmp_repo / "sources" / "doc" / "normalized.md"
+    norm = tmp_repo / "sources" / "normalized" / "doc.md"
     assert norm.exists()
     fm = _parse_frontmatter(norm.read_text())
     assert fm["text_extracted"] is False
@@ -205,5 +205,5 @@ def test_normalize_unknown_source_no_crash(tmp_repo):
     ])
 
     assert result.exit_code == 0, result.output
-    norm = tmp_repo / "sources" / "mystery" / "normalized.md"
+    norm = tmp_repo / "sources" / "normalized" / "mystery.md"
     assert norm.exists()

@@ -41,10 +41,10 @@ def _register_source(tmp_repo, name):
 
 
 def _create_normalized_md(tmp_repo, name, topic="test-topic", body="Clinical content here."):
-    """Create a sources/<name>/normalized.md stub with YAML frontmatter."""
-    src_dir = tmp_repo / "sources" / name
-    src_dir.mkdir(parents=True, exist_ok=True)
-    norm = src_dir / "normalized.md"
+    """Create a sources/normalized/<name>.md stub with YAML frontmatter."""
+    norm_dir = tmp_repo / "sources" / "normalized"
+    norm_dir.mkdir(parents=True, exist_ok=True)
+    norm = norm_dir / f"{name}.md"
     norm.write_text(
         f"---\nsource: {name}\ntopic: {topic}\nnormalized: 2025-01-01T00:00:00Z\n"
         f"original: sources/{name}.txt\ntext_extracted: true\n---\n\n{body}"
@@ -84,7 +84,7 @@ def test_annotate_updates_normalized_frontmatter(tmp_repo):
     ])
 
     assert result.exit_code == 0, result.output
-    norm = tmp_repo / "sources" / "src-a" / "normalized.md"
+    norm = tmp_repo / "sources" / "normalized" / "src-a.md"
     fm = _parse_frontmatter(norm.read_text())
     assert "concepts" in fm
     names = [c["name"] for c in fm["concepts"]]
@@ -215,7 +215,7 @@ def test_annotate_no_normalized_md_exits_1(tmp_repo):
     ])
 
     assert result.exit_code == 1
-    assert "normalized.md not found" in result.output
+    assert "sources/normalized" in result.output
 
 
 def test_annotate_concept_default_type_term(tmp_repo):
