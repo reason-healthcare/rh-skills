@@ -236,6 +236,297 @@ def _ensure_tracking() -> None:
 
 
 @ingest.command()
+@click.argument("file", type=click.Path(exists=True))
+@click.option("--topic", required=True, help="Topic slug")
+@click.option("--name", "source_name", default=None, help="Source name override (default: file stem)")
+def normalize(file, topic, source_name):
+    """Convert a source file to normalized Markdown at sources/<name>/normalized.md."""
+    import subprocess
+
+    src_path = Path(file)
+    name = source_name or src_path.stem
+    out_dir = sources_root() / name
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / "normalized.md"
+
+    text_extracted = True
+    ext = src_path.suffix.lower()
+
+    if ext == ".pdf":
+        if shutil.which("pdftotext") is None:
+            log_warn("Install poppler: brew install poppler")
+            text_extracted = False
+            content = ""
+        else:
+            result = subprocess.run(
+                ["pdftotext", str(src_path), "-"],
+                capture_output=True, text=True,
+            )
+            if result.returncode != 0:
+                log_warn(f"pdftotext failed: {result.stderr.strip()}")
+                text_extracted = False
+                content = ""
+            else:
+                content = result.stdout
+    elif ext in (".docx", ".doc", ".xlsx"):
+        if shutil.which("pandoc") is None:
+            log_warn("Install pandoc: brew install pandoc")
+            text_extracted = False
+            content = ""
+        else:
+            result = subprocess.run(
+                ["pandoc", str(src_path), "-t", "markdown"],
+                capture_output=True, text=True,
+            )
+            if result.returncode != 0:
+                log_warn(f"pandoc failed: {result.stderr.strip()}")
+                text_extracted = False
+                content = ""
+            else:
+                content = result.stdout
+    elif ext in (".html", ".htm"):
+        if shutil.which("pandoc") is not None:
+            result = subprocess.run(
+                ["pandoc", str(src_path), "-f", "html", "-t", "markdown"],
+                capture_output=True, text=True,
+            )
+            if result.returncode != 0:
+                log_warn(f"pandoc failed: {result.stderr.strip()}")
+                # Fall back to stdlib html.parser
+                import html.parser as _hp
+                class _Stripper(_hp.HTMLParser):
+                    def __init__(self):
+                        super().__init__()
+                        self._parts = []
+                    def handle_data(self, data):
+                        self._parts.append(data)
+                    def get_text(self):
+                        return "".join(self._parts)
+                stripper = _Stripper()
+                stripper.feed(src_path.read_text(errors="replace"))
+                content = stripper.get_text()
+            else:
+                content = result.stdout
+        else:
+            import html.parser as _hp
+            class _Stripper(_hp.HTMLParser):
+                def __init__(self):
+                    super().__init__()
+                    self._parts = []
+                def handle_data(self, data):
+                    self._parts.append(data)
+                def get_text(self):
+                    return "".join(self._parts)
+            stripper = _Stripper()
+            stripper.feed(src_path.read_text(errors="replace"))
+            content = stripper.get_text()
+    else:
+        content = src_path.read_text(errors="replace")
+
+    from ruamel.yaml import YAML as _YAML
+    import io
+    _y = _YAML()
+    _y.default_flow_style = False
+    frontmatter_data = {
+        "source": name,
+        "topic": topic,
+        "normalized": now_iso(),
+        "original": f"sources/{src_path.name}",
+        "text_extracted": text_extracted,
+    }
+    buf = io.StringIO()
+    _y.dump(frontmatter_data, buf)
+    fm_text = buf.getvalue()
+    out_file.write_text(f"---\n{fm_text}---\n\n{content}")
+
+    # Update tracking.yaml — soft-fail if source not registered
+    source_found = False
+    try:
+        tracking_data = require_tracking()
+        sources_list = tracking_data.get("sources", [])
+        source_found = any(s.get("name") == name for s in sources_list)
+    except Exception:
+        pass
+
+    if source_found:
+        def _update(tracking):
+            for s in tracking.get("sources", []):
+                if s.get("name") == name:
+                    s["normalized"] = f"sources/{name}/normalized.md"
+                    s["text_extracted"] = text_extracted
+            append_root_event(tracking, "source_normalized", f"Normalized: {name}")
+        locked_update_tracking(_update)
+    else:
+        log_warn(f"Source '{name}' not found in tracking.yaml — skipping tracking update")
+        try:
+            def _update_event(tracking):
+                append_root_event(tracking, "source_normalized", f"Normalized: {name}")
+            locked_update_tracking(_update_event)
+        except Exception:
+            pass
+
+    if text_extracted:
+        click.echo(f"✓ Normalized: sources/{name}/normalized.md")
+    else:
+        click.echo(f"⚠ Normalized (text not extracted): sources/{name}/normalized.md")
+
+
+@ingest.command()
+@click.argument("name")
+@click.option("--topic", required=True, help="Topic slug")
+@click.option("--type", "source_type", required=True, help="Source type")
+@click.option("--evidence-level", required=True, help="Evidence level")
+@click.option("--tags", default="", help="Comma-separated domain tags")
+def classify(name, topic, source_type, evidence_level, tags):
+    """Assign classification metadata to a registered source."""
+    from hi.commands.search import VALID_SOURCE_TYPES, VALID_EVIDENCE_LEVELS
+
+    if source_type not in VALID_SOURCE_TYPES:
+        raise click.ClickException(
+            f"Invalid type '{source_type}'. Valid types: {', '.join(sorted(VALID_SOURCE_TYPES))}"
+        )
+    if evidence_level not in VALID_EVIDENCE_LEVELS:
+        raise click.ClickException(
+            f"Invalid evidence level '{evidence_level}'. Valid levels: {', '.join(sorted(VALID_EVIDENCE_LEVELS))}"
+        )
+
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+
+    require_tracking()
+
+    def _update(tracking):
+        for s in tracking.get("sources", []):
+            if s.get("name") == name:
+                s["type"] = source_type
+                s["evidence_level"] = evidence_level
+                s["domain_tags"] = tag_list
+                s["classified_at"] = now_iso()
+                append_root_event(tracking, "source_classified", f"Classified: {name}")
+                return
+        raise click.ClickException(
+            f"Source '{name}' not found in tracking.yaml. Run hi ingest implement first."
+        )
+
+    locked_update_tracking(_update)
+    click.echo(f"✓ Classified: {name} (type={source_type}, evidence_level={evidence_level})")
+
+
+@ingest.command()
+@click.argument("name")
+@click.option("--topic", required=True, help="Topic slug")
+@click.option("--concept", "concepts", multiple=True,
+              help="Concept in 'canonical-name:type' format. Repeatable.")
+def annotate(name, topic, concepts):
+    """Add concept annotations to normalized.md and update concepts.yaml."""
+    from ruamel.yaml import YAML as _YAML
+    import io
+
+    normalized_md = sources_root() / name / "normalized.md"
+    if not normalized_md.exists():
+        raise click.ClickException(
+            f"normalized.md not found for '{name}'. "
+            f"Run: hi ingest normalize <file> --topic {topic} first."
+        )
+
+    # Parse concepts
+    parsed_concepts = []
+    for c in concepts:
+        if ":" in c:
+            cname, ctype = c.split(":", 1)
+            parsed_concepts.append({"name": cname.strip(), "type": ctype.strip()})
+        else:
+            parsed_concepts.append({"name": c.strip(), "type": "term"})
+
+    # Update normalized.md frontmatter
+    raw = normalized_md.read_text()
+    parts = raw.split("---\n", 2)
+    if len(parts) >= 3:
+        fm_text = parts[1]
+        body = parts[2]
+    else:
+        fm_text = ""
+        body = raw
+
+    _y = _YAML()
+    _y.default_flow_style = False
+    _y.preserve_quotes = True
+    fm_data = _y.load(fm_text) if fm_text.strip() else {}
+    if fm_data is None:
+        fm_data = {}
+    fm_data["concepts"] = [{"name": c["name"], "type": c["type"]} for c in parsed_concepts]
+    buf = io.StringIO()
+    _y.dump(dict(fm_data), buf)
+    new_fm = buf.getvalue()
+    normalized_md.write_text(f"---\n{new_fm}---\n\n{body.lstrip()}")
+
+    # Update concepts.yaml
+    concepts_path = repo_root() / "topics" / topic / "process" / "concepts.yaml"
+    concepts_path.parent.mkdir(parents=True, exist_ok=True)
+    _yc = _YAML()
+    _yc.default_flow_style = False
+    if concepts_path.exists():
+        existing = _yc.load(concepts_path.read_text())
+        if existing is None:
+            existing = {"topic": topic, "generated": now_iso(), "concepts": []}
+    else:
+        existing = {"topic": topic, "generated": now_iso(), "concepts": []}
+    existing_concepts = existing.get("concepts", [])
+
+    for pc in parsed_concepts:
+        pc_name_lower = pc["name"].lower()
+        match = next(
+            (ec for ec in existing_concepts if ec.get("name", "").lower() == pc_name_lower),
+            None,
+        )
+        if match is not None:
+            sources_list = match.get("sources", [])
+            if name not in sources_list:
+                sources_list.append(name)
+            match["sources"] = sources_list
+        else:
+            existing_concepts.append({
+                "name": pc["name"],
+                "type": pc["type"],
+                "sources": [name],
+            })
+    existing["concepts"] = existing_concepts
+    buf2 = io.StringIO()
+    _yc.dump(dict(existing), buf2)
+    concepts_path.write_text(buf2.getvalue())
+
+    # Update tracking.yaml — soft-fail if source not found
+    try:
+        tracking_data = require_tracking()
+        source_found = any(s.get("name") == name for s in tracking_data.get("sources", []))
+    except Exception:
+        source_found = False
+
+    if source_found:
+        def _update(tracking):
+            for s in tracking.get("sources", []):
+                if s.get("name") == name:
+                    s["annotated_at"] = now_iso()
+                    s["concept_count"] = len(parsed_concepts)
+            append_root_event(
+                tracking, "source_annotated",
+                f"Annotated: {name} ({len(parsed_concepts)} concepts)"
+            )
+        locked_update_tracking(_update)
+    else:
+        try:
+            def _update_event(tracking):
+                append_root_event(
+                    tracking, "source_annotated",
+                    f"Annotated: {name} ({len(parsed_concepts)} concepts)"
+                )
+            locked_update_tracking(_update_event)
+        except Exception:
+            pass
+
+    click.echo(f"✓ Annotated: {name} ({len(parsed_concepts)} concepts added to concepts.yaml)")
+
+
+@ingest.command()
 def verify():
     """Re-checksum all registered sources and report changes."""
     tracking = require_tracking()
