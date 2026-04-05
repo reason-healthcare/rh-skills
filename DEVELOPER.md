@@ -176,10 +176,10 @@ Exit codes: `0` success · `1` network/HTTP error · `2` file already exists · 
 
 ### hi validate --plan
 
-Validate a discovery plan YAML frontmatter for completeness and correctness.
+Validate a discovery plan YAML file for completeness and correctness.
 
 ```sh
-hi validate --plan topics/<topic>/process/plans/discovery-plan.md
+hi validate --plan topics/<topic>/process/plans/discovery-plan.yaml
 ```
 
 Checks: YAML parseable · 5–25 sources · terminology source present · all rationale non-empty ·
