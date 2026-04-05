@@ -394,11 +394,14 @@ When the user approves saving:
 2. Create `process/notes.md` stub (create-unless-exists — do not overwrite if user has added content)
 3. Update `RESEARCH.md` root portfolio row for the topic (source count, date)
 
-After saving, recommend:
+After saving, tell the user:
 
-```sh
-hi-discovery verify <topic>
-```
+> ✓ Plan saved. Before handing off to `hi-ingest`, validate the plan:
+> ```
+> hi-discovery verify <topic>
+> ```
+> This runs non-destructive checks on the saved YAML (source count, required
+> fields, evidence coverage). Fix any issues before proceeding to ingest.
 
 Emit status block:
 ```
@@ -426,12 +429,27 @@ hi validate --plan topics/<topic>/process/plans/discovery-plan.yaml
 
 Report the output verbatim. Exit with the same code as `hi validate --plan`.
 
-On exit 0, emit:
+On exit 0, before emitting the status block, tell the user:
+
+> ✓ Discovery plan validated. Your sources are ready for acquisition.
+>
+> **Next step — hi-ingest:**
+> The `hi-ingest` skill reads your `discovery-plan.yaml` and runs the full
+> acquisition pipeline: Download → Normalize → Classify → Annotate.
+>
+> To begin, load the `hi-ingest` skill and run plan mode:
+> ```
+> hi-ingest plan <topic>
+> ```
+> Open-access sources will be downloaded automatically. Authenticated sources
+> listed in your plan include `auth_note` instructions for manual retrieval.
+
+Then emit:
 ```
 ─── hi-discovery · <topic> ──────────────────────────────────
   Mode:   verify
   Result: PASS
-  Next:   hi-ingest session <topic>
+  Next:   hi-ingest plan <topic>
 ─────────────────────────────────────────────────────────────
 ```
 
