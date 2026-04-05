@@ -122,7 +122,11 @@ Based on your current sources, consider expanding into:
 4. Cost-effectiveness of CCM vs. usual care — healthcare economics dimension
 5. MIPS quality measure specifications for diabetes — CMS alignment
 
-Would you like to explore any of these? Or save and exit?
+**What would you like to do next?**
+
+> A) Explore an expansion area — tell me the number
+> B) Add, remove, or modify sources
+> C) Save the plan and move on to `hi-ingest`
 ```
 
 ---
