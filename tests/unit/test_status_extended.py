@@ -111,6 +111,28 @@ def test_next_steps_suggests_ingest_when_no_sources(tmp_repo):
     assert "hi-ingest plan" in result.output
 
 
+def test_next_steps_discovery_plan_aware_without_plan(tmp_repo):
+    """Without a discovery-plan.yaml, suggests 'start source discovery'."""
+    make_topic_entry(tmp_repo, "t1", sources=0)
+    runner = CliRunner()
+    result = runner.invoke(status, ["next-steps", "t1"])
+    assert "hi-discovery session t1" in result.output
+    assert "Start" in result.output or "start" in result.output or "discovery" in result.output.lower()
+
+
+def test_next_steps_discovery_plan_aware_with_plan(tmp_repo):
+    """With a discovery-plan.yaml present, primary option says 'Update your discovery plan'."""
+    make_topic_entry(tmp_repo, "t1", sources=0)
+    plan_path = tmp_repo / "topics" / "t1" / "process" / "plans"
+    plan_path.mkdir(parents=True, exist_ok=True)
+    (plan_path / "discovery-plan.yaml").write_text("topic: t1\nsources: []\n")
+    runner = CliRunner()
+    result = runner.invoke(status, ["next-steps", "t1"])
+    assert "hi-discovery session t1" in result.output
+    assert "hi-ingest plan t1" in result.output
+    assert "Update" in result.output or "existing" in result.output.lower()
+
+
 def test_next_steps_suggests_extract_when_sources_but_no_structured(tmp_repo):
     make_topic_entry(tmp_repo, "t1", sources=2, structured=0)
     runner = CliRunner()

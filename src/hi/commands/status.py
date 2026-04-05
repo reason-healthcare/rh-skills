@@ -42,12 +42,26 @@ def _completeness_pct(sources: int, structured: int, computable: int) -> int:
     return 25
 
 
+def _has_discovery_plan(topic: str) -> bool:
+    """Return True if a discovery-plan.yaml exists for this topic."""
+    plan_path = repo_root() / "topics" / topic / "process" / "plans" / "discovery-plan.yaml"
+    return plan_path.exists()
+
+
 def _next_step_options(sources: int, structured: int, computable: int, topic: str) -> list[tuple[str, str]]:
     """Return ordered list of (description, exact_command) options based on lifecycle state."""
     if sources == 0:
+        has_plan = _has_discovery_plan(topic)
+        if has_plan:
+            return [
+                (f"Update your discovery plan", f"hi-discovery session {topic}"),
+                (f"Ingest sources using your existing discovery plan", f"hi-ingest plan {topic}"),
+                (f"Full pipeline summary", f"hi status progress {topic}"),
+            ]
         return [
-            ("Plan and discover sources for this topic", f"hi-discovery session {topic}"),
+            ("Start source discovery for this topic", f"hi-discovery session {topic}"),
             ("Ingest sources if you already have a discovery plan", f"hi-ingest plan {topic}"),
+            ("Full pipeline summary", f"hi status progress {topic}"),
         ]
     if structured == 0:
         return [
