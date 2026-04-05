@@ -93,6 +93,7 @@ A researcher drops a society guideline PDF into `sources/` directly without runn
 - **FR-013**: Verify mode MUST also validate `concepts.yaml` schema (each entry has `name`, `type`, `sources[]`) and report any errors.
 - **FR-014**: Verify mode MUST NOT write any files or append events to `tracking.yaml`.
 - **FR-015**: If a source's checksum in `tracking.yaml` differs from the file on disk, verify MUST flag it as `CHANGED` and recommend `hi ingest implement --force`.
+- **FR-016** *(future)*: `hi ingest normalize` SHOULD support a `--js-render` flag for HTML sources whose content is rendered by JavaScript (SPAs, dynamically loaded pages). When `--js-render` is given, the CLI MUST use Playwright (`playwright install chromium`) to load the page in a headless browser, wait for network idle, then capture `page.content()` before passing to markdownify. Playwright MUST be an optional dependency (`pip install playwright`) — absence of Playwright with `--js-render` MUST exit 1 with an install hint rather than silently returning empty content. Without `--js-render`, static HTML is assumed.
 
 ### Non-Functional Requirements
 

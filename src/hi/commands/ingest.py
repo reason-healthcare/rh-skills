@@ -416,6 +416,13 @@ def normalize(file, topic, source_name):
     elif ext in (".html", ".htm"):
         from markdownify import markdownify as md
         html_text = src_path.read_text(errors="replace")
+        # TODO(js-render): static HTML only. Sites that require JavaScript to
+        # render (SPAs, dynamically loaded content) will produce empty or
+        # incomplete content here. Future: detect empty body post-parse and
+        # offer `--js-render` flag backed by Playwright
+        # (`playwright install chromium`; `playwright.sync_api` Page.goto +
+        # Page.content()). Guard behind optional dep to avoid forcing browser
+        # install on all users. Track as FR-016 in specs/004-hi-ingest/spec.md.
         html_meta = _extract_html_meta(html_text)
         content = md(html_text, heading_style="ATX")
     else:
