@@ -7,10 +7,10 @@ from click.testing import CliRunner
 from hi.commands.validate import validate
 
 
-def write_plan(tmp_path: Path, frontmatter: str, body: str = "") -> Path:
-    """Write a discovery-plan.md file with given frontmatter."""
-    plan = tmp_path / "discovery-plan.md"
-    plan.write_text(f"---\n{frontmatter}\n---\n\n{body}")
+def write_plan(tmp_path: Path, content: str) -> Path:
+    """Write a discovery-plan.yaml file with given YAML content."""
+    plan = tmp_path / "discovery-plan.yaml"
+    plan.write_text(content)
     return plan
 
 
@@ -33,7 +33,7 @@ def make_source(
 
 
 def yaml_sources(sources: list[dict]) -> str:
-    """Convert list of source dicts to YAML frontmatter text."""
+    """Convert list of source dicts to YAML content for discovery-plan.yaml."""
     lines = ["sources:"]
     for s in sources:
         lines.append(f"  - name: {s['name']}")
@@ -64,37 +64,38 @@ def test_validate_plan_valid_exits_0(tmp_path):
     result = runner.invoke(validate, ["--plan", str(plan)])
 
     assert result.exit_code == 0, result.output
-    assert "✓ Frontmatter parses as valid YAML" in result.output
+    assert "✓ Parses as valid YAML" in result.output
     assert "✓ Source count" in result.output
     assert "✓ Terminology source present" in result.output
     assert "✓ All entries have rationale" in result.output
     assert "VALID" in result.output
 
 
-# ── Frontmatter errors ────────────────────────────────────────────────────────
+# ── Parse errors ──────────────────────────────────────────────────────────────
 
 def test_validate_plan_missing_file_exits_1(tmp_path):
     runner = CliRunner()
-    result = runner.invoke(validate, ["--plan", str(tmp_path / "nonexistent.md")])
+    result = runner.invoke(validate, ["--plan", str(tmp_path / "nonexistent.yaml")])
     assert result.exit_code == 1
     assert "not found" in result.output
 
 
 def test_validate_plan_malformed_yaml_exits_1(tmp_path):
-    plan = tmp_path / "plan.md"
-    plan.write_text("---\nsources: [\n  - broken yaml\n---\n")
+    plan = tmp_path / "plan.yaml"
+    plan.write_text("sources: [\n  - broken yaml\n")
     runner = CliRunner()
     result = runner.invoke(validate, ["--plan", str(plan)])
     assert result.exit_code == 1
 
 
 def test_validate_plan_no_frontmatter_exits_1(tmp_path):
-    plan = tmp_path / "plan.md"
-    plan.write_text("# No frontmatter here\n\nJust prose.\n")
+    """A plain prose file (not a YAML mapping) should fail validation."""
+    plan = tmp_path / "plan.yaml"
+    plan.write_text("# Not YAML\n\nJust prose.\n")
     runner = CliRunner()
     result = runner.invoke(validate, ["--plan", str(plan)])
     assert result.exit_code == 1
-    assert "frontmatter" in result.output.lower()
+    assert "not a yaml mapping" in result.output.lower()
 
 
 # ── Source count ──────────────────────────────────────────────────────────────

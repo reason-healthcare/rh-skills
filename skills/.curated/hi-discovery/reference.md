@@ -8,7 +8,7 @@ Companion reference for `SKILL.md`. Loaded on demand during session mode.
 
 Apply the relevant sections below when generating domain advice in Step 1 of
 session mode. Address each applicable item in the **Domain Advice** section of
-`discovery-plan.md`.
+`discovery-plan.md` (the narrative file).
 
 ### CMS Program Alignment
 - Does an existing CMS eCQM (electronic clinical quality measure) cover this

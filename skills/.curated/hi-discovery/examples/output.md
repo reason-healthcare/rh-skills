@@ -225,8 +225,11 @@ User: hi-discovery session diabetes-ccm
 
 > Saving discovery plan...
 >
-> ✓ Written: `topics/diabetes-ccm/process/plans/discovery-plan.md`
+> ✓ Written: `topics/diabetes-ccm/process/plans/discovery-plan.yaml`
 >   (10 sources: 8 open, 2 authenticated)
+>
+> ✓ Written: `topics/diabetes-ccm/process/plans/discovery-readout.md`
+>   (domain advice + 5 expansion suggestions)
 >
 > ✓ Updated: `topics/diabetes-ccm/process/research.md`
 >   (10 sources → Pending Review, awaiting hi-ingest)
@@ -252,13 +255,13 @@ User: hi-discovery verify diabetes-ccm
 ```
 
 ```
-hi validate --plan topics/diabetes-ccm/process/plans/discovery-plan.md
+hi validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
 ```
 
 ```
-Validating: topics/diabetes-ccm/process/plans/discovery-plan.md
+Validating: topics/diabetes-ccm/process/plans/discovery-plan.yaml
 
-✓ YAML frontmatter parses successfully
+✓ YAML parses successfully
 ✓ Source count: 10 (within 5–25 range)
 ✓ At least one terminology source present (SNOMED CT, LOINC, ICD-10-CM)
 ✓ All sources have non-empty rationale

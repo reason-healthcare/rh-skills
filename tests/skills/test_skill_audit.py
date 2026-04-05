@@ -80,8 +80,10 @@ class TestCompanionFiles:
         )
 
     def test_examples_plan_md_exists(self, curated_skill: Path):
-        assert (curated_skill / "examples" / "plan.md").exists(), (
-            f"{curated_skill.name}: missing examples/plan.md — "
+        has_plan_md = (curated_skill / "examples" / "plan.md").exists()
+        has_plan_yaml = (curated_skill / "examples" / "plan.yaml").exists()
+        assert has_plan_md or has_plan_yaml, (
+            f"{curated_skill.name}: missing examples/plan.md or examples/plan.yaml — "
             "add a worked example plan artifact"
         )
 

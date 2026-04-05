@@ -62,13 +62,13 @@ def _get_nested(data: dict, field_path: str):
 @click.argument("level", required=False)
 @click.argument("artifact", required=False)
 @click.option("--plan", "plan_path", default=None, type=click.Path(),
-              help="Path to a discovery-plan.md to validate (FR-019 checks)")
+              help="Path to a discovery-plan.yaml to validate (FR-019 checks)")
 def validate(topic, level, artifact, plan_path):
     """Validate an artifact against its schema.
 
     LEVEL: l2 | structured | l3 | computable
 
-    With --plan: validate a discovery-plan.md for structural completeness (FR-019).
+    With --plan: validate a discovery-plan.yaml for structural completeness (FR-019).
     """
     if plan_path:
         _validate_discovery_plan(plan_path)
@@ -141,7 +141,7 @@ def validate(topic, level, artifact, plan_path):
 
 
 def _validate_discovery_plan(plan_path: str) -> None:
-    """Validate a discovery-plan.md per FR-019 checks. Read-only — no file writes."""
+    """Validate a discovery-plan.yaml per FR-019 checks. Read-only — no file writes."""
     from pathlib import Path
 
     path = Path(plan_path)
@@ -149,22 +149,15 @@ def _validate_discovery_plan(plan_path: str) -> None:
         click.echo(f"✗ Plan file not found: {plan_path}")
         raise SystemExit(1)
 
-    # Parse YAML frontmatter delimited by ---
-    content = path.read_text()
-    frontmatter_str = _extract_frontmatter(content)
-    if frontmatter_str is None:
-        click.echo("✗ No YAML frontmatter found (expected --- delimiters)")
-        raise SystemExit(1)
-
     y = YAML(typ="safe")
     try:
-        data = y.load(frontmatter_str)
+        data = y.load(path.read_text())
     except Exception as e:
         click.echo(f"✗ YAML parse error: {e}")
         raise SystemExit(1)
 
     if not isinstance(data, dict):
-        click.echo("✗ Frontmatter parsed but is not a mapping")
+        click.echo("✗ File parsed but is not a YAML mapping")
         raise SystemExit(1)
 
     errors = 0
@@ -173,7 +166,7 @@ def _validate_discovery_plan(plan_path: str) -> None:
     click.echo(f"Validating discovery plan: {plan_path}\n")
 
     # (a) YAML parses successfully — already done above
-    click.echo("✓ Frontmatter parses as valid YAML")
+    click.echo("✓ Parses as valid YAML")
 
     # (b) sources[] count 5–25
     sources = data.get("sources", []) or []
@@ -257,16 +250,4 @@ def _validate_discovery_plan(plan_path: str) -> None:
         click.echo("VALID — all checks passed")
 
 
-def _extract_frontmatter(content: str) -> str | None:
-    """Extract YAML frontmatter between first pair of --- delimiters."""
-    lines = content.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    end = None
-    for i, line in enumerate(lines[1:], start=1):
-        if line.strip() == "---":
-            end = i
-            break
-    if end is None:
-        return None
-    return "\n".join(lines[1:end])
+

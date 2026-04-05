@@ -11,7 +11,8 @@ description: >
 compatibility: "hi-skills-framework >= 0.1.0"
 context_files:
   - reference.md          # domain advice checklist, source taxonomies, US gov coverage
-  - examples/plan.md      # worked example: diabetes-ccm discovery-plan.md
+  - examples/plan.yaml    # worked example: diabetes-ccm discovery-plan.yaml (structured sources)
+  - examples/readout.md   # worked example: diabetes-ccm discovery-readout.md (domain narrative)
   - examples/output.md    # worked example: session transcript excerpt
 metadata:
   author: "HI Skills Framework"
@@ -41,21 +42,31 @@ metadata:
 `hi-discovery` is the **L1 evidence discovery** stage of the HI lifecycle. It
 guides a clinical informaticist through finding, evaluating, and documenting
 evidence-based source material for a healthcare informatics topic. The result is
-a `discovery-plan.md` that `hi-ingest` consumes to acquire and register all
-sources, and that downstream skills (`hi-extract`, `hi-formalize`) use to
-advance artifacts toward L2 and L3.
+a `discovery-plan.yaml` (structured source list, the single source of truth) and
+`discovery-readout.md` (generated domain narrative) that `hi-ingest` consumes
+to acquire and register all sources, and that downstream skills
+(`hi-extract`, `hi-formalize`) use to advance artifacts toward L2 and L3.
 
 The skill acts as an **interactive research assistant** — it does not stop at a
 single search pass. After each pass the agent explicitly prompts the user with
 expansion suggestions and awaits direction. The plan is a **living document**
 written to disk only when the user approves it.
 
-**Guiding principle**: Discovery is a pure research and planning activity.
-All searches are delegated to `hi` CLI commands. All clinical reasoning, source
-evaluation, and research synthesis happen in this skill. Discovery does **not**
-download or register any source files — that is entirely `hi-ingest`'s
-responsibility. This means the plan can be re-run, revised, and reviewed before
-any file-system side effects occur.
+---
+
+## Guiding Principles
+
+- **Discovery is pure research.** All searches are delegated to `hi` CLI commands.
+  All clinical reasoning, source evaluation, and research synthesis happen in
+  this skill.
+- **No file-system side effects.** Discovery does not download or register any
+  source files — that is entirely `hi-ingest`'s responsibility. The plan can be
+  re-run, revised, and reviewed before any acquisition occurs.
+- **Single source of truth.** `discovery-plan.yaml` is the authoritative source
+  list. `discovery-readout.md` is a generated narrative derived from it and
+  should never be edited directly.
+- **Always close the loop.** Every response must include a status block telling
+  the user where they are and what to do next.
 
 ---
 
@@ -74,7 +85,7 @@ kebab-case topic identifier previously initialized with `hi init`.
 | `session` | `<topic> [--force]` | `session diabetes-ccm` |
 | `verify` | `<topic>` | `verify diabetes-ccm` |
 
-- `--force`: overwrite an existing `discovery-plan.md` (session mode only).
+- `--force`: overwrite existing `discovery-plan.yaml` and `discovery-readout.md` (session mode only).
 - If `$ARGUMENTS` is empty or the mode is unrecognized, print this table and exit.
 
 ---
@@ -92,7 +103,7 @@ If the topic does not exist, print a helpful error and suggest `hi init <topic>`
 For **session** mode only: check whether a plan already exists:
 
 ```sh
-ls topics/<topic>/process/plans/discovery-plan.md 2>/dev/null
+ls topics/<topic>/process/plans/discovery-plan.yaml 2>/dev/null
 ```
 
 - If it exists **and** `--force` was not passed: warn the user, offer to load it
@@ -122,7 +133,7 @@ Rules:
   Use `Complete` suffix once a step is fully done (e.g., `3 — ClinicalTrials
   Search · Complete`).
 - **Plan** shows live source count while unsaved; switches to `saved ·` once
-  `discovery-plan.md` has been written.
+  switches to `saved ·` once `discovery-plan.yaml` has been written.
 - **Next** must be a concrete, copy-pasteable command OR a specific choice
   prompt (e.g., `approve list / modify / add sources`). Never vague.
 - After `verify` mode, the block uses `Mode: verify` and `Result: PASS / FAIL`
@@ -149,8 +160,8 @@ guidance for `<topic>`, addressing all checklist items relevant to the domain:
 - Health economics angle (cost of care, disease burden) — required when the
   topic involves a chronic condition, preventive intervention, or CMS program
 
-This advice is captured in the **Domain Advice** section of `discovery-plan.md`
-and guides which sources to prioritize.
+This advice is captured in the **Domain Advice** section of `discovery-readout.md`
+(the generated narrative file) and guides which sources to prioritize.
 
 Emit status block:
 ```
@@ -368,8 +379,11 @@ Emit status block reflecting current state, e.g.:
 
 When the user approves saving:
 
-1. Write `topics/<topic>/process/plans/discovery-plan.md` (see Level 3 below
-   for the required format)
+1. Write `topics/<topic>/process/plans/discovery-plan.yaml` — the structured
+   source list (see Level 3 below for the required format)
+2. Write `topics/<topic>/process/plans/discovery-readout.md` — the generated
+   domain narrative (Domain Advice + Research Expansion Suggestions prose);
+   add a note at the top that it is derived from `discovery-plan.yaml`
 2. Update `process/research.md` — move all approved sources to Pending Review
    (awaiting `hi-ingest`); move rejected sources to Ruled Out
 3. Update `RESEARCH.md` root portfolio row for the topic (source count, date)
@@ -402,7 +416,7 @@ files) in a single dedicated step.
 **Read-only** — no file writes, no `tracking.yaml` modifications.
 
 ```sh
-hi validate --plan topics/<topic>/process/plans/discovery-plan.md
+hi validate --plan topics/<topic>/process/plans/discovery-plan.yaml
 ```
 
 Report the output verbatim. Exit with the same code as `hi validate --plan`.
@@ -427,15 +441,17 @@ On exit 1, emit:
 
 ---
 
-## Level 3 — discovery-plan.md Format
+## Level 3 — Discovery Plan Format
 
 <!-- LEVEL 3 DISCLOSURE — detailed schemas, loaded on-demand -->
 
-The discovery plan is a Markdown file with YAML frontmatter followed by prose
-sections. This exact structure is required for `hi validate --plan` to pass.
+The discovery plan is **two files** written to the same directory:
 
-```markdown
----
+### `discovery-plan.yaml` — Structured Source List
+
+Pure YAML. This is what `hi validate --plan` and `hi-ingest` operate on.
+
+```yaml
 topic: "<topic>"
 date: "YYYY-MM-DD"
 sources:
@@ -450,7 +466,18 @@ sources:
     url: "<url>"                     # required when access: open
     auth_note: "<how to access>"     # required when access: authenticated
     recommended: true                # optional; true for high-value authenticated sources
----
+```
+
+See `examples/plan.yaml` for a complete worked example.
+
+### `discovery-readout.md` — Generated Domain Narrative
+
+Markdown prose. Generated by the agent; consumed by agents and humans for context; **not machine-parsed**. Must begin with the derivation note.
+
+```markdown
+> **Note:** This file is a narrative readout derived from `discovery-plan.yaml`.
+> It is generated by the `hi-discovery` skill and should not be edited directly.
+> The structured source list in `discovery-plan.yaml` is the single source of truth.
 
 ## Domain Advice
 
@@ -466,7 +493,7 @@ sources:
 2. ...
 ```
 
-See `examples/plan.md` for a complete worked example.
+See `examples/readout.md` for a complete worked example.
 
 ---
 
