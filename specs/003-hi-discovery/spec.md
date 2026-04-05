@@ -9,7 +9,7 @@
 
 ### Session 2026-04-04
 
-- Q: Does `implement` download sources now or only populate `ingest-plan.md` for hi-ingest to handle later? → A: Discovery is a single conversational session — no separate explicit `implement` mode. Downloads happen inline as the user explores; the agent triggers `hi ingest implement --url` during the session when the user approves a source.
+- Q: Does `implement` download sources now or only populate `ingest-plan.md` for hi-ingest to handle later? → A: Discovery is pure planning — no downloads occur during the session. `hi-ingest` (004) owns all source acquisition. The discovery session produces `discovery-plan.yaml` (machine-readable work queue) and `discovery-readout.md` (narrative); `hi-ingest` reads `discovery-plan.yaml` to execute downloads.
 - Q: What are the source count bounds for a discovery plan? → A: 5 minimum, 25 maximum sources per plan.
 - Q: Should `verify` check for a health-economics source? → A: Warning only — `verify` emits `⚠ No health-economics source found — recommended for chronic conditions` but does not exit 1.
 - Q: What should the default result count be for `hi search pubmed`? → A: Default 20, configurable via `--max`. All `hi search` subcommands share this default.
@@ -29,7 +29,7 @@ The skill has two modes:
 
 | Mode | Agent role | `hi` CLI called | Output |
 |------|-----------|----------------|--------|
-| `session` | Interactive research conversation — searches, advises, downloads, expands, iterates; writes plan to disk on user approval | `hi search pubmed/pmc/clinicaltrials`, `hi ingest implement --url` (per approved source) | `process/plans/discovery-plan.md` (on save), `process/research.md` updated, `RESEARCH.md` updated |
+| `session` | Interactive research conversation — searches, advises, expands, iterates; writes plan to disk on user approval (no downloads — `hi-ingest` owns acquisition) | `hi search pubmed/pmc/clinicaltrials` | `process/plans/discovery-plan.yaml` + `process/plans/discovery-readout.md` (on save), `process/research.md` updated, `RESEARCH.md` updated |
 | `verify` | Validates a saved plan for structural completeness and coverage | (read-only) | Per-check report; no file writes |
 
 ---
@@ -49,11 +49,11 @@ A clinical informaticist starts a new topic "sepsis-early-detection" and has no 
 **Acceptance Scenarios**:
 
 1. **Given** an initialised topic, **When** `hi-discovery` session starts, **Then** the agent advises on domain considerations and calls `hi search pubmed` with topic-relevant terms.
-2. **Given** the user approves a source with `access: open`, **Then** the agent calls `hi ingest implement --url` immediately, downloads to `sources/`, and confirms registration.
-3. **Given** an `access: authenticated` source is identified, **Then** the agent prints an access advisory (name, relevance, URL, auth method, search terms) before the user decides whether to pursue it.
-4. **Given** `discovery-plan.md` already exists when the session starts, **Then** the agent warns and offers to load it for continuation or start fresh with `--force`.
+2. **Given** an `access: open` source is identified, **Then** the agent records it in the in-session plan with `url` populated; `hi-ingest` will download it later when consuming `discovery-plan.yaml`.
+3. **Given** an `access: authenticated` source is identified, **Then** the agent prints an access advisory (name, relevance, URL, auth method, search terms) and includes the source in `discovery-plan.yaml` with `auth_note`; no download is attempted during discovery.
+4. **Given** `discovery-plan.yaml` already exists when the session starts, **Then** the agent warns and offers to load it for continuation or start fresh with `--force`.
 5. **Given** `--dry-run`, **When** the session runs, **Then** proposed sources and domain advice are shown; no files written and no events appended.
-6. **Given** the user approves the plan, **Then** `discovery-plan.md` is written, `process/research.md` is updated, `RESEARCH.md` portfolio is updated, and a `discovery_planned` event is appended to `tracking.yaml`.
+6. **Given** the user approves the plan, **Then** `discovery-plan.yaml` and `discovery-readout.md` are written, `process/research.md` is updated, `RESEARCH.md` portfolio is updated, and a `discovery_planned` event is appended to `tracking.yaml`.
 
 ---
 
@@ -64,7 +64,7 @@ After the initial pass, the user asks the agent to explore the healthcare econom
 **Acceptance Scenarios**:
 
 1. **Given** the user requests expansion into an adjacent area, **When** the agent searches and finds relevant sources, **Then** new entries are added to the in-session plan without overwriting existing entries.
-2. **Given** the user asks to save mid-session, **Then** the current plan state is written to `discovery-plan.md` as a checkpoint; the session continues.
+2. **Given** the user asks to save mid-session, **Then** the current plan state is written to `discovery-plan.yaml` (and `discovery-readout.md`) as a checkpoint; the session continues.
 3. **Given** the plan reaches 25 sources, **Then** the agent warns that the maximum is reached and moves additional candidates to the Research Expansion Suggestions section rather than `sources[]`.
 4. **Given** the plan has fewer than 5 sources after all searches, **Then** the agent searches additional databases or source categories before presenting the plan for approval.
 
@@ -89,11 +89,11 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 - Source URL returns a redirect to a login page — download fails gracefully; source is flagged as `access: manual` with failure reason recorded in `process/research.md` Ruled Out.
 - Plan reaches 25-source cap — agent moves additional candidates to Research Expansion Suggestions rather than silently dropping them.
 - Plan has fewer than 5 sources after all searches — agent explicitly searches additional databases before presenting for approval.
-- Plan YAML frontmatter is malformed — `verify` fails at parse time with a line-level error.
+- Plan YAML is malformed — `verify` fails at parse time with a line-level error.
 - A source file is already present in `sources/` with matching checksum — `hi ingest implement` skips re-download (idempotent).
 - Topic name not found in `tracking.yaml` — session exits non-zero with: `topic '<name>' not initialised — run hi init first`.
-- Network unavailable during session — agent reasons from domain knowledge; defers all URL downloads to `ingest-plan.md` for manual action; warns the user clearly.
-- User asks to save mid-session — current plan state is checkpointed to `discovery-plan.md`; session continues; subsequent save with `--force` implied.
+- Network unavailable during session — agent reasons from domain knowledge; records all sources as `access: manual` in `discovery-plan.yaml` with appropriate `auth_note`; warns the user clearly.
+- User asks to save mid-session — current plan state is checkpointed to `discovery-plan.yaml` and `discovery-readout.md`; session continues; subsequent save with `--force` implied.
 
 ---
 
@@ -112,30 +112,30 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 
 **plan mode**
 
-- **FR-004**: `hi-discovery session` MUST produce `process/plans/discovery-plan.md` on user approval or explicit save. The file MUST contain: (a) a prose **Domain Advice** section; (b) YAML frontmatter with a `sources[]` list; (c) a **Research Expansion Suggestions** section (see FR-025). The plan is a **living document during the session** — the agent updates it as the conversation evolves and only writes to disk at a save checkpoint (user approval or explicit "save" instruction).
+- **FR-004**: `hi-discovery session` MUST produce two files on user approval or explicit save: (a) `process/plans/discovery-plan.yaml` — pure YAML (no frontmatter delimiters), the single machine-readable source of truth containing `topic`, `date`, `sources[]`, and related fields; (b) `process/plans/discovery-readout.md` — generated Markdown narrative containing the **Domain Advice** section and the **Research Expansion Suggestions** section, with a header note "This file is derived from discovery-plan.yaml. Do not edit directly." The plan is a **living document during the session** — the agent updates it as the conversation evolves and only writes to disk at a save checkpoint (user approval or explicit "save" instruction).
 - **FR-004a**: A discovery plan MUST contain a minimum of 5 and a maximum of 25 source entries. If fewer than 5 sources are identified, the agent MUST search additional databases or source categories before presenting the plan. If the agent identifies more than 25 high-quality sources, it MUST select the 25 most relevant and note the remainder as expansion candidates in the Research Expansion Suggestions section.
 - **FR-005**: Each source entry in `sources[]` MUST have: `name`, `type` (see FR-009), `rationale`, `search_terms[]`, `evidence_level` (see FR-010), `access` (`open | authenticated | manual`). `url` is optional but MUST be present when `access: open`. When `access: authenticated`, the entry MUST include `auth_note` — a plain-English description of how to obtain access (e.g., institutional login, free registration, society membership).
 - **FR-005a**: For `access: authenticated` sources, the agent MUST include a `recommended: true` flag when the source is considered authoritative or high-value for the topic domain, regardless of whether it can be downloaded automatically. The discovery plan is the authoritative recommendation — access difficulty does not reduce a source's priority.
 - **FR-006**: The agent MUST call `hi search pubmed` and at least one other `hi search` subcommand during `plan`; results inform the `sources[]` list. The agent decides which results are relevant.
 - **FR-007**: `plan` MUST populate `process/research.md` Pending Review table with all `sources[]` entries from the discovery plan (name, URL or "TBD", date added). `plan` MUST also create `process/conflicts.md` stub (create-unless-exists). Existing files MUST NOT be modified (only the Pending Review table is appended).
-- **FR-008**: If `discovery-plan.md` already exists, `plan` MUST warn and stop unless `--force` is passed. Successful `plan` (non-dry-run) MUST append `discovery_planned` to `tracking.yaml`.
+- **FR-008**: If `discovery-plan.yaml` already exists, `plan` MUST warn and stop unless `--force` is passed. Successful `plan` (non-dry-run) MUST append `discovery_planned` to `tracking.yaml`. `--force` applies to both `discovery-plan.yaml` and `discovery-readout.md`.
 
 **session mode — inline download**
 
 - **FR-011**: During the discovery session, when the user approves a source with `access: open` and a known `url`, the agent MUST immediately call `hi ingest implement --url <url> --name <name> --topic <topic>` without waiting for the session to end. The source is downloaded to `sources/` and registered in `tracking.yaml` in real time.
 - **FR-011a**: For `access: authenticated` sources, the agent MUST print a formatted per-source access advisory during the session — naming the source, explaining why it is recommended for this topic, providing the specific URL, login mechanism, and what to search for once authenticated.
 - **FR-011b**: The access advisory format MUST include: source name, why it is relevant, access URL, authentication method (institutional login / free registration / society membership / library proxy), and suggested search terms to use once inside.
-- **FR-012**: Sources with `access: manual` or no resolvable `url` MUST be added to `process/plans/ingest-plan.md` as pending manual entries at session save time. No download is attempted.
+- **FR-012**: Sources with `access: manual` or `access: authenticated` MUST be included in `discovery-plan.yaml` with an `auth_note` field describing how to obtain access. `hi-ingest` reads `discovery-plan.yaml` directly to determine which sources require manual retrieval. No `ingest-plan.md` is generated.
 - **FR-013**: Download failures (non-2xx HTTP, network error, auth redirect) MUST be caught per-source during the session; the agent reports the failure inline and continues. Failed sources are flagged in the plan as `access: manual` with the failure reason.
-- **FR-014**: When the user approves the session plan or issues a save checkpoint, the agent MUST write `process/plans/discovery-plan.md`, update `process/research.md` (Pending Review → Ruled In for downloaded sources; Pending Review → Ruled Out for failed/manual), and update `RESEARCH.md` root portfolio (source count, updated date).
-- **FR-015**: If `discovery-plan.md` already exists when the session starts, the agent MUST warn the user and offer to load it for continuation or start fresh with `--force`.
+- **FR-014**: When the user approves the session plan or issues a save checkpoint, the agent MUST write `process/plans/discovery-plan.yaml` and `process/plans/discovery-readout.md`, update `process/research.md` (Pending Review → Ruled In for sources planned for open access; Pending Review → Pending Manual for manual/authenticated sources), and update `RESEARCH.md` root portfolio (source count, updated date).
+- **FR-015**: If `discovery-plan.yaml` already exists when the session starts, the agent MUST warn the user and offer to load it for continuation or start fresh with `--force`.
 - **FR-016**: If no sources are identified after exhausting all search strategies, the session MUST exit with a clear message listing what was searched and suggesting the user try alternate search terms.
 - **FR-017**: Successful session save MUST append `discovery_planned` event to `tracking.yaml` with payload: `{ sources: N, downloaded: D, manual_pending: M }`.
 
 **verify mode**
 
 - **FR-018**: `hi-discovery verify` MUST be strictly read-only (no file writes, no `tracking.yaml` modifications).
-- **FR-019**: `verify` MUST check: (a) `discovery-plan.md` exists and parses as valid YAML; (b) `sources[]` is non-empty and contains 5–25 entries; (c) at least one entry has `type: terminology`; (d) every entry has non-empty `rationale`; (e) every entry has non-empty `search_terms[]`; (f) every `evidence_level` is from the allowed set; (g) every `type` is from the allowed set (unknown types → warning only); (h) if no `health-economics` source is present → emit `⚠ No health-economics source found — recommended for chronic conditions and preventive interventions` (warning only, does not fail the check).
+- **FR-019**: `verify` MUST check: (a) `discovery-plan.yaml` exists and parses as valid YAML (no frontmatter extraction needed — file is pure YAML); (b) `sources[]` is non-empty and contains 5–25 entries; (c) at least one entry has `type: terminology`; (d) every entry has non-empty `rationale`; (e) every entry has non-empty `search_terms[]`; (f) every `evidence_level` is from the allowed set; (g) every `type` is from the allowed set (unknown types → warning only); (h) if no `health-economics` source is present → emit `⚠ No health-economics source found — recommended for chronic conditions and preventive interventions` (warning only, does not fail the check).
 - **FR-020**: `verify` MUST exit 0 iff all checks pass; exit 1 otherwise. Per-check output uses `✓` / `✗`.
 
 **general**
@@ -143,8 +143,8 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 - **FR-021**: Both modes accept `TOPIC` positional argument and `--dry-run`. The `session` mode accepts `--force` (to overwrite an existing plan).
 - **FR-022**: The skill MUST reside at `skills/.curated/hi-discovery/SKILL.md` following the `skills/_template/` three-level progressive disclosure format.
 - **FR-023**: For any topic with a US clinical care or population health angle, the agent MUST actively search and include sources from the US government healthcare ecosystem. Minimum coverage: (a) check CMS eCQM Library and CMIT for existing quality measures; (b) check QPP/MIPS if a clinician performance angle exists; (c) check USPSTF for preventive service grades; (d) assess SDOH relevance using Gravity Project domain taxonomy; (e) check AHRQ for evidence-based practice reports; (f) include CDC surveillance or MMWR if epidemiological evidence is needed.
-- **FR-024**: The domain advice section of `discovery-plan.md` MUST address the `reference.md` Domain Advice Checklist in full, including: CMS program alignment, SDOH relevance (with specific Gravity domains if applicable), health equity lens, and existing quality measure landscape.
-- **FR-025**: After producing the source plan, the agent MUST present a **Research Expansion Suggestions** section in `discovery-plan.md` with 3–7 numbered, clinically-grounded prompts the user can choose to pursue. These are prospective adjacent areas — NOT sources already in the plan. Each suggestion MUST include: the adjacent topic, why it is relevant to the primary topic, and the first `hi` command the user would run to explore it. Suggestions MUST NOT be added to `sources[]` automatically; they are offered for the user to act on.
+- **FR-024**: The domain advice section of `discovery-readout.md` MUST address the `reference.md` Domain Advice Checklist in full, including: CMS program alignment, SDOH relevance (with specific Gravity domains if applicable), health equity lens, and existing quality measure landscape.
+- **FR-025**: After producing the source plan, the agent MUST present a **Research Expansion Suggestions** section in `discovery-readout.md` with 3–7 numbered, clinically-grounded prompts the user can choose to pursue. These are prospective adjacent areas — NOT sources already in the plan. Each suggestion MUST include: the adjacent topic, why it is relevant to the primary topic, and the first `hi` command the user would run to explore it. Suggestions MUST NOT be added to `sources[]` automatically; they are offered for the user to act on.
 - **FR-025a**: Research Expansion Suggestions MUST cover at minimum these categories when applicable: (a) adjacent comorbidities or closely related conditions; (b) a healthcare economics angle (cost of care, disease burden, cost-effectiveness); (c) a health equity or disparate-population angle; (d) an implementation science gap (known barriers to guideline adoption); (e) a data / registry gap (areas with limited evidence or active clinical trial inquiry).
 - **FR-026**: When the topic involves a chronic condition, a preventive intervention, or a CMS quality program, the agent MUST include at least one `health-economics` source in `sources[]`. Minimum content: a cost-of-care or disease-burden estimate source (e.g., HCUP, MEPS, GBD) and, where a clinical intervention is involved, a cost-effectiveness reference (e.g., CEA Registry, NICE HTA).
 - **FR-027**: The agent MUST function as an interactive research assistant throughout the session. The plan is a **living document** — the agent may add, remove, or revise source entries and expansion suggestions as the conversation develops. The plan is written to disk only when the user explicitly approves it or issues a save instruction. After each research pass, the agent MUST explicitly prompt the user: which (if any) expansion areas to explore next, whether to save the current plan state, and whether to run `hi-discovery verify` before proceeding to ingest.
@@ -177,11 +177,11 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 
 ### Key Entities
 
-- **Discovery Plan** (`discovery-plan.md`): YAML frontmatter + Markdown prose. Contains domain advice, `sources[]`, and Research Expansion Suggestions. Human-editable between `plan` and `implement`.
+- **Discovery Plan** (`discovery-plan.yaml`): Pure YAML file (no frontmatter delimiters) — the single machine-readable source of truth. Contains `topic`, `date`, `sources[]`, and related metadata. Operated on by `hi validate --plan`. Human-editable between sessions. `hi-ingest` reads this file directly for source acquisition.
+- **Discovery Readout** (`discovery-readout.md`): Generated Markdown narrative derived from `discovery-plan.yaml`. Contains `## Domain Advice` and `## Research Expansion Suggestions` sections. For human/agent reading only — never machine-parsed. Includes a note: "This file is derived from discovery-plan.yaml. Do not edit directly."
 - **Source Entry**: One item in `sources[]` with `name`, `type`, `rationale`, `search_terms[]`, `evidence_level`, `access` (`open | authenticated | manual`), optional `url`, optional `auth_note` (required when `access: authenticated`), optional `recommended` (bool, for high-value authenticated sources).
 - **Research Portfolio** (`RESEARCH.md` at repo root): Cross-topic portfolio log. CLI-managed table of all topics with stage, source count, and dates. Human-editable Notes column and prose.
 - **Per-Topic Research Notes** (`process/research.md`): Source-level disposition tracking — Ruled In, Ruled Out (with reason), Pending Review. CLI appends rows; humans maintain Open Questions and Related Topics sections.
-- **Ingest Plan** (`ingest-plan.md`): Populated by `implement` with manual-acquisition sources. Consumed by `hi-ingest` (004) for any remaining local-file registration.
 - **Conflicts Stub** (`conflicts.md`): Created-unless-exists. Human-maintained guideline contradictions.
 
 ---

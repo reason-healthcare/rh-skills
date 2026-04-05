@@ -5,7 +5,7 @@
 
 ## Summary
 
-`hi-discovery` is an interactive research assistant SKILL.md that guides clinical informaticists through evidence-based source discovery for a new topic. It operates as a single conversational session (no explicit plan/implement split): the agent searches PubMed, PubMed Central, and ClinicalTrials.gov via `hi search` CLI commands; downloads approved open-access sources inline via `hi ingest implement --url`; maintains a living `discovery-plan.md` written to disk on user approval; and produces Research Expansion Suggestions after each research pass. A `verify` mode validates saved plans for structural completeness. Two new `hi` CLI command groups are required: `hi search` (PubMed/PMC/ClinicalTrials API wrappers) and an extension to `hi ingest implement` for URL-based downloads.
+`hi-discovery` is an interactive research assistant SKILL.md that guides clinical informaticists through evidence-based source discovery for a new topic. It operates as a single conversational session (pure planning — no downloads): the agent searches PubMed, PubMed Central, and ClinicalTrials.gov via `hi search` CLI commands; maintains a living `discovery-plan.yaml` (pure YAML, machine-readable source of truth) and `discovery-readout.md` (generated narrative) written to disk on user approval; and produces Research Expansion Suggestions after each research pass. A `verify` mode validates saved plans for structural completeness. `hi-ingest` (004) handles all source acquisition by reading `discovery-plan.yaml` directly. Two new `hi` CLI command groups are required: `hi search` (PubMed/PMC/ClinicalTrials API wrappers) and an extension to `hi validate` for `--plan <path>.yaml`.
 
 ## Technical Context
 
@@ -46,7 +46,7 @@ specs/003-hi-discovery/
 ├── quickstart.md        # Phase 1 output
 ├── contracts/           # Phase 1 output
 │   ├── hi-search.md     # hi search command contract
-│   └── discovery-plan-schema.md  # discovery-plan.md YAML schema
+│   └── discovery-plan-schema.md  # discovery-plan.yaml YAML schema
 └── tasks.md             # Phase 2 output (speckit-tasks)
 ```
 
@@ -62,8 +62,8 @@ skills/.curated/hi-discovery/
 ├── SKILL.md             # NEW: interactive research assistant skill
 ├── reference.md         # EXISTING: full source taxonomy + access guidance
 └── examples/
-    ├── plan.md          # NEW: worked example discovery-plan.md
-    └── output.md        # NEW: worked example of a saved session output
+    ├── plan.yaml        # NEW: worked example discovery-plan.yaml
+    └── readout.md       # NEW: worked example discovery-readout.md
 
 tests/
 ├── unit/

@@ -22,8 +22,8 @@ topics/<name>/
     contracts/        # YAML assertions for validation
     checklists/       # clinical review checklists
     plans/            # plan artifacts from framework skills
-      discovery-plan.md
-      ingest-plan.md
+      discovery-plan.yaml
+      discovery-readout.md
       extract-plan.md
       formalize-plan.md
       tasks.md
@@ -273,9 +273,9 @@ metadata:
 
 | Skill | Mode | Reads | Writes |
 |-------|------|-------|--------|
-| `hi-discovery` | `plan` | tracking.yaml (domain) | `topics/<name>/process/plans/discovery-plan.md` |
-| `hi-discovery` | `implement` | `topics/<name>/process/plans/discovery-plan.md` | `topics/<name>/process/plans/ingest-plan.md` |
-| `hi-ingest` | `plan` | `topics/<name>/process/plans/discovery-plan.md` or user input | `plans/ingest-plan.md` |
+| `hi-discovery` | `session` | tracking.yaml (domain) | `topics/<name>/process/plans/discovery-plan.yaml`, `topics/<name>/process/plans/discovery-readout.md` |
+| `hi-discovery` | `verify` | `topics/<name>/process/plans/discovery-plan.yaml` | *(none — read-only)* |
+| `hi-ingest` | `plan` | `topics/<name>/process/plans/discovery-plan.yaml` or user input | sources queue |
 | `hi-ingest` | `implement` | `<file>` (path argument) | `sources/*`, tracking.yaml `sources[]` |
 | `hi-ingest` | `verify` | tracking.yaml `sources[]` | *(none — read-only)* |
 | `hi-extract` | `plan` | `sources/*`, tracking.yaml | `topics/<name>/process/plans/extract-plan.md` |

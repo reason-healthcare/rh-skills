@@ -42,21 +42,21 @@ Invoke the `hi-discovery` skill in **plan** mode. The agent generates a research
 
 **Agent invokes**: `hi-discovery plan`  
 **Reads**: `tracking.yaml` (domain: `diabetes`)  
-**Writes**: `topics/diabetes-screening/process/plans/discovery-plan.md`
+**Writes**: `topics/diabetes-screening/process/plans/discovery-plan.yaml` (machine-readable source list) and `topics/diabetes-screening/process/plans/discovery-readout.md` (narrative)
 
-**Human review**: Open `topics/diabetes-screening/process/plans/discovery-plan.md`. Edit the YAML front matter to remove sources you don't need, add any you know of. The prose body explains each source — review it, then proceed.
+**Human review**: Open `topics/diabetes-screening/process/plans/discovery-plan.yaml`. Edit the YAML to remove sources you don't need or add any you know of. Review `discovery-readout.md` for domain advice and expansion suggestions, then proceed.
 
-Then invoke **implement** mode to convert the plan into ingest tasks:
+Then invoke **verify** mode to validate the plan before ingesting:
 
-**Agent invokes**: `hi-discovery implement`  
-**Reads**: `topics/diabetes-screening/process/plans/discovery-plan.md`  
-**Writes**: `topics/diabetes-screening/process/plans/ingest-plan.md`
+**Agent invokes**: `hi validate --plan topics/diabetes-screening/process/plans/discovery-plan.yaml`  
+**Reads**: `topics/diabetes-screening/process/plans/discovery-plan.yaml`  
+**Writes**: nothing (read-only)
 
 ---
 
 ## Step 2: Ingest — register your raw sources
 
-You've downloaded `ada-care-2024.pdf`. Review and edit `topics/diabetes-screening/process/plans/ingest-plan.md` — update file paths to match where your files actually are.
+You've downloaded `ada-care-2024.pdf`. `hi-ingest` reads `discovery-plan.yaml` directly to determine which sources to acquire.
 
 **Agent invokes**: `hi ingest implement <file>`  
 **Reads**: file path argument  

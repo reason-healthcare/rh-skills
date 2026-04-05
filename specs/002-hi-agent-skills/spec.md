@@ -37,7 +37,8 @@ topics/<name>/
   computable/                # Computable L3 artifacts (YAML) — prominent
   process/
     plans/                   # Per-topic plan artifacts
-      discovery-plan.md      # YAML front matter + prose
+      discovery-plan.yaml    # Pure YAML — hi-discovery output (machine-readable source of truth)
+      discovery-readout.md   # Generated narrative — do not edit directly
       ingest-plan.md         # YAML front matter + prose
       extract-plan.md        # YAML front matter + prose
       formalize-plan.md      # YAML front matter + prose
@@ -140,7 +141,7 @@ hi-extract implement
 hi-ingest verify
 ```
 
-- **`plan`** — Writes `topics/<name>/process/plans/<skill>-plan.md` with YAML front matter (machine-readable) + Markdown prose (human review). No other files created or modified.
+- **`plan`** — Writes `topics/<name>/process/plans/<skill>-plan.md` with YAML front matter (machine-readable) + Markdown prose (human review). No other files created or modified. **Exception**: `hi-discovery` (003) uses a two-file split instead: `discovery-plan.yaml` (pure YAML, no frontmatter delimiters) as the machine-readable source of truth, and `discovery-readout.md` (generated narrative, do not edit) for human review.
 - **`implement`** — Reads YAML front matter from the plan artifact and executes it by invoking `hi` CLI commands. Fails immediately if no plan exists.
 - **`verify`** — Non-destructive validation only. Never modifies any file.
 
@@ -346,7 +347,7 @@ A skill author implements `hi-extract` by copying `skills/_template/`, filling i
 - **Source Artifact (L1)**: A raw input file registered via `hi ingest`. Tracked by path, type, SHA-256 checksum, and timestamp.
 - **Structured Artifact (L2)**: A semi-structured YAML file in `topics/<name>/structured/` produced by `hi promote derive`.
 - **Computable Artifact (L3)**: A fully structured YAML file in `topics/<name>/computable/` produced by `hi promote combine`. Contains FHIR-compatible pathways, measures, and value sets.
-- **Plan Artifact**: A Markdown file with YAML front matter in `topics/<name>/process/plans/<skill>-plan.md`. Required input for the corresponding `implement` mode.
+- **Plan Artifact**: A Markdown file with YAML front matter in `topics/<name>/process/plans/<skill>-plan.md`. Required input for the corresponding `implement` mode. **Exception**: `hi-discovery` uses `discovery-plan.yaml` (pure YAML) + `discovery-readout.md` (generated narrative) instead of a single `.md` file.
 - **tracking.yaml**: Repo-root YAML file recording all topics, sources, artifacts, and lifecycle events.
 - **Event**: A named entry appended to `tracking.yaml` by any skill mode that modifies state.
 

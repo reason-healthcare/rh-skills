@@ -28,7 +28,7 @@ Output:
   plans/ingest-plan.md  (YAML front matter + Markdown prose)
 
 Reads:
-  topics/<name>/process/plans/discovery-plan.md  (if available, for context)
+  topics/<name>/process/plans/discovery-plan.yaml  (if available, for context)
 ```
 
 ### `hi ingest implement <file> [--force]`
@@ -116,7 +116,10 @@ All plan artifacts share this interface, consumed by `implement` mode scripts.
 
 ### Front Matter Fields by Plan Type
 
-#### discovery-plan.md
+#### discovery-plan.yaml
+
+Pure YAML file (no frontmatter delimiters). Single machine-readable source of truth for `hi-discovery` output. Consumed by `hi validate --plan` and `hi-ingest`.
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `topic` | string | ✅ | Topic name |
@@ -129,8 +132,12 @@ All plan artifacts share this interface, consumed by `implement` mode scripts.
 | `sources[].priority` | enum | ✅ | `high\|medium\|low` |
 | `sources[].url` | string | ❌ | URL if applicable |
 | `sources[].rationale` | string | ❌ | Why this source |
+| `sources[].access` | enum | ✅ | `open\|authenticated\|manual` |
+| `sources[].auth_note` | string | ❌ | Required when `access: authenticated` or `access: manual` |
 
-#### ingest-plan.md
+#### discovery-readout.md
+
+Generated Markdown narrative derived from `discovery-plan.yaml`. Do not edit directly. Contains `## Domain Advice` and `## Research Expansion Suggestions` sections. For human/agent reading only; never machine-parsed.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `topic` | string | ✅ | Topic name |

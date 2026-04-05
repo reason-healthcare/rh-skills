@@ -131,10 +131,11 @@ Would you like to explore any of these? Or save and exit?
 
 User: `save`
 
-Agent writes `topics/diabetes-ccm/process/plans/discovery-plan.md` and updates research tracking:
+Agent writes `topics/diabetes-ccm/process/plans/discovery-plan.yaml` (machine-readable source list) and `topics/diabetes-ccm/process/plans/discovery-readout.md` (narrative), and updates research tracking:
 
 ```
-✓ Discovery plan saved: topics/diabetes-ccm/process/plans/discovery-plan.md
+✓ Discovery plan saved: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+✓ Discovery readout saved: topics/diabetes-ccm/process/plans/discovery-readout.md
   Sources: 3 (2 open-access, 1 government)
   Coverage warnings:
     ⚠ Health-economics source not included — consider adding for comprehensive coverage
@@ -150,7 +151,7 @@ Research tracking updated:
 
 ```bash
 # (agent-run, or user-run directly)
-hi validate --plan topics/diabetes-ccm/process/plans/discovery-plan.md
+hi validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
 ```
 
 Output:
@@ -175,7 +176,8 @@ sources/
 
 topics/diabetes-ccm/process/
 ├── plans/
-│   └── discovery-plan.md
+│   ├── discovery-plan.yaml
+│   └── discovery-readout.md
 └── research.md              (updated by hi)
 
 RESEARCH.md                  (updated by hi)

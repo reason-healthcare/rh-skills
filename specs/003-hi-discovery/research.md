@@ -107,7 +107,7 @@ MIME_TO_EXT = {
 
 ## Decision 6: RESEARCH.md and process/research.md update strategy
 
-**Decision**: Implement as append-only table row operations using `ruamel.yaml` for frontmatter parsing and direct string manipulation for Markdown table rows.
+**Decision**: Implement as append-only table row operations using `ruamel.yaml` for `discovery-plan.yaml` parsing and direct string manipulation for Markdown table rows.
 
 **Rationale**:
 - `RESEARCH.md` is Markdown with no frontmatter — row appends are simple string operations
@@ -148,11 +148,11 @@ modes:
 5. Call `hi search pmc --query <terms> --max 20 --json` (for open-access articles)
 6. Build working `sources[]` list in memory (living document)
 7. Present sources to user with access tier, rationale, evidence level
-8. For each approved open-access source: call `hi ingest implement --url <url>`
-9. For each authenticated source: print access advisory (FR-011a/b)
+8. For each authenticated source: print access advisory (FR-011a/b)
+9. For each `access: manual` source: record `auth_note` describing retrieval steps
 10. Present Research Expansion Suggestions (3–7)
 11. Prompt user: expand an area? save now? verify?
-12. On save: write `discovery-plan.md`, update `research.md`, update `RESEARCH.md`, append event
+12. On save: write `discovery-plan.yaml` (pure YAML) and `discovery-readout.md` (narrative), update `research.md`, update `RESEARCH.md`, append event
 
 ---
 
