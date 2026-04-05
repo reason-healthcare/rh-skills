@@ -129,11 +129,14 @@ exact format:
 Rules:
 - **Always present** — every response, without exception. The user must never
   have to ask "what do I do next?"
+- **Status block is the last thing in the response** — no text after it. Do
+  not add post-block commentary, predictions about future steps, or guidance
+  about choices not yet made.
 - **Step** reflects the current step number and name from the session workflow.
   Use `Complete` suffix once a step is fully done (e.g., `3 — ClinicalTrials
   Search · Complete`).
 - **Plan** shows live source count while unsaved; switches to `saved ·` once
-  switches to `saved ·` once `discovery-plan.yaml` has been written.
+  `discovery-plan.yaml` has been written.
 - **Next** must be a concrete, copy-pasteable command OR a specific choice
   prompt (e.g., `approve list / modify / add sources`). Never vague.
 - After `verify` mode, the block uses `Mode: verify` and `Result: PASS / FAIL`
@@ -359,8 +362,7 @@ Emit status block:
 
 ### Step 10 — Interactive Prompt
 
-After presenting the plan and suggestions, present this prompt **verbatim** (substituting
-the expansion areas from Step 9):
+After presenting the plan and suggestions, present this prompt **verbatim**:
 
 > **What would you like to do next?**
 >
@@ -368,13 +370,14 @@ the expansion areas from Step 9):
 > B) Add, remove, or modify sources
 > C) Save the plan and move on to `hi-ingest`
 
-Do **not** paraphrase or add qualifiers like "if you want" or "I can turn this into".
-The plan is already complete in memory — saving writes it as-is.
+Then emit the status block and **stop**. Do not add any text after the status
+block. Do not pre-answer choices not yet made. Do not add guidance like
+"if you choose C..." or "the next step would be...". Wait for the user's reply.
 
 If the user wants to explore an expansion area, loop back to Steps 2–9 for that
 area and merge the findings into the living plan.
 
-Emit status block reflecting current state:
+Emit status block:
 ```
   Step:   10 — Awaiting Direction
   Plan:   <N> sources in memory
