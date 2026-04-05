@@ -201,11 +201,11 @@ User: hi-discovery session diabetes-ccm
 
 **Agent:**
 
-> **Next steps — please choose:**
+> **What would you like to do next?**
 >
-> A) Explore an expansion area (tell me which number)
-> B) Modify the source list
-> C) Save the current plan
+> A) Explore an expansion area — tell me the number
+> B) Add, remove, or modify sources
+> C) Save the plan and move on to `hi-ingest`
 >
 > ```
 > ─── hi-discovery · diabetes-ccm ─────────────────────────────

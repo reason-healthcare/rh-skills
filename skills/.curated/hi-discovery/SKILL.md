@@ -359,20 +359,26 @@ Emit status block:
 
 ### Step 10 — Interactive Prompt
 
-After presenting the plan and suggestions, explicitly ask:
+After presenting the plan and suggestions, present this prompt **verbatim** (substituting
+the expansion areas from Step 9):
 
-1. Which (if any) expansion areas to explore next?
-2. Are there sources to add, remove, or modify?
-3. Ready to save the plan? (Or continue researching?)
+> **What would you like to do next?**
+>
+> A) Explore an expansion area — tell me the number
+> B) Add, remove, or modify sources
+> C) Save the plan and move on to `hi-ingest`
+
+Do **not** paraphrase or add qualifiers like "if you want" or "I can turn this into".
+The plan is already complete in memory — saving writes it as-is.
 
 If the user wants to explore an expansion area, loop back to Steps 2–9 for that
 area and merge the findings into the living plan.
 
-Emit status block reflecting current state, e.g.:
+Emit status block reflecting current state:
 ```
   Step:   10 — Awaiting Direction
   Plan:   <N> sources in memory
-  Next:   explore "<area>" / save the plan / modify list
+  Next:   A) explore expansion  B) modify list  C) save plan
 ```
 
 ### Step 11 — Save Checkpoint
