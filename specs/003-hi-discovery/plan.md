@@ -10,12 +10,12 @@
 ## Technical Context
 
 **Language/Version**: Python 3.13+ (existing `hi` CLI stack)
-**Primary Dependencies**: `click >= 8.0`, `ruamel.yaml >= 0.18`, `httpx` (async-capable HTTP for URL download + PubMed API calls), `requests` (fallback for simple GET), `lxml` or `xmltodict` (PubMed XML parsing)
+**Primary Dependencies**: `click >= 8.0`, `ruamel.yaml >= 0.18`, `httpx` (async-capable HTTP for PubMed API calls), `lxml` or `xmltodict` (PubMed XML parsing)
 **Storage**: File system (`sources/`, `topics/<name>/process/plans/`, `tracking.yaml`, `RESEARCH.md`)
 **Testing**: `pytest` + `pytest-httpx` (for mocking PubMed/ClinicalTrials HTTP calls) — existing suite
 **Target Platform**: macOS/Linux CLI (same as existing `hi`)
 **Project Type**: CLI extension + SKILL.md (agent skill)
-**Performance Goals**: `hi search pubmed` returns structured results in ≤5 seconds (SC-004); downloads via `hi ingest implement --url` subject to network speed
+**Performance Goals**: `hi search pubmed` returns structured results in ≤5 seconds (SC-004); downloads via `hi ingest implement --url` (spec 004-hi-ingest) subject to network speed
 **Constraints**: No API key required for PubMed (≤3 req/s without key; ≤10 req/s with `NCBI_API_KEY`); ClinicalTrials.gov v2 is free/public; no auth for PMC open-access
 **Scale/Scope**: Per-topic usage; plans hold 5–25 sources; single-user CLI session
 
@@ -25,7 +25,7 @@
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| All deterministic work via `hi` CLI | ✅ Pass | `hi search`, `hi ingest implement --url` handle all I/O; skill provides reasoning only |
+| All deterministic work via `hi` CLI | ✅ Pass | `hi search` handles all search I/O; skill provides reasoning only; downloads delegated to hi-ingest (004) |
 | Skill resides at `skills/.curated/<name>/SKILL.md` | ✅ Pass | Target: `skills/.curated/hi-discovery/SKILL.md` |
 | `verify` is strictly read-only | ✅ Pass | FR-018 explicit; no file writes or tracking.yaml modifications |
 | All plan/implement modes append event to `tracking.yaml` | ✅ Pass | FR-017: `discovery_planned` event on session save |

@@ -65,7 +65,7 @@ The agent presents curated results:
 ```
 Found 14 sources across PubMed, PMC, and ClinicalTrials.gov.
 
-Open-access sources (can download now):
+Open-access sources:
   [1] ADA Standards of Care 2024 — PMC open access
       Evidence: Level Ia (clinical guideline) | Type: clinical-guideline
       Rationale: Primary authoritative guidance for diabetes management
@@ -87,27 +87,24 @@ Which sources do you want to include? [all / select numbers / none]
 
 ---
 
-## Step 4: User selects sources; agent downloads open-access
+## Step 4: User selects sources; agent records access advisories
 
 User: `include 1, 2, 4`
 
-Agent calls:
-```bash
-hi ingest implement --url "https://pmc.ncbi.nlm.nih.gov/articles/PMC..." \
-    --name ada-standards-2024 --type clinical-guideline
-
-hi ingest implement --url "https://pmc.ncbi.nlm.nih.gov/articles/PMC..." \
-    --name ccm-diabetes-jama-2023 --type systematic-review
-
-hi ingest implement --url "https://www.cms.gov/priorities/innovation/..." \
-    --name cms-dpp-program --type government-program
+Agent records sources in the in-session plan and prints access advisories:
 ```
+Open-access sources:
+  ✓ ada-standards-2024         access: open   url: https://pmc.ncbi.nlm.nih.gov/articles/PMC...
+  ✓ ccm-diabetes-jama-2023     access: open   url: https://pmc.ncbi.nlm.nih.gov/articles/PMC...
+  ✓ cms-dpp-program            access: open   url: https://www.cms.gov/priorities/innovation/...
 
-Output per download:
-```
-✓ Downloaded: sources/ada-standards-2024.pdf (SHA-256: a1b2c3...)
-✓ Downloaded: sources/ccm-diabetes-jama-2023.pdf (SHA-256: e4f5a6...)
-✓ Downloaded: sources/cms-dpp-program.html (SHA-256: 9c8d7e...)
+Authenticated sources (advisory):
+  ⊘ nejm-empagliflozin-2022    access: authenticated
+    Requires institutional access. Search: 'Empagliflozin Standard Care 2022'
+    URL: https://www.nejm.org/...
+    Add to discovery-plan.yaml with auth_note when confirmed accessible.
+
+All sources are recorded in discovery-plan.yaml. hi-ingest will handle acquisition.
 ```
 
 ---
@@ -163,7 +160,7 @@ Output:
 ✓ 3 sources (above 5-source minimum? NO — below minimum: only 3)
 ⚠ Source count below minimum (5). Consider expanding discovery session.
 ⚠ health-economics source type not present
-✓ All open-access sources have sha256 populated
+✓ All open-access sources have url populated
 ✓ All authenticated sources have auth_note
 ```
 
@@ -172,11 +169,6 @@ Output:
 ## Files produced by this quickstart
 
 ```
-sources/
-├── ada-standards-2024.pdf
-├── ccm-diabetes-jama-2023.pdf
-└── cms-dpp-program.html
-
 topics/diabetes-ccm/process/
 ├── plans/
 │   ├── discovery-plan.yaml
@@ -185,4 +177,7 @@ topics/diabetes-ccm/process/
 
 RESEARCH.md                  (updated by hi)
 tracking.yaml                (updated by hi)
+```
+
+> Note: `sources/` files are produced by `hi-ingest` (004), not by hi-discovery.
 ```

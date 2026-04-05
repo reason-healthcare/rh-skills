@@ -37,14 +37,14 @@ description: "Tasks for 003-hi-discovery — hi-discovery interactive research a
 
 ## Phase 3: User Story 1 — Research a Clinical Topic from Scratch (P1)
 
-**Story goal**: A clinical informaticist runs `hi-discovery` on a new topic, receives domain advice, searches PubMed/PMC/ClinicalTrials, approves sources that are downloaded inline, and saves a living discovery plan to disk.
+**Story goal**: A clinical informaticist runs `hi-discovery` on a new topic, receives domain advice, searches PubMed/PMC/ClinicalTrials, curates sources with access advisories, and saves a living discovery plan to disk.
 
 **Independent test criteria**:
 1. `hi search pubmed --query "sepsis management" --json` returns valid JSON with ≥1 result (mocked)
 2. `hi search pmc --query "sepsis management" --json` returns results with `open_access: true`
 3. `hi search clinicaltrials --query "sepsis" --json` returns NCT ID results
-4. `hi ingest implement --url <mocked-pdf-url> --name test-source` downloads file, computes SHA-256, registers in tracking.yaml
-5. `hi ingest implement --url <login-redirect-url> --name test` exits 3 with advisory
+4. `hi-discovery session <topic>` produces `discovery-plan.yaml` with sources[], access types, and auth_notes
+5. `hi validate --plan discovery-plan.yaml` exits 0 on a valid plan
 6. `hi init diabetes-ccm` creates `RESEARCH.md` at root and `topics/diabetes-ccm/process/research.md`
 7. SKILL.md passes `tests/skills/` parametrized suite
 
@@ -54,9 +54,9 @@ description: "Tasks for 003-hi-discovery — hi-discovery interactive research a
 - [ ] T009 [US1] Add `--json` flag to all three `hi search` subcommands in `src/hi/commands/search.py`; emit structured JSON to stdout per the `hi search` Result schema in `specs/003-hi-discovery/data-model.md` Entity 3; `--json` and human-readable are mutually exclusive output paths
 - [ ] T010 [P] [US1] Write `tests/unit/test_search_pubmed.py` — use `pytest-httpx` to mock NCBI esearch + efetch HTTP calls; test: successful result list, `open_access: true` when pmcid present, zero-results exits 2, network error exits 1, `--json` output matches Entity 3 schema, rate-limit sleep called
 - [ ] T011 [P] [US1] Write `tests/unit/test_search_clinicaltrials.py` — use `pytest-httpx` to mock ClinicalTrials.gov v2 API; test: result list parsed correctly, `open_access: true` always set, zero results exits 2, `--json` output matches schema
-- [ ] T012 [US1] Extend `hi ingest implement` in `src/hi/commands/ingest.py` to accept `--url TEXT` and `--name TEXT` flags (mutually exclusive with positional FILE arg); implement: GET url via httpx (follow redirects up to 20), detect MIME from Content-Type header using MIME_TO_EXT map from `specs/003-hi-discovery/research.md` Decision 5, write to `sources/<name>.<ext>`, compute SHA-256, append `source_ingested` event to `tracking.yaml`, print `✓ Downloaded: sources/<name>.<ext>`
-- [ ] T013 [US1] Add auth-redirect detection to `hi ingest implement --url` in `src/hi/commands/ingest.py` — after redirect chain resolves, check if final URL contains `login`, `signin`, `auth`, or `access-denied`; if true: print access advisory (source URL, final redirect URL, manual retrieval instructions) and exit 3 without writing any file
-- [ ] T014 [P] [US1] Write `tests/unit/test_ingest_url.py` — use `pytest-httpx` to mock HTTP responses; test: successful PDF download (SHA-256 computed, file written, tracking.yaml event appended), MIME detection (pdf → `.pdf`, html → `.html`), auth-redirect exit 3 (no file written), already-exists exit 2 (no overwrite), network error exit 1
+- [ ] T012 [US1] [MOVED TO 004-hi-ingest] Extend `hi ingest implement` in `src/hi/commands/ingest.py` to accept `--url TEXT` and `--name TEXT` flags (mutually exclusive with positional FILE arg); implement: GET url via httpx (follow redirects up to 20), detect MIME from Content-Type header using MIME_TO_EXT map from `specs/003-hi-discovery/research.md` Decision 5, write to `sources/<name>.<ext>`, compute SHA-256, append `source_ingested` event to `tracking.yaml`, print `✓ Downloaded: sources/<name>.<ext>`
+- [ ] T013 [US1] [MOVED TO 004-hi-ingest] Add auth-redirect detection to `hi ingest implement --url` in `src/hi/commands/ingest.py` — after redirect chain resolves, check if final URL contains `login`, `signin`, `auth`, or `access-denied`; if true: print access advisory (source URL, final redirect URL, manual retrieval instructions) and exit 3 without writing any file
+- [ ] T014 [P] [US1] [MOVED TO 004-hi-ingest] Write `tests/unit/test_ingest_url.py` — use `pytest-httpx` to mock HTTP responses; test: successful PDF download (SHA-256 computed, file written, tracking.yaml event appended), MIME detection (pdf → `.pdf`, html → `.html`), auth-redirect exit 3 (no file written), already-exists exit 2 (no overwrite), network error exit 1
 - [ ] T015 [US1] Extend `hi init` in `src/hi/commands/init.py` to create `RESEARCH.md` at repo root if not already present using the canonical format from `specs/003-hi-discovery/data-model.md` Entity 4; then append one Active Topics row `| <topic> | initialized | 0 | <date> | <date> | |`; if `RESEARCH.md` already exists, append row only (idempotent: skip if topic row already present)
 - [ ] T016 [US1] Extend `hi init` in `src/hi/commands/init.py` to create `topics/<name>/process/notes.md` with the canonical stub format (`# Research Notes — <topic>` header; `## Open Questions`, `## Decisions`, `## Source Conflicts`, `## Notes` sections with placeholder comments) per `specs/003-hi-discovery/data-model.md` Entity 5; skip creation if file already exists
 - [ ] T017 [P] [US1] Write `tests/unit/test_init_research.py` — test: first `hi init` creates both `RESEARCH.md` and `process/notes.md`, second `hi init` on different topic appends row to existing `RESEARCH.md` without corrupting existing rows, duplicate init is idempotent, process/notes.md contains all four section headers (Open Questions, Decisions, Source Conflicts, Notes)

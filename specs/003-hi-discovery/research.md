@@ -131,7 +131,7 @@ MIME_TO_EXT = {
 
 **Decision**: The SKILL.md uses two modes (`session` and `verify`) rather than the standard three-mode template. The `session` mode is the primary interactive research assistant mode.
 
-**Rationale**: Confirmed in speckit-clarify (2026-04-04). The "implement" mode is collapsed into the session — downloads happen inline as the user approves sources. The SKILL.md template supports custom modes; we adapt accordingly.
+**Rationale**: Confirmed in speckit-clarify (2026-04-04). Discovery is pure planning — no downloads occur during the session. `hi-ingest` (004) owns all source acquisition. The `session` mode guides the agent to search, curate, and save `discovery-plan.yaml`; `hi-ingest` reads that file to execute downloads. The SKILL.md template supports custom modes; we adapt accordingly.
 
 **Frontmatter modes**:
 ```yaml

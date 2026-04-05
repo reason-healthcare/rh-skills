@@ -20,10 +20,10 @@
 `hi-discovery` is an active **interactive research assistant** for clinical informaticists starting a new topic. It is a single conversational session with two checkpointed operations:
 
 1. **Domain advice** — reasons about the clinical domain and tells the user what to consider (diagnostic criteria, population characteristics, existing measures, regulatory context, evidence gaps)
-2. **Source identification & acquisition** — searches PubMed, PubMed Central, ClinicalTrials.gov, and known medical society URL patterns; downloads approved sources inline as the session progresses; updates the discovery plan as the conversation evolves
+2. **Source identification & curation** — searches PubMed, PubMed Central, ClinicalTrials.gov, and known medical society URL patterns; produces a curated source list in memory, advising on access method for each source; updates the discovery plan as the conversation evolves
 3. **Research expansion** — after each pass, suggests adjacent areas (comorbidities, economics, equity, implementation gaps) and prompts the user to explore further
 
-**Guiding principle**: all deterministic work (API calls, downloads, file registration, checksum) via `hi` CLI; all reasoning (domain advice, relevance judgement, evidence prioritisation, expansion suggestions) by the agent.
+**Guiding principle**: all deterministic work (search API calls) via `hi` CLI; all reasoning (domain advice, relevance judgement, evidence prioritisation, expansion suggestions) by the agent. Note: hi-discovery only performs search API calls — file registration, checksum, and download are hi-ingest's responsibility.
 
 The skill has two modes:
 
@@ -42,7 +42,7 @@ A clinical informaticist starts a new topic "sepsis-early-detection" and has no 
 - Explains what to consider in sepsis informatics (diagnostic criteria like qSOFA/SOFA, organ dysfunction coding, time-sensitive treatment windows, population subtypes, existing SEP-1 measure)
 - Searches PubMed for recent systematic reviews and guidelines
 - Searches ClinicalTrials.gov for active/completed relevant trials
-- Downloads approved open-access sources inline as the conversation progresses
+- Produces a discovery-plan.yaml listing all sources with access advisories for authenticated ones
 - Suggests adjacent research areas (economics of sepsis care, SDOH factors, implementation barriers)
 - Saves the discovery plan to disk when the user approves it
 
@@ -59,7 +59,7 @@ A clinical informaticist starts a new topic "sepsis-early-detection" and has no 
 
 ### User Story 2 — Iterative research expansion (Priority: P1)
 
-After the initial pass, the user asks the agent to explore the healthcare economics angle for diabetes screening. The agent searches additional sources, adds them to the working plan, and downloads approved ones inline — all within the same session.
+After the initial pass, the user asks the agent to explore the healthcare economics angle for diabetes screening. The agent searches additional sources and adds them to the working plan, updating the living discovery-plan.yaml.
 
 **Acceptance Scenarios**:
 
@@ -86,11 +86,10 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 ### Edge Cases
 
 - PubMed API returns zero results — agent falls back to domain knowledge and known society URL patterns; warns user that search was sparse.
-- Source URL returns a redirect to a login page — download fails gracefully; source is flagged as `access: manual` with failure reason recorded in `discovery-plan.yaml`.
+- Source URL is known to require authentication or redirect to a login page — source is included in `discovery-plan.yaml` with `access: authenticated` or `access: manual` and an `auth_note` describing retrieval method; no download is attempted during discovery.
 - Plan reaches 25-source cap — agent moves additional candidates to Research Expansion Suggestions rather than silently dropping them.
 - Plan has fewer than 5 sources after all searches — agent explicitly searches additional databases before presenting for approval.
 - Plan YAML is malformed — `verify` fails at parse time with a line-level error.
-- A source file is already present in `sources/` with matching checksum — `hi ingest implement` skips re-download (idempotent).
 - Topic name not found in `tracking.yaml` — session exits non-zero with: `topic '<name>' not initialised — run hi init first`.
 - Network unavailable during session — agent reasons from domain knowledge; records all sources as `access: manual` in `discovery-plan.yaml` with appropriate `auth_note`; warns the user clearly.
 - User asks to save mid-session — current plan state is checkpointed to `discovery-plan.yaml` and `discovery-readout.md`; session continues; subsequent save with `--force` implied.
@@ -107,7 +106,7 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
   - `hi search pubmed --query <terms> [--max N] [--json]` — calls PubMed Entrez esearch + efetch APIs; returns structured list of results (PMID, title, authors, journal, year, abstract, DOI, open-access flag). Default `--max 20`.
   - `hi search pmc --query <terms> [--max N] [--json]` — searches PubMed Central for open-access full-text articles. Default `--max 20`.
   - `hi search clinicaltrials --query <terms> [--max N] [--status <status>] [--json]` — calls ClinicalTrials.gov API v2; returns NCT ID, title, status, phase, conditions, interventions. Default `--max 20`.
-- **FR-002**: `hi ingest implement` MUST accept `--url <url>` as an alternative to a local file path. When `--url` is given, the CLI downloads the resource to `sources/<name>.<ext>`, computes its SHA-256, and registers it in `tracking.yaml` identically to a local file ingest.
+- **FR-002**: Implemented in `hi ingest implement` (see spec 004-hi-ingest). Discovery does not call this command. `hi ingest implement` accepts `--url <url>` as an alternative to a local file path; when given, it downloads the resource to `sources/<name>.<ext>`, computes SHA-256, and registers it in `tracking.yaml`.
 - **FR-003**: `hi search` subcommands MUST require no API key for PubMed and ClinicalTrials.gov (both are free/public). A `NCBI_API_KEY` environment variable MAY be set to increase PubMed rate limits (10 req/s vs. 3 req/s).
 
 **plan mode**
@@ -120,13 +119,13 @@ Before proceeding to ingest, the informaticist runs `hi-discovery verify` to con
 - **FR-007**: `plan` MUST create `process/notes.md` stub (create-unless-exists) using the canonical format (Open Questions, Decisions, Source Conflicts, Notes sections). Existing `notes.md` MUST NOT be modified.
 - **FR-008**: If `discovery-plan.yaml` already exists, `plan` MUST warn and stop unless `--force` is passed. Successful `plan` (non-dry-run) MUST append `discovery_planned` to `tracking.yaml`. `--force` applies to both `discovery-plan.yaml` and `discovery-readout.md`.
 
-**session mode — inline download**
+**session mode**
 
-- **FR-011**: During the discovery session, when the user approves a source with `access: open` and a known `url`, the agent MUST immediately call `hi ingest implement --url <url> --name <name> --topic <topic>` without waiting for the session to end. The source is downloaded to `sources/` and registered in `tracking.yaml` in real time.
+- **FR-011 (REMOVED)**: Discovery does not download sources. All source acquisition is delegated to `hi-ingest`. Approved open-access sources are recorded in `discovery-plan.yaml` with `access: open` and `url`; hi-ingest reads this file and handles download.
 - **FR-011a**: For `access: authenticated` sources, the agent MUST print a formatted per-source access advisory during the session — naming the source, explaining why it is recommended for this topic, providing the specific URL, login mechanism, and what to search for once authenticated.
 - **FR-011b**: The access advisory format MUST include: source name, why it is relevant, access URL, authentication method (institutional login / free registration / society membership / library proxy), and suggested search terms to use once inside.
 - **FR-012**: Sources with `access: manual` or `access: authenticated` MUST be included in `discovery-plan.yaml` with an `auth_note` field describing how to obtain access. `hi-ingest` reads `discovery-plan.yaml` directly to determine which sources require manual retrieval. No `ingest-plan.md` is generated.
-- **FR-013**: Download failures (non-2xx HTTP, network error, auth redirect) MUST be caught per-source during the session; the agent reports the failure inline and continues. Failed sources are flagged in the plan as `access: manual` with the failure reason.
+- **FR-013**: Sources that cannot be accessed programmatically (non-2xx HTTP, auth redirect) MUST be recorded in `discovery-plan.yaml` with `access: manual` or `access: authenticated` and an `auth_note`; the agent reports the access barrier inline and continues. No download is attempted during discovery.
 - **FR-014**: When the user approves the session plan or issues a save checkpoint, the agent MUST write `process/plans/discovery-plan.yaml` and `process/plans/discovery-readout.md`, and update `RESEARCH.md` root portfolio (source count, updated date). `process/notes.md` is human-maintained and is NOT updated by the CLI.
 - **FR-015**: If `discovery-plan.yaml` already exists when the session starts, the agent MUST warn the user and offer to load it for continuation or start fresh with `--force`.
 - **FR-016**: If no sources are identified after exhausting all search strategies, the session MUST exit with a clear message listing what was searched and suggesting the user try alternate search terms.
@@ -188,11 +187,9 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 ## Success Criteria
 
 - **SC-001**: A clinical informaticist with no prior knowledge of a domain receives actionable domain advice and a populated source list from a single `hi-discovery plan` invocation.
-- **SC-002**: Running `hi-discovery implement` on a plan with five open-access sources downloads all five to `sources/`, registers them in `tracking.yaml`, and reports any failures per-source.
 - **SC-003**: `verify` catches a missing terminology source and exits 1 with an actionable message.
 - **SC-004**: `hi search pubmed --query "diabetes screening" --max 10` returns structured JSON output in under 5 seconds.
 - **SC-005**: The SKILL.md passes all `tests/skills/` checks with zero failures.
-- **SC-006**: `--dry-run implement` produces zero downloads and zero `tracking.yaml` events while still reporting which sources would be downloaded vs. flagged manual.
 - **SC-007**: After completing a plan, the agent presents 3–7 Research Expansion Suggestions with specific next `hi` commands, then presents the scripted A/B/C prompt verbatim (A: explore expansion area, B: add/remove/modify sources, C: save plan), emits the status block, and stops — no trailing prose after the block.
 - **SC-008**: For a chronic condition topic (e.g., diabetes, hypertension), at least one `health-economics` source appears in `sources[]` and the domain advice section addresses cost-of-care burden.
 
@@ -203,7 +200,7 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 - PubMed Entrez and ClinicalTrials.gov v2 APIs are free and publicly accessible without authentication.
 - NICE, Cochrane, and most society portals require manual download; the skill marks these `access: manual` and does not attempt programmatic fetch.
 - The agent has sufficient domain knowledge to provide useful clinical advice without internet access; `hi search` results augment rather than replace that knowledge.
-- `hi ingest implement --url` handles redirect following, MIME type detection, and file extension inference from Content-Type headers.
+- See spec 004-hi-ingest for download implementation details (`hi ingest implement --url` redirect following, MIME type detection, and file extension inference).
 - All downloaded sources are stored in `sources/` at repo root — the same directory used by manually ingested files.
 - The optional `NCBI_API_KEY` environment variable, if set, is used to increase PubMed rate limits; it is never written to any artifact.
 
@@ -212,7 +209,7 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 `hi-discovery` is implemented as a **SKILL.md** (not a standalone agent or sub-process) for the following reasons:
 
 1. **Interactive research assistant** — the primary use case is a conversation: the user asks about a topic, the skill guides the LLM to search, reason, and suggest; the user asks follow-up questions mid-session. This is inherently dialogic and is best served by the user's own LLM session reading a SKILL.md.
-2. **Guiding principle** — all deterministic work (API calls, downloads, file writes) is handled by the `hi` CLI. The skill provides reasoning. A standalone agent would duplicate this boundary without adding value.
+2. **Guiding principle** — all deterministic work (search API calls) is handled by the `hi` CLI. The skill provides reasoning. A standalone agent would duplicate this boundary without adding value.
 3. **Framework consistency** — all six HI framework skills (003–008) follow the SKILL.md pattern established in 002.
 4. **User controls the pace** — the user can ask "tell me more about the economics angle" or "what else should I search?" mid-session and the LLM responds in full context. An autonomous agent cannot do this.
 
