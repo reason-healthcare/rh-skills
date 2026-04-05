@@ -142,7 +142,12 @@ Status block format:
   Next:     confirm to proceed → hi-ingest implement <topic>
 ```
 
-**Are you ready to implement?**
+**What would you like to do next?**
+
+A) Proceed — run `hi-ingest implement <topic>`
+B) Review or adjust the plan first
+
+You can also ask for `hi-status` at any time.
 
 ---
 
@@ -239,7 +244,12 @@ After all sources complete, emit final status block.
   Next:     hi-ingest verify <topic>
 ```
 
-**Are you ready to verify?**
+**What would you like to do next?**
+
+A) Run `hi-ingest verify <topic>` — validate all pipeline stages
+B) Re-run a specific stage (normalize / classify / annotate)
+
+You can also ask for `hi-status` at any time.
 
 ---
 
@@ -282,8 +292,7 @@ You can also ask for `hi-status` at any time.
 
 ## Output Contract
 
-After every response, emit a status block and friendly user prompt as the **last thing** in the response.
-No text after the user prompt.
+After every response, emit a status block and friendly user prompt as the **last thing** in the response. No text after the user prompt.
 
 ```
 ▸ hi-ingest  <topic>
@@ -294,7 +303,7 @@ No text after the user prompt.
 
 **What would you like to do next?**
 
-<lettered options for next steps>
+<lettered options for next steps, each on new line>
 
 You can also ask for `hi-status` at any time.
 

@@ -65,8 +65,9 @@ written to disk only when the user approves it.
 - **Single source of truth.** `discovery-plan.yaml` is the authoritative source
   list. `discovery-readout.md` is a generated narrative derived from it and
   should never be edited directly.
-- **Always close the loop.** Every response must include a status block telling
-  the user where they are and what to do next.
+- **Always close the loop.** Every response must end with a status block
+  followed by a friendly user prompt and lettered next-step options. The user
+  must never have to ask "what do I do next?"
 
 ---
 
@@ -115,8 +116,8 @@ ls topics/<topic>/process/plans/discovery-plan.yaml 2>/dev/null
 
 ## Output Contract
 
-Every agent response during a `session` MUST end with a status block in this
-exact format:
+After every response, emit a status block and friendly user prompt as the
+**last thing** in the response. No text after the user prompt.
 
 ```
 ▸ hi-discovery  <topic>
@@ -125,12 +126,17 @@ exact format:
   Next:  <concrete command or choice presented to the user>
 ```
 
+**What would you like to do next?**
+
+<lettered options for next steps, each on new line>
+
+You can also ask for `hi-status` at any time.
+
 Rules:
 - **Always present** — every response, without exception. The user must never
   have to ask "what do I do next?"
-- **Status block is the last thing in the response** — no text after it. Do
-  not add post-block commentary, predictions about future steps, or guidance
-  about choices not yet made.
+- **Status block is first** — emit the block, then the "What would you like to
+  do next?" prompt and options. No text after the user prompt.
 - **First line**: `▸ ` then skill name, two spaces, then topic (no dashes, no
   fill characters). **Subsequent lines**: two-space indent, Title Case key with
   colon, two spaces, value. No horizontal rules or blank lines inside the block.
@@ -302,15 +308,24 @@ sources, note the auth method. For `access: manual` sources, note what the user
 must retrieve. None of these are downloaded here — all acquisition happens in
 `hi-ingest`.
 
-Ask the user: approve all, modify the list, or add/remove sources?
+Ask the user to approve, modify, or add/remove sources.
 Incorporate feedback and loop back if needed.
 
 Emit status block:
 ```
+▸ hi-discovery  <topic>
   Step:   7 — Source Review
   Plan:   <N> sources in memory
   Next:   approve list / modify / add sources
 ```
+
+**What would you like to do next?**
+
+A) Approve all sources — proceed to access advisories
+B) Modify the list — add, remove, or edit sources
+C) Ask a question about a specific source
+
+You can also ask for `hi-status` at any time.
 
 ### Step 8 — Access Advisories
 
@@ -364,25 +379,29 @@ Emit status block:
 
 ### Step 10 — Interactive Prompt
 
-After presenting the plan and suggestions, present this prompt **verbatim** (no lead-in, no preamble):
-
-> A) Explore an expansion area — tell me the number
-> B) Add, remove, or modify sources
-> C) Save the plan and move on to `hi-ingest`
-
-Then emit the status block and **stop**. Do not add any text after the status
-block. Do not pre-answer choices not yet made. Do not add guidance like
-"if you choose C..." or "the next step would be...". Wait for the user's reply.
+After presenting the plan and suggestions, emit the status block followed by
+the options below. No lead-in, no preamble before the status block. Do not
+pre-answer choices not yet made. Do not add guidance like "if you choose C..."
+or "the next step would be...". Wait for the user's reply.
 
 If the user wants to explore an expansion area, loop back to Steps 2–9 for that
 area and merge the findings into the living plan.
 
 Emit status block:
 ```
+▸ hi-discovery  <topic>
   Step:   10 — Awaiting Direction
   Plan:   <N> sources in memory
   Next:   A) explore expansion  B) modify list  C) save plan
 ```
+
+**What would you like to do next?**
+
+A) Explore an expansion area — tell me the number
+B) Add, remove, or modify sources
+C) Save the plan and move on to `hi-ingest`
+
+You can also ask for `hi-status` at any time.
 
 ### Step 11 — Save Checkpoint
 
@@ -407,10 +426,18 @@ After saving, tell the user:
 
 Emit status block:
 ```
+▸ hi-discovery  <topic>
   Step:   11 — Save Checkpoint · Complete
   Plan:   saved · <N> sources
   Next:   hi-discovery verify <topic>
 ```
+
+**What would you like to do next?**
+
+A) Run `hi-discovery verify <topic>` — validate the plan before handing off
+B) Return to the session to revise sources
+
+You can also ask for `hi-status` at any time.
 
 ### Step 12 — Verify Recommendation
 
@@ -454,6 +481,13 @@ Then emit:
   Next:    hi-ingest plan <topic>
 ```
 
+**What would you like to do next?**
+
+A) Run `hi-ingest plan <topic>` — begin source acquisition
+B) Return to the discovery session to revise sources
+
+You can also ask for `hi-status` at any time.
+
 On exit 1, emit:
 ```
 ▸ hi-discovery  <topic>
@@ -461,6 +495,13 @@ On exit 1, emit:
   Result:  FAIL — <N> check(s) failed
   Next:    fix: <specific issue(s) listed above>, then re-run verify
 ```
+
+**What would you like to do next?**
+
+A) Fix the listed issues and re-run `hi-discovery verify <topic>`
+B) Return to the session to modify sources
+
+You can also ask for `hi-status` at any time.
 
 ---
 
