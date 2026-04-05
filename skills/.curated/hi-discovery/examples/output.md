@@ -126,16 +126,22 @@ User: hi-discovery session diabetes-ccm
 > | 9 | Diabetes Care Journal (CCM articles) | pubmed-article | grade-b | authenticated | library proxy |
 > |10 | ICD-10-CM E08–E13 | terminology | reference-standard | open | URL provided |
 >
-> All open-access sources have URLs recorded. Authenticated sources are flagged
-> with access advisories below. `hi-ingest` will handle all downloads and
-> registration. Do you approve this list? Any changes?
 >
 > ```
-> ▸ hi-discovery  diabetes-ccm
+> ▸ hi-discovery diabetes-ccm
 >   Step:  7 — Source Review
 >   Plan:  10 sources in memory
 >   Next:  approve list / modify / add sources
 > ```
+>
+>
+> All open-access sources have URLs recorded. Authenticated sources are flagged
+> with access advisories below. `hi-ingest` will handle all downloads and
+> registration. 
+>
+> Do you approve this list? Any changes? 
+>
+>
 
 **User:** Looks good, go ahead.
 
@@ -199,18 +205,22 @@ User: hi-discovery session diabetes-ccm
 
 **Agent:**
 
-> **What would you like to do next?**
->
-> A) Explore an expansion area — tell me the number
-> B) Add, remove, or modify sources
-> C) Save the plan and move on to `hi-ingest`
->
 > ```
 > ▸ hi-discovery  diabetes-ccm
 >   Step:  10 — Awaiting Direction
 >   Plan:  10 sources in memory
 >   Next:  A) explore expansion  B) modify list  C) save plan
 > ```
+>
+> **What would you like to do next?**
+>
+> A) Explore an expansion area — tell me the number
+> B) Add, remove, or modify sources
+> C) Save the plan
+>
+> You can also ask for `hi-status` at any time.
+>
+
 
 **User:** C — save the plan.
 
@@ -232,26 +242,28 @@ User: hi-discovery session diabetes-ccm
 >
 > ✓ Created: `topics/diabetes-ccm/process/notes.md` (stub — add open questions and decisions here)
 >
+>
 > ```
 > ▸ hi-discovery  diabetes-ccm
 >   Step:  11 — Save Checkpoint · Complete
 >   Plan:  saved · 10 sources
 >   Next:  hi-discovery verify diabetes-ccm
 > ```
+>
+> Ready to verify?
+>
+
+**User:** yes, verify.
 
 ---
 
-## verify Mode Output
-
-```
-User: hi-discovery verify diabetes-ccm
-```
+## Verify Mode Output
 
 ```
 hi validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
 ```
 
-```
+
 Validating: topics/diabetes-ccm/process/plans/discovery-plan.yaml
 
 ✓ YAML parses successfully
@@ -264,7 +276,6 @@ Validating: topics/diabetes-ccm/process/plans/discovery-plan.yaml
 ✓ Health-economics source present (HCUP NIS)
 
 Overall: PASS (1 warning)
-```
 
 > ```
 > ▸ hi-discovery  diabetes-ccm
@@ -272,3 +283,11 @@ Overall: PASS (1 warning)
 >   Result:  PASS (1 warning)
 >   Next:    hi-ingest session diabetes-ccm
 > ```
+>
+> **What would you like to do next?**
+>
+> A) Address warnings and re-run `hi-verify` 
+> B) Move on to `hi-ingest`
+>
+> (you can ask for `hi-status` at any time)
+>
