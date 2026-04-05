@@ -1,8 +1,10 @@
 """hi ingest — Register and track raw L1 source artifacts."""
 
 import hashlib
+import json
 import shutil
 import time
+from html.parser import HTMLParser
 from pathlib import Path
 
 import click
@@ -34,6 +36,132 @@ MIME_TO_EXT = {
     "application/xml": ".xml",
     "text/xml": ".xml",
 }
+
+# Meta name prefixes to include; values are normalized to these short keys
+_META_NAME_MAP = {
+    "description": "description",
+    "author": "author",
+    "keywords": "keywords",
+    "date": "date",
+    "language": "language",
+    "generator": "generator",
+    # Dublin Core
+    "dc.title": "dc_title",
+    "dc.creator": "dc_creator",
+    "dc.date": "dc_date",
+    "dc.description": "dc_description",
+    "dc.subject": "dc_subject",
+    "dc.publisher": "dc_publisher",
+    "dc.type": "dc_type",
+    "dc.format": "dc_format",
+    "dc.identifier": "dc_identifier",
+    # OpenGraph
+    "og:title": "og_title",
+    "og:description": "og_description",
+    "og:url": "og_url",
+    "og:type": "og_type",
+    "og:site_name": "og_site_name",
+    # Twitter card
+    "twitter:title": "twitter_title",
+    "twitter:description": "twitter_description",
+}
+
+
+class _HTMLMetaParser(HTMLParser):
+    """Extracts <title>, <meta>, and <script type="application/ld+json"> from HTML."""
+
+    def __init__(self):
+        super().__init__()
+        self.title: str | None = None
+        self.meta: dict[str, str] = {}
+        self.json_ld: list[dict] = []
+        self._in_title = False
+        self._in_json_ld = False
+        self._title_buf: list[str] = []
+        self._json_ld_buf: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs_d = dict(attrs)
+        if tag == "title":
+            self._in_title = True
+        elif tag == "meta":
+            name = (
+                attrs_d.get("name") or
+                attrs_d.get("property") or
+                attrs_d.get("itemprop") or ""
+            ).lower().strip()
+            content = (attrs_d.get("content") or "").strip()
+            if name and content:
+                key = _META_NAME_MAP.get(name)
+                if key:
+                    self.meta[key] = content
+        elif tag == "script" and attrs_d.get("type") == "application/ld+json":
+            self._in_json_ld = True
+
+    def handle_endtag(self, tag):
+        if tag == "title":
+            self._in_title = False
+            self.title = "".join(self._title_buf).strip() or None
+        elif tag == "script" and self._in_json_ld:
+            self._in_json_ld = False
+            raw = "".join(self._json_ld_buf).strip()
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, list):
+                    self.json_ld.extend(parsed)
+                elif isinstance(parsed, dict):
+                    self.json_ld.append(parsed)
+            except json.JSONDecodeError:
+                pass
+            self._json_ld_buf = []
+
+    def handle_data(self, data):
+        if self._in_title:
+            self._title_buf.append(data)
+        elif self._in_json_ld:
+            self._json_ld_buf.append(data)
+
+
+def _extract_html_meta(html_text: str) -> dict:
+    """Return a dict of metadata extracted from HTML head tags and JSON-LD."""
+    parser = _HTMLMetaParser()
+    parser.feed(html_text)
+
+    result: dict = {}
+
+    if parser.title:
+        result["title"] = parser.title
+
+    result.update(parser.meta)
+
+    # Flatten useful JSON-LD fields (first schema.org object wins)
+    for obj in parser.json_ld:
+        if not isinstance(obj, dict):
+            continue
+        schema_type = obj.get("@type", "")
+        ld: dict = {}
+        for field, key in [
+            ("name", "ld_name"),
+            ("headline", "ld_headline"),
+            ("description", "ld_description"),
+            ("author", "ld_author"),
+            ("datePublished", "ld_date_published"),
+            ("dateModified", "ld_date_modified"),
+            ("publisher", "ld_publisher"),
+            ("url", "ld_url"),
+        ]:
+            val = obj.get(field)
+            if isinstance(val, dict):
+                val = val.get("name") or val.get("@id")
+            if val and isinstance(val, str):
+                ld[key] = val
+        if ld:
+            if schema_type:
+                ld["ld_type"] = schema_type
+            result.update(ld)
+            break  # only use first schema.org object
+
+    return result
 
 
 @click.group()
@@ -250,6 +378,7 @@ def normalize(file, topic, source_name):
     out_file = out_dir / f"{name}.md"
 
     text_extracted = True
+    html_meta: dict = {}
     ext = src_path.suffix.lower()
 
     if ext == ".pdf":
@@ -286,7 +415,9 @@ def normalize(file, topic, source_name):
                 content = result.stdout
     elif ext in (".html", ".htm"):
         from markdownify import markdownify as md
-        content = md(src_path.read_text(errors="replace"), heading_style="ATX")
+        html_text = src_path.read_text(errors="replace")
+        html_meta = _extract_html_meta(html_text)
+        content = md(html_text, heading_style="ATX")
     else:
         content = src_path.read_text(errors="replace")
 
@@ -294,13 +425,15 @@ def normalize(file, topic, source_name):
     import io
     _y = _YAML()
     _y.default_flow_style = False
-    frontmatter_data = {
+    frontmatter_data: dict = {
         "source": name,
         "topic": topic,
         "normalized": now_iso(),
         "original": f"sources/{src_path.name}",
         "text_extracted": text_extracted,
     }
+    if html_meta:
+        frontmatter_data["html_meta"] = html_meta
     buf = io.StringIO()
     _y.dump(frontmatter_data, buf)
     fm_text = buf.getvalue()

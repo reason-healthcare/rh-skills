@@ -207,3 +207,63 @@ def test_normalize_unknown_source_no_crash(tmp_repo):
     assert result.exit_code == 0, result.output
     norm = tmp_repo / "sources" / "normalized" / "mystery.md"
     assert norm.exists()
+
+
+def test_normalize_html_extracts_meta(tmp_repo):
+    """HTML normalization extracts title, meta tags, and JSON-LD into html_meta frontmatter."""
+    src = tmp_repo / "guideline.html"
+    src.write_text("""\
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ADA Hypertension Guidelines 2024</title>
+  <meta name="author" content="American Diabetes Association">
+  <meta name="description" content="Clinical guidelines for hypertension management">
+  <meta name="DC.date" content="2024-01-15">
+  <meta property="og:url" content="https://diabetesjournals.org/guidelines">
+  <script type="application/ld+json">
+  {
+    "@type": "MedicalWebPage",
+    "name": "ADA Guidelines",
+    "datePublished": "2024-01-15",
+    "publisher": {"name": "American Diabetes Association"}
+  }
+  </script>
+</head>
+<body><h1>Guidelines</h1><p>Content here.</p></body>
+</html>
+""")
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, [
+        "normalize", str(src), "--topic", "hypertension",
+    ])
+
+    assert result.exit_code == 0, result.output
+    norm = tmp_repo / "sources" / "normalized" / "guideline.md"
+    assert norm.exists()
+    fm = _parse_frontmatter(norm.read_text())
+    meta = fm.get("html_meta", {})
+    assert meta.get("title") == "ADA Hypertension Guidelines 2024"
+    assert meta.get("author") == "American Diabetes Association"
+    assert meta.get("description") == "Clinical guidelines for hypertension management"
+    assert meta.get("dc_date") == "2024-01-15"
+    assert meta.get("og_url") == "https://diabetesjournals.org/guidelines"
+    assert meta.get("ld_type") == "MedicalWebPage"
+    assert meta.get("ld_publisher") == "American Diabetes Association"
+
+
+def test_normalize_html_no_meta_omits_html_meta_key(tmp_repo):
+    """HTML with no extractable metadata omits html_meta from frontmatter."""
+    src = tmp_repo / "bare.html"
+    src.write_text("<html><body><p>Just content.</p></body></html>")
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, [
+        "normalize", str(src), "--topic", "test-topic",
+    ])
+
+    assert result.exit_code == 0, result.output
+    norm = tmp_repo / "sources" / "normalized" / "bare.md"
+    fm = _parse_frontmatter(norm.read_text())
+    assert "html_meta" not in fm
