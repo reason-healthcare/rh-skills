@@ -70,36 +70,30 @@ def test_init_idempotent_topic_row(tmp_repo):
 
 
 def test_init_creates_process_research_md(tmp_repo):
-    """hi init creates topics/<name>/process/research.md with three-table format."""
+    """hi init creates topics/<name>/process/notes.md with human-annotation sections."""
     runner = CliRunner()
     runner.invoke(init, ["diabetes-ccm"])
 
-    research_md = tmp_repo / "topics" / "diabetes-ccm" / "process" / "research.md"
-    assert research_md.exists(), "process/research.md should be created"
-    content = research_md.read_text()
+    notes_md = tmp_repo / "topics" / "diabetes-ccm" / "process" / "notes.md"
+    assert notes_md.exists(), "process/notes.md should be created"
+    content = notes_md.read_text()
 
-    assert "# Research Notes: diabetes-ccm" in content
-    assert "### Ruled In" in content
-    assert "### Ruled Out" in content
-    assert "### Pending Review" in content
+    assert "# Research Notes" in content
     assert "## Open Questions" in content
-    assert "## Related Topics" in content
+    assert "## Decisions" in content
+    assert "## Source Conflicts" in content
+    assert "## Notes" in content
 
 
 def test_init_process_research_md_table_headers(tmp_repo):
-    """process/research.md has correct column headers in all three tables."""
+    """process/notes.md has no Markdown tables — plain bullets only."""
     runner = CliRunner()
     runner.invoke(init, ["sepsis-detection"])
 
-    research_md = tmp_repo / "topics" / "sepsis-detection" / "process" / "research.md"
-    content = research_md.read_text()
+    notes_md = tmp_repo / "topics" / "sepsis-detection" / "process" / "notes.md"
+    content = notes_md.read_text()
 
-    # Ruled In table
-    assert "| Source | File | Type | Evidence Level | Added | Notes |" in content
-    # Ruled Out table
-    assert "| Source | Reason | Date |" in content
-    # Pending Review table
-    assert "| Source | Location | Added |" in content
+    assert "| Source |" not in content, "notes.md must not contain Markdown tables"
 
 
 def test_init_does_not_clobber_existing_research_md(tmp_repo):

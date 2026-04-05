@@ -236,7 +236,7 @@ User: hi-discovery session diabetes-ccm
 >
 > ✓ Updated: `RESEARCH.md` (row for diabetes-ccm: sources=10, updated=2026-04-15)
 >
-> ✓ Created: `topics/diabetes-ccm/process/conflicts.md` (stub)
+> ✓ Created: `topics/diabetes-ccm/process/notes.md` (stub — add open questions and decisions here)
 >
 > ```
 > ─── hi-discovery · diabetes-ccm ─────────────────────────────

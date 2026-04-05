@@ -112,54 +112,31 @@ def init(topic, title, description, author):
     with open(tf, "w") as f:
         y.dump(tracking, f)
 
-    # Write research.md — per-topic source disposition (three-table format for discovery skill)
-    (td / "process" / "research.md").write_text(f"""\
-# Research Notes: {topic}
-
-> Source rows managed by `hi` — CLI appends only, never deletes.
-> Add notes in the Notes column. Maintain Open Questions and Related Topics manually.
-
-## Sources
-
-### Ruled In
-
-| Source | File | Type | Evidence Level | Added | Notes |
-|--------|------|------|---------------|-------|-------|
-
-### Ruled Out
-
-| Source | Reason | Date |
-|--------|--------|------|
-
-### Pending Review
-
-| Source | Location | Added |
-|--------|----------|-------|
+    # Write notes.md — human annotation space (open questions, decisions, conflicts, free notes)
+    (td / "process" / "notes.md").write_text(f"""\
+# Research Notes — {topic}
 
 ## Open Questions
 
-## Related Topics
-""")
+<!-- Questions to resolve before proceeding. Check off when resolved. -->
+- [ ] 
 
-    # Write conflicts.md
-    (td / "process" / "conflicts.md").write_text(f"""\
----
-topic: "{topic}"
-updated: "{today}"
----
+## Decisions
 
-## Open Conflicts
+<!-- Key choices made and why. Add as the project progresses. -->
+- 
 
-<!-- Document contradictions between sources. Format:
-- **Conflict**: <description of contradiction>
-  - **Source A**: <source name> says <X>
-  - **Source B**: <source name> says <Y>
-  - **Resolution**: <pending | resolved: <decision>>
+## Source Conflicts
+
+<!-- Contradictions between sources. Document and resolve.
+     Example:
+     - ADA 2024 recommends HbA1c < 7%, but USPSTF uses < 9% as the threshold
+       Resolution: use ADA target for CCM goal-setting; USPSTF for quality measure denominator
 -->
 
-## Resolved Conflicts
+## Notes
 
-<!-- Move resolved conflicts here with the resolution decision. -->
+<!-- Free-form observations, context, and reminders. -->
 """)
 
     # Write process/plans/tasks.md
@@ -223,14 +200,13 @@ metadata:
     click.echo("        checklists/  (clinical review checklists)")
     click.echo("        plans/       (tasks and plan artifacts)")
     click.echo("        fixtures/    (LLM test fixtures)")
-    click.echo("        research.md  (source disposition tracking)")
-    click.echo("        conflicts.md (source contradictions)")
+    click.echo("        notes.md     (open questions, decisions, conflicts, notes)")
     click.echo("      TOPIC.md     (topic description)")
     click.echo("    RESEARCH.md  (root research portfolio)")
 
 
 def _init_research_portfolio(topic: str, today: str) -> None:
-    """Create or update root RESEARCH.md and confirm research.md created."""
+    """Create or update root RESEARCH.md and confirm notes.md created."""
     root = repo_root()
     portfolio = root / "RESEARCH.md"
 

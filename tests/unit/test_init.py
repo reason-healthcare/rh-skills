@@ -132,16 +132,22 @@ def test_init_creates_plans_tasks_md(tmp_repo):
     assert (tmp_repo / "topics" / "test-skill" / "process" / "plans" / "tasks.md").exists()
 
 
-def test_init_creates_research_md(tmp_repo):
+def test_init_creates_notes_md(tmp_repo):
     runner = CliRunner()
     runner.invoke(init, ["test-skill"])
-    assert (tmp_repo / "topics" / "test-skill" / "process" / "research.md").exists()
+    assert (tmp_repo / "topics" / "test-skill" / "process" / "notes.md").exists()
 
 
-def test_init_creates_conflicts_md(tmp_repo):
+def test_init_does_not_create_research_md(tmp_repo):
     runner = CliRunner()
     runner.invoke(init, ["test-skill"])
-    assert (tmp_repo / "topics" / "test-skill" / "process" / "conflicts.md").exists()
+    assert not (tmp_repo / "topics" / "test-skill" / "process" / "research.md").exists()
+
+
+def test_init_does_not_create_conflicts_md(tmp_repo):
+    runner = CliRunner()
+    runner.invoke(init, ["test-skill"])
+    assert not (tmp_repo / "topics" / "test-skill" / "process" / "conflicts.md").exists()
 
 
 def test_init_tracking_has_topic_created_root_event(tmp_repo):

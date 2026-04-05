@@ -22,7 +22,7 @@ metadata:
   reads_from:
     - tracking.yaml
     - RESEARCH.md
-    - topics/<name>/process/research.md
+    - topics/<name>/process/notes.md
   writes_via_cli:
     - "hi search pubmed"
     - "hi search pmc"
@@ -390,10 +390,8 @@ When the user approves saving:
 2. Write `topics/<topic>/process/plans/discovery-readout.md` — the generated
    domain narrative (Domain Advice + Research Expansion Suggestions prose);
    add a note at the top that it is derived from `discovery-plan.yaml`
-2. Update `process/research.md` — move all approved sources to Pending Review
-   (awaiting `hi-ingest`); move rejected sources to Ruled Out
+2. Create `process/notes.md` stub (create-unless-exists — do not overwrite if user has added content)
 3. Update `RESEARCH.md` root portfolio row for the topic (source count, date)
-4. Create `process/conflicts.md` stub (create-unless-exists)
 
 After saving, recommend:
 
