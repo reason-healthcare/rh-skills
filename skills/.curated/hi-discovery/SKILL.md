@@ -114,48 +114,6 @@ ls topics/<topic>/process/plans/discovery-plan.yaml 2>/dev/null
 
 ---
 
-## Output Contract
-
-
-After every response, emit a status block and friendly user prompt as the
-**last thing** in the response. No text after the user prompt.
-
-> 
-> ```
-> ▸ hi-discovery  <topic>
->   Step:  <N> — <Step Name>
->   Plan:  <N source(s) in memory | saved · <N> sources>
->   Next:  <concrete command or choice presented to the user>
-> ```
-> 
-> **What would you like to do next?**
-> 
-> <lettered options for next steps, each on new line>
-> 
-> You can also ask for status (`hi-status`) at any time.
->
-
-Rules:
-- **Always present** — every response, without exception. The user must never
-  have to ask "what do I do next?"
-- **Status block is first** — emit the block, then the "What would you like to
-  do next?" prompt and options. No text after the user prompt.
-- **First line**: `▸ ` then skill name, two spaces, then topic (no dashes, no
-  fill characters). **Subsequent lines**: two-space indent, Title Case key with
-  colon, two spaces, value. No horizontal rules or blank lines inside the block.
-- **Step** reflects the current step number and name from the session workflow.
-  Use `Complete` suffix once a step is fully done (e.g., `3 — ClinicalTrials
-  Search · Complete`).
-- **Plan** shows live source count while unsaved; switches to `saved ·` once
-  `discovery-plan.yaml` has been written.
-- **Next** must be a concrete, copy-pasteable command OR a specific choice
-  prompt (e.g., `approve list / modify / add sources`). Never vague.
-- After `verify` mode, the block uses `Mode: verify` and `Result: PASS / FAIL`
-  in place of Step/Plan, and `Next` gives the exact `hi-ingest` command on
-  PASS or the specific fix required on FAIL.
-
----
-
 ## session Mode
 
 The session is an **interactive research loop**. Complete all steps; prompt the
@@ -420,29 +378,21 @@ When the user approves saving:
 2. Create `process/notes.md` stub (create-unless-exists — do not overwrite if user has added content)
 3. Update `RESEARCH.md` root portfolio row for the topic (source count, date)
 
-After saving, tell the user:
+After saving, emit status block:
 
-> ✓ Plan saved. Before handing off to `hi-ingest`, validate the plan:
 > ```
-> hi-discovery verify <topic>
+> ▸ hi-discovery  <topic>
+>   Step:   11 — Save Checkpoint · Complete
+>   Plan:   saved · <N> sources
+>   Next:   hi-discovery verify <topic>
 > ```
-> This runs non-destructive checks on the saved YAML (source count, required
-> fields, evidence coverage). Fix any issues before proceeding to ingest.
-
-Emit status block:
-```
-▸ hi-discovery  <topic>
-  Step:   11 — Save Checkpoint · Complete
-  Plan:   saved · <N> sources
-  Next:   hi-discovery verify <topic>
-```
-
-**What would you like to do next?**
-
-A) Run `hi-discovery verify <topic>` — validate the plan before handing off
-B) Return to the session to revise sources
-
-You can also ask for `hi-status` at any time.
+> 
+> **What would you like to do next?**
+> 
+> A) Run `hi-discovery verify <topic>` — validate the plan before handing off
+> B) Return to the session to revise sources
+> 
+> You can also ask for `hi-status` at any time.
 
 ### Step 12 — Verify Recommendation
 
@@ -463,50 +413,42 @@ hi validate --plan topics/<topic>/process/plans/discovery-plan.yaml
 
 Report the output verbatim. Exit with the same code as `hi validate --plan`.
 
-On exit 0, before emitting the status block, tell the user:
+On exit 0, before emitting the status block, emit:
 
-> ✓ Discovery plan validated. Your sources are ready for acquisition.
->
-> **Next step — hi-ingest:**
-> The `hi-ingest` skill reads your `discovery-plan.yaml` and runs the full
-> acquisition pipeline: Download → Normalize → Classify → Annotate.
->
-> To begin, load the `hi-ingest` skill and run plan mode:
+> Verification passed! Your discovery plan is well-formed and ready for `hi-ingest`.
+> 
 > ```
-> hi-ingest plan <topic>
+> ▸ hi-discovery  <topic>
+>   Mode:    verify
+>   Result:  PASS
+>   Next:    hi-ingest plan <topic>
 > ```
-> Open-access sources will be downloaded automatically. Authenticated sources
-> listed in your plan include `auth_note` instructions for manual retrieval.
+> 
+> **What would you like to do next?**
+> 
+> A) Run `hi-ingest plan <topic>` — begin source acquisition
+> B) Return to the discovery session to revise sources
+> 
+> You can also ask for status `hi-status` at any time.
 
-Then emit:
-```
-▸ hi-discovery  <topic>
-  Mode:    verify
-  Result:  PASS
-  Next:    hi-ingest plan <topic>
-```
-
-**What would you like to do next?**
-
-A) Run `hi-ingest plan <topic>` — begin source acquisition
-B) Return to the discovery session to revise sources
-
-You can also ask for `hi-status` at any time.
 
 On exit 1, emit:
-```
-▸ hi-discovery  <topic>
-  Mode:    verify
-  Result:  FAIL — <N> check(s) failed
-  Next:    fix: <specific issue(s) listed above>, then re-run verify
-```
 
-**What would you like to do next?**
-
-A) Fix the listed issues and re-run `hi-discovery verify <topic>`
-B) Return to the session to modify sources
-
-You can also ask for `hi-status` at any time.
+> Verification failed. Please address the following issues in `discovery-plan.yaml`:
+> 
+> ```
+> ▸ hi-discovery  <topic>
+>   Mode:    verify
+>   Result:  FAIL — <N> check(s) failed
+>   Next:    fix: <specific issue(s) listed above>, then re-run verify
+> ```
+> 
+> **What would you like to do next?**
+> 
+> A) Fix the listed issues and re-run `hi-discovery verify <topic>`
+> B) Return to the session to modify sources
+> 
+> You can also ask for status `hi-status` at any time.
 
 ---
 

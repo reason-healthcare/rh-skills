@@ -6,6 +6,7 @@
 
 | Topic | Stage | Sources | Initialized | Updated | Notes |
 |-------|-------|---------|-------------|---------|-------|
+| test-status-topic | initialized | 0 | 2026-04-06 | 2026-04-06 | |
 | demo-topic | initialized | 0 | 2026-04-05 | 2026-04-05 | |
 
 ## Completed Topics

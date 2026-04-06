@@ -101,7 +101,7 @@ def status(ctx):
 
 
 def _portfolio_summary() -> None:
-    """Print a summary of all topics with stage, completeness, and next steps."""
+    """Print project-level status and per-topic recommendations from tracking.yaml."""
     tracking_path = repo_root() / "tracking.yaml"
     if not tracking_path.exists():
         click.echo("No tracking.yaml found. Run `hi init <topic>` to start a topic.")
@@ -110,31 +110,47 @@ def _portfolio_summary() -> None:
     tracking = load_tracking()
     topics = tracking.get("topics", [])
     global_sources = tracking.get("sources", [])
+    source_count = len(global_sources)
 
     if not topics:
         click.echo("No topics yet. Run `hi init <topic>` to start one.")
         return
 
-    click.echo(f"Research Portfolio — {len(topics)} topic(s)\n")
+    # Project-level header
+    click.echo(f"Research Portfolio")
+    click.echo(f"  Topics:   {len(topics)}")
+    click.echo(f"  Sources:  {source_count}")
+    click.echo("")
 
     for t in topics:
         name = t.get("name", "")
         title = t.get("title", "")
         structured_count = len(t.get("structured", []))
         computable_count = len(t.get("computable", []))
-        sources_count = len(global_sources)
-        stage = _compute_stage(sources_count, structured_count, computable_count)
-        pct = _completeness_pct(sources_count, structured_count, computable_count)
+        stage = _compute_stage(source_count, structured_count, computable_count)
         label = _STAGE_LABELS.get(stage, stage)
-        options = _next_step_options(sources_count, structured_count, computable_count, name)
+        has_plan = _has_discovery_plan(name)
+        options = _next_step_options(source_count, structured_count, computable_count, name)
 
-        click.echo(f"▸ {name}")
+        header = f"{name}"
         if title:
-            click.echo(f"  Title:    {title}")
-        click.echo(f"  Stage:    {label}  ({pct}%)")
-        click.echo("  Next steps:")
-        for i, (desc, cmd) in enumerate(options, start=1):
-            click.echo(f"    {chr(64 + i)}) {cmd}")
+            header += f" — {title}"
+        click.echo(header)
+
+        plan_note = "· discovery plan ✓" if has_plan else ""
+        click.echo(f"  Stage:  {label} {plan_note}".rstrip())
+
+        if source_count:
+            click.echo(f"  Sources:     {source_count}")
+        if structured_count:
+            click.echo(f"  Structured:  {structured_count}")
+        if computable_count:
+            click.echo(f"  Computable:  {computable_count}")
+
+        # Primary recommendation only — keep it scannable
+        if options:
+            click.echo(f"  Next:    {options[0][1]}")
+
         click.echo("")
 
 
