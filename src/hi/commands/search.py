@@ -1,6 +1,7 @@
 """hi search — Search biomedical databases for evidence-based sources."""
 
 import json
+import sys
 import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -37,6 +38,50 @@ VALID_SOURCE_TYPES = {
 }
 
 
+# ── HTTP helper with rate-limit retry ─────────────────────────────────────────
+
+_RETRY_DELAYS = (1.0, 3.0, 10.0)  # seconds between retries on 429
+
+
+def _http_get_with_retry(url: str, params: dict, timeout: int) -> httpx.Response:
+    """GET with automatic retry on HTTP 429 (rate limited).
+
+    Prints a warning to stderr on each retry so the caller can see progress
+    without the agent needing to improvise its own retry commentary.
+    Raises click.ClickException after all retries are exhausted.
+    """
+    last_exc: Exception | None = None
+    for attempt, delay in enumerate((_RETRY_DELAYS[0] - 1,) + _RETRY_DELAYS, start=0):
+        if attempt > 0:
+            print(
+                f"Rate limit hit — retrying in {int(delay)}s "
+                f"(attempt {attempt}/{len(_RETRY_DELAYS)})",
+                file=sys.stderr,
+            )
+            time.sleep(delay)
+        try:
+            r = httpx.get(url, params=params, timeout=timeout)
+            if r.status_code == 429:
+                last_exc = httpx.HTTPStatusError(
+                    f"429 Too Many Requests", request=r.request, response=r
+                )
+                continue
+            r.raise_for_status()
+            return r
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                last_exc = e
+                continue
+            raise click.ClickException(f"HTTP error: {e}") from e
+        except httpx.HTTPError as e:
+            raise click.ClickException(f"Network error: {e}") from e
+
+    raise click.ClickException(
+        f"Rate limit persists after {len(_RETRY_DELAYS)} retries. "
+        "Try again in a few minutes or set NCBI_API_KEY for higher limits."
+    )
+
+
 # ── NCBI Entrez helper ─────────────────────────────────────────────────────────
 
 def _entrez_search_fetch(
@@ -65,10 +110,9 @@ def _entrez_search_fetch(
         esearch_params["api_key"] = api_key
 
     try:
-        r = httpx.get(NCBI_ESEARCH, params=esearch_params, timeout=15)
-        r.raise_for_status()
-    except httpx.HTTPError as e:
-        raise click.ClickException(f"NCBI esearch failed: {e}") from e
+        r = _http_get_with_retry(NCBI_ESEARCH, params=esearch_params, timeout=15)
+    except click.ClickException as e:
+        raise click.ClickException(f"NCBI esearch failed: {e.format_message()}") from e
 
     esearch_data = r.json()
     id_list = esearch_data.get("esearchresult", {}).get("idlist", [])
@@ -90,10 +134,9 @@ def _entrez_search_fetch(
         efetch_params["api_key"] = api_key
 
     try:
-        r2 = httpx.get(NCBI_EFETCH, params=efetch_params, timeout=30)
-        r2.raise_for_status()
-    except httpx.HTTPError as e:
-        raise click.ClickException(f"NCBI efetch failed: {e}") from e
+        r2 = _http_get_with_retry(NCBI_EFETCH, params=efetch_params, timeout=30)
+    except click.ClickException as e:
+        raise click.ClickException(f"NCBI efetch failed: {e.format_message()}") from e
 
     results = _parse_pubmed_xml(r2.text, db=db)
     results = results[:max_results]
@@ -203,10 +246,9 @@ def _clinicaltrials_search(
     }
 
     try:
-        r = httpx.get(CLINICALTRIALS_V2, params=params, timeout=15)
-        r.raise_for_status()
-    except httpx.HTTPError as e:
-        raise click.ClickException(f"ClinicalTrials.gov API failed: {e}") from e
+        r = _http_get_with_retry(CLINICALTRIALS_V2, params=params, timeout=15)
+    except click.ClickException as e:
+        raise click.ClickException(f"ClinicalTrials.gov API failed: {e.format_message()}") from e
 
     data = r.json()
     studies = data.get("studies", [])[:max_results]

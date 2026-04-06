@@ -7,7 +7,7 @@ import pytest
 import httpx
 from click.testing import CliRunner
 
-from hi.commands.search import pubmed, pmc, _entrez_search_fetch, _parse_pubmed_xml
+from hi.commands.search import pubmed, pmc, _entrez_search_fetch, _parse_pubmed_xml, _http_get_with_retry
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -149,6 +149,54 @@ def test_entrez_search_fetch_network_error(httpx_mock):
     import click
     with patch("time.sleep"), pytest.raises(click.ClickException):
         _entrez_search_fetch("diabetes", db="pubmed", max_results=5)
+
+
+# ── Rate limit retry tests ────────────────────────────────────────────────────
+
+def test_http_get_retries_on_429_then_succeeds(httpx_mock):
+    """A 429 response triggers a retry; a subsequent 200 succeeds."""
+    import click
+    httpx_mock.add_response(status_code=429)
+    httpx_mock.add_response(status_code=200, json={"ok": True})
+
+    with patch("time.sleep"):
+        r = _http_get_with_retry("https://example.com", params={}, timeout=10)
+    assert r.status_code == 200
+
+
+def test_http_get_raises_after_all_retries_exhausted(httpx_mock):
+    """Persistent 429s eventually raise a ClickException."""
+    import click
+    for _ in range(4):  # initial + 3 retries
+        httpx_mock.add_response(status_code=429)
+
+    with patch("time.sleep"), pytest.raises(click.ClickException, match="Rate limit"):
+        _http_get_with_retry("https://example.com", params={}, timeout=10)
+
+
+def test_http_get_prints_warning_on_retry(httpx_mock, capsys):
+    """A retry emits a message to stderr."""
+    httpx_mock.add_response(status_code=429)
+    httpx_mock.add_response(status_code=200, json={})
+
+    with patch("time.sleep"):
+        _http_get_with_retry("https://example.com", params={}, timeout=10)
+
+    captured = capsys.readouterr()
+    assert "Rate limit" in captured.err
+    assert "retrying" in captured.err.lower()
+
+
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+def test_entrez_search_fetch_recovers_from_429(httpx_mock):
+    """_entrez_search_fetch succeeds when esearch 429 is followed by 200."""
+    httpx_mock.add_response(status_code=429)       # first attempt → rate limited
+    httpx_mock.add_response(json=ESEARCH_RESPONSE) # retry → ok
+    httpx_mock.add_response(text=EFETCH_XML)       # efetch → ok
+
+    with patch("time.sleep"):
+        results = _entrez_search_fetch("diabetes", db="pubmed", max_results=5)
+    assert len(results) >= 1
 
 
 # ── CLI tests: hi search pubmed ───────────────────────────────────────────────

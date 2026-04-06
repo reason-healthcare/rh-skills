@@ -116,21 +116,24 @@ ls topics/<topic>/process/plans/discovery-plan.yaml 2>/dev/null
 
 ## Output Contract
 
+
 After every response, emit a status block and friendly user prompt as the
 **last thing** in the response. No text after the user prompt.
 
-```
-▸ hi-discovery  <topic>
-  Step:  <N> — <Step Name>
-  Plan:  <N source(s) in memory | saved · <N> sources>
-  Next:  <concrete command or choice presented to the user>
-```
-
-**What would you like to do next?**
-
-<lettered options for next steps, each on new line>
-
-You can also ask for `hi-status` at any time.
+> 
+> ```
+> ▸ hi-discovery  <topic>
+>   Step:  <N> — <Step Name>
+>   Plan:  <N source(s) in memory | saved · <N> sources>
+>   Next:  <concrete command or choice presented to the user>
+> ```
+> 
+> **What would you like to do next?**
+> 
+> <lettered options for next steps, each on new line>
+> 
+> You can also ask for status (`hi-status`) at any time.
+>
 
 Rules:
 - **Always present** — every response, without exception. The user must never
@@ -312,20 +315,21 @@ Ask the user to approve, modify, or add/remove sources.
 Incorporate feedback and loop back if needed.
 
 Emit status block:
-```
-▸ hi-discovery  <topic>
-  Step:   7 — Source Review
-  Plan:   <N> sources in memory
-  Next:   approve list / modify / add sources
-```
 
-**What would you like to do next?**
-
-A) Approve all sources — proceed to access advisories
-B) Modify the list — add, remove, or edit sources
-C) Ask a question about a specific source
-
-You can also ask for `hi-status` at any time.
+> ```
+> ▸ hi-discovery  <topic>
+>   Step:   7 — Source Review
+>   Plan:   <N> sources in memory
+>   Next:   approve list / modify / add sources
+> ```
+> 
+> **What would you like to do next?**
+> 
+> A) Approve all sources — proceed to access advisories
+> B) Modify the list — add, remove, or edit sources
+> C) Ask a question about a specific source
+> 
+> You can also ask for status `hi-status` at any time.
 
 ### Step 8 — Access Advisories
 
@@ -388,20 +392,21 @@ If the user wants to explore an expansion area, loop back to Steps 2–9 for tha
 area and merge the findings into the living plan.
 
 Emit status block:
-```
-▸ hi-discovery  <topic>
-  Step:   10 — Awaiting Direction
-  Plan:   <N> sources in memory
-  Next:   A) explore expansion  B) modify list  C) save plan
-```
 
-**What would you like to do next?**
-
-A) Explore an expansion area — tell me the number
-B) Add, remove, or modify sources
-C) Save the plan and move on to `hi-ingest`
-
-You can also ask for `hi-status` at any time.
+> ```
+> ▸ hi-discovery  <topic>
+>   Step:   10 — Awaiting Direction
+>   Plan:   <N> sources in memory
+>   Next:   explore expansion / modify / save plan
+> ```
+> 
+> **What would you like to do next?**
+> 
+> A) Explore an expansion area — tell me the number
+> B) Add, remove, or modify sources
+> C) Save the plan and move on to `hi-ingest`
+> 
+> You can also ask for status `hi-status` at any time.
 
 ### Step 11 — Save Checkpoint
 
