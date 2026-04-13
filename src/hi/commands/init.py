@@ -1,4 +1,4 @@
-"""hi init — Scaffold a new healthcare informatics topic."""
+"""rh-skills init — Scaffold a new informatics topic."""
 
 import re
 import subprocess
@@ -106,8 +106,8 @@ def init(topic, title, description, author):
         "computable": [],
         "events": [],
     })
-    append_root_event(tracking, "topic_created", f"Topic scaffolded with hi init")
-    append_topic_event(tracking, topic, "created", "Topic scaffolded with hi init")
+    append_root_event(tracking, "topic_created", f"Topic scaffolded with rh-skills init")
+    append_topic_event(tracking, topic, "created", "Topic scaffolded with rh-skills init")
 
     with open(tf, "w") as f:
         y.dump(tracking, f)
@@ -164,7 +164,7 @@ updated: "{today}"
 ---
 name: "{topic}"
 description: "{description}"
-compatibility: "hi-skills-framework >= 0.1.0"
+compatibility: "rh-skills >= 0.1.0"
 metadata:
   author: "{author}"
   created: "{today}"
@@ -214,7 +214,7 @@ def _init_research_portfolio(topic: str, today: str) -> None:
         portfolio.write_text("""\
 # Research Portfolio
 
-> Managed by `hi` — CLI appends rows; human edits the Notes column.
+> Managed by `rh-skills` — CLI appends rows; human edits the Notes column.
 
 ## Active Topics
 

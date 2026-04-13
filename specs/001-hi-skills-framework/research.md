@@ -1,7 +1,7 @@
 # Research: Healthcare Informatics Skills Framework
 
 **Phase**: 0 — Pre-Design Research  
-**Branch**: `001-hi-skills-framework`  
+**Branch**: `001-rh-skills`  
 **Date**: 2026-04-03
 
 ---
@@ -27,7 +27,7 @@ metadata:
 - `## Pre-Execution Checks` — prerequisite gates
 - `## Outline` — numbered step-by-step instruction for the agent
 
-**Implication for HI skills framework**: Each HI skill lives at `skills/{skill-name}/SKILL.md` following this exact convention. The SKILL.md prompt is the authoritative agent instruction that references L3 YAML artifact content at runtime.
+**Implication for RH skills framework**: Each HI skill lives at `skills/{skill-name}/SKILL.md` following this exact convention. The SKILL.md prompt is the authoritative agent instruction that references L3 YAML artifact content at runtime.
 
 ---
 
@@ -236,8 +236,8 @@ teardown() {
   rm -rf "$TEST_DIR"
 }
 
-@test "hi init creates skill directory structure" {
-  run hi init diabetes-screening --description "A screening skill"
+@test "rh-skills init creates skill directory structure" {
+  run rh-skills init diabetes-screening --description "A screening skill"
   [ "$status" -eq 0 ]
   [ -d "skills/diabetes-screening/l1" ]
   [ -d "skills/diabetes-screening/l2" ]
@@ -268,7 +268,7 @@ tests/
 │   ├── hi-init.bats        # Scaffold command
 │   ├── hi-promote.bats     # Promotion + validation
 │   ├── hi-validate.bats    # Schema validation
-│   ├── hi-status.bats      # Tracking artifact read
+│   ├── rh-inf-status.bats      # Tracking artifact read
 │   └── hi-list.bats        # Repository listing
 └── integration/
     └── skill-lifecycle.bats  # Full L1→L2→L3 workflow

@@ -1,4 +1,4 @@
-"""hi search — Search biomedical databases for evidence-based sources."""
+"""rh-skills search — Search biomedical databases for evidence-based sources."""
 
 import json
 import sys
@@ -328,7 +328,7 @@ def search():
     """Search biomedical databases for evidence-based sources."""
 
 
-# ── hi search pubmed ───────────────────────────────────────────────────────────
+# ── rh-skills search pubmed ───────────────────────────────────────────────────────────
 
 @search.command()
 @click.option("--query", required=True, help="PubMed search query (supports MeSH, boolean, filters)")
@@ -360,7 +360,7 @@ def pubmed(query, max_results, filter_str, api_key, as_json):
         _format_human(results, "pubmed")
 
 
-# ── hi search pmc ─────────────────────────────────────────────────────────────
+# ── rh-skills search pmc ─────────────────────────────────────────────────────────────
 
 @search.command()
 @click.option("--query", required=True, help="PMC search query")
@@ -396,7 +396,7 @@ def pmc(query, max_results, filter_str, api_key, as_json):
         _format_human(results, "pmc")
 
 
-# ── hi search clinicaltrials ──────────────────────────────────────────────────
+# ── rh-skills search clinicaltrials ──────────────────────────────────────────────────
 
 @search.command()
 @click.option("--query", required=True, help="Condition or intervention search term")

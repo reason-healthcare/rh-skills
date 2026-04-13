@@ -1,0 +1,57 @@
+topic: young-adult-hypertension
+date: "2025-03-15"
+sources:
+  - name: acc-aha-2017-hypertension
+    type: clinical-guideline
+    rationale: >
+      Landmark ACC/AHA guideline defining the new BP thresholds (≥130/80 mmHg)
+      and management algorithm used in most US health systems.
+    search_terms:
+      - hypertension guideline
+      - blood pressure classification 2017
+    evidence_level: ia
+    access: open
+    url: https://www.ahajournals.org/doi/pdf/10.1161/HYP.0000000000000065
+
+  - name: uspstf-hypertension-screening
+    type: government-program
+    rationale: >
+      USPSTF Grade A recommendation for hypertension screening in adults ≥18.
+      Establishes screening intervals and confirms ambulatory monitoring as
+      the diagnostic standard.
+    search_terms:
+      - USPSTF hypertension screening
+      - ambulatory blood pressure monitoring recommendation
+    evidence_level: ia
+    access: open
+    url: https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/hypertension-in-adults-screening
+
+  - name: jnc8-hypertension-management
+    type: clinical-guideline
+    rationale: >
+      JNC 8 evidence-based guideline for management of high blood pressure in adults.
+      Defines treatment thresholds and first-line therapy recommendations.
+    search_terms:
+      - JNC 8 hypertension treatment
+      - blood pressure pharmacotherapy evidence
+    evidence_level: ia
+    access: open
+    url: https://jamanetwork.com/journals/jama/fullarticle/1791493
+
+  - name: uptodate-young-adult-htn
+    type: clinical-guideline
+    rationale: >
+      UpToDate review of hypertension in young adults with special consideration
+      of secondary causes and lifestyle modification evidence.
+    search_terms:
+      - hypertension young adults secondary causes
+      - lifestyle modification blood pressure
+    evidence_level: v
+    access: authenticated
+    url: https://www.uptodate.com/contents/overview-of-hypertension-in-adults
+    auth_note: >
+      Requires institutional UpToDate subscription. Access via library portal
+      or institutional VPN. Download PDF and place at
+      sources/uptodate-young-adult-htn/uptodate-young-adult-htn.pdf, then run:
+      rh-skills ingest implement sources/uptodate-young-adult-htn/uptodate-young-adult-htn.pdf
+    recommended: true

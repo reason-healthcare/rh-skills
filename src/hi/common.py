@@ -1,4 +1,4 @@
-"""Shared utilities for the hi CLI."""
+"""Shared utilities for the rh-skills CLI."""
 
 import contextlib
 import fcntl

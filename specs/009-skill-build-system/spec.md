@@ -6,12 +6,12 @@
 
 ## Overview
 
-The HI Skills Framework supports two usage modes:
+The RH Skills supports two usage modes:
 
-1. **CLI-first** — users call `hi` commands directly
-2. **Agent-native** — users interact with an AI agent (Copilot, Claude, Gemini, etc.) which reads HI skills and calls `hi` commands on their behalf
+1. **CLI-first** — users call `rh-skills` commands directly
+2. **Agent-native** — users interact with an AI agent (Copilot, Claude, Gemini, etc.) which reads RH skills and calls `rh-skills` commands on their behalf
 
-In both modes, the guiding principle is identical: **all deterministic work via `hi` CLI, all reasoning by the agent.** The SKILL.md content does not change between modes — only the *installation format* differs per agent platform.
+In both modes, the guiding principle is identical: **all deterministic work via `rh-skills` CLI, all reasoning by the agent.** The SKILL.md content does not change between modes — only the *installation format* differs per agent platform.
 
 The build system compiles the canonical `skills/.curated/<name>/SKILL.md` files into platform-specific output formats using per-platform profiles. A single source of truth; multiple deployment targets.
 
@@ -152,6 +152,6 @@ A contributor wants to preview what the build would produce without writing any 
 - `dist/` is gitignored by default; teams that want to version-control generated outputs can remove it from `.gitignore`.
 - Gemini CLI skill format will be derived from Gemini CLI documentation at implementation time; profile fields are sufficient to accommodate any discovered nuances.
 - Claude Code reads skill context from plain Markdown files in `.claude/commands/`; frontmatter stripping plus a slash-command preamble is sufficient for compatibility.
-- The build script is a developer tool only — it is never invoked by `hi` CLI or called by end users.
+- The build script is a developer tool only — it is never invoked by `rh-skills` CLI or called by end users.
 - Platform profiles for 003–008 skills (once implemented) will be validated as part of the build; the build system does not need to know skill semantics.
 

@@ -133,7 +133,7 @@ notes: >
 
 ---
 
-## Tracking.yaml Entries (set by `hi` CLI commands)
+## Tracking.yaml Entries (set by `rh-skills` CLI commands)
 
 After `implement` completes, `tracking.yaml` will contain:
 

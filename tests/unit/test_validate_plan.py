@@ -1,4 +1,4 @@
-"""Tests for hi validate --plan (FR-019 discovery plan checks)."""
+"""Tests for rh-skills validate --plan (FR-019 discovery plan checks)."""
 
 import pytest
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""hi list — List all topics in the repository."""
+"""rh-skills list — List all topics in the repository."""
 
 import json
 

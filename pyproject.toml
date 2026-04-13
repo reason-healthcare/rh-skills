@@ -1,7 +1,7 @@
 [project]
-name = "hi"
+name = "rh-skills"
 version = "0.1.0"
-description = "Healthcare Informatics Skills Framework CLI"
+description = "RH Skills CLI for informatics workflows"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -12,10 +12,11 @@ dependencies = [
 ]
 
 [project.scripts]
+rh-skills = "hi.cli:main"
 hi = "hi.cli:main"
 
 [project.urls]
-Repository = "https://github.com/your-org/hi-skills"
+Repository = "https://github.com/your-org/rh-skills"
 
 [build-system]
 requires = ["hatchling"]
@@ -36,8 +37,8 @@ dev = [
 ]
 
 [tool.uv]
-# End users install with: uv tool install hi
-# Dev setup: uv sync && uv run hi --help
+# End users install with: uv tool install rh-skills
+# Dev setup: uv sync && uv run rh-skills --help
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

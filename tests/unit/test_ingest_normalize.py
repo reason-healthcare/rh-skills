@@ -1,4 +1,4 @@
-"""Tests for hi ingest normalize subcommand."""
+"""Tests for rh-skills ingest normalize subcommand."""
 
 import os
 from pathlib import Path

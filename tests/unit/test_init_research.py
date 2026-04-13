@@ -1,4 +1,4 @@
-"""Tests for hi init research tracking extensions (RESEARCH.md + process/research.md)."""
+"""Tests for rh-skills init research tracking extensions (RESEARCH.md + process/research.md)."""
 
 import pytest
 from click.testing import CliRunner
@@ -17,7 +17,7 @@ def tmp_repo(tmp_path, monkeypatch):
 
 
 def test_init_creates_research_md(tmp_repo):
-    """hi init creates RESEARCH.md at repo root."""
+    """rh-skills init creates RESEARCH.md at repo root."""
     runner = CliRunner()
     result = runner.invoke(init, ["diabetes-ccm"])
     assert result.exit_code == 0, result.output
@@ -43,7 +43,7 @@ def test_init_appends_active_topics_row(tmp_repo):
 
 
 def test_init_second_topic_appends_row(tmp_repo):
-    """A second hi init appends a new row without corrupting existing rows."""
+    """A second rh-skills init appends a new row without corrupting existing rows."""
     runner = CliRunner()
     runner.invoke(init, ["diabetes-ccm"])
     runner.invoke(init, ["sepsis-detection"])
@@ -55,7 +55,7 @@ def test_init_second_topic_appends_row(tmp_repo):
 
 
 def test_init_idempotent_topic_row(tmp_repo):
-    """Re-running hi init on the same topic doesn't fail and doesn't duplicate rows."""
+    """Re-running rh-skills init on the same topic doesn't fail and doesn't duplicate rows."""
     runner = CliRunner()
     runner.invoke(init, ["diabetes-ccm"])
 
@@ -70,7 +70,7 @@ def test_init_idempotent_topic_row(tmp_repo):
 
 
 def test_init_creates_process_research_md(tmp_repo):
-    """hi init creates topics/<name>/process/notes.md with human-annotation sections."""
+    """rh-skills init creates topics/<name>/process/notes.md with human-annotation sections."""
     runner = CliRunner()
     runner.invoke(init, ["diabetes-ccm"])
 
@@ -97,13 +97,13 @@ def test_init_process_research_md_table_headers(tmp_repo):
 
 
 def test_init_does_not_clobber_existing_research_md(tmp_repo):
-    """If RESEARCH.md already exists, hi init appends row without overwriting."""
+    """If RESEARCH.md already exists, rh-skills init appends row without overwriting."""
     # Create pre-existing RESEARCH.md with custom content
     portfolio = tmp_repo / "RESEARCH.md"
     portfolio.write_text("""\
 # Research Portfolio
 
-> Managed by `hi`
+> Managed by `rh-skills`
 
 ## Active Topics
 

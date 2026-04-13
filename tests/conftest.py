@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for hi CLI tests."""
+"""Shared pytest fixtures for rh-skills CLI tests."""
 
 import os
 from pathlib import Path

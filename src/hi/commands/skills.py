@@ -1,4 +1,4 @@
-"""hi skills — Manage hi agent skills for agent-native usage."""
+"""rh-skills skills — Manage curated agent skills for agent-native usage."""
 
 import shutil
 from pathlib import Path
@@ -10,7 +10,7 @@ from hi.common import bundled_skills_dir, log_info, log_warn
 
 @click.group()
 def skills():
-    """Manage hi agent skills."""
+    """Manage curated RH skills."""
     pass
 
 
@@ -25,17 +25,17 @@ def skills():
 )
 @click.option("--force", is_flag=True, help="Overwrite skills that already exist.")
 def install(source, dest, force):
-    """Install curated hi skills into .agents/skills/.
+    """Install curated RH skills into .agents/skills/.
 
-    By default installs from the skills bundled with the hi package.
+    By default installs from the skills bundled with the rh-skills package.
     Pass --from to install from a local directory instead (useful during
     skill development so you can test edits without reinstalling).
 
     \b
     Examples:
-      hi skills install                          # install bundled skills
-      hi skills install --from skills/.curated   # install from local dev repo
-      hi skills install --force                  # overwrite existing installs
+      rh-skills skills install                          # install bundled skills
+      rh-skills skills install --from skills/.curated   # install from local dev repo
+      rh-skills skills install --force                  # overwrite existing installs
     """
     src_dir = Path(source) if source else bundled_skills_dir()
 

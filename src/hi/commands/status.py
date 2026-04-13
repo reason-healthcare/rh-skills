@@ -1,4 +1,4 @@
-"""hi status — Show workflow state of a topic."""
+"""rh-skills status — Show workflow state of a topic."""
 
 import json
 
@@ -54,42 +54,42 @@ def _next_step_options(sources: int, structured: int, computable: int, topic: st
         has_plan = _has_discovery_plan(topic)
         if has_plan:
             return [
-                (f"Update your discovery plan", f"hi-discovery session {topic}"),
-                (f"Ingest sources using your existing discovery plan", f"hi-ingest plan {topic}"),
-                (f"Full pipeline summary", f"hi status progress {topic}"),
+                (f"Update your discovery plan", f"rh-inf-discovery session {topic}"),
+                (f"Ingest sources using your existing discovery plan", f"rh-inf-ingest plan {topic}"),
+                (f"Full pipeline summary", f"rh-skills status progress {topic}"),
             ]
         return [
-            ("Start source discovery for this topic", f"hi-discovery session {topic}"),
-            ("Ingest sources if you already have a discovery plan", f"hi-ingest plan {topic}"),
-            ("Full pipeline summary", f"hi status progress {topic}"),
+            ("Start source discovery for this topic", f"rh-inf-discovery session {topic}"),
+            ("Ingest sources if you already have a discovery plan", f"rh-inf-ingest plan {topic}"),
+            ("Full pipeline summary", f"rh-skills status progress {topic}"),
         ]
     if structured == 0:
         return [
-            ("Extract structured criteria from ingested sources (L2)", f"hi-extract plan {topic}"),
-            ("Check whether any source files have changed since ingest", f"hi status check-changes {topic}"),
-            ("Re-run ingest if sources need refreshing", f"hi-ingest implement {topic}"),
+            ("Extract structured criteria from ingested sources (L2)", f"rh-inf-extract plan {topic}"),
+            ("Check whether any source files have changed since ingest", f"rh-skills status check-changes {topic}"),
+            ("Re-run ingest if sources need refreshing", f"rh-inf-ingest implement {topic}"),
         ]
     if computable == 0:
         return [
-            ("Formalize structured artifacts into a computable format (L3)", f"hi-formalize plan {topic}"),
-            ("Validate existing structured artifacts", f"hi validate {topic}"),
-            ("Check whether any source files have changed since ingest", f"hi status check-changes {topic}"),
+            ("Formalize structured artifacts into a computable format (L3)", f"rh-inf-formalize plan {topic}"),
+            ("Validate existing structured artifacts", f"rh-skills validate {topic}"),
+            ("Check whether any source files have changed since ingest", f"rh-skills status check-changes {topic}"),
         ]
     return [
-        ("Validate all artifacts for this topic", f"hi validate {topic}"),
-        ("Check whether any source files have changed since ingest", f"hi status check-changes {topic}"),
+        ("Validate all artifacts for this topic", f"rh-skills validate {topic}"),
+        ("Check whether any source files have changed since ingest", f"rh-skills status check-changes {topic}"),
     ]
 
 
 def _next_step_recommendation(sources: int, structured: int, computable: int) -> tuple[str, str]:
     """Return (description, exact_command) for the single most important next action."""
     if sources == 0:
-        return ("Discover and ingest raw source artifacts (L1)", "hi-ingest plan")
+        return ("Discover and ingest raw source artifacts (L1)", "rh-inf-ingest plan")
     if structured == 0:
-        return ("Extract structured (L2) artifacts from ingested sources", "hi-extract plan")
+        return ("Extract structured (L2) artifacts from ingested sources", "rh-inf-extract plan")
     if computable == 0:
-        return ("Formalize structured artifacts into a computable (L3) artifact", "hi-formalize plan")
-    return ("Review and validate artifacts", "hi validate <topic> <artifact>")
+        return ("Formalize structured artifacts into a computable (L3) artifact", "rh-inf-formalize plan")
+    return ("Review and validate artifacts", "rh-skills validate <topic> <artifact>")
 
 
 @click.group(invoke_without_command=True)
@@ -104,7 +104,7 @@ def _portfolio_summary() -> None:
     """Print project-level status and per-topic recommendations from tracking.yaml."""
     tracking_path = repo_root() / "tracking.yaml"
     if not tracking_path.exists():
-        click.echo("No tracking.yaml found. Run `hi init <topic>` to start a topic.")
+        click.echo("No tracking.yaml found. Run `rh-skills init <topic>` to start a topic.")
         return
 
     tracking = load_tracking()
@@ -113,7 +113,7 @@ def _portfolio_summary() -> None:
     source_count = len(global_sources)
 
     if not topics:
-        click.echo("No topics yet. Run `hi init <topic>` to start one.")
+        click.echo("No topics yet. Run `rh-skills init <topic>` to start one.")
         return
 
     # Project-level header
@@ -332,7 +332,7 @@ def status_check_changes(topic):
 
     click.echo("")
     if any_changed:
-        click.echo("Action: Re-ingest changed sources with `hi ingest implement <file>`")
+        click.echo("Action: Re-ingest changed sources with `rh-skills ingest implement <file>`")
         raise SystemExit(1)
     else:
         click.echo("All sources unchanged.")

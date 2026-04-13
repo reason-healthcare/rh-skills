@@ -1,6 +1,6 @@
 # Tracking Artifact Schema
 # Single repo-level file: <repo-root>/tracking.yaml
-# Maintained by hi CLI commands; not manually edited
+# Maintained by rh-skills CLI commands; not manually edited
 schema_version: "1.0"
 
 # ── Design rationale ─────────────────────────────────────────────────────────
@@ -68,13 +68,13 @@ event_types:
   root_events:
     - source_added      # raw source registered into sources/
     - source_changed    # source checksum drift detected (re-ingested)
-    - topic_created     # topic scaffolded with hi init or agent classification
+    - topic_created     # topic scaffolded with rh-skills init or agent classification
   topic_events:
     - structured_derived   # source → structured artifact derivation completed
     - computable_converged # structured → computable convergence completed
     - validated            # validation run completed
     - tested               # test run completed
-    - task_completed       # a workflow task marked done via hi tasks complete
+    - task_completed       # a workflow task marked done via rh-skills tasks complete
 
 # ── yq v4 query patterns ──────────────────────────────────────────────────────
 # Get topic entry:

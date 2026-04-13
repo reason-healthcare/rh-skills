@@ -1,6 +1,6 @@
 # Example Project
 
-This directory is a reference implementation of a **target repo** using the HI Skills Framework. It shows how a clinical team would structure their repository.
+This directory is a reference implementation of a **target repo** using the RH Skills. It shows how a clinical team would structure their repository.
 
 ## `topics/diabetes-screening/`
 
@@ -25,12 +25,12 @@ my-clinical-repo/
 │   └── hypertension-management/
 └── .agents/
     └── skills/
-        ├── hi-discovery/SKILL.md
-        ├── hi-ingest/SKILL.md
-        ├── hi-extract/SKILL.md
-        ├── hi-formalize/SKILL.md
-        ├── hi-verify/SKILL.md
-        └── hi-status/SKILL.md
+        ├── rh-inf-discovery/SKILL.md
+        ├── rh-inf-ingest/SKILL.md
+        ├── rh-inf-extract/SKILL.md
+        ├── rh-inf-formalize/SKILL.md
+        ├── rh-inf-verify/SKILL.md
+        └── rh-inf-status/SKILL.md
 ```
 
-The `hi` CLI commands ship with this framework repo. Agent skills are distributed from `skills/.curated/` and installed into target repos at `.agents/skills/`.
+The `rh-skills` CLI commands ship with this framework repo. Agent skills are distributed from `skills/.curated/` and installed into target repos at `.agents/skills/`.

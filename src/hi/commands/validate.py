@@ -1,4 +1,4 @@
-"""hi validate — Validate an artifact against its level schema."""
+"""rh-skills validate — Validate an artifact against its level schema."""
 
 import click
 from ruamel.yaml import YAML

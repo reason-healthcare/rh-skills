@@ -1,4 +1,4 @@
-"""hi test — Run LLM-based tests against topic fixtures."""
+"""rh-skills test — Run LLM-based tests against topic fixtures."""
 
 import json
 import os

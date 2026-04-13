@@ -1,7 +1,7 @@
 # CLI Contracts: Healthcare Informatics Skills Framework
 
 **Phase**: 1 — Design  
-**Branch**: `001-hi-skills-framework`  
+**Branch**: `001-rh-skills`  
 **Date**: 2026-04-03
 
 ---
@@ -25,12 +25,12 @@ Global flags:
 
 ## Commands
 
-### `hi init`
+### `rh-skills init`
 
 Scaffolds a new skill directory with L1 stubs, SKILL.md, and an initial tracking artifact.
 
 ```
-hi init <skill-name> [--description "..."] [--author "..."]
+rh-skills init <skill-name> [--description "..."] [--author "..."]
 ```
 
 **Arguments**:
@@ -61,7 +61,7 @@ hi init <skill-name> [--description "..."] [--author "..."]
 
 ---
 
-### `hi promote`
+### `rh-skills promote`
 
 Promotes one or more artifacts to the next level. Supports two modes:
 
@@ -70,7 +70,7 @@ Promotes one or more artifacts to the next level. Supports two modes:
 Derives one or more L2 artifacts from a single L1 artifact.
 
 ```
-hi promote <skill-name> <l1-artifact-name> --to l2 [--count N]
+rh-skills promote <skill-name> <l1-artifact-name> --to l2 [--count N]
 ```
 
 **Flags**:
@@ -94,7 +94,7 @@ hi promote <skill-name> <l1-artifact-name> --to l2 [--count N]
 Combines two or more L2 artifacts into a single L3 artifact.
 
 ```
-hi promote <skill-name> --combine <l2-artifact-1> <l2-artifact-2> [<l2-artifact-N>...] --output <l3-artifact-name>
+rh-skills promote <skill-name> --combine <l2-artifact-1> <l2-artifact-2> [<l2-artifact-N>...] --output <l3-artifact-name>
 ```
 
 **Outputs**:
@@ -113,12 +113,12 @@ hi promote <skill-name> --combine <l2-artifact-1> <l2-artifact-2> [<l2-artifact-
 
 ---
 
-### `hi validate`
+### `rh-skills validate`
 
 Validates a specific artifact against its level schema without promoting.
 
 ```
-hi validate <skill-name> <artifact-path> [--json]
+rh-skills validate <skill-name> <artifact-path> [--json]
 ```
 
 **Arguments**:
@@ -150,12 +150,12 @@ Status: WARNINGS (promotable with warnings)
 
 ---
 
-### `hi test`
+### `rh-skills test`
 
 Runs LLM-based tests for a skill against defined fixtures.
 
 ```
-hi test <skill-name> [--fixture <fixture-name>] [--provider ollama|anthropic|openai]
+rh-skills test <skill-name> [--fixture <fixture-name>] [--provider ollama|anthropic|openai]
 ```
 
 **Flags**:
@@ -198,12 +198,12 @@ Tracking artifact updated.
 
 ---
 
-### `hi status`
+### `rh-skills status`
 
 Reads a skill's tracking artifact and renders its full workflow state.
 
 ```
-hi status <skill-name> [--json]
+rh-skills status <skill-name> [--json]
 ```
 
 **Outputs**:
@@ -234,12 +234,12 @@ Event History:
 
 ---
 
-### `hi list`
+### `rh-skills list`
 
 Lists all skills in the repository with a summary table.
 
 ```
-hi list [--level l1|l2|l3] [--json]
+rh-skills list [--level l1|l2|l3] [--json]
 ```
 
 **Flags**:
@@ -259,4 +259,4 @@ sepsis-screening         1     0     0     —
 
 **Exit codes**:
 - `0`: Success (even if no skills exist)
-- `1`: Skills directory not found (not an HI skills repository)
+- `1`: Skills directory not found (not an RH skills repository)

@@ -15,7 +15,7 @@ mode and consumed by `implement` mode. Location:
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
-| `topic` | string | Must match a topic in `hi list` | Topic identifier (kebab-case) |
+| `topic` | string | Must match a topic in `rh-skills list` | Topic identifier (kebab-case) |
 | `plan_type` | string | Must equal `"<skill-name>"` | Identifies the plan type |
 | `version` | string | Semver, e.g. `"1.0"` | Plan artifact schema version |
 | `created` | string | ISO-8601 (e.g. `2026-04-04T14:00:00Z`) | When the plan was written |
@@ -62,7 +62,7 @@ derived_from:                   # list[string] — source file names in sources[
 # optional_clinical_field: ...
 
 # Metadata
-created_at: <ISO-8601>          # string — set by hi promote derive
+created_at: <ISO-8601>          # string — set by rh-skills promote derive
 ```
 
 ### L3 Computable Artifact (`topics/<topic>/computable/<name>.yaml`)
@@ -93,13 +93,13 @@ created_at: <ISO-8601>
 
 ### Plan Artifact Validation
 
-- `topic` — MUST match an entry in `hi list` output
+- `topic` — MUST match an entry in `rh-skills list` output
 - `plan_type` — MUST equal `"<skill-name>"`
 - `version` — MUST be a string in `"MAJOR.MINOR"` format
 - `created` — MUST be ISO-8601 with timezone offset
 - All items in skill-specific arrays MUST have all their required sub-fields
 
-### L2 Artifact Validation (run by `hi validate`)
+### L2 Artifact Validation (run by `rh-skills validate`)
 
 | Field | Rule |
 |-------|------|
@@ -109,7 +109,7 @@ created_at: <ISO-8601>
 | `<clinical_field>` | Required; <constraint> |
 | `<optional_field>` | Optional; <constraint> |
 
-### L3 Artifact Validation (run by `hi validate`)
+### L3 Artifact Validation (run by `rh-skills validate`)
 
 | Field | Rule |
 |-------|------|

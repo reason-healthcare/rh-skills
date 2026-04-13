@@ -1,4 +1,4 @@
-"""Tests for hi status extended subcommands: progress, next-steps, check-changes."""
+"""Tests for rh-skills status extended subcommands: progress, next-steps, check-changes."""
 
 import pytest
 from click.testing import CliRunner
@@ -53,7 +53,7 @@ def make_topic_entry(tmp_repo, name, sources=0, structured=0, computable=0):
         y.dump(tracking, f)
 
 
-# ── hi status progress ─────────────────────────────────────────────────────────
+# ── rh-skills status progress ─────────────────────────────────────────────────────────
 
 def test_progress_exits_zero(tmp_repo):
     make_topic_entry(tmp_repo, "t1")
@@ -95,7 +95,7 @@ def test_progress_100_pct_when_computable(tmp_repo):
     assert "100%" in result.output
 
 
-# ── hi status next-steps ───────────────────────────────────────────────────────
+# ── rh-skills status next-steps ───────────────────────────────────────────────────────
 
 def test_next_steps_exits_zero(tmp_repo):
     make_topic_entry(tmp_repo, "t1")
@@ -108,7 +108,7 @@ def test_next_steps_suggests_ingest_when_no_sources(tmp_repo):
     make_topic_entry(tmp_repo, "t1", sources=0)
     runner = CliRunner()
     result = runner.invoke(status, ["next-steps", "t1"])
-    assert "hi-ingest plan" in result.output
+    assert "rh-inf-ingest plan" in result.output
 
 
 def test_next_steps_discovery_plan_aware_without_plan(tmp_repo):
@@ -116,7 +116,7 @@ def test_next_steps_discovery_plan_aware_without_plan(tmp_repo):
     make_topic_entry(tmp_repo, "t1", sources=0)
     runner = CliRunner()
     result = runner.invoke(status, ["next-steps", "t1"])
-    assert "hi-discovery session t1" in result.output
+    assert "rh-inf-discovery session t1" in result.output
     assert "Start" in result.output or "start" in result.output or "discovery" in result.output.lower()
 
 
@@ -128,8 +128,8 @@ def test_next_steps_discovery_plan_aware_with_plan(tmp_repo):
     (plan_path / "discovery-plan.yaml").write_text("topic: t1\nsources: []\n")
     runner = CliRunner()
     result = runner.invoke(status, ["next-steps", "t1"])
-    assert "hi-discovery session t1" in result.output
-    assert "hi-ingest plan t1" in result.output
+    assert "rh-inf-discovery session t1" in result.output
+    assert "rh-inf-ingest plan t1" in result.output
     assert "Update" in result.output or "existing" in result.output.lower()
 
 
@@ -137,26 +137,26 @@ def test_next_steps_suggests_extract_when_sources_but_no_structured(tmp_repo):
     make_topic_entry(tmp_repo, "t1", sources=2, structured=0)
     runner = CliRunner()
     result = runner.invoke(status, ["next-steps", "t1"])
-    assert "hi-extract plan" in result.output
+    assert "rh-inf-extract plan" in result.output
 
 
 def test_next_steps_suggests_formalize_when_structured_but_no_computable(tmp_repo):
     make_topic_entry(tmp_repo, "t1", sources=1, structured=2, computable=0)
     runner = CliRunner()
     result = runner.invoke(status, ["next-steps", "t1"])
-    assert "hi-formalize plan" in result.output
+    assert "rh-inf-formalize plan" in result.output
 
 
 def test_next_steps_output_is_runnable_command(tmp_repo):
-    """The 'Run:' section must contain a hi command, not just prose."""
+    """The 'Run:' section must contain an RH command, not just prose."""
     make_topic_entry(tmp_repo, "t1", sources=1, structured=0)
     runner = CliRunner()
     result = runner.invoke(status, ["next-steps", "t1"])
     assert "Run:" in result.output
-    assert "hi-" in result.output  # must be a hi skill command
+    assert "rh-" in result.output  # must be an RH skill command
 
 
-# ── hi status check-changes ────────────────────────────────────────────────────
+# ── rh-skills status check-changes ────────────────────────────────────────────────────
 
 def test_check_changes_exits_zero_when_no_sources(tmp_repo):
     make_topic_entry(tmp_repo, "t1", sources=0)

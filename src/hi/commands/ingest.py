@@ -1,4 +1,4 @@
-"""hi ingest — Register and track raw L1 source artifacts."""
+"""rh-skills ingest — Register and track raw L1 source artifacts."""
 
 import hashlib
 import json
@@ -190,7 +190,7 @@ sources:
 
 # Ingest Plan
 
-Review and update the `sources` list above before running `hi ingest implement <file>`.
+Review and update the `sources` list above before running `rh-skills ingest implement <file>`.
 
 ## Fields
 
@@ -203,7 +203,7 @@ Review and update the `sources` list above before running `hi ingest implement <
 After editing this file, run for each source:
 
 ```
-hi ingest implement <path-to-file>
+rh-skills ingest implement <path-to-file>
 ```
 """)
     log_info(f"Created: {plan_file}")
@@ -291,7 +291,7 @@ def _implement_url(url: str, source_name: str | None, source_type: str = "docume
     if any(marker in final_url_lower for marker in AUTH_REDIRECT_MARKERS):
         click.echo(f"⚠ Authentication required for: {url}", err=True)
         click.echo(f"  Final redirect URL: {final_url}", err=True)
-        click.echo("  Action: Retrieve manually and run: hi ingest implement <downloaded-file>", err=True)
+        click.echo("  Action: Retrieve manually and run: rh-skills ingest implement <downloaded-file>", err=True)
         raise SystemExit(3)
 
     # Detect file extension from Content-Type
@@ -422,7 +422,7 @@ def normalize(file, topic, source_name):
         # offer `--js-render` flag backed by Playwright
         # (`playwright install chromium`; `playwright.sync_api` Page.goto +
         # Page.content()). Guard behind optional dep to avoid forcing browser
-        # install on all users. Track as FR-016 in specs/004-hi-ingest/spec.md.
+        # install on all users. Track as FR-016 in specs/004-rh-inf-ingest/spec.md.
         html_meta = _extract_html_meta(html_text)
         content = md(html_text, heading_style="ATX")
     else:
@@ -511,7 +511,7 @@ def classify(name, topic, source_type, evidence_level, tags):
                 append_root_event(tracking, "source_classified", f"Classified: {name}")
                 return
         raise click.ClickException(
-            f"Source '{name}' not found in tracking.yaml. Run hi ingest implement first."
+            f"Source '{name}' not found in tracking.yaml. Run rh-skills ingest implement first."
         )
 
     locked_update_tracking(_update)
@@ -532,7 +532,7 @@ def annotate(name, topic, concepts):
     if not normalized_md.exists():
         raise click.ClickException(
             f"sources/normalized/{name}.md not found. "
-            f"Run: hi ingest normalize <file> --topic {topic} first."
+            f"Run: rh-skills ingest normalize <file> --topic {topic} first."
         )
 
     # Parse concepts
@@ -671,5 +671,5 @@ def verify():
             any_changed = True
 
     if any_changed:
-        click.echo("\nRun `hi ingest implement <file>` to re-register changed sources.")
+        click.echo("\nRun `rh-skills ingest implement <file>` to re-register changed sources.")
         raise SystemExit(1)

@@ -1,4 +1,4 @@
-"""Tests for hi search pubmed and hi search pmc subcommands."""
+"""Tests for rh-skills search pubmed and rh-skills search pmc subcommands."""
 
 import json
 from unittest.mock import patch
@@ -199,7 +199,7 @@ def test_entrez_search_fetch_recovers_from_429(httpx_mock):
     assert len(results) >= 1
 
 
-# ── CLI tests: hi search pubmed ───────────────────────────────────────────────
+# ── CLI tests: rh-skills search pubmed ───────────────────────────────────────────────
 
 def test_hi_search_pubmed_human_output(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=ESEARCH_RESPONSE)
@@ -242,7 +242,7 @@ def test_hi_search_pubmed_zero_results_exit_2(httpx_mock):
     assert result.exit_code == 2
 
 
-# ── CLI tests: hi search pmc ──────────────────────────────────────────────────
+# ── CLI tests: rh-skills search pmc ──────────────────────────────────────────────────
 
 def test_hi_search_pmc_all_open_access(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=ESEARCH_RESPONSE)

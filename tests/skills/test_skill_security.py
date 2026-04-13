@@ -16,7 +16,7 @@ Additional HI-specific checks:
   PHI_EXPOSURE       — skill instructs the agent to log, print, or display
                        patient-level data without a de-identification rule.
   TRACKING_WRITE     — verify-mode skill attempts to write to tracking.yaml
-                       directly (must only write via hi CLI).
+                       directly (must only write via rh-skills CLI).
 
 Each FAIL causes a non-zero test exit. Template SKILL.md is excluded from
 security checks (it intentionally uses open patterns).
@@ -91,19 +91,19 @@ PHI_DEIDENTIFICATION_PATTERNS = [
     re.compile(r"no (patient|personal|PHI|PII) (data|information) (in|to|into)", re.IGNORECASE),
 ]
 
-# TRACKING_WRITE — verify mode writing to tracking.yaml directly (must use hi CLI)
+# TRACKING_WRITE — verify mode writing to tracking.yaml directly (must use rh-skills CLI)
 DIRECT_TRACKING_WRITE_PATTERNS = [
     re.compile(r"write.{0,60}tracking\.yaml", re.IGNORECASE),
     re.compile(r"(append|update|edit|modify).{0,60}tracking\.yaml", re.IGNORECASE),
     re.compile(r"open\(.{0,40}tracking\.yaml.{0,20}['\"]w", re.IGNORECASE),
 ]
 
-# The hi CLI commands that are the legitimate way to write tracking.yaml
-HI_CLI_WRITE_BOUNDARY_PATTERNS = [
-    re.compile(r"via\s+`hi\s", re.IGNORECASE),
-    re.compile(r"hi\s+(ingest|promote|init|tasks|validate)", re.IGNORECASE),
-    re.compile(r"delegate.{0,60}hi\s+CLI", re.IGNORECASE),
-    re.compile(r"all.{0,40}(I/O|writes|updates).{0,40}(via|through|delegated to).{0,40}hi", re.IGNORECASE),
+# The rh-skills CLI commands that are the legitimate way to write tracking.yaml
+RH_SKILLS_CLI_WRITE_BOUNDARY_PATTERNS = [
+    re.compile(r"via\s+`rh-skills\s", re.IGNORECASE),
+    re.compile(r"rh-skills\s+(ingest|promote|init|tasks|validate)", re.IGNORECASE),
+    re.compile(r"delegate.{0,60}rh-skills\s+CLI", re.IGNORECASE),
+    re.compile(r"all.{0,40}(I/O|writes|updates).{0,40}(via|through|delegated to).{0,40}rh-skills", re.IGNORECASE),
 ]
 
 
@@ -180,11 +180,11 @@ def check_tracking_write_in_verify(content: str, skill_dir: Path) -> str | None:
 
     if not any(p.search(verify_section) for p in DIRECT_TRACKING_WRITE_PATTERNS):
         return None
-    if any(p.search(verify_section) for p in HI_CLI_WRITE_BOUNDARY_PATTERNS):
+    if any(p.search(verify_section) for p in RH_SKILLS_CLI_WRITE_BOUNDARY_PATTERNS):
         return None
     return (
         "TRACKING_WRITE: verify mode appears to write to tracking.yaml directly. "
-        "Verify must be non-destructive; all tracking writes must go through hi CLI."
+        "Verify must be non-destructive; all tracking writes must go through rh-skills CLI."
     )
 
 

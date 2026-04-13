@@ -1,4 +1,4 @@
-"""Tests for hi ingest annotate subcommand."""
+"""Tests for rh-skills ingest annotate subcommand."""
 
 import pytest
 from click.testing import CliRunner

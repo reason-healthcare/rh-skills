@@ -27,7 +27,7 @@ version: "1.0"
 created: "2026-04-04T14:00:00Z"
 
 # ── Skill-specific fields (replace with actual schema) ────────────────────
-# Example: for hi-extract, this would be the artifacts_to_derive[] array
+# Example: for rh-inf-extract, this would be the artifacts_to_derive[] array
 items:
   - name: screening-criteria
     source_file: ada-guidelines-2024

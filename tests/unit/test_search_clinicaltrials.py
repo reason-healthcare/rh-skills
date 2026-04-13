@@ -1,4 +1,4 @@
-"""Tests for hi search clinicaltrials subcommand."""
+"""Tests for rh-skills search clinicaltrials subcommand."""
 
 import json
 from unittest.mock import patch
@@ -95,7 +95,7 @@ def test_clinicaltrials_network_error(httpx_mock):
         _clinicaltrials_search("diabetes")
 
 
-# ── CLI tests: hi search clinicaltrials ───────────────────────────────────────
+# ── CLI tests: rh-skills search clinicaltrials ───────────────────────────────────────
 
 def test_hi_search_clinicaltrials_human_output(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=CT_RESPONSE)

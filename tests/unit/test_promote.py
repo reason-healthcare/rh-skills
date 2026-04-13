@@ -1,4 +1,4 @@
-"""Tests for hi promote command — ported from tests/unit/promote.bats."""
+"""Tests for rh-skills promote command — ported from tests/unit/promote.bats."""
 
 import os
 

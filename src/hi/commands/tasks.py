@@ -1,4 +1,4 @@
-"""hi tasks — Manage workflow tasks for a topic or the repo root."""
+"""rh-skills tasks — Manage workflow tasks for a topic or the repo root."""
 
 from pathlib import Path
 

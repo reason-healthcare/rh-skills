@@ -1,7 +1,7 @@
 # Data Model: Healthcare Informatics Skills Framework
 
 **Phase**: 1 — Design  
-**Branch**: `001-hi-skills-framework`  
+**Branch**: `001-rh-skills`  
 **Date**: 2026-04-03
 
 ---
@@ -208,7 +208,7 @@ tags: [{string}]
 
 ### Test Result Artifact
 
-Produced by `hi test` — a timestamped record of a full test run.
+Produced by `rh-skills test` — a timestamped record of a full test run.
 
 **Location**: `skills/{skill-name}/fixtures/results/{ISO-date}-{run-id}.json`
 
@@ -265,8 +265,8 @@ discovery-b.md ──┘   concept-y.yaml ──┘
                       concept-z.yaml ──────► measure.yaml
 ```
 
-- One L1 may derive **one or more** L2 artifacts (`hi promote --derive`)
-- Multiple L2 artifacts may converge into **one** L3 artifact (`hi promote --combine`)
+- One L1 may derive **one or more** L2 artifacts (`rh-skills promote --derive`)
+- Multiple L2 artifacts may converge into **one** L3 artifact (`rh-skills promote --combine`)
 - A skill may have **multiple L3 artifacts** (e.g., one for a guideline, one for a measure)
 - Relationships are recorded in `tracking.yaml` as `derived_from` and `converged_from` arrays
 

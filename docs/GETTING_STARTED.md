@@ -1,4 +1,4 @@
-# Getting Started with the HI Skills Framework
+# Getting Started with the RH Skills
 
 ## Prerequisites
 
@@ -8,8 +8,8 @@
 ## Installation
 
 ```bash
-uv tool install hi
-hi --help
+uv tool install rh-skills
+rh-skills --help
 ```
 
 ## Initialize a Topic
@@ -17,7 +17,7 @@ hi --help
 A "topic" is a clinical knowledge domain (e.g., "diabetes-screening", "sepsis-detection").
 
 ```bash
-hi init diabetes-screening --title "Diabetes Screening" --author "Jane Smith"
+rh-skills init diabetes-screening --title "Diabetes Screening" --author "Jane Smith"
 ```
 
 This creates:
@@ -38,7 +38,7 @@ A `tracking.yaml` at the repo root records the topic's metadata and lifecycle ev
 
 ## The Lifecycle
 
-The HI Framework guides clinical knowledge through three artifact levels:
+The RH Skills guides clinical knowledge through three artifact levels:
 
 ```
 L1 (sources)  →  L2 (structured)  →  L3 (computable)
@@ -51,13 +51,13 @@ Each transition is guided by an **agent skill** — a SKILL.md prompt file invok
 ### Step 1: Discover sources
 
 ```
-hi-discovery plan
+rh-inf-discovery plan
 ```
 
 The agent generates `topics/diabetes-screening/process/plans/discovery-plan.md` — a list of suggested source types (guidelines, terminology systems, research papers). Review and edit the plan.
 
 ```
-hi-discovery implement
+rh-inf-discovery implement
 ```
 
 Converts the approved plan into ingest tasks.
@@ -65,13 +65,13 @@ Converts the approved plan into ingest tasks.
 ### Step 2: Ingest raw sources
 
 ```
-hi-ingest plan
+rh-inf-ingest plan
 ```
 
 Displays the ingest plan for review.
 
 ```
-hi-ingest implement
+rh-inf-ingest implement
 ```
 
 Registers each source file with its SHA-256 checksum in `tracking.yaml`.
@@ -79,59 +79,59 @@ Registers each source file with its SHA-256 checksum in `tracking.yaml`.
 ### Step 3: Extract structured artifacts (L2)
 
 ```
-hi-extract plan
+rh-inf-extract plan
 ```
 
 The agent proposes candidate structured artifact names (e.g., "screening-criteria", "diagnostic-thresholds"). Review the plan at `topics/diabetes-screening/process/plans/extract-plan.md`.
 
 ```
-hi-extract implement
+rh-inf-extract implement
 ```
 
-Calls `hi promote derive` for each planned artifact, producing YAML files in `topics/diabetes-screening/structured/`.
+Calls `rh-skills promote derive` for each planned artifact, producing YAML files in `topics/diabetes-screening/structured/`.
 
 ### Step 4: Formalize into computable artifact (L3)
 
 ```
-hi-formalize plan
+rh-inf-formalize plan
 ```
 
 The agent identifies which structured artifacts to combine and drafts the computable artifact's sections.
 
 ```
-hi-formalize implement
+rh-inf-formalize implement
 ```
 
-Calls `hi promote combine`, producing a FHIR-compatible YAML file in `topics/diabetes-screening/computable/`.
+Calls `rh-skills promote combine`, producing a FHIR-compatible YAML file in `topics/diabetes-screening/computable/`.
 
 ## Check Status Anytime
 
 ```bash
-hi status show diabetes-screening          # basic status
-hi status progress diabetes-screening      # detailed progress with % complete
-hi status next-steps diabetes-screening    # single most important next action
-hi status check-changes diabetes-screening # detect changed source files
+rh-skills status show diabetes-screening          # basic status
+rh-skills status progress diabetes-screening      # detailed progress with % complete
+rh-skills status next-steps diabetes-screening    # single most important next action
+rh-skills status check-changes diabetes-screening # detect changed source files
 ```
 
 ## Validate Artifacts
 
 ```bash
-hi validate diabetes-screening screening-criteria   # validate L2 artifact
-hi validate diabetes-screening diabetes-pathway     # validate L3 artifact
+rh-skills validate diabetes-screening screening-criteria   # validate L2 artifact
+rh-skills validate diabetes-screening diabetes-pathway     # validate L3 artifact
 ```
 
 ## Track Tasks
 
 ```bash
-hi tasks list diabetes-screening           # list per-topic tasks
-hi tasks add diabetes-screening "Review screening criteria with cardiologist"
-hi tasks complete diabetes-screening 1
+rh-skills tasks list diabetes-screening           # list per-topic tasks
+rh-skills tasks add diabetes-screening "Review screening criteria with cardiologist"
+rh-skills tasks complete diabetes-screening 1
 ```
 
 ## Test Skills
 
 ```bash
-hi test diabetes-screening hi-extract      # run skill against fixtures
+rh-skills test diabetes-screening rh-inf-extract      # run skill against fixtures
 ```
 
 ## Reference

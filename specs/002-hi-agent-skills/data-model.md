@@ -12,7 +12,7 @@ The `topics/<name>/` directory structure holds all artifacts for a clinical topi
 
 ```
 topics/<name>/
-  TOPIC.md            # topic description (created by hi init)
+  TOPIC.md            # topic description (created by rh-skills init)
   structured/         # semi-structured L2 artifacts
   computable/         # computable L3 artifacts
   process/
@@ -195,9 +195,9 @@ events: []                        # repo-level events (see Event schema below)
 | `l2-semi-structured` | At least 1 structured artifact, no computable artifacts |
 | `l3-computable` | At least 1 computable artifact |
 
-**schema_version strategy**: The value `"1.0"` is bumped to `"2.0"` only on breaking structural changes (field renames, required field additions, removal of fields). Additive changes (new optional fields) do not require a version bump. The `hi` CLI always writes the version it was built for; no migration tool is provided in v1.
+**schema_version strategy**: The value `"1.0"` is bumped to `"2.0"` only on breaking structural changes (field renames, required field additions, removal of fields). Additive changes (new optional fields) do not require a version bump. The `rh-skills` CLI always writes the version it was built for; no migration tool is provided in v1.
 
-**Checksum comparison** (used by `hi ingest verify`):
+**Checksum comparison** (used by `rh-skills ingest verify`):
 - At ingest: compute `checksum = hashlib.sha256(file)`, store in `sources[].checksum`
 - At verify: compute `sha256(current_file)`, compare to stored value
 - If mismatch: flag as CHANGED
@@ -206,7 +206,7 @@ events: []                        # repo-level events (see Event schema below)
 
 ### Event
 
-Every state-changing `hi` CLI command or skill mode appends a named event to `tracking.yaml`. Events are append-only and never modified after creation.
+Every state-changing `rh-skills` CLI command or skill mode appends a named event to `tracking.yaml`. Events are append-only and never modified after creation.
 
 **Schema** (applies to both root-level `events[]` and topic-level `topics[].events[]`):
 
@@ -217,24 +217,24 @@ Every state-changing `hi` CLI command or skill mode appends a named event to `tr
   payload: {}                     # object: event-specific data (optional, varies by event type)
 ```
 
-**Named events** (all events currently emitted by `hi` CLI and skills):
+**Named events** (all events currently emitted by `rh-skills` CLI and skills):
 
 | Event name | Emitted by | Scope | Payload fields |
 |------------|-----------|-------|----------------|
-| `topic_created` | `hi init` | topic | `name`, `title`, `author` |
-| `source_added` | `hi ingest implement` | root | `name`, `file`, `type`, `checksum` |
-| `source_changed` | `hi ingest implement` (re-registration) | root | `name`, `old_checksum`, `new_checksum` |
-| `structured_derived` | `hi promote derive` | topic | `name`, `file`, `derived_from[]` |
-| `computable_converged` | `hi promote combine` | topic | `name`, `file`, `converged_from[]` |
-| `validated` | `hi validate` (pass) | topic | `artifact`, `level` (`l2`\|`l3`) |
-| `task_completed` | `hi tasks complete` | topic | `task_id`, `task_text` |
-| `discovery_planned` | `hi-discovery plan` | topic | `plan_file` |
-| `discovery_implemented` | `hi-discovery implement` | topic | `items_count` |
-| `ingest_planned` | `hi-ingest plan` | root | `plan_file` |
-| `extract_planned` | `hi-extract plan` | topic | `plan_file`, `artifact_count` |
-| `extract_implemented` | `hi-extract implement` | topic | `artifacts[]` |
-| `formalize_planned` | `hi-formalize plan` | topic | `plan_file`, `output_name` |
-| `formalize_implemented` | `hi-formalize implement` | topic | `name`, `converged_from[]` |
+| `topic_created` | `rh-skills init` | topic | `name`, `title`, `author` |
+| `source_added` | `rh-skills ingest implement` | root | `name`, `file`, `type`, `checksum` |
+| `source_changed` | `rh-skills ingest implement` (re-registration) | root | `name`, `old_checksum`, `new_checksum` |
+| `structured_derived` | `rh-skills promote derive` | topic | `name`, `file`, `derived_from[]` |
+| `computable_converged` | `rh-skills promote combine` | topic | `name`, `file`, `converged_from[]` |
+| `validated` | `rh-skills validate` (pass) | topic | `artifact`, `level` (`l2`\|`l3`) |
+| `task_completed` | `rh-skills tasks complete` | topic | `task_id`, `task_text` |
+| `discovery_planned` | `rh-inf-discovery plan` | topic | `plan_file` |
+| `discovery_implemented` | `rh-inf-discovery implement` | topic | `items_count` |
+| `ingest_planned` | `rh-inf-ingest plan` | root | `plan_file` |
+| `extract_planned` | `rh-inf-extract plan` | topic | `plan_file`, `artifact_count` |
+| `extract_implemented` | `rh-inf-extract implement` | topic | `artifacts[]` |
+| `formalize_planned` | `rh-inf-formalize plan` | topic | `plan_file`, `output_name` |
+| `formalize_implemented` | `rh-inf-formalize implement` | topic | `name`, `converged_from[]` |
 
 Events marked **root scope** are appended to the top-level `events[]`. Events marked **topic scope** are appended to `topics[<name>].events[]`.
 
@@ -242,7 +242,7 @@ Events marked **root scope** are appended to the top-level `events[]`. Events ma
 
 ### FrameworkSkill
 
-A SKILL.md file in `skills/.curated/<name>/SKILL.md`. Not a clinical skill — excluded from `hi list` output via dot-prefix convention.
+A SKILL.md file in `skills/.curated/<name>/SKILL.md`. Not a clinical skill — excluded from `rh-skills list` output via dot-prefix convention.
 
 The canonical SKILL.md template is at `skills/_template/SKILL.md` in this repo and follows the [anthropic skills-developer](https://github.com/anthropics/anthropic-cookbook) format. Contributors creating new framework skills MUST copy and fill in this template.
 
@@ -261,39 +261,39 @@ instructs it to read them — keeping the core context window lean.
 
 **Frontmatter**:
 ```yaml
-name: "hi-extract"
+name: "rh-inf-extract"
 description: "Extract structured artifacts from sources. Modes: plan | implement | verify"
-compatibility: "hi-skills-framework >= 0.1.0"
+compatibility: "rh-skills >= 0.1.0"
 metadata:
   author: "Clinical Informatics Team"
-  source: "skills/.curated/hi-extract/SKILL.md"
+  source: "skills/.curated/rh-inf-extract/SKILL.md"
 ```
 
 **Modes** (dispatched via `$ARGUMENTS` first positional arg):
 
 | Skill | Mode | Reads | Writes |
 |-------|------|-------|--------|
-| `hi-discovery` | `session` | tracking.yaml (domain) | `topics/<name>/process/plans/discovery-plan.yaml`, `topics/<name>/process/plans/discovery-readout.md` |
-| `hi-discovery` | `verify` | `topics/<name>/process/plans/discovery-plan.yaml` | *(none — read-only)* |
-| `hi-ingest` | `plan` | `topics/<name>/process/plans/discovery-plan.yaml` or user input | sources queue |
-| `hi-ingest` | `implement` | `<file>` (path argument) | `sources/*`, tracking.yaml `sources[]` |
-| `hi-ingest` | `verify` | tracking.yaml `sources[]` | *(none — read-only)* |
-| `hi-extract` | `plan` | `sources/*`, tracking.yaml | `topics/<name>/process/plans/extract-plan.md` |
-| `hi-extract` | `implement` | `topics/<name>/process/plans/extract-plan.md` | `topics/<name>/structured/*` via `hi promote derive` |
-| `hi-extract` | `verify` | `topics/<name>/structured/*` | *(none)* via `hi validate` |
-| `hi-formalize` | `plan` | `topics/<name>/structured/*`, tracking.yaml | `topics/<name>/process/plans/formalize-plan.md` |
-| `hi-formalize` | `implement` | `topics/<name>/process/plans/formalize-plan.md` | `topics/<name>/computable/*` via `hi promote combine` |
-| `hi-formalize` | `verify` | `topics/<name>/computable/*` | *(none)* via `hi validate` |
-| `hi-verify` | *(standalone)* | `topics/<name>/structured/*` or `topics/<name>/computable/*` | *(none)* |
-| `hi-status` | `progress` | tracking.yaml | *(none)* |
-| `hi-status` | `next-steps` | tracking.yaml, `topics/<name>/process/plans/*`, `sources/*`, `structured/*`, `computable/*` | *(none)* |
-| `hi-status` | `check-changes` | tracking.yaml `sources[]`, disk files | *(none)* |
+| `rh-inf-discovery` | `session` | tracking.yaml (domain) | `topics/<name>/process/plans/discovery-plan.yaml`, `topics/<name>/process/plans/discovery-readout.md` |
+| `rh-inf-discovery` | `verify` | `topics/<name>/process/plans/discovery-plan.yaml` | *(none — read-only)* |
+| `rh-inf-ingest` | `plan` | `topics/<name>/process/plans/discovery-plan.yaml` or user input | sources queue |
+| `rh-inf-ingest` | `implement` | `<file>` (path argument) | `sources/*`, tracking.yaml `sources[]` |
+| `rh-inf-ingest` | `verify` | tracking.yaml `sources[]` | *(none — read-only)* |
+| `rh-inf-extract` | `plan` | `sources/*`, tracking.yaml | `topics/<name>/process/plans/extract-plan.md` |
+| `rh-inf-extract` | `implement` | `topics/<name>/process/plans/extract-plan.md` | `topics/<name>/structured/*` via `rh-skills promote derive` |
+| `rh-inf-extract` | `verify` | `topics/<name>/structured/*` | *(none)* via `rh-skills validate` |
+| `rh-inf-formalize` | `plan` | `topics/<name>/structured/*`, tracking.yaml | `topics/<name>/process/plans/formalize-plan.md` |
+| `rh-inf-formalize` | `implement` | `topics/<name>/process/plans/formalize-plan.md` | `topics/<name>/computable/*` via `rh-skills promote combine` |
+| `rh-inf-formalize` | `verify` | `topics/<name>/computable/*` | *(none)* via `rh-skills validate` |
+| `rh-inf-verify` | *(standalone)* | `topics/<name>/structured/*` or `topics/<name>/computable/*` | *(none)* |
+| `rh-inf-status` | `progress` | tracking.yaml | *(none)* |
+| `rh-inf-status` | `next-steps` | tracking.yaml, `topics/<name>/process/plans/*`, `sources/*`, `structured/*`, `computable/*` | *(none)* |
+| `rh-inf-status` | `check-changes` | tracking.yaml `sources[]`, disk files | *(none)* |
 
 ---
 
 ## State Machine: Skill Lifecycle
 
-The state machine below describes the full granular progression. The four **stage values** stored in `tracking.yaml` (and shown by `hi list`) represent coarser checkpoints that collapse multiple state machine states:
+The state machine below describes the full granular progression. The four **stage values** stored in `tracking.yaml` (and shown by `rh-skills list`) represent coarser checkpoints that collapse multiple state machine states:
 
 | Stage value | Covers states |
 |-------------|--------------|
@@ -310,35 +310,35 @@ The state machine below describes the full granular progression. The four **stag
 ```
 [initialized]
     │
-    ▼ hi-discovery plan
+    ▼ rh-inf-discovery plan
 [discovery-planned]
     │
-    ▼ hi-discovery implement
+    ▼ rh-inf-discovery implement
 [ingest-tasks-ready]
     │
-    ▼ hi-ingest implement
+    ▼ rh-inf-ingest implement
 [sources-ingested]
     │
-    ▼ hi-extract plan
+    ▼ rh-inf-extract plan
 [extract-planned]
     │
-    ▼ hi-extract implement
+    ▼ rh-inf-extract implement
 [structured-extracted]
     │
-    ▼ hi-extract verify
+    ▼ rh-inf-extract verify
 [structured-verified]
     │
-    ▼ hi-formalize plan
+    ▼ rh-inf-formalize plan
 [formalize-planned]
     │
-    ▼ hi-formalize implement
+    ▼ rh-inf-formalize implement
 [computable-formalized]
     │
-    ▼ hi-formalize verify
+    ▼ rh-inf-formalize verify
 [computable-verified] ← terminal "computable" state
 ```
 
-At any stage: `hi ingest verify` may surface CHANGED sources → re-run from `hi ingest implement`
+At any stage: `rh-skills ingest verify` may surface CHANGED sources → re-run from `rh-skills ingest implement`
 
 ---
 
@@ -376,8 +376,8 @@ At any stage: `hi ingest verify` may surface CHANGED sources → re-run from `hi
 - `payload` is optional; fields vary by event type (see Named Events table)
 
 ### FrameworkSkill (SKILL.md)
-- Frontmatter `name` must match directory name (e.g., `hi-extract`)
-- `compatibility` must reference `hi-skills-framework`
+- Frontmatter `name` must match directory name (e.g., `rh-inf-extract`)
+- `compatibility` must reference `rh-skills`
 - Modes listed in `description` must be documented in body
 
 ---

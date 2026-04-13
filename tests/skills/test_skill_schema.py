@@ -1,7 +1,7 @@
 """SKILL.md schema validation tests.
 
 Validates that every implemented curated skill and the canonical template
-conform to the HI framework SKILL.md schema:
+conform to the RH skills framework SKILL.md schema:
 
   - YAML frontmatter present with required fields
   - name is kebab-case, ≤64 chars, matches directory name

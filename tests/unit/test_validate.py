@@ -1,4 +1,4 @@
-"""Tests for hi validate command — ported from tests/unit/validate.bats."""
+"""Tests for rh-skills validate command — ported from tests/unit/validate.bats."""
 
 import pytest
 from click.testing import CliRunner

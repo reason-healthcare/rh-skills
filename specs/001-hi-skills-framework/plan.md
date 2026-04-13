@@ -1,7 +1,7 @@
 # Implementation Plan: Healthcare Informatics Skills Framework
 
-**Branch**: `001-hi-skills-framework` | **Date**: 2026-04-03 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-hi-skills-framework/spec.md`
+**Branch**: `001-rh-skills` | **Date**: 2026-04-03 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/001-rh-skills/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
@@ -18,7 +18,7 @@ Build a CLI-driven repository framework for authoring healthcare informatics ski
 **Target Platform**: POSIX-compliant systems (macOS 12+, Linux/Ubuntu 20.04+)
 **Project Type**: CLI tool + skill repository framework
 **Performance Goals**: All CLI commands (init, promote, validate, status, list) complete in <3s for typical skill sizes; LLM test latency depends on configured endpoint
-**Constraints**: Zero runtime dependencies beyond POSIX shell + yq + jq + curl; fully offline except for `hi test` (requires LLM endpoint); no sudo required for CLI installation
+**Constraints**: Zero runtime dependencies beyond POSIX shell + yq + jq + curl; fully offline except for `rh-skills test` (requires LLM endpoint); no sudo required for CLI installation
 **Scale/Scope**: Dozens to hundreds of skills per repository; 2–10 artifacts per skill per level; single-repository multi-author workflow via git
 
 ## Constitution Check
@@ -36,7 +36,7 @@ Build a CLI-driven repository framework for authoring healthcare informatics ski
 ### Documentation (this feature)
 
 ```text
-specs/001-hi-skills-framework/
+specs/001-rh-skills/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output
 ├── data-model.md        # Phase 1 output
@@ -55,7 +55,7 @@ bin/
 ├── hi-init              # Scaffold new skill (FR-001, FR-002)
 ├── hi-promote           # Promote artifact(s) between levels (FR-004, FR-005, FR-006, FR-007)
 ├── hi-test              # Run LLM-based skill tests (FR-008, FR-009)
-├── hi-status            # Show skill workflow state (FR-012)
+├── rh-inf-status            # Show skill workflow state (FR-012)
 ├── hi-list              # List all skills summary (FR-013)
 └── hi-validate          # Validate artifact schema (FR-014); also called by hi-promote
 
@@ -93,7 +93,7 @@ tests/                   # bats-core test suite
 │   ├── hi-init.bats
 │   ├── hi-promote.bats
 │   ├── hi-validate.bats
-│   ├── hi-status.bats
+│   ├── rh-inf-status.bats
 │   └── hi-list.bats
 └── integration/
     └── skill-lifecycle.bats

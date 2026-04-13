@@ -1,10 +1,10 @@
-# HI Skills Framework
+# RH Skills
 
 Agent skills for building clinical knowledge artifacts — from raw sources through structured criteria to computable, FHIR-aligned outputs.
 
 ## What it does
 
-The HI framework guides clinical knowledge through three artifact levels:
+The RH skills framework guides clinical knowledge through three artifact levels:
 
 | Level | Format | Description |
 |-------|--------|-------------|
@@ -16,12 +16,12 @@ The relationships are many-to-many: one L1 source can yield several L2 artifacts
 
 ## Usage Modes
 
-The framework supports two modes — both use the `hi` CLI for deterministic work and an agent for reasoning:
+The framework supports two modes — both use the `rh-skills` CLI for deterministic work and an agent for reasoning:
 
 | Mode | How it works | Best for |
 |------|-------------|----------|
-| **CLI-first** | You call `hi` commands directly; use any LLM provider (including local models) | Full control, CI/CD, bring-your-own-model |
-| **Agent-native** | Your AI agent (Copilot, Claude, Gemini) reads the HI skills and calls `hi` on your behalf | Conversational UX, clinical teams |
+| **CLI-first** | You call `rh-skills` commands directly; use any LLM provider (including local models) | Full control, CI/CD, bring-your-own-model |
+| **Agent-native** | Your AI agent (Copilot, Claude, Gemini) reads the RH skills and calls `rh-skills` on your behalf | Conversational UX, clinical teams |
 
 → See [docs/USAGE_MODES.md](docs/USAGE_MODES.md) for a full comparison, platform support, and LLM configuration.
 
@@ -34,8 +34,8 @@ The framework supports two modes — both use the `hi` CLI for deterministic wor
 ## Installation
 
 ```bash
-uv tool install hi
-hi --help
+uv tool install rh-skills
+rh-skills --help
 ```
 
 Configure your LLM provider:
@@ -48,36 +48,36 @@ cp .env.example .env   # set LLM_PROVIDER, model, and API key
 
 ```bash
 # 1. Initialize a clinical topic
-hi init diabetes-screening --title "Diabetes Screening" --author "My Team"
+rh-skills init diabetes-screening --title "Diabetes Screening" --author "My Team"
 
 # 2. Discover and ingest source materials (agent-guided)
-#    hi-discovery and hi-ingest skills handle this step
+#    rh-inf-discovery and rh-inf-ingest skills handle this step
 
 # 3. Check where the topic stands
-hi status show diabetes-screening
+rh-skills status show diabetes-screening
 
 # 4. Extract structured L2 artifacts from ingested sources
-hi promote derive diabetes-screening --source ada-guidelines --name screening-criteria
-hi promote derive diabetes-screening --source ada-guidelines --name risk-factors
+rh-skills promote derive diabetes-screening --source ada-guidelines --name screening-criteria
+rh-skills promote derive diabetes-screening --source ada-guidelines --name risk-factors
 
 # 5. Validate the L2 artifacts
-hi validate diabetes-screening l2 screening-criteria
+rh-skills validate diabetes-screening l2 screening-criteria
 
 # 6. Converge L2 artifacts into a computable L3
-hi promote combine diabetes-screening \
+rh-skills promote combine diabetes-screening \
   --sources screening-criteria,risk-factors \
   --name diabetes-screening-pathway
 
 # 7. Validate the L3 artifact
-hi validate diabetes-screening l3 diabetes-screening-pathway
+rh-skills validate diabetes-screening l3 diabetes-screening-pathway
 
 # 8. See all topics and their stages
-hi list
+rh-skills list
 ```
 
 ## Command Reference
 
-### `hi init <name>`
+### `rh-skills init <name>`
 Scaffold a new topic. Creates the directory structure and registers the topic in `tracking.yaml`.
 
 ```
@@ -86,7 +86,7 @@ Options:
   --author TEXT   Author or team name
 ```
 
-### `hi list`
+### `rh-skills list`
 List all topics and their lifecycle stages.
 
 ```
@@ -95,7 +95,7 @@ Options:
   --stage STAGE   Filter: initialized | l1-discovery | l2-semi-structured | l3-computable
 ```
 
-### `hi status <subcommand> <topic>`
+### `rh-skills status <subcommand> <topic>`
 Inspect a topic's current state.
 
 | Subcommand | Description |
@@ -105,7 +105,7 @@ Inspect a topic's current state.
 | `next-steps` | Recommended next action |
 | `check-changes` | Detect files changed since last tracking event |
 
-### `hi ingest <mode> <topic>`
+### `rh-skills ingest <mode> <topic>`
 Register source files (L1) with checksums in `tracking.yaml`.
 
 ```
@@ -116,7 +116,7 @@ Options:
   --force         Overwrite existing output
 ```
 
-### `hi promote <mode> <topic>`
+### `rh-skills promote <mode> <topic>`
 Promote artifacts to the next level.
 
 **`derive`** — L1 → L2 (one or more structured artifacts from a single source):
@@ -133,10 +133,10 @@ Promote artifacts to the next level.
 
 Both modes support `--dry-run` (print prompt only) and `--force` (overwrite existing).
 
-### `hi validate <topic> <level> <artifact>`
+### `rh-skills validate <topic> <level> <artifact>`
 Validate an artifact against its schema. Required field violations exit 1; optional field gaps are warnings.
 
-### `hi test <topic> <skill>`
+### `rh-skills test <topic> <skill>`
 Run a skill against test fixtures. Results written to `topics/<topic>/process/fixtures/results/`.
 
 ## Topic Structure

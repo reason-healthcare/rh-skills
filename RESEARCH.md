@@ -1,6 +1,6 @@
 # Research Portfolio
 
-> Managed by `hi` — CLI appends rows; human edits the Notes column.
+> Managed by `rh-skills` — CLI appends rows; human edits the Notes column.
 
 ## Active Topics
 

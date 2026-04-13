@@ -136,39 +136,6 @@ wheels = [
 ]
 
 [[package]]
-name = "hi"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "click" },
-    { name = "httpx" },
-    { name = "markdownify" },
-    { name = "ruamel-yaml" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pytest-httpx" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click", specifier = ">=8.0" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "markdownify", specifier = ">=0.13" },
-    { name = "ruamel-yaml", specifier = ">=0.18" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-cov", specifier = ">=5.0" },
-    { name = "pytest-httpx", specifier = ">=0.30" },
-]
-
-[[package]]
 name = "httpcore"
 version = "1.0.9"
 source = { registry = "https://pypi.org/simple" }
@@ -295,6 +262,39 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ca/bc/5574834da9499066fa1a5ea9c336f94dba2eae02298d36dab192fcf95c86/pytest_httpx-0.36.0.tar.gz", hash = "sha256:9edb66a5fd4388ce3c343189bc67e7e1cb50b07c2e3fc83b97d511975e8a831b", size = 56793, upload-time = "2025-12-02T16:34:57.414Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/d2/1eb1ea9c84f0d2033eb0b49675afdc71aa4ea801b74615f00f3c33b725e3/pytest_httpx-0.36.0-py3-none-any.whl", hash = "sha256:bd4c120bb80e142df856e825ec9f17981effb84d159f9fa29ed97e2357c3a9c8", size = 20229, upload-time = "2025-12-02T16:34:56.45Z" },
+]
+
+[[package]]
+name = "rh-skills"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "click" },
+    { name = "httpx" },
+    { name = "markdownify" },
+    { name = "ruamel-yaml" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.0" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "markdownify", specifier = ">=0.13" },
+    { name = "ruamel-yaml", specifier = ">=0.18" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "pytest-httpx", specifier = ">=0.30" },
 ]
 
 [[package]]

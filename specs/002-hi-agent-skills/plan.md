@@ -5,7 +5,7 @@
 
 ## Summary
 
-Build the deterministic infrastructure for the HI skills framework: the repository layout (`topics/<name>/structured/`, `computable/`, `process/`), the `hi` CLI commands (`init`, `list`, `ingest`, `promote`, `validate`, `status`, `tasks`, `test`), and `tracking.yaml`. This spec covers framework infrastructure only. Each of the six HI agent skills (`hi-discovery` through `hi-status`) has its own specification (003–008) covering SKILL.md authoring. The guiding principle: all deterministic work in `hi` CLI commands; all reasoning in SKILL.md agent prompts.
+Build the deterministic infrastructure for the RH skills framework: the repository layout (`topics/<name>/structured/`, `computable/`, `process/`), the `rh-skills` CLI commands (`init`, `list`, `ingest`, `promote`, `validate`, `status`, `tasks`, `test`), and `tracking.yaml`. This spec covers framework infrastructure only. Each of the six HI agent skills (`rh-inf-discovery` through `rh-inf-status`) has its own specification (003–008) covering SKILL.md authoring. The guiding principle: all deterministic work in `rh-skills` CLI commands; all reasoning in SKILL.md agent prompts.
 
 ## Technical Context
 
@@ -15,7 +15,7 @@ Build the deterministic infrastructure for the HI skills framework: the reposito
 **Testing**: pytest 8.0+ (via uv)
 **Target Platform**: macOS + Linux
 **Project Type**: Agent skills (SKILL.md prompt files) + CLI command extensions (Python modules in `src/hi/commands/`)
-**Performance Goals**: No LLM calls in plan mode — plan generation is pure LLM reasoning in SKILL.md context; implement mode calls existing `hi promote` commands
+**Performance Goals**: No LLM calls in plan mode — plan generation is pure LLM reasoning in SKILL.md context; implement mode calls existing `rh-skills promote` commands
 **Constraints**: Python 3.13+ required; uv for package management; graceful degradation for optional tools; SKILL.md follows anthropic skills-developer template
 **Scale/Scope**: 6 SKILL.md files + supporting CLI subcommands; skills apply to all clinical skills in the repo
 
@@ -25,7 +25,7 @@ Build the deterministic infrastructure for the HI skills framework: the reposito
 
 - [X] No PHI in any artifact
 - [X] All code Python 3.13+ (click + ruamel.yaml)
-- [X] Deterministic work in `hi` CLI commands; reasoning in SKILL.md prompts
+- [X] Deterministic work in `rh-skills` CLI commands; reasoning in SKILL.md prompts
 - [X] New CLI commands follow existing exit code contract (0/1/2)
 - [X] All new commands have pytest unit tests
 - [X] No new mandatory dependencies (optional tools degrade gracefully)
@@ -43,33 +43,33 @@ specs/002-hi-agent-skills/
 ├── contracts/           # Phase 1 output
 └── tasks.md             # Phase 2 output (framework CLI tasks only)
 
-specs/003-hi-discovery/spec.md   # hi-discovery skill spec
-specs/004-hi-ingest/spec.md      # hi-ingest skill spec
-specs/005-hi-extract/spec.md     # hi-extract skill spec
-specs/006-hi-formalize/spec.md   # hi-formalize skill spec
-specs/007-hi-verify/spec.md      # hi-verify skill spec
-specs/008-hi-status/spec.md      # hi-status skill spec
+specs/003-rh-inf-discovery/spec.md   # rh-inf-discovery skill spec
+specs/004-rh-inf-ingest/spec.md      # rh-inf-ingest skill spec
+specs/005-rh-inf-extract/spec.md     # rh-inf-extract skill spec
+specs/006-rh-inf-formalize/spec.md   # rh-inf-formalize skill spec
+specs/007-rh-inf-verify/spec.md      # rh-inf-verify skill spec
+specs/008-rh-inf-status/spec.md      # rh-inf-status skill spec
 ```
 
 ### Source Code (repository root)
 
 ```text
 skills/.curated/             # Framework-level agent skills
-  hi-discovery/
+  rh-inf-discovery/
     SKILL.md                 # plan | implement modes
-  hi-ingest/
+  rh-inf-ingest/
     SKILL.md                 # plan | implement | verify modes
-  hi-extract/
+  rh-inf-extract/
     SKILL.md                 # plan | implement | verify modes
-  hi-formalize/
+  rh-inf-formalize/
     SKILL.md                 # plan | implement | verify modes
-  hi-verify/
+  rh-inf-verify/
     SKILL.md                 # standalone
-  hi-status/
+  rh-inf-status/
     SKILL.md                 # progress | next-steps | check-changes modes
 
 src/hi/commands/
-  ingest.py                  # hi ingest subcommands (plan/implement/verify)
+  ingest.py                  # rh-skills ingest subcommands (plan/implement/verify)
 
 sources/                     # Raw source files (repo root, shared across topics)
 
@@ -82,7 +82,7 @@ topics/<name>/
       ingest-plan.md
       extract-plan.md
       formalize-plan.md
-      tasks.md               # hi tasks tracking
+      tasks.md               # rh-skills tasks tracking
     contracts/               # YAML validation contracts
     checklists/              # Clinical review checklists
     fixtures/                # LLM test fixtures
@@ -91,7 +91,7 @@ topics/<name>/
     notes.md                 # Human annotations (open questions, decisions, source conflicts)
 
 tests/unit/
-  test_ingest.py             # Unit tests for hi ingest
+  test_ingest.py             # Unit tests for rh-skills ingest
 tests/integration/
   test_lifecycle.py          # End-to-end lifecycle with stub LLM
 ```

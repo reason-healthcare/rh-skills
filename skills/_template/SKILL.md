@@ -8,7 +8,7 @@ name: "<skill-name>"
 description: >
   <One sentence: what this skill does and for whom.>
   Modes: plan · implement · verify.
-compatibility: "hi-skills-framework >= 0.1.0"
+compatibility: "rh-skills >= 0.1.0"
 context_files:
   - reference.md        # full schemas, field definitions, validation rules
   - examples/plan.md    # worked example of a plan artifact
@@ -22,8 +22,8 @@ metadata:
     - tracking.yaml
     - "<e.g., topics/<name>/process/plans/<skill-name>-plan.md>"
   writes_via_cli:
-    - "<e.g., hi promote derive>"
-    - "<e.g., hi validate>"
+    - "<e.g., rh-skills promote derive>"
+    - "<e.g., rh-skills validate>"
 ---
 
 # <Skill Name>
@@ -42,12 +42,12 @@ metadata:
 This skill handles the **<stage>** stage of the HI lifecycle, transforming
 <describe input artifacts and their level> into <describe output artifacts and
 their level>. It follows the plan → implement → verify pattern: the agent reasons
-about the clinical domain in `plan` mode, executes deterministic work via `hi`
+about the clinical domain in `plan` mode, executes deterministic work via `rh-skills`
 CLI commands in `implement` mode, and performs non-destructive validation in
 `verify` mode.
 
 **Guiding principle**: All file I/O, checksums, YAML writes, and schema
-validation are delegated to `hi` CLI commands. All clinical reasoning, artifact
+validation are delegated to `rh-skills` CLI commands. All clinical reasoning, artifact
 naming decisions, and evidence synthesis happen in this skill.
 
 ---
@@ -79,14 +79,14 @@ error if any required check fails — do not attempt partial work.
 
 **1. Verify `tracking.yaml` exists:**
 ```
-hi list
+rh-skills list
 ```
 If the command returns "No tracking.yaml found", exit:
-> `Error: tracking.yaml not found at repo root. Run \`hi init <topic>\` first.`
+> `Error: tracking.yaml not found at repo root. Run \`rh-skills init <topic>\` first.`
 
 **2. Verify topic exists:**
-Confirm the topic name from `$ARGUMENTS` appears in `hi list` output. If not:
-> `Error: Topic '<topic>' not found. Run \`hi list\` to see available topics.`
+Confirm the topic name from `$ARGUMENTS` appears in `rh-skills list` output. If not:
+> `Error: Topic '<topic>' not found. Run \`rh-skills list\` to see available topics.`
 
 **3. For `implement` mode only — verify plan artifact exists:**
 Check that `topics/<topic>/process/plans/<skill-name>-plan.md` exists.
@@ -108,7 +108,7 @@ No files are created or modified other than the plan artifact itself.
 
 ### Steps
 
-1. **Read context** — Run `hi status show <topic>` and review current lifecycle
+1. **Read context** — Run `rh-skills status show <topic>` and review current lifecycle
    state. Note artifact counts and last event. Also read:
    <!-- List the exact files/outputs the agent should read for this skill -->
    - `tracking.yaml` sources list (to understand what raw material is available)
@@ -173,8 +173,8 @@ created: "<ISO-8601 timestamp>"
 
 ## Mode: `implement`
 
-**Goal**: Execute the plan by invoking `hi` CLI commands. Never write files
-directly — all I/O must go through `hi` commands.
+**Goal**: Execute the plan by invoking `rh-skills` CLI commands. Never write files
+directly — all I/O must go through `rh-skills` commands.
 
 ### Steps
 
@@ -182,17 +182,17 @@ directly — all I/O must go through `hi` commands.
    Confirm all required fields are present (see Pre-Execution Checks above).
 
 2. **Execute** — For each item in the plan:
-   <!-- Replace with the exact hi CLI commands this skill calls -->
+   <!-- Replace with the exact rh-skills CLI commands this skill calls -->
    ```
-   hi <command> <topic> <args>
+   rh-skills <command> <topic> <args>
    ```
    - Report progress after each command: `✓ Created <name>` or `✗ Failed: <reason>`
-   - If any `hi` command exits non-zero, **stop immediately** and report the
+   - If any `rh-skills` command exits non-zero, **stop immediately** and report the
      error. Do not continue with remaining items.
 
 3. **Validate outputs** — After all items are created, run:
    ```
-   hi validate <topic> <artifact>
+   rh-skills validate <topic> <artifact>
    ```
    for each produced artifact. Report required-field errors (blocking) and
    advisory warnings separately.
@@ -202,13 +202,13 @@ directly — all I/O must go through `hi` commands.
    > "Next step: run `<skill-name> verify <topic>` to confirm all outputs are valid."
 
 ### Must NOT
-- Write any file directly (all I/O via `hi` CLI)
-- Silently skip failed `hi` commands
+- Write any file directly (all I/O via `rh-skills` CLI)
+- Silently skip failed `rh-skills` commands
 - Continue past a blocking error
 
-### Events Appended (by the `hi` CLI commands invoked)
-<!-- List the events that the hi commands will write to tracking.yaml -->
-- `<event-name>` — appended by `hi <command>` for each item
+### Events Appended (by the `rh-skills` CLI commands invoked)
+<!-- List the events that the rh-skills commands will write to tracking.yaml -->
+- `<event-name>` — appended by `rh-skills <command>` for each item
 
 ---
 
@@ -225,7 +225,7 @@ file or tracking.yaml entry. Safe to run at any time.
 
 2. **Validate each artifact:**
    ```
-   hi validate <topic> <artifact-name>
+   rh-skills validate <topic> <artifact-name>
    ```
    Collect results.
 
@@ -255,16 +255,16 @@ file or tracking.yaml entry. Safe to run at any time.
 
 ## Error Messages
 
-Use these standard templates for consistency across all HI skills.
+Use these standard templates for consistency across all RH skills.
 
 | Situation | Message |
 |-----------|---------|
-| No tracking.yaml | `Error: tracking.yaml not found. Run \`hi init <topic>\` first.` |
-| Unknown topic | `Error: Topic '<topic>' not found. Run \`hi list\` to see available topics.` |
+| No tracking.yaml | `Error: tracking.yaml not found. Run \`rh-skills init <topic>\` first.` |
+| Unknown topic | `Error: Topic '<topic>' not found. Run \`rh-skills list\` to see available topics.` |
 | No plan (implement) | `Error: No plan found. Run \`<skill-name> plan <topic>\` first.` |
 | Missing plan field | `Error: Plan missing required field '<field>'. Edit the plan and re-run.` |
 | Plan exists (no --force) | `Warning: Plan already exists. Pass --force to overwrite, or run implement to execute the existing plan.` |
-| hi command failure | `Error: \`hi <command>\` failed (exit <code>): <stderr>. Stopping.` |
+| rh-skills command failure | `Error: \`rh-skills <command>\` failed (exit <code>): <stderr>. Stopping.` |
 | Artifact exists (no --force) | `Warning: <artifact> already exists. Pass --force to overwrite.` |
 
 ---
@@ -283,10 +283,10 @@ Load these on demand — do not load all of them upfront.
 
 ## Guiding Principles
 
-> **All deterministic work in `hi` CLI commands. All reasoning in this SKILL.md.**
+> **All deterministic work in `rh-skills` CLI commands. All reasoning in this SKILL.md.**
 
 1. **Delegate everything deterministic** — file I/O, checksums, YAML reads/writes,
-   schema validation, tracking updates — to `hi` CLI. Never replicate this logic
+   schema validation, tracking updates — to `rh-skills` CLI. Never replicate this logic
    in the skill.
 2. **Fail loudly and early** — run all prerequisite checks before doing any work.
    A partial implement is worse than no implement.

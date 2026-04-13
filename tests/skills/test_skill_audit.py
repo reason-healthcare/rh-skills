@@ -4,8 +4,8 @@ Checks that every implemented curated skill:
   - has required companion files (reference.md, examples/)
   - follows the plan→implement→verify contract defined in 002 spec FR-017–FR-022
   - declares events it appends (FR-021)
-  - references hi CLI commands (not direct file I/O) for deterministic operations
-  - declares compatibility with hi-skills-framework
+  - references rh-skills CLI commands (not direct file I/O) for deterministic operations
+  - declares compatibility with rh-skills
 
 These tests run vacuously (skip) when no curated skills are implemented yet.
 """
@@ -19,10 +19,10 @@ import pytest
 
 from .conftest import curated_skill_dirs, parse_frontmatter, skill_body
 
-# Patterns confirming that implement mode delegates to hi CLI (FR-017)
-HI_CLI_DELEGATION_PATTERNS = [
-    re.compile(r"`hi\s+(ingest|promote|validate|init|tasks|test|list|status)"),
-    re.compile(r"hi\s+(ingest|promote|validate|init|tasks)\s+", re.IGNORECASE),
+# Patterns confirming that implement mode delegates to rh-skills CLI (FR-017)
+RH_SKILLS_CLI_DELEGATION_PATTERNS = [
+    re.compile(r"`rh-skills\s+(ingest|promote|validate|init|tasks|test|list|status)"),
+    re.compile(r"rh-skills\s+(ingest|promote|validate|init|tasks)\s+", re.IGNORECASE),
 ]
 
 # Patterns confirming a plan-existence pre-check (FR-019)
@@ -46,7 +46,7 @@ VERIFY_NONDESTRUCT_PATTERNS = [
 ]
 
 # Skills that intentionally have no verify mode
-NO_VERIFY_SKILLS = {"hi-discovery", "hi-status"}
+NO_VERIFY_SKILLS = {"rh-inf-discovery", "rh-inf-status"}
 
 
 # ---------------------------------------------------------------------------
@@ -105,23 +105,23 @@ class TestCompanionFiles:
 class TestFrameworkContracts:
     """Validate that every skill honours the framework contracts from spec FR-017–FR-022."""
 
-    def test_compatibility_declares_hi_skills_framework(self, curated_skill: Path):
-        """FR-016: skills must declare compatibility with hi-skills-framework."""
+    def test_compatibility_declares_rh_skills(self, curated_skill: Path):
+        """FR-016: skills must declare compatibility with rh-skills."""
         fm = parse_frontmatter(curated_skill / "SKILL.md")
         compat = fm.get("compatibility", "")
-        assert "hi-skills-framework" in compat, (
-            f"{curated_skill.name}: 'compatibility' must reference 'hi-skills-framework', got: '{compat}'"
+        assert "rh-skills" in compat, (
+            f"{curated_skill.name}: 'compatibility' must reference 'rh-skills', got: '{compat}'"
         )
 
-    def test_implement_mode_references_hi_cli(self, curated_skill: Path):
-        """FR-017: implement mode must delegate to hi CLI, never perform file I/O directly."""
+    def test_implement_mode_references_rh_skills_cli(self, curated_skill: Path):
+        """FR-017: implement mode must delegate to rh-skills CLI, never perform file I/O directly."""
         body = skill_body(curated_skill / "SKILL.md")
         if "## Mode: `implement`" not in body and "### `implement`" not in body:
             pytest.skip(f"{curated_skill.name} has no implement mode")
-        has_delegation = any(p.search(body) for p in HI_CLI_DELEGATION_PATTERNS)
+        has_delegation = any(p.search(body) for p in RH_SKILLS_CLI_DELEGATION_PATTERNS)
         assert has_delegation, (
-            f"{curated_skill.name}: implement mode must reference hi CLI commands "
-            "(e.g. `hi promote derive`, `hi validate`) — never perform file I/O directly (FR-017)"
+            f"{curated_skill.name}: implement mode must reference rh-skills CLI commands "
+            "(e.g. `rh-skills promote derive`, `rh-skills validate`) — never perform file I/O directly (FR-017)"
         )
 
     def test_plan_mode_writes_to_process_plans(self, curated_skill: Path):
@@ -170,15 +170,15 @@ class TestFrameworkContracts:
         )
 
     def test_guiding_principle_states_cli_delegation(self, curated_skill: Path):
-        """FR-017 guiding principle: deterministic work in hi CLI, reasoning in SKILL.md."""
+        """FR-017 guiding principle: deterministic work in rh-skills CLI, reasoning in SKILL.md."""
         content = (curated_skill / "SKILL.md").read_text()
         has_principle = (
-            "deterministic" in content.lower() and "hi" in content.lower()
+            "deterministic" in content.lower() and "rh-skills" in content.lower()
             or "CLI" in content and "reasoning" in content.lower()
         )
         assert has_principle, (
             f"{curated_skill.name}: SKILL.md must state the guiding principle that "
-            "all deterministic work goes through hi CLI commands (FR-017)"
+            "all deterministic work goes through rh-skills CLI commands (FR-017)"
         )
 
 
@@ -212,8 +212,8 @@ class TestSkillLibraryHealth:
             if d.is_dir() and (d / "SKILL.md").exists()
         ] if CURATED_DIR.exists() else []
         expected_skills = {
-            "hi-discovery", "hi-ingest", "hi-extract",
-            "hi-formalize", "hi-verify", "hi-status",
+            "rh-inf-discovery", "rh-inf-ingest", "rh-inf-extract",
+            "rh-inf-formalize", "rh-inf-verify", "rh-inf-status",
         }
         implemented_names = {d.name for d in implemented}
         missing = expected_skills - implemented_names

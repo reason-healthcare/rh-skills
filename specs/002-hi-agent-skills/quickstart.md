@@ -2,15 +2,15 @@
 
 **Branch**: `002-hi-agent-skills` | **Date**: 2026-04-03
 
-This quickstart walks through the full lifecycle for a new `diabetes-screening` skill using the 6 framework agent skills. Each step shows what the skill does, what human review is expected, and what `hi` CLI command the skill invokes.
+This quickstart walks through the full lifecycle for a new `diabetes-screening` skill using the 6 framework agent skills. Each step shows what the skill does, what human review is expected, and what `rh-skills` CLI command the skill invokes.
 
 ---
 
 ## Prerequisites
 
 ```bash
-# Install the hi CLI (end users)
-uv tool install hi
+# Install the rh-skills CLI (end users)
+uv tool install rh-skills
 
 # Or for development
 git clone ... && cd reason-skills-2
@@ -27,7 +27,7 @@ brew install pandoc       # Word/Excel text extraction
 ## Step 0: Initialize the topic
 
 ```bash
-hi init diabetes-screening \
+rh-skills init diabetes-screening \
   --title "Diabetes Screening" \
   --author "Clinical Informatics Team"
 ```
@@ -38,9 +38,9 @@ Creates `topics/diabetes-screening/` with `TOPIC.md`, `structured/`, `computable
 
 ## Step 1: Discovery — find your sources
 
-Invoke the `hi-discovery` skill in **plan** mode. The agent generates a research plan for the domain.
+Invoke the `rh-inf-discovery` skill in **plan** mode. The agent generates a research plan for the domain.
 
-**Agent invokes**: `hi-discovery plan`  
+**Agent invokes**: `rh-inf-discovery plan`  
 **Reads**: `tracking.yaml` (domain: `diabetes`)  
 **Writes**: `topics/diabetes-screening/process/plans/discovery-plan.yaml` (machine-readable source list) and `topics/diabetes-screening/process/plans/discovery-readout.md` (narrative)
 
@@ -48,7 +48,7 @@ Invoke the `hi-discovery` skill in **plan** mode. The agent generates a research
 
 Then invoke **verify** mode to validate the plan before ingesting:
 
-**Agent invokes**: `hi validate --plan topics/diabetes-screening/process/plans/discovery-plan.yaml`  
+**Agent invokes**: `rh-skills validate --plan topics/diabetes-screening/process/plans/discovery-plan.yaml`  
 **Reads**: `topics/diabetes-screening/process/plans/discovery-plan.yaml`  
 **Writes**: nothing (read-only)
 
@@ -56,9 +56,9 @@ Then invoke **verify** mode to validate the plan before ingesting:
 
 ## Step 2: Ingest — register your raw sources
 
-You've downloaded `ada-care-2024.pdf`. `hi-ingest` reads `discovery-plan.yaml` directly to determine which sources to acquire.
+You've downloaded `ada-care-2024.pdf`. `rh-inf-ingest` reads `discovery-plan.yaml` directly to determine which sources to acquire.
 
-**Agent invokes**: `hi ingest implement <file>`  
+**Agent invokes**: `rh-skills ingest implement <file>`  
 **Reads**: file path argument  
 **Writes**:
 - `sources/ada-guidelines-2024.md` (copy of the source file)
@@ -66,10 +66,10 @@ You've downloaded `ada-care-2024.pdf`. `hi-ingest` reads `discovery-plan.yaml` d
 
 ```bash
 # Ingest a source file
-hi ingest implement ~/Downloads/ada-care-2024.pdf
+rh-skills ingest implement ~/Downloads/ada-care-2024.pdf
 
 # Verify all sources are registered correctly
-hi ingest verify
+rh-skills ingest verify
 # ✓ ada-guidelines-2024            OK
 ```
 
@@ -77,7 +77,7 @@ hi ingest verify
 
 ## Step 3: Extract — derive structured artifacts
 
-**Agent invokes**: `hi-extract plan`  
+**Agent invokes**: `rh-inf-extract plan`  
 **Reads**: `sources/`  
 **Writes**: `topics/diabetes-screening/process/plans/extract-plan.md`
 
@@ -85,15 +85,15 @@ hi ingest verify
 
 Then implement:
 
-**Agent invokes**: `hi-extract implement`  
+**Agent invokes**: `rh-inf-extract implement`  
 **Reads**: `topics/diabetes-screening/process/plans/extract-plan.md`  
-**Executes**: `hi promote derive` for each artifact  
+**Executes**: `rh-skills promote derive` for each artifact  
 **Writes**: `topics/diabetes-screening/structured/screening-criteria.yaml`, `topics/diabetes-screening/structured/risk-factors.yaml`
 
 Verify:
 
-**Agent invokes**: `hi-extract verify`  
-**Executes**: `hi validate diabetes-screening structured <each artifact>`
+**Agent invokes**: `rh-inf-extract verify`  
+**Executes**: `rh-skills validate diabetes-screening structured <each artifact>`
 
 ```
 ✓ Validating diabetes-screening/structured/screening-criteria...
@@ -106,7 +106,7 @@ VALID (with 2 optional field warning(s))
 
 ## Step 4: Formalize — converge to computable artifact
 
-**Agent invokes**: `hi-formalize plan`  
+**Agent invokes**: `rh-inf-formalize plan`  
 **Reads**: `topics/diabetes-screening/structured/`  
 **Writes**: `topics/diabetes-screening/process/plans/formalize-plan.md`
 
@@ -114,14 +114,14 @@ VALID (with 2 optional field warning(s))
 
 Then implement:
 
-**Agent invokes**: `hi-formalize implement`  
+**Agent invokes**: `rh-inf-formalize implement`  
 **Reads**: `topics/diabetes-screening/process/plans/formalize-plan.md`  
-**Executes**: `hi promote combine diabetes-screening screening-criteria risk-factors diabetes-screening-computable`  
+**Executes**: `rh-skills promote combine diabetes-screening screening-criteria risk-factors diabetes-screening-computable`  
 **Writes**: `topics/diabetes-screening/computable/diabetes-screening-computable.yaml`
 
 Verify:
 
-**Agent invokes**: `hi-formalize verify`  
+**Agent invokes**: `rh-inf-formalize verify`  
 **Checks**: Required fields + FHIR-compatible section completeness
 
 ---
@@ -130,10 +130,10 @@ Verify:
 
 ```bash
 # Where is this topic in its lifecycle?
-hi status diabetes-screening
+rh-skills status diabetes-screening
 ```
 
-> **Note**: `hi status progress`, `hi status next-steps`, and `hi status check-changes` are planned features (tasks T030-T032) and not yet implemented. The current `hi status <topic>` provides basic lifecycle info (stage, artifact counts, last event).
+> **Note**: `rh-skills status progress`, `rh-skills status next-steps`, and `rh-skills status check-changes` are planned features (tasks T030-T032) and not yet implemented. The current `rh-skills status <topic>` provides basic lifecycle info (stage, artifact counts, last event).
 
 ---
 
@@ -142,7 +142,7 @@ hi status diabetes-screening
 Six months later, ADA publishes updated guidelines. You download the new PDF.
 
 ```bash
-hi ingest verify
+rh-skills ingest verify
 # ✗ ada-guidelines-2024            CHANGED
 #   was: e3b0c442...
 #   now: 9f86d081...
@@ -151,7 +151,7 @@ hi ingest verify
 Re-ingest the updated file:
 
 ```bash
-hi ingest implement ~/Downloads/ada-care-2024-updated.pdf --force
+rh-skills ingest implement ~/Downloads/ada-care-2024-updated.pdf --force
 ```
 
 Then re-extract and re-formalize affected artifacts following Steps 3–4.
@@ -163,7 +163,7 @@ Then re-extract and re-formalize affected artifacts following Steps 3–4.
 All `plan` and `implement` modes are **safe by default**:
 
 - If a plan already exists → warns and stops (edit it or use `--force`)
-- If L2/L3 artifacts already exist → `hi promote` warns; use `--force` to regenerate
+- If L2/L3 artifacts already exist → `rh-skills promote` warns; use `--force` to regenerate
 - `verify` and `check-changes` are always read-only and safe to run at any time
 
 ---
@@ -172,10 +172,10 @@ All `plan` and `implement` modes are **safe by default**:
 
 ```
 skills/.curated/
-  hi-discovery/SKILL.md   → invoke for literature search planning
-  hi-ingest/SKILL.md      → invoke for source registration
-  hi-extract/SKILL.md     → invoke for structured derivation
-  hi-formalize/SKILL.md   → invoke for computable convergence
-  hi-verify/SKILL.md      → invoke for on-demand artifact validation
-  hi-status/SKILL.md      → invoke for progress/next-steps/change-detection
+  rh-inf-discovery/SKILL.md   → invoke for literature search planning
+  rh-inf-ingest/SKILL.md      → invoke for source registration
+  rh-inf-extract/SKILL.md     → invoke for structured derivation
+  rh-inf-formalize/SKILL.md   → invoke for computable convergence
+  rh-inf-verify/SKILL.md      → invoke for on-demand artifact validation
+  rh-inf-status/SKILL.md      → invoke for progress/next-steps/change-detection
 ```

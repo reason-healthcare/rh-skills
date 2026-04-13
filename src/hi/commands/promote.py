@@ -1,4 +1,4 @@
-"""hi promote — Promote artifacts between lifecycle levels."""
+"""rh-skills promote — Promote artifacts between lifecycle levels."""
 
 import os
 from pathlib import Path
@@ -132,7 +132,7 @@ def combine(topic, sources, dry_run):
     """Promote L2 artifacts to a single L3 computable artifact.
 
     Sources: all positional args — last one is the target name, rest are L2 source names.
-    Example: hi promote combine mytopic l2-a l2-b l3-target
+    Example: rh-skills promote combine mytopic l2-a l2-b l3-target
     """
     if len(sources) < 2:
         raise click.UsageError("combine requires at least one source and one target name")

@@ -4,7 +4,7 @@ from hi.commands import init, status, list_cmd, promote, validate, ingest, tasks
 
 @click.group()
 def main():
-    """Healthcare Informatics Skills Framework CLI."""
+    """RH Skills CLI for informatics workflows."""
     pass
 
 

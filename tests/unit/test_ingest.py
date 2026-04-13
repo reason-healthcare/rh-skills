@@ -1,4 +1,4 @@
-"""Tests for hi ingest command — plan / implement / verify."""
+"""Tests for rh-skills ingest command — plan / implement / verify."""
 
 import pytest
 from click.testing import CliRunner
@@ -8,7 +8,7 @@ from hi.commands.ingest import ingest
 from tests.conftest import load_tracking
 
 
-# ── hi ingest plan ─────────────────────────────────────────────────────────────
+# ── rh-skills ingest plan ─────────────────────────────────────────────────────────────
 
 def test_plan_creates_ingest_plan_md(tmp_repo):
     runner = CliRunner()
@@ -34,7 +34,7 @@ def test_plan_rerun_guard(tmp_repo):
     assert "already exists" in result.output
 
 
-# ── hi ingest implement ────────────────────────────────────────────────────────
+# ── rh-skills ingest implement ────────────────────────────────────────────────────────
 
 def test_implement_registers_source_in_tracking(tmp_repo):
     src = tmp_repo / "test-source.md"
@@ -100,7 +100,7 @@ def test_implement_reregisters_changed_source(tmp_repo):
     assert len(entries) == 1  # still one entry, not duplicated
 
 
-# ── hi ingest verify ───────────────────────────────────────────────────────────
+# ── rh-skills ingest verify ───────────────────────────────────────────────────────────
 
 def test_verify_exits_zero_for_unchanged_file(tmp_repo):
     src = tmp_repo / "stable.md"

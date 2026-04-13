@@ -11,7 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CURATED_DIR = REPO_ROOT / "skills" / ".curated"
 TEMPLATE_DIR = REPO_ROOT / "skills" / "_template"
 
-# Frontmatter keys allowed in HI framework SKILL.md files.
+# Frontmatter keys allowed in RH skills framework SKILL.md files.
 # Extends the base Agent Skills standard with HI-specific fields.
 REQUIRED_FRONTMATTER_KEYS = {"name", "description", "compatibility"}
 OPTIONAL_FRONTMATTER_KEYS = {

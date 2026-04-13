@@ -1,6 +1,6 @@
 # Skill Authoring Guide
 
-This guide explains how to author a new HI framework skill using the canonical
+This guide explains how to author a new RH skills framework skill using the canonical
 template at `skills/_template/`.
 
 ---
@@ -23,9 +23,9 @@ keeping the context window efficient.
 
 ### 2. Determinism / Reasoning Separation
 
-> **All deterministic work in `hi` CLI commands. All reasoning in SKILL.md.**
+> **All deterministic work in `rh-skills` CLI commands. All reasoning in SKILL.md.**
 
-| Lives in `hi` CLI | Lives in SKILL.md |
+| Lives in `rh-skills` CLI | Lives in SKILL.md |
 |-------------------|-------------------|
 | File I/O | Clinical reasoning |
 | SHA-256 checksums | Artifact naming decisions |
@@ -35,7 +35,7 @@ keeping the context window efficient.
 | Exit code handling | Human review prompts |
 
 Never compute checksums, write YAML, or touch the filesystem from a skill.
-Invoke `hi` commands for everything deterministic.
+Invoke `rh-skills` commands for everything deterministic.
 
 ### 3. Plan → Human Review → Implement
 
@@ -78,14 +78,14 @@ Update every field in the YAML frontmatter:
 
 | Field | Guidance |
 |-------|----------|
-| `name` | Must match directory name exactly (e.g., `hi-extract`) |
+| `name` | Must match directory name exactly (e.g., `rh-inf-extract`) |
 | `description` | One sentence + `Modes: plan · implement · verify` |
 | `version` | Start at `"1.0.0"`; bump minor for new fields, major for breaking changes |
-| `modes` | Remove modes not supported by this skill (e.g., `hi-status` has no `plan`) |
+| `modes` | Remove modes not supported by this skill (e.g., `rh-inf-status` has no `plan`) |
 | `context_files` | List only files that exist in the skill directory |
 | `lifecycle_stage` | One of: `l1-discovery`, `l2-semi-structured`, `l3-computable` |
 | `reads_from` | All files/sources the skill reads |
-| `writes_via_cli` | All `hi` CLI commands that modify state |
+| `writes_via_cli` | All `rh-skills` CLI commands that modify state |
 | `metadata.author` | Your name or team |
 | `metadata.source` | Canonical path: `skills/.curated/<skill-name>/SKILL.md` |
 
@@ -124,12 +124,12 @@ In `examples/plan.md`:
 
 In `examples/output.md`:
 - A realistic output artifact (L2 YAML and/or L3 YAML)
-- The corresponding `tracking.yaml` entries that `hi` CLI would write
+- The corresponding `tracking.yaml` entries that `rh-skills` CLI would write
 
 ### Step 7: Test the skill
 
 ```bash
-hi test <topic> <skill-name>
+rh-skills test <topic> <skill-name>
 ```
 
 Runs the skill against fixtures in `topics/<topic>/process/fixtures/` and
@@ -143,12 +143,12 @@ writes results to `topics/<topic>/process/fixtures/results/`.
 
 | Skill | plan | implement | verify |
 |-------|------|-----------|--------|
-| `hi-discovery` | ✓ | ✓ | — |
-| `hi-ingest` | ✓ | ✓ | ✓ |
-| `hi-extract` | ✓ | ✓ | ✓ |
-| `hi-formalize` | ✓ | ✓ | ✓ |
-| `hi-verify` | — | — | ✓ |
-| `hi-status` | — | — | — (custom modes) |
+| `rh-inf-discovery` | ✓ | ✓ | — |
+| `rh-inf-ingest` | ✓ | ✓ | ✓ |
+| `rh-inf-extract` | ✓ | ✓ | ✓ |
+| `rh-inf-formalize` | ✓ | ✓ | ✓ |
+| `rh-inf-verify` | — | — | ✓ |
+| `rh-inf-status` | — | — | — (custom modes) |
 
 ### Standard `plan` Mode Contract (FR-018)
 
@@ -162,9 +162,9 @@ writes results to `topics/<topic>/process/fixtures/results/`.
 
 - **Reads from**: the plan artifact's YAML front matter
 - **Must fail** if plan does not exist
-- **Must delegate** all file I/O to `hi` CLI commands
+- **Must delegate** all file I/O to `rh-skills` CLI commands
 - **Must stop** on first CLI command failure
-- **Events**: written by the `hi` CLI commands invoked
+- **Events**: written by the `rh-skills` CLI commands invoked
 
 ### Standard `verify` Mode Contract (FR-022)
 
@@ -182,8 +182,8 @@ Use these verbatim for consistency across all skills:
 
 ```
 # Missing prerequisite
-Error: tracking.yaml not found. Run `hi init <topic>` first.
-Error: Topic '<topic>' not found. Run `hi list` to see available topics.
+Error: tracking.yaml not found. Run `rh-skills init <topic>` first.
+Error: Topic '<topic>' not found. Run `rh-skills list` to see available topics.
 
 # Plan missing (implement mode)
 Error: No plan found at topics/<topic>/process/plans/<skill-name>-plan.md.
@@ -197,7 +197,7 @@ Warning: Plan already exists at topics/<topic>/process/plans/<skill-name>-plan.m
 Pass --force to overwrite, or run `<skill-name> implement <topic>` to use the existing plan.
 
 # CLI command failure
-Error: `hi <command>` failed (exit <code>): <stderr>. Stopping.
+Error: `rh-skills <command>` failed (exit <code>): <stderr>. Stopping.
 
 # Artifact exists (no --force)
 Warning: <artifact> already exists. Pass --force to overwrite.
@@ -221,5 +221,5 @@ Before marking a skill implementation complete:
 - [ ] `reference.md` schemas filled in with actual field names and constraints
 - [ ] `examples/plan.md` contains realistic clinical content (not Lorem Ipsum)
 - [ ] `examples/output.md` contains realistic output artifacts
-- [ ] Skill tested with `hi test <topic> <skill-name>`
+- [ ] Skill tested with `rh-skills test <topic> <skill-name>`
 - [ ] Skill spec (003–008) acceptance scenarios pass

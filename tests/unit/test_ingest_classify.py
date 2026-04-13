@@ -1,4 +1,4 @@
-"""Tests for hi ingest classify subcommand."""
+"""Tests for rh-skills ingest classify subcommand."""
 
 import pytest
 from click.testing import CliRunner

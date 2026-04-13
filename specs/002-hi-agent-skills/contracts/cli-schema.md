@@ -4,16 +4,16 @@
 
 ---
 
-## New Command: `hi ingest`
+## New Command: `rh-skills ingest`
 
 Follows the existing click command group pattern. All exit codes match the existing contract.
 
-### `hi ingest plan [--force]`
+### `rh-skills ingest plan [--force]`
 
 Generate an ingest plan template at `plans/ingest-plan.md` (root-level plans directory).
 
 ```
-Usage: hi ingest plan [--force]
+Usage: rh-skills ingest plan [--force]
 
 Options:
   --force     Overwrite existing ingest-plan.md
@@ -31,12 +31,12 @@ Reads:
   topics/<name>/process/plans/discovery-plan.yaml  (if available, for context)
 ```
 
-### `hi ingest implement <file> [--force]`
+### `rh-skills ingest implement <file> [--force]`
 
 Copy FILE to `sources/` and register in tracking.yaml. FILE is a path to any local file.
 
 ```
-Usage: hi ingest implement <file> [--force]
+Usage: rh-skills ingest implement <file> [--force]
 
 Arguments:
   file        Path to the local source file to ingest
@@ -57,12 +57,12 @@ Side effects:
   - Appends source_added or source_changed event to tracking.yaml
 ```
 
-### `hi ingest verify`
+### `rh-skills ingest verify`
 
 Verify all registered sources are still present and checksums match.
 
 ```
-Usage: hi ingest verify
+Usage: rh-skills ingest verify
 
 Exit codes:
   0  All sources present and checksums match
@@ -77,12 +77,12 @@ Output (stdout):
 
 ---
 
-## Extended Command: `hi status`
+## Extended Command: `rh-skills status`
 
-### `hi status <topic>`
+### `rh-skills status <topic>`
 
 ```
-Usage: hi status <topic> [--json]
+Usage: rh-skills status <topic> [--json]
 
 Exit codes:
   0  Summary printed
@@ -103,7 +103,7 @@ Output (human-readable):
   Last event: structured_derived (2026-04-03T19:05:00Z)
 ```
 
-> **Note**: `hi status progress`, `hi status next-steps`, and `hi status check-changes` are planned features (tasks T030–T032) and **not yet implemented**. The current `hi status <topic>` provides basic lifecycle info.
+> **Note**: `rh-skills status progress`, `rh-skills status next-steps`, and `rh-skills status check-changes` are planned features (tasks T030–T032) and **not yet implemented**. The current `rh-skills status <topic>` provides basic lifecycle info.
 
 ---
 
@@ -118,7 +118,7 @@ All plan artifacts share this interface, consumed by `implement` mode scripts.
 
 #### discovery-plan.yaml
 
-Pure YAML file (no frontmatter delimiters). Single machine-readable source of truth for `hi-discovery` output. Consumed by `hi validate --plan` and `hi-ingest`.
+Pure YAML file (no frontmatter delimiters). Single machine-readable source of truth for `rh-inf-discovery` output. Consumed by `rh-skills validate --plan` and `rh-inf-ingest`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -177,7 +177,7 @@ Generated Markdown narrative derived from `discovery-plan.yaml`. Do not edit dir
 
 ## Tracking.yaml Extension Contract
 
-The `tracking.yaml` at the repo root uses the following structure. All fields are set by `hi init` and extended by subsequent commands.
+The `tracking.yaml` at the repo root uses the following structure. All fields are set by `rh-skills init` and extended by subsequent commands.
 
 ```yaml
 # Current tracking.yaml structure
@@ -194,7 +194,7 @@ topics:
     events: []
 events: []            # root-level events
 
-# sources[] entry schema (added by hi ingest implement):
+# sources[] entry schema (added by rh-skills ingest implement):
 sources:
   - name: string          # kebab-case, unique
     file: string          # path relative to repo root, in sources/
@@ -214,7 +214,7 @@ All 6 framework skills must satisfy:
 Required frontmatter:
   name:           "hi-<skill>"
   description:    "<one-line summary>. Modes: <mode1> | <mode2> [| mode3]"
-  compatibility:  "hi-skills-framework >= 0.1.0"
+  compatibility:  "rh-skills >= 0.1.0"
   metadata:
     author:       string
     source:       "skills/.curated/hi-<skill>/SKILL.md"
@@ -227,7 +227,7 @@ Each mode section must document:
   - What it reads
   - What it writes (or "read-only")
   - Failure conditions
-  - The hi CLI commands it invokes
+  - The rh-skills CLI commands it invokes
 ```
 
 ---

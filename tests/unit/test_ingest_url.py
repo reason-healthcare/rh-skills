@@ -1,4 +1,4 @@
-"""Tests for hi ingest implement --url flag."""
+"""Tests for rh-skills ingest implement --url flag."""
 
 import os
 import tempfile

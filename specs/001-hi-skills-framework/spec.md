@@ -1,6 +1,6 @@
 # Feature Specification: Healthcare Informatics Skills Framework
 
-**Feature Branch**: `001-hi-skills-framework`  
+**Feature Branch**: `001-rh-skills`  
 **Created**: 2026-04-03  
 **Status**: Clarified  
 **Input**: User description: "I want to build a skills repo for a set of healthcare informatics skills. I want to model it after spec-kit with similar style. The concept is to progress from discovery of L1 artifacts (unstructured / raw), progressing to L2 (semi-structured) and then ultimately L3 (computable) artifacts. Each step of the workflow, I want to produce tracking artifacts, so this system will require a CLI. Model the actual skills source development following anthropic skills-developer. We want to allow for local testing of the skills. A guiding principal is to offload all deterministic work to commands, and only leave reasoning to the agent."

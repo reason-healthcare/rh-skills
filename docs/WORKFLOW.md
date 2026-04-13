@@ -1,8 +1,8 @@
-# HI Skills Framework — Workflow
+# RH Skills — Workflow
 
 ## Lifecycle Overview
 
-The HI Framework progresses clinical knowledge through three artifact levels:
+The RH Skills progresses clinical knowledge through three artifact levels:
 
 ```
 sources/                        topics/<name>/structured/       topics/<name>/computable/
@@ -40,7 +40,7 @@ Every lifecycle transition follows this mandatory three-step pattern:
  ┌───────────────────────▼─────────────────────────────────────────┐
  │  IMPLEMENT                                                       │
  │  Agent reads the YAML front matter from the plan file and        │
- │  executes it by invoking hi CLI commands. Fails immediately if   │
+ │  executes it by invoking rh-skills CLI commands. Fails immediately if   │
  │  no plan exists. Human review gate is enforced.                  │
  └───────────────────────┬─────────────────────────────────────────┘
                          │
@@ -55,12 +55,12 @@ Every lifecycle transition follows this mandatory three-step pattern:
 
 | Stage | Skill | Modes | Plan Artifact | Output |
 |-------|-------|-------|---------------|--------|
-| **Discovery** | `hi-discovery` | plan · implement | `discovery-plan.md` | Ingest task list |
-| **Ingest** | `hi-ingest` | plan · implement · verify | `ingest-plan.md` | L1 sources in tracking.yaml |
-| **Extract** | `hi-extract` | plan · implement · verify | `extract-plan.md` | L2 artifacts in `structured/` |
-| **Formalize** | `hi-formalize` | plan · implement · verify | `formalize-plan.md` | L3 artifact in `computable/` |
-| **Verify** | `hi-verify` | *(standalone)* | — | Validation report |
-| **Status** | `hi-status` | progress · next-steps · check-changes | — | Lifecycle summary |
+| **Discovery** | `rh-inf-discovery` | plan · implement | `discovery-plan.md` | Ingest task list |
+| **Ingest** | `rh-inf-ingest` | plan · implement · verify | `ingest-plan.md` | L1 sources in tracking.yaml |
+| **Extract** | `rh-inf-extract` | plan · implement · verify | `extract-plan.md` | L2 artifacts in `structured/` |
+| **Formalize** | `rh-inf-formalize` | plan · implement · verify | `formalize-plan.md` | L3 artifact in `computable/` |
+| **Verify** | `rh-inf-verify` | *(standalone)* | — | Validation report |
+| **Status** | `rh-inf-status` | progress · next-steps · check-changes | — | Lifecycle summary |
 
 ## Directory Structure
 
@@ -78,7 +78,7 @@ topics/<name>/
     │   ├── ingest-plan.md
     │   ├── extract-plan.md
     │   ├── formalize-plan.md
-    │   └── tasks.md             ← hi tasks tracking
+    │   └── tasks.md             ← rh-skills tasks tracking
     ├── contracts/               ← YAML validation contracts
     ├── checklists/              ← clinical review checklists
     ├── fixtures/                ← LLM test fixtures
@@ -91,10 +91,10 @@ tracking.yaml                    ← lifecycle state for all topics
 
 ## Guiding Principle
 
-> **All deterministic work in `hi` CLI commands. All reasoning in SKILL.md agent prompts.**
+> **All deterministic work in `rh-skills` CLI commands. All reasoning in SKILL.md agent prompts.**
 
 The framework makes this separation explicit:
-- `hi` commands handle: file I/O, SHA-256 checksums, YAML reads/writes, schema validation
+- `rh-skills` commands handle: file I/O, SHA-256 checksums, YAML reads/writes, schema validation
 - SKILL.md prompts handle: clinical reasoning, artifact naming, source discovery, convergence strategy
 
 ## Event Tracking
@@ -103,14 +103,14 @@ Every state-changing operation appends a named event to `tracking.yaml`:
 
 | Event | Triggered By |
 |-------|-------------|
-| `topic_created` | `hi init` |
-| `source_added` | `hi ingest implement` |
-| `source_changed` | `hi ingest implement` (re-registration) |
-| `structured_derived` | `hi promote derive` |
-| `computable_converged` | `hi promote combine` |
-| `validated` | `hi validate` (pass) |
-| `task_completed` | `hi tasks complete` |
-| `discovery_planned` | `hi-discovery plan` mode |
-| `discovery_implemented` | `hi-discovery implement` mode |
-| `extract_planned` | `hi-extract plan` mode |
-| `formalize_planned` | `hi-formalize plan` mode |
+| `topic_created` | `rh-skills init` |
+| `source_added` | `rh-skills ingest implement` |
+| `source_changed` | `rh-skills ingest implement` (re-registration) |
+| `structured_derived` | `rh-skills promote derive` |
+| `computable_converged` | `rh-skills promote combine` |
+| `validated` | `rh-skills validate` (pass) |
+| `task_completed` | `rh-skills tasks complete` |
+| `discovery_planned` | `rh-inf-discovery plan` mode |
+| `discovery_implemented` | `rh-inf-discovery implement` mode |
+| `extract_planned` | `rh-inf-extract plan` mode |
+| `formalize_planned` | `rh-inf-formalize plan` mode |

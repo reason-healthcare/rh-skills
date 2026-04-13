@@ -1,7 +1,7 @@
 # Artifact Schemas: Healthcare Informatics Skills Framework
 
 **Phase**: 1 — Design  
-**Branch**: `001-hi-skills-framework`  
+**Branch**: `001-rh-skills`  
 **Date**: 2026-04-03
 
 ---
@@ -236,7 +236,7 @@ Written and updated exclusively by CLI commands. Never manually edited.
 |-------|------|-------------|
 | `schema_version` | string | Always `"1.0"` |
 | `skill.name` | kebab-case string | Matches skill directory name |
-| `skill.created_at` | ISO-8601 | Set at `hi init` time |
+| `skill.created_at` | ISO-8601 | Set at `rh-skills init` time |
 | `artifacts.l1` | list | L1 artifact inventory |
 | `artifacts.l2` | list | L2 artifact inventory with derivation links |
 | `artifacts.l3` | list | L3 artifact inventory with convergence links |
@@ -246,9 +246,9 @@ Written and updated exclusively by CLI commands. Never manually edited.
 
 | Type | Triggered By | Key Fields |
 |------|-------------|-----------|
-| `created` | `hi init` | `—` |
+| `created` | `rh-skills init` | `—` |
 | `l1_added` | Author adds a file to `l1/` and registers | `target_artifacts` |
-| `l2_derived` | `hi promote --to l2` | `source_artifacts`, `target_artifacts`, `validation_status` |
-| `l3_converged` | `hi promote --combine` | `source_artifacts`, `target_artifacts`, `validation_status` |
-| `validated` | `hi validate` | `target_artifacts`, `outcome`, `warnings` |
-| `test_run` | `hi test` | `outcome` (summary), `result_file` |
+| `l2_derived` | `rh-skills promote --to l2` | `source_artifacts`, `target_artifacts`, `validation_status` |
+| `l3_converged` | `rh-skills promote --combine` | `source_artifacts`, `target_artifacts`, `validation_status` |
+| `validated` | `rh-skills validate` | `target_artifacts`, `outcome`, `warnings` |
+| `test_run` | `rh-skills test` | `outcome` (summary), `result_file` |

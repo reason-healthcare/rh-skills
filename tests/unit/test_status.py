@@ -1,4 +1,4 @@
-"""Tests for hi status and hi list commands — ported from tests/unit/status.bats."""
+"""Tests for rh-skills status and rh-skills list commands — ported from tests/unit/status.bats."""
 
 import json
 
@@ -63,7 +63,7 @@ def make_topic(tmp_repo, name, stage="initialized"):
         y.dump(tracking, f)
 
 
-# ── hi status tests ────────────────────────────────────────────────────────────
+# ── rh-skills status tests ────────────────────────────────────────────────────────────
 
 def test_status_exits_0_for_valid_skill(tmp_repo):
     make_topic(tmp_repo, "my-skill")
@@ -130,7 +130,7 @@ def test_status_exits_2_for_unknown_skill(tmp_repo):
     assert result.exit_code == 2
 
 
-# ── hi list tests ──────────────────────────────────────────────────────────────
+# ── rh-skills list tests ──────────────────────────────────────────────────────────────
 
 def test_list_exits_0_with_no_skills(tmp_repo):
     runner = CliRunner()
@@ -192,7 +192,7 @@ def test_list_no_tracking_exits_0(tmp_repo):
 
 
 def test_list_excludes_curated_skill_dirs(tmp_repo):
-    """skills/.curated/ dirs must never appear in hi list output (never in tracking.yaml)."""
+    """skills/.curated/ dirs must never appear in rh-skills list output (never in tracking.yaml)."""
     # Simulate a .curated dir existing on disk
     (tmp_repo / "topics" / ".curated").mkdir(parents=True, exist_ok=True)
     make_topic(tmp_repo, "real-topic")

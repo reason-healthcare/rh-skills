@@ -1,4 +1,4 @@
-"""Tests for hi test command — ported from tests/unit/test-cmd.bats."""
+"""Tests for rh-skills test command — ported from tests/unit/test-cmd.bats."""
 
 import json
 
