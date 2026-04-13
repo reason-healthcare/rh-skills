@@ -1,7 +1,7 @@
 # Tasks: RH Skills — CLI & Repository Layout (002)
 
-**Branch**: `002-hi-agent-skills`
-**Input**: Design documents from `/specs/002-hi-agent-skills/`
+**Branch**: `002-rh-agent-skills`
+**Input**: Design documents from `/specs/002-rh-agent-skills/`
 **Prerequisites**: plan.md ✅ | spec.md ✅ | research.md ✅ | data-model.md ✅ | contracts/ ✅ | quickstart.md ✅
 
 **Scope**: This task list covers the framework CLI and repository layout only. SKILL.md authoring for each skill is tracked in the respective skill specs (003–008).

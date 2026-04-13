@@ -1,6 +1,6 @@
 # Quickstart: HI Agent Skills Suite (002)
 
-**Branch**: `002-hi-agent-skills` | **Date**: 2026-04-03
+**Branch**: `002-rh-agent-skills` | **Date**: 2026-04-03
 
 This quickstart walks through the full lifecycle for a new `diabetes-screening` skill using the 6 framework agent skills. Each step shows what the skill does, what human review is expected, and what `rh-skills` CLI command the skill invokes.
 

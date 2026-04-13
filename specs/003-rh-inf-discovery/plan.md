@@ -21,7 +21,7 @@
 
 ## Constitution Check
 
-*Constitution is a blank template — no project-specific principles defined. Applying framework principles from `002-hi-agent-skills/spec.md` instead.*
+*Constitution is a blank template — no project-specific principles defined. Applying framework principles from `002-rh-agent-skills/spec.md` instead.*
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
@@ -56,7 +56,7 @@ specs/003-rh-inf-discovery/
 src/hi/commands/
 ├── search.py            # NEW: rh-skills search pubmed/pmc/clinicaltrials
 ├── ingest.py            # EXTEND: add --url flag to implement subcommand
-└── init.py              # EXTEND: create RESEARCH.md + process/research.md stubs
+└── init.py              # EXTEND: create RESEARCH.md + process/notes.md stubs
 
 skills/.curated/rh-inf-discovery/
 ├── SKILL.md             # NEW: interactive research assistant skill
@@ -70,8 +70,7 @@ tests/
 │   ├── test_search_pubmed.py        # NEW: PubMed API wrapper tests (httpx mock)
 │   ├── test_search_clinicaltrials.py # NEW: ClinicalTrials API tests
 │   ├── test_ingest_url.py           # NEW: URL download + registration tests
-│   └── test_init_research.py        # NEW: RESEARCH.md + research.md creation
+│   └── test_init_research.py        # NEW: RESEARCH.md + notes.md creation
 └── skills/
     └── (existing parametrized suite — rh-inf-discovery skill activates automatically)
 ```
-

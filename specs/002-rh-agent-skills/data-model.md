@@ -1,6 +1,6 @@
 # Data Model: HI Agent Skills Suite (002)
 
-**Branch**: `002-hi-agent-skills` | **Date**: 2026-04-03
+**Branch**: `002-rh-agent-skills` | **Date**: 2026-04-03
 
 ---
 

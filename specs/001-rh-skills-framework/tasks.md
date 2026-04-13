@@ -1,7 +1,7 @@
 # Tasks: Healthcare Informatics Skills Framework
 
-**Input**: Design documents from `/specs/001-rh-skills/`  
-**Branch**: `001-rh-skills`  
+**Input**: Design documents from `/specs/001-rh-skills-framework/`  
+**Branch**: `001-rh-skills-framework`  
 **Generated**: 2026-04-03
 
 **Format**: `[ID] [P?] [Story?] Description with file path`  

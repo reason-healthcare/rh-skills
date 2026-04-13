@@ -67,7 +67,7 @@ Found 14 sources across PubMed, PMC, and ClinicalTrials.gov.
 
 Open-access sources:
   [1] ADA Standards of Care 2024 — PMC open access
-      Evidence: Level Ia (clinical guideline) | Type: clinical-guideline
+      Evidence: grade-a | Type: guideline
       Rationale: Primary authoritative guidance for diabetes management
 
   [2] Systematic Review: CCM Programs and Diabetes Outcomes (JAMA, 2023) — PMC
@@ -89,7 +89,7 @@ Which sources do you want to include? [all / select numbers / none]
 
 ## Step 4: User selects sources; agent records access advisories
 
-User: `include 1, 2, 4`
+User: `include all except 3`
 
 Agent records sources in the in-session plan and prints access advisories:
 ```
@@ -97,6 +97,9 @@ Open-access sources:
   ✓ ada-standards-2024         access: open   url: https://pmc.ncbi.nlm.nih.gov/articles/PMC...
   ✓ ccm-diabetes-jama-2023     access: open   url: https://pmc.ncbi.nlm.nih.gov/articles/PMC...
   ✓ cms-dpp-program            access: open   url: https://www.cms.gov/priorities/innovation/...
+  ✓ gravity-sdoh-fhir-ig       access: open   url: https://hl7.org/fhir/us/sdoh-clinicalcare/
+  ✓ hcup-diabetes-costs        access: open   url: https://www.hcup-us.ahrq.gov/nisoverview.jsp
+  ✓ loinc-hba1c-codes          access: open   url: https://loinc.org/4548-4/
 
 Authenticated sources (advisory):
   ⊘ nejm-empagliflozin-2022    access: authenticated
@@ -104,7 +107,7 @@ Authenticated sources (advisory):
     URL: https://www.nejm.org/...
     Add to discovery-plan.yaml with auth_note when confirmed accessible.
 
-All sources are recorded in discovery-plan.yaml. rh-inf-ingest will handle acquisition.
+All selected sources are recorded in discovery-plan.yaml. rh-inf-ingest will handle acquisition.
 ```
 
 ---
@@ -137,12 +140,10 @@ Agent writes `topics/diabetes-ccm/process/plans/discovery-plan.yaml` (machine-re
 ```
 ✓ Discovery plan saved: topics/diabetes-ccm/process/plans/discovery-plan.yaml
 ✓ Discovery readout saved: topics/diabetes-ccm/process/plans/discovery-readout.md
-  Sources: 3 (2 open-access, 1 government)
-  Coverage warnings:
-    ⚠ Health-economics source not included — consider adding for comprehensive coverage
+  Sources: 6 (5 open-access, 1 government)
 
 Research tracking updated:
-  RESEARCH.md: Active Topics row updated (3 sources, 2026-04-04)
+  RESEARCH.md: Active Topics row updated (6 sources, 2026-04-04)
 ```
 
 ---
@@ -156,10 +157,11 @@ rh-skills validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
 
 Output:
 ```
-✓ Schema valid
-✓ 3 sources (above 5-source minimum? NO — below minimum: only 3)
-⚠ Source count below minimum (5). Consider expanding discovery session.
-⚠ health-economics source type not present
+✓ Parses as valid YAML
+✓ 6 sources (within 5–25 range)
+✓ Terminology source present
+✓ All entries have rationale and evidence_level
+✓ Health-economics source present
 ✓ All open-access sources have url populated
 ✓ All authenticated sources have auth_note
 ```
@@ -175,8 +177,8 @@ topics/diabetes-ccm/process/
 │   └── discovery-readout.md
 └── notes.md              (stub — human-maintained)
 
-RESEARCH.md                  (updated by hi)
-tracking.yaml                (updated by hi)
+RESEARCH.md                  (updated by rh-skills)
+tracking.yaml                (updated by rh-skills)
 ```
 
 > Note: `sources/` files are produced by `rh-inf-ingest` (004), not by rh-inf-discovery.

@@ -1,7 +1,7 @@
 # Implementation Plan: Healthcare Informatics Skills Framework
 
-**Branch**: `001-rh-skills` | **Date**: 2026-04-03 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-rh-skills/spec.md`
+**Branch**: `001-rh-skills-framework` | **Date**: 2026-04-03 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/001-rh-skills-framework/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
@@ -36,7 +36,7 @@ Build a CLI-driven repository framework for authoring healthcare informatics ski
 ### Documentation (this feature)
 
 ```text
-specs/001-rh-skills/
+specs/001-rh-skills-framework/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output
 ├── data-model.md        # Phase 1 output
@@ -104,4 +104,3 @@ tests/                   # bats-core test suite
 ## Complexity Tracking
 
 > No constitution violations to justify — constitution not yet defined.
-

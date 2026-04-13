@@ -3,7 +3,7 @@
 **Feature Branch**: `006-rh-inf-formalize`  
 **Created**: 2026-04-04  
 **Status**: Draft  
-**Depends On**: [002 — RH Skills](../002-hi-agent-skills/), [005 — rh-inf-extract](../005-rh-inf-extract/)
+**Depends On**: [002 — RH Skills](../002-rh-agent-skills/), [005 — rh-inf-extract](../005-rh-inf-extract/)
 
 ## Overview
 

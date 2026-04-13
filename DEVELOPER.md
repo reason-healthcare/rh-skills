@@ -34,8 +34,8 @@ The skill test suite (`tests/skills/`) is parametrized over curated skills in `s
 
 ```
 specs/                          ← feature specifications
-  001-hi-skills-framework/      ← framework foundation (data model, CLI contract)
-  002-hi-agent-skills/          ← agent skills framework (this dev repo)
+  001-rh-skills-framework/      ← framework foundation (data model, CLI contract)
+  002-rh-agent-skills/          ← agent skills framework (this dev repo)
   003-rh-inf-discovery/         ← individual skill specs (003–008)
   ...
 
@@ -159,7 +159,7 @@ rh-skills search pmc   --query "<terms>" --max 20 [--json]
 rh-skills search clinicaltrials --query "<terms>" --max 20 [--json]
 ```
 
-- `--json`: output a JSON array of result objects (id, title, authors, year, journal, abstract, url, open_access)
+- `--json`: output a JSON object with query metadata plus `results[]`; each result includes shared keys (`id`, `title`, `url`, `year`, `journal`, `open_access`, `abstract_snippet`) plus PubMed-specific metadata (`pmid`, `authors`, `doi`, `pmcid`) or ClinicalTrials metadata (`nct_id`, `status`, `phase`, `conditions`, `interventions`)
 - `--max`: maximum results to return (default 20)
 - Set `NCBI_API_KEY` env var for higher PubMed rate limits (10 req/s vs 3 req/s)
 - PubMed uses Entrez esearch→efetch two-step; ClinicalTrials uses REST API v2
@@ -197,5 +197,5 @@ all search_terms non-empty · valid evidence_level · known source type (warning
 - [Workflow](docs/WORKFLOW.md) — artifact lifecycle and many-to-many topology
 - [Skill Authoring Guide](docs/SKILL_AUTHORING.md) — detailed per-step instructions
 - [Command Reference](docs/COMMANDS.md) — full `rh-skills` CLI reference
-- [002 Spec](specs/002-hi-agent-skills/spec.md) — framework requirements (FRs, NFRs)
-- [002 Data Model](specs/002-hi-agent-skills/data-model.md) — tracking.yaml schema, event types, state machine
+- [002 Spec](specs/002-rh-agent-skills/spec.md) — framework requirements (FRs, NFRs)
+- [002 Data Model](specs/002-rh-agent-skills/data-model.md) — tracking.yaml schema, event types, state machine

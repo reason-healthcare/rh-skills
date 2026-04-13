@@ -1,7 +1,7 @@
 # Implementation Plan: HI Agent Skills Suite
 
-**Branch**: `002-hi-agent-skills` | **Date**: 2026-04-03 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/002-hi-agent-skills/spec.md`
+**Branch**: `002-rh-agent-skills` | **Date**: 2026-04-03 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/002-rh-agent-skills/spec.md`
 
 ## Summary
 
@@ -35,7 +35,7 @@ Build the deterministic infrastructure for the RH skills framework: the reposito
 ### Documentation (this feature)
 
 ```text
-specs/002-hi-agent-skills/
+specs/002-rh-agent-skills/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output
 ├── data-model.md        # Phase 1 output

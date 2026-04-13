@@ -32,7 +32,9 @@ Search PubMed via NCBI E-utilities (esearch → efetch).
 **Stdout (default, human-readable)**:
 ```
 [1] Chronic Care Management in Diabetes: A Systematic Review (2023)
-    PMID: 12345678 | Journal of Clinical Informatics | open-access: yes
+    ID: 12345678 | Journal of Clinical Informatics | open-access: yes
+    Authors: Smith J, Patel R
+    DOI: 10.1000/j.jci.2023.001
     https://pubmed.ncbi.nlm.nih.gov/12345678
     Abstract: Chronic care management interventions for type 2 diabetes...
 
@@ -103,13 +105,21 @@ Search ClinicalTrials.gov via REST API v2.
   "results": [
     {
       "id": "NCT04512345",
+      "pmid": null,
+      "nct_id": "NCT04512345",
       "title": "...",
       "url": "https://clinicaltrials.gov/study/NCT04512345",
       "year": "2021",
       "journal": null,
+      "authors": [],
+      "doi": null,
       "open_access": true,
       "pmcid": null,
-      "abstract_snippet": "This randomized controlled trial..."
+      "abstract_snippet": "This randomized controlled trial...",
+      "status": "COMPLETED",
+      "phase": "PHASE3",
+      "conditions": ["Type 2 Diabetes Mellitus"],
+      "interventions": ["Chronic Care Management Program"]
     }
   ]
 }

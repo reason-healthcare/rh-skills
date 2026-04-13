@@ -2,8 +2,8 @@
 
 **Feature Branch**: `003-rh-inf-discovery`
 **Created**: 2026-04-04 | **Updated**: 2026-04-04
-**Status**: Draft
-**Depends On**: [002 — RH Skills CLI](../002-hi-agent-skills/)
+**Status**: ✅ Complete
+**Depends On**: [002 — RH Skills CLI](../002-rh-agent-skills/)
 
 ## Clarifications
 
@@ -29,7 +29,7 @@ The skill has two modes:
 
 | Mode | Agent role | `rh-skills` CLI called | Output |
 |------|-----------|----------------|--------|
-| `session` | Interactive research conversation — searches, advises, expands, iterates; writes plan to disk on user approval (no downloads — `rh-inf-ingest` owns acquisition) | `rh-skills search pubmed/pmc/clinicaltrials` | `process/plans/discovery-plan.yaml` + `process/plans/discovery-readout.md` (on save), `process/research.md` updated, `RESEARCH.md` updated |
+| `session` | Interactive research conversation — searches, advises, expands, iterates; writes plan to disk on user approval (no downloads — `rh-inf-ingest` owns acquisition) | `rh-skills search pubmed/pmc/clinicaltrials` | `process/plans/discovery-plan.yaml` + `process/plans/discovery-readout.md` (on save), `RESEARCH.md` updated |
 | `verify` | Validates a saved plan for structural completeness and coverage | (read-only) | Per-check report; no file writes |
 
 ---
@@ -53,7 +53,7 @@ A clinical informaticist starts a new topic "sepsis-early-detection" and has no 
 3. **Given** an `access: authenticated` source is identified, **Then** the agent prints an access advisory (name, relevance, URL, auth method, search terms) and includes the source in `discovery-plan.yaml` with `auth_note`; no download is attempted during discovery.
 4. **Given** `discovery-plan.yaml` already exists when the session starts, **Then** the agent warns and offers to load it for continuation or start fresh with `--force`.
 5. **Given** `--dry-run`, **When** the session runs, **Then** proposed sources and domain advice are shown; no files written and no events appended.
-6. **Given** the user approves the plan, **Then** `discovery-plan.yaml` and `discovery-readout.md` are written, `process/research.md` is updated, `RESEARCH.md` portfolio is updated, and a `discovery_planned` event is appended to `tracking.yaml`.
+6. **Given** the user approves the plan, **Then** `discovery-plan.yaml` and `discovery-readout.md` are written, `RESEARCH.md` portfolio is updated, and a `discovery_planned` event is appended to `tracking.yaml`.
 
 ---
 
@@ -103,9 +103,9 @@ Before proceeding to ingest, the informaticist runs `rh-inf-discovery verify` to
 **`rh-skills` CLI extensions required by this skill**
 
 - **FR-001**: A new `rh-skills search` command group MUST be implemented with the following subcommands:
-  - `rh-skills search pubmed --query <terms> [--max N] [--json]` — calls PubMed Entrez esearch + efetch APIs; returns structured list of results (PMID, title, authors, journal, year, abstract, DOI, open-access flag). Default `--max 20`.
-  - `rh-skills search pmc --query <terms> [--max N] [--json]` — searches PubMed Central for open-access full-text articles. Default `--max 20`.
-  - `rh-skills search clinicaltrials --query <terms> [--max N] [--status <status>] [--json]` — calls ClinicalTrials.gov API v2; returns NCT ID, title, status, phase, conditions, interventions. Default `--max 20`.
+  - `rh-skills search pubmed --query <terms> [--max N] [--json]` — calls PubMed Entrez esearch + efetch APIs; returns structured list of results including PMID, title, authors, journal, year, abstract snippet, DOI, URL, PMC ID, and open-access flag. Default `--max 20`.
+  - `rh-skills search pmc --query <terms> [--max N] [--json]` — searches PubMed Central for open-access full-text articles and returns the same metadata shape as PubMed, with `open_access: true`. Default `--max 20`.
+  - `rh-skills search clinicaltrials --query <terms> [--max N] [--status <status>] [--json]` — calls ClinicalTrials.gov API v2; returns NCT ID, title, status, phase, conditions, interventions, summary snippet, and canonical study URL. Default `--max 20`.
 - **FR-002**: Implemented in `rh-skills ingest implement` (see spec 004-rh-inf-ingest). Discovery does not call this command. `rh-skills ingest implement` accepts `--url <url>` as an alternative to a local file path; when given, it downloads the resource to `sources/<name>.<ext>`, computes SHA-256, and registers it in `tracking.yaml`.
 - **FR-003**: `rh-skills search` subcommands MUST require no API key for PubMed and ClinicalTrials.gov (both are free/public). A `NCBI_API_KEY` environment variable MAY be set to increase PubMed rate limits (10 req/s vs. 3 req/s).
 
@@ -213,10 +213,8 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 3. **Framework consistency** — all six RH skills framework skills (003–008) follow the SKILL.md pattern established in 002.
 4. **User controls the pace** — the user can ask "tell me more about the economics angle" or "what else should I search?" mid-session and the LLM responds in full context. An autonomous agent cannot do this.
 
-A `hi discovery run` non-interactive CLI entrypoint may be added in a future spec for batch/unattended use without changing the SKILL.md design.
+A non-interactive `rh-skills discovery run` entrypoint may be added in a future spec for batch or unattended use without changing the SKILL.md design.
 
 ### Many-to-Many Awareness
 
 Discovery does not name L2 artifacts (that is `rh-inf-extract`'s responsibility). However, the plan should group sources by their expected *contribution type* (criteria source, terminology source, measure reference, FHIR IG) so downstream skills have semantic context.
-
-

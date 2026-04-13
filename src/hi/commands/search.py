@@ -178,6 +178,25 @@ def _parse_pubmed_xml(xml_text: str, db: str = "pubmed") -> list[dict]:
             journal_el = medline.find(".//MedlineJournalInfo/MedlineTA")
         journal = journal_el.text.strip() if journal_el is not None else ""
 
+        # Authors
+        authors = []
+        for author_el in medline.findall(".//AuthorList/Author"):
+            collective = author_el.findtext("CollectiveName")
+            if collective:
+                authors.append(collective.strip())
+                continue
+            last_name = (author_el.findtext("LastName") or "").strip()
+            initials = (author_el.findtext("Initials") or "").strip()
+            fore_name = (author_el.findtext("ForeName") or "").strip()
+            if last_name and initials:
+                authors.append(f"{last_name} {initials}")
+            elif last_name and fore_name:
+                authors.append(f"{last_name}, {fore_name}")
+            elif last_name:
+                authors.append(last_name)
+            elif fore_name:
+                authors.append(fore_name)
+
         # Year
         pub_year = ""
         for year_path in [
@@ -198,10 +217,12 @@ def _parse_pubmed_xml(xml_text: str, db: str = "pubmed") -> list[dict]:
 
         # PMC ID (open access flag)
         pmcid = ""
+        doi = None
         for id_el in article.findall(".//ArticleId"):
             if id_el.get("IdType") == "pmc":
                 pmcid = id_el.text.strip() if id_el.text else ""
-                break
+            elif id_el.get("IdType") == "doi":
+                doi = id_el.text.strip() if id_el.text else None
         open_access = bool(pmcid) or db == "pmc"
 
         # URL
@@ -214,13 +235,21 @@ def _parse_pubmed_xml(xml_text: str, db: str = "pubmed") -> list[dict]:
 
         results.append({
             "id": pmcid if (db == "pmc" and pmcid) else pmid,
+            "pmid": pmid or None,
+            "nct_id": None,
             "title": title,
             "url": url,
             "year": pub_year,
             "journal": journal,
+            "authors": authors,
+            "doi": doi,
             "open_access": open_access,
             "pmcid": pmcid or None,
             "abstract_snippet": abstract,
+            "status": None,
+            "phase": None,
+            "conditions": [],
+            "interventions": [],
         })
 
     return results
@@ -260,6 +289,9 @@ def _clinicaltrials_search(
         ident = proto.get("identificationModule", {})
         status_mod = proto.get("statusModule", {})
         desc_mod = proto.get("descriptionModule", {})
+        design_mod = proto.get("designModule", {})
+        conditions_mod = proto.get("conditionsModule", {})
+        interventions_mod = proto.get("armsInterventionsModule", {})
 
         nct_id = ident.get("nctId", "")
         title = ident.get("briefTitle", "")
@@ -267,18 +299,33 @@ def _clinicaltrials_search(
         start_date = status_mod.get("startDateStruct", {}).get("date", "")
         year = start_date[:4] if start_date else ""
         summary = desc_mod.get("briefSummary", "")[:200]
+        phases = design_mod.get("phases", []) or []
+        conditions = conditions_mod.get("conditions", []) or []
+        interventions = [
+            intervention.get("name", "")
+            for intervention in interventions_mod.get("interventions", []) or []
+            if intervention.get("name")
+        ]
 
         url = f"https://clinicaltrials.gov/study/{nct_id}" if nct_id else ""
 
         results.append({
             "id": nct_id,
+            "pmid": None,
+            "nct_id": nct_id or None,
             "title": title,
             "url": url,
             "year": year,
             "journal": None,
+            "authors": [],
+            "doi": None,
             "open_access": True,
             "pmcid": None,
             "abstract_snippet": summary,
+            "status": status or None,
+            "phase": ", ".join(phases) if phases else None,
+            "conditions": conditions,
+            "interventions": interventions,
         })
 
     if results:
@@ -297,6 +344,18 @@ def _format_human(results: list[dict], source: str) -> None:
         year = r.get("year") or "n/d"
         click.echo(f"\n[{i}] {r['title']} ({year})")
         click.echo(f"    ID: {r['id']} | {journal} | {oa_label}")
+        if source in {"pubmed", "pmc"} and r.get("authors"):
+            click.echo(f"    Authors: {', '.join(r['authors'][:5])}")
+        if source in {"pubmed", "pmc"} and r.get("doi"):
+            click.echo(f"    DOI: {r['doi']}")
+        if source == "clinicaltrials":
+            status = r.get("status") or "n/d"
+            phase = r.get("phase") or "n/d"
+            click.echo(f"    Status: {status} | Phase: {phase}")
+            if r.get("conditions"):
+                click.echo(f"    Conditions: {', '.join(r['conditions'][:3])}")
+            if r.get("interventions"):
+                click.echo(f"    Interventions: {', '.join(r['interventions'][:3])}")
         if r.get("url"):
             click.echo(f"    {r['url']}")
         if r.get("abstract_snippet"):

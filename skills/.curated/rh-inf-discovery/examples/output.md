@@ -216,9 +216,7 @@ User: rh-inf-discovery session diabetes-ccm
 >
 > A) Explore an expansion area — tell me the number
 > B) Add, remove, or modify sources
-> C) Save the plan
->
-> You can also ask for `rh-inf-status` at any time.
+> C) Save the plan and move on to `rh-inf-ingest`
 >
 
 
@@ -240,7 +238,7 @@ User: rh-inf-discovery session diabetes-ccm
 >
 > ✓ Updated: `RESEARCH.md` (row for diabetes-ccm: sources=10, updated=2026-04-15)
 >
-> ✓ Created: `topics/diabetes-ccm/process/notes.md` (stub — add open questions and decisions here)
+> ✓ Confirmed: `topics/diabetes-ccm/process/notes.md` (human-maintained notes stub)
 >
 >
 > ```
@@ -249,9 +247,6 @@ User: rh-inf-discovery session diabetes-ccm
 >   Plan:  saved · 10 sources
 >   Next:  rh-inf-discovery verify diabetes-ccm
 > ```
->
-> Ready to verify?
->
 
 **User:** yes, verify.
 
@@ -264,18 +259,17 @@ rh-skills validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
 ```
 
 
-Validating: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+Validating discovery plan: topics/diabetes-ccm/process/plans/discovery-plan.yaml
 
-✓ YAML parses successfully
+✓ Parses as valid YAML
 ✓ Source count: 10 (within 5–25 range)
-✓ At least one terminology source present (SNOMED CT, LOINC, ICD-10-CM)
-✓ All sources have non-empty rationale
-✓ All sources have non-empty search_terms
-✓ All evidence_level values are valid
-⚠ 1 source has unrecognized type (custom-registry) — review recommended
-✓ Health-economics source present (HCUP NIS)
+✓ Terminology source present
+✓ All entries have rationale
+✓ All entries have search_terms
+✓ All evidence levels are valid
+✓ All source types are from the taxonomy
 
-Overall: PASS (1 warning)
+VALID — all checks passed
 
 > ```
 > ▸ rh-inf-discovery  diabetes-ccm
@@ -286,8 +280,7 @@ Overall: PASS (1 warning)
 >
 > **What would you like to do next?**
 >
-> A) Address warnings and re-run `rh-inf-verify` 
+> A) Address issues and re-run `rh-skills validate --plan ...`
 > B) Move on to `rh-inf-ingest`
 >
-> (you can ask for `rh-inf-status` at any time)
 >

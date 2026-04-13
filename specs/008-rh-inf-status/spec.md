@@ -3,7 +3,7 @@
 **Feature Branch**: `008-rh-inf-status`  
 **Created**: 2026-04-04  
 **Status**: Draft  
-**Depends On**: [002 — RH Skills](../002-hi-agent-skills/)
+**Depends On**: [002 — RH Skills](../002-rh-agent-skills/)
 
 ## Overview
 

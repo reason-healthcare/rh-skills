@@ -1,6 +1,6 @@
 # Feature Specification: RH Skills — CLI & Repository Layout
 
-**Feature Branch**: `002-hi-agent-skills`  
+**Feature Branch**: `002-rh-agent-skills`  
 **Created**: 2026-04-03 | **Updated**: 2026-04-04  
 **Status**: ✅ Complete (T040 integration test deferred to skill specs)
 
@@ -349,7 +349,7 @@ A skill author implements `rh-inf-extract` by copying `skills/_template/`, filli
 
 ## Deliverables
 
-All items below are implemented and committed on branch `002-hi-agent-skills`.
+All items below are implemented and committed on branch `002-rh-agent-skills`.
 
 ### CLI (`src/hi/commands/`)
 - `init.py` — `rh-skills init`

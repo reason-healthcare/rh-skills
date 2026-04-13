@@ -24,6 +24,18 @@ CT_RESPONSE = {
                     "overallStatus": "COMPLETED",
                     "startDateStruct": {"date": "2019-03-01"},
                 },
+                "designModule": {
+                    "phases": ["PHASE3"],
+                },
+                "conditionsModule": {
+                    "conditions": ["Diabetes Mellitus, Type 2"],
+                },
+                "armsInterventionsModule": {
+                    "interventions": [
+                        {"name": "Chronic Care Management Program"},
+                        {"name": "Usual Care"},
+                    ],
+                },
                 "descriptionModule": {
                     "briefSummary": "This RCT evaluates CCM programs for type 2 diabetes management.",
                 },
@@ -38,6 +50,17 @@ CT_RESPONSE = {
                 "statusModule": {
                     "overallStatus": "RECRUITING",
                     "startDateStruct": {"date": "2023-01-15"},
+                },
+                "designModule": {
+                    "phases": ["PHASE2"],
+                },
+                "conditionsModule": {
+                    "conditions": ["Diabetes Mellitus"],
+                },
+                "armsInterventionsModule": {
+                    "interventions": [
+                        {"name": "Remote Monitoring"},
+                    ],
                 },
                 "descriptionModule": {
                     "briefSummary": "A study of remote monitoring technology in diabetes care.",
@@ -66,6 +89,11 @@ def test_clinicaltrials_search_extracts_fields(httpx_mock):
     assert r0["open_access"] is True
     assert r0["journal"] is None
     assert r0["pmcid"] is None
+    assert r0["nct_id"] == "NCT04512345"
+    assert r0["status"] == "COMPLETED"
+    assert r0["phase"] == "PHASE3"
+    assert r0["conditions"] == ["Diabetes Mellitus, Type 2"]
+    assert r0["interventions"] == ["Chronic Care Management Program", "Usual Care"]
     assert "CCM programs" in r0["abstract_snippet"]
 
 
@@ -121,6 +149,8 @@ def test_hi_search_clinicaltrials_json_output(httpx_mock):
     assert data["total_found"] == 142
     assert len(data["results"]) == 2
     assert "retrieved_at" in data
+    assert data["results"][0]["status"] == "COMPLETED"
+    assert data["results"][0]["phase"] == "PHASE3"
 
 
 def test_hi_search_clinicaltrials_json_schema(httpx_mock):
@@ -134,7 +164,10 @@ def test_hi_search_clinicaltrials_json_schema(httpx_mock):
     required_top_keys = {"query", "source", "retrieved_at", "total_found", "returned", "results"}
     assert required_top_keys.issubset(data.keys())
 
-    required_result_keys = {"id", "title", "url", "year", "journal", "open_access", "pmcid", "abstract_snippet"}
+    required_result_keys = {
+        "id", "pmid", "nct_id", "title", "url", "year", "journal", "authors", "doi",
+        "open_access", "pmcid", "abstract_snippet", "status", "phase", "conditions", "interventions",
+    }
     for r in data["results"]:
         assert required_result_keys.issubset(r.keys())
 

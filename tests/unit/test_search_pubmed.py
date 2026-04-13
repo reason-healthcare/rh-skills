@@ -26,22 +26,35 @@ EFETCH_XML = """\
   <PubmedArticle>
     <MedlineCitation>
       <PMID>12345678</PMID>
-      <Article>
-        <Journal>
-          <Title>Journal of Clinical Informatics</Title>
-          <JournalIssue>
-            <PubDate><Year>2023</Year></PubDate>
-          </JournalIssue>
-        </Journal>
-        <ArticleTitle>Chronic Care Management in Diabetes: A Systematic Review</ArticleTitle>
-        <Abstract>
-          <AbstractText>Chronic care management interventions for type 2 diabetes reduce HbA1c.</AbstractText>
-        </Abstract>
-      </Article>
-      <ArticleIdList>
-        <ArticleId IdType="pmc">PMC9999001</ArticleId>
-      </ArticleIdList>
-    </MedlineCitation>
+        <Article>
+          <Journal>
+            <Title>Journal of Clinical Informatics</Title>
+            <JournalIssue>
+              <PubDate><Year>2023</Year></PubDate>
+            </JournalIssue>
+          </Journal>
+          <ArticleTitle>Chronic Care Management in Diabetes: A Systematic Review</ArticleTitle>
+          <AuthorList>
+            <Author>
+              <LastName>Smith</LastName>
+              <ForeName>Jane</ForeName>
+              <Initials>J</Initials>
+            </Author>
+            <Author>
+              <LastName>Patel</LastName>
+              <ForeName>Ravi</ForeName>
+              <Initials>R</Initials>
+            </Author>
+          </AuthorList>
+          <Abstract>
+            <AbstractText>Chronic care management interventions for type 2 diabetes reduce HbA1c.</AbstractText>
+          </Abstract>
+        </Article>
+        <ArticleIdList>
+          <ArticleId IdType="pmc">PMC9999001</ArticleId>
+          <ArticleId IdType="doi">10.1000/j.jci.2023.001</ArticleId>
+        </ArticleIdList>
+      </MedlineCitation>
   </PubmedArticle>
   <PubmedArticle>
     <MedlineCitation>
@@ -79,6 +92,9 @@ def test_parse_pubmed_xml_extracts_fields():
     assert r0["journal"] == "Journal of Clinical Informatics"
     assert r0["open_access"] is True  # has PMC ID
     assert r0["pmcid"] == "PMC9999001"
+    assert r0["pmid"] == "12345678"
+    assert r0["authors"] == ["Smith J", "Patel R"]
+    assert r0["doi"] == "10.1000/j.jci.2023.001"
     assert r0["url"] == "https://pubmed.ncbi.nlm.nih.gov/12345678/"
     assert len(r0["abstract_snippet"]) <= 200
 
@@ -229,6 +245,9 @@ def test_hi_search_pubmed_json_output(httpx_mock):
     assert len(data["results"]) == 2
     assert "total_found" in data
     assert "retrieved_at" in data
+    assert data["results"][0]["authors"] == ["Smith J", "Patel R"]
+    assert data["results"][0]["doi"] == "10.1000/j.jci.2023.001"
+    assert data["results"][0]["pmid"] == "12345678"
 
 
 def test_hi_search_pubmed_zero_results_exit_2(httpx_mock):
@@ -257,6 +276,8 @@ def test_hi_search_pmc_all_open_access(httpx_mock):
     assert data["source"] == "pmc"
     for r in data["results"]:
         assert r["open_access"] is True
+        assert "authors" in r
+        assert "doi" in r
 
 
 def test_hi_search_pmc_zero_results_exit_2(httpx_mock):

@@ -49,12 +49,17 @@ last_updated: "ISO-8601 date" # When plan was last modified in this session
 status: "string"             # draft | approved | superseded
 session_id: "string"         # Unique identifier for the discovery session
 domain_advice:
-  coverage_gaps: []          # List of coverage areas not yet addressed
-  expansion_suggestions: []  # 3–7 strings: areas the user may want to research next
+  cms_program_alignment: []  # Key CMS/QPP/eCQM considerations for the topic
+  sdoh_relevance: []         # Gravity Project or broader SDOH considerations
+  health_equity: []          # Disparate-population or equity considerations
+  terminology_systems: []    # Terminology/value set systems likely needed
+  health_economics: []       # Cost-of-care or disease-burden considerations
+  coverage_gaps: []          # Areas still under-covered after the current pass
+expansion_suggestions:
+  - area: "string"
+    why_relevant: "string"
+    first_command: "string"  # First rh-skills command to explore this area
 sources: []                  # Source entries (see Entity 1)
-research_expansion:
-  - area: "string"           # Area name (e.g., "pediatric subgroup analysis")
-    rationale: "string"      # Why relevant; not auto-added to sources
 ```
 
 **State transitions**:
@@ -92,18 +97,26 @@ Generated Markdown narrative derived from `discovery-plan.yaml`. **Do not edit d
   "total_found": 0,
   "returned": 0,
   "results": [
-    {
-      "id": "string",           // PMID for pubmed/pmc; NCT ID for clinicaltrials
-      "title": "string",
-      "url": "string",          // Abstract page or full-text URL
-      "year": "string",         // Publication year or start date
-      "journal": "string",      // Journal or sponsor name (null for clinicaltrials)
-      "open_access": false,     // true if PMC full text available
-      "pmcid": "string",        // null if not in PMC
-      "abstract_snippet": "string" // First 200 chars of abstract
-    }
-  ]
-}
+      {
+        "id": "string",           // PMID for pubmed/pmc; NCT ID for clinicaltrials
+        "pmid": "string|null",
+        "nct_id": "string|null",
+        "title": "string",
+        "url": "string",          // Abstract page or full-text URL
+        "year": "string",         // Publication year or start date
+        "journal": "string",      // Journal or sponsor name (null for clinicaltrials)
+        "authors": ["string"],    // PubMed/PMC author display names
+        "doi": "string|null",     // DOI when present for PubMed/PMC
+        "open_access": false,     // true if PMC full text available
+        "pmcid": "string",        // null if not in PMC
+        "abstract_snippet": "string", // First 200 chars of abstract/summary
+        "status": "string|null",      // ClinicalTrials overall status
+        "phase": "string|null",       // ClinicalTrials phase label(s)
+        "conditions": ["string"],     // ClinicalTrials condition names
+        "interventions": ["string"]   // ClinicalTrials intervention names
+      }
+    ]
+  }
 ```
 
 ---

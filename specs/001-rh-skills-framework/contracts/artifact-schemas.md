@@ -1,7 +1,7 @@
 # Artifact Schemas: Healthcare Informatics Skills Framework
 
 **Phase**: 1 — Design  
-**Branch**: `001-rh-skills`  
+**Branch**: `001-rh-skills-framework`  
 **Date**: 2026-04-03
 
 ---

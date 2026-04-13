@@ -105,7 +105,7 @@ MIME_TO_EXT = {
 
 ---
 
-## Decision 6: RESEARCH.md and process/research.md update strategy
+## Decision 6: RESEARCH.md and process/notes.md update strategy
 
 **Decision**: Implement as append-only table row operations using `ruamel.yaml` for `discovery-plan.yaml` parsing and direct string manipulation for Markdown table rows.
 

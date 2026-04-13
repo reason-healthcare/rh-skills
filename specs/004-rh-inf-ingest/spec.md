@@ -4,7 +4,7 @@
 **Created**: 2026-04-04  
 **Updated**: 2026-04-05  
 **Status**: Draft  
-**Depends On**: [002 — RH Skills](../002-hi-agent-skills/), [003 — rh-inf-discovery](../003-rh-inf-discovery/)
+**Depends On**: [002 — RH Skills](../002-rh-agent-skills/), [003 — rh-inf-discovery](../003-rh-inf-discovery/)
 
 ## Overview
 

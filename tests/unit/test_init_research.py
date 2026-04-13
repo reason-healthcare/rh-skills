@@ -1,4 +1,4 @@
-"""Tests for rh-skills init research tracking extensions (RESEARCH.md + process/research.md)."""
+"""Tests for rh-skills init research tracking extensions (RESEARCH.md + process/notes.md)."""
 
 import pytest
 from click.testing import CliRunner
