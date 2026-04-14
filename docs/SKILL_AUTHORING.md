@@ -152,8 +152,12 @@ writes results to `topics/<topic>/process/fixtures/results/`.
 
 ### Standard `plan` Mode Contract (FR-018)
 
-- **Writes to**: `topics/<topic>/process/plans/<skill-name>-plan.md`
+- **Writes to**: `topics/<topic>/process/plans/<skill-name>-plan.md` by default.
+  A feature spec MAY define a different canonical plan artifact name when the
+  alternate name is documented consistently in the spec, plan, tasks, and
+  `SKILL.md`.
 - **Format**: Markdown with YAML front matter
+- **Canonical artifact name**: MUST be stated explicitly in `SKILL.md`
 - **Must NOT** create or modify any other file
 - **Must warn and exit** if plan already exists and `--force` not set
 - **Event**: append `<skill-name>_planned` to topic events

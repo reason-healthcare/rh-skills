@@ -21,16 +21,15 @@
 
 ## Constitution Check
 
-*Constitution is an unfilled template, so project-specific gates cannot be enforced. Applying framework principles from `002-rh-agent-skills/spec.md` instead.*
-
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| Deterministic writes via `rh-skills` CLI | ✅ Pass | Durable writes should go through `rh-skills promote derive` and `rh-skills validate` integration points |
+| Deterministic writes via `rh-skills` CLI | ✅ Pass | Durable writes go through `rh-skills promote plan`, `rh-skills promote derive`, and `rh-skills validate` |
 | Curated skill must live in `skills/.curated/<name>/SKILL.md` | ✅ Pass | Target: `skills/.curated/rh-inf-extract/SKILL.md` |
 | Plan mode writes reviewable artifact under `process/plans/` | ✅ Pass | `topics/<topic>/process/plans/extract-plan.md` is the canonical review packet |
 | Verify mode must be read-only | ✅ Pass | Required by spec FR-015/FR-016 behavior |
 | Human review gate must be explicit before state change | ✅ Pass | 005 centers on `pending-review` → `approved` transition before implement |
 | All source content treated as untrusted data | ✅ Pass | Injection boundary required before reading normalized source content |
+| Validation tasks for changed contracts and safety gates | ✅ Pass | Tasks cover plan generation, approval gating, extract validation, and skill safety/audit checks |
 
 No blocking gate violations.
 

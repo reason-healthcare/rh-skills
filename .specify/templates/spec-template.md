@@ -11,6 +11,8 @@
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
   you should still have a viable MVP (Minimum Viable Product) that delivers value.
+  If the feature creates or validates durable artifacts, scenarios must also
+  make review gates and read-only verification behavior explicit.
   
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
@@ -80,6 +82,9 @@
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.
   Fill them out with the right functional requirements.
+  Name the canonical CLI boundary for deterministic writes/validation where
+  applicable, the review/approval gate for state changes, and any named events
+  or non-destructive verify expectations.
 -->
 
 ### Functional Requirements
@@ -105,6 +110,8 @@
 <!--
   ACTION REQUIRED: Define measurable success criteria.
   These must be technology-agnostic and measurable.
+  Avoid vague quality claims such as "fast", "secure", or "easy to review"
+  unless you define how they will be checked.
 -->
 
 ### Measurable Outcomes

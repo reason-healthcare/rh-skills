@@ -25,7 +25,7 @@ It operates in three modes:
 
 | Mode | Output | CLI Commands Used |
 |------|--------|-------------------|
-| `plan` | `topics/<name>/process/plans/extract-plan.md` | `rh-skills status <name>`, `rh-skills list` |
+| `plan` | `topics/<name>/process/plans/extract-plan.md` | `rh-skills status <name>`, `rh-skills list`, `rh-skills promote plan <name>` |
 | `implement` | L2 artifacts in `topics/<name>/structured/` | `rh-skills promote derive`, `rh-skills validate` |
 | `verify` | Validation report for all L2 artifacts | `rh-skills validate <topic> <artifact>` |
 
@@ -102,7 +102,9 @@ before any L2 files are written.
   `required_sections[]`, `unresolved_conflicts[]`, `reviewer_decision`
   (`pending-review | approved | needs-revision | rejected`), and
   `approval_notes`. A `custom_artifact_type` field MAY be included when the
-  proposal falls outside the standard catalog.
+  proposal falls outside the standard catalog, but only when no standard type
+  preserves the artifact's meaning; reviewer approval notes MUST justify the
+  custom type.
 - **FR-004**: The plan body MUST be well-organized for human review and include
   these sections in order: `Review Summary`, `Proposed Artifacts`
   (one review card per artifact), `Cross-Artifact Issues`, and
@@ -143,7 +145,7 @@ before any L2 files are written.
 
 **Verify mode**
 - **FR-015**: `rh-inf-extract verify` MUST run `rh-skills validate` on each L2
-  artifact produced in the last extract-implement run and report pass/fail per
+  artifact expected by the approved extract plan and report pass/fail per
   artifact with field-level detail on failures.
 - **FR-016**: `rh-inf-extract verify` MUST additionally check that each L2
   artifact preserves claim-level evidence traceability and records unresolved
@@ -155,11 +157,13 @@ before any L2 files are written.
 
 - **NFR-001**: Skill MUST reside at `skills/.curated/rh-inf-extract/SKILL.md`
   and follow the anthropic skills-developer SKILL.md template.
-- **NFR-002**: All file writes and validation MUST be delegated to
-  `rh-skills promote derive` and `rh-skills validate` CLI commands.
+- **NFR-002**: All file writes and validation MUST be delegated to canonical
+  `rh-skills` CLI commands, including `rh-skills promote plan`,
+  `rh-skills promote derive`, and `rh-skills validate` as appropriate.
 - **NFR-003**: The extract plan UX MUST be optimized for human review. A
   reviewer should be able to identify proposed artifacts, source coverage,
-  unresolved conflicts, and implementation readiness without reading prose in
+  unresolved conflicts, reviewer decisions, and implementation readiness from
+  scan-friendly headings and bullet fields without reading narrative prose in
   full.
 
 ## Notes
