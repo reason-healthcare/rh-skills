@@ -29,7 +29,7 @@ description: "Tasks for 005-rh-inf-extract — reviewer-gated L2 extraction work
 
 **Purpose**: Add the shared schema and validation helpers that all extract modes depend on.
 
-- [ ] T003 Add extract plan parsing and approval-gate helper functions in `src/hi/commands/promote.py`
+- [X] T003 Add extract plan parsing and approval-gate helper functions in `src/hi/commands/promote.py`
 - [X] T004 [P] Extend L2 artifact validation helpers in `src/hi/commands/validate.py` for traceability/conflict checks required by 005
 - [X] T005 [P] Add foundational validation coverage for extract helpers in `tests/unit/test_validate.py`
 
@@ -45,12 +45,12 @@ description: "Tasks for 005-rh-inf-extract — reviewer-gated L2 extraction work
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Add unit tests for extract review-packet generation and no-input guardrails in `tests/unit/test_promote.py`
+- [X] T006 [P] [US1] Add unit tests for extract review-packet generation and no-input guardrails in `tests/unit/test_promote.py`
 - [X] T007 [P] [US1] Add curated skill audit coverage for `rh-inf-extract` plan artifact contract in `tests/skills/test_skill_audit.py`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Implement review-packet plan generation in `src/hi/commands/promote.py` for `topics/<topic>/process/plans/extract-plan.md`
+- [X] T008 [US1] Implement review-packet plan generation in `src/hi/commands/promote.py` for `topics/<topic>/process/plans/extract-plan.md`
 - [X] T009 [US1] Create `skills/.curated/rh-inf-extract/SKILL.md` plan mode with the injection boundary, hybrid catalog guidance, and reviewer-packet workflow
 - [X] T010 [P] [US1] Create `skills/.curated/rh-inf-extract/reference.md` with artifact catalog, traceability rules, and conflict-handling guidance
 - [X] T011 [P] [US1] Create `skills/.curated/rh-inf-extract/examples/plan.md` and `skills/.curated/rh-inf-extract/examples/output.md` for the review-packet flow
@@ -67,7 +67,7 @@ description: "Tasks for 005-rh-inf-extract — reviewer-gated L2 extraction work
 
 ### Tests for User Story 2
 
-- [ ] T012 [P] [US2] Add unit tests for approval-gated derive behavior and approved-artifact selection in `tests/unit/test_promote.py`
+- [X] T012 [P] [US2] Add unit tests for approval-gated derive behavior and approved-artifact selection in `tests/unit/test_promote.py`
 - [X] T013 [P] [US2] Add unit tests for extract validation invocation/reporting in `tests/unit/test_validate.py`
 
 ### Implementation for User Story 2

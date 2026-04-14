@@ -1,12 +1,14 @@
 """Tests for rh-skills promote command — ported from tests/unit/promote.bats."""
 
+import io
 import os
 
+import click
 import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.promote import promote
+from hi.commands.promote import _approved_extract_artifacts, promote
 
 
 def load_yaml(path):
@@ -89,6 +91,69 @@ derived_from:
 
     with open(tracking_path, "w") as f:
         y.dump(tracking, f)
+
+
+def setup_topic_with_normalized_sources(tmp_repo, topic_name="my-skill", source_names=("ada-guidelines",)):
+    """Create a topic plus normalized source markdown files."""
+    td = tmp_repo / "topics" / topic_name
+    (td / "structured").mkdir(parents=True, exist_ok=True)
+    (td / "computable").mkdir(parents=True, exist_ok=True)
+    (td / "process").mkdir(parents=True, exist_ok=True)
+    normalized_root = tmp_repo / "sources" / "normalized"
+    normalized_root.mkdir(parents=True, exist_ok=True)
+
+    tracking_path = tmp_repo / "tracking.yaml"
+    y = YAML()
+    y.default_flow_style = False
+    with open(tracking_path) as f:
+        tracking = y.load(f)
+
+    tracking["topics"].append({
+        "name": topic_name,
+        "title": "Test Skill",
+        "description": "A test skill",
+        "author": "test",
+        "created_at": "2026-04-03T00:00:00Z",
+        "structured": [],
+        "computable": [],
+        "events": [{"timestamp": "2026-04-03T00:00:00Z", "type": "created", "description": "scaffolded"}],
+    })
+    for source_name in source_names:
+        normalized_path = normalized_root / f"{source_name}.md"
+        normalized_path.write_text(
+            f"{source_name} guidance covering screening criteria, workflow steps, and evidence traceability."
+        )
+        tracking["sources"].append({
+            "name": source_name,
+            "file": f"sources/{source_name}.md",
+            "checksum": "abc123",
+            "ingested_at": "2026-04-03T00:00:00Z",
+            "topic": topic_name,
+        })
+
+    with open(tracking_path, "w") as f:
+        y.dump(tracking, f)
+
+
+def write_extract_plan(tmp_repo, topic_name="my-skill", status="approved", artifacts=None):
+    plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "extract-plan.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    frontmatter = {
+        "topic": topic_name,
+        "plan_type": "extract",
+        "status": status,
+        "reviewer": "Reviewer",
+        "reviewed_at": "2026-04-14T00:00:00Z" if status == "approved" else None,
+        "artifacts": artifacts or [],
+    }
+    buf = io.StringIO()
+    y.dump(frontmatter, buf)
+    plan_path.write_text(
+        f"---\n{buf.getvalue()}---\n\n# Review Summary\n\n# Proposed Artifacts\n\n# Cross-Artifact Issues\n\n# Implementation Readiness\n"
+    )
+    return plan_path
 
 
 # ── Derive mode ────────────────────────────────────────────────────────────────
@@ -193,6 +258,82 @@ def test_derive_invalid_evidence_ref_format_exits_2(tmp_repo, monkeypatch):
         "--evidence-ref", "broken-format",
     ])
     assert result.exit_code == 2
+
+
+def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
+    setup_topic_with_normalized_sources(
+        tmp_repo,
+        source_names=("ada-screening-guideline", "uspstf-screening-update"),
+    )
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.md"
+    assert plan_path.exists()
+    raw = plan_path.read_text()
+    assert raw.index("# Review Summary") < raw.index("# Proposed Artifacts") < raw.index("# Cross-Artifact Issues") < raw.index("# Implementation Readiness")
+
+    parts = raw.split("---\n", 2)
+    plan = YAML(typ="safe").load(parts[1])
+    assert plan["topic"] == "my-skill"
+    assert plan["plan_type"] == "extract"
+    assert plan["status"] == "pending-review"
+    assert plan["artifacts"]
+    artifact = plan["artifacts"][0]
+    assert artifact["reviewer_decision"] == "pending-review"
+    assert artifact["source_files"]
+    assert "evidence_traceability" in artifact["required_sections"]
+
+    tracking = load_yaml(tmp_repo / "tracking.yaml")
+    topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
+    assert "extract_planned" in [event["type"] for event in topic["events"]]
+
+
+def test_plan_warns_and_does_not_write_without_normalized_sources(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0
+    assert "No normalized sources found" in result.output
+    assert not (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.md").exists()
+
+
+def test_approved_extract_artifacts_requires_approved_plan(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "screening-criteria", "reviewer_decision": "approved"}],
+    )
+    with pytest.raises(click.UsageError, match="not approved"):
+        _approved_extract_artifacts("my-skill")
+
+
+def test_approved_extract_artifacts_selects_only_approved_entries_when_not_strict(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        artifacts=[
+            {"name": "screening-criteria", "reviewer_decision": "approved"},
+            {"name": "risk-factors", "reviewer_decision": "needs-revision"},
+        ],
+    )
+    approved = _approved_extract_artifacts("my-skill", strict=False)
+    assert [artifact["name"] for artifact in approved] == ["screening-criteria"]
+
+
+def test_approved_extract_artifacts_blocks_unapproved_entries_in_strict_mode(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        artifacts=[
+            {"name": "screening-criteria", "reviewer_decision": "approved"},
+            {"name": "risk-factors", "reviewer_decision": "pending-review"},
+        ],
+    )
+    with pytest.raises(click.UsageError, match="Artifacts not approved"):
+        _approved_extract_artifacts("my-skill")
 
 
 # ── Combine mode ───────────────────────────────────────────────────────────────

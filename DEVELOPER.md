@@ -204,6 +204,20 @@ rh-skills promote derive <topic> <artifact-name> \
 - stub/test mode now writes richer L2 artifact fields: `artifact_type`, `clinical_question`, `sections`, and `conflicts`
 - `--evidence-ref` is repeatable and populates `sections.evidence_traceability`
 
+### rh-skills promote plan
+
+Write the 005 extract review packet from topic-normalized source inputs.
+
+```sh
+rh-skills promote plan <topic> [--force]
+```
+
+- writes `topics/<topic>/process/plans/extract-plan.md`
+- groups normalized sources into candidate extract artifacts
+- records `extract_planned` on success
+- warns and exits without writing when no normalized topic sources are available
+- refuses to overwrite an existing plan unless `--force` is passed
+
 ### rh-skills validate --plan
 
 Validate a discovery plan YAML file for completeness and correctness.

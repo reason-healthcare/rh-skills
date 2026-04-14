@@ -16,8 +16,54 @@ from hi.common import (
     require_tracking,
     save_tracking,
     sha256_file,
+    sources_root,
     today_date,
     topic_dir,
+)
+
+EXTRACT_ARTIFACT_PROFILES = (
+    {
+        "artifact_type": "eligibility-criteria",
+        "keywords": ("criteria", "eligibility", "screen"),
+        "section": "criteria",
+        "key_question": "Which patients qualify for the recommended intervention or workflow?",
+    },
+    {
+        "artifact_type": "exclusions",
+        "keywords": ("exclusion", "contraind", "avoid"),
+        "section": "exclusions",
+        "key_question": "Which patients or situations should be excluded?",
+    },
+    {
+        "artifact_type": "risk-factors",
+        "keywords": ("risk", "factor"),
+        "section": "factors",
+        "key_question": "Which risk factors materially change clinical decisions?",
+    },
+    {
+        "artifact_type": "decision-points",
+        "keywords": ("decision", "threshold", "diagnostic"),
+        "section": "decision_points",
+        "key_question": "Which decision points or thresholds govern next actions?",
+    },
+    {
+        "artifact_type": "workflow-steps",
+        "keywords": ("workflow", "pathway", "algorithm", "step"),
+        "section": "workflow",
+        "key_question": "What workflow steps should the team follow?",
+    },
+    {
+        "artifact_type": "terminology-value-sets",
+        "keywords": ("terminology", "value-set", "valueset", "code"),
+        "section": "terminology",
+        "key_question": "Which terminology or value sets must remain consistent downstream?",
+    },
+    {
+        "artifact_type": "measure-logic",
+        "keywords": ("measure", "numerator", "denominator", "quality"),
+        "section": "measure_logic",
+        "key_question": "What measure logic or reporting rules should be preserved?",
+    },
 )
 
 
@@ -28,8 +74,72 @@ def _yaml_rt() -> YAML:
     return y
 
 
+def _yaml_safe() -> YAML:
+    return YAML(typ="safe")
+
+
 def _human_title(name: str) -> str:
     return " ".join(part.capitalize() for part in name.replace("_", "-").split("-") if part)
+
+
+def _slugify(value: str) -> str:
+    cleaned = [
+        char.lower() if char.isalnum() else "-"
+        for char in value
+    ]
+    slug = "".join(cleaned)
+    while "--" in slug:
+        slug = slug.replace("--", "-")
+    return slug.strip("-")
+
+
+def _parse_markdown_frontmatter(path: Path) -> dict:
+    raw = path.read_text()
+    parts = raw.split("---\n", 2)
+    if len(parts) < 3:
+        return {}
+    data = _yaml_safe().load(parts[1]) or {}
+    return data if isinstance(data, dict) else {}
+
+
+def _extract_plan_path(topic: str) -> Path:
+    return topic_dir(topic) / "process" / "plans" / "extract-plan.md"
+
+
+def _load_extract_plan(topic: str) -> dict:
+    plan_path = _extract_plan_path(topic)
+    if not plan_path.exists():
+        raise click.UsageError(
+            f"No plan found: {plan_path}. Run 'rh-skills promote plan {topic}' first."
+        )
+    plan = _parse_markdown_frontmatter(plan_path)
+    if not plan:
+        raise click.UsageError(f"Plan frontmatter missing or invalid: {plan_path}")
+    return plan
+
+
+def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict]:
+    plan = _load_extract_plan(topic)
+    if plan.get("status") != "approved":
+        raise click.UsageError(
+            "extract-plan.md is not approved. Review and update the plan before implement."
+        )
+
+    approved: list[dict] = []
+    blocked: list[str] = []
+    for artifact in plan.get("artifacts", []) or []:
+        decision = artifact.get("reviewer_decision", "pending-review")
+        name = artifact.get("name", "<unnamed-artifact>")
+        if decision == "approved":
+            approved.append(artifact)
+        else:
+            blocked.append(f"{name} ({decision})")
+
+    if strict and blocked:
+        raise click.UsageError(
+            "Artifacts not approved for implementation: " + ", ".join(blocked)
+        )
+    return approved
 
 
 def _parse_evidence_refs(raw_refs: tuple[str, ...]) -> list[dict]:
@@ -121,6 +231,162 @@ def _build_stub_l2_artifact(
     return buf.getvalue().rstrip() + "\n"
 
 
+def _normalized_source_records(tracking: dict, topic: str) -> list[dict]:
+    normalized_root = sources_root() / "normalized"
+    records: list[dict] = []
+    for source in tracking.get("sources", []):
+        source_topic = source.get("topic")
+        if source_topic not in (None, topic):
+            continue
+        normalized_path = normalized_root / f"{source['name']}.md"
+        if normalized_path.exists():
+            records.append({
+                "name": source["name"],
+                "path": normalized_path,
+                "relative_path": f"sources/normalized/{source['name']}.md",
+                "content": normalized_path.read_text(),
+            })
+    return records
+
+
+def _infer_artifact_profile(source_name: str, content: str) -> dict:
+    haystack = f"{source_name} {content[:1000]}".lower()
+    for profile in EXTRACT_ARTIFACT_PROFILES:
+        if any(keyword in haystack for keyword in profile["keywords"]):
+            return profile
+    return {
+        "artifact_type": "evidence-summary",
+        "section": "summary_points",
+        "key_question": "What evidence should be preserved for downstream reasoning?",
+    }
+
+
+def _group_sources_for_extract_plan(source_records: list[dict]) -> list[dict]:
+    grouped: dict[str, dict] = {}
+    for record in source_records:
+        profile = _infer_artifact_profile(record["name"], record["content"])
+        artifact_type = profile["artifact_type"]
+        group = grouped.setdefault(
+            artifact_type,
+            {
+                "artifact_type": artifact_type,
+                "section": profile["section"],
+                "key_question": profile["key_question"],
+                "sources": [],
+            },
+        )
+        group["sources"].append(record)
+    return list(grouped.values())
+
+
+def _build_plan_artifact_entry(group: dict) -> dict:
+    source_names = [record["name"] for record in group["sources"]]
+    source_files = [record["relative_path"] for record in group["sources"]]
+    source_count = len(source_files)
+    artifact_name = group["artifact_type"]
+    if source_count == 1:
+        artifact_name = _slugify(source_names[0])
+
+    unresolved_conflicts: list[str] = []
+    if source_count > 1:
+        unresolved_conflicts.append(
+            "Multiple normalized sources contribute to this artifact; confirm that thresholds, timing, and terminology align before derive."
+        )
+    if any(
+        keyword in record["content"].lower()
+        for record in group["sources"]
+        for keyword in ("however", "conflict", "differ", "disagree", "uncertain", "versus", "vs.")
+    ):
+        unresolved_conflicts.append(
+            "At least one contributing source contains potentially conflicting or qualified guidance that requires reviewer confirmation."
+        )
+
+    required_sections = ["summary", group["section"], "evidence_traceability"]
+    if unresolved_conflicts:
+        required_sections.append("conflicts")
+
+    rationale = (
+        f"Synthesizes {source_count} normalized source(s) contributing to {group['artifact_type']} for review and downstream formalization."
+    )
+    return {
+        "name": artifact_name,
+        "artifact_type": group["artifact_type"],
+        "source_files": source_files,
+        "rationale": rationale,
+        "key_questions": [group["key_question"]],
+        "required_sections": required_sections,
+        "unresolved_conflicts": unresolved_conflicts,
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }
+
+
+def _render_extract_plan(topic: str, artifacts: list[dict], has_concepts: bool) -> str:
+    frontmatter = {
+        "topic": topic,
+        "plan_type": "extract",
+        "status": "pending-review",
+        "reviewer": "",
+        "reviewed_at": None,
+        "artifacts": artifacts,
+    }
+    frontmatter_buf = io.StringIO()
+    _yaml_rt().dump(frontmatter, frontmatter_buf)
+
+    lines = [
+        "---",
+        frontmatter_buf.getvalue().rstrip(),
+        "---",
+        "",
+        "# Review Summary",
+        "",
+        f"- Topic: `{topic}`",
+        f"- Proposed artifacts: {len(artifacts)}",
+        f"- Concepts file present: {'yes' if has_concepts else 'no'}",
+        "- Claim-level traceability is required for every extracted rule, criterion, or summary claim.",
+        "- Reviewer action required: update plan status and per-artifact decisions before implementation.",
+        "",
+        "# Proposed Artifacts",
+        "",
+    ]
+
+    for artifact in artifacts:
+        lines.extend([
+            f"## {artifact['name']}",
+            "",
+            f"- Type: `{artifact['artifact_type']}`",
+            f"- Source coverage: {', '.join(artifact['source_files'])}",
+            f"- Rationale: {artifact['rationale']}",
+            f"- Key questions: {', '.join(artifact['key_questions'])}",
+            f"- Required sections: {', '.join(artifact['required_sections'])}",
+        ])
+        if artifact["unresolved_conflicts"]:
+            lines.append("- Unresolved conflicts:")
+            lines.extend([f"  - {item}" for item in artifact["unresolved_conflicts"]])
+        else:
+            lines.append("- Unresolved conflicts: none identified during deterministic planning")
+        lines.extend([
+            f"- Reviewer decision: `{artifact['reviewer_decision']}`",
+            "- Approval notes: _pending reviewer input_",
+            "",
+        ])
+
+    lines.extend([
+        "# Cross-Artifact Issues",
+        "",
+        "- Confirm artifact boundaries avoid duplicate extraction across overlapping source sets.",
+        "- Confirm terminology and threshold language are consistent across approved artifacts.",
+        "",
+        "# Implementation Readiness",
+        "",
+        "- Current plan status: `pending-review`",
+        "- Implement MUST NOT proceed until the plan status is `approved`.",
+        "- Every artifact intended for implementation must have `reviewer_decision: approved`.",
+        "",
+    ])
+    return "\n".join(lines)
+
+
 def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     """Invoke LLM or return stub response."""
     provider = os.environ.get("LLM_PROVIDER", "ollama")
@@ -135,6 +401,42 @@ def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
 @click.group()
 def promote():
     """Promote artifacts between lifecycle levels."""
+
+
+@promote.command("plan")
+@click.argument("topic")
+@click.option("--force", is_flag=True, help="Overwrite an existing extract-plan.md")
+def plan(topic, force):
+    """Write topics/<topic>/process/plans/extract-plan.md from normalized sources."""
+    tracking = require_tracking()
+    require_topic(tracking, topic)
+
+    plan_path = _extract_plan_path(topic)
+    if plan_path.exists() and not force:
+        log_warn("extract-plan.md already exists. Re-run with --force to overwrite it.")
+        return
+
+    source_records = _normalized_source_records(tracking, topic)
+    if not source_records:
+        log_warn("No normalized sources found. Run rh-inf-ingest first.")
+        return
+
+    grouped = _group_sources_for_extract_plan(source_records)
+    artifacts = [_build_plan_artifact_entry(group) for group in grouped]
+    concepts_path = topic_dir(topic) / "process" / "concepts.yaml"
+    plan_text = _render_extract_plan(topic, artifacts, concepts_path.exists())
+
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(plan_text)
+
+    append_topic_event(
+        tracking,
+        topic,
+        "extract_planned",
+        f"Wrote extract plan: topics/{topic}/process/plans/extract-plan.md",
+    )
+    save_tracking(tracking)
+    log_info(f"Created: {plan_path}")
 
 
 @promote.command()
