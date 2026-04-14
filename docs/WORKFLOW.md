@@ -59,8 +59,13 @@ Every lifecycle transition follows this mandatory three-step pattern:
 | **Ingest** | `rh-inf-ingest` | plan · implement · verify | `ingest-plan.md` | L1 sources in tracking.yaml |
 | **Extract** | `rh-inf-extract` | plan · implement · verify | `extract-plan.md` | L2 artifacts in `structured/` |
 | **Formalize** | `rh-inf-formalize` | plan · implement · verify | `formalize-plan.md` | L3 artifact in `computable/` |
-| **Verify** | `rh-inf-verify` | *(standalone)* | — | Validation report |
+| **Verify** | `rh-inf-verify` | *(standalone)* | — | Consolidated topic verification report |
 | **Status** | `rh-inf-status` | progress · next-steps · check-changes | — | Lifecycle summary |
+
+`rh-inf-verify` is a read-only coordinator, not a parallel lifecycle stage. It
+determines stage applicability for the current topic, runs the applicable
+stage-specific verify workflows, and reports later stages explicitly as
+`not-yet-ready` / `not-applicable` instead of silently omitting them.
 
 ## Directory Structure
 

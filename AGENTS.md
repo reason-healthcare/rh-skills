@@ -9,6 +9,7 @@ Auto-generated from all feature plans. Last updated: 2026-04-14
 - File system (`sources/`, `sources/normalized/`, `topics/<name>/process/`, `tracking.yaml`) (004-rh-inf-ingest)
 - Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, existing `promote`/`validate` command stack, LLM provider abstraction in `src/hi/commands/promote.py` (005-rh-inf-extract)
 - File system (`topics/<topic>/process/plans/`, `topics/<topic>/structured/`, `topics/<topic>/process/concepts.yaml`, `sources/normalized/`, `tracking.yaml`) (005-rh-inf-extract)
+- File system only for reads (`topics/<topic>/process/plans/`, (007-rh-inf-verify)
 
 - Bash 3.2+ (portable macOS/Linux) + `yq` (Go binary), `jq`, `curl`, `bash 3.2+` — same as existing `rh-skills` CLI stack. Optional: `pdftotext` (poppler), `pandoc` for binary file extraction. (002-rh-agent-skills)
 
@@ -28,9 +29,9 @@ tests/
 Bash 3.2+ (portable macOS/Linux): Follow standard conventions
 
 ## Recent Changes
+- 007-rh-inf-verify: Added Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, existing
 - 006-rh-inf-formalize: Added Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, existing
 - 005-rh-inf-extract: Added Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, existing `promote`/`validate` command stack, LLM provider abstraction in `src/hi/commands/promote.py`
-- 004-rh-inf-ingest: Added Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, `httpx >= 0.27`, `markdownify >= 0.13`, Python stdlib `html.parser`, external tools `pdftotext` and `pandoc` when available
 
 
 <!-- MANUAL ADDITIONS START -->

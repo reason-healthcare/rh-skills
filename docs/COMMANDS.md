@@ -207,6 +207,27 @@ lists the artifact as the implementation target, validation also checks:
 
 ---
 
+## Curated skill entry points
+
+These reviewer-facing skill invocations sit above the deterministic `rh-skills`
+CLI commands.
+
+### `rh-inf-verify <topic>`
+
+Run unified, read-only topic verification across the lifecycle.
+
+```bash
+rh-inf-verify verify <topic>
+```
+
+- determines which lifecycle stages are applicable for the topic
+- launches the applicable stage-specific verify workflows
+- preserves stage-attributed failures, warnings, and invocation problems
+- reports later stages explicitly as `not-yet-ready` or `not-applicable`
+- does not create files or update `tracking.yaml`
+
+---
+
 ## `rh-skills tasks`
 
 Per-topic task tracking via `tasks.md`.

@@ -202,3 +202,45 @@ class TestCuratedSkillSchema:
         assert not missing, (
             f"{curated_skill.name}: context_files references missing files: {missing}"
         )
+
+
+class TestRhInfVerifySkillSchema:
+    """Focused schema assertions for the standalone verify skill."""
+
+    def test_verify_skill_declares_expected_companion_files(self):
+        skill = Path("skills/.curated/rh-inf-verify/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-verify skill not implemented")
+        fm = parse_frontmatter(skill)
+        context_files = skill.read_text()
+        assert fm["name"] == "rh-inf-verify"
+        assert "reference.md" in context_files
+        assert "examples/plan.md" in context_files
+        assert "examples/output.md" in context_files
+
+    def test_verify_output_example_uses_required_report_sections(self):
+        example = Path("skills/.curated/rh-inf-verify/examples/output.md")
+        if not example.exists():
+            pytest.skip("rh-inf-verify output example not implemented")
+        content = example.read_text()
+        assert "Topic Summary" in content
+        assert "Stage Results" in content
+        assert "Overall Readiness" in content
+        assert "Recommended Next Action" in content
+
+    def test_verify_reference_documents_canonical_status_mapping(self):
+        ref = Path("skills/.curated/rh-inf-verify/reference.md")
+        if not ref.exists():
+            pytest.skip("rh-inf-verify reference not implemented")
+        content = ref.read_text()
+        for term in (
+            "applicable",
+            "not-yet-ready",
+            "not-applicable",
+            "unavailable",
+            "pass",
+            "fail",
+            "warning-only",
+            "invocation-error",
+        ):
+            assert term in content

@@ -261,3 +261,37 @@ class TestRhInfFormalizeSkillContract:
         assert "implementation_target" in body
         assert "rh-skills promote combine" in body
         assert "rh-skills validate" in body
+
+
+class TestRhInfVerifySkillContract:
+    """Focused contract checks for the unified verify skill."""
+
+    def test_verify_skill_mentions_stage_verify_subagents(self):
+        skill = Path("skills/.curated/rh-inf-verify/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-verify skill not implemented")
+        body = skill_body(skill)
+        assert "subagent" in body.lower()
+        assert "rh-inf-ingest verify <topic>" in body
+        assert "rh-inf-extract verify <topic>" in body
+        assert "rh-inf-formalize verify <topic>" in body
+
+    def test_verify_skill_mentions_consolidated_report_sections(self):
+        ref = Path("skills/.curated/rh-inf-verify/reference.md")
+        if not ref.exists():
+            pytest.skip("rh-inf-verify reference not implemented")
+        content = ref.read_text()
+        assert "Topic Summary" in content
+        assert "Stage Results" in content
+        assert "Overall Readiness" in content
+        assert "Recommended Next Action" in content
+
+    def test_verify_skill_preserves_applicability_and_normalized_status(self):
+        ref = Path("skills/.curated/rh-inf-verify/reference.md")
+        if not ref.exists():
+            pytest.skip("rh-inf-verify reference not implemented")
+        content = ref.read_text()
+        assert "applicability" in content
+        assert "not-yet-ready" in content
+        assert "warning-only" in content
+        assert "invocation-error" in content

@@ -178,6 +178,18 @@ writes results to `topics/<topic>/process/fixtures/results/`.
 - **Exit 1** if any required check fails
 - Safe to rerun at any time
 
+### Standalone verify-only orchestrators
+
+`rh-inf-verify` is the canonical example of a verify-only skill. For partial
+lifecycle topics:
+
+- document both **applicability** and normalized **status**
+- keep `not-yet-ready` as an applicability decision, not a new status word
+- reuse stage-specific verify workflows via subagents instead of calling lower-
+  level validators as a silent fallback
+- preserve stage attribution for all blocking and advisory findings in the final
+  report
+
 ---
 
 ## Error Message Templates
