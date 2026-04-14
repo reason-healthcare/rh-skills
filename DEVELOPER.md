@@ -218,6 +218,20 @@ rh-skills promote plan <topic> [--force]
 - warns and exits without writing when no normalized topic sources are available
 - refuses to overwrite an existing plan unless `--force` is passed
 
+### rh-skills promote formalize-plan
+
+Write the 006 formalize review packet from approved structured artifacts.
+
+```sh
+rh-skills promote formalize-plan <topic> [--force]
+```
+
+- writes `topics/<topic>/process/plans/formalize-plan.md`
+- screens inputs to extract-approved structured artifacts that still pass validation
+- proposes one primary pathway-oriented computable package and its required sections
+- records `formalize_planned` on success
+- refuses to overwrite an existing plan unless `--force` is passed
+
 ### rh-skills validate --plan
 
 Validate a discovery plan YAML file for completeness and correctness.
@@ -243,6 +257,12 @@ When `topics/<topic>/process/plans/extract-plan.md` exists and lists the artifac
 - required extract sections
 - evidence traceability entries
 - conflict records when the plan requires them
+
+When `topics/<topic>/process/plans/formalize-plan.md` exists, is approved, and
+marks the artifact as the implementation target, validation also checks:
+- approved `input_artifacts[]` vs `converged_from[]`
+- required computable sections from the approved plan
+- minimum completeness for required sections such as pathways, actions, value sets, measures, libraries, and assessments
 
 ## Branches & Commits
 

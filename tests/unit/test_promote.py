@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.promote import _approved_extract_artifacts, promote
+from hi.commands.promote import _approved_extract_artifacts, _approved_formalize_target, promote
 
 
 def load_yaml(path):
@@ -146,6 +146,112 @@ def write_extract_plan(tmp_repo, topic_name="my-skill", status="approved", artif
         "status": status,
         "reviewer": "Reviewer",
         "reviewed_at": "2026-04-14T00:00:00Z" if status == "approved" else None,
+        "artifacts": artifacts or [],
+    }
+    buf = io.StringIO()
+    y.dump(frontmatter, buf)
+    plan_path.write_text(
+        f"---\n{buf.getvalue()}---\n\n# Review Summary\n\n# Proposed Artifacts\n\n# Cross-Artifact Issues\n\n# Implementation Readiness\n"
+    )
+    return plan_path
+
+
+def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", artifact_specs=None):
+    artifact_specs = artifact_specs or [
+        {"name": "screening-criteria", "artifact_type": "eligibility-criteria"},
+        {"name": "workflow-steps", "artifact_type": "workflow-steps"},
+        {"name": "terminology-value-sets", "artifact_type": "terminology-value-sets"},
+    ]
+    setup_topic_with_source(tmp_repo, topic_name)
+
+    td = tmp_repo / "topics" / topic_name / "structured"
+    td.mkdir(parents=True, exist_ok=True)
+
+    tracking_path = tmp_repo / "tracking.yaml"
+    y = YAML()
+    y.default_flow_style = False
+    with open(tracking_path) as f:
+        tracking = y.load(f)
+
+    for spec in artifact_specs:
+        artifact_name = spec["name"]
+        artifact_type = spec["artifact_type"]
+        sections = {
+            "summary": f"{artifact_name} summary",
+            "evidence_traceability": [{
+                "claim_id": f"{artifact_name}-001",
+                "statement": f"Evidence for {artifact_name}",
+                "evidence": [{"source": "ada-guidelines", "locator": "Section 1"}],
+            }],
+        }
+        if artifact_type == "workflow-steps":
+            sections["workflow"] = [{"step": "Assess patient"}]
+        elif artifact_type == "terminology-value-sets":
+            sections["terminology"] = [{"system": "SNOMED"}]
+        else:
+            sections["criteria"] = ["Adults at risk"]
+
+        buf = io.StringIO()
+        y.dump({
+            "id": artifact_name,
+            "name": artifact_name,
+            "title": artifact_name.replace("-", " ").title(),
+            "version": "1.0.0",
+            "status": "draft",
+            "domain": "diabetes",
+            "description": f"Structured artifact for {artifact_name}.",
+            "derived_from": ["ada-guidelines"],
+            "artifact_type": artifact_type,
+            "clinical_question": f"What does {artifact_name} contribute?",
+            "sections": sections,
+            "conflicts": [],
+        }, buf)
+        (td / f"{artifact_name}.yaml").write_text(buf.getvalue())
+
+        topic = next(t for t in tracking["topics"] if t["name"] == topic_name)
+        topic["structured"].append({
+            "name": artifact_name,
+            "file": f"topics/{topic_name}/structured/{artifact_name}.yaml",
+            "created_at": "2026-04-14T00:00:00Z",
+            "checksum": "abc123",
+            "derived_from": ["ada-guidelines"],
+            "artifact_type": artifact_type,
+        })
+
+    with open(tracking_path, "w") as f:
+        y.dump(tracking, f)
+
+    write_extract_plan(
+        tmp_repo,
+        topic_name=topic_name,
+        artifacts=[
+            {
+                "name": spec["name"],
+                "artifact_type": spec["artifact_type"],
+                "source_files": ["sources/normalized/ada-guidelines.md"],
+                "rationale": f"Approved input for {spec['name']}",
+                "key_questions": [f"What does {spec['name']} contribute?"],
+                "required_sections": ["summary", "evidence_traceability"],
+                "unresolved_conflicts": [],
+                "reviewer_decision": "approved",
+                "approval_notes": "Use in formalize",
+            }
+            for spec in artifact_specs
+        ],
+    )
+
+
+def write_formalize_plan(tmp_repo, topic_name="my-skill", status="approved", artifacts=None):
+    plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "formalize-plan.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    frontmatter = {
+        "topic": topic_name,
+        "plan_type": "formalize",
+        "status": status,
+        "reviewer": "Reviewer",
+        "reviewed_at": "2026-04-14T12:00:00Z" if status == "approved" else None,
         "artifacts": artifacts or [],
     }
     buf = io.StringIO()
@@ -334,6 +440,109 @@ def test_approved_extract_artifacts_blocks_unapproved_entries_in_strict_mode(tmp
     )
     with pytest.raises(click.UsageError, match="Artifacts not approved"):
         _approved_extract_artifacts("my-skill")
+
+
+def test_formalize_plan_writes_review_packet_and_records_event(tmp_repo):
+    setup_topic_with_valid_extract_artifacts(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, ["formalize-plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.md"
+    assert plan_path.exists()
+    raw = plan_path.read_text()
+    assert raw.index("# Review Summary") < raw.index("# Proposed Artifacts") < raw.index("# Cross-Artifact Issues") < raw.index("# Implementation Readiness")
+
+    parts = raw.split("---\n", 2)
+    plan = YAML(typ="safe").load(parts[1])
+    assert plan["topic"] == "my-skill"
+    assert plan["plan_type"] == "formalize"
+    assert plan["status"] == "pending-review"
+    assert len(plan["artifacts"]) == 1
+    artifact = plan["artifacts"][0]
+    assert artifact["name"] == "my-skill-pathway"
+    assert artifact["implementation_target"] is True
+    assert artifact["input_artifacts"] == ["screening-criteria", "workflow-steps", "terminology-value-sets"]
+    assert "pathways" in artifact["required_sections"]
+    assert "value_sets" in artifact["required_sections"]
+
+    tracking = load_yaml(tmp_repo / "tracking.yaml")
+    topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
+    assert "formalize_planned" in [event["type"] for event in topic["events"]]
+
+
+def test_formalize_plan_warns_and_does_not_write_without_eligible_inputs(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, ["formalize-plan", "my-skill"])
+    assert result.exit_code == 0
+    assert (
+        "No approved structured artifacts are ready for formalization" in result.output
+        or "extract-plan.md is not approved" in result.output
+        or "No plan found" in result.output
+    )
+    assert not (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.md").exists()
+
+
+def test_formalize_plan_force_overwrites_existing_packet(tmp_repo):
+    setup_topic_with_valid_extract_artifacts(tmp_repo)
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text("old plan")
+
+    runner = CliRunner()
+    result = runner.invoke(promote, ["formalize-plan", "my-skill", "--force"])
+    assert result.exit_code == 0, result.output
+    assert "old plan" not in plan_path.read_text()
+
+
+def test_approved_formalize_target_requires_approved_target_and_valid_inputs(tmp_repo):
+    setup_topic_with_valid_extract_artifacts(tmp_repo)
+    write_formalize_plan(
+        tmp_repo,
+        artifacts=[{
+            "name": "my-skill-pathway",
+            "artifact_type": "pathway-package",
+            "input_artifacts": ["screening-criteria", "workflow-steps"],
+            "rationale": "Primary package",
+            "required_sections": ["pathways", "actions"],
+            "implementation_target": True,
+            "reviewer_decision": "approved",
+            "approval_notes": "Proceed",
+        }],
+    )
+
+    target = _approved_formalize_target("my-skill")
+    assert target["name"] == "my-skill-pathway"
+    assert target["input_artifacts"] == ["screening-criteria", "workflow-steps"]
+
+
+def test_approved_formalize_target_blocks_invalid_inputs(tmp_repo):
+    setup_topic_with_valid_extract_artifacts(tmp_repo)
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "workflow-steps.yaml"
+    data = load_yaml(artifact_path)
+    data["sections"].pop("evidence_traceability")
+    y = YAML()
+    y.default_flow_style = False
+    with open(artifact_path, "w") as f:
+        y.dump(data, f)
+
+    write_formalize_plan(
+        tmp_repo,
+        artifacts=[{
+            "name": "my-skill-pathway",
+            "artifact_type": "pathway-package",
+            "input_artifacts": ["workflow-steps"],
+            "rationale": "Primary package",
+            "required_sections": ["pathways", "actions"],
+            "implementation_target": True,
+            "reviewer_decision": "approved",
+            "approval_notes": "Proceed",
+        }],
+    )
+
+    with pytest.raises(click.UsageError, match="missing or invalid"):
+        _approved_formalize_target("my-skill")
 
 
 # ── Combine mode ───────────────────────────────────────────────────────────────

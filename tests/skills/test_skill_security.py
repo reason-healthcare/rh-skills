@@ -320,3 +320,21 @@ class TestRhInfExtractSkillSecurity:
             pytest.skip("rh-inf-extract skill not implemented")
         content = skill.read_text()
         assert check_tracking_write_in_verify(content, skill.parent) is None
+
+
+class TestRhInfFormalizeSkillSecurity:
+    """Focused security assertions for the formalize skill text."""
+
+    def test_formalize_skill_has_injection_boundary(self):
+        skill = Path("skills/.curated/rh-inf-formalize/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-formalize skill not implemented")
+        content = skill.read_text()
+        assert check_prompt_injection(content) is None
+
+    def test_formalize_skill_verify_mode_is_non_destructive(self):
+        skill = Path("skills/.curated/rh-inf-formalize/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-formalize skill not implemented")
+        content = skill.read_text()
+        assert check_tracking_write_in_verify(content, skill.parent) is None

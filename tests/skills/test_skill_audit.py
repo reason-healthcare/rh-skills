@@ -240,3 +240,24 @@ class TestRhInfExtractSkillContract:
         body = skill_body(skill)
         assert "approved" in body and "reviewer_decision" in body
         assert "rh-skills validate" in body and "<topic>" in body
+
+
+class TestRhInfFormalizeSkillContract:
+    """Focused contract checks for the formalize skill's reviewer-gated L3 flow."""
+
+    def test_formalize_skill_plan_mode_mentions_canonical_packet(self):
+        skill = Path("skills/.curated/rh-inf-formalize/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-formalize skill not implemented")
+        body = skill_body(skill)
+        assert "process/plans/formalize-plan.md" in body
+        assert "rh-skills promote formalize-plan" in body
+
+    def test_formalize_skill_implement_mode_mentions_single_target_combine(self):
+        skill = Path("skills/.curated/rh-inf-formalize/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-formalize skill not implemented")
+        body = skill_body(skill)
+        assert "implementation_target" in body
+        assert "rh-skills promote combine" in body
+        assert "rh-skills validate" in body

@@ -2,19 +2,32 @@
 
 **Feature Branch**: `006-rh-inf-formalize`  
 **Created**: 2026-04-14  
-**Status**: Draft  
+**Status**: Ready for Review  
 **Depends On**: [002 — RH Skills](../002-rh-agent-skills/), [005 — rh-inf-extract](../005-rh-inf-extract/)
 **Input**: User description: "formalize structured artifacts into a computable format (L3)"
+
+## Clarifications
+
+### Session 2026-04-14
+
+- Q: Should one formalize plan implement one primary computable artifact or allow multiple approved outputs? → A: One primary computable artifact per formalize plan; alternates may appear for review only.
+- Q: What L3 output shape should 006 v1 target? → A: A pathway-oriented computable artifact package with supporting sections such as actions, value sets, measures, assessments, or libraries when needed.
+- Q: Should verify check only section presence or also section-type completeness? → A: Verify checks both required section presence and minimum completeness for each required section type.
+- Q: Which L2 artifacts are eligible formalize inputs? → A: Only structured artifacts that were approved in extract and currently pass validation may be formalized.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Plan computable artifact scope (Priority: P1)
 
 After a topic has approved structured (L2) artifacts, a clinical informaticist
-wants `rh-inf-formalize plan` to produce a durable review packet that proposes
-the computable artifact to build, identifies which L2 artifacts should converge,
-and names the L3 sections that must be created before any computable file is
-written.
+wants `rh-inf-formalize plan` to produce a durable review packet by delegating
+the deterministic plan write to `rh-skills promote formalize-plan <topic>`. The
+packet must propose the primary computable artifact to build, identify which L2
+artifacts should converge, and name the L3 sections that must be created before
+any computable file is written. The plan may mention alternate artifact
+candidates for review, but only one target is eligible for implementation. In
+v1, that target is a pathway-oriented computable artifact package that may
+include supporting sections when the approved plan requires them.
 
 **Why this priority**: A reviewable formalization plan is the safety gate
 between structured reasoning and durable computable output. Without it, teams
@@ -22,9 +35,10 @@ could converge the wrong artifacts or omit required computable sections.
 
 **Independent Test**: Run `rh-inf-formalize plan <topic>` on a topic with one or
 more structured artifacts and confirm that
-`topics/<topic>/process/plans/formalize-plan.md` is written with candidate L3
-artifact details, selected L2 inputs, required computable sections, and no L3
-file creation.
+`topics/<topic>/process/plans/formalize-plan.md` is written via
+`rh-skills promote formalize-plan <topic>` with candidate L3 artifact details,
+selected L2 inputs, required computable sections, one
+`implementation_target: true`, and no L3 file creation.
 
 **Acceptance Scenarios**:
 
@@ -33,8 +47,8 @@ file creation.
    `topics/<topic>/process/plans/formalize-plan.md` is written as a review
    packet describing the proposed computable artifact and its input artifacts.
 2. **Given** a topic has no structured artifacts ready for convergence, **When**
-   `rh-inf-formalize plan <topic>` is invoked, **Then** the skill warns and exits
-   without creating a formalize plan.
+    `rh-inf-formalize plan <topic>` is invoked, **Then** the skill warns and exits
+    without creating a formalize plan.
 
 ---
 
@@ -84,7 +98,7 @@ required computable sections without modifying any files.
 1. **Given** an approved formalize plan and a derived computable artifact,
    **When** `rh-inf-formalize verify <topic>` is invoked, **Then** the skill
    reports pass/fail per planned artifact and highlights missing required
-   computable sections.
+   computable sections and incomplete required section content.
 2. **Given** verify mode is run repeatedly, **When** `rh-inf-formalize verify`
    is invoked, **Then** it performs read-only checks and does not create,
    modify, or delete any file.
@@ -104,32 +118,42 @@ required computable sections without modifying any files.
 ### Functional Requirements
 
 - **FR-001**: `rh-inf-formalize plan` MUST analyze structured topic inputs and
-  write `topics/<name>/process/plans/formalize-plan.md` as a review packet for
-  proposed computable (L3) artifacts.
+  delegate the durable plan write to `rh-skills promote formalize-plan <topic>`,
+  which writes `topics/<name>/process/plans/formalize-plan.md` as a review
+  packet for proposed computable (L3) artifacts.
+- **FR-001a**: Only structured artifacts that were approved in extract and
+  currently pass validation are eligible for inclusion in a formalize plan's
+  `input_artifacts[]` list.
 - **FR-002**: The formalize plan MUST use structured Markdown with YAML front
   matter. YAML front matter MUST include: `topic`, `plan_type: formalize`,
   `status` (`pending-review | approved | rejected`), `reviewer`,
   `reviewed_at`, and an `artifacts[]` list.
 - **FR-003**: Each `artifacts[]` entry in the formalize plan MUST include:
   `name`, `artifact_type`, `input_artifacts[]`, `rationale`,
-  `required_sections[]`, `reviewer_decision`
+  `required_sections[]`, `implementation_target`, `reviewer_decision`
   (`pending-review | approved | needs-revision | rejected`), and
   `approval_notes`.
+- **FR-003a**: Formalize v1 MUST treat the primary computable output as a
+  pathway-oriented artifact package. Supporting sections such as `actions`,
+  `value_sets`, `measures`, `assessments`, or `libraries` MAY be required when
+  the approved plan calls for them.
 - **FR-004**: The formalize plan body MUST be organized for human review and
   include these sections in order: `Review Summary`, `Proposed Artifacts`,
   `Cross-Artifact Issues`, and `Implementation Readiness`.
 - **FR-005**: `rh-inf-formalize plan` MUST warn and stop unless `--force` is
   passed when `formalize-plan.md` already exists.
 - **FR-006**: Successful `plan` mode MUST append `formalize_planned` to
-  `tracking.yaml`.
+  `tracking.yaml` via the canonical `rh-skills promote formalize-plan` CLI
+  boundary.
 - **FR-007**: `rh-inf-formalize implement` MUST NOT proceed without a valid
   `topics/<name>/process/plans/formalize-plan.md`.
 - **FR-008**: `rh-inf-formalize implement` MUST fail unless the plan
   `status` is `approved`. It MUST also fail if any artifact intended for
   implementation has `reviewer_decision` other than `approved`.
 - **FR-009**: `rh-inf-formalize implement` MUST call
-  `rh-skills promote combine` for each approved computable artifact using the
-  approved artifact name and the `input_artifacts[]` set defined in the plan.
+  `rh-skills promote combine` only for the single approved computable artifact
+  marked `implementation_target: true`, using the approved artifact name and the
+  `input_artifacts[]` set defined in the plan.
 - **FR-010**: After each `rh-skills promote combine`,
   `rh-inf-formalize implement` MUST run `rh-skills validate <topic> <name>`. If
   validation fails, the specific missing fields or sections MUST be surfaced and
@@ -140,11 +164,18 @@ required computable sections without modifying any files.
 - **FR-012**: `rh-inf-formalize verify` MUST additionally confirm that each
   computable artifact contains the required computable sections declared in the
   approved plan.
+- **FR-012a**: For every required section declared in the approved plan,
+  `rh-inf-formalize verify` MUST check minimum section completeness in addition
+  to section presence. For example, pathways must contain steps, value sets
+  must contain codes, and measures must contain numerator and denominator
+  definitions.
 - **FR-013**: Successful per-artifact `implement` MUST append
   `computable_converged`.
 - **FR-014**: A single computable artifact MAY converge multiple structured
   artifacts, and the plan MUST record the full `input_artifacts[]` set for each
-  proposed computable artifact.
+  proposed computable artifact. A formalize plan MAY describe alternate
+  candidate artifacts, but at most one artifact entry may be marked
+  `implementation_target: true`.
 - **FR-015**: Formalize planning and verification MUST preserve review-visible
   notes about unresolved modeling choices or overlapping inputs instead of
   silently dropping them from the plan.
@@ -156,11 +187,14 @@ required computable sections without modifying any files.
   artifact, selected L2 inputs, required computable sections, review state, and
   approval notes.
 - **Proposed Computable Artifact Entry**: A plan entry that identifies one L3
-  artifact by name, type, `input_artifacts[]`, rationale, required sections, and
-  reviewer disposition.
+  artifact by name, type, `input_artifacts[]`, rationale, required sections,
+  whether it is the single implementation target, and reviewer disposition.
 - **Computable Artifact**: The resulting L3 artifact in
   `topics/<topic>/computable/` that converges approved L2 inputs into a
-  machine-usable representation for downstream execution or export.
+  machine-usable representation for downstream execution or export. In v1 this
+  is primarily a pathway-oriented artifact package that may also include
+  supporting sections such as actions, value sets, measures, assessments, or
+  libraries.
 
 ## Success Criteria *(mandatory)*
 
@@ -168,23 +202,28 @@ required computable sections without modifying any files.
 
 - **SC-001**: Reviewers can inspect a generated formalize plan and identify the
   proposed computable artifact, its selected structured inputs, and its required
-  sections within 2 minutes.
+  sections within 2 minutes. A compliant plan makes these fields directly
+  visible in the review summary or first artifact card without requiring deep
+  scrolling or cross-referencing.
 - **SC-002**: 100% of approved formalize implementations either produce a
   computable artifact that passes validation or fail with artifact-specific
   error reporting and no partial success.
 - **SC-003**: 100% of verify runs on approved formalize plans report whether
   each expected computable artifact exists and whether required sections are
-  present.
+  present and minimally complete.
 - **SC-004**: Formalize plan mode never creates a computable artifact before the
   reviewer approval gate is satisfied.
 
 ## Assumptions
 
 - Approved structured artifacts from `rh-inf-extract` are the only inputs to
-  this feature; raw sources and L1 ingest behavior are out of scope.
+  this feature, and they must still pass validation at formalize time; raw
+  sources and L1 ingest behavior are out of scope.
 - Formalize v1 focuses on one topic at a time and typically produces one primary
-  computable artifact per plan, though the plan may describe multiple
-  candidates.
+  computable artifact per plan; the plan may describe alternate candidates for
+  reviewer comparison, but only one target may be implemented.
+- Formalize v1 centers on one pathway-oriented computable artifact package per
+  plan rather than treating every possible L3 shape as equally primary.
 - Reviewers are comfortable editing Markdown + YAML front matter plan artifacts
   directly before running implement.
 - Downstream FHIR export or runtime execution is out of scope for this feature;

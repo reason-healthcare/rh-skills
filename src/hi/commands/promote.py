@@ -20,6 +20,7 @@ from hi.common import (
     today_date,
     topic_dir,
 )
+from hi.commands.validate import validate_artifact_file
 
 EXTRACT_ARTIFACT_PROFILES = (
     {
@@ -106,11 +107,27 @@ def _extract_plan_path(topic: str) -> Path:
     return topic_dir(topic) / "process" / "plans" / "extract-plan.md"
 
 
+def _formalize_plan_path(topic: str) -> Path:
+    return topic_dir(topic) / "process" / "plans" / "formalize-plan.md"
+
+
 def _load_extract_plan(topic: str) -> dict:
     plan_path = _extract_plan_path(topic)
     if not plan_path.exists():
         raise click.UsageError(
             f"No plan found: {plan_path}. Run 'rh-skills promote plan {topic}' first."
+        )
+    plan = _parse_markdown_frontmatter(plan_path)
+    if not plan:
+        raise click.UsageError(f"Plan frontmatter missing or invalid: {plan_path}")
+    return plan
+
+
+def _load_formalize_plan(topic: str) -> dict:
+    plan_path = _formalize_plan_path(topic)
+    if not plan_path.exists():
+        raise click.UsageError(
+            f"No plan found: {plan_path}. Run 'rh-skills promote formalize-plan {topic}' first."
         )
     plan = _parse_markdown_frontmatter(plan_path)
     if not plan:
@@ -140,6 +157,188 @@ def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict
             "Artifacts not approved for implementation: " + ", ".join(blocked)
         )
     return approved
+
+
+def _eligible_formalize_inputs(topic: str) -> tuple[list[dict], list[str]]:
+    tracking = require_tracking()
+    topic_entry = require_topic(tracking, topic)
+    tracked_structured = {artifact["name"]: artifact for artifact in topic_entry.get("structured", [])}
+    approved_extract = _approved_extract_artifacts(topic, strict=False)
+
+    eligible: list[dict] = []
+    blocked: list[str] = []
+    for artifact in approved_extract:
+        name = artifact.get("name")
+        if not name:
+            blocked.append("<unnamed-artifact> (missing name)")
+            continue
+        if name not in tracked_structured:
+            blocked.append(f"{name} (not registered in tracking)")
+            continue
+        try:
+            errors, _warnings = validate_artifact_file(topic, "l2", name, emit=False)
+        except click.UsageError as exc:
+            blocked.append(f"{name} ({exc.message})")
+            continue
+        if errors > 0:
+            blocked.append(f"{name} (fails validation)")
+            continue
+        eligible.append(artifact)
+
+    return eligible, blocked
+
+
+def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
+    required_sections = ["pathways"]
+    artifact_types = {artifact.get("artifact_type") for artifact in artifacts}
+
+    if artifact_types & {
+        "eligibility-criteria",
+        "exclusions",
+        "risk-factors",
+        "decision-points",
+        "workflow-steps",
+    }:
+        required_sections.append("actions")
+    if "terminology-value-sets" in artifact_types:
+        required_sections.append("value_sets")
+    if "measure-logic" in artifact_types:
+        required_sections.append("measures")
+
+    deduped: list[str] = []
+    for section in required_sections:
+        if section not in deduped:
+            deduped.append(section)
+    return deduped
+
+
+def _build_formalize_artifacts(topic: str, eligible_inputs: list[dict]) -> list[dict]:
+    candidate = {
+        "name": f"{topic}-pathway",
+        "artifact_type": "pathway-package",
+        "input_artifacts": [artifact["name"] for artifact in eligible_inputs],
+        "rationale": (
+            f"Combines {len(eligible_inputs)} approved structured artifact(s) into "
+            "one primary pathway-oriented computable package."
+        ),
+        "required_sections": _formalize_required_sections(eligible_inputs),
+        "implementation_target": True,
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }
+
+    return [candidate]
+
+
+def _render_formalize_plan(topic: str, artifacts: list[dict], blocked_inputs: list[str]) -> str:
+    frontmatter = {
+        "topic": topic,
+        "plan_type": "formalize",
+        "status": "pending-review",
+        "reviewer": "",
+        "reviewed_at": None,
+        "artifacts": artifacts,
+    }
+    frontmatter_buf = io.StringIO()
+    _yaml_rt().dump(frontmatter, frontmatter_buf)
+
+    lines = [
+        "---",
+        frontmatter_buf.getvalue().rstrip(),
+        "---",
+        "",
+        "# Review Summary",
+        "",
+        f"- Topic: `{topic}`",
+        f"- Proposed computable artifacts: {len(artifacts)}",
+        f"- Primary implementation target: `{next(artifact['name'] for artifact in artifacts if artifact['implementation_target'])}`",
+        "- Eligible structured inputs are limited to extract-approved artifacts that still pass validation.",
+        "- Reviewer action required: approve the plan and the single implementation target before formalization.",
+        "",
+        "# Proposed Artifacts",
+        "",
+    ]
+
+    for artifact in artifacts:
+        lines.extend([
+            f"## {artifact['name']}",
+            "",
+            f"- Type: `{artifact['artifact_type']}`",
+            f"- Eligible structured inputs: {', '.join(artifact['input_artifacts'])}",
+            f"- Rationale: {artifact['rationale']}",
+            f"- Required computable sections: {', '.join(artifact['required_sections'])}",
+            f"- Implementation target: `{'yes' if artifact['implementation_target'] else 'no'}`",
+            "- Unresolved modeling notes: review input overlap, omitted alternates, and downstream export assumptions before implementation.",
+            f"- Reviewer decision: `{artifact['reviewer_decision']}`",
+            "- Approval notes: _pending reviewer input_",
+            "",
+        ])
+
+    lines.extend([
+        "# Cross-Artifact Issues",
+        "",
+    ])
+    if blocked_inputs:
+        lines.append("- Inputs excluded from this plan because they are not currently eligible:")
+        lines.extend([f"  - {item}" for item in blocked_inputs])
+    else:
+        lines.append("- No excluded structured inputs were detected during deterministic planning.")
+    lines.extend([
+        "- Confirm overlapping structured artifacts are intentionally converged into a single pathway-oriented package.",
+        "- Confirm any deferred alternate computable package belongs in a future plan revision rather than this implementation run.",
+        "",
+        "# Implementation Readiness",
+        "",
+        "- Current plan status: `pending-review`",
+        "- Implement MUST NOT proceed until `status: approved` and the single target has `reviewer_decision: approved`.",
+        "- All `input_artifacts[]` entries must still exist in `topics/<topic>/structured/` and pass validation at implement time.",
+        "",
+    ])
+    return "\n".join(lines)
+
+
+def _approved_formalize_target(topic: str) -> dict:
+    plan = _load_formalize_plan(topic)
+    if plan.get("status") != "approved":
+        raise click.UsageError(
+            "formalize-plan.md is not approved. Review and update the plan before implement."
+        )
+
+    artifacts = plan.get("artifacts", []) or []
+    targets = [artifact for artifact in artifacts if artifact.get("implementation_target") is True]
+    if len(targets) != 1:
+        raise click.UsageError(
+            "formalize-plan.md must mark exactly one artifact as implementation_target: true."
+        )
+
+    target = targets[0]
+    if target.get("reviewer_decision") != "approved":
+        raise click.UsageError(
+            f"Artifact '{target.get('name', '<unnamed-artifact>')}' is not approved for implementation."
+        )
+
+    input_artifacts = target.get("input_artifacts", []) or []
+    if not input_artifacts:
+        raise click.UsageError(
+            f"Artifact '{target.get('name', '<unnamed-artifact>')}' has no input_artifacts."
+        )
+
+    invalid_inputs: list[str] = []
+    for input_name in input_artifacts:
+        try:
+            errors, _warnings = validate_artifact_file(topic, "l2", input_name, emit=False)
+        except click.UsageError as exc:
+            invalid_inputs.append(f"{input_name} ({exc.message})")
+            continue
+        if errors > 0:
+            invalid_inputs.append(f"{input_name} (fails validation)")
+
+    if invalid_inputs:
+        raise click.UsageError(
+            "Formalize inputs are missing or invalid: " + ", ".join(invalid_inputs)
+        )
+
+    return target
 
 
 def _parse_evidence_refs(raw_refs: tuple[str, ...]) -> list[dict]:
@@ -434,6 +633,50 @@ def plan(topic, force):
         topic,
         "extract_planned",
         f"Wrote extract plan: topics/{topic}/process/plans/extract-plan.md",
+    )
+    save_tracking(tracking)
+    log_info(f"Created: {plan_path}")
+
+
+@promote.command("formalize-plan")
+@click.argument("topic")
+@click.option("--force", is_flag=True, help="Overwrite an existing formalize-plan.md")
+def formalize_plan(topic, force):
+    """Write topics/<topic>/process/plans/formalize-plan.md from approved L2 artifacts."""
+    tracking = require_tracking()
+    require_topic(tracking, topic)
+
+    plan_path = _formalize_plan_path(topic)
+    if plan_path.exists() and not force:
+        log_warn("formalize-plan.md already exists. Re-run with --force to overwrite it.")
+        return
+
+    try:
+        eligible_inputs, blocked_inputs = _eligible_formalize_inputs(topic)
+    except click.UsageError as exc:
+        log_warn(str(exc))
+        return
+
+    if not eligible_inputs:
+        log_warn(
+            "No approved structured artifacts are ready for formalization. "
+            "Approve extract artifacts and ensure they pass validation first."
+        )
+        return
+
+    plan_text = _render_formalize_plan(
+        topic,
+        _build_formalize_artifacts(topic, eligible_inputs),
+        blocked_inputs,
+    )
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(plan_text)
+
+    append_topic_event(
+        tracking,
+        topic,
+        "formalize_planned",
+        f"Wrote formalize plan: topics/{topic}/process/plans/formalize-plan.md",
     )
     save_tracking(tracking)
     log_info(f"Created: {plan_path}")

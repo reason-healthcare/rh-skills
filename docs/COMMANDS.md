@@ -172,6 +172,21 @@ rh-skills promote combine <topic> screening-criteria risk-factors <target-name>
 
 Creates `topics/<topic>/computable/<target-name>.yaml`.
 
+### `rh-skills promote formalize-plan <topic> [--force]`
+
+Write the 006 formalize review packet from approved, valid structured inputs.
+
+```
+rh-skills promote formalize-plan <topic> [--force]
+```
+
+- writes `topics/<topic>/process/plans/formalize-plan.md`
+- selects only extract-approved structured artifacts that still pass validation
+- proposes one primary pathway-oriented computable package
+- records `formalize_planned` on success
+- warns and exits without writing when no eligible structured inputs are available
+- refuses to overwrite an existing plan unless `--force` is passed
+
 ---
 
 ## `rh-skills validate`
@@ -183,6 +198,12 @@ rh-skills validate <topic> <artifact>
 ```
 
 **Output:** Required-field errors (blocking, exit 1) and optional-field warnings (advisory, exit 0).
+
+When `topics/<topic>/process/plans/formalize-plan.md` exists, is approved, and
+lists the artifact as the implementation target, validation also checks:
+- approved `input_artifacts[]` vs `converged_from[]`
+- required computable sections from the approved plan
+- minimum completeness for section types such as pathways, actions, value sets, measures, libraries, and assessments
 
 ---
 
