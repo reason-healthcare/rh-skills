@@ -1,9 +1,11 @@
 """rh-skills promote — Promote artifacts between lifecycle levels."""
 
+import io
 import os
 from pathlib import Path
 
 import click
+from ruamel.yaml import YAML
 
 from hi.common import (
     append_topic_event,
@@ -17,6 +19,106 @@ from hi.common import (
     today_date,
     topic_dir,
 )
+
+
+def _yaml_rt() -> YAML:
+    y = YAML()
+    y.default_flow_style = False
+    y.preserve_quotes = True
+    return y
+
+
+def _human_title(name: str) -> str:
+    return " ".join(part.capitalize() for part in name.replace("_", "-").split("-") if part)
+
+
+def _parse_evidence_refs(raw_refs: tuple[str, ...]) -> list[dict]:
+    entries: list[dict] = []
+    for raw in raw_refs:
+        parts = [part.strip() for part in raw.split("|")]
+        if len(parts) != 4:
+            raise click.UsageError(
+                "--evidence-ref must use 'claim_id|statement|source|locator'"
+            )
+        claim_id, statement, source, locator = parts
+        entries.append({
+            "claim_id": claim_id,
+            "statement": statement,
+            "evidence": [{"source": source, "locator": locator}],
+        })
+    return entries
+
+
+def _parse_conflicts(raw_conflicts: tuple[str, ...]) -> list[dict]:
+    entries: list[dict] = []
+    for raw in raw_conflicts:
+        parts = [part.strip() for part in raw.split("|")]
+        if len(parts) < 3:
+            raise click.UsageError(
+                "--conflict must use 'issue|source|statement' or "
+                "'issue|source|statement|preferred_source|preferred_rationale'"
+            )
+        issue, source, statement = parts[:3]
+        entry = {
+            "issue": issue,
+            "positions": [{"source": source, "statement": statement}],
+        }
+        if len(parts) >= 5:
+            entry["preferred_interpretation"] = {
+                "source": parts[3],
+                "rationale": parts[4],
+            }
+        entries.append(entry)
+    return entries
+
+
+def _build_sections(
+    required_sections: tuple[str, ...],
+    clinical_question: str | None,
+    evidence_refs: tuple[str, ...],
+) -> dict:
+    section_names = list(required_sections) if required_sections else ["summary"]
+    evidence_entries = _parse_evidence_refs(evidence_refs)
+    if evidence_entries and "evidence_traceability" not in section_names:
+        section_names.append("evidence_traceability")
+
+    sections: dict = {}
+    for name in section_names:
+        if name == "summary":
+            sections[name] = clinical_question or ""
+        elif name == "evidence_traceability":
+            sections[name] = evidence_entries
+        else:
+            sections[name] = []
+    return sections
+
+
+def _build_stub_l2_artifact(
+    artifact_name: str,
+    source: tuple[str, ...],
+    artifact_type: str | None,
+    clinical_question: str | None,
+    required_sections: tuple[str, ...],
+    evidence_refs: tuple[str, ...],
+    conflicts: tuple[str, ...],
+) -> str:
+    data = {
+        "id": artifact_name,
+        "name": artifact_name,
+        "title": _human_title(artifact_name),
+        "version": "1.0.0",
+        "status": "draft",
+        "domain": "",
+        "description": "",
+        "derived_from": list(source),
+        "artifact_type": artifact_type or "evidence-summary",
+        "clinical_question": clinical_question or "",
+        "sections": _build_sections(required_sections, clinical_question, evidence_refs),
+        "conflicts": _parse_conflicts(conflicts),
+    }
+    buf = io.StringIO()
+    _yaml_rt().dump(data, buf)
+    return buf.getvalue().rstrip() + "\n"
 
 
 def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
@@ -40,8 +142,27 @@ def promote():
 @click.argument("name")
 @click.option("--source", required=True, multiple=True, help="L1 source name (can repeat)")
 @click.option("--count", default=1, help="Number of L2 artifacts to generate")
+@click.option("--artifact-type", default=None, help="Extract artifact type for richer L2 output")
+@click.option("--clinical-question", default=None, help="Clinical question answered by this artifact")
+@click.option("--required-section", "required_sections", multiple=True,
+              help="Required section to emit in the L2 artifact (repeatable)")
+@click.option("--evidence-ref", "evidence_refs", multiple=True,
+              help="Claim evidence in 'claim_id|statement|source|locator' format (repeatable)")
+@click.option("--conflict", "conflicts", multiple=True,
+              help="Conflict in 'issue|source|statement[|preferred_source|preferred_rationale]' format")
 @click.option("--dry-run", is_flag=True, help="Print what would be created without doing it")
-def derive(topic, name, source, count, dry_run):
+def derive(
+    topic,
+    name,
+    source,
+    count,
+    artifact_type,
+    clinical_question,
+    required_sections,
+    evidence_refs,
+    conflicts,
+    dry_run,
+):
     """Promote L1 source(s) to L2 structured artifact(s)."""
     tracking = require_tracking()
     require_topic(tracking, topic)
@@ -79,7 +200,12 @@ Rules:
 Output ONLY the YAML block. No markdown fences, no explanation."""
 
     for artifact_name in artifact_names:
-        user_prompt = f"Source L1 artifact name: {', '.join(source)}\nGenerate L2 artifact: {artifact_name}"
+        user_prompt = (
+            f"Source L1 artifact name: {', '.join(source)}\n"
+            f"Generate L2 artifact: {artifact_name}\n"
+            f"Artifact type: {artifact_type or 'evidence-summary'}\n"
+            f"Clinical question: {clinical_question or ''}"
+        )
 
         if dry_run:
             click.echo(f"--- DRY RUN: derive prompt for {artifact_name} ---")
@@ -94,17 +220,17 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
 
         if llm_output == "Stub response":
             # Write a minimal valid L2 artifact template for stub mode
-            l2_file.write_text(f"""\
-id: {artifact_name}
-name: {artifact_name}
-title: ""
-version: "1.0.0"
-status: draft
-domain: ""
-description: ""
-derived_from:
-{chr(10).join(f"  - {s}" for s in source)}
-""")
+            l2_file.write_text(
+                _build_stub_l2_artifact(
+                    artifact_name,
+                    source,
+                    artifact_type,
+                    clinical_question,
+                    required_sections,
+                    evidence_refs,
+                    conflicts,
+                )
+            )
         else:
             l2_file.write_text(llm_output + "\n")
 
@@ -117,6 +243,7 @@ derived_from:
             "created_at": timestamp,
             "checksum": checksum,
             "derived_from": list(source),
+            "artifact_type": artifact_type or "evidence-summary",
         })
         append_topic_event(tracking, topic, "structured_derived", f"Derived {artifact_name} from {', '.join(source)}")
         save_tracking(tracking)

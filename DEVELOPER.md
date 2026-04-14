@@ -186,6 +186,24 @@ rh-skills ingest verify <topic>
 - `plan <topic>`: summarizes discovery-plan sources, authenticated/manual advisories, untracked files already present in `sources/`, and tool availability
 - `verify <topic>`: reports file/checksum/normalized/classified/annotated readiness plus `concepts.yaml` validity without writing to `tracking.yaml`
 
+### rh-skills promote derive
+
+Derive an L2 structured artifact from one or more ingested sources.
+
+```sh
+rh-skills promote derive <topic> <artifact-name> \
+  --source <source-name> \
+  [--artifact-type <type>] \
+  [--clinical-question "<question>"] \
+  [--required-section <section>] \
+  [--evidence-ref "claim_id|statement|source|locator"] \
+  [--conflict "issue|source|statement|preferred_source|preferred_rationale"]
+```
+
+- multiple `--source` flags are supported for multi-source extraction
+- stub/test mode now writes richer L2 artifact fields: `artifact_type`, `clinical_question`, `sections`, and `conflicts`
+- `--evidence-ref` is repeatable and populates `sections.evidence_traceability`
+
 ### rh-skills validate --plan
 
 Validate a discovery plan YAML file for completeness and correctness.
@@ -196,6 +214,21 @@ rh-skills validate --plan topics/<topic>/process/plans/discovery-plan.yaml
 
 Checks: YAML parseable · 5–25 sources · terminology source present · all rationale non-empty ·
 all search_terms non-empty · valid evidence_level · known source type (warning) · health-economics source (warning).
+
+### rh-skills validate `<topic> <artifact>`
+
+Two-argument shorthand defaults to L2 validation:
+
+```sh
+rh-skills validate <topic> <artifact-name>
+```
+
+When `topics/<topic>/process/plans/extract-plan.md` exists and lists the artifact, validation also checks:
+- `artifact_type` and `clinical_question`
+- approved `source_files[]` vs `derived_from[]`
+- required extract sections
+- evidence traceability entries
+- conflict records when the plan requires them
 
 ## Branches & Commits
 

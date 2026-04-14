@@ -13,6 +13,10 @@ from hi.common import (
     topic_dir,
 )
 
+
+def _yaml_safe() -> YAML:
+    return YAML(typ="safe")
+
 VALID_EVIDENCE_LEVELS = {
     # GRADE letter grades (reference.md primary taxonomy)
     "grade-a", "grade-b", "grade-c", "grade-d",
@@ -57,6 +61,105 @@ def _get_nested(data: dict, field_path: str):
     return val
 
 
+def _parse_markdown_frontmatter(path) -> dict:
+    raw = path.read_text()
+    parts = raw.split("---\n", 2)
+    if len(parts) < 3:
+        return {}
+    data = _yaml_safe().load(parts[1]) or {}
+    return data if isinstance(data, dict) else {}
+
+
+def _normalized_source_to_name(path_str: str) -> str:
+    from pathlib import Path
+    return Path(path_str).stem
+
+
+def _validate_extract_artifact(topic: str, artifact: str, artifact_data: dict) -> tuple[int, int]:
+    plan_path = topic_dir(topic) / "process" / "plans" / "extract-plan.md"
+    if not plan_path.exists():
+        return 0, 0
+
+    plan = _parse_markdown_frontmatter(plan_path)
+    artifacts = plan.get("artifacts", []) or []
+    plan_entry = next((entry for entry in artifacts if entry.get("name") == artifact), None)
+    if plan_entry is None:
+        if any(key in artifact_data for key in ("artifact_type", "clinical_question", "sections", "conflicts")):
+            log_warn("  extract-plan.md exists but this artifact is not listed there")
+            return 0, 1
+        return 0, 0
+
+    errors = 0
+    warnings = 0
+
+    if not artifact_data.get("artifact_type"):
+        log_error("  MISSING extract field: artifact_type")
+        errors += 1
+
+    if not artifact_data.get("clinical_question"):
+        log_error("  MISSING extract field: clinical_question")
+        errors += 1
+
+    sections = artifact_data.get("sections")
+    if not isinstance(sections, dict) or not sections:
+        log_error("  MISSING extract field: sections")
+        return errors + 1, warnings
+
+    expected_sources = {
+        _normalized_source_to_name(path)
+        for path in plan_entry.get("source_files", []) or []
+    }
+    actual_sources = set(artifact_data.get("derived_from") or [])
+    if expected_sources and expected_sources != actual_sources:
+        log_error(
+            "  derived_from does not match approved plan sources: "
+            f"expected {sorted(expected_sources)}, got {sorted(actual_sources)}"
+        )
+        errors += 1
+
+    for section_name in plan_entry.get("required_sections", []) or []:
+        if section_name not in sections:
+            log_error(f"  MISSING required extract section: sections.{section_name}")
+            errors += 1
+
+    if "evidence_traceability" in (plan_entry.get("required_sections", []) or []):
+        refs = sections.get("evidence_traceability") or []
+        if not isinstance(refs, list) or not refs:
+            log_error("  MISSING evidence traceability entries")
+            errors += 1
+        else:
+            for idx, entry in enumerate(refs, start=1):
+                if not isinstance(entry, dict):
+                    log_error(f"  INVALID evidence traceability entry #{idx}")
+                    errors += 1
+                    continue
+                if not entry.get("claim_id") or not entry.get("statement"):
+                    log_error(f"  MISSING claim_id or statement in evidence traceability entry #{idx}")
+                    errors += 1
+                evidence = entry.get("evidence") or []
+                if not isinstance(evidence, list) or not evidence:
+                    log_error(f"  MISSING evidence list in evidence traceability entry #{idx}")
+                    errors += 1
+                else:
+                    for ev in evidence:
+                        if not ev.get("source") or not ev.get("locator"):
+                            log_error(
+                                f"  MISSING source or locator in evidence traceability entry #{idx}"
+                            )
+                            errors += 1
+
+    unresolved_conflicts = plan_entry.get("unresolved_conflicts", []) or []
+    conflicts = artifact_data.get("conflicts") or []
+    if unresolved_conflicts and not conflicts:
+        log_error("  MISSING conflicts[] despite unresolved conflicts in approved plan")
+        errors += 1
+    elif conflicts and not isinstance(conflicts, list):
+        log_error("  conflicts must be a list")
+        errors += 1
+
+    return errors, warnings
+
+
 @click.command()
 @click.argument("topic", required=False)
 @click.argument("level", required=False)
@@ -73,6 +176,10 @@ def validate(topic, level, artifact, plan_path):
     if plan_path:
         _validate_discovery_plan(plan_path)
         return
+
+    if topic and level and artifact is None and level not in ("l2", "structured", "l3", "computable"):
+        artifact = level
+        level = "l2"
 
     if not all([topic, level, artifact]):
         raise click.UsageError(
@@ -135,6 +242,13 @@ def validate(topic, level, artifact, plan_path):
         click.echo(f"INVALID — {errors} required field(s) missing")
         raise SystemExit(1)
 
+    if level in ("l2", "structured"):
+        extract_errors, extract_warnings = _validate_extract_artifact(topic, artifact, artifact_data)
+        errors += extract_errors
+        warnings += extract_warnings
+        if errors > 0:
+            click.echo(f"INVALID — {errors} required field(s) missing")
+            raise SystemExit(1)
     if warnings > 0:
         click.echo(f"VALID (with {warnings} optional field warning(s))", err=True)
     click.echo(f"VALID — {artifact_file}")
@@ -248,6 +362,4 @@ def _validate_discovery_plan(plan_path: str) -> None:
         click.echo(f"VALID — all mandatory checks passed ({warnings} warning(s))")
     else:
         click.echo("VALID — all checks passed")
-
-
 

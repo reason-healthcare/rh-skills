@@ -288,3 +288,35 @@ class TestSecurityAuditLogic:
     def test_phi_exposure_passes_when_no_patient_data_referenced(self):
         content = "Write a plan artifact summarising clinical screening criteria."
         assert check_phi_exposure(content) is None
+
+    def test_tracking_write_in_verify_flags_direct_write(self):
+        content = """
+        ## Mode: `verify`
+        Write to tracking.yaml after checking each artifact.
+        """
+        assert check_tracking_write_in_verify(content, Path("dummy")) is not None
+
+    def test_tracking_write_in_verify_passes_with_cli_boundary(self):
+        content = """
+        ## Mode: `verify`
+        Update tracking.yaml via `rh-skills validate` only.
+        """
+        assert check_tracking_write_in_verify(content, Path("dummy")) is None
+
+
+class TestRhInfExtractSkillSecurity:
+    """Focused security assertions for the extract skill text."""
+
+    def test_extract_skill_has_injection_boundary(self):
+        skill = Path("skills/.curated/rh-inf-extract/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-extract skill not implemented")
+        content = skill.read_text()
+        assert check_prompt_injection(content) is None
+
+    def test_extract_skill_verify_mode_is_non_destructive(self):
+        skill = Path("skills/.curated/rh-inf-extract/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-extract skill not implemented")
+        content = skill.read_text()
+        assert check_tracking_write_in_verify(content, skill.parent) is None

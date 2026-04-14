@@ -1,7 +1,10 @@
 """Tests for rh-skills validate command — ported from tests/unit/validate.bats."""
 
+from pathlib import Path
+
 import pytest
 from click.testing import CliRunner
+from ruamel.yaml import YAML
 
 from hi.commands.validate import validate
 
@@ -20,6 +23,66 @@ description: |
   A test artifact for validation testing.
 derived_from:
   - source-l1
+""")
+
+
+def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, unresolved_conflicts=None):
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "extract-plan.md"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    frontmatter = {
+        "topic": topic,
+        "plan_type": "extract",
+        "status": "approved",
+        "reviewer": "Tester",
+        "reviewed_at": "2026-04-14T00:00:00Z",
+        "artifacts": [{
+            "name": artifact,
+            "artifact_type": "eligibility-criteria",
+            "source_files": ["sources/normalized/source-l1.md"],
+            "rationale": "Primary criteria artifact",
+            "key_questions": ["Who qualifies?"],
+            "required_sections": ["summary", "evidence_traceability"],
+            "unresolved_conflicts": unresolved_conflicts or [],
+            "reviewer_decision": "approved",
+            "approval_notes": "Proceed",
+        }],
+    }
+    from io import StringIO
+    buf = StringIO()
+    y.dump(frontmatter, buf)
+    plan_path.write_text(
+        f"---\n{buf.getvalue()}---\n\n# Review Summary\n\n# Proposed Artifacts\n\n# Cross-Artifact Issues\n\n# Implementation Readiness\n"
+    )
+    return plan_path
+
+
+def make_valid_extract_l2(tmp_repo, skill="my-skill", artifact="test-artifact"):
+    td = tmp_repo / "topics" / skill / "structured"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / f"{artifact}.yaml").write_text(f"""\
+id: {artifact}
+name: {artifact}
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: |
+  A test artifact for validation testing.
+derived_from:
+  - source-l1
+artifact_type: eligibility-criteria
+clinical_question: "Who should be screened?"
+sections:
+  summary: "Adults at risk should be screened."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Screen adults at risk"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+conflicts: []
 """)
 
 
@@ -144,3 +207,62 @@ def test_validate_computable_alias(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "computable", "test-l3"])
     assert result.exit_code == 0
+
+
+def test_validate_two_arg_shorthand_defaults_to_l2(tmp_repo):
+    make_valid_l2(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0
+    assert "VALID" in result.output
+
+
+def test_validate_extract_artifact_checks_plan_requirements(tmp_repo):
+    write_extract_plan(tmp_repo)
+    make_valid_extract_l2(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "VALID" in result.output
+
+
+def test_validate_extract_artifact_fails_missing_traceability(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Incomplete extract artifact"
+derived_from:
+  - source-l1
+artifact_type: eligibility-criteria
+clinical_question: "Who should be screened?"
+sections:
+  summary: "Adults at risk should be screened."
+conflicts: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "evidence traceability" in result.output.lower()
+
+
+def test_validate_extract_artifact_fails_missing_conflicts_when_plan_requires_them(tmp_repo):
+    write_extract_plan(tmp_repo, unresolved_conflicts=["Guidelines disagree"])
+    make_valid_extract_l2(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact.yaml"
+    data = YAML().load(td.read_text())
+    data["conflicts"] = []
+    y = YAML()
+    y.default_flow_style = False
+    with open(td, "w") as f:
+        y.dump(data, f)
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "missing conflicts" in result.output.lower()

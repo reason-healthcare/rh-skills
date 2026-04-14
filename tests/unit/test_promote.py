@@ -159,6 +159,42 @@ def test_derive_fails_exit_2_if_topic_not_found(tmp_repo, monkeypatch):
     assert result.exit_code == 2
 
 
+def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--source", "ada-guidelines",
+        "--artifact-type", "eligibility-criteria",
+        "--clinical-question", "Who should be screened?",
+        "--required-section", "summary",
+        "--required-section", "evidence_traceability",
+        "--evidence-ref", "crit-001|Screen adults at risk|ada-guidelines|Section 2",
+        "--conflict", "Interval differs|ada-guidelines|Annual screening|ada-guidelines|Explicit interval language",
+    ])
+    assert result.exit_code == 0, result.output
+    data = load_yaml(tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria.yaml")
+    assert data["artifact_type"] == "eligibility-criteria"
+    assert data["clinical_question"] == "Who should be screened?"
+    assert "evidence_traceability" in data["sections"]
+    assert data["sections"]["evidence_traceability"][0]["claim_id"] == "crit-001"
+    assert data["conflicts"][0]["issue"] == "Interval differs"
+    assert data["conflicts"][0]["preferred_interpretation"]["source"] == "ada-guidelines"
+
+
+def test_derive_invalid_evidence_ref_format_exits_2(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "criteria",
+        "--source", "ada-guidelines",
+        "--evidence-ref", "broken-format",
+    ])
+    assert result.exit_code == 2
+
+
 # ── Combine mode ───────────────────────────────────────────────────────────────
 
 def test_combine_creates_l3_artifact_file(tmp_repo, monkeypatch):

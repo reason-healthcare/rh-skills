@@ -220,3 +220,23 @@ class TestSkillLibraryHealth:
         # This is an informational test — report but don't fail
         if missing:
             pytest.skip(f"Skills not yet implemented: {sorted(missing)} ({len(implemented)}/6 done)")
+
+
+class TestRhInfExtractSkillContract:
+    """Focused contract checks for the extract skill's reviewer-packet flow."""
+
+    def test_extract_skill_plan_mode_mentions_canonical_packet(self):
+        skill = Path("skills/.curated/rh-inf-extract/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-extract skill not implemented")
+        body = skill_body(skill)
+        assert "process/plans/extract-plan.md" in body
+        assert "pending-review" in body
+
+    def test_extract_skill_implement_mode_mentions_approval_gate(self):
+        skill = Path("skills/.curated/rh-inf-extract/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-extract skill not implemented")
+        body = skill_body(skill)
+        assert "approved" in body and "reviewer_decision" in body
+        assert "rh-skills validate" in body and "<topic>" in body
