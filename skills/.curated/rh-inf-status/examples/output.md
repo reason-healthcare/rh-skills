@@ -23,31 +23,22 @@ Research Portfolio
 juvenile-diabetes-onset — Juvenile Diabetes Onset Screening
   Stage:  Ingest · discovery plan ✓
   Sources:     9
-  Next:    rh-inf-extract plan juvenile-diabetes-onset
+  Next steps:
+    - Extract structured criteria from ingested sources (L2): rh-inf-extract plan juvenile-diabetes-onset
+    - Check whether any source files have changed since ingest: rh-skills status check-changes juvenile-diabetes-onset
+    - Re-run ingest if sources need refreshing: rh-inf-ingest implement juvenile-diabetes-onset
 
 hypertension-young-adults — Hypertension in Young Adults
   Stage:  Discovery
-  Next:    rh-inf-discovery session hypertension-young-adults
+  Next steps:
+    - Start source discovery for this topic: rh-inf-discovery session hypertension-young-adults
+    - Ingest sources if you already have a discovery plan: rh-inf-ingest plan hypertension-young-adults
+    - Full pipeline summary: rh-skills status progress hypertension-young-adults
 ```
 
 Two topics in the portfolio. `juvenile-diabetes-onset` has 9 sources ingested
 and a discovery plan — the recommended next step is extraction. `hypertension-young-adults`
 is still in the Discovery stage with no sources yet.
-
-```
-▸ rh-inf-status  portfolio
-  Topics:   2
-  Sources:  9
-  Next:     rh-inf-extract plan juvenile-diabetes-onset
-```
-
-**What would you like to do next?**
-
-A) Run `rh-inf-extract plan juvenile-diabetes-onset` — begin extraction
-B) Run `rh-inf-discovery session hypertension-young-adults` — start source discovery for the second topic
-C) Run `rh-skills status check-changes juvenile-diabetes-onset` — check for source drift before extracting
-
-You can also ask for `rh-inf-status` at any time.
 
 ---
 
@@ -75,24 +66,15 @@ Artifacts:
   L3 (computable):       0
 
 Last event: source_annotated (2026-04-05T18:22:11Z)
+
+Next steps:
+  - Extract structured criteria from ingested sources (L2): rh-inf-extract plan juvenile-diabetes-onset
+  - Check whether any source files have changed since ingest: rh-skills status check-changes juvenile-diabetes-onset
+  - Re-run ingest if sources need refreshing: rh-inf-ingest implement juvenile-diabetes-onset
 ```
 
 Nine sources have been ingested and annotated. No structured (L2) artifacts
 exist yet — extraction is the natural next step.
-
-```
-▸ rh-inf-status  juvenile-diabetes-onset
-  Stage:    Ingest (l1-discovery)
-  Sources:  9
-  Next:     rh-inf-extract plan juvenile-diabetes-onset
-```
-
-**What would you like to do next?**
-
-A) Run `rh-inf-extract plan juvenile-diabetes-onset` — begin extraction
-B) Run `rh-skills status check-changes juvenile-diabetes-onset` — verify sources haven't changed since ingest
-
-You can also ask for `rh-inf-status` at any time.
 
 ---
 
@@ -118,26 +100,15 @@ Source Change Report:
     was: 8f3a21c4d7e6b9f1...
     now: 2b9e44a7f18c3d05...
     Potentially stale L2 artifacts: criteria-cochrane
+    Potentially stale L3 artifacts: diabetes-pathway
   ✓ uspstf-diabetes-grade-b   OK
 
-Action: Re-ingest changed sources with `rh-skills ingest implement <file>`
+Next steps:
+  - Re-ingest or refresh the affected sources for this topic: rh-inf-ingest implement juvenile-diabetes-onset
+  - Re-check drift after source refresh: rh-skills status check-changes juvenile-diabetes-onset
+  - Review topic status before continuing: rh-skills status show juvenile-diabetes-onset
 ```
 
 One source has changed: `cochrane-meta-analysis`. The L2 artifact
 `criteria-cochrane` was derived from it and is now potentially stale. Re-ingest
 the changed source before running extraction to ensure consistency.
-
-```
-▸ rh-inf-status  juvenile-diabetes-onset
-  Sources:  9 (1 changed)
-  Next:     rh-inf-ingest implement juvenile-diabetes-onset
-```
-
-**What would you like to do next?**
-
-A) Re-ingest the changed source — `rh-inf-ingest implement juvenile-diabetes-onset`
-B) Proceed to extraction anyway (changed source noted)
-C) Run `rh-skills status` for a full portfolio overview
-
-You can also ask for `rh-inf-status` at any time.
-

@@ -79,6 +79,15 @@ def test_status_shows_skill_name(tmp_repo):
     assert "my-skill" in result.output
 
 
+def test_status_show_includes_bullet_next_steps(tmp_repo):
+    make_topic(tmp_repo, "my-skill", "l1-discovery")
+    runner = CliRunner()
+    result = runner.invoke(status, ["show", "my-skill"])
+    assert "Next steps:" in result.output
+    assert "  - " in result.output
+    assert "A)" not in result.output
+
+
 def test_status_shows_stage_initialized(tmp_repo):
     make_topic(tmp_repo, "my-skill", "initialized")
     runner = CliRunner()
@@ -125,9 +134,42 @@ def test_status_json_includes_artifact_counts(tmp_repo):
 
 
 def test_status_exits_2_for_unknown_skill(tmp_repo):
+    make_topic(tmp_repo, "known-skill")
     runner = CliRunner()
     result = runner.invoke(status, ["show", "ghost-skill"])
     assert result.exit_code == 2
+    assert "Topic 'ghost-skill' not found" in result.output
+    assert "rh-skills list" in result.output
+    assert "rh-skills init ghost-skill" in result.output
+
+
+def test_status_portfolio_uses_bullet_next_steps(tmp_repo):
+    make_topic(tmp_repo, "alpha-skill", "l1-discovery")
+    make_topic(tmp_repo, "beta-skill", "initialized")
+    runner = CliRunner()
+    result = runner.invoke(status, [])
+    assert result.exit_code == 0
+    assert "Next steps:" in result.output
+    assert "  - " in result.output
+    assert "A)" not in result.output
+
+
+def test_status_portfolio_without_tracking_offers_init_guidance(tmp_repo):
+    (tmp_repo / "tracking.yaml").unlink()
+    runner = CliRunner()
+    result = runner.invoke(status, [])
+    assert result.exit_code == 1
+    assert "No tracking.yaml found" in result.output
+    assert "rh-skills init <topic>" in result.output
+
+
+def test_status_portfolio_without_topics_offers_init_guidance(tmp_repo):
+    runner = CliRunner()
+    result = runner.invoke(status, [])
+    assert result.exit_code == 0
+    assert "No topics yet" in result.output
+    assert "Next steps:" in result.output
+    assert "rh-skills init <topic>" in result.output
 
 
 # ── rh-skills list tests ──────────────────────────────────────────────────────────────

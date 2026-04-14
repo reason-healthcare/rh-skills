@@ -244,3 +244,35 @@ class TestRhInfVerifySkillSchema:
             "invocation-error",
         ):
             assert term in content
+
+
+class TestRhInfStatusSkillSchema:
+    """Focused schema assertions for the status skill."""
+
+    def test_status_skill_declares_expected_companion_files(self):
+        skill = Path("skills/.curated/rh-inf-status/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-status skill not implemented")
+        fm = parse_frontmatter(skill)
+        content = skill.read_text()
+        assert fm["name"] == "rh-inf-status"
+        assert "reference.md" in content
+        assert "examples/output.md" in content
+
+    def test_status_output_example_uses_next_step_bullets(self):
+        example = Path("skills/.curated/rh-inf-status/examples/output.md")
+        if not example.exists():
+            pytest.skip("rh-inf-status output example not implemented")
+        content = example.read_text()
+        assert "Next steps" in content
+        assert "A)" not in content
+        assert "B)" not in content
+        assert "C)" not in content
+
+    def test_status_reference_documents_bullet_next_steps(self):
+        ref = Path("skills/.curated/rh-inf-status/reference.md")
+        if not ref.exists():
+            pytest.skip("rh-inf-status reference not implemented")
+        content = ref.read_text()
+        assert "bullet items" in content
+        assert "Lettered menus" in content

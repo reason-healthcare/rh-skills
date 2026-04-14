@@ -295,3 +295,33 @@ class TestRhInfVerifySkillContract:
         assert "not-yet-ready" in content
         assert "warning-only" in content
         assert "invocation-error" in content
+
+
+class TestRhInfStatusSkillContract:
+    """Focused contract checks for the status skill's deterministic UX."""
+
+    def test_status_skill_uses_canonical_status_cli(self):
+        skill = Path("skills/.curated/rh-inf-status/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-status skill not implemented")
+        body = skill_body(skill)
+        assert "rh-skills status" in body
+        assert "rh-skills status check-changes <topic>" in body
+
+    def test_status_skill_output_contract_uses_bullets_not_lettered_choices(self):
+        skill = Path("skills/.curated/rh-inf-status/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-status skill not implemented")
+        content = skill.read_text()
+        assert "Next steps" in content
+        assert "lettered choices" in content.lower() or "lettered menus" in content.lower()
+
+    def test_status_skill_examples_do_not_use_lettered_options(self):
+        example = Path("skills/.curated/rh-inf-status/examples/output.md")
+        if not example.exists():
+            pytest.skip("rh-inf-status examples not implemented")
+        content = example.read_text()
+        assert "Next steps" in content
+        assert "A)" not in content
+        assert "B)" not in content
+        assert "C)" not in content

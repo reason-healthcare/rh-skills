@@ -259,6 +259,17 @@ class TestSecurityAuditLogic:
         )
         assert check_prompt_injection(content) is None
 
+
+class TestRhInfStatusSkillSecurity:
+    """Focused security assertions for the status skill text."""
+
+    def test_status_skill_verify_mode_is_non_destructive(self):
+        skill = Path("skills/.curated/rh-inf-status/SKILL.md")
+        if not skill.exists():
+            pytest.skip("rh-inf-status skill not implemented")
+        content = skill.read_text()
+        assert check_tracking_write_in_verify(content, skill.parent) is None
+
     def test_prompt_injection_passes_when_no_external_reads(self):
         content = "Write a plan artifact to topics/<topic>/process/plans/extract-plan.md."
         assert check_prompt_injection(content) is None

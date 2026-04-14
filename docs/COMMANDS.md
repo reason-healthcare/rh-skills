@@ -61,7 +61,7 @@ Show workflow state of a topic. Subcommands: `show`, `progress`, `next-steps`, `
 
 ### `rh-skills status show <topic>`
 
-Basic lifecycle summary.
+Basic lifecycle summary with deterministic next-step bullets.
 
 ```
 rh-skills status show <topic> [--json]
@@ -69,7 +69,7 @@ rh-skills status show <topic> [--json]
 
 ### `rh-skills status progress <topic>`
 
-Detailed progress report with completeness percentage and stage pipeline.
+Detailed progress report with completeness percentage, stage pipeline, and deterministic next-step bullets.
 
 ```
 rh-skills status progress <topic>
@@ -77,7 +77,7 @@ rh-skills status progress <topic>
 
 ### `rh-skills status next-steps <topic>`
 
-Recommend the single most important next action with the exact command to run.
+Recommend deterministic next-step bullets for the topic.
 
 ```
 rh-skills status next-steps <topic>
@@ -87,16 +87,14 @@ rh-skills status next-steps <topic>
 ```
 Topic: diabetes-screening
 
-Recommended next step:
-  Extract structured (L2) artifacts from ingested sources
-
-Run:
-  rh-inf-extract plan
+Next steps:
+  - Extract structured (L2) artifacts from ingested sources: rh-inf-extract plan diabetes-screening
+  - Check whether any source files have changed since ingest: rh-skills status check-changes diabetes-screening
 ```
 
 ### `rh-skills status check-changes <topic>`
 
-Re-checksum all registered sources and report drift. Lists downstream structured artifacts that may be stale.
+Re-checksum all registered sources and report drift. Lists downstream structured and computable artifacts that may be stale, then emits deterministic remediation bullets.
 
 ```
 rh-skills status check-changes <topic>

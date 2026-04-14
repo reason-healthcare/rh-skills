@@ -60,7 +60,7 @@ Every lifecycle transition follows this mandatory three-step pattern:
 | **Extract** | `rh-inf-extract` | plan · implement · verify | `extract-plan.md` | L2 artifacts in `structured/` |
 | **Formalize** | `rh-inf-formalize` | plan · implement · verify | `formalize-plan.md` | L3 artifact in `computable/` |
 | **Verify** | `rh-inf-verify` | *(standalone)* | — | Consolidated topic verification report |
-| **Status** | `rh-inf-status` | progress · next-steps · check-changes | — | Lifecycle summary |
+| **Status** | `rh-inf-status` | progress · next-steps · check-changes | — | Lifecycle summary + deterministic next steps |
 
 `rh-inf-verify` is a read-only coordinator, not a parallel lifecycle stage. It
 determines stage applicability for the current topic, runs the applicable

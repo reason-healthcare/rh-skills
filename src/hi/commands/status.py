@@ -7,8 +7,6 @@ import click
 from hi.common import (
     load_tracking,
     repo_root,
-    require_topic,
-    require_tracking,
     sha256_file,
     sources_root,
 )
@@ -48,7 +46,7 @@ def _has_discovery_plan(topic: str) -> bool:
     return plan_path.exists()
 
 
-def _next_step_options(sources: int, structured: int, computable: int, topic: str) -> list[tuple[str, str]]:
+def _next_step_options(sources: int, structured: int, computable: int, topic: str) -> list[tuple[str, str | None]]:
     """Return ordered list of (description, exact_command) options based on lifecycle state."""
     if sources == 0:
         has_plan = _has_discovery_plan(topic)
@@ -72,24 +70,50 @@ def _next_step_options(sources: int, structured: int, computable: int, topic: st
     if computable == 0:
         return [
             ("Formalize structured artifacts into a computable format (L3)", f"rh-inf-formalize plan {topic}"),
-            ("Validate existing structured artifacts", f"rh-skills validate {topic}"),
+            ("Run extract-stage verification for existing structured artifacts", f"rh-inf-extract verify {topic}"),
             ("Check whether any source files have changed since ingest", f"rh-skills status check-changes {topic}"),
         ]
     return [
-        ("Validate all artifacts for this topic", f"rh-skills validate {topic}"),
+        ("No immediate action required — this topic already has computable artifacts", None),
+        ("Run unified verification for this topic", f"rh-inf-verify verify {topic}"),
         ("Check whether any source files have changed since ingest", f"rh-skills status check-changes {topic}"),
     ]
 
 
-def _next_step_recommendation(sources: int, structured: int, computable: int) -> tuple[str, str]:
-    """Return (description, exact_command) for the single most important next action."""
-    if sources == 0:
-        return ("Discover and ingest raw source artifacts (L1)", "rh-inf-ingest plan")
-    if structured == 0:
-        return ("Extract structured (L2) artifacts from ingested sources", "rh-inf-extract plan")
-    if computable == 0:
-        return ("Formalize structured artifacts into a computable (L3) artifact", "rh-inf-formalize plan")
-    return ("Review and validate artifacts", "rh-skills validate <topic> <artifact>")
+def _render_next_steps(options: list[tuple[str, str | None]], indent: str = "") -> None:
+    """Render deterministic next-step bullets."""
+    click.echo(f"{indent}Next steps:")
+    for desc, cmd in options:
+        if cmd:
+            click.echo(f"{indent}  - {desc}: {cmd}")
+        else:
+            click.echo(f"{indent}  - {desc}")
+
+
+def _load_status_tracking() -> dict:
+    """Load tracking with status-specific recovery guidance."""
+    tracking_path = repo_root() / "tracking.yaml"
+    if not tracking_path.exists():
+        raise click.ClickException(
+            "No tracking.yaml found. Run `rh-skills init <topic>` to start a topic."
+        )
+    return load_tracking()
+
+
+def _require_status_topic(tracking: dict, topic: str) -> dict:
+    """Return topic or raise a user-facing status error with recovery guidance."""
+    topics = tracking.get("topics", [])
+    if not topics:
+        raise click.UsageError("No topics yet. Run `rh-skills init <topic>` to start one.")
+
+    for topic_entry in topics:
+        if topic_entry.get("name") == topic:
+            return topic_entry
+
+    raise click.UsageError(
+        f"Topic '{topic}' not found. Run `rh-skills list` to see available topics or "
+        f"`rh-skills init {topic}` to start it."
+    )
 
 
 @click.group(invoke_without_command=True)
@@ -102,18 +126,15 @@ def status(ctx):
 
 def _portfolio_summary() -> None:
     """Print project-level status and per-topic recommendations from tracking.yaml."""
-    tracking_path = repo_root() / "tracking.yaml"
-    if not tracking_path.exists():
-        click.echo("No tracking.yaml found. Run `rh-skills init <topic>` to start a topic.")
-        return
-
-    tracking = load_tracking()
+    tracking = _load_status_tracking()
     topics = tracking.get("topics", [])
     global_sources = tracking.get("sources", [])
     source_count = len(global_sources)
 
     if not topics:
         click.echo("No topics yet. Run `rh-skills init <topic>` to start one.")
+        click.echo("")
+        _render_next_steps([("Initialize a new topic", "rh-skills init <topic>")])
         return
 
     # Project-level header
@@ -147,9 +168,8 @@ def _portfolio_summary() -> None:
         if computable_count:
             click.echo(f"  Computable:  {computable_count}")
 
-        # Primary recommendation only — keep it scannable
         if options:
-            click.echo(f"  Next:    {options[0][1]}")
+            _render_next_steps(options, indent="  ")
 
         click.echo("")
 
@@ -159,8 +179,8 @@ def _portfolio_summary() -> None:
 @click.option("--json", "as_json", is_flag=True, help="Output as JSON")
 def status_show(topic, as_json):
     """Show basic workflow state of a topic."""
-    tracking = require_tracking()
-    topic_entry = require_topic(tracking, topic)
+    tracking = _load_status_tracking()
+    topic_entry = _require_status_topic(tracking, topic)
 
     sources_count = len(tracking.get("sources", []))
     structured_count = len(topic_entry.get("structured", []))
@@ -200,14 +220,16 @@ def status_show(topic, as_json):
     click.echo(f"  L3 (computable):       {computable_count}")
     click.echo("")
     click.echo(f"Last event: {last_event.get('type', '')} ({last_event.get('timestamp', '')})")
+    click.echo("")
+    _render_next_steps(_next_step_options(sources_count, structured_count, computable_count, topic))
 
 
 @status.command("progress")
 @click.argument("topic")
 def status_progress(topic):
     """Detailed progress report with completeness percentage."""
-    tracking = require_tracking()
-    topic_entry = require_topic(tracking, topic)
+    tracking = _load_status_tracking()
+    topic_entry = _require_status_topic(tracking, topic)
 
     sources_count = len(tracking.get("sources", []))
     structured_count = len(topic_entry.get("structured", []))
@@ -239,18 +261,15 @@ def status_progress(topic):
 
     options = _next_step_options(sources_count, structured_count, computable_count, topic)
     click.echo("")
-    click.echo("What to do next:")
-    for i, (desc, cmd) in enumerate(options, start=1):
-        click.echo(f"  {chr(64 + i)}) {desc}")
-        click.echo(f"     {cmd}")
+    _render_next_steps(options)
 
 
 @status.command("next-steps")
 @click.argument("topic")
 def status_next_steps(topic):
     """Recommend the single most important next action."""
-    tracking = require_tracking()
-    topic_entry = require_topic(tracking, topic)
+    tracking = _load_status_tracking()
+    topic_entry = _require_status_topic(tracking, topic)
 
     sources_count = len(tracking.get("sources", []))
     structured_count = len(topic_entry.get("structured", []))
@@ -260,29 +279,24 @@ def status_next_steps(topic):
 
     click.echo(f"Topic: {topic}")
     click.echo("")
-    click.echo("Recommended next step:")
-    click.echo(f"  {options[0][0]}")
-    click.echo("")
-    click.echo("Run:")
-    click.echo(f"  {options[0][1]}")
-    if len(options) > 1:
-        click.echo("")
-        click.echo("Other options:")
-        for opt_desc, opt_cmd in options[1:]:
-            click.echo(f"  • {opt_desc}")
-            click.echo(f"    {opt_cmd}")
+    _render_next_steps(options)
 
 
 @status.command("check-changes")
 @click.argument("topic")
 def status_check_changes(topic):
     """Check source files for checksum drift; report stale downstream artifacts."""
-    tracking = require_tracking()
-    topic_entry = require_topic(tracking, topic)
+    tracking = _load_status_tracking()
+    topic_entry = _require_status_topic(tracking, topic)
 
     sources = tracking.get("sources", [])
     if not sources:
         click.echo("No L1 sources registered.")
+        click.echo("")
+        _render_next_steps([
+            ("Start source discovery for this topic", f"rh-inf-discovery session {topic}"),
+            ("Review topic status", f"rh-skills status show {topic}"),
+        ])
         return
 
     src_root = sources_root()
@@ -295,6 +309,8 @@ def status_check_changes(topic):
     for art in structured:
         for src_name in art.get("derived_from", []):
             derived_from.setdefault(src_name, []).append(art["name"])
+
+    computable = topic_entry.get("computable", [])
 
     click.echo(f"Topic: {topic}")
     click.echo("")
@@ -313,8 +329,15 @@ def status_check_changes(topic):
         if not full_path.exists():
             click.echo(f"  ✗ {src_name}  MISSING")
             stale = derived_from.get(src_name, [])
+            stale_l3 = [
+                art.get("name", "")
+                for art in computable
+                if any(parent in stale for parent in art.get("converged_from", []))
+            ]
             if stale:
-                click.echo(f"    Potentially stale: {', '.join(stale)}")
+                click.echo(f"    Potentially stale L2 artifacts: {', '.join(stale)}")
+            if stale_l3:
+                click.echo(f"    Potentially stale L3 artifacts: {', '.join(stale_l3)}")
             any_changed = True
             continue
 
@@ -326,13 +349,30 @@ def status_check_changes(topic):
             click.echo(f"    was: {stored_checksum[:16]}...")
             click.echo(f"    now: {current[:16]}...")
             stale = derived_from.get(src_name, [])
+            stale_l3 = [
+                art.get("name", "")
+                for art in computable
+                if any(parent in stale for parent in art.get("converged_from", []))
+            ]
             if stale:
                 click.echo(f"    Potentially stale L2 artifacts: {', '.join(stale)}")
+            if stale_l3:
+                click.echo(f"    Potentially stale L3 artifacts: {', '.join(stale_l3)}")
             any_changed = True
 
     click.echo("")
     if any_changed:
-        click.echo("Action: Re-ingest changed sources with `rh-skills ingest implement <file>`")
+        _render_next_steps([
+            ("Re-ingest or refresh the affected sources for this topic", f"rh-inf-ingest implement {topic}"),
+            ("Re-check drift after source refresh", f"rh-skills status check-changes {topic}"),
+            ("Review topic status before continuing", f"rh-skills status show {topic}"),
+        ])
         raise SystemExit(1)
     else:
         click.echo("All sources unchanged.")
+        click.echo("")
+        _render_next_steps([
+            ("No immediate action required — no source drift was detected", None),
+            ("Review topic status", f"rh-skills status show {topic}"),
+            ("Run unified verification for this topic", f"rh-inf-verify verify {topic}"),
+        ])

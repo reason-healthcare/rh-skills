@@ -37,9 +37,9 @@ modifies any file.
   recommendations are produced by `rh-skills status` CLI commands. The agent presents
   output and may add one sentence of context per topic; it does not invent
   recommendations beyond what the CLI produces.
-- **Always close the loop.** Every response ends with the standard output
-  contract: status block + "**What would you like to do next?**" + lettered
-  options.
+- **One status contract everywhere.** Status, portfolio, and drift output should
+  all end with the same deterministic `Next steps` bullet list emitted by the
+  canonical CLI surface. Do not append A/B/C-style menus.
 
 ---
 
@@ -81,35 +81,26 @@ Present the CLI output as-is. For each topic, you may add one sentence of
 context if the recommended next step is non-obvious (e.g., explain what
 `rh-inf-extract` does if the user may not know).
 
-**Step 2 — Offer check-changes (when sources exist)**
-
-If any topic shows sources registered, offer drift detection as an option:
+If the user explicitly asks for drift detection or changed-source checks, run:
 
 ```sh
 rh-skills status check-changes <topic>
 ```
 
-Do not run this automatically — offer it as a lettered option.
-
 ---
 
 ## Output Contract
 
-After every response, emit a status block and friendly user prompt as the
-**last thing** in the response. No text after the user prompt.
+Present the canonical `rh-skills status` output as-is. If you add any context,
+limit it to one brief sentence before the CLI output. Do not append a second
+menu, alternate recommendations, or lettered choices after the CLI output.
 
 ```
-▸ rh-inf-status  <topic or "portfolio">
-  Topics:   <N>
-  Sources:  <N>
-  Next:     <primary recommended action>
+<canonical rh-skills status output>
+Next steps:
+  - <deterministic action>
+  - <deterministic action>
 ```
-
-**What would you like to do next?**
-
-<lettered options derived from the CLI output, each on a new line>
-
-You can also ask for `rh-inf-status` at any time.
 
 ---
 
@@ -118,6 +109,5 @@ You can also ask for `rh-inf-status` at any time.
 | Condition | Action |
 |-----------|--------|
 | `tracking.yaml` missing | Advise `rh-skills init <topic>`; exit |
-| Topic not found | Advise `rh-skills init <topic>`; exit |
+| Topic not found | Advise `rh-skills list` and `rh-skills init <topic>`; exit |
 | `rh-skills status` exits non-zero | Surface the error verbatim; do not continue |
-
