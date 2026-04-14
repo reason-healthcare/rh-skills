@@ -169,10 +169,22 @@ rh-skills search clinicaltrials --query "<terms>" --max 20 [--json]
 Download a source file from a URL and register it in tracking.yaml.
 
 ```sh
-rh-skills ingest implement --url <url> --name <slug> [--type <mime>]
+rh-skills ingest implement --url <url> --name <slug> [--type <mime>] [--topic <topic>]
 ```
 
 Exit codes: `0` success · `1` network/HTTP error · `2` file already exists · `3` auth redirect detected
+
+### rh-skills ingest plan / verify
+
+Topic-aware ingest orchestration stays read-only and is safe to call from the curated skill.
+
+```sh
+rh-skills ingest plan <topic>
+rh-skills ingest verify <topic>
+```
+
+- `plan <topic>`: summarizes discovery-plan sources, authenticated/manual advisories, untracked files already present in `sources/`, and tool availability
+- `verify <topic>`: reports file/checksum/normalized/classified/annotated readiness plus `concepts.yaml` validity without writing to `tracking.yaml`
 
 ### rh-skills validate --plan
 

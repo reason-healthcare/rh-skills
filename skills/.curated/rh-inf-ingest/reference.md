@@ -89,8 +89,8 @@ sources:
     auth_note: >
       Requires institutional UpToDate subscription.
       Access via library portal or VPN. Download PDF and place at
-      sources/uptodate-hypertension/uptodate-hypertension.pdf,
-      then run: rh-skills ingest implement sources/uptodate-hypertension/uptodate-hypertension.pdf
+      sources/uptodate-hypertension.pdf,
+      then run: rh-skills ingest implement sources/uptodate-hypertension.pdf --topic <topic>
 ```
 
 ---
@@ -122,7 +122,7 @@ concepts:
 
 ## normalized.md Frontmatter Schema
 
-Every `sources/<name>/normalized.md` begins with a YAML frontmatter block:
+Every `sources/normalized/<name>.md` begins with a YAML frontmatter block:
 
 ```yaml
 ---

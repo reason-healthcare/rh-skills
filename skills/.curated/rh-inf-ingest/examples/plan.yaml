@@ -52,6 +52,6 @@ sources:
     auth_note: >
       Requires institutional UpToDate subscription. Access via library portal
       or institutional VPN. Download PDF and place at
-      sources/uptodate-young-adult-htn/uptodate-young-adult-htn.pdf, then run:
-      rh-skills ingest implement sources/uptodate-young-adult-htn/uptodate-young-adult-htn.pdf
+      sources/uptodate-young-adult-htn.pdf, then run:
+      rh-skills ingest implement sources/uptodate-young-adult-htn.pdf --topic young-adult-hypertension
     recommended: true

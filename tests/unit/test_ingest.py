@@ -5,10 +5,91 @@ from click.testing import CliRunner
 from ruamel.yaml import YAML
 
 from hi.commands.ingest import ingest
+from hi.common import sha256_file
 from tests.conftest import load_tracking
 
 
 # ── rh-skills ingest plan ─────────────────────────────────────────────────────────────
+
+
+def _write_discovery_plan(tmp_repo, topic, sources):
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "discovery-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    y.dump({"topic": topic, "sources": sources}, plan_path)
+    return plan_path
+
+
+def _register_source(
+    tmp_repo,
+    name,
+    *,
+    topic=None,
+    file_name=None,
+    source_type="document",
+    evidence_level=None,
+    domain_tags=None,
+    normalized=None,
+    annotated_at=None,
+    checksum=None,
+):
+    y = YAML()
+    y.default_flow_style = False
+    tf = tmp_repo / "tracking.yaml"
+    data = y.load(tf.read_text())
+    record = {
+        "name": name,
+        "file": file_name or f"sources/{name}.md",
+        "type": source_type,
+        "checksum": checksum or "abc",
+        "ingested_at": "2025-01-01T00:00:00Z",
+        "text_extracted": True,
+    }
+    if topic:
+        record["topic"] = topic
+    if evidence_level:
+        record["evidence_level"] = evidence_level
+    if domain_tags is not None:
+        record["domain_tags"] = domain_tags
+    if normalized:
+        record["normalized"] = normalized
+    if annotated_at:
+        record["annotated_at"] = annotated_at
+        record["concept_count"] = 1
+    data["sources"].append(record)
+    y.dump(data, tf)
+
+
+def _create_normalized_md(tmp_repo, name, topic="test-topic", *, concepts=None, text_extracted=True):
+    norm_dir = tmp_repo / "sources" / "normalized"
+    norm_dir.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    frontmatter = {
+        "source": name,
+        "topic": topic,
+        "normalized": "2025-01-01T00:00:00Z",
+        "original": f"sources/{name}.md",
+        "text_extracted": text_extracted,
+    }
+    if concepts is not None:
+        frontmatter["concepts"] = concepts
+    from io import StringIO
+    buf = StringIO()
+    y.dump(frontmatter, buf)
+    norm = norm_dir / f"{name}.md"
+    norm.write_text(f"---\n{buf.getvalue()}---\n\nNormalized content")
+    return norm
+
+
+def _write_concepts_yaml(tmp_repo, topic, concepts):
+    path = tmp_repo / "topics" / topic / "process" / "concepts.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    y.dump({"topic": topic, "generated": "2025-01-01T00:00:00Z", "concepts": concepts}, path)
+    return path
 
 def test_plan_creates_ingest_plan_md(tmp_repo):
     runner = CliRunner()
@@ -32,6 +113,48 @@ def test_plan_rerun_guard(tmp_repo):
     result = runner.invoke(ingest, ["plan"])
     assert result.exit_code == 0
     assert "already exists" in result.output
+
+
+def test_plan_topic_summarizes_discovery_plan_and_manual_files(tmp_repo):
+    _write_discovery_plan(tmp_repo, "hypertension", [
+        {
+            "name": "open-guideline",
+            "type": "clinical-guideline",
+            "access": "open",
+            "url": "https://example.com/open.pdf",
+        },
+        {
+            "name": "auth-review",
+            "type": "systematic-review",
+            "access": "authenticated",
+            "auth_note": "Use library portal",
+        },
+    ])
+    (tmp_repo / "sources" / "manual.pdf").write_text("manual file")
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, ["plan", "hypertension"])
+
+    assert result.exit_code == 0, result.output
+    assert "Pre-flight summary for 'hypertension'" in result.output
+    assert "Open-access sources ready to download: 1" in result.output
+    assert "Authenticated/manual sources requiring manual placement: 1" in result.output
+    assert "auth_note: Use library portal" in result.output
+    assert "Manually placed untracked files: 1" in result.output
+    assert "manual.pdf" in result.output
+    assert not (tmp_repo / "plans" / "ingest-plan.md").exists()
+
+
+def test_plan_topic_without_discovery_plan_lists_manual_files(tmp_repo):
+    (tmp_repo / "sources" / "manual-only.pdf").write_text("manual file")
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, ["plan", "manual-topic"])
+
+    assert result.exit_code == 0, result.output
+    assert "No discovery-plan.yaml found for this topic." in result.output
+    assert "Manually placed untracked files: 1" in result.output
+    assert "manual-only.pdf" in result.output
 
 
 # ── rh-skills ingest implement ────────────────────────────────────────────────────────
@@ -141,3 +264,49 @@ def test_verify_no_sources_exits_cleanly(tmp_repo):
     result = runner.invoke(ingest, ["verify"])
     assert result.exit_code == 0
     assert "No" in result.output
+
+
+def test_verify_topic_reports_readiness_and_valid_concepts(tmp_repo):
+    src = tmp_repo / "sources" / "topic-source.md"
+    src.write_text("Tracked source")
+    _register_source(
+        tmp_repo,
+        "topic-source",
+        topic="hypertension",
+        source_type="clinical-guideline",
+        evidence_level="ia",
+        domain_tags=["hypertension"],
+        normalized="sources/normalized/topic-source.md",
+        annotated_at="2025-01-01T00:00:00Z",
+        checksum=sha256_file(src),
+    )
+    _create_normalized_md(
+        tmp_repo,
+        "topic-source",
+        topic="hypertension",
+        concepts=[{"name": "Hypertension", "type": "condition"}],
+    )
+    _write_concepts_yaml(
+        tmp_repo,
+        "hypertension",
+        [{"name": "Hypertension", "type": "condition", "sources": ["topic-source"]}],
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, ["verify", "hypertension"])
+
+    assert result.exit_code == 0, result.output
+    assert "Ingest readiness for 'hypertension'" in result.output
+    assert "topic-source: file=OK checksum=OK normalized=YES classified=YES annotated=YES" in result.output
+    assert "concepts.yaml: VALID" in result.output
+
+
+def test_verify_topic_reports_untracked_manual_files(tmp_repo):
+    (tmp_repo / "sources" / "manual-only.pdf").write_text("manual file")
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, ["verify", "manual-topic"])
+
+    assert result.exit_code == 1
+    assert "Untracked manual files:" in result.output
+    assert "manual-only.pdf" in result.output

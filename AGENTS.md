@@ -1,10 +1,12 @@
 # reason-skills-2 Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-04
+Auto-generated from all feature plans. Last updated: 2026-04-13
 
 ## Active Technologies
 - Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, `httpx` (async-capable HTTP for URL download + PubMed API calls), `requests` (fallback for simple GET), `lxml` or `xmltodict` (PubMed XML parsing) (003-rh-inf-discovery)
 - File system (`sources/`, `topics/<name>/process/plans/`, `tracking.yaml`, `RESEARCH.md`) (003-rh-inf-discovery)
+- Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, `httpx >= 0.27`, `markdownify >= 0.13`, Python stdlib `html.parser`, external tools `pdftotext` and `pandoc` when available (004-rh-inf-ingest)
+- File system (`sources/`, `sources/normalized/`, `topics/<name>/process/`, `tracking.yaml`) (004-rh-inf-ingest)
 
 - Bash 3.2+ (portable macOS/Linux) + `yq` (Go binary), `jq`, `curl`, `bash 3.2+` — same as existing `rh-skills` CLI stack. Optional: `pdftotext` (poppler), `pandoc` for binary file extraction. (002-rh-agent-skills)
 
@@ -24,6 +26,7 @@ tests/
 Bash 3.2+ (portable macOS/Linux): Follow standard conventions
 
 ## Recent Changes
+- 004-rh-inf-ingest: Added Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, `httpx >= 0.27`, `markdownify >= 0.13`, Python stdlib `html.parser`, external tools `pdftotext` and `pandoc` when available
 - 003-rh-inf-discovery: Added Python 3.13+ (existing `rh-skills` CLI stack) + `click >= 8.0`, `ruamel.yaml >= 0.18`, `httpx` (async-capable HTTP for URL download + PubMed API calls), `requests` (fallback for simple GET), `lxml` or `xmltodict` (PubMed XML parsing)
 
 - 002-rh-agent-skills: Added Bash 3.2+ (portable macOS/Linux) + `yq` (Go binary), `jq`, `curl`, `bash 3.2+` — same as existing `rh-skills` CLI stack. Optional: `pdftotext` (poppler), `pandoc` for binary file extraction.

@@ -105,6 +105,31 @@ def test_ingest_implement_url_registers_in_tracking(httpx_mock, tmp_repo):
     assert "source_ingested" in event_types
 
 
+def test_ingest_implement_url_stores_topic_metadata(httpx_mock, tmp_repo):
+    """Optional --topic flag is persisted on the tracked source record."""
+    from ruamel.yaml import YAML
+
+    httpx_mock.add_response(
+        method="GET",
+        url="https://example.com/topic-doc.pdf",
+        content=b"%PDF fake",
+        headers={"content-type": "application/pdf"},
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, [
+        "implement",
+        "--url", "https://example.com/topic-doc.pdf",
+        "--name", "topic-doc",
+        "--topic", "hypertension",
+    ])
+
+    assert result.exit_code == 0, result.output
+    y = YAML(typ="safe")
+    tracking = y.load((tmp_repo / "tracking.yaml").read_text())
+    assert tracking["sources"][0]["topic"] == "hypertension"
+
+
 # ── URL download: MIME fallback ───────────────────────────────────────────────
 
 def test_ingest_implement_url_unknown_mime_uses_url_ext(httpx_mock, tmp_repo):

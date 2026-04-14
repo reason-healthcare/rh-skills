@@ -9,6 +9,7 @@ from pathlib import Path
 
 import click
 import httpx
+from ruamel.yaml import YAML
 
 from hi.common import (
     append_root_event,
@@ -164,14 +165,262 @@ def _extract_html_meta(html_text: str) -> dict:
     return result
 
 
+def _yaml_safe() -> YAML:
+    y = YAML(typ="safe")
+    return y
+
+
+def _topic_plan_path(topic: str) -> Path:
+    return repo_root() / "topics" / topic / "process" / "plans" / "discovery-plan.yaml"
+
+
+def _load_discovery_plan(topic: str) -> dict | None:
+    plan_path = _topic_plan_path(topic)
+    if not plan_path.exists():
+        return None
+    data = _yaml_safe().load(plan_path.read_text()) or {}
+    return data if isinstance(data, dict) else None
+
+
+def _tracking_or_empty() -> dict:
+    try:
+        return require_tracking()
+    except click.ClickException:
+        return {"sources": [], "topics": [], "events": []}
+
+
+def _tool_availability() -> dict[str, bool]:
+    return {
+        "pdftotext": shutil.which("pdftotext") is not None,
+        "pandoc": shutil.which("pandoc") is not None,
+    }
+
+
+def _source_files() -> list[Path]:
+    src_root = sources_root()
+    if not src_root.exists():
+        return []
+    return sorted(
+        path for path in src_root.iterdir()
+        if path.is_file()
+    )
+
+
+def _topic_tracked_sources(tracking: dict, topic: str, discovery_names: set[str]) -> list[dict]:
+    tracked = tracking.get("sources", [])
+    topic_sources = [
+        source for source in tracked
+        if source.get("topic") == topic or source.get("name") in discovery_names
+    ]
+    if topic_sources:
+        return topic_sources
+    return [source for source in tracked if source.get("topic") == topic]
+
+
+def _untracked_source_files(tracking: dict, topic: str, discovery_names: set[str]) -> list[Path]:
+    tracked_files = {
+        source.get("file")
+        for source in tracking.get("sources", [])
+        if source.get("file")
+    }
+    tracked_names = {
+        source.get("name")
+        for source in _topic_tracked_sources(tracking, topic, discovery_names)
+        if source.get("name")
+    }
+    manual_files: list[Path] = []
+    for path in _source_files():
+        rel_path = f"sources/{path.name}"
+        if rel_path in tracked_files:
+            continue
+        if path.stem in tracked_names:
+            continue
+        manual_files.append(path)
+    return manual_files
+
+
+def _load_frontmatter(markdown_path: Path) -> dict:
+    if not markdown_path.exists():
+        return {}
+    raw = markdown_path.read_text()
+    parts = raw.split("---\n", 2)
+    if len(parts) < 3:
+        return {}
+    data = _yaml_safe().load(parts[1]) or {}
+    return data if isinstance(data, dict) else {}
+
+
+def _validate_concepts_file(topic: str) -> tuple[bool, list[str]]:
+    concepts_path = repo_root() / "topics" / topic / "process" / "concepts.yaml"
+    if not concepts_path.exists():
+        return False, [f"concepts.yaml missing: {concepts_path}"]
+
+    try:
+        data = _yaml_safe().load(concepts_path.read_text()) or {}
+    except Exception as exc:
+        return False, [f"concepts.yaml parse error: {exc}"]
+
+    errors: list[str] = []
+    if not isinstance(data, dict):
+        return False, ["concepts.yaml is not a YAML mapping"]
+    if data.get("topic") != topic:
+        errors.append(f"concepts.yaml topic mismatch: expected {topic}")
+    concepts = data.get("concepts")
+    if not isinstance(concepts, list):
+        errors.append("concepts.yaml concepts must be a list")
+        return False, errors
+
+    seen: set[str] = set()
+    for index, concept in enumerate(concepts, start=1):
+        if not isinstance(concept, dict):
+            errors.append(f"concept #{index} is not a mapping")
+            continue
+        name = concept.get("name")
+        ctype = concept.get("type")
+        sources = concept.get("sources")
+        if not name:
+            errors.append(f"concept #{index} missing name")
+            continue
+        key = str(name).strip().lower()
+        if key in seen:
+            errors.append(f"duplicate concept entry: {name}")
+        seen.add(key)
+        if not ctype:
+            errors.append(f"concept '{name}' missing type")
+        if not isinstance(sources, list) or not sources:
+            errors.append(f"concept '{name}' missing sources[]")
+
+    return not errors, errors
+
+
+def _print_topic_plan(topic: str) -> None:
+    tracking = _tracking_or_empty()
+    discovery = _load_discovery_plan(topic) or {}
+    sources = discovery.get("sources", []) if isinstance(discovery.get("sources", []), list) else []
+    open_sources = [source for source in sources if source.get("access") == "open"]
+    auth_sources = [
+        source for source in sources
+        if source.get("access") in {"authenticated", "manual"}
+    ]
+    discovery_names = {
+        source.get("name")
+        for source in sources
+        if source.get("name")
+    }
+    manual_files = _untracked_source_files(tracking, topic, discovery_names)
+    tools = _tool_availability()
+
+    click.echo(f"Pre-flight summary for '{topic}'")
+    if sources:
+        click.echo(f"Open-access sources ready to download: {len(open_sources)}")
+        for source in open_sources:
+            click.echo(f"  - {source.get('name')} ({source.get('type', 'unknown')})")
+        click.echo(f"Authenticated/manual sources requiring manual placement: {len(auth_sources)}")
+        for source in auth_sources:
+            click.echo(f"  - {source.get('name')} [{source.get('access')}]")
+            if source.get("auth_note"):
+                click.echo(f"    auth_note: {source.get('auth_note')}")
+    else:
+        click.echo("No discovery-plan.yaml found for this topic.")
+
+    click.echo(f"Manually placed untracked files: {len(manual_files)}")
+    for path in manual_files:
+        click.echo(f"  - {path.name}")
+
+    click.echo("Tool availability:")
+    click.echo(f"  - pdftotext: {'available' if tools['pdftotext'] else 'missing'}")
+    click.echo(f"  - pandoc: {'available' if tools['pandoc'] else 'missing'}")
+
+
+def _verify_topic(topic: str) -> None:
+    tracking = _tracking_or_empty()
+    discovery = _load_discovery_plan(topic) or {}
+    discovery_sources = discovery.get("sources", []) if isinstance(discovery.get("sources", []), list) else []
+    discovery_names = {
+        source.get("name")
+        for source in discovery_sources
+        if source.get("name")
+    }
+    tracked_sources = _topic_tracked_sources(tracking, topic, discovery_names)
+    manual_files = _untracked_source_files(tracking, topic, discovery_names)
+
+    if not tracked_sources and not manual_files and not discovery_sources:
+        click.echo(f"No ingest sources found for topic '{topic}'")
+        return
+
+    click.echo(f"Ingest readiness for '{topic}'")
+    any_failures = False
+    for source in tracked_sources:
+        name = source.get("name", "<unknown>")
+        src_file = source.get("file", f"sources/{name}.md")
+        checksum = source.get("checksum")
+        full_path = repo_root() / src_file
+        if not full_path.exists():
+            full_path = sources_root() / Path(src_file).name
+
+        if not full_path.exists():
+            checksum_state = "MISSING"
+            file_ok = False
+        elif checksum and sha256_file(full_path) != checksum:
+            checksum_state = "CHANGED"
+            file_ok = True
+        else:
+            checksum_state = "OK"
+            file_ok = True
+
+        normalized_rel = source.get("normalized", f"sources/normalized/{name}.md")
+        normalized_path = repo_root() / normalized_rel
+        normalized_ok = normalized_path.exists()
+        frontmatter = _load_frontmatter(normalized_path) if normalized_ok else {}
+        classified_ok = bool(source.get("type") and source.get("evidence_level"))
+        annotated_ok = bool(source.get("annotated_at")) or bool(frontmatter.get("concepts"))
+
+        status_line = (
+            f"{name}: file={'OK' if file_ok else 'MISSING'} "
+            f"checksum={checksum_state} "
+            f"normalized={'YES' if normalized_ok else 'NO'} "
+            f"classified={'YES' if classified_ok else 'NO'} "
+            f"annotated={'YES' if annotated_ok else 'NO'}"
+        )
+        click.echo(status_line)
+        if frontmatter.get("text_extracted") is False:
+            click.echo(f"  warning: {name} has text_extracted=false")
+
+        if checksum_state != "OK" or not normalized_ok or not classified_ok or not annotated_ok:
+            any_failures = True
+
+    if manual_files:
+        click.echo("Untracked manual files:")
+        for path in manual_files:
+            click.echo(f"  - {path.name}")
+        any_failures = True
+
+    concepts_valid, concept_errors = _validate_concepts_file(topic)
+    if concepts_valid:
+        click.echo("concepts.yaml: VALID")
+    else:
+        click.echo("concepts.yaml: INVALID")
+        for error in concept_errors:
+            click.echo(f"  - {error}")
+        any_failures = True
+
+    if any_failures:
+        raise SystemExit(1)
+
+
 @click.group()
 def ingest():
     """Register and track raw L1 source artifacts."""
 
 
 @ingest.command()
-def plan():
-    """Generate an ingest plan template at plans/ingest-plan.md."""
+@click.argument("topic", required=False)
+def plan(topic):
+    """Generate an ingest plan template, or render a topic pre-flight summary."""
+    if topic:
+        _print_topic_plan(topic)
+        return
+
     root = repo_root()
     plan_file = root / "plans" / "ingest-plan.md"
 
@@ -214,20 +463,21 @@ rh-skills ingest implement <path-to-file>
 @click.option("--url", "source_url", default=None, help="URL to download instead of a local file")
 @click.option("--name", "source_name", default=None, help="Stem name for saved file (required with --url)")
 @click.option("--type", "source_type", default="document", help="Source type (see Source Type Taxonomy)")
-def implement(file, source_url, source_name, source_type):
+@click.option("--topic", default=None, help="Topic slug for topic-aware reporting")
+def implement(file, source_url, source_name, source_type, topic):
     """Copy FILE to sources/ and register in tracking.yaml.
 
     Alternatively, pass --url <url> --name <name> to download from a URL.
     """
     if source_url:
-        _implement_url(source_url, source_name, source_type)
+        _implement_url(source_url, source_name, source_type, topic=topic)
     else:
         if file is None:
             raise click.UsageError("Provide FILE argument or --url flag")
-        _implement_file(Path(file), source_type)
+        _implement_file(Path(file), source_type, topic=topic)
 
 
-def _implement_file(src_path: Path, source_type: str = "document") -> None:
+def _implement_file(src_path: Path, source_type: str = "document", topic: str | None = None) -> None:
     """Copy a local file to sources/ and register it."""
     if not src_path.exists():
         raise click.ClickException(f"File not found: {src_path}")
@@ -253,23 +503,33 @@ def _implement_file(src_path: Path, source_type: str = "document") -> None:
                 if s["name"] == source_name:
                     s["checksum"] = checksum
                     s["ingested_at"] = ingested_at
+                    if topic:
+                        s["topic"] = topic
             append_root_event(tracking, "source_changed", f"Re-ingested source: {source_name}")
         else:
-            tracking["sources"].append({
+            record = {
                 "name": source_name,
                 "file": f"sources/{src_path.name}",
                 "type": source_type,
                 "checksum": checksum,
                 "ingested_at": ingested_at,
                 "text_extracted": False,
-            })
+            }
+            if topic:
+                record["topic"] = topic
+            tracking["sources"].append(record)
             append_root_event(tracking, "source_added", f"Ingested source: {source_name}")
 
     locked_update_tracking(_update)
     log_info(f"Registered: {source_name} (checksum: {checksum[:12]}...)")
 
 
-def _implement_url(url: str, source_name: str | None, source_type: str = "document") -> None:
+def _implement_url(
+    url: str,
+    source_name: str | None,
+    source_type: str = "document",
+    topic: str | None = None,
+) -> None:
     """Download a URL to sources/ and register it. Exit 3 on auth redirect."""
     if not source_name:
         raise click.UsageError("--name is required when using --url")
@@ -325,9 +585,11 @@ def _implement_url(url: str, source_name: str | None, source_type: str = "docume
                     s["checksum"] = checksum
                     s["ingested_at"] = ingested_at
                     s["url"] = url
+                    if topic:
+                        s["topic"] = topic
             append_root_event(tracking, "source_changed", f"Re-downloaded source: {source_name}")
         else:
-            tracking["sources"].append({
+            record = {
                 "name": source_name,
                 "file": f"sources/{source_name}{ext}",
                 "type": source_type,
@@ -336,7 +598,10 @@ def _implement_url(url: str, source_name: str | None, source_type: str = "docume
                 "ingested_at": ingested_at,
                 "text_extracted": False,
                 "downloaded": True,
-            })
+            }
+            if topic:
+                record["topic"] = topic
+            tracking["sources"].append(record)
             append_root_event(tracking, "source_ingested", f"Downloaded source: {source_name}")
 
     locked_update_tracking(_update)
@@ -461,6 +726,7 @@ def normalize(file, topic, source_name):
                 if s.get("name") == name:
                     s["normalized"] = f"sources/normalized/{name}.md"
                     s["text_extracted"] = text_extracted
+                    s["topic"] = topic
             append_root_event(tracking, "source_normalized", f"Normalized: {name}")
         locked_update_tracking(_update)
     else:
@@ -508,6 +774,7 @@ def classify(name, topic, source_type, evidence_level, tags):
                 s["evidence_level"] = evidence_level
                 s["domain_tags"] = tag_list
                 s["classified_at"] = now_iso()
+                s["topic"] = topic
                 append_root_event(tracking, "source_classified", f"Classified: {name}")
                 return
         raise click.ClickException(
@@ -614,6 +881,7 @@ def annotate(name, topic, concepts):
                 if s.get("name") == name:
                     s["annotated_at"] = now_iso()
                     s["concept_count"] = len(parsed_concepts)
+                    s["topic"] = topic
             append_root_event(
                 tracking, "source_annotated",
                 f"Annotated: {name} ({len(parsed_concepts)} concepts)"
@@ -634,8 +902,13 @@ def annotate(name, topic, concepts):
 
 
 @ingest.command()
-def verify():
-    """Re-checksum all registered sources and report changes."""
+@click.argument("topic", required=False)
+def verify(topic):
+    """Re-checksum all registered sources, or report topic ingest readiness."""
+    if topic:
+        _verify_topic(topic)
+        return
+
     tracking = require_tracking()
     sources = tracking.get("sources", [])
 
