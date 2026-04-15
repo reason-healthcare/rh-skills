@@ -4,6 +4,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
+from hi.commands.ingest import ingest
 from hi.commands.init import init
 from hi.commands.promote import promote
 from hi.commands.validate import validate
@@ -180,3 +181,64 @@ def test_lifecycle_tracking_arrays_are_lists(tmp_repo):
     topic = next(t for t in data["topics"] if t["name"] == "test-workflow-skill")
     assert isinstance(topic["structured"], list)
     assert isinstance(topic["computable"], list)
+
+
+def test_lifecycle_diabetes_screening_fixture_flow(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv(
+        "HI_STUB_RESPONSE",
+        """\
+id: screening-criteria
+name: screening-criteria
+title: "Diabetes Screening Criteria"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: |
+  Evidence-based criteria for identifying adults who should be screened for
+  diabetes and prediabetes.
+derived_from:
+  - ada-guidelines-2024
+""",
+    )
+
+    runner = CliRunner()
+    init_result = runner.invoke(init, ["diabetes-screening"])
+    assert init_result.exit_code == 0, init_result.output
+
+    source_file = tmp_repo / "ada-guidelines-2024.md"
+    source_file.write_text(
+        """\
+ADA 2024 diabetes screening guidance:
+- Begin routine screening at age 35
+- Screen earlier when overweight or obese with additional risk factors
+"""
+    )
+
+    ingest_result = runner.invoke(ingest, ["implement", str(source_file)])
+    assert ingest_result.exit_code == 0, ingest_result.output
+
+    derive_result = runner.invoke(
+        promote,
+        [
+            "derive",
+            "diabetes-screening",
+            "screening-criteria",
+            "--source",
+            "ada-guidelines-2024",
+        ],
+    )
+    assert derive_result.exit_code == 0, derive_result.output
+
+    validate_result = runner.invoke(
+        validate, ["diabetes-screening", "l2", "screening-criteria"]
+    )
+    assert validate_result.exit_code == 0, validate_result.output
+
+    y = YAML()
+    with open(tmp_repo / "tracking.yaml") as f:
+        tracking = y.load(f)
+
+    assert tracking["sources"][0]["name"] == "ada-guidelines-2024"
+    topic = next(t for t in tracking["topics"] if t["name"] == "diabetes-screening")
+    assert topic["structured"][0]["name"] == "screening-criteria"

@@ -64,7 +64,7 @@
 - [X] T037 [P] ✅ Create `docs/GETTING_STARTED.md`
 - [X] T038 [P] ✅ Create `docs/WORKFLOW.md`
 - [X] T039 [P] ✅ Create `docs/COMMANDS.md`
-- [ ] T040 Run integration test using `diabetes-screening` fixture: `rh-skills init` → `rh-skills ingest implement` (source registered in tracking.yaml) → `rh-skills promote derive` → `rh-skills validate` → confirm all pass
+- [X] T040 ✅ Run integration test using `diabetes-screening` fixture: `rh-skills init` → `rh-skills ingest implement` (source registered in tracking.yaml) → `rh-skills promote derive` → `rh-skills validate` → confirm all pass
 
 ---
 

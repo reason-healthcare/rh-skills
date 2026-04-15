@@ -1,26 +1,26 @@
 <!--
 Sync Impact Report
-Version change: template -> 1.0.0
-Modified principles:
-- Template Principle 1 -> I. Deterministic CLI Boundary
-- Template Principle 2 -> II. Reviewable Lifecycle Artifacts
-- Template Principle 3 -> III. Spec-Linked Validation
-- Template Principle 4 -> IV. Safety and Evidence Integrity
-- Template Principle 5 -> V. Minimal Surface Area
-Added sections:
-- Delivery Constraints
-- Development Workflow
-Removed sections:
-- Placeholder template principle titles and section names
-Templates requiring updates:
-- ✅ .specify/templates/plan-template.md
-- ✅ .specify/templates/spec-template.md
-- ✅ .specify/templates/tasks-template.md
-- ✅ docs/SKILL_AUTHORING.md
-- ✅ specs/005-rh-inf-extract/spec.md
-- ✅ specs/005-rh-inf-extract/plan.md
-Follow-up TODOs:
-- None
+- Version change: template -> 1.0.0
+- Modified principles:
+  - Template Principle 1 -> I. Deterministic CLI Boundary
+  - Template Principle 2 -> II. Reviewable Lifecycle Artifacts
+  - Template Principle 3 -> III. Spec-Linked Validation
+  - Template Principle 4 -> IV. Safety and Evidence Integrity
+  - Template Principle 5 -> V. Minimal Surface Area
+- Added sections:
+  - Delivery Constraints
+  - Development Workflow
+- Removed sections:
+  - Placeholder template principle titles and section names
+- Templates requiring updates:
+  - ✅ .specify/templates/plan-template.md
+  - ✅ .specify/templates/spec-template.md
+  - ✅ .specify/templates/tasks-template.md
+  - ✅ docs/SKILL_AUTHORING.md
+  - ✅ specs/005-rh-inf-extract/spec.md
+  - ✅ specs/005-rh-inf-extract/plan.md
+- Follow-up TODOs:
+  - None
 -->
 
 # RH Skills Constitution

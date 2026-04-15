@@ -3,7 +3,7 @@
 **Feature Branch**: `004-rh-inf-ingest`  
 **Created**: 2026-04-04  
 **Updated**: 2026-04-05  
-**Status**: Draft  
+**Status**: ✅ Complete  
 **Depends On**: [002 — RH Skills](../002-rh-agent-skills/), [003 — rh-inf-discovery](../003-rh-inf-discovery/)
 
 ## Overview

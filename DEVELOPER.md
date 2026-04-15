@@ -25,10 +25,31 @@ make test                              # full suite
 make test-unit                         # CLI unit tests only
 make test-skills                       # skill schema, security, contract tests
 make test-integration                  # integration tests
+uv run pytest                        # full suite
+uv run pytest tests/unit/            # CLI unit tests only
+uv run pytest tests/skills/          # skill schema, security, contract tests
+uv run pytest tests/build/           # build-system fixtures and bundle validation
 uv run pytest tests/unit/test_init.py  # single file
 ```
 
 The skill test suite (`tests/skills/`) is parametrized over curated skills in `skills/.curated/`. Tests skip gracefully when no skills are implemented yet and activate automatically as each skill is added.
+
+## Building Distribution Bundles
+
+Use the build entrypoint to turn canonical curated skills into deterministic
+platform bundles under `dist/`:
+
+```bash
+scripts/build-skills.sh --platform copilot
+scripts/build-skills.sh --all --dry-run
+scripts/build-skills.sh --all --validate
+```
+
+Platform behavior lives in `skills/_profiles/*.yaml`, so new targets should
+normally be onboarded by adding a profile and any referenced support content
+rather than editing the core script. See
+[docs/SKILL_DISTRIBUTION.md](docs/SKILL_DISTRIBUTION.md) for profile fields,
+validation rules, and CI reproduction steps.
 
 ## Repository Layout
 
@@ -45,6 +66,7 @@ src/hi/                         ← rh-skills CLI source (Python, click)
 
 tests/
   unit/                         ← pytest tests for CLI commands
+  build/                        ← fixture-driven bundle generation + validation tests
   skills/                       ← skill schema, security, and contract tests
     conftest.py                 ← shared fixtures (curated_skill, parse_frontmatter)
     test_skill_schema.py        ← frontmatter validation, companion file presence
@@ -59,12 +81,17 @@ skills/
       plan.md
       output.md
   .curated/                     ← stable, distributable skills (003–008 land here)
+  _profiles/                    ← declarative bundle profiles + support content
+
+scripts/
+  build-skills.sh               ← deterministic bundle builder for agent-native platforms
 
 docs/
   GETTING_STARTED.md
   WORKFLOW.md
   COMMANDS.md
   SKILL_AUTHORING.md            ← step-by-step skill authoring guide
+  SKILL_DISTRIBUTION.md         ← build/profile/CI guide for generated bundles
 
 schemas/
   l2-schema.yaml

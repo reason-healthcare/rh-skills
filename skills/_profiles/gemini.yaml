@@ -1,0 +1,22 @@
+platform: gemini
+bundled: true
+bundle_mode: per_skill
+output_path_pattern: dist/gemini/{skill_name}
+frontmatter_policy: transform
+preamble:
+  file: skills/_profiles/support/gemini-preamble.md
+suffix:
+  file: skills/_profiles/support/gemini-suffix.md
+field_map:
+  compatibility: platform_compatibility
+omit_sections:
+  - Pre-Execution Checks
+validation_rules:
+  - skill_entry_exists
+  - frontmatter_present
+  - preamble_present
+  - suffix_present
+installability_checks:
+  - bundle_directory_exists
+  - file_nonempty
+

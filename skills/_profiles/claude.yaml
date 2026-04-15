@@ -1,0 +1,17 @@
+platform: claude
+bundled: true
+bundle_mode: per_skill
+output_path_pattern: dist/claude/{skill_name}
+frontmatter_policy: strip
+preamble:
+  file: skills/_profiles/support/claude-preamble.md
+omit_sections:
+  - User Input
+validation_rules:
+  - skill_entry_exists
+  - frontmatter_absent
+  - preamble_present
+installability_checks:
+  - bundle_directory_exists
+  - file_nonempty
+

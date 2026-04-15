@@ -4,15 +4,19 @@ name: screening-eligibility
 description: "Computable artifact must define screening eligibility criteria"
 version: "1.0"
 assertions:
-  - id: has-age-criteria
-    description: "Must define minimum screening age"
-    path: "criteria[?(@.type=='age')]"
+  - id: has-pathway
+    description: "Must define at least one screening pathway"
+    path: "pathways"
     required: true
-  - id: has-risk-factors
-    description: "Must enumerate at least one risk factor"
-    path: "risk_factors"
+  - id: has-screening-actions
+    description: "Must define screening-related actions"
+    path: "actions"
     required: true
-  - id: has-frequency
-    description: "Must specify screening frequency"
-    path: "frequency"
+  - id: has-quality-measure
+    description: "Must define a quality measure for screening"
+    path: "measures"
+    required: true
+  - id: has-supporting-value-set
+    description: "Must include at least one supporting value set"
+    path: "value_sets"
     required: true

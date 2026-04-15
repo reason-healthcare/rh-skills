@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-rh-agent-skills`  
 **Created**: 2026-04-03 | **Updated**: 2026-04-04  
-**Status**: ✅ Complete (T040 integration test deferred to skill specs)
+**Status**: ✅ Complete
 
 ## Overview
 

@@ -2,7 +2,7 @@ artifact_schema_version: "1.0"
 
 metadata:
   id: diabetes-screening-computable
-  name: DiabetesScreeningComputable
+  name: diabetes-screening-computable
   title: "Diabetes Screening Computable Artifact"
   version: "1.0.0"
   status: draft
@@ -64,7 +64,7 @@ measures:
     description: |
       Percentage of eligible adults who received appropriate diabetes screening
       (FPG or A1C) within the measurement period.
-    numerator: "Patient.age >= 35 and hasLabResult('FPG') or hasLabResult('A1C')"
+    numerator: "(Patient.age >= 35) and (hasLabResult('FPG') or hasLabResult('A1C'))"
     denominator: "Patient.age >= 35 and isActive and noExistingDiabetesDiagnosis"
     scoring: proportion
 

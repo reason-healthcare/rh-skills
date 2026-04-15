@@ -3,7 +3,7 @@ sources:
   - name: ada-guidelines-2024
     file: sources/ada-guidelines-2024.md
     type: document
-    checksum: "5ab36f57b47ab616df818db58467fcf594042b454d357866756dd80929d5e944"
+    checksum: "7a0d2d4d7057b7f4d10046f08b7fdfe35ecff374717c507215679b9b4853a8e9"
     ingested_at: "2026-04-03T00:00:00Z"
     text_extracted: false
 topics:
@@ -16,20 +16,20 @@ topics:
       - name: screening-criteria
         file: topics/diabetes-screening/structured/screening-criteria.yaml
         created_at: "2026-04-03T00:00:00Z"
-        checksum: "9588833b2338ea2e80e7aa0bedf1f962c9780433c909ebc5ebd185eab800c794"
+        checksum: "b61662af23fa7b93b679055389aaa5fb2a7efa8b668225c7fff618fa2792ee10"
         derived_from:
           - ada-guidelines-2024
       - name: risk-factors
         file: topics/diabetes-screening/structured/risk-factors.yaml
         created_at: "2026-04-03T00:00:00Z"
-        checksum: "4e24205379d4c5e219dc269b954c1b9df8e73dd8e796128beb642421f384a0c6"
+        checksum: "9a295b631ca73c257eabbf2dbbcfb0d42befad2c83327c1280792c821e9c7ab7"
         derived_from:
           - ada-guidelines-2024
     computable:
       - name: diabetes-screening-computable
         file: topics/diabetes-screening/computable/diabetes-screening-computable.yaml
         created_at: "2026-04-03T00:00:00Z"
-        checksum: "2ca001ac7a53deef495117500cf5101d2054cbb6a98738946f11759d40c964be"
+        checksum: "40b32486882c106e7f820417d63ffda367ebbc8fb6e15d34425ce7e85f01ae60"
         converged_from:
           - screening-criteria
           - risk-factors
@@ -44,6 +44,9 @@ topics:
         type: computable_converged
         description: Converged diabetes-screening-computable from screening-criteria, risk-factors
 events:
+  - timestamp: "2026-04-03T00:00:00Z"
+    type: topic_created
+    description: Topic scaffolded with hi init
   - timestamp: "2026-04-03T00:01:00Z"
     type: source_added
-    description: Added ada-guidelines-2024 raw source
+    description: Ingested source: ada-guidelines-2024

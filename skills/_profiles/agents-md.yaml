@@ -1,0 +1,16 @@
+platform: agents-md
+bundled: false
+bundle_mode: aggregate
+output_path_pattern: dist/agents-md/AGENTS.md
+frontmatter_policy: strip
+preamble:
+  inline: |
+    # RH Informatics Skills
+
+    Aggregate preview bundle generated from the curated skill library.
+validation_rules:
+  - skill_entry_exists
+  - aggregate_contains_skills
+installability_checks:
+  - file_nonempty
+

@@ -2,7 +2,7 @@
 
 **Feature Branch**: `008-rh-inf-status`  
 **Created**: 2026-04-14  
-**Status**: Ready for Review  
+**Status**: ✅ Complete  
 **Depends On**: [002 — RH Skills](../002-rh-agent-skills/), [003 — rh-inf-discovery](../003-rh-inf-discovery/), [004 — rh-inf-ingest](../004-rh-inf-ingest/), [005 — rh-inf-extract](../005-rh-inf-extract/), [006 — rh-inf-formalize](../006-rh-inf-formalize/), [007 — rh-inf-verify](../007-rh-inf-verify/)  
 **Input**: User description: "008 we should create this skill to use the same CLI to report status we use elsewhere to have a consistent UX. Status skill should always suggest the user what to do next. Let's remove the A, B, C choice as this is not consistent across models, rather a simple bullet list of what they can do. This should be deterministic, so we should be able to build into the CLI command"
 

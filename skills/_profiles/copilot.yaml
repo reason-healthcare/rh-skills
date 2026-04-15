@@ -1,0 +1,13 @@
+platform: copilot
+bundled: true
+bundle_mode: per_skill
+output_path_pattern: dist/copilot/{skill_name}
+frontmatter_policy: keep
+validation_rules:
+  - skill_entry_exists
+  - frontmatter_present
+  - companion_files_present
+installability_checks:
+  - bundle_directory_exists
+  - skill_entry_exists
+

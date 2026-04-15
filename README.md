@@ -178,4 +178,5 @@ See [`example-project/`](example-project/) for a complete diabetes-screening wal
 - [Getting Started](docs/GETTING_STARTED.md) — step-by-step first topic walkthrough
 - [Workflow](docs/WORKFLOW.md) — lifecycle diagram and many-to-many artifact topology
 - [Command Reference](docs/COMMANDS.md) — full CLI reference with all flags
+- [Skill Distribution](docs/SKILL_DISTRIBUTION.md) — build deterministic platform bundles from `skills/.curated/`
 - [Developer Guide](DEVELOPER.md) — contributing skills and framework code

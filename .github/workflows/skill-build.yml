@@ -1,0 +1,48 @@
+name: skill-build
+
+on:
+  pull_request:
+    paths:
+      - "scripts/build-skills.sh"
+      - "skills/_profiles/**"
+      - "skills/.curated/**"
+      - "tests/build/**"
+      - "docs/SKILL_DISTRIBUTION.md"
+      - "README.md"
+      - "DEVELOPER.md"
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/build-skills.sh"
+      - "skills/_profiles/**"
+      - "skills/.curated/**"
+      - "tests/build/**"
+      - "docs/SKILL_DISTRIBUTION.md"
+
+jobs:
+  bundle-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Install project dependencies
+        run: uv sync --dev
+
+      - name: Run build-system validation suite
+        run: uv run pytest tests/build/test_build_skills.py -q
+

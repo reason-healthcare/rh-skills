@@ -1,10 +1,17 @@
-# Feature Specification: HI Skills Build System
+# Feature Specification: RH Skills Build System
 
-**Feature Branch**: `009-skill-build-system`
-**Created**: 2026-04-04
-**Status**: Draft
+**Feature Branch**: `009-skill-build-system`  
+**Created**: 2026-04-14  
+**Status**: ✅ Complete  
+**Input**: User description: "Specify what needs to be done on branch 009 for a build system that turns the canonical RH skill library into installable platform-specific skill bundles from one source of truth."
 
-## Overview
+## Clarifications
+
+### Session 2026-04-14
+
+- Q: Should 009 cover only build/distribution, or also include CI evaluation? → A: Include CI validation of generated bundles and installability checks in 009; defer scenario-based model evaluation to a later extension.
+
+## User Scenarios & Testing *(mandatory)*
 
 The RH Skills supports two usage modes:
 
@@ -13,137 +20,188 @@ The RH Skills supports two usage modes:
 
 In both modes, the guiding principle is identical: **all deterministic work via `rh-skills` CLI, all reasoning by the agent.** The SKILL.md content does not change between modes — only the *installation format* differs per agent platform.
 
-The build system compiles the canonical `skills/.curated/<name>/SKILL.md` files into platform-specific output formats using per-platform profiles. A single source of truth; multiple deployment targets.
+## User Scenarios & Testing *(mandatory)*
 
----
+### User Story 1 - Build skill bundles for supported platforms (Priority: P1)
 
-## User Scenarios & Testing
+A contributor wants to package the canonical RH skill library for one or more
+supported agent platforms so teams can install the same skills consistently
+without manually rewriting them for each platform.
 
-### User Story 1 — Build all skills for a target platform (Priority: P1)
+**Why this priority**: This is the core value of the feature. Without reliable
+multi-platform packaging from one source of truth, the build system does not
+solve the distribution problem it exists to address.
 
-A contributor has finished implementing a skill (or updated an existing one) and wants to publish it to one or more agent platforms so clinical teams can install it.
-
-**Why this priority**: Core value of the build system — without this, multi-platform support doesn't exist.
-
-**Independent Test**: Running the build script for a single platform produces correctly formatted output files that can be installed in the target agent environment.
-
-**Acceptance Scenarios**:
-
-1. **Given** canonical skills in `skills/.curated/`, **When** `scripts/build-skills.sh --platform copilot` runs, **Then** formatted output is written to `dist/copilot/<name>/SKILL.md` for each curated skill, passing all platform validation rules.
-2. **Given** canonical skills in `skills/.curated/`, **When** `scripts/build-skills.sh --platform claude` runs, **Then** formatted output is written to `dist/claude/<name>.md` with frontmatter stripped and Claude-compatible structure applied.
-3. **Given** `scripts/build-skills.sh --all` runs, **Then** all configured platforms are built in sequence; a summary reports skill count and any per-platform warnings.
-4. **Given** a canonical SKILL.md has an unfilled `<placeholder>`, **When** the build runs, **Then** the build fails with a clear error identifying the skill and the placeholder.
-
----
-
-### User Story 2 — Define a platform profile (Priority: P2)
-
-A contributor adds support for a new agent platform by creating a profile that describes how canonical SKILL.md files should be transformed for that platform.
-
-**Why this priority**: Profiles are what make the build system extensible — adding a platform must not require touching the build script itself.
-
-**Independent Test**: A new profile YAML file alone (no script changes) is sufficient to produce valid output for that platform when the build runs.
+**Independent Test**: A contributor can run the build workflow for one supported
+platform or all supported platforms and receive installable platform-specific
+skill bundles plus a clear build summary.
 
 **Acceptance Scenarios**:
 
-1. **Given** a new profile at `skills/_profiles/<platform>.yaml`, **When** `scripts/build-skills.sh --platform <platform>` runs, **Then** the build reads the profile and produces output without any script modification.
-2. **Given** a profile specifying `frontmatter: strip`, **When** the build runs, **Then** YAML frontmatter is removed from all output files for that platform.
-3. **Given** a profile specifying `frontmatter: keep`, **When** the build runs, **Then** YAML frontmatter is preserved verbatim in output files.
-4. **Given** a profile specifying a `preamble` template, **When** the build runs, **Then** the preamble is prepended to each output file with `{{skill_name}}` and `{{description}}` substituted.
-5. **Given** a profile specifying `output_path_pattern`, **When** the build runs, **Then** output files are written to paths matching the pattern.
+1. **Given** canonical RH skills are available in the curated skill library,
+   **When** a contributor builds for one supported platform, **Then** the system
+   produces installable skill bundles for that platform from the same canonical
+   source content.
+2. **Given** canonical RH skills are available in the curated skill library,
+   **When** a contributor builds for all supported platforms, **Then** the
+   system builds each configured platform in one workflow and reports the
+   outcome for each platform.
+3. **Given** the canonical skill content contains unresolved placeholder text,
+   **When** a contributor starts a build, **Then** the system stops before
+   distributing output and identifies the affected skill clearly.
+4. **Given** generated bundles are ready for distribution, **When** repository CI
+   runs, **Then** the system validates the generated bundles and installability
+   checks before distribution is considered ready.
 
 ---
 
-### User Story 3 — Validate build output (Priority: P2)
+### User Story 2 - Add or adjust a platform profile declaratively (Priority: P2)
 
-A contributor wants confidence that the build output is correctly formed before distributing it.
+A maintainer wants to support a new agent platform, or refine an existing one,
+by updating a platform profile rather than rewriting the build workflow itself.
 
-**Why this priority**: Prevents broken skills reaching clinical teams.
+**Why this priority**: The build system must stay extensible. Adding platform
+support should be routine configuration work rather than a bespoke engineering
+project each time.
 
-**Independent Test**: Running the validate flag on build output produces a per-skill, per-platform pass/fail report.
+**Independent Test**: A maintainer can add a new platform profile and build for
+that platform without changing the core build workflow.
 
 **Acceptance Scenarios**:
 
-1. **Given** `scripts/build-skills.sh --all --validate`, **When** the build runs, **Then** each output file is checked against its platform profile's validation rules; failures are reported with skill name, platform, and reason.
-2. **Given** a Claude output file missing a required `## Usage` section, **When** validate runs, **Then** the build exits non-zero with a clear diagnostic.
-3. **Given** all output files pass validation, **When** validate runs, **Then** the build exits 0 and prints a summary: `N skills × M platforms — all valid`.
+1. **Given** a maintainer defines a new platform profile, **When** the build
+   workflow is run for that platform, **Then** the system uses the profile to
+   generate platform-specific bundles without requiring core build logic changes.
+2. **Given** a platform profile changes how metadata or preamble content should
+   appear, **When** the build workflow runs, **Then** the output reflects the
+   profile-defined formatting rules consistently across all generated bundles.
+3. **Given** a profile contains an unsupported or conflicting configuration,
+   **When** the build workflow starts, **Then** the system reports the issue
+   clearly before producing ambiguous or conflicting output.
 
 ---
 
-### User Story 4 — Dry-run mode (Priority: P3)
+### User Story 3 - Validate or preview build output before distribution (Priority: P2)
 
-A contributor wants to preview what the build would produce without writing any files.
+A contributor wants confidence that generated skill bundles are well-formed
+before sharing them, and sometimes wants to preview the impact of a build
+without writing any files.
+
+**Why this priority**: Distribution safety matters because broken skill bundles
+would create installation problems across platforms and erode trust in the
+canonical skill library.
+
+**Independent Test**: A contributor can run validation and preview workflows and
+receive a clear per-platform, per-skill outcome without needing to inspect the
+generated files manually.
 
 **Acceptance Scenarios**:
 
-1. **Given** `scripts/build-skills.sh --all --dry-run`, **When** the build runs, **Then** no files are written; the script prints each output path and a diff-style preview of transformations applied.
-2. **Given** `--dry-run` is active, **When** the build would fail (e.g., unfilled placeholder), **Then** the error is reported the same as a real build.
+1. **Given** generated bundles are ready for review, **When** a contributor runs
+   the validation workflow, **Then** the system reports pass/fail results for
+   each bundle with enough detail to diagnose failures.
+2. **Given** a generated bundle is missing required platform content, **When**
+   validation runs, **Then** the system fails the validation workflow with a
+   clear diagnostic tied to the affected platform and skill.
+3. **Given** a contributor wants a non-destructive preview, **When** the preview
+   workflow runs, **Then** the system shows what would be generated without
+   writing files while still surfacing blocking errors.
+4. **Given** a generated bundle cannot be installed or loaded in its target
+   platform validation flow, **When** CI validation runs, **Then** the system
+   fails with a clear platform-specific diagnostic.
 
 ---
 
 ### Edge Cases
 
-- A curated skill directory exists but contains no `SKILL.md` — skip with a warning, do not fail the build.
-- A platform profile references a `preamble_file` that does not exist — fail with a clear error identifying the missing file.
-- Two profiles produce output to the same path — fail at profile load time with a conflict error.
-- A profile field is unrecognized — emit a warning and continue (forward-compatible).
-- `skills/.curated/` contains zero skills — build succeeds with an informational message; no output written.
-- `--platform` is specified but no matching profile exists — fail immediately with the list of known platforms.
+- What happens when the curated skill library contains zero buildable skills?
+- What happens when a platform profile is requested but does not exist?
+- What happens when two platform profiles would generate output to the same
+  destination?
+- What happens when a platform profile references required supporting content
+  that cannot be found?
+- What happens when a curated skill is incomplete and cannot be distributed?
+- What happens when a platform profile includes fields the current build system
+  does not yet understand?
 
----
-
-## Requirements
+## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-**Build Script**
+- **FR-001**: The system MUST generate installable skill bundles for one selected
+  supported platform from the canonical curated RH skill library.
+- **FR-002**: The system MUST generate installable skill bundles for all
+  supported platforms in a single build workflow when requested.
+- **FR-003**: The system MUST preserve one canonical source of truth for skill
+  content and MUST NOT require contributors to manually rewrite the same skill
+  for each supported platform.
+- **FR-004**: The system MUST support a non-destructive preview mode that shows
+  what would be generated without writing distributable output.
+- **FR-005**: The system MUST support a validation mode that checks generated
+  bundles against platform-specific expectations and reports failures clearly.
+- **FR-005a**: The system MUST support automated CI validation of generated
+  bundles and installability checks for bundled platforms before distribution is
+  considered ready.
+- **FR-006**: The system MUST stop a build before distribution when canonical
+  skill content is incomplete or contains unresolved placeholder text, and it
+  MUST identify the affected skill clearly.
+- **FR-007**: The system MUST provide a clear build summary showing which skills
+  and platforms succeeded, failed, or produced warnings.
+- **FR-008**: The system MUST use declarative platform profiles so that adding or
+  refining a supported platform does not require changing the core build
+  workflow in the normal case.
+- **FR-009**: A platform profile MUST define the output shape needed for that
+  platform, including bundle location, metadata handling, and any required
+  preamble or formatting rules.
+- **FR-010**: The system MUST detect conflicting platform profile outputs before
+  writing bundles so contributors do not receive ambiguous or overlapping build
+  artifacts.
+- **FR-011**: The system MUST warn clearly about unsupported or unrecognized
+  optional profile fields without silently changing the canonical skill content.
+- **FR-012**: The system MUST include bundled support for GitHub Copilot, Claude
+  Code, and Gemini CLI as initial distribution targets.
+- **FR-013**: The system MAY include an additional distribution target that
+  produces an aggregate agent-guidance document derived from the same canonical
+  skill library.
+- **FR-014**: Generated build artifacts MUST be kept separate from the canonical
+  curated skill sources so contributors can distinguish source content from
+  distributable output.
+- **FR-015**: Re-running the same build with unchanged inputs MUST produce the
+  same output so contributors can trust the build workflow to be repeatable.
 
-- **FR-001**: A shell script at `scripts/build-skills.sh` MUST compile all skills in `skills/.curated/` into platform-specific outputs using the profile for the specified platform(s).
-- **FR-002**: The script MUST support `--platform <name>` (single platform) and `--all` (all configured platforms).
-- **FR-003**: The script MUST support `--dry-run` to preview output paths and transformations without writing files.
-- **FR-004**: The script MUST support `--validate` to check output files against platform profile validation rules after building.
-- **FR-005**: The script MUST exit 0 on success, exit 1 on any build or validation error, and print a per-skill summary.
-- **FR-006**: The script MUST detect unfilled `<placeholder>` tokens in any canonical SKILL.md and fail with a diagnostic identifying the skill name and the placeholder text before producing any output.
-- **FR-007**: The script MUST be compatible with bash 3.2+ (macOS default) and require no dependencies beyond standard POSIX utilities and `yq` (already required by the framework).
+### Key Entities *(include if feature involves data)*
 
-**Platform Profiles**
+- **Canonical Skill**: A curated RH skill that serves as the single source of
+  truth for skill content before distribution.
+- **Platform Profile**: A declarative description of how canonical skill content
+  should be shaped for one supported platform.
+- **Generated Skill Bundle**: A platform-specific distribution artifact derived
+  from a canonical skill and a platform profile.
+- **Validation Finding**: A pass, warning, or failure result associated with a
+  generated bundle during validation.
+- **Installability Check**: A platform-specific automated check confirming that a
+  generated bundle can be loaded or consumed in the expected distribution flow.
+- **Build Summary**: A contributor-facing report of which skills and platforms
+  were built, skipped, warned, or failed.
 
-- **FR-008**: Platform profiles MUST be YAML files at `skills/_profiles/<platform>.yaml`.
-- **FR-009**: Each profile MUST declare: `platform` (name), `output_dir` (base output path), `output_path_pattern` (per-skill file path with `{{skill_name}}` interpolation), `frontmatter` (`keep` | `strip` | `transform`), and `validation_rules[]`.
-- **FR-010**: Profiles MAY declare: `preamble` (inline text), `preamble_file` (path to a Markdown file), `suffix` (appended text), `field_map` (frontmatter field renames), `omit_sections[]` (SKILL.md section headings to exclude from output).
-- **FR-011**: The build script MUST apply profiles declaratively — adding a new profile MUST produce output for the new platform with no script changes.
-- **FR-012**: Unknown profile fields MUST produce a warning, not a build failure (forward-compatible).
+## Success Criteria *(mandatory)*
 
-**Bundled Profiles**
+### Measurable Outcomes
 
-- **FR-013**: A profile for **GitHub Copilot** (`copilot.yaml`) MUST be included. Output: `dist/copilot/<skill-name>/SKILL.md`. Frontmatter: keep. This is effectively a passthrough (canonical format = Copilot format).
-- **FR-014**: A profile for **Claude Code** (`claude.yaml`) MUST be included. Output: `dist/claude/<skill-name>.md`. Frontmatter: strip (Claude reads context from file content, not YAML). Preamble: slash-command header with skill name and description.
-- **FR-015**: A profile for **Gemini CLI** (`gemini.yaml`) MUST be included. Output: `dist/gemini/<skill-name>.md`. Format details derived from Gemini CLI tool conventions.
-- **FR-016**: A profile for **AGENTS.md injection** (`agents-md.yaml`) MAY be included as a convenience target: concatenates all skill names and descriptions into an `AGENTS.md`-compatible block.
-
-**Output**
-
-- **FR-017**: All build output MUST be written under `dist/` (repo root). The `dist/` directory MUST be listed in `.gitignore` by default; contributors may opt to commit it.
-- **FR-018**: The build script MUST be idempotent — running it multiple times produces identical output (no timestamps or run IDs in generated files).
-
-### Key Entities
-
-- **Canonical Skill**: `skills/.curated/<name>/SKILL.md` — the single source of truth for skill content.
-- **Platform Profile**: `skills/_profiles/<platform>.yaml` — declares transformation rules and output format for one agent platform.
-- **Build Output**: `dist/<platform>/<name>.<ext>` — platform-specific skill file ready for installation.
-- **Preamble Template**: Optional Markdown prepended to each output file; supports `{{skill_name}}` and `{{description}}` interpolation.
-
----
-
-## Success Criteria
-
-- **SC-001**: A contributor can add a new agent platform by creating one profile YAML file with no changes to `build-skills.sh`.
-- **SC-002**: Running `scripts/build-skills.sh --all` from a clean clone (with `uv` and `yq` installed) succeeds in under 10 seconds for six skills across three platforms.
-- **SC-003**: Output files for all bundled platforms pass their respective platform's skill loading validation (Copilot, Claude Code, Gemini CLI).
-- **SC-004**: `--dry-run` mode produces zero file writes while still reporting all errors a real build would report.
-- **SC-005**: The build system is documented in `DEVELOPER.md` such that a new contributor can build and distribute skills for any supported platform without reading the script source.
-
----
+- **SC-001**: A contributor can generate distributable skill bundles for any
+  bundled platform from a clean clone in under 10 minutes after following the
+  documented setup steps.
+- **SC-002**: A maintainer can add support for a new platform by defining one
+  platform profile without changing the core build workflow for at least 90% of
+  new platform onboarding cases.
+- **SC-003**: 100% of generated bundles for bundled platforms pass the build
+  system's platform-specific validation checks before distribution.
+- **SC-003a**: 100% of bundled-platform distributions pass automated CI
+  installability checks before contributors treat them as releasable output.
+- **SC-004**: Preview mode produces zero file writes while still surfacing 100%
+  of blocking errors that would fail a normal build.
+- **SC-005**: A new contributor can successfully build and distribute RH skills
+  for a supported platform without reading the build workflow source code.
 
 ## Assumptions
 
@@ -154,4 +212,17 @@ A contributor wants to preview what the build would produce without writing any 
 - Claude Code reads skill context from plain Markdown files in `.claude/commands/`; frontmatter stripping plus a slash-command preamble is sufficient for compatibility.
 - The build script is a developer tool only — it is never invoked by `rh-skills` CLI or called by end users.
 - Platform profiles for 003–008 skills (once implemented) will be validated as part of the build; the build system does not need to know skill semantics.
-
+- The curated RH skill library remains the single source of truth for skill
+  content and distribution starts from that library rather than from
+  platform-specific copies.
+- Supported target platforms continue to accept file-based skill bundles or
+  equivalent distributable documents.
+- Contributors need both selective builds for one platform and full builds for
+  all bundled platforms.
+- Generated output is treated as derived distribution material rather than the
+  authoritative editing surface for RH skills.
+- The first release of this feature should cover GitHub Copilot, Claude Code,
+  and Gemini CLI, with room for additional platforms later.
+- Scenario-based model evaluation and transcript ranking are explicitly out of
+  scope for 009 and may be proposed as a later extension once the CI validation
+  baseline exists.

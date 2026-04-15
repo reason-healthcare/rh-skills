@@ -2,7 +2,7 @@
 
 **Feature Branch**: `005-rh-inf-extract`  
 **Created**: 2026-04-04  
-**Status**: Draft  
+**Status**: ✅ Complete  
 **Depends On**: [002 — RH Skills](../002-rh-agent-skills/), [004 — rh-inf-ingest](../004-rh-inf-ingest/)
 
 ## Overview
