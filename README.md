@@ -1,5 +1,7 @@
 # rh-skills
 
+[![CI](https://github.com/reason-healthcare/rh-skills/actions/workflows/skill-build.yml/badge.svg)](https://github.com/reason-healthcare/rh-skills/actions/workflows/skill-build.yml)
+
 rh-skills is an agentic workflow toolset providing superpowers for clinical
 informaticists: it orchestrates AI reasoning over raw clinical source material
 and produces **deterministic, computable rules** — structured artifacts that can
