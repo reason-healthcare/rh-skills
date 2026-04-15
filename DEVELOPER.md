@@ -85,6 +85,11 @@ skills/
 
 scripts/
   build-skills.sh               ← deterministic bundle builder for agent-native platforms
+  eval-skill.sh                 ← run a skill in an isolated workspace and capture transcript
+
+eval/
+  transcripts/                  ← captured agent session transcripts (per skill/scenario)
+  reviews/                      ← human-filled review stubs (efficiency + quality scores)
 
 docs/
   GETTING_STARTED.md
@@ -124,6 +129,98 @@ All six RH informatics skills follow the same SKILL.md pattern. To implement a n
 - **`plan → implement → verify` modes** — every skill exposes all three. `verify` is strictly read-only (FR-022, FR-026).
 - **Progressive disclosure** — SKILL.md body is Level 2; `reference.md` and `examples/` are Level 3 (loaded on demand). Keep the SKILL.md body lean.
 - **Named events** — every `implement` mode must append a named event to `tracking.yaml` via `rh-skills ingest` / `rh-skills promote` (never raw YAML writes).
+
+## Iterating on a Skill Locally
+
+Before committing a new or revised skill, run it end-to-end in an isolated
+workspace and capture the session for review. This surfaces two categories of
+problems that static tests cannot catch:
+
+1. **Efficiency** — ambiguity in the skill prompt, agent churn, and missing CLI
+   commands (cases where the agent wrote a shell script for something that should
+   be an `rh-skills` subcommand).
+2. **Output quality** — clinical accuracy, schema compliance, evidence
+   traceability, and absence of hallucinations. This requires a human reviewer.
+
+### Running an eval session
+
+```bash
+# Claude CLI against rh-inf-discovery, "sources-identified" scenario
+scripts/eval-skill.sh \
+  --skill rh-inf-discovery \
+  --scenario sources-identified \
+  --agent claude
+
+# Local model via Ollama
+scripts/eval-skill.sh \
+  --skill rh-inf-ingest \
+  --scenario ingest-pdf \
+  --agent ollama --model llama3
+
+# No agent — dumps an opening prompt for manual copy-paste
+scripts/eval-skill.sh \
+  --skill rh-inf-extract \
+  --scenario single-source \
+  --agent generic
+```
+
+The script:
+
+1. Creates a temp directory (`mktemp -d`) and bootstraps a minimal `rh-skills`
+   project inside it so the agent sees a realistic workspace.
+2. Calls `rh-skills skills init --platforms generic` to install the skill.
+3. Launches the chosen agent, piping the opening prompt to it.
+4. Tee-s stdout/stderr to a transcript file at
+   `eval/transcripts/<skill>/<scenario>-<timestamp>.md`.
+5. Writes a human-review stub to
+   `eval/reviews/<skill>/<scenario>-<timestamp>-review.md`.
+6. Deletes the temp directory on exit (pass `--keep-workdir` to preserve it for
+   manual inspection of produced artifacts).
+
+### Completing the review
+
+Open the generated review stub and work through both checklists:
+
+**Efficiency checklist** (objective — can be filled in by the skill author):
+
+| Signal | What to look for |
+|--------|-----------------|
+| Ambiguity | Agent asked clarifying questions a clearer prompt would have answered |
+| Churn | Agent retried a step, re-read the same file, or looped on the same sub-task |
+| CLI gaps | Agent wrote an inline script for I/O, schema validation, or path ops that belong in `rh-skills` |
+| Over-instruction | Skill body restates rules that are already in `reference.md`; trim and move |
+| Token waste | Verbose preambles or repeated tool calls with identical arguments |
+
+**Output quality checklist** (subjective — requires a clinical reviewer):
+
+| Dimension | What to check |
+|-----------|--------------|
+| Completeness | All expected files/sections are present for the scenario |
+| Clinical accuracy | Terminology, evidence levels, and cited guidelines are correct |
+| Schema compliance | YAML/FHIR structure matches `schemas/l2-schema.yaml` or `l3-schema.yaml` |
+| Traceability | Every claim in L2/L3 artifacts links back to an ingested source |
+| No hallucinations | No fabricated citations, lab values, or guideline references |
+
+Score each dimension 1–5 in the review file, add notes and recommended changes,
+then commit both files:
+
+```bash
+git add eval/
+git commit -m "eval(rh-inf-discovery/sources-identified): <one-line summary>"
+```
+
+### Naming scenarios
+
+Use a short kebab-case label that describes the starting state or the
+clinical question being tested, e.g.:
+
+- `sources-identified` — discovery sources already found; test extract
+- `ingest-pdf` — single PDF source; test normalize + classify
+- `conflicting-guidelines` — two sources disagree; test conflict handling
+- `no-sources` — nothing ingested yet; test graceful early exit
+
+Scenarios accumulate in `eval/` and serve as a regression baseline when the
+skill or the CLI commands it delegates to are updated.
 
 ## Skill Security Requirements
 
