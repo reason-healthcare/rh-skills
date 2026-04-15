@@ -10,7 +10,7 @@ context_files:
   - examples/output.md
 metadata:
   author: "RH Skills"
-  version: "1.0.0"
+  version: "1.1.0"
   source: "skills/.curated/rh-inf-extract/SKILL.md"
   lifecycle_stage: "l2-semi-structured"
   reads_from:
@@ -21,6 +21,19 @@ metadata:
   writes_via_cli:
     - "rh-skills promote derive"
     - "rh-skills validate"
+  uses_mcp:
+    - tool: reasonhub-search_all_codesystems
+      when: plan — first-pass concept search when target code system is unknown
+    - tool: reasonhub-search_snomed
+      when: plan — proposing terminology/value-set artifacts; search clinical concepts
+    - tool: reasonhub-search_loinc
+      when: plan — proposing terminology/value-set artifacts; search observable/lab concepts
+    - tool: reasonhub-search_icd10
+      when: plan — proposing terminology/value-set artifacts; search diagnosis concepts
+    - tool: reasonhub-search_rxnorm
+      when: plan — proposing terminology/value-set artifacts; search medication concepts
+    - tool: reasonhub-codesystem_lookup
+      when: plan — resolving canonical display name or UCUM unit for a candidate code
 ---
 
 # rh-inf-extract
@@ -106,14 +119,33 @@ appropriate `rh-skills` CLI boundary used by the workflow.
    - measure logic
    - evidence summary
    - custom artifact types when clearly justified
-5. Write `topics/<topic>/process/plans/extract-plan.md` with:
+5. For each proposed `terminology-value-sets` artifact, resolve candidate codes
+   using reasonhub MCP before writing the plan:
+   a. If the target code system is not yet clear, call
+      `reasonhub-search_all_codesystems` with each key clinical concept as the
+      query to identify the most appropriate system(s).
+   b. Refine with system-specific searches (`reasonhub-search_snomed`,
+      `reasonhub-search_loinc`, `reasonhub-search_icd10`,
+      `reasonhub-search_rxnorm`) based on the concept domain:
+      - lab / observable → LOINC
+      - clinical finding / procedure / condition → SNOMED CT
+      - diagnosis / billing → ICD-10-CM
+      - medication / drug → RxNorm
+   c. For each candidate code, call `reasonhub-codesystem_lookup` to confirm the
+      canonical display name and, for quantitative LOINC codes, the recommended
+      UCUM unit.
+   d. Record candidate codes in the artifact's `candidate_codes[]` field in the
+      review packet. Include `code`, `system`, `display`, and `search_query` for
+      each entry so the reviewer can evaluate and approve or remove codes before
+      implement.
+6. Write `topics/<topic>/process/plans/extract-plan.md` with:
    - plan frontmatter (`topic`, `plan_type`, `status`, `reviewer`, `reviewed_at`, `artifacts[]`)
    - `Review Summary`
    - `Proposed Artifacts`
    - `Cross-Artifact Issues`
    - `Implementation Readiness`
-6. If `extract-plan.md` already exists and `--force` is not present, warn and stop without overwriting.
-7. Summarize the proposed artifacts and instruct the reviewer to edit approval fields before implement mode.
+7. If `extract-plan.md` already exists and `--force` is not present, warn and stop without overwriting.
+8. Summarize the proposed artifacts and instruct the reviewer to edit approval fields before implement mode.
 
 ### What to capture per artifact
 

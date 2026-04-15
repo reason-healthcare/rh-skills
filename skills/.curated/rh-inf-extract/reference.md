@@ -37,6 +37,11 @@ artifacts:
       - evidence_traceability
     unresolved_conflicts:
       - <conflict summary>
+    candidate_codes:               # populated by reasonhub MCP during plan; only present for terminology-value-sets artifacts
+      - code: <code>
+        system: <system-url>
+        display: <canonical display name>
+        search_query: <query used to find this code>
     reviewer_decision: <pending-review | approved | needs-revision | rejected>
     approval_notes: <string>
 ```
@@ -46,6 +51,34 @@ Body sections, in order:
 2. `Proposed Artifacts`
 3. `Cross-Artifact Issues`
 4. `Implementation Readiness`
+
+---
+
+## Terminology Resolution (Plan Mode)
+
+When proposing a `terminology-value-sets` artifact, use reasonhub MCP tools to
+surface candidate codes before the plan is written.
+
+### Tool selection
+
+| Concept domain | Preferred tool |
+|----------------|----------------|
+| Unknown / cross-system | `reasonhub-search_all_codesystems` |
+| Lab / observable | `reasonhub-search_loinc` |
+| Clinical finding / procedure / condition | `reasonhub-search_snomed` |
+| Diagnosis / billing | `reasonhub-search_icd10` |
+| Medication / drug | `reasonhub-search_rxnorm` |
+
+After finding candidate codes, call `reasonhub-codesystem_lookup` to confirm the
+canonical display name. For quantitative LOINC codes, the response includes an
+`EXAMPLE_UCUM_UNITS` property with the recommended unit.
+
+### candidate_codes[] in the review packet
+
+Each `terminology-value-sets` artifact entry in the plan SHOULD include a
+`candidate_codes[]` list. The reviewer inspects, prunes, or augments this list
+before approving. Approved codes carry forward into the L3 `value_sets[]`
+section during formalize.
 
 ---
 

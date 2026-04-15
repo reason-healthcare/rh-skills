@@ -86,9 +86,48 @@ Minimum completeness rules:
 - `actions` must contain at least one action with `intent` and either
   `description` or `conditions`
 - `value_sets` must contain at least one coded entry in `codes`
+- every code in `value_sets[].codes[]` must pass `reasonhub-codesystem_verify_code` against the declared `system`
 - `measures` must contain both `numerator` and `denominator`
 - `libraries` must contain both `language` and `content`
 - `assessments` must contain one or more `items`
+
+---
+
+## Terminology Resolution (Implement Mode)
+
+When the approved formalize plan requires a `value_sets` section, resolve codes
+using reasonhub MCP tools before calling `rh-skills promote combine`.
+
+### Tool selection
+
+| Concept domain | Preferred tool |
+|----------------|----------------|
+| Unknown / cross-system | `reasonhub-search_all_codesystems` |
+| Lab / observable | `reasonhub-search_loinc` |
+| Clinical finding / procedure / condition | `reasonhub-search_snomed` |
+| Diagnosis / billing | `reasonhub-search_icd10` |
+| Medication / drug | `reasonhub-search_rxnorm` |
+
+After identifying candidate codes, call `reasonhub-codesystem_lookup` to confirm
+the canonical display name. For quantitative LOINC codes the response includes
+`EXAMPLE_UCUM_UNITS`.
+
+Use `reasonhub-valueset_expand` when the value set should cover an entire concept
+hierarchy (e.g. all SNOMED descendants of "Diabetes mellitus") — inline-expand
+rather than manually listing codes.
+
+### Carry-forward from extract
+
+If the approved extract plan includes `candidate_codes[]` for a
+`terminology-value-sets` artifact that maps to this value set, use those codes
+as the authoritative starting set. Only invoke MCP search to fill gaps.
+
+### Terminology verification (Verify Mode)
+
+For each `value_sets[]` entry in the computable artifact, call
+`reasonhub-codesystem_verify_code` with the entry's `system` and each `code`.
+Any code that fails verification is a terminology error and causes verify to
+exit non-zero with per-code detail.
 
 ---
 

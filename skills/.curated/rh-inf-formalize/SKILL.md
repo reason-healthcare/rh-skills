@@ -10,7 +10,7 @@ context_files:
   - examples/output.md
 metadata:
   author: "RH Skills"
-  version: "1.0.0"
+  version: "1.1.0"
   source: "skills/.curated/rh-inf-formalize/SKILL.md"
   lifecycle_stage: "l3-computable"
   reads_from:
@@ -22,6 +22,23 @@ metadata:
     - "rh-skills promote formalize-plan"
     - "rh-skills promote combine"
     - "rh-skills validate"
+  uses_mcp:
+    - tool: reasonhub-search_all_codesystems
+      when: implement — first-pass concept search when target code system is unknown for a value_set entry
+    - tool: reasonhub-search_snomed
+      when: implement — resolving clinical finding / procedure / condition codes for value_sets[]
+    - tool: reasonhub-search_loinc
+      when: implement — resolving lab / observable codes for value_sets[]
+    - tool: reasonhub-search_icd10
+      when: implement — resolving diagnosis codes for value_sets[]
+    - tool: reasonhub-search_rxnorm
+      when: implement — resolving medication codes for value_sets[]
+    - tool: reasonhub-codesystem_lookup
+      when: implement — confirming canonical display name and UCUM unit for each resolved code
+    - tool: reasonhub-valueset_expand
+      when: implement — expanding hierarchical value sets (e.g. SNOMED descendants) inline
+    - tool: reasonhub-codesystem_verify_code
+      when: verify — validating each code in value_sets[] against its declared system
 ---
 
 # rh-inf-formalize
@@ -130,19 +147,37 @@ all deterministic writes must go through `rh-skills promote combine` and
    implementation target remains `pending-review`, `needs-revision`, or `rejected`.
 3. Re-check every `input_artifacts[]` entry with `rh-skills validate <topic> <artifact>`
    and fail immediately if any input is missing or invalid.
-4. Run:
+4. For `value_sets` sections required by the approved plan, resolve codes using
+   reasonhub MCP before calling `rh-skills promote combine`:
+   a. For each value set concept, start with `reasonhub-search_all_codesystems`
+      if the target system is not clear, then refine with the appropriate
+      system-specific search (`reasonhub-search_loinc`,
+      `reasonhub-search_snomed`, `reasonhub-search_icd10`,
+      `reasonhub-search_rxnorm`).
+   b. Call `reasonhub-codesystem_lookup` on each selected code to confirm the
+      canonical display name. For quantitative LOINC codes, capture
+      `EXAMPLE_UCUM_UNITS` as the unit.
+   c. When the value set should include all descendants of a concept (e.g. all
+      SNOMED children of "Diabetes mellitus"), call `reasonhub-valueset_expand`
+      with a filter to inline-expand the hierarchy rather than listing codes
+      manually.
+   d. If `candidate_codes[]` entries were approved in the extract plan for the
+      corresponding `terminology-value-sets` artifact, use those as the
+      authoritative starting set, augmented by MCP search only where the plan
+      set is incomplete.
+5. Run:
 
    ```sh
    rh-skills promote combine <topic> <l2-input-1> <l2-input-2> <target-name>
    ```
 
-5. Immediately validate the computable artifact with:
+6. Immediately validate the computable artifact with:
 
    ```sh
    rh-skills validate <topic> <target-name>
    ```
 
-6. Report `✓` or `✗` for the single implementation target. Stop on blocking CLI failures; do not silently continue past a failed combine or validate command.
+7. Report `✓` or `✗` for the single implementation target. Stop on blocking CLI failures; do not silently continue past a failed combine or validate command.
 
 ### Events
 
@@ -170,7 +205,11 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    - `converged_from[]` matches the approved `input_artifacts[]`
    - every required computable section from the plan is present
    - every required section is minimally complete for its section type
-4. Report pass/fail per artifact and exit non-zero only when required checks fail.
+4. For each `value_sets[]` entry in the computable artifact, call
+   `reasonhub-codesystem_verify_code` with the entry's `system` and each
+   `code`. Report any code that fails verification as a terminology error.
+   Treat terminology errors as verify failures (exit non-zero).
+5. Report pass/fail per artifact and exit non-zero only when required checks fail.
 
 Verify is read-only and safe to re-run at any time.
 

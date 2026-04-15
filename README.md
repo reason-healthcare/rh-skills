@@ -1,9 +1,10 @@
-# RH Skills
+# rh-skills
 
-RH Skills is an agentic workflow toolset for clinical informaticists: it
-orchestrates AI reasoning over raw clinical source material and produces
-**deterministic, computable rules** — structured artifacts that can be embedded
-directly into EHRs, quality programs, and clinical decision support systems.
+rh-skills is an agentic workflow toolset providing superpowers for clinical
+informaticists: it orchestrates AI reasoning over raw clinical source material
+and produces **deterministic, computable rules** — structured artifacts that can
+be embedded directly into EHRs, quality programs, and clinical decision support
+systems.
 
 This matters. Clinically, evidence shows it takes up to 17 years for research
 findings to reach routine practice,¹ and even published guidelines are routinely
@@ -42,10 +43,10 @@ The RH Skills framework guides clinical knowledge through three artifact levels:
            ├──────────▶│  Structured artifact    │  (L2)
            ├──────────▶│  Structured artifact    │  (L2)
            └──────────▶│  Structured artifact    │  (L2)
-                       └────────┬──────────┬─────┘
-                                │          │
-                                │ converge │
-                                ▼          ▼
+                       └───────┬───────────┬─────┘
+                               │           │
+                               │ formalize │
+                               ▼           ▼
                         ┌────────────────────────┐
                         │  Computable artifact   │  (L3)
                         │  (FHIR-aligned)        │
@@ -69,6 +70,38 @@ Raw files are ingested and normalized to Markdown (L1) before extraction. The re
 - An LLM provider only if you plan to use **CLI-first** mode — local Ollama,
   Anthropic, OpenAI, or any OpenAI-compatible endpoint. Agent-native users can
   rely on their existing agent platform.
+
+## Recommended: ReasonHub MCP
+
+The RH skills use the **ReasonHub MCP** service for terminology support —
+code-system searching (SNOMED CT, LOINC, ICD-10-CM, RxNorm, UCUM), value set
+expansion, and code validation. Without it the skills still function, but
+`terminology / value sets` artifacts and `value_sets[]` sections in computable
+artifacts will contain placeholder text rather than validated codes.
+
+**Setup (free)**:
+
+1. Sign up at **<https://reasonhub.app/>**
+2. Retrieve your API key from the dashboard
+3. Add the MCP server to your agent configuration under the service name
+   **`reasonhub`**:
+
+```json
+{
+  "mcpServers": {
+    "reasonhub": {
+      "url": "https://mcp.reasonhub.app/sse",
+      "headers": {
+        "Authorization": "Bearer <your-api-key>"
+      }
+    }
+  }
+}
+```
+
+> The service name **`reasonhub`** is required — the skills reference MCP tools
+> by that name. If your agent platform uses a different config format (YAML,
+> TOML, etc.), adapt the snippet accordingly but keep the service name the same.
 
 ## Installation
 
