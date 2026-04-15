@@ -1,13 +1,30 @@
 # RH Skills
 
-RH Skills is a toolset for superpowering informaticists: it helps teams
-synthesize clinical knowledge from raw source material into structured and
-computable artifacts.
+RH Skills is an agentic workflow toolset for clinical informaticists: it
+orchestrates AI reasoning over raw clinical source material and produces
+**deterministic, computable rules** — structured artifacts that can be embedded
+directly into EHRs, quality programs, and clinical decision support systems.
 
-Today that means workflows for turning guidelines, quality measures,
-assessments, and related clinical logic into FHIR-aligned outputs. Over time it
-is intended to grow into a broader informatics workbench with terminology and
-ontology tooling as well.
+This matters deeply for healthcare. Clinically, evidence shows it takes up to
+17 years for research findings to reach routine practice, and even published
+guidelines are routinely inconsistently applied due to the gap between
+narrative prose and implementable logic. Computable rules close that gap:
+once encoded, a guideline can fire consistently at the point of care across
+every patient, every encounter, every system — reducing diagnostic errors,
+preventing harmful drug interactions, and improving adherence to best
+practices without relying on individual clinician recall.
+
+Economically, clinical variation is one of the largest drivers of healthcare
+waste — estimated at hundreds of billions of dollars annually in the US alone.
+Value-based care programs, eCQMs, and payer contracts increasingly tie
+reimbursement to measurable adherence to evidence-based standards. Teams that
+can rapidly translate guidelines into FHIR-aligned, computable artifacts are
+better positioned to close care gaps, pass audits, and perform under
+pay-for-performance models.
+
+Today RH Skills focuses on turning guidelines, quality measures, assessments,
+and clinical logic into FHIR-aligned outputs. Over time it is intended to grow
+into a broader informatics workbench with terminology and ontology tooling.
 
 ## What it does
 
@@ -21,16 +38,16 @@ The RH Skills framework guides clinical knowledge through three artifact levels:
        Markdown                        (L1 normalized)
            │
            │  extract  ┌──────────────────────────────┐
-           ├──────────▶│  Structured YAML artifact     │  (L2)
-           ├──────────▶│  Structured YAML artifact     │  (L2)
-           └──────────▶│  Structured YAML artifact     │  (L2)
-                       └──────────┬───────────┬────────┘
+           ├──────────▶│  Structured YAML artifact    │  (L2)
+           ├──────────▶│  Structured YAML artifact    │  (L2)
+           └──────────▶│  Structured YAML artifact    │  (L2)
+                       └──────────┬───────────┬───────┘
                                   │           │
                                   │  converge │
                                   ▼           ▼
                         ┌─────────────────────────────┐
-                        │  Computable YAML artifact    │  (L3)
-                        │  (FHIR-aligned)              │
+                        │  Computable YAML artifact   │  (L3)
+                        │  (FHIR-aligned)             │
                         └─────────────────────────────┘
 ```
 
