@@ -8,12 +8,12 @@
 
 ## CLI Dispatcher
 
-**Entry point**: `bin/hi`
+**Entry point**: `rh-skills`
 
 Routes subcommands to dedicated scripts in `bin/`:
 
 ```
-hi <command> [arguments] [flags]
+rh-skills <command> [arguments] [flags]
 ```
 
 Global flags:

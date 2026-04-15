@@ -46,7 +46,7 @@ topics:
 events:
   - timestamp: "2026-04-03T00:00:00Z"
     type: topic_created
-    description: Topic scaffolded with hi init
+    description: Topic scaffolded with rh-skills init
   - timestamp: "2026-04-03T00:01:00Z"
     type: source_added
     description: Ingested source: ada-guidelines-2024

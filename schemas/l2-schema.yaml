@@ -1,5 +1,5 @@
 # L2 Semi-Structured Artifact Schema
-# Validation reference for hi-validate command
+# Validation reference for rh-skills validate command
 # Required fields → exit 1 if missing
 # Optional fields → warn if missing
 

@@ -3,7 +3,7 @@
 import pytest
 from click.testing import CliRunner
 
-from hi.commands.status import status
+from rh_skills.commands.status import status
 from tests.conftest import load_tracking
 
 

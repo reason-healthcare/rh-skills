@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
-from hi.commands.validate import validate
+from rh_skills.commands.validate import validate
 
 
 def write_plan(tmp_path: Path, content: str) -> Path:

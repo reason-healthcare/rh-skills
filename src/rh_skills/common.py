@@ -16,8 +16,8 @@ import click
 # ── Path resolution ────────────────────────────────────────────────────────────
 
 def repo_root() -> Path:
-    """Return repo root: HI_REPO_ROOT env or walk up from cwd looking for tracking.yaml/pyproject.toml."""
-    if env := os.environ.get("HI_REPO_ROOT"):
+    """Return repo root: RH_REPO_ROOT env or walk up from cwd looking for tracking.yaml/pyproject.toml."""
+    if env := os.environ.get("RH_REPO_ROOT"):
         return Path(env)
     cwd = Path.cwd()
     for parent in [cwd, *cwd.parents]:
@@ -28,21 +28,21 @@ def repo_root() -> Path:
 
 def topics_root() -> Path:
     """Return topics root directory."""
-    if env := os.environ.get("HI_TOPICS_ROOT"):
+    if env := os.environ.get("RH_TOPICS_ROOT"):
         return Path(env)
     return repo_root() / "topics"
 
 
 def tracking_file() -> Path:
     """Return path to tracking.yaml."""
-    if env := os.environ.get("HI_TRACKING_FILE"):
+    if env := os.environ.get("RH_TRACKING_FILE"):
         return Path(env)
     return repo_root() / "tracking.yaml"
 
 
 def sources_root() -> Path:
     """Return path to sources directory."""
-    if env := os.environ.get("HI_SOURCES_ROOT"):
+    if env := os.environ.get("RH_SOURCES_ROOT"):
         return Path(env)
     return repo_root() / "sources"
 

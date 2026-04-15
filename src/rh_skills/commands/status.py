@@ -4,7 +4,7 @@ import json
 
 import click
 
-from hi.common import (
+from rh_skills.common import (
     load_tracking,
     repo_root,
     sha256_file,

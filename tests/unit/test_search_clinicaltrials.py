@@ -7,7 +7,7 @@ import pytest
 import httpx
 from click.testing import CliRunner
 
-from hi.commands.search import clinicaltrials, _clinicaltrials_search
+from rh_skills.commands.search import clinicaltrials, _clinicaltrials_search
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ def test_clinicaltrials_network_error(httpx_mock):
 
 # ── CLI tests: rh-skills search clinicaltrials ───────────────────────────────────────
 
-def test_hi_search_clinicaltrials_human_output(httpx_mock):
+def test_rh_search_clinicaltrials_human_output(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=CT_RESPONSE)
 
     runner = CliRunner()
@@ -136,7 +136,7 @@ def test_hi_search_clinicaltrials_human_output(httpx_mock):
     assert "NCT04512345" in result.output
 
 
-def test_hi_search_clinicaltrials_json_output(httpx_mock):
+def test_rh_search_clinicaltrials_json_output(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=CT_RESPONSE)
 
     runner = CliRunner()
@@ -153,7 +153,7 @@ def test_hi_search_clinicaltrials_json_output(httpx_mock):
     assert data["results"][0]["phase"] == "PHASE3"
 
 
-def test_hi_search_clinicaltrials_json_schema(httpx_mock):
+def test_rh_search_clinicaltrials_json_schema(httpx_mock):
     """Verify JSON output matches data-model.md Entity 3 schema."""
     httpx_mock.add_response(method="GET", url=None, json=CT_RESPONSE)
 
@@ -172,7 +172,7 @@ def test_hi_search_clinicaltrials_json_schema(httpx_mock):
         assert required_result_keys.issubset(r.keys())
 
 
-def test_hi_search_clinicaltrials_zero_results_exit_2(httpx_mock):
+def test_rh_search_clinicaltrials_zero_results_exit_2(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=CT_EMPTY_RESPONSE)
 
     runner = CliRunner()
@@ -181,7 +181,7 @@ def test_hi_search_clinicaltrials_zero_results_exit_2(httpx_mock):
     assert result.exit_code == 2
 
 
-def test_hi_search_clinicaltrials_status_filter(httpx_mock):
+def test_rh_search_clinicaltrials_status_filter(httpx_mock):
     """Verify --status filter is passed to API."""
     httpx_mock.add_response(method="GET", url=None, json=CT_RESPONSE)
 

@@ -21,7 +21,7 @@ description: "Tasks for 004-rh-inf-ingest — rh-inf-ingest source acquisition a
 **Purpose**: Establish topic-aware ingest fixtures and helper structure before behavior changes.
 
 - [X] T001 Create topic/discovery-plan test fixtures for ingest in `tests/unit/test_ingest.py`
-- [X] T002 [P] Add discovery-plan and topic-status helper functions in `src/hi/commands/ingest.py`
+- [X] T002 [P] Add discovery-plan and topic-status helper functions in `src/rh_skills/commands/ingest.py`
 
 ---
 
@@ -29,8 +29,8 @@ description: "Tasks for 004-rh-inf-ingest — rh-inf-ingest source acquisition a
 
 **Purpose**: Add the shared topic-aware command behavior that both user stories depend on.
 
-- [X] T003 Extend `rh-skills ingest plan` in `src/hi/commands/ingest.py` to support topic-based pre-flight summaries while preserving existing template-generation fallback
-- [X] T004 Extend `rh-skills ingest verify` in `src/hi/commands/ingest.py` to support topic-based readiness reports and `concepts.yaml` validation without writing files
+- [X] T003 Extend `rh-skills ingest plan` in `src/rh_skills/commands/ingest.py` to support topic-based pre-flight summaries while preserving existing template-generation fallback
+- [X] T004 Extend `rh-skills ingest verify` in `src/rh_skills/commands/ingest.py` to support topic-based readiness reports and `concepts.yaml` validation without writing files
 - [X] T005 [P] Add unit coverage for topic-aware `plan` and `verify` behavior in `tests/unit/test_ingest.py`
 
 **Checkpoint**: Topic-aware read-only plan and verify flows are available for the skill to call.
@@ -43,7 +43,7 @@ description: "Tasks for 004-rh-inf-ingest — rh-inf-ingest source acquisition a
 
 **Independent Test**: With a fixture topic containing `process/plans/discovery-plan.yaml`, `rh-skills ingest plan <topic>` reports open/auth/manual counts and tool availability, `rh-skills ingest implement --url ... --topic <topic>` records topic-aware source metadata, and `rh-skills ingest verify <topic>` reports checksum/readiness status without writes.
 
-- [X] T006 [US1] Add optional `--topic` handling to `rh-skills ingest implement` and persist topic-aware source metadata in `src/hi/commands/ingest.py`
+- [X] T006 [US1] Add optional `--topic` handling to `rh-skills ingest implement` and persist topic-aware source metadata in `src/rh_skills/commands/ingest.py`
 - [X] T007 [P] [US1] Add unit coverage for topic-aware `implement --url` behavior in `tests/unit/test_ingest_url.py`
 - [X] T008 [US1] Update `skills/.curated/rh-inf-ingest/SKILL.md` to use the transient pre-flight plan flow, current CLI flags, injection boundary, and topic-aware verify guidance
 - [X] T009 [P] [US1] Update `skills/.curated/rh-inf-ingest/reference.md` with the finalized path conventions, verify expectations, and topic-aware command examples
@@ -60,7 +60,7 @@ description: "Tasks for 004-rh-inf-ingest — rh-inf-ingest source acquisition a
 
 **Independent Test**: With manually placed files in `sources/` and no discovery plan, `rh-skills ingest plan <topic>` surfaces untracked manual files, and `rh-skills ingest verify <topic>` reports normalized/classified/annotated gaps without mutating tracking state.
 
-- [X] T012 [US2] Add manual-source discovery and untracked-file reporting to topic-aware `plan`/`verify` flows in `src/hi/commands/ingest.py`
+- [X] T012 [US2] Add manual-source discovery and untracked-file reporting to topic-aware `plan`/`verify` flows in `src/rh_skills/commands/ingest.py`
 - [X] T013 [P] [US2] Add unit coverage for manual-source-only and mixed-source topic flows in `tests/unit/test_ingest.py`
 - [X] T014 [US2] Update `skills/.curated/rh-inf-ingest/SKILL.md` and `skills/.curated/rh-inf-ingest/examples/output.md` with manual classification confirmation and mixed-entry guidance
 

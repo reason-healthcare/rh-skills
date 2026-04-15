@@ -99,7 +99,7 @@ def parse_plan_artifact(path: Path) -> dict:
     return dict(yaml.load(m.group(1)))
 ```
 
-This utility lives in `src/hi/common.py` and is imported by command modules.
+This utility lives in `src/rh_skills/common.py` and is imported by command modules.
 
 **Alternatives considered**:
 - Pure YAML plan file — rejected: not human-readable/editable without knowing YAML syntax
@@ -217,7 +217,7 @@ def plan(force: bool):
 
 ## Decision 7: New CLI Module (rh-skills ingest)
 
-**Decision**: Add `src/hi/commands/ingest.py` as a new click command group. It provides `plan`, `implement`, and `verify` subcommands. Checksum and file registration helpers are in `src/hi/common.py`.
+**Decision**: Add `src/rh_skills/commands/ingest.py` as a new click command group. It provides `plan`, `implement`, and `verify` subcommands. Checksum and file registration helpers are in `src/rh_skills/common.py`.
 
 **Rationale**: The ingest skill needs deterministic file operations (checksum, YAML write, file type detection) that must live in CLI code, not LLM prompts. The existing click command group pattern applies unchanged.
 
@@ -238,4 +238,4 @@ def plan(force: bool):
 | SHA-256 computation | `hashlib.sha256` (Python stdlib, no external tools) | No external tool dependency |
 | Optional tools | Detect with `shutil.which`, degrade with warning | No mandatory new deps |
 | Re-run behavior | Warn + stop; `--force` to override | Protect human-reviewed plans |
-| New CLI module | `src/hi/commands/ingest.py` as click command group | Follow existing click pattern |
+| New CLI module | `src/rh_skills/commands/ingest.py` as click command group | Follow existing click pattern |

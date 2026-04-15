@@ -60,7 +60,7 @@ specs/                          ← feature specifications
   003-rh-inf-discovery/         ← individual skill specs (003–008)
   ...
 
-src/hi/                         ← rh-skills CLI source (Python, click)
+src/rh_skills/                         ← rh-skills CLI source (Python, click)
   commands/
     init.py  list_cmd.py  status.py  ingest.py  promote.py  validate.py  test_cmd.py
 
@@ -169,8 +169,8 @@ Use the speckit skills (`.agents/skills/speckit-*/`) to generate and maintain th
 
 ## Adding CLI Commands
 
-CLI commands live in `src/hi/commands/`. Each command:
-- Is a `@click.command()` or `@click.group()` registered in `src/hi/cli.py`
+CLI commands live in `src/rh_skills/commands/`. Each command:
+- Is a `@click.command()` or `@click.group()` registered in `src/rh_skills/cli.py`
 - Takes a `TOPIC` argument where applicable
 - Updates `tracking.yaml` via `ruamel.yaml` (never raw string writes)
 - Has unit tests in `tests/unit/test_<command>.py`

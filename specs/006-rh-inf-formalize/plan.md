@@ -70,7 +70,7 @@ specs/006-rh-inf-formalize/
 ### Source Code (repository root)
 
 ```text
-src/hi/commands/
+src/rh_skills/commands/
 ├── promote.py                      # combine primitive and future formalize plan helper surface
 └── validate.py                     # L3 validation surface to extend for plan-aware section completeness
 

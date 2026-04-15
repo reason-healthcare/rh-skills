@@ -4,7 +4,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.tasks import tasks
+from rh_skills.commands.tasks import tasks
 
 
 def setup_topic_with_tasks(tmp_repo, topic_name="my-topic"):

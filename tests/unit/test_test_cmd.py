@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.test_cmd import test
+from rh_skills.commands.test_cmd import test
 
 
 def setup_skill_with_fixture(tmp_repo, skill="my-skill", fixture_name="my-fixture"):
@@ -48,7 +48,7 @@ compare_mode: contains
 
 def test_test_runs_all_fixtures_exits_0(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.setenv("HI_STUB_RESPONSE", "Stub response")
+    monkeypatch.setenv("RH_STUB_RESPONSE", "Stub response")
     setup_skill_with_fixture(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(test, ["my-skill", "--mode", "contains"])
@@ -58,7 +58,7 @@ def test_test_runs_all_fixtures_exits_0(tmp_repo, monkeypatch):
 
 def test_test_writes_results_json(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.setenv("HI_STUB_RESPONSE", "Stub response")
+    monkeypatch.setenv("RH_STUB_RESPONSE", "Stub response")
     setup_skill_with_fixture(tmp_repo)
     runner = CliRunner()
     runner.invoke(test, ["my-skill", "--mode", "contains"])
@@ -69,7 +69,7 @@ def test_test_writes_results_json(tmp_repo, monkeypatch):
 
 def test_test_result_json_has_correct_structure(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.setenv("HI_STUB_RESPONSE", "Stub response")
+    monkeypatch.setenv("RH_STUB_RESPONSE", "Stub response")
     setup_skill_with_fixture(tmp_repo)
     runner = CliRunner()
     runner.invoke(test, ["my-skill", "--mode", "contains"])
@@ -81,7 +81,7 @@ def test_test_result_json_has_correct_structure(tmp_repo, monkeypatch):
 
 def test_test_result_json_has_summary(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.setenv("HI_STUB_RESPONSE", "Stub response")
+    monkeypatch.setenv("RH_STUB_RESPONSE", "Stub response")
     setup_skill_with_fixture(tmp_repo)
     runner = CliRunner()
     runner.invoke(test, ["my-skill", "--mode", "contains"])
@@ -96,7 +96,7 @@ def test_test_result_json_has_summary(tmp_repo, monkeypatch):
 
 def test_test_fixture_option_runs_only_named(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.setenv("HI_STUB_RESPONSE", "Stub response")
+    monkeypatch.setenv("RH_STUB_RESPONSE", "Stub response")
     setup_skill_with_fixture(tmp_repo, fixture_name="fixture-a")
     setup_skill_with_fixture(tmp_repo, fixture_name="fixture-b")
     runner = CliRunner()
@@ -107,7 +107,7 @@ def test_test_fixture_option_runs_only_named(tmp_repo, monkeypatch):
 
 def test_test_exits_1_when_fixture_fails(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.setenv("HI_STUB_RESPONSE", "completely different answer")
+    monkeypatch.setenv("RH_STUB_RESPONSE", "completely different answer")
     setup_skill_with_fixture(tmp_repo)
     # Overwrite fixture with a non-matching expected
     fixture_file = tmp_repo / "topics" / "my-skill" / "process" / "fixtures" / "my-fixture.yaml"

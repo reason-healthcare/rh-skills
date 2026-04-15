@@ -212,12 +212,12 @@ All 6 framework skills must satisfy:
 
 ```
 Required frontmatter:
-  name:           "hi-<skill>"
+  name:           "rh-inf-<skill>"
   description:    "<one-line summary>. Modes: <mode1> | <mode2> [| mode3]"
   compatibility:  "rh-skills >= 0.1.0"
   metadata:
     author:       string
-    source:       "skills/.curated/hi-<skill>/SKILL.md"
+    source:       "skills/.curated/rh-inf-<skill>/SKILL.md"
 
 Required body sections:
   ## User Input        ($ARGUMENTS block + MUST-consider directive)

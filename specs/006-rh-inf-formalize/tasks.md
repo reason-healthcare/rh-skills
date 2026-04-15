@@ -29,8 +29,8 @@ description: "Tasks for 006-rh-inf-formalize — reviewer-gated L2→L3 formaliz
 
 **Purpose**: Add the shared plan/approval/validation helpers that every formalize mode depends on.
 
-- [X] T003 Add formalize plan parsing, implementation-target selection, and approved-L2 eligibility helpers in `src/hi/commands/promote.py`
-- [X] T004 [P] Add formalize plan loading and L3 section-completeness helper functions in `src/hi/commands/validate.py`
+- [X] T003 Add formalize plan parsing, implementation-target selection, and approved-L2 eligibility helpers in `src/rh_skills/commands/promote.py`
+- [X] T004 [P] Add formalize plan loading and L3 section-completeness helper functions in `src/rh_skills/commands/validate.py`
 - [X] T005 [P] Add foundational unit coverage for formalize helper boundaries in `tests/unit/test_promote.py` and `tests/unit/test_validate.py`
 
 **Checkpoint**: Formalize plan parsing, approved-target resolution, and plan-aware L3 validation primitives are available.
@@ -50,7 +50,7 @@ description: "Tasks for 006-rh-inf-formalize — reviewer-gated L2→L3 formaliz
 
 ### Implementation for User Story 1
 
-- [X] T008 [US1] Implement formalize review-packet generation and `formalize_planned` tracking updates in `src/hi/commands/promote.py` for `topics/<topic>/process/plans/formalize-plan.md`
+- [X] T008 [US1] Implement formalize review-packet generation and `formalize_planned` tracking updates in `src/rh_skills/commands/promote.py` for `topics/<topic>/process/plans/formalize-plan.md`
 - [X] T009 [US1] Create `skills/.curated/rh-inf-formalize/SKILL.md` plan mode with approved-input screening, prompt-injection boundary guidance, and reviewer-packet workflow
 - [X] T010 [P] [US1] Create `skills/.curated/rh-inf-formalize/reference.md` with the review-packet schema, computable package contract, and required-section completeness guidance
 - [X] T011 [P] [US1] Create `skills/.curated/rh-inf-formalize/examples/plan.md` and `skills/.curated/rh-inf-formalize/examples/output.md` for the plan and approval flow
@@ -72,7 +72,7 @@ description: "Tasks for 006-rh-inf-formalize — reviewer-gated L2→L3 formaliz
 
 ### Implementation for User Story 2
 
-- [X] T014 [US2] Implement approved-target resolution and approved+valid L2 input enforcement in `src/hi/commands/promote.py`
+- [X] T014 [US2] Implement approved-target resolution and approved+valid L2 input enforcement in `src/rh_skills/commands/promote.py`
 - [X] T015 [US2] Implement `rh-inf-formalize` implement mode in `skills/.curated/rh-inf-formalize/SKILL.md` to call `rh-skills promote combine` and `rh-skills validate`
 - [X] T016 [P] [US2] Update `docs/COMMANDS.md` and `DEVELOPER.md` to document the formalize implement workflow and approval gate semantics
 
@@ -93,7 +93,7 @@ description: "Tasks for 006-rh-inf-formalize — reviewer-gated L2→L3 formaliz
 
 ### Implementation for User Story 3
 
-- [X] T019 [US3] Extend `src/hi/commands/validate.py` with formalize-specific verification checks for approved-target alignment and section completeness
+- [X] T019 [US3] Extend `src/rh_skills/commands/validate.py` with formalize-specific verification checks for approved-target alignment and section completeness
 - [X] T020 [US3] Implement `rh-inf-formalize` verify mode in `skills/.curated/rh-inf-formalize/SKILL.md` with per-artifact pass/fail reporting and no-write behavior
 
 **Checkpoint**: Verify mode independently confirms 006-specific artifact completeness guarantees.

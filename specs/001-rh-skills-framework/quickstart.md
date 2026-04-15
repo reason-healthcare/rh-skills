@@ -29,7 +29,7 @@ cd rh-skills
 export PATH="$PATH:$(pwd)/bin"
 
 # Verify
-hi --version
+rh-skills --version
 ```
 
 For local LLM testing (recommended for development), install Ollama:
@@ -250,5 +250,5 @@ bats tests/
 bats tests/unit/
 
 # Run a specific test file
-bats tests/unit/hi-init.bats
+bats tests/unit/rh-skills init.bats
 ```

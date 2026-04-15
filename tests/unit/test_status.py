@@ -6,8 +6,8 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.status import status
-from hi.commands.list_cmd import list_
+from rh_skills.commands.status import status
+from rh_skills.commands.list_cmd import list_
 
 
 def load_yaml(path):

@@ -4,16 +4,16 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.ingest import ingest
+from rh_skills.commands.ingest import ingest
 from tests.conftest import load_tracking
 
 
 @pytest.fixture()
 def tmp_repo(tmp_path, monkeypatch):
     """Set up a minimal repo root with tracking.yaml."""
-    monkeypatch.setenv("HI_REPO_ROOT", str(tmp_path))
-    monkeypatch.setenv("HI_TRACKING_FILE", str(tmp_path / "tracking.yaml"))
-    monkeypatch.setenv("HI_SOURCES_ROOT", str(tmp_path / "sources"))
+    monkeypatch.setenv("RH_REPO_ROOT", str(tmp_path))
+    monkeypatch.setenv("RH_TRACKING_FILE", str(tmp_path / "tracking.yaml"))
+    monkeypatch.setenv("RH_SOURCES_ROOT", str(tmp_path / "sources"))
 
     tracking = tmp_path / "tracking.yaml"
     y = YAML()

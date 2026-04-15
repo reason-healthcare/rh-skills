@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 from ruamel.yaml import YAML
 
-from hi.common import (
+from rh_skills.common import (
     append_topic_event,
     log_info,
     log_warn,
@@ -20,7 +20,7 @@ from hi.common import (
     today_date,
     topic_dir,
 )
-from hi.commands.validate import validate_artifact_file
+from rh_skills.commands.validate import validate_artifact_file
 
 EXTRACT_ARTIFACT_PROFILES = (
     {
@@ -590,7 +590,7 @@ def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     """Invoke LLM or return stub response."""
     provider = os.environ.get("LLM_PROVIDER", "ollama")
     if provider == "stub":
-        stub = os.environ.get("HI_STUB_RESPONSE", "Stub response")
+        stub = os.environ.get("RH_STUB_RESPONSE", "Stub response")
         return stub
     raise click.ClickException(
         f"LLM provider '{provider}' not available in Python port — use LLM_PROVIDER=stub for testing"

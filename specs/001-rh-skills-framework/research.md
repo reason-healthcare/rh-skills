@@ -124,7 +124,7 @@ value_sets: [...]
 code_systems: [...]
 ```
 
-### Key Naming Conventions (Enforced by hi-validate)
+### Key Naming Conventions (Enforced by rh-skills validate)
 - `id` / `identifier` fields: kebab-case (e.g., `htn-mgmt`)
 - `name` fields: PascalCase (e.g., `HypertensionManagement`)
 - `title` fields: Natural language (e.g., "Hypertension Management Pathway")
@@ -161,7 +161,7 @@ L3 artifacts support optional `extensions.cql` and `extensions.fhirpath` blocks 
 - `yamale`: Requires Python runtime — violates zero-dependency constraint
 - `ajv`: Requires Node.js runtime — violates zero-dependency constraint
 
-### Validation Pattern (hi-validate implementation)
+### Validation Pattern (rh-skills validate implementation)
 
 ```bash
 validate_yaml_artifact() {
@@ -265,11 +265,11 @@ setup() {
 ```
 tests/
 ├── unit/
-│   ├── hi-init.bats        # Scaffold command
-│   ├── hi-promote.bats     # Promotion + validation
-│   ├── hi-validate.bats    # Schema validation
+│   ├── rh-skills init.bats        # Scaffold command
+│   ├── rh-skills promote.bats     # Promotion + validation
+│   ├── rh-skills validate.bats    # Schema validation
 │   ├── rh-inf-status.bats      # Tracking artifact read
-│   └── hi-list.bats        # Repository listing
+│   └── rh-skills list.bats        # Repository listing
 └── integration/
     └── skill-lifecycle.bats  # Full L1→L2→L3 workflow
 ```

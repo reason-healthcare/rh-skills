@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from hi.common import (
+from rh_skills.common import (
     log_warn,
     now_iso,
     require_topic,
@@ -20,7 +20,7 @@ def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     """Invoke LLM or return stub response."""
     provider = os.environ.get("LLM_PROVIDER", "ollama")
     if provider == "stub":
-        return os.environ.get("HI_STUB_RESPONSE", "Stub response")
+        return os.environ.get("RH_STUB_RESPONSE", "Stub response")
     raise click.ClickException(
         f"LLM provider '{provider}' not available — use LLM_PROVIDER=stub for testing"
     )

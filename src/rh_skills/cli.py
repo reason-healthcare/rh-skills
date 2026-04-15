@@ -1,5 +1,16 @@
 import click
-from hi.commands import init, status, list_cmd, promote, validate, ingest, tasks, test_cmd, search, skills
+from rh_skills.commands import (
+    ingest,
+    init,
+    list_cmd,
+    promote,
+    search,
+    skills,
+    status,
+    tasks,
+    test_cmd,
+    validate,
+)
 
 
 @click.group()

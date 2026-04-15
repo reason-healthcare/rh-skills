@@ -29,8 +29,8 @@ description: "Tasks for 005-rh-inf-extract — reviewer-gated L2 extraction work
 
 **Purpose**: Add the shared schema and validation helpers that all extract modes depend on.
 
-- [X] T003 Add extract plan parsing and approval-gate helper functions in `src/hi/commands/promote.py`
-- [X] T004 [P] Extend L2 artifact validation helpers in `src/hi/commands/validate.py` for traceability/conflict checks required by 005
+- [X] T003 Add extract plan parsing and approval-gate helper functions in `src/rh_skills/commands/promote.py`
+- [X] T004 [P] Extend L2 artifact validation helpers in `src/rh_skills/commands/validate.py` for traceability/conflict checks required by 005
 - [X] T005 [P] Add foundational validation coverage for extract helpers in `tests/unit/test_validate.py`
 
 **Checkpoint**: Extract plan parsing, approval-state checks, and 005 validation primitives are available.
@@ -50,7 +50,7 @@ description: "Tasks for 005-rh-inf-extract — reviewer-gated L2 extraction work
 
 ### Implementation for User Story 1
 
-- [X] T008 [US1] Implement review-packet plan generation in `src/hi/commands/promote.py` for `topics/<topic>/process/plans/extract-plan.md`
+- [X] T008 [US1] Implement review-packet plan generation in `src/rh_skills/commands/promote.py` for `topics/<topic>/process/plans/extract-plan.md`
 - [X] T009 [US1] Create `skills/.curated/rh-inf-extract/SKILL.md` plan mode with the injection boundary, hybrid catalog guidance, and reviewer-packet workflow
 - [X] T010 [P] [US1] Create `skills/.curated/rh-inf-extract/reference.md` with artifact catalog, traceability rules, and conflict-handling guidance
 - [X] T011 [P] [US1] Create `skills/.curated/rh-inf-extract/examples/plan.md` and `skills/.curated/rh-inf-extract/examples/output.md` for the review-packet flow
@@ -72,7 +72,7 @@ description: "Tasks for 005-rh-inf-extract — reviewer-gated L2 extraction work
 
 ### Implementation for User Story 2
 
-- [X] T014 [US2] Extend `src/hi/commands/promote.py` derive flow to emit the richer 005 L2 schema with multi-source provenance, clinical question, sections, and conflict placeholders
+- [X] T014 [US2] Extend `src/rh_skills/commands/promote.py` derive flow to emit the richer 005 L2 schema with multi-source provenance, clinical question, sections, and conflict placeholders
 - [X] T015 [US2] Implement approval-gated extract implement orchestration in `skills/.curated/rh-inf-extract/SKILL.md`
 - [X] T016 [P] [US2] Update `specs/005-rh-inf-extract/quickstart.md` and `DEVELOPER.md` to document approval-gated derive/validate orchestration
 
@@ -93,7 +93,7 @@ description: "Tasks for 005-rh-inf-extract — reviewer-gated L2 extraction work
 
 ### Implementation for User Story 3
 
-- [X] T019 [US3] Extend `src/hi/commands/validate.py` with extract-specific artifact verification checks tied to approved plan expectations
+- [X] T019 [US3] Extend `src/rh_skills/commands/validate.py` with extract-specific artifact verification checks tied to approved plan expectations
 - [X] T020 [US3] Implement verify mode in `skills/.curated/rh-inf-extract/SKILL.md` with per-artifact pass/fail reporting and no-write behavior
 
 **Checkpoint**: Verify mode independently confirms 005-specific artifact quality guarantees.

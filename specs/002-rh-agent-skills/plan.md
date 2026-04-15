@@ -14,7 +14,7 @@ Build the deterministic infrastructure for the RH skills framework: the reposito
 **Storage**: YAML (`tracking.yaml` at repo root, plan artifacts as `.md` files with YAML front matter in `topics/<name>/process/plans/` subdir)
 **Testing**: pytest 8.0+ (via uv)
 **Target Platform**: macOS + Linux
-**Project Type**: Agent skills (SKILL.md prompt files) + CLI command extensions (Python modules in `src/hi/commands/`)
+**Project Type**: Agent skills (SKILL.md prompt files) + CLI command extensions (Python modules in `src/rh_skills/commands/`)
 **Performance Goals**: No LLM calls in plan mode — plan generation is pure LLM reasoning in SKILL.md context; implement mode calls existing `rh-skills promote` commands
 **Constraints**: Python 3.13+ required; uv for package management; graceful degradation for optional tools; SKILL.md follows anthropic skills-developer template
 **Scale/Scope**: 6 SKILL.md files + supporting CLI subcommands; skills apply to all clinical skills in the repo
@@ -68,7 +68,7 @@ skills/.curated/             # Framework-level agent skills
   rh-inf-status/
     SKILL.md                 # progress | next-steps | check-changes modes
 
-src/hi/commands/
+src/rh_skills/commands/
   ingest.py                  # rh-skills ingest subcommands (plan/implement/verify)
 
 sources/                     # Raw source files (repo root, shared across topics)
@@ -96,7 +96,7 @@ tests/integration/
   test_lifecycle.py          # End-to-end lifecycle with stub LLM
 ```
 
-**Structure Decision**: Single-project layout extending the existing `src/hi/commands/` + `skills/` + `tests/` tree. Framework skills live under `skills/.curated/` (separate namespace from clinical skills, dot-prefix excluded from topic listings). New CLI functionality goes in `src/hi/commands/ingest.py` as a click command group.
+**Structure Decision**: Single-project layout extending the existing `src/rh_skills/commands/` + `skills/` + `tests/` tree. Framework skills live under `skills/.curated/` (separate namespace from clinical skills, dot-prefix excluded from topic listings). New CLI functionality goes in `src/rh_skills/commands/ingest.py` as a click command group.
 
 
 ---

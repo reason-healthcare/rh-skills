@@ -4,8 +4,8 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.ingest import ingest
-from hi.common import sha256_file
+from rh_skills.commands.ingest import ingest
+from rh_skills.common import sha256_file
 from tests.conftest import load_tracking
 
 

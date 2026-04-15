@@ -10,7 +10,7 @@ from typing import Optional
 import click
 import httpx
 
-from hi.common import log_warn
+from rh_skills.common import log_warn
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 

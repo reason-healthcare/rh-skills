@@ -51,13 +51,7 @@ specs/001-rh-skills-framework/
 
 ```text
 bin/
-├── hi                   # Main dispatcher (routes subcommands)
-├── hi-init              # Scaffold new skill (FR-001, FR-002)
-├── hi-promote           # Promote artifact(s) between levels (FR-004, FR-005, FR-006, FR-007)
-├── hi-test              # Run LLM-based skill tests (FR-008, FR-009)
-├── rh-inf-status            # Show skill workflow state (FR-012)
-├── hi-list              # List all skills summary (FR-013)
-└── hi-validate          # Validate artifact schema (FR-014); also called by hi-promote
+└── rh-skills              # Main CLI entry point (routes subcommands)
 
 skills/                  # Healthcare informatics skill definitions (anthropic SKILL.md convention)
 └── {skill-name}/
@@ -68,7 +62,7 @@ skills/                  # Healthcare informatics skill definitions (anthropic S
     │   └── {name}.yaml
     ├── l3/              # L3 computable YAML artifacts
     │   └── {name}.yaml
-    ├── fixtures/        # Test fixtures for hi-test
+    ├── fixtures/        # Test fixtures for rh-skills test
     │   └── {fixture-name}/
     │       ├── input.yaml
     │       └── expected.yaml
@@ -90,11 +84,11 @@ templates/               # Artifact templates for scaffolding
 
 tests/                   # bats-core test suite
 ├── unit/
-│   ├── hi-init.bats
-│   ├── hi-promote.bats
-│   ├── hi-validate.bats
+│   ├── rh-skills-init.bats
+│   ├── rh-skills-promote.bats
+│   ├── rh-skills-validate.bats
 │   ├── rh-inf-status.bats
-│   └── hi-list.bats
+│   └── rh-skills-list.bats
 └── integration/
     └── skill-lifecycle.bats
 ```

@@ -4,7 +4,7 @@ import json
 
 import click
 
-from hi.common import tracking_file
+from rh_skills.common import tracking_file
 
 
 def _compute_stage(sources_count: int, structured_count: int, computable_count: int) -> str:

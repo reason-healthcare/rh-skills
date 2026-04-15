@@ -67,7 +67,7 @@ tracking.yaml                # Single source of truth for lifecycle state
 # Research Portfolio
 
 > Managed by `rh-skills`. Add notes freely in the Notes column or below each topic block.
-> Do not reorder table rows manually — use `hi research defer <topic>` to move entries.
+> Do not reorder table rows manually — use `rh-skills research defer <topic>` to move entries.
 
 ## Active Topics
 
@@ -351,7 +351,7 @@ A skill author implements `rh-inf-extract` by copying `skills/_template/`, filli
 
 All items below are implemented and committed on branch `002-rh-agent-skills`.
 
-### CLI (`src/hi/commands/`)
+### CLI (`src/rh_skills/commands/`)
 - `init.py` — `rh-skills init`
 - `list_cmd.py` — `rh-skills list`
 - `status.py` — `rh-skills status` group: `show`, `progress`, `next-steps`, `check-changes`

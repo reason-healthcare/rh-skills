@@ -1,7 +1,7 @@
 ---
 name: "rh-inf-sample"
 description: "Sample RH informatics skill used for bundle generation tests. Modes: plan · implement · verify."
-compatibility: "hi-skills-framework >= 0.1.0"
+compatibility: "rh-skills-framework >= 0.1.0"
 version: "1.0.0"
 modes:
   - plan
@@ -18,7 +18,7 @@ metadata:
   reads_from:
     - tracking.yaml
   writes_via_cli:
-    - hi status show
+    - rh-skills status show
 ---
 
 # RH INF Sample

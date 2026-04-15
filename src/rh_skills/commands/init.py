@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 from ruamel.yaml import YAML
 
-from hi.common import (
+from rh_skills.common import (
     append_root_event,
     append_topic_event,
     log_info,

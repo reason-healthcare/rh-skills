@@ -53,7 +53,7 @@ specs/004-rh-inf-ingest/
 ### Source Code (repository root)
 
 ```text
-src/hi/commands/
+src/rh_skills/commands/
 └── ingest.py                      # plan / implement / normalize / classify / annotate / verify
 
 skills/.curated/rh-inf-ingest/
@@ -71,7 +71,7 @@ tests/unit/
 └── test_ingest_annotate.py        # concepts.yaml + normalized frontmatter updates
 ```
 
-**Structure Decision**: Single-project Python CLI. The feature extends the existing `src/hi/commands/ingest.py` command group and its unit tests while producing design artifacts under `specs/004-rh-inf-ingest/`.
+**Structure Decision**: Single-project Python CLI. The feature extends the existing `src/rh_skills/commands/ingest.py` command group and its unit tests while producing design artifacts under `specs/004-rh-inf-ingest/`.
 
 ## Complexity Tracking
 

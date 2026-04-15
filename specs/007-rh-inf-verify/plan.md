@@ -86,7 +86,7 @@ docs/
 ├── WORKFLOW.md
 └── SKILL_AUTHORING.md
 
-src/hi/commands/
+src/rh_skills/commands/
 ├── status.py            # existing topic-stage summary surface used to infer applicability
 └── validate.py          # existing canonical validation surface invoked by stage-specific verify flows
 ```

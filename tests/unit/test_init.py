@@ -4,7 +4,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.init import init
+from rh_skills.commands.init import init
 
 
 def load_yaml(path):

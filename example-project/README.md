@@ -67,10 +67,10 @@ directly or run validation commands against the sample repo by pointing the
 `rh-skills` CLI at `example-project`:
 
 ```bash
-export HI_REPO_ROOT="$PWD/example-project"
-export HI_TOPICS_ROOT="$HI_REPO_ROOT/topics"
-export HI_TRACKING_FILE="$HI_REPO_ROOT/tracking.yaml"
-export HI_SOURCES_ROOT="$HI_REPO_ROOT/sources"
+export RH_REPO_ROOT="$PWD/example-project"
+export RH_TOPICS_ROOT="$RH_REPO_ROOT/topics"
+export RH_TRACKING_FILE="$RH_REPO_ROOT/tracking.yaml"
+export RH_SOURCES_ROOT="$RH_REPO_ROOT/sources"
 
 uv run rh-skills validate diabetes-screening l2 screening-criteria
 uv run rh-skills validate diabetes-screening l2 risk-factors

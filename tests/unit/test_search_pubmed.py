@@ -7,7 +7,7 @@ import pytest
 import httpx
 from click.testing import CliRunner
 
-from hi.commands.search import pubmed, pmc, _entrez_search_fetch, _parse_pubmed_xml, _http_get_with_retry
+from rh_skills.commands.search import pubmed, pmc, _entrez_search_fetch, _parse_pubmed_xml, _http_get_with_retry
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -217,7 +217,7 @@ def test_entrez_search_fetch_recovers_from_429(httpx_mock):
 
 # ── CLI tests: rh-skills search pubmed ───────────────────────────────────────────────
 
-def test_hi_search_pubmed_human_output(httpx_mock):
+def test_rh_search_pubmed_human_output(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=ESEARCH_RESPONSE)
     httpx_mock.add_response(method="GET", url=None, text=EFETCH_XML)
 
@@ -230,7 +230,7 @@ def test_hi_search_pubmed_human_output(httpx_mock):
     assert "Chronic Care Management" in result.output
 
 
-def test_hi_search_pubmed_json_output(httpx_mock):
+def test_rh_search_pubmed_json_output(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=ESEARCH_RESPONSE)
     httpx_mock.add_response(method="GET", url=None, text=EFETCH_XML)
 
@@ -250,7 +250,7 @@ def test_hi_search_pubmed_json_output(httpx_mock):
     assert data["results"][0]["pmid"] == "12345678"
 
 
-def test_hi_search_pubmed_zero_results_exit_2(httpx_mock):
+def test_rh_search_pubmed_zero_results_exit_2(httpx_mock):
     httpx_mock.add_response(method="GET", url=None,
                             json={"esearchresult": {"count": "0", "idlist": []}})
 
@@ -263,7 +263,7 @@ def test_hi_search_pubmed_zero_results_exit_2(httpx_mock):
 
 # ── CLI tests: rh-skills search pmc ──────────────────────────────────────────────────
 
-def test_hi_search_pmc_all_open_access(httpx_mock):
+def test_rh_search_pmc_all_open_access(httpx_mock):
     httpx_mock.add_response(method="GET", url=None, json=ESEARCH_RESPONSE)
     httpx_mock.add_response(method="GET", url=None, text=EFETCH_XML)
 
@@ -280,7 +280,7 @@ def test_hi_search_pmc_all_open_access(httpx_mock):
         assert "doi" in r
 
 
-def test_hi_search_pmc_zero_results_exit_2(httpx_mock):
+def test_rh_search_pmc_zero_results_exit_2(httpx_mock):
     httpx_mock.add_response(method="GET", url=None,
                             json={"esearchresult": {"count": "0", "idlist": []}})
 

@@ -10,7 +10,7 @@
 ## Technical Context
 
 **Language/Version**: Python 3.13+ (existing `rh-skills` CLI stack)  
-**Primary Dependencies**: `click >= 8.0`, `ruamel.yaml >= 0.18`, existing `promote`/`validate` command stack, LLM provider abstraction in `src/hi/commands/promote.py`  
+**Primary Dependencies**: `click >= 8.0`, `ruamel.yaml >= 0.18`, existing `promote`/`validate` command stack, LLM provider abstraction in `src/rh_skills/commands/promote.py`  
 **Storage**: File system (`topics/<topic>/process/plans/`, `topics/<topic>/structured/`, `topics/<topic>/process/concepts.yaml`, `sources/normalized/`, `tracking.yaml`)  
 **Testing**: `pytest`, `click.testing.CliRunner`, curated skill audit/security tests under `tests/skills/`  
 **Target Platform**: macOS/Linux CLI environment  
@@ -52,7 +52,7 @@ specs/005-rh-inf-extract/
 ### Source Code (repository root)
 
 ```text
-src/hi/commands/
+src/rh_skills/commands/
 ├── promote.py                      # derive/combine primitives to be extended for 005
 └── validate.py                     # L2 validation surface to be extended for traceability/conflicts
 

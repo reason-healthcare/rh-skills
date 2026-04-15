@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 
-from hi.common import bundled_skills_dir, log_info, log_warn
+from rh_skills.common import bundled_skills_dir, log_info, log_warn
 
 
 @click.group()

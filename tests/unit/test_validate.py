@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.validate import validate
+from rh_skills.commands.validate import validate
 
 
 def make_valid_l2(tmp_repo, skill="my-skill", artifact="test-artifact"):

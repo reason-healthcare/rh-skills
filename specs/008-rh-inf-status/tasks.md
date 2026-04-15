@@ -50,7 +50,7 @@ description: "Tasks for 008-rh-inf-status — deterministic status UX"
 
 ### Implementation for User Story 1
 
-- [X] T008 [US1] Update topic-level next-step rendering in `src/hi/commands/status.py` to emit deterministic bullet items instead of A/B/C-style choices
+- [X] T008 [US1] Update topic-level next-step rendering in `src/rh_skills/commands/status.py` to emit deterministic bullet items instead of A/B/C-style choices
 - [X] T009 [US1] Update `skills/.curated/rh-inf-status/SKILL.md` to describe `rh-skills status` as the canonical topic status engine and require bullet-list next steps
 - [X] T010 [P] [US1] Update `skills/.curated/rh-inf-status/reference.md` and `skills/.curated/rh-inf-status/examples/output.md` to match the new topic-status contract
 
@@ -71,7 +71,7 @@ description: "Tasks for 008-rh-inf-status — deterministic status UX"
 
 ### Implementation for User Story 2
 
-- [X] T013 [US2] Update portfolio status output in `src/hi/commands/status.py` so portfolio recommendations follow the same deterministic bullet-list contract as topic status
+- [X] T013 [US2] Update portfolio status output in `src/rh_skills/commands/status.py` so portfolio recommendations follow the same deterministic bullet-list contract as topic status
 - [X] T014 [P] [US2] Update `skills/.curated/rh-inf-status/examples/output.md`, `docs/COMMANDS.md`, and `docs/WORKFLOW.md` for the portfolio-status UX
 
 **Checkpoint**: Topic and portfolio status now share one consistent status-and-guidance contract.
@@ -91,7 +91,7 @@ description: "Tasks for 008-rh-inf-status — deterministic status UX"
 
 ### Implementation for User Story 3
 
-- [X] T017 [US3] Update drift-report output in `src/hi/commands/status.py` to include deterministic bullet next steps and explicit downstream stale-risk messaging
+- [X] T017 [US3] Update drift-report output in `src/rh_skills/commands/status.py` to include deterministic bullet next steps and explicit downstream stale-risk messaging
 - [X] T018 [P] [US3] Update `skills/.curated/rh-inf-status/SKILL.md`, `skills/.curated/rh-inf-status/reference.md`, and `skills/.curated/rh-inf-status/examples/output.md` for the drift-report contract
 - [X] T019 [P] [US3] Align `specs/008-rh-inf-status/contracts/status-drift-contract.md` and `specs/008-rh-inf-status/quickstart.md` with the implemented drift guidance behavior
 
@@ -107,7 +107,7 @@ description: "Tasks for 008-rh-inf-status — deterministic status UX"
 - [X] T021 Run targeted status CLI and skill tests in `tests/unit/test_status.py`, `tests/unit/test_status_extended.py`, `tests/skills/test_skill_audit.py`, `tests/skills/test_skill_schema.py`, and `tests/skills/test_skill_security.py`
 - [X] T022 Run the full test suite with `uv run pytest`
 - [X] T023 Add explicit FR-010 coverage for missing tracking, unknown topics, and empty portfolios in `tests/unit/test_status.py` and `tests/unit/test_status_extended.py`
-- [X] T024 Update `src/hi/commands/status.py` and `specs/008-rh-inf-status/spec.md` so failure paths include clear recovery guidance and artifact metadata stays in sync
+- [X] T024 Update `src/rh_skills/commands/status.py` and `specs/008-rh-inf-status/spec.md` so failure paths include clear recovery guidance and artifact metadata stays in sync
 - [X] T025 Align `specs/008-rh-inf-status/data-model.md` with the implemented portfolio contract so next steps remain per-topic except for empty-state recovery guidance
 - [X] T026 Clarify in `specs/008-rh-inf-status/spec.md` and `specs/008-rh-inf-status/contracts/status-drift-contract.md` that partial drift reports for unexpected runtime I/O failures are out of scope for 008
 

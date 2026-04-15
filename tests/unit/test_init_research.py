@@ -3,16 +3,16 @@
 import pytest
 from click.testing import CliRunner
 
-from hi.commands.init import init
+from rh_skills.commands.init import init
 
 
 @pytest.fixture()
 def tmp_repo(tmp_path, monkeypatch):
     """Set up a minimal repo root."""
-    monkeypatch.setenv("HI_REPO_ROOT", str(tmp_path))
-    monkeypatch.setenv("HI_TRACKING_FILE", str(tmp_path / "tracking.yaml"))
-    monkeypatch.setenv("HI_SOURCES_ROOT", str(tmp_path / "sources"))
-    monkeypatch.setenv("HI_TOPICS_ROOT", str(tmp_path / "topics"))
+    monkeypatch.setenv("RH_REPO_ROOT", str(tmp_path))
+    monkeypatch.setenv("RH_TRACKING_FILE", str(tmp_path / "tracking.yaml"))
+    monkeypatch.setenv("RH_SOURCES_ROOT", str(tmp_path / "sources"))
+    monkeypatch.setenv("RH_TOPICS_ROOT", str(tmp_path / "topics"))
     return tmp_path
 
 

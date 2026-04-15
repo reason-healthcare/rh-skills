@@ -15,7 +15,7 @@ choices with CLI-produced bullet lists of recommended actions.
 
 **Language/Version**: Python 3.13+ (existing `rh-skills` CLI stack)  
 **Primary Dependencies**: `click >= 8.0`, `ruamel.yaml >= 0.18`, existing
-`src/hi/commands/status.py`, curated skill contract framework in `tests/skills/`  
+`src/rh_skills/commands/status.py`, curated skill contract framework in `tests/skills/`  
 **Storage**: File system reads only (`tracking.yaml`, `topics/<topic>/...`,
 `sources/`)  
 **Testing**: `pytest`, status unit tests in `tests/unit/`, curated skill
@@ -64,7 +64,7 @@ specs/008-rh-inf-status/
 ### Source Code (repository root)
 
 ```text
-src/hi/commands/
+src/rh_skills/commands/
 └── status.py
 
 skills/.curated/rh-inf-status/

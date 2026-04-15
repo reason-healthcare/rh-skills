@@ -15,7 +15,7 @@ uv tool install rh-skills
 # Or for development
 git clone ... && cd reason-skills-2
 uv sync
-export PATH="$PATH:$(pwd)/bin"  # or use: uv run hi
+export PATH="$PATH:$(pwd)/bin"  # or use: uv run rh-skills
 
 # Optional (for binary file ingest)
 brew install poppler      # provides pdftotext (PDF text extraction)

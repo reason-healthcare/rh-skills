@@ -1,7 +1,7 @@
 ---
 name: "diabetes-screening"
 description: "Clinical decision support for evidence-based diabetes screening using ADA criteria."
-compatibility: "hi-skills-framework >= 0.1.0"
+compatibility: "rh-skills-framework >= 0.1.0"
 metadata:
   author: "Clinical Informatics Team"
   created: "2026-04-03"

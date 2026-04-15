@@ -22,10 +22,10 @@ def tmp_repo(tmp_path):
     y.dump({"schema_version": "1.0", "sources": [], "topics": [], "events": []}, tracking)
 
     env_overrides = {
-        "HI_REPO_ROOT": str(tmp_path),
-        "HI_TOPICS_ROOT": str(topics),
-        "HI_TRACKING_FILE": str(tracking),
-        "HI_SOURCES_ROOT": str(sources),
+        "RH_REPO_ROOT": str(tmp_path),
+        "RH_TOPICS_ROOT": str(topics),
+        "RH_TRACKING_FILE": str(tracking),
+        "RH_SOURCES_ROOT": str(sources),
     }
     old = {k: os.environ.get(k) for k in env_overrides}
     for k, v in env_overrides.items():
@@ -42,7 +42,7 @@ def tmp_repo(tmp_path):
 def tmp_topic(tmp_repo):
     """Create a test topic inside tmp_repo."""
     from click.testing import CliRunner
-    from hi.commands.init import init
+    from rh_skills.commands.init import init
     runner = CliRunner()
     result = runner.invoke(init, ["test-topic", "--title", "Test Topic"])
     assert result.exit_code == 0, result.output

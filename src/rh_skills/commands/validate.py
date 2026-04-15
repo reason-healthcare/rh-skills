@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 from ruamel.yaml import YAML
 
-from hi.common import (
+from rh_skills.common import (
     load_schema,
     log_error,
     log_warn,

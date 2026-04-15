@@ -45,7 +45,7 @@ specs/003-rh-inf-discovery/
 ├── data-model.md        # Phase 1 output
 ├── quickstart.md        # Phase 1 output
 ├── contracts/           # Phase 1 output
-│   ├── hi-search.md     # rh-skills search command contract
+│   ├── rh-search.md     # rh-skills search command contract
 │   └── discovery-plan-schema.md  # discovery-plan.yaml YAML schema
 └── tasks.md             # Phase 2 output (speckit-tasks)
 ```
@@ -53,7 +53,7 @@ specs/003-rh-inf-discovery/
 ### Source Code (repository root)
 
 ```text
-src/hi/commands/
+src/rh_skills/commands/
 ├── search.py            # NEW: rh-skills search pubmed/pmc/clinicaltrials
 ├── ingest.py            # EXTEND: add --url flag to implement subcommand
 └── init.py              # EXTEND: create RESEARCH.md + process/notes.md stubs

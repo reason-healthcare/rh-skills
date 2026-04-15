@@ -4,7 +4,7 @@ from pathlib import Path
 
 import click
 
-from hi.common import (
+from rh_skills.common import (
     append_topic_event,
     log_error,
     now_iso,
@@ -147,7 +147,7 @@ def _complete_task(n: int, topic: str | None) -> None:
             except Exception:
                 pass
         else:
-            from hi.common import append_root_event
+            from rh_skills.common import append_root_event
             append_root_event(tracking, "task_completed", f"Completed task: {found_desc}")
         with open(tf, "w") as f:
             y.dump(tracking, f)

@@ -4,10 +4,10 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.ingest import ingest
-from hi.commands.init import init
-from hi.commands.promote import promote
-from hi.commands.validate import validate
+from rh_skills.commands.ingest import ingest
+from rh_skills.commands.init import init
+from rh_skills.commands.promote import promote
+from rh_skills.commands.validate import validate
 
 
 # ── Phase 1: Init ─────────────────────────────────────────────────────────────
@@ -186,7 +186,7 @@ def test_lifecycle_tracking_arrays_are_lists(tmp_repo):
 def test_lifecycle_diabetes_screening_fixture_flow(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     monkeypatch.setenv(
-        "HI_STUB_RESPONSE",
+        "RH_STUB_RESPONSE",
         """\
 id: screening-criteria
 name: screening-criteria

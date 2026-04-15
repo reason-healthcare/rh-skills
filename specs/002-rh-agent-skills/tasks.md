@@ -17,9 +17,9 @@
 
 **Purpose**: Extend the Python framework to support plan artifacts and the `skills/.curated/` namespace.
 
-- [X] T001 ✅ Add `plans/` directory creation to `rh-skills init` (`src/hi/commands/init.py`)
+- [X] T001 ✅ Add `plans/` directory creation to `rh-skills init` (`src/rh_skills/commands/init.py`)
 - [X] T002 [P] ✅ Markdown front matter parsing via ruamel.yaml; `common.py` has `sha256_file()`, `load_tracking()`, `save_tracking()`
-- [X] T003 [P] ✅ SHA-256 checksum via `hashlib` in `src/hi/common.py` (`sha256_file()`)
+- [X] T003 [P] ✅ SHA-256 checksum via `hashlib` in `src/rh_skills/common.py` (`sha256_file()`)
 - [X] T004 [P] ✅ Create `skills/.curated/` directory skeleton with 6 subdirectories: `rh-inf-discovery/`, `rh-inf-ingest/`, `rh-inf-extract/`, `rh-inf-formalize/`, `rh-inf-verify/`, `rh-inf-status/`
 
 **Checkpoint**: ✅ Python helpers available; `rh-skills init` creates `process/` subdir scaffold; framework skill dirs exist.
@@ -30,7 +30,7 @@
 
 **Purpose**: Build the deterministic CLI that all ingest-related SKILL.md files will invoke.
 
-> **Status**: ✅ CLI fully implemented in `src/hi/commands/ingest.py`.
+> **Status**: ✅ CLI fully implemented in `src/rh_skills/commands/ingest.py`.
 
 - [X] T005 ✅ `rh-skills ingest` click group with `plan`/`implement`/`verify` subcommand routing
 - [X] T006 ✅ `rh-skills ingest plan [--force]`: write `plans/ingest-plan.md` with YAML front matter template; re-run guard
@@ -49,7 +49,7 @@
 
 > **Note**: Basic `rh-skills status <topic>` exists. These subcommands add lifecycle analysis and drift detection.
 
-- [X] T030 ✅ Extend `rh-skills status` with `progress` subcommand in `src/hi/commands/status.py`
+- [X] T030 ✅ Extend `rh-skills status` with `progress` subcommand in `src/rh_skills/commands/status.py`
 - [X] T031 ✅ Extend `rh-skills status` with `next-steps` subcommand
 - [X] T032 ✅ Extend `rh-skills status` with `check-changes` subcommand
 - [X] T035 [P] ✅ Create `tests/unit/test_status_extended.py`: 14 tests for all new status subcommands

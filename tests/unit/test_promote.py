@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from hi.commands.promote import _approved_extract_artifacts, _approved_formalize_target, promote
+from rh_skills.commands.promote import _approved_extract_artifacts, _approved_formalize_target, promote
 
 
 def load_yaml(path):

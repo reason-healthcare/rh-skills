@@ -11,7 +11,7 @@ import click
 import httpx
 from ruamel.yaml import YAML
 
-from hi.common import (
+from rh_skills.common import (
     append_root_event,
     locked_update_tracking,
     log_info,
@@ -752,7 +752,7 @@ def normalize(file, topic, source_name):
 @click.option("--tags", default="", help="Comma-separated domain tags")
 def classify(name, topic, source_type, evidence_level, tags):
     """Assign classification metadata to a registered source."""
-    from hi.commands.search import VALID_SOURCE_TYPES, VALID_EVIDENCE_LEVELS
+    from rh_skills.commands.search import VALID_SOURCE_TYPES, VALID_EVIDENCE_LEVELS
 
     if source_type not in VALID_SOURCE_TYPES:
         raise click.ClickException(
