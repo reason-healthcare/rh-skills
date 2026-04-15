@@ -112,6 +112,41 @@ deterministic work and an agent for reasoning:
 → See [docs/USAGE_MODES.md](docs/USAGE_MODES.md) for a full comparison,
 platform support, and LLM configuration.
 
+### Agent-native setup
+
+Install the RH skills into your project so your agent can find them:
+
+```bash
+# First-time setup — prompts for which agents to support
+rh-skills skills init
+
+# Check for drift (files modified or missing since last install)
+rh-skills skills check
+
+# Re-install / update after upgrading rh-skills
+rh-skills skills update
+```
+
+Skills are bundled with the package, so no network access is required during
+install. To get new or updated skills, upgrade the package first:
+
+```bash
+pipx upgrade rh-skills
+rh-skills skills update
+```
+
+Supported platforms and their install locations:
+
+| Platform | Install location |
+|----------|-----------------|
+| Generic (Copilot, etc.) | `.agents/skills/<skill>/` |
+| Claude | `.claude/commands/<skill>.md` |
+| Cursor | `.cursor/rules/<skill>.mdc` |
+| Gemini | `.gemini/<skill>.md` |
+
+A `.rh-skills-lock.yaml` file is written to your project root to track which
+skills and versions are installed. Commit this file alongside your agent config.
+
 ## End-user documentation
 
 - Introduction: high-level orientation to RH Skills and its intended use cases

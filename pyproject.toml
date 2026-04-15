@@ -27,6 +27,7 @@ packages = ["src/rh_skills"]
 [tool.hatch.build.targets.wheel.force-include]
 "src/rh_skills/schemas" = "rh_skills/schemas"
 "skills/.curated" = "rh_skills/skills"
+"skills/_profiles/support" = "rh_skills/skills_profiles"
 
 [dependency-groups]
 dev = [
