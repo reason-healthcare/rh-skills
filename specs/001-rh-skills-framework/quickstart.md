@@ -22,7 +22,7 @@ Install the `rh-skills` CLI:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/rh-skills
+git clone https://github.com/reason-healthcare/rh-skills
 cd rh-skills
 
 # Add bin/ to your PATH

@@ -1,6 +1,7 @@
 """Tests for rh-skills test command — ported from tests/unit/test-cmd.bats."""
 
 import json
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
@@ -42,6 +43,16 @@ user_prompt: "What is HbA1c used for?"
 expected_response: "Stub"
 compare_mode: contains
 """)
+
+
+def write_config(path: Path, provider: str = "stub", stub_response: str = "Stub response"):
+    path.write_text(
+        f"""\
+[llm]
+provider = "{provider}"
+stub_response = "{stub_response}"
+"""
+    )
 
 
 # ── Basic functionality ────────────────────────────────────────────────────────
@@ -159,3 +170,40 @@ def test_test_exits_2_for_nonexistent_named_fixture(tmp_repo, monkeypatch):
     runner = CliRunner()
     result = runner.invoke(test, ["my-skill", "--fixture", "no-such-fixture"])
     assert result.exit_code == 2
+
+
+def test_test_reads_llm_config_from_local_file(tmp_repo, monkeypatch):
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    write_config(tmp_repo / ".rh-skills.toml")
+    setup_skill_with_fixture(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(test, ["my-skill", "--mode", "contains"])
+    assert result.exit_code == 0, result.output
+
+
+def test_test_reads_llm_config_from_global_file(tmp_repo, tmp_path, monkeypatch):
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    write_config(home / ".rh-skills.toml")
+    setup_skill_with_fixture(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(test, ["my-skill", "--mode", "contains"])
+    assert result.exit_code == 0, result.output
+
+
+def test_test_env_overrides_local_and_global_config(tmp_repo, tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    write_config(home / ".rh-skills.toml", stub_response="global wrong answer")
+    write_config(tmp_repo / ".rh-skills.toml", stub_response="local wrong answer")
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv("RH_STUB_RESPONSE", "Stub response")
+    setup_skill_with_fixture(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(test, ["my-skill", "--mode", "contains"])
+    assert result.exit_code == 0, result.output

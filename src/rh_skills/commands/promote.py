@@ -1,7 +1,6 @@
 """rh-skills promote — Promote artifacts between lifecycle levels."""
 
 import io
-import os
 from pathlib import Path
 
 import click
@@ -9,6 +8,7 @@ from ruamel.yaml import YAML
 
 from rh_skills.common import (
     append_topic_event,
+    config_value,
     log_info,
     log_warn,
     now_iso,
@@ -588,9 +588,9 @@ def _render_extract_plan(topic: str, artifacts: list[dict], has_concepts: bool) 
 
 def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     """Invoke LLM or return stub response."""
-    provider = os.environ.get("LLM_PROVIDER", "ollama")
+    provider = config_value("LLM_PROVIDER", "ollama")
     if provider == "stub":
-        stub = os.environ.get("RH_STUB_RESPONSE", "Stub response")
+        stub = config_value("RH_STUB_RESPONSE", "Stub response")
         return stub
     raise click.ClickException(
         f"LLM provider '{provider}' not available in Python port — use LLM_PROVIDER=stub for testing"

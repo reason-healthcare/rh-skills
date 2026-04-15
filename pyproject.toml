@@ -1,7 +1,7 @@
 [project]
 name = "rh-skills"
 version = "0.1.0"
-description = "RH Skills CLI for informatics workflows"
+description = "Tools that superpower informaticists building computable clinical knowledge"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -15,7 +15,7 @@ dependencies = [
 rh-skills = "rh_skills.cli:main"
 
 [project.urls]
-Repository = "https://github.com/your-org/rh-skills"
+Repository = "https://github.com/reason-healthcare/rh-skills"
 
 [build-system]
 requires = ["hatchling"]

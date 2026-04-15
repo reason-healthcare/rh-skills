@@ -11,8 +11,8 @@ For contributors working on the `rh-skills` CLI, the curated skill library, or t
 **Requirements:** Python 3.13+, [uv](https://docs.astral.sh/uv/)
 
 ```bash
-git clone <repo-url> reason-skills-2
-cd reason-skills-2
+git clone https://github.com/reason-healthcare/rh-skills
+cd rh-skills
 uv sync                  # install all dependencies into .venv
 uv run rh-skills --help         # run the CLI from the local source
 make install             # install rh-skills into ~/.local/bin (editable)

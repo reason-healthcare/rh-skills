@@ -5,6 +5,7 @@ import fcntl
 import hashlib
 import os
 import tempfile
+import tomllib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,11 +14,93 @@ from ruamel.yaml import YAML
 import click
 
 
+_CONFIG_KEYS = {
+    "LLM_PROVIDER",
+    "RH_REPO_ROOT",
+    "RH_SOURCES_ROOT",
+    "RH_STUB_RESPONSE",
+    "RH_TOPICS_ROOT",
+    "RH_TRACKING_FILE",
+}
+
+
+def _global_config_path() -> Path:
+    """Return the global rh-skills config path."""
+    return Path.home() / ".rh-skills.toml"
+
+
+def _local_config_path() -> Path | None:
+    """Return the nearest local rh-skills config path from cwd upwards."""
+    cwd = Path.cwd()
+    for parent in [cwd, *cwd.parents]:
+        path = parent / ".rh-skills.toml"
+        if path.exists():
+            return path
+    return None
+
+
+def _load_config_file(path: Path) -> dict[str, str]:
+    """Load a TOML config file and normalize supported keys."""
+    with open(path, "rb") as f:
+        raw = tomllib.load(f)
+
+    data: dict[str, str] = {}
+
+    for key in _CONFIG_KEYS:
+        value = raw.get(key)
+        if value is not None:
+            data[key] = str(value)
+
+    paths = raw.get("paths")
+    if isinstance(paths, dict):
+        mapping = {
+            "repo_root": "RH_REPO_ROOT",
+            "topics_root": "RH_TOPICS_ROOT",
+            "tracking_file": "RH_TRACKING_FILE",
+            "sources_root": "RH_SOURCES_ROOT",
+        }
+        for key, env_key in mapping.items():
+            value = paths.get(key)
+            if value is not None:
+                data[env_key] = str(value)
+
+    llm = raw.get("llm")
+    if isinstance(llm, dict):
+        mapping = {
+            "provider": "LLM_PROVIDER",
+            "stub_response": "RH_STUB_RESPONSE",
+        }
+        for key, env_key in mapping.items():
+            value = llm.get(key)
+            if value is not None:
+                data[env_key] = str(value)
+
+    return data
+
+
+def config_value(key: str, default: str | None = None) -> str | None:
+    """Return a config value with precedence ENV > local > global."""
+    if key not in _CONFIG_KEYS:
+        return default
+
+    value = default
+
+    global_config = _global_config_path()
+    if global_config.exists():
+        value = _load_config_file(global_config).get(key, value)
+
+    local_config = _local_config_path()
+    if local_config is not None:
+        value = _load_config_file(local_config).get(key, value)
+
+    return os.environ.get(key, value)
+
+
 # ── Path resolution ────────────────────────────────────────────────────────────
 
 def repo_root() -> Path:
-    """Return repo root: RH_REPO_ROOT env or walk up from cwd looking for tracking.yaml/pyproject.toml."""
-    if env := os.environ.get("RH_REPO_ROOT"):
+    """Return repo root from config or by walking up from cwd."""
+    if env := config_value("RH_REPO_ROOT"):
         return Path(env)
     cwd = Path.cwd()
     for parent in [cwd, *cwd.parents]:
@@ -28,21 +111,21 @@ def repo_root() -> Path:
 
 def topics_root() -> Path:
     """Return topics root directory."""
-    if env := os.environ.get("RH_TOPICS_ROOT"):
+    if env := config_value("RH_TOPICS_ROOT"):
         return Path(env)
     return repo_root() / "topics"
 
 
 def tracking_file() -> Path:
     """Return path to tracking.yaml."""
-    if env := os.environ.get("RH_TRACKING_FILE"):
+    if env := config_value("RH_TRACKING_FILE"):
         return Path(env)
     return repo_root() / "tracking.yaml"
 
 
 def sources_root() -> Path:
     """Return path to sources directory."""
-    if env := os.environ.get("RH_SOURCES_ROOT"):
+    if env := config_value("RH_SOURCES_ROOT"):
         return Path(env)
     return repo_root() / "sources"
 

@@ -1,13 +1,13 @@
 """rh-skills test — Run LLM-based tests against topic fixtures."""
 
 import json
-import os
 import re
 from pathlib import Path
 
 import click
 
 from rh_skills.common import (
+    config_value,
     log_warn,
     now_iso,
     require_topic,
@@ -18,9 +18,9 @@ from rh_skills.common import (
 
 def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     """Invoke LLM or return stub response."""
-    provider = os.environ.get("LLM_PROVIDER", "ollama")
+    provider = config_value("LLM_PROVIDER", "ollama")
     if provider == "stub":
-        return os.environ.get("RH_STUB_RESPONSE", "Stub response")
+        return config_value("RH_STUB_RESPONSE", "Stub response")
     raise click.ClickException(
         f"LLM provider '{provider}' not available — use LLM_PROVIDER=stub for testing"
     )
@@ -144,7 +144,7 @@ def test(topic, fixture, mode):
     result_data = {
         "topic": topic,
         "timestamp": timestamp,
-        "provider": os.environ.get("LLM_PROVIDER", "ollama"),
+        "provider": config_value("LLM_PROVIDER", "ollama"),
         "summary": {
             "passed": passed,
             "failed": failed,
