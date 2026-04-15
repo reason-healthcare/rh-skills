@@ -1,0 +1,39 @@
+name: empty-portfolio
+skill: rh-inf-status
+description: >
+  Freshly initialized repository with no topics. Agent must call rh-skills
+  status show, interpret the empty state correctly, and provide actionable
+  next-step guidance without hallucinating topic progress.
+
+topic: _none
+
+workspace:
+  tracking_yaml: |
+    topics: {}
+    sources: []
+
+prompt: |
+  Use the rh-inf-status skill.
+
+  Working directory: {workdir}
+
+  This is a freshly initialized rh-skills repository with no topics yet.
+
+  Run **show** mode: report the current portfolio status and recommend the
+  next step to get started.
+
+expected_outputs:
+  - path: tracking.yaml
+    checks:
+      - exists
+
+efficiency_focus:
+  - "Does the agent call rh-skills status show exactly once (not repeatedly)?"
+  - "Does it avoid reading other files when the status command gives a complete picture?"
+  - "Is the response concise (not a wall of boilerplate)?"
+
+quality_focus:
+  - "Does the agent correctly identify the portfolio as empty (no topics)?"
+  - "Does the recommended next step reference rh-skills init <topic> or rh-inf-discovery?"
+  - "Does the agent avoid fabricating topic names or progress that doesn't exist in tracking.yaml?"
+  - "Is the guidance actionable for a new user?"

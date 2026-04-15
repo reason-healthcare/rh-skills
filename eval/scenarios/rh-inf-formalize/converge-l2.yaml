@@ -1,0 +1,155 @@
+name: converge-l2
+skill: rh-inf-formalize
+description: >
+  Two approved L2 structured artifacts ready for convergence; agent must plan
+  and implement a single L3 FHIR-aligned computable package combining both
+  artifacts, with a valid formalize plan signed off before implement runs.
+
+topic: diabetes-ccm
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-ccm:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+          - event: extract_planned
+            timestamp: "2026-04-15T08:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+    sources:
+      - id: ada-standards-2024
+        normalized: true
+        path: sources/normalized/ada-standards-2024.md
+      - id: cms-diabetes-measures
+        normalized: true
+        path: sources/normalized/cms-diabetes-measures.md
+
+  files:
+    - path: topics/diabetes-ccm/process/plans/extract-plan.md
+      content: |
+        # Extract Plan — diabetes-ccm
+
+        **Status:** approved
+        **Approved by:** reviewer
+        **Approved at:** 2026-04-15T10:00:00Z
+
+        ## Artifact Candidates
+
+        | Artifact | Source(s) | Type |
+        |----------|-----------|------|
+        | diabetes-ccm-standards | ada-standards-2024 | clinical-summary |
+        | diabetes-ccm-quality-measures | cms-diabetes-measures | quality-measure-set |
+
+    - path: topics/diabetes-ccm/structured/diabetes-ccm-standards.yaml
+      content: |
+        artifact_id: diabetes-ccm-standards
+        artifact_type: clinical-summary
+        topic: diabetes-ccm
+        clinical_question: >
+          What are the recommended components of CCM for adults with T2D?
+        derived_from:
+          - ada-standards-2024
+        sections:
+          glycemic_targets:
+            summary: HbA1c < 7.0% for most adults; < 8.0% for limited life expectancy.
+            evidence_traceability:
+              - claim_id: hba1c-primary
+                statement: "HbA1c goal <7%"
+                source: ada-standards-2024
+                locator: "Section: Glycemic Targets"
+          blood_pressure:
+            summary: Target BP < 130/80 mmHg for most patients with diabetes.
+            evidence_traceability:
+              - claim_id: bp-target
+                statement: "<130/80 mmHg"
+                source: ada-standards-2024
+                locator: "Section: Blood Pressure"
+          ccm_components:
+            summary: "Annual foot exam, UACR, dilated eye exam every 1–2 years."
+            evidence_traceability:
+              - claim_id: ccm-foot
+                statement: "Comprehensive foot exam annually"
+                source: ada-standards-2024
+                locator: "Section: Chronic Care Management Components"
+        status: extract-approved
+
+    - path: topics/diabetes-ccm/structured/diabetes-ccm-quality-measures.yaml
+      content: |
+        artifact_id: diabetes-ccm-quality-measures
+        artifact_type: quality-measure-set
+        topic: diabetes-ccm
+        clinical_question: >
+          What CMS quality measures apply to diabetes CCM?
+        derived_from:
+          - cms-diabetes-measures
+        sections:
+          measures:
+            items:
+              - measure_id: CMS122
+                name: "Diabetes: HbA1c Poor Control (>9%)"
+                type: outcome
+                inverse: true
+                program: MIPS
+              - measure_id: CMS123
+                name: "Diabetes: Foot Exam"
+                type: process
+                program: MIPS
+            evidence_traceability:
+              - claim_id: cms122
+                statement: "CMS122 HbA1c Poor Control measure"
+                source: cms-diabetes-measures
+                locator: "eCQM CMS122v12"
+        status: extract-approved
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `diabetes-ccm`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  Two approved L2 artifacts are ready for convergence:
+  - `diabetes-ccm-standards` (clinical summary — ADA guideline)
+  - `diabetes-ccm-quality-measures` (quality measure set — CMS eCQM)
+
+  Run the full formalize cycle:
+  1. **plan** — generate a formalize plan proposing the L3 package structure
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L3 FHIR-aligned computable package via
+     rh-skills promote combine
+  4. **verify** — validate the L3 artifact
+
+expected_outputs:
+  - path: topics/diabetes-ccm/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "diabetes-ccm-standards"
+      - contains: "diabetes-ccm-quality-measures"
+  - path: topics/diabetes-ccm/computable/diabetes-ccm-package.yaml
+    checks:
+      - exists
+      - contains: "converged_from:"
+      - contains: "pathways:"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+      - event: formalize_complete
+
+efficiency_focus:
+  - "Does the agent use rh-skills promote formalize-plan rather than writing the plan inline?"
+  - "Does it correctly pause for reviewer approval between plan and implement?"
+  - "Does it use rh-skills promote combine (not inline YAML construction) for the L3 artifact?"
+  - "Does it re-read the L2 artifacts more than once each?"
+
+quality_focus:
+  - "Does the L3 package reference both input L2 artifacts in converged_from?"
+  - "Is there a pathways section with at least one clinical decision pathway?"
+  - "Are the quality measures from the second artifact integrated into the L3 package?"
+  - "Does rh-skills validate report zero errors on the L3 artifact?"
+  - "Is the FHIR alignment section present (even if minimal)?"

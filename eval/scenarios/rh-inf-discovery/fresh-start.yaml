@@ -1,0 +1,66 @@
+name: fresh-start
+skill: rh-inf-discovery
+description: >
+  New topic with no prior state — agent must initiate a full discovery session,
+  run searches across all source types, and save a complete discovery-plan.yaml.
+
+topic: diabetes-ccm
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-ccm:
+        state: initialized
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-15T00:00:00Z"
+    sources: []
+
+  files:
+    - path: RESEARCH.md
+      content: |
+        # Research Focus
+
+        **Topic:** diabetes-ccm
+        **Clinical question:** What are the recommended components of chronic care
+        management for adults with type 2 diabetes, and what quality measures apply?
+
+        ## Scope
+        - Adult patients (18+) with T2D
+        - US care delivery context
+        - Focus on CMS program alignment (MIPS/QPP, CCM billing codes)
+        - Outcome measures: HbA1c, blood pressure, nephropathy screening
+
+prompt: |
+  Use the rh-inf-discovery skill in **session** mode for the topic `diabetes-ccm`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  The RESEARCH.md file describes the clinical question. There is no existing
+  discovery plan — start fresh. Run searches across PubMed, PMC, and
+  ClinicalTrials.gov. When complete, save the plan via `rh-skills validate --plan`.
+
+expected_outputs:
+  - path: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+    checks:
+      - exists
+      - contains: "sources:"
+      - contains: "clinical-guideline"
+      - contains: "government-program"
+  - path: tracking.yaml
+    checks:
+      - event: discovery_planned
+
+efficiency_focus:
+  - "Does the agent search more than one database before saving the plan?"
+  - "Does it ask for clarification about the clinical question that RESEARCH.md already answers?"
+  - "Does it re-run the same search query more than once?"
+  - "Does it write any inline scripts for file I/O instead of using rh-skills CLI commands?"
+
+quality_focus:
+  - "Are there at least 5 sources covering distinct evidence types (guideline, RCT, systematic review, government program, health economics)?"
+  - "Is a CMS quality measure source present (e.g., eCQM, MIPS)?"
+  - "Are evidence levels assigned correctly (ia/ib/iia/iib/iii/iv)?"
+  - "Does the plan include a health-economics source?"
+  - "Are all rationale fields non-empty?"

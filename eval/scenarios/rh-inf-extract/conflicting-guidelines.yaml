@@ -1,0 +1,136 @@
+name: conflicting-guidelines
+skill: rh-inf-extract
+description: >
+  Two normalized sources with a direct conflict on HbA1c targets (ADA <7% vs
+  a more permissive threshold in an older source). Agent must surface the
+  conflict explicitly in the L2 artifact with preferred rationale.
+
+topic: diabetes-ccm
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-ccm:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources:
+      - id: ada-standards-2024
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/ada-standards-2024.md
+      - id: aace-diabetes-guidelines-2022
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/aace-diabetes-guidelines-2022.md
+
+  files:
+    - path: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+      content: |
+        topic: diabetes-ccm
+        clinical_question: >
+          What are the recommended HbA1c targets and CCM components for
+          adults with type 2 diabetes?
+        sources:
+          - id: ada-standards-2024
+            title: "ADA Standards of Care in Diabetes 2024"
+            type: clinical-guideline
+            evidence_level: ia
+            open_access: true
+          - id: aace-diabetes-guidelines-2022
+            title: "AACE Comprehensive Diabetes Management Algorithm 2022"
+            type: clinical-guideline
+            evidence_level: ia
+            open_access: true
+        status: approved
+
+    - path: sources/normalized/ada-standards-2024.md
+      content: |
+        # ADA Standards of Care in Diabetes — 2024
+
+        ## Glycemic Targets
+
+        For most non-pregnant adults with diabetes, an HbA1c goal of **<7.0%**
+        is appropriate (Evidence: A).
+
+        A less stringent HbA1c goal (such as <8%) may be appropriate for patients
+        with limited life expectancy (Evidence: B).
+
+    - path: sources/normalized/aace-diabetes-guidelines-2022.md
+      content: |
+        # AACE Comprehensive Diabetes Management Algorithm 2022
+
+        ## Glycemic Goals
+
+        The optimal HbA1c goal for most patients is **≤6.5%** if achievable
+        without significant hypoglycemia (Grade A; BEL 1).
+
+        For patients at high risk of hypoglycemia, a goal of **<7.0–7.5%**
+        is appropriate.
+
+        ## Notes on Target Comparison
+
+        The AACE recommends a more stringent target than the ADA for patients
+        where intensive control is safe and feasible.
+
+    - path: topics/diabetes-ccm/process/concepts.yaml
+      content: |
+        topic: diabetes-ccm
+        concepts:
+          - term: HbA1c
+            aliases: [glycated hemoglobin, A1c]
+            category: biomarker
+          - term: hypoglycemia
+            category: adverse-event
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `diabetes-ccm`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  Two sources are ingested. They **conflict** on HbA1c targets:
+  - ADA 2024 recommends <7.0% for most patients
+  - AACE 2022 recommends ≤6.5% (more stringent) where safe
+
+  Run the full extract cycle:
+  1. **plan** — generate an extract plan that identifies the conflict
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L2 artifact, explicitly recording the conflict
+     with a preferred source and rationale via --conflict flag
+  4. **verify** — validate the artifact
+
+expected_outputs:
+  - path: topics/diabetes-ccm/process/plans/extract-plan.md
+    checks:
+      - exists
+      - contains: "conflict"
+  - path: topics/diabetes-ccm/structured/diabetes-ccm-standards.yaml
+    checks:
+      - exists
+      - contains: "conflicts:"
+      - contains: "preferred_source:"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: extract_complete
+
+efficiency_focus:
+  - "Does the agent identify the conflict during the plan phase (not after implement)?"
+  - "Does it use the --conflict flag on rh-skills promote derive rather than writing inline YAML?"
+  - "Does it provide a clinical rationale for the preferred source rather than just picking one arbitrarily?"
+  - "Does it avoid re-reading both source files more than once each?"
+
+quality_focus:
+  - "Is the conflict record in the L2 artifact complete: issue, both sources, both statements, preferred_source, preferred_rationale?"
+  - "Is the rationale for preferring ADA vs AACE clinically defensible?"
+  - "Does the rest of the artifact (non-conflicting sections) still extract correctly?"
+  - "Does rh-skills validate pass despite the recorded conflict?"
+  - "Is the conflict surfaced clearly enough for a clinical reviewer to make a decision?"

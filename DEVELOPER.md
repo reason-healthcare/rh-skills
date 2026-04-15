@@ -209,6 +209,33 @@ git add eval/
 git commit -m "eval(rh-inf-discovery/sources-identified): <one-line summary>"
 ```
 
+### Scenario files
+
+Each scenario is declared as a YAML file at
+`eval/scenarios/<skill>/<scenario-name>.yaml`. When the script finds a matching
+file it:
+
+1. Seeds the workspace with the declared `tracking_yaml` and `files` entries
+2. Uses the `prompt` field (with `{workdir}`, `{topic}`, `{skill}` placeholders) as the opening message
+3. Pre-populates the review stub with the `expected_outputs`, `efficiency_focus`, and `quality_focus` checklists from the file
+
+See `eval/scenarios/README.md` for the full schema.
+
+**Current scenarios:**
+
+| Skill | Scenario | What it tests |
+|-------|----------|---------------|
+| `rh-inf-discovery` | `fresh-start` | New topic, full session from blank slate |
+| `rh-inf-discovery` | `resume-session` | Partial plan — add missing source types without duplicating existing ones |
+| `rh-inf-ingest` | `open-access-sources` | Full ingest cycle, 3 open-access sources |
+| `rh-inf-ingest` | `authenticated-source` | Correct advisory for gated source; no content fabrication |
+| `rh-inf-extract` | `single-source` | Plan → implement → verify with one guideline source |
+| `rh-inf-extract` | `conflicting-guidelines` | Explicit conflict record when two sources disagree |
+| `rh-inf-formalize` | `converge-l2` | Converge two approved L2 artifacts into one L3 package |
+| `rh-inf-status` | `empty-portfolio` | Empty portfolio — correct next-step guidance |
+| `rh-inf-status` | `mid-workflow` | Two topics at different stages — distinct per-topic recommendations |
+| `rh-inf-verify` | `post-ingest` | Missing normalized file detected; verify stays read-only |
+
 ### Naming scenarios
 
 Use a short kebab-case label that describes the starting state or the

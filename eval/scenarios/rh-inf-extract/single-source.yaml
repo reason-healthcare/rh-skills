@@ -1,0 +1,137 @@
+name: single-source
+skill: rh-inf-extract
+description: >
+  One normalized guideline source fully ingested; agent must plan and implement
+  a single L2 extraction, producing a structured artifact with evidence
+  traceability and no conflicts.
+
+topic: diabetes-ccm
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-ccm:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources:
+      - id: ada-standards-2024
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/ada-standards-2024.md
+
+  files:
+    - path: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+      content: |
+        topic: diabetes-ccm
+        clinical_question: >
+          What are the recommended components of chronic care management for
+          adults with type 2 diabetes, and what quality measures apply?
+        sources:
+          - id: ada-standards-2024
+            title: "ADA Standards of Care in Diabetes 2024"
+            url: https://diabetesjournals.org/care/issue/47/Supplement_1
+            type: clinical-guideline
+            evidence_level: ia
+            rationale: Primary annual guideline; single source for this scenario.
+            open_access: true
+        status: approved
+
+    - path: sources/normalized/ada-standards-2024.md
+      content: |
+        # ADA Standards of Care in Diabetes — 2024
+
+        ## Glycemic Targets
+
+        For most non-pregnant adults with diabetes, an HbA1c goal of <7% (53 mmol/mol)
+        is appropriate (Evidence: A).
+
+        A less stringent HbA1c goal (such as <8%) may be appropriate for patients with
+        limited life expectancy or where the harms of treatment outweigh the benefits
+        (Evidence: B).
+
+        ## Blood Pressure
+
+        For people with diabetes and hypertension, blood pressure targets should be
+        individualized. A target of <130/80 mmHg is recommended for most patients
+        (Evidence: B).
+
+        ## Chronic Care Management (CCM) Components
+
+        Recommended CCM components include:
+        - Comprehensive foot exam annually
+        - Urine albumin-to-creatinine ratio (UACR) annually
+        - Dilated eye exam every 1–2 years
+        - Dental examination every 6–12 months
+        - Statin therapy for patients aged 40–75 with LDL ≥70 mg/dL (Evidence: A)
+
+        ## Quality Measures
+
+        CMS122: HbA1c Poor Control (>9%) — MIPS quality measure, inverse scoring.
+        CMIT: CMS identifies CCM billing codes CPT 99490–99491 for eligible beneficiaries.
+
+    - path: topics/diabetes-ccm/process/concepts.yaml
+      content: |
+        topic: diabetes-ccm
+        concepts:
+          - term: HbA1c
+            aliases: [glycated hemoglobin, A1c]
+            category: biomarker
+          - term: chronic care management
+            aliases: [CCM]
+            category: care-model
+          - term: MIPS
+            aliases: [Merit-based Incentive Payment System, QPP]
+            category: quality-program
+          - term: UACR
+            aliases: [urine albumin-to-creatinine ratio]
+            category: biomarker
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `diabetes-ccm`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One source is fully ingested: `ada-standards-2024`. There is no existing
+  extract plan.
+
+  Run the full extract cycle:
+  1. **plan** — generate an extract plan identifying artifact candidates
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L2 structured artifact via rh-skills promote derive
+  4. **verify** — validate the artifact with rh-skills validate
+
+expected_outputs:
+  - path: topics/diabetes-ccm/process/plans/extract-plan.md
+    checks:
+      - exists
+      - contains: "ada-standards-2024"
+  - path: topics/diabetes-ccm/structured/diabetes-ccm-standards.yaml
+    checks:
+      - exists
+      - contains: "artifact_type:"
+      - contains: "evidence_traceability:"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: extract_complete
+
+efficiency_focus:
+  - "Does the agent generate the extract plan without re-reading the source file more than once?"
+  - "Does it use rh-skills promote derive (not inline YAML construction) for the artifact?"
+  - "Does it pause correctly for reviewer approval before implementing?"
+  - "Does it run rh-skills validate after producing the artifact?"
+
+quality_focus:
+  - "Does the L2 artifact contain the major CCM components (glycemic targets, BP, foot exam, UACR, eye exam)?"
+  - "Is evidence traceability present for each major claim?"
+  - "Are evidence levels consistent with the source (A/B from ADA → ia/ib)?"
+  - "Does the artifact include the quality measure references (CMS122)?"
+  - "Does rh-skills validate report zero errors?"

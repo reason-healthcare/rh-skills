@@ -1,0 +1,100 @@
+name: open-access-sources
+skill: rh-inf-ingest
+description: >
+  Discovery plan with 3 open-access sources; agent must download all three,
+  normalize to Markdown, classify each, annotate with concepts, and produce
+  concepts.yaml — a full ingest cycle with no authentication barriers.
+
+topic: diabetes-ccm
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-ccm:
+        state: discovery_planned
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+    sources: []
+
+  files:
+    - path: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+      content: |
+        topic: diabetes-ccm
+        clinical_question: >
+          What are the recommended components of chronic care management for
+          adults with type 2 diabetes, and what quality measures apply?
+        sources:
+          - id: ada-standards-2024
+            title: "ADA Standards of Care in Diabetes 2024"
+            url: https://diabetesjournals.org/care/issue/47/Supplement_1
+            type: clinical-guideline
+            evidence_level: ia
+            rationale: Primary annual guideline from the American Diabetes Association.
+            open_access: true
+          - id: cms-diabetes-measures
+            title: "CMS Quality Measures — Diabetes (eCQM)"
+            url: https://ecqi.healthit.gov/ep/ecqms-2024-performance-period
+            type: government-program
+            evidence_level: iii
+            rationale: Defines MIPS/QPP quality measures directly tied to diabetes CCM billing.
+            open_access: true
+          - id: ihi-ccm-framework
+            title: "IHI Chronic Care Model — Diabetes Implementation Guide"
+            url: https://www.ihi.org/resources/Pages/IHIWhitePapers/IHIDiabetesCCM.aspx
+            type: clinical-guideline
+            evidence_level: iia
+            rationale: Operational implementation framework for CCM program design.
+            open_access: true
+        status: approved
+
+prompt: |
+  Use the rh-inf-ingest skill for the topic `diabetes-ccm`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  A validated discovery plan is at
+  `topics/diabetes-ccm/process/plans/discovery-plan.yaml` with 3 open-access
+  sources.
+
+  Run the full ingest cycle:
+  1. **plan** — summarise sources and tool availability
+  2. **implement** — download, normalize, classify, and annotate all 3 sources
+  3. **verify** — confirm all sources are ingested and concepts.yaml is valid
+
+expected_outputs:
+  - path: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+    checks:
+      - exists
+  - path: sources/normalized/ada-standards-2024.md
+    checks:
+      - exists
+  - path: sources/normalized/cms-diabetes-measures.md
+    checks:
+      - exists
+  - path: sources/normalized/ihi-ccm-framework.md
+    checks:
+      - exists
+  - path: topics/diabetes-ccm/process/concepts.yaml
+    checks:
+      - exists
+      - contains: "concepts:"
+  - path: tracking.yaml
+    checks:
+      - event: ingest_complete
+
+efficiency_focus:
+  - "Does the agent call rh-skills ingest implement --url for each source (3 calls) rather than writing a download loop?"
+  - "Does it proceed through plan → implement → verify without prompting the user unnecessarily?"
+  - "Does it re-read the discovery plan more than once?"
+  - "Does it produce an inline classification table instead of using rh-skills ingest classify?"
+
+quality_focus:
+  - "Are all 3 sources present in sources/normalized/ as .md files?"
+  - "Is the Markdown normalization readable (no garbled HTML artifacts)?"
+  - "Are classification tags appropriate for each source type?"
+  - "Does concepts.yaml contain meaningful clinical terms (HbA1c, CCM, MIPS, etc.)?"
+  - "Does rh-skills ingest verify report zero errors?"

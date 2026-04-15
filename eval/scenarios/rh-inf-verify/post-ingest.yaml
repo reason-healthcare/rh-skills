@@ -1,0 +1,83 @@
+name: post-ingest
+skill: rh-inf-verify
+description: >
+  Topic with ingest complete but one source missing its normalized file.
+  Agent must run verify, detect the discrepancy between tracking.yaml and the
+  filesystem, and report it clearly without attempting to fix it (verify is
+  read-only).
+
+topic: diabetes-ccm
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-ccm:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources:
+      - id: ada-standards-2024
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/ada-standards-2024.md
+      - id: cms-diabetes-measures
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/cms-diabetes-measures.md
+
+  files:
+    # Intentionally only ada-standards-2024.md is present;
+    # cms-diabetes-measures.md is missing to trigger a verify finding.
+    - path: sources/normalized/ada-standards-2024.md
+      content: |
+        # ADA Standards of Care in Diabetes — 2024
+
+        ## Glycemic Targets
+
+        For most adults with diabetes, an HbA1c goal of <7.0% is appropriate.
+
+    - path: topics/diabetes-ccm/process/concepts.yaml
+      content: |
+        topic: diabetes-ccm
+        concepts:
+          - term: HbA1c
+            category: biomarker
+          - term: chronic care management
+            aliases: [CCM]
+            category: care-model
+
+prompt: |
+  Use the rh-inf-verify skill for the topic `diabetes-ccm`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  The topic is marked as `ingest_complete` in tracking.yaml with 2 sources,
+  but one normalized file is missing from the filesystem.
+
+  Run **verify** mode: report the full verification result including any
+  discrepancies. Do NOT attempt to fix the missing file — verify is read-only.
+
+expected_outputs:
+  - path: tracking.yaml
+    checks:
+      - exists
+
+efficiency_focus:
+  - "Does the agent run rh-skills ingest verify (not manually diff the filesystem against tracking.yaml)?"
+  - "Does it report the finding clearly in a single pass without retrying the verify command?"
+  - "Does it correctly refrain from writing any files or running rh-skills ingest implement?"
+
+quality_focus:
+  - "Is the missing file (cms-diabetes-measures.md) correctly identified in the report?"
+  - "Is the finding categorized appropriately (e.g., WARN or ERROR level)?"
+  - "Does the report include a recommended remediation step (re-run ingest implement for that source)?"
+  - "Is the verify report read-only — no events appended to tracking.yaml?"
+  - "Does the agent's conclusion accurately reflect that ingest is NOT fully complete?"

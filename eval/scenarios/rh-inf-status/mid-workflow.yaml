@@ -1,0 +1,73 @@
+name: mid-workflow
+skill: rh-inf-status
+description: >
+  Portfolio with two topics at different lifecycle stages: one at discovery_planned
+  (ready for ingest) and one at extract_complete (ready for formalize). Agent must
+  show correct per-topic stage and emit distinct next-step recommendations for each.
+
+topic: _multiple
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-ccm:
+        state: discovery_planned
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+      young-adult-hypertension:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-08T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-09T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-11T00:00:00Z"
+          - event: extract_planned
+            timestamp: "2026-04-13T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources: []
+
+  files:
+    - path: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+      content: |
+        topic: diabetes-ccm
+        status: approved
+        sources:
+          - id: ada-standards-2024
+            type: clinical-guideline
+            evidence_level: ia
+            open_access: true
+
+prompt: |
+  Use the rh-inf-status skill.
+
+  Working directory: {workdir}
+
+  The portfolio has two topics at different stages:
+  - `diabetes-ccm` — discovery done, ingest not yet started
+  - `young-adult-hypertension` — extraction complete, ready to formalize
+
+  Run **show** mode: report status for both topics and give a distinct
+  next-step recommendation for each.
+
+expected_outputs:
+  - path: tracking.yaml
+    checks:
+      - exists
+
+efficiency_focus:
+  - "Does the agent call rh-skills status show once and derive both topic states from that output?"
+  - "Does it avoid making separate status calls per topic?"
+  - "Is the output structured (table or clear per-topic sections) rather than a wall of prose?"
+
+quality_focus:
+  - "Is diabetes-ccm shown as `discovery_planned` with next step: run rh-inf-ingest?"
+  - "Is young-adult-hypertension shown as `extract_complete` with next step: run rh-inf-formalize?"
+  - "Are the stages reported accurately (no mixing up the two topics)?"
+  - "Does the recommendation for young-adult-hypertension reference rh-skills promote formalize-plan?"
+  - "Is the output read-only (no file writes)?"

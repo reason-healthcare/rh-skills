@@ -1,0 +1,92 @@
+name: authenticated-source
+skill: rh-inf-ingest
+description: >
+  Discovery plan with 2 open-access sources and 1 authenticated source (UpToDate).
+  Agent must download open-access sources, surface the correct advisory for the
+  authenticated source, and complete ingest without fabricating content for the
+  gated source.
+
+topic: young-adult-hypertension
+
+workspace:
+  tracking_yaml: |
+    topics:
+      young-adult-hypertension:
+        state: discovery_planned
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-13T00:00:00Z"
+    sources: []
+
+  files:
+    - path: topics/young-adult-hypertension/process/plans/discovery-plan.yaml
+      content: |
+        topic: young-adult-hypertension
+        clinical_question: >
+          What are the diagnostic thresholds, treatment targets, and
+          lifestyle interventions for hypertension in adults aged 18–39?
+        sources:
+          - id: acc-aha-2017-hypertension
+            title: "2017 ACC/AHA Guideline for High Blood Pressure in Adults"
+            url: https://www.ahajournals.org/doi/10.1161/HYP.0000000000000065
+            type: clinical-guideline
+            evidence_level: ia
+            rationale: Primary US clinical guideline; redefines hypertension thresholds.
+            open_access: true
+          - id: uspstf-hypertension-screening
+            title: "USPSTF Recommendation: Hypertension in Adults Screening (2021)"
+            url: https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/hypertension-in-adults-screening
+            type: government-program
+            evidence_level: iii
+            rationale: Grade B USPSTF recommendation; defines screening intervals.
+            open_access: true
+          - id: uptodate-young-adult-htn
+            title: "UpToDate: Hypertension in young and middle-aged adults"
+            url: https://www.uptodate.com/contents/hypertension-in-young-and-middle-aged-adults
+            type: clinical-guideline
+            evidence_level: iia
+            rationale: Authoritative clinical reference with young-adult-specific guidance.
+            open_access: false
+        status: approved
+
+prompt: |
+  Use the rh-inf-ingest skill for the topic `young-adult-hypertension`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  The discovery plan has 2 open-access sources and 1 authenticated source
+  (UpToDate, which requires an institutional subscription).
+
+  Run the full ingest cycle. For the authenticated source, surface the correct
+  advisory to the user — do NOT attempt to download it or fabricate its content.
+  The open-access sources should be fully ingested and normalized.
+
+expected_outputs:
+  - path: sources/normalized/acc-aha-2017-hypertension.md
+    checks:
+      - exists
+  - path: sources/normalized/uspstf-hypertension-screening.md
+    checks:
+      - exists
+  - path: topics/young-adult-hypertension/process/concepts.yaml
+    checks:
+      - exists
+  - path: tracking.yaml
+    checks:
+      - event: ingest_complete
+
+efficiency_focus:
+  - "Does the agent correctly identify the authenticated source before attempting to download it?"
+  - "Does it issue the advisory without requiring multiple back-and-forth turns?"
+  - "Does it complete ingest for the 2 open-access sources without waiting for user action on the gated one?"
+  - "Does it use rh-skills ingest implement --url (not curl or wget inline)?"
+
+quality_focus:
+  - "Is the advisory for UpToDate accurate (institutional access required, manual download instructions)?"
+  - "Are the 2 open-access sources correctly normalized to Markdown?"
+  - "Does concepts.yaml still capture concepts from the 2 ingested sources even without the authenticated one?"
+  - "Is the ingest_complete event recorded with a note about the 1 pending authenticated source?"
+  - "Does the agent avoid fabricating content for the UpToDate source?"

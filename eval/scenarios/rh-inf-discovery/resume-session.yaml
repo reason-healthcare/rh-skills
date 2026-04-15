@@ -1,0 +1,94 @@
+name: resume-session
+skill: rh-inf-discovery
+description: >
+  Topic has a partial discovery plan with 3 sources; agent must resume the
+  session, identify gaps (missing health-economics and government-program
+  sources), add them, and re-validate without duplicating existing entries.
+
+topic: young-adult-hypertension
+
+workspace:
+  tracking_yaml: |
+    topics:
+      young-adult-hypertension:
+        state: discovery_in_progress
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_session_started
+            timestamp: "2026-04-14T09:00:00Z"
+    sources: []
+
+  files:
+    - path: topics/young-adult-hypertension/process/plans/discovery-plan.yaml
+      content: |
+        topic: young-adult-hypertension
+        clinical_question: >
+          What are the diagnostic thresholds, treatment targets, and lifestyle
+          interventions for hypertension in adults aged 18–39?
+        sources:
+          - id: acc-aha-2017-hypertension
+            title: "2017 ACC/AHA Guideline for High Blood Pressure in Adults"
+            url: https://www.ahajournals.org/doi/10.1161/HYP.0000000000000065
+            type: clinical-guideline
+            evidence_level: ia
+            rationale: >
+              Primary US clinical guideline redefining hypertension thresholds;
+              directly addresses young-adult treatment targets.
+            open_access: true
+          - id: jnc8-hypertension-management
+            title: "2014 Evidence-Based Guideline for High Blood Pressure (JNC 8)"
+            url: https://jamanetwork.com/journals/jama/fullarticle/1791497
+            type: clinical-guideline
+            evidence_level: ia
+            rationale: Previous guideline; useful for threshold comparison.
+            open_access: false
+          - id: sprint-trial
+            title: "SPRINT: Systolic BP Intervention Trial"
+            url: https://www.nejm.org/doi/10.1056/NEJMoa1511939
+            type: rct
+            evidence_level: ib
+            rationale: >
+              Landmark RCT supporting intensive BP targets; note exclusion of
+              adults < 50 limits direct applicability to this age group.
+            open_access: true
+        status: draft
+
+prompt: |
+  Use the rh-inf-discovery skill in **session** mode for the topic
+  `young-adult-hypertension`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  A partial discovery plan already exists at
+  `topics/young-adult-hypertension/process/plans/discovery-plan.yaml`.
+  It has 3 sources (2 clinical guidelines, 1 RCT) but is missing:
+  - A health-economics or value-based care source
+  - A US government program or USPSTF source
+
+  Resume the session: identify the gaps, search for the missing source types,
+  add them to the plan, and re-validate.
+
+expected_outputs:
+  - path: topics/young-adult-hypertension/process/plans/discovery-plan.yaml
+    checks:
+      - exists
+      - contains: "government-program"
+      - contains: "health-economics"
+  - path: tracking.yaml
+    checks:
+      - event: discovery_planned
+
+efficiency_focus:
+  - "Does the agent read the existing plan before searching, or does it start from scratch?"
+  - "Does it avoid re-adding sources that are already present?"
+  - "Does it run targeted searches (e.g., USPSTF site search) rather than generic broad queries?"
+  - "Does it produce inline YAML instead of using rh-skills validate --plan to save?"
+
+quality_focus:
+  - "Are the new sources complementary (not duplicates) to the existing 3?"
+  - "Is the USPSTF hypertension screening recommendation included?"
+  - "Is the health-economics source relevant to young adults specifically (not just general BP cost)?
+  - "Are evidence levels on new sources correctly assigned?"
+  - "Does the final plan have ≥ 5 sources and pass rh-skills validate --plan?"
