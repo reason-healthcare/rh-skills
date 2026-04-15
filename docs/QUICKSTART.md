@@ -113,11 +113,25 @@ rh-skills status next-steps diabetes-screening
 ## CLI-first
 
 Run every step yourself. An LLM is required for the reasoning steps (plan and
-implement modes); configure your provider once:
+implement modes); configure your provider via `.rh-skills.toml` or environment
+variables:
+
+```toml
+# .rh-skills.toml (local) or ~/.rh-skills.toml (global)
+[llm]
+provider = "anthropic"   # ollama | anthropic | openai
+model    = "claude-3-5-sonnet-20241022"
+api_key  = "sk-ant-..."
+```
 
 ```bash
-cp .env.example .env   # set LLM_PROVIDER, model, and API key
+# or via environment variables
+export LLM_PROVIDER=anthropic
+export ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+export ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+See [Usage Modes](USAGE_MODES.md) for all provider options.
 
 ### 1. Initialize a topic
 
