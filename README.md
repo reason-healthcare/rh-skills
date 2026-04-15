@@ -5,26 +5,27 @@ orchestrates AI reasoning over raw clinical source material and produces
 **deterministic, computable rules** — structured artifacts that can be embedded
 directly into EHRs, quality programs, and clinical decision support systems.
 
-This matters deeply for healthcare. Clinically, evidence shows it takes up to
-17 years for research findings to reach routine practice, and even published
-guidelines are routinely inconsistently applied due to the gap between
-narrative prose and implementable logic. Computable rules close that gap:
-once encoded, a guideline can fire consistently at the point of care across
-every patient, every encounter, every system — reducing diagnostic errors,
-preventing harmful drug interactions, and improving adherence to best
-practices without relying on individual clinician recall.
+This matters. Clinically, evidence shows it takes up to 17 years for research
+findings to reach routine practice,¹ and even published guidelines are routinely
+inconsistently applied due to the gap between narrative prose and implementable
+logic. Computable rules close that gap: once encoded, a guideline can fire
+consistently at the point of care across every patient, every encounter, every
+system — reducing diagnostic errors, preventing harmful drug interactions, and
+improving adherence to best practices without relying on individual clinician
+recall.
 
-Economically, clinical variation is one of the largest drivers of healthcare
-waste — estimated at hundreds of billions of dollars annually in the US alone.
-Value-based care programs, eCQMs, and payer contracts increasingly tie
-reimbursement to measurable adherence to evidence-based standards. Teams that
-can rapidly translate guidelines into FHIR-aligned, computable artifacts are
-better positioned to close care gaps, pass audits, and perform under
-pay-for-performance models.
 
-Today RH Skills focuses on turning guidelines, quality measures, assessments,
-and clinical logic into FHIR-aligned outputs. Over time it is intended to grow
-into a broader informatics workbench with terminology and ontology tooling.
+> RH Skills focuses on turning guidelines, quality measures, assessments,
+> clinical logic, and prior authorization policies into computable, 
+> deterministic logic. 
+
+---
+
+¹ Morris ZS, Wooding S, Grant J. "The answer is 17 years, what is the question:
+understanding time lags in translational research." *J R Soc Med.* 2011;104(12):510–520.
+[doi:10.1258/jrsm.2011.110180](https://doi.org/10.1258/jrsm.2011.110180) · PMID 22179294
+
+---
 
 ## What it does
 
