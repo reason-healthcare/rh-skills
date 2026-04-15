@@ -36,7 +36,10 @@ User → rh-skills commands → artifacts + tracking.yaml
 
 ```bash
 # Configure your preferred LLM provider
-cp .env.example .env   # set LLM_PROVIDER, model, and API key
+# .rh-skills.toml (local) or ~/.rh-skills.toml (global)
+# [llm]
+# provider = "ollama"
+# Or use environment variables: LLM_PROVIDER, OLLAMA_MODEL, etc.
 
 # Initialize a topic
 rh-skills init diabetes-screening --title "Diabetes Screening"
@@ -128,23 +131,33 @@ Because both modes produce identical outputs via the same `rh-skills` CLI, artif
 
 ## LLM Provider Configuration (CLI-First)
 
-In CLI-first mode, the `rh-skills` CLI invokes your configured LLM provider for reasoning steps. Configure via `.env`:
+In CLI-first mode, the `rh-skills` CLI invokes your configured LLM provider for
+reasoning steps. Configure via `.rh-skills.toml` or environment variables:
 
-```dotenv
-LLM_PROVIDER=ollama            # ollama | anthropic | openai
+```toml
+# .rh-skills.toml (local) or ~/.rh-skills.toml (global)
+[llm]
+provider = "ollama"            # ollama | anthropic | openai
 
 # Ollama (local, no API key required)
-OLLAMA_ENDPOINT=http://localhost:11434
-OLLAMA_MODEL=mistral
+# endpoint = "http://localhost:11434"
+# model = "mistral"
 
 # Anthropic
-# ANTHROPIC_API_KEY=sk-ant-...
-# ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+# api_key = "sk-ant-..."
+# model = "claude-3-5-sonnet-20241022"
 
 # OpenAI-compatible
-# OPENAI_API_KEY=sk-...
-# OPENAI_ENDPOINT=https://api.openai.com/v1/chat/completions
-# OPENAI_MODEL=gpt-4o-mini
+# api_key = "sk-..."
+# endpoint = "https://api.openai.com/v1/chat/completions"
+# model = "gpt-4o-mini"
+```
+
+```bash
+# Or via environment variables (take precedence over .rh-skills.toml)
+export LLM_PROVIDER=ollama
+export OLLAMA_ENDPOINT=http://localhost:11434
+export OLLAMA_MODEL=mistral
 ```
 
 Any OpenAI-compatible endpoint works — local models via Ollama, LM Studio, vLLM, or hosted providers. The `rh-skills` CLI is model-agnostic; all reasoning is in the SKILL.md prompts, not hardcoded to any model.

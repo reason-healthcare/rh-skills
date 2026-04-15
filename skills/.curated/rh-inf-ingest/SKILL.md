@@ -16,7 +16,7 @@ metadata:
   source: "skills/.curated/rh-inf-ingest/SKILL.md"
   lifecycle_stage: "l1-ingest"
   reads_from:
-    - topics/<name>/process/plans/discovery-plan.yaml
+    - topics/<topic>/process/plans/discovery-plan.yaml
     - tracking.yaml
     - sources/
   writes_via_cli:

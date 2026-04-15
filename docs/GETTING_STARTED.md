@@ -51,13 +51,13 @@ Each transition is guided by an **agent skill** — a SKILL.md prompt file invok
 ### Step 1: Discover sources
 
 ```
-rh-inf-discovery plan
+rh-inf-discovery plan diabetes-screening
 ```
 
 The agent generates `topics/diabetes-screening/process/plans/discovery-plan.md` — a list of suggested source types (guidelines, terminology systems, research papers). Review and edit the plan.
 
 ```
-rh-inf-discovery implement
+rh-inf-discovery implement diabetes-screening
 ```
 
 Converts the approved plan into ingest tasks.
@@ -65,13 +65,13 @@ Converts the approved plan into ingest tasks.
 ### Step 2: Ingest raw sources
 
 ```
-rh-inf-ingest plan
+rh-inf-ingest plan diabetes-screening
 ```
 
 Displays the ingest plan for review.
 
 ```
-rh-inf-ingest implement
+rh-inf-ingest implement diabetes-screening
 ```
 
 Registers each source file with its SHA-256 checksum in `tracking.yaml`.
@@ -79,13 +79,13 @@ Registers each source file with its SHA-256 checksum in `tracking.yaml`.
 ### Step 3: Extract structured artifacts (L2)
 
 ```
-rh-inf-extract plan
+rh-inf-extract plan diabetes-screening
 ```
 
 The agent proposes candidate structured artifact names (e.g., "screening-criteria", "diagnostic-thresholds"). Review the plan at `topics/diabetes-screening/process/plans/extract-plan.md`.
 
 ```
-rh-inf-extract implement
+rh-inf-extract implement diabetes-screening
 ```
 
 Calls `rh-skills promote derive` for each planned artifact, producing YAML files in `topics/diabetes-screening/structured/`.
@@ -93,13 +93,13 @@ Calls `rh-skills promote derive` for each planned artifact, producing YAML files
 ### Step 4: Formalize into computable artifact (L3)
 
 ```
-rh-inf-formalize plan
+rh-inf-formalize plan diabetes-screening
 ```
 
 The agent identifies which structured artifacts to combine and drafts the computable artifact's sections.
 
 ```
-rh-inf-formalize implement
+rh-inf-formalize implement diabetes-screening
 ```
 
 Calls `rh-skills promote combine`, producing a FHIR-compatible YAML file in `topics/diabetes-screening/computable/`.
