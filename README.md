@@ -38,18 +38,18 @@ The RH Skills framework guides clinical knowledge through three artifact levels:
            ▼
        Markdown                        (L1 normalized)
            │
-           │  extract  ┌──────────────────────────────┐
-           ├──────────▶│  Structured YAML artifact    │  (L2)
-           ├──────────▶│  Structured YAML artifact    │  (L2)
-           └──────────▶│  Structured YAML artifact    │  (L2)
-                       └──────────┬───────────┬───────┘
-                                  │           │
-                                  │  converge │
-                                  ▼           ▼
-                        ┌─────────────────────────────┐
-                        │  Computable YAML artifact   │  (L3)
-                        │  (FHIR-aligned)             │
-                        └─────────────────────────────┘
+           │  extract  ┌─────────────────────────┐
+           ├──────────▶│  Structured artifact    │  (L2)
+           ├──────────▶│  Structured artifact    │  (L2)
+           └──────────▶│  Structured artifact    │  (L2)
+                       └────────┬──────────┬─────┘
+                                │          │
+                                │ converge │
+                                ▼          ▼
+                        ┌────────────────────────┐
+                        │  Computable artifact   │  (L3)
+                        │  (FHIR-aligned)        │
+                        └────────────────────────┘
 ```
 
 
