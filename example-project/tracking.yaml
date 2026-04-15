@@ -49,4 +49,4 @@ events:
     description: Topic scaffolded with rh-skills init
   - timestamp: "2026-04-03T00:01:00Z"
     type: source_added
-    description: Ingested source: ada-guidelines-2024
+    description: "Ingested source: ada-guidelines-2024"
