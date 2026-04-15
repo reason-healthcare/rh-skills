@@ -90,7 +90,7 @@ artifacts will contain placeholder text rather than validated codes.
 {
   "mcpServers": {
     "reasonhub": {
-      "url": "https://mcp.reasonhub.app/sse",
+      "url": "https://mcp.reasonhub.app/mcp",
       "headers": {
         "Authorization": "Bearer <your-api-key>"
       }
