@@ -15,12 +15,12 @@ The RH Skills framework guides clinical knowledge through three artifact levels:
 
 | Level | Format | Description |
 |-------|--------|-------------|
-| **Raw** | Any | Pre-ingestion files — PDFs, Word docs, web pages, spreadsheets |
-| **L1** | Markdown | Raw sources — guideline extracts, clinical notes, literature |
+| **L1 (raw)** | Any | Original source files as-obtained — PDFs, Word docs, web pages, spreadsheets |
+| **L1 (normalized)** | Markdown | Source content converted to plain Markdown for consistent downstream processing |
 | **L2** | YAML | Structured — discrete clinical criteria, coded concepts |
 | **L3** | YAML | Computable — pathways, measures, value sets (FHIR-compatible) |
 
-The relationships are many-to-many: one L1 source can yield several L2 artifacts; multiple L2 artifacts can converge into a single L3.
+Raw files are ingested and normalized to Markdown (L1) before extraction. The relationships are many-to-many: one L1 source can yield several L2 artifacts; multiple L2 artifacts can converge into a single L3.
 
 ## Prerequisites
 
