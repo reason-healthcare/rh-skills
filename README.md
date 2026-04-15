@@ -13,6 +13,28 @@ ontology tooling as well.
 
 The RH Skills framework guides clinical knowledge through three artifact levels:
 
+```
+  PDF, DOCX, HTML, XLSX, ...          (L1 raw — any format)
+           │
+           │  ingest + normalize
+           ▼
+       Markdown                        (L1 normalized)
+           │
+           │  extract  ┌──────────────────────────────┐
+           ├──────────▶│  Structured YAML artifact     │  (L2)
+           ├──────────▶│  Structured YAML artifact     │  (L2)
+           └──────────▶│  Structured YAML artifact     │  (L2)
+                       └──────────┬───────────┬────────┘
+                                  │           │
+                                  │  converge │
+                                  ▼           ▼
+                        ┌─────────────────────────────┐
+                        │  Computable YAML artifact    │  (L3)
+                        │  (FHIR-aligned)              │
+                        └─────────────────────────────┘
+```
+
+
 | Level | Format | Description |
 |-------|--------|-------------|
 | **L1 (raw)** | Any | Original source files as-obtained — PDFs, Word docs, web pages, spreadsheets |
