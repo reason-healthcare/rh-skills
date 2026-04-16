@@ -121,6 +121,24 @@ If `topics/<topic>/process/plans/discovery-plan.yaml` is absent, continue in
 manual-source mode: inspect `sources/` for untracked files and make it clear to
 the user that discovery-backed download/classification shortcuts are unavailable.
 
+**Manual-source registration flow** (no discovery-plan.yaml):
+
+1. **Discover untracked files**:
+   ```sh
+   rh-skills ingest list-manual <topic>
+   ```
+   This lists every file in `sources/` not yet registered in tracking.yaml and
+   prints the exact `rh-skills ingest implement` command for each one.
+
+2. **Register each file**:
+   ```sh
+   rh-skills ingest implement sources/<file> --topic <topic>
+   ```
+   Registration must happen before normalize/classify/annotate — those commands
+   look up sources by name in tracking.yaml.
+
+3. **Proceed with implement mode** — normalize → classify → annotate — as normal.
+
 ---
 
 ## Mode: `plan`

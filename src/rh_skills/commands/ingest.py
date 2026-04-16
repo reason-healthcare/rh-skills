@@ -458,6 +458,36 @@ rh-skills ingest implement <path-to-file>
     log_info(f"Created: {plan_file}")
 
 
+@ingest.command("list-manual")
+@click.argument("topic", required=False)
+def list_manual(topic):
+    """List files in sources/ that are not yet registered in tracking.yaml.
+
+    Useful in manual-source mode (no discovery-plan.yaml) to discover which
+    files need to be registered with `rh-skills ingest implement <file>`.
+    """
+    tracking = _tracking_or_empty()
+    discovery = _load_discovery_plan(topic) if topic else None
+    discovery_names: set[str] = set()
+    if discovery:
+        discovery_names = {s.get("id") or s.get("name", "") for s in discovery.get("sources", [])}
+
+    untracked = _untracked_source_files(tracking, topic or "", discovery_names)
+
+    if not untracked:
+        click.echo("✓ No untracked files in sources/")
+        return
+
+    click.echo(f"Untracked files in sources/ ({len(untracked)}):")
+    for path in untracked:
+        click.echo(f"  {path.relative_to(repo_root())}")
+    click.echo()
+    click.echo("Register each with:")
+    for path in untracked:
+        topic_flag = f" --topic {topic}" if topic else ""
+        click.echo(f"  rh-skills ingest implement {path.relative_to(repo_root())}{topic_flag}")
+
+
 @ingest.command()
 @click.argument("file", required=False, type=click.Path(exists=False))
 @click.option("--url", "source_url", default=None, help="URL to download instead of a local file")
