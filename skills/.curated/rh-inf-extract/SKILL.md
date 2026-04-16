@@ -133,8 +133,8 @@ appropriate `rh-skills` CLI boundary used by the workflow.
    - measure logic
    - evidence summary
    - custom artifact types when clearly justified
-5. For each proposed `terminology-value-sets` artifact, resolve candidate codes
-   using reasonhub MCP before writing the plan:
+5. For each proposed `terminology-value-sets` artifact, **if reasonhub MCP tools
+   are available**, resolve candidate codes before writing the plan:
    a. If the target code system is not yet clear, call
       `reasonhub-search_all_codesystems` with each key clinical concept as the
       query to identify the most appropriate system(s).
@@ -152,12 +152,13 @@ appropriate `rh-skills` CLI boundary used by the workflow.
       review packet. Include `code`, `system`, `display`, and `search_query` for
       each entry so the reviewer can evaluate and approve or remove codes before
       implement.
-6. Write `topics/<topic>/process/plans/extract-plan.md` with:
-   - plan frontmatter (`topic`, `plan_type`, `status`, `reviewer`, `reviewed_at`, `artifacts[]`)
-   - `Review Summary`
-   - `Proposed Artifacts`
-   - `Cross-Artifact Issues`
-   - `Implementation Readiness`
+
+   **If MCP tools are unavailable**, omit `candidate_codes[]` and note in the
+   Review Summary that terminology resolution was deferred. The plan is valid
+   without populated codes; resolution can be done in formalize mode.
+6. Run `rh-skills promote plan <topic>` to generate
+   `topics/<topic>/process/plans/extract-plan.md`. This command also appends
+   `extract_planned` to `tracking.yaml`.
 7. If `extract-plan.md` already exists and `--force` is not present, warn and stop without overwriting.
 8. Summarize the proposed artifacts and instruct the reviewer to edit approval fields before implement mode.
 
@@ -169,6 +170,25 @@ appropriate `rh-skills` CLI boundary used by the workflow.
 - required sections to derive
 - unresolved conflicts
 - reviewer decision placeholder
+
+---
+
+## Review & Approval
+
+After plan mode completes, the plan is in `status: pending-review` and each
+artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
+to run until the plan is approved.**
+
+A reviewer must edit `topics/<topic>/process/plans/extract-plan.md` and:
+
+1. Set `status: pending-review` → `status: approved`
+2. Set each intended artifact's `reviewer_decision: pending-review` → `reviewer_decision: approved`
+   (or `rejected` / `needs-revision` to exclude it)
+3. Set `reviewed_at` to the current ISO-8601 timestamp
+4. Optionally add `approval_notes` per artifact
+
+Only artifacts with `reviewer_decision: approved` will be implemented.
+Artifacts marked `rejected` or `needs-revision` are skipped without error.
 
 ---
 

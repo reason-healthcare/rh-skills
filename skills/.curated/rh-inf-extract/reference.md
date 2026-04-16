@@ -137,6 +137,41 @@ conflicts:
 
 ---
 
+## CLI Argument Formats
+
+### `--evidence-ref` pipe format
+
+Evidence references passed to `rh-skills promote derive` use a `|`-delimited string:
+
+```
+--evidence-ref "claim_id|statement|source|locator"
+```
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `claim_id` | Unique identifier within the artifact | `term-001` |
+| `statement` | The clinical claim or fact extracted from the source | `HbA1c target <7% for most adults` |
+| `source` | L1 source name (stem of normalized file) | `ada-standards-2024` |
+| `locator` | Section, page, heading, or table reference | `Section 6, Table 6.2` |
+
+Multiple `--evidence-ref` flags can be passed for a single artifact.
+
+### `--conflict` pipe format
+
+```
+--conflict "issue|source|statement|preferred_source|preferred_rationale"
+```
+
+| Field | Description |
+|-------|-------------|
+| `issue` | Brief summary of the conflict |
+| `source` | Source name that holds one position |
+| `statement` | That source's statement |
+| `preferred_source` | Source whose position is preferred |
+| `preferred_rationale` | Clinical rationale for the preference |
+
+---
+
 ## Validation Rules
 
 `rh-skills validate <topic> <artifact-name>` should fail when:
