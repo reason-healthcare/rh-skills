@@ -3,7 +3,7 @@ skill: rh-inf-extract
 description: >
   Discovery and ingest ran for one source (acc-aha-htn-guideline-2017, fully
   normalized via rh-inf-ingest). After ingest completed the user manually
-  downloaded a second source (jnc8-2014.pdf) and placed it in sources/raw/ —
+  downloaded a second source (jnc8-2014.pdf) and placed it in sources/ —
   it is tracked in tracking.yaml with normalized: false but rh-inf-ingest has
   NOT been re-run to normalize it.
 
@@ -12,7 +12,7 @@ description: >
   proceed with only the one normalized source.
 
   Fixture files (copied from eval/scenarios/rh-inf-extract/manually-downloaded-source/):
-    sources/raw/jnc8-2014.pdf  — JNC 8 hypertension guidelines (raw PDF, not yet ingested)
+    sources/jnc8-2014.pdf  — JNC 8 hypertension guidelines (raw PDF, not yet ingested)
 
 topic: young-adult-hypertension
 
@@ -37,7 +37,7 @@ workspace:
         path: sources/normalized/acc-aha-htn-guideline-2017.md
       - id: jnc8-2014
         normalized: false
-        path: sources/raw/jnc8-2014.pdf
+        path: sources/jnc8-2014.pdf
 
   files:
     - path: topics/young-adult-hypertension/process/plans/discovery-plan.yaml
@@ -125,7 +125,7 @@ prompt: |
   One source is fully normalized: `acc-aha-htn-guideline-2017`.
   A second source `jnc8-2014` was manually downloaded after ingest; it is tracked
   in tracking.yaml with `normalized: false` and exists as a raw PDF at
-  `sources/raw/jnc8-2014.pdf`.
+  `sources/jnc8-2014.pdf`.
 
   Run the full extract cycle:
   1. **plan** — generate an extract plan; handle the un-normalized source correctly
