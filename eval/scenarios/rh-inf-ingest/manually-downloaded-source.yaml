@@ -2,10 +2,11 @@ name: manually-downloaded-source
 skill: rh-inf-ingest
 description: >
   Discovery plan has two sources: acc-aha-htn-guideline-2017 (open access,
-  to be downloaded) and jnc8-2014 (access: manual, PDF already placed in
-  sources/ by the user). Neither has been ingested yet. The agent must plan
-  and implement a full ingest cycle — downloading the open-access source via
-  the CLI and normalizing the manually-placed PDF — then verify.
+  already downloaded to sources/ by a prior run) and jnc8-2014 (access:
+  manual, PDF placed in sources/ by the user). Neither has been normalized,
+  classified, or annotated yet. The agent must plan and implement a full
+  ingest cycle for both pre-placed files — normalizing, classifying, and
+  annotating both — then verify.
 
   Fixture files (copied from eval/scenarios/rh-inf-ingest/manually-downloaded-source/):
     sources/jnc8-2014.pdf  — JNC 8 hypertension guidelines (raw PDF, pre-placed by user)
@@ -24,6 +25,7 @@ workspace:
           - event: discovery_planned
             timestamp: "2026-04-12T00:00:00Z"
     sources: []
+    events: []
 
   files:
     - path: topics/young-adult-hypertension/process/plans/discovery-plan.yaml
@@ -52,6 +54,44 @@ workspace:
             access: manual
         status: approved
 
+    - path: sources/acc-aha-htn-guideline-2017.txt
+      content: |
+        2017 ACC/AHA/AAPA/ABC/ACPM/AGS/APhA/ASH/ASPC/NMA/PCNA Guideline
+        for the Prevention, Detection, Evaluation, and Management of High
+        Blood Pressure in Adults (excerpt)
+
+        DEFINITION AND CLASSIFICATION
+
+        Normal blood pressure: SBP <120 mmHg AND DBP <80 mmHg
+        Elevated blood pressure: SBP 120–129 mmHg AND DBP <80 mmHg
+        Stage 1 hypertension: SBP 130–139 mmHg OR DBP 80–89 mmHg (Class I; Evidence: B-NR)
+        Stage 2 hypertension: SBP ≥140 mmHg OR DBP ≥90 mmHg (Class I; Evidence: B-NR)
+
+        KEY CHANGE FROM JNC 7: Threshold lowered from 140/90 to 130/80 mmHg for Stage 1 HTN.
+
+        TREATMENT TARGETS
+
+        For most hypertensive adults: SBP target <130 mmHg and DBP <80 mmHg (Class I; Evidence: A)
+        For adults aged ≥65 with hypertension: SBP target <130 mmHg (Class I; Evidence: B-R)
+
+        NON-PHARMACOLOGICAL INTERVENTIONS (Class I for all stages)
+
+        - DASH dietary pattern (reduces SBP by 11 mmHg in hypertensive adults)
+        - Weight reduction (1 mmHg reduction per kg lost)
+        - Sodium restriction to <1,500 mg/day
+        - Aerobic exercise: 90–150 min/week of moderate-intensity activity
+        - Limit alcohol: ≤1 drink/day women, ≤2 drinks/day men
+
+        PHARMACOLOGICAL THERAPY — STAGE 1 (130–139/80–89 mmHg)
+
+        Initiate drug therapy when: 10-year ASCVD risk ≥10% AND lifestyle modifications insufficient.
+        First-line agents: thiazide diuretics, ACE inhibitors, ARBs, CCBs (Class I; Evidence: A)
+
+        PHARMACOLOGICAL THERAPY — STAGE 2 (≥140/90 mmHg)
+
+        Initiate 2-drug combination for most patients (Class I; Evidence: B-R)
+        BP ≥160/100: initiate 2-drug combination plus lifestyle modification
+
 prompt: |
   Use the rh-inf-ingest skill for the topic `young-adult-hypertension`.
 
@@ -61,13 +101,15 @@ prompt: |
   A validated discovery plan is at
   `topics/young-adult-hypertension/process/plans/discovery-plan.yaml` with
   two sources:
-    - acc-aha-htn-guideline-2017 — open access (download via CLI)
+    - acc-aha-htn-guideline-2017 — open access; the file is already at
+      sources/acc-aha-htn-guideline-2017.txt (downloaded previously)
     - jnc8-2014 — access: manual; the PDF is already at sources/jnc8-2014.pdf
 
+  Both files are pre-placed in sources/ and do not need to be downloaded.
+
   Run the full ingest cycle:
-  1. **plan** — summarise both sources and note the manual PDF
-  2. **implement** — download and normalize acc-aha-htn-guideline-2017; normalize
-     the manually-placed jnc8-2014.pdf; classify and annotate both
+  1. **plan** — summarise both sources; confirm both files are present in sources/
+  2. **implement** — register, normalize, classify, and annotate both sources
   3. **verify** — confirm both sources are ingested and concepts.yaml is valid
 
 expected_outputs:
@@ -86,10 +128,10 @@ expected_outputs:
       - event: ingest_complete
 
 efficiency_focus:
-  - "Does the agent use rh-skills ingest implement --url for the open-access source?"
-  - "Does it use rh-skills ingest normalize for the manually-placed PDF?"
+  - "Does the agent use rh-skills ingest implement <file> for both pre-placed sources?"
+  - "Does it avoid trying to download any source (both are already in sources/)?"
   - "Does it classify and annotate both sources via CLI (not inline YAML)?"
-  - "Does it recognize access: manual and skip trying to download jnc8-2014?"
+  - "Does it recognize access: manual for jnc8-2014 and not attempt to download it?"
 
 quality_focus:
   - "Both sources present in sources/normalized/ as .md files"

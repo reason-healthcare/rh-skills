@@ -487,8 +487,9 @@ def _implement_file(src_path: Path, source_type: str = "document", topic: str | 
 
     source_name = src_path.stem
 
-    shutil.copy2(src_path, src_root / src_path.name)
     dest_file = src_root / src_path.name
+    if src_path.resolve() != dest_file.resolve():
+        shutil.copy2(src_path, dest_file)
 
     checksum = sha256_file(dest_file)
     ingested_at = now_iso()

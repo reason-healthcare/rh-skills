@@ -252,7 +252,7 @@ def require_tracking() -> dict:
 
 def append_root_event(tracking: dict, type_: str, description: str) -> None:
     """Append an event to the root events list."""
-    tracking["events"].append({
+    tracking.setdefault("events", []).append({
         "timestamp": now_iso(),
         "type": type_,
         "description": description,
