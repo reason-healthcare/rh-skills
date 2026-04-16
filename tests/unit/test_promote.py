@@ -719,3 +719,26 @@ def test_approve_no_args_non_tty_raises_usage_error(tmp_repo):
     # CliRunner does not set up a TTY, so stdin.isatty() → False
     result = runner.invoke(promote, ["approve", "my-skill"])
     assert result.exit_code != 0
+
+
+def test_approve_finalize_after_separate_artifact_approval_preserves_decision(tmp_repo):
+    """Regression: --finalize must not reset reviewer_decision set by a prior invocation."""
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "screening-criteria", "reviewer_decision": "pending-review", "approval_notes": ""}],
+    )
+    runner = CliRunner()
+    # First invocation: approve artifact
+    r1 = runner.invoke(promote, ["approve", "my-skill", "--artifact", "screening-criteria", "--decision", "approved"])
+    assert r1.exit_code == 0, r1.output
+
+    # Second invocation: finalize (simulates running after --artifact has already written the file)
+    r2 = runner.invoke(promote, ["approve", "my-skill", "--finalize", "--reviewer", "Jane"])
+    assert r2.exit_code == 0, r2.output
+    assert "1/1" in r2.output
+
+    plan = _read_plan(tmp_repo)
+    assert plan["status"] == "approved"
+    assert plan["artifacts"][0]["reviewer_decision"] == "approved"

@@ -801,6 +801,10 @@ def approve(topic, artifact_name, decision, notes, reviewer, finalize):
 
     \b
     Non-interactive (AI agent / script):
+      # Approve one artifact and finalize in a single atomic call (recommended):
+      rh-skills promote approve TOPIC --artifact NAME --decision approved --finalize [--reviewer NAME]
+
+      # Or as separate sequential calls:
       rh-skills promote approve TOPIC --artifact NAME --decision approved [--notes TEXT]
       rh-skills promote approve TOPIC --finalize [--reviewer NAME]
 
@@ -829,6 +833,13 @@ def approve(topic, artifact_name, decision, notes, reviewer, finalize):
         log_info(f"Artifact '{artifact_name}' → {_DECISION_ICON.get(decision, '')} {decision}")
 
     if finalize:
+        # Re-read from disk so any --artifact changes written by a prior or concurrent
+        # invocation are reflected before we write the finalized plan.
+        if artifact_name:
+            # We just wrote above — plan in memory is already up-to-date.
+            pass
+        else:
+            plan = _yaml_safe().load(plan_path.read_text())
         rev = reviewer or plan.get("reviewer") or ""
         plan["status"] = "approved"
         plan["reviewer"] = rev

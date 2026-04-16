@@ -116,11 +116,11 @@ expected_outputs:
   - path: topics/diabetes-ccm/process/plans/extract-plan-readout.md
     checks:
       - exists
-  - path: topics/diabetes-ccm/structured/diabetes-ccm-standards.yaml
+  - path: topics/diabetes-ccm/structured
     checks:
       - exists
-      - contains: "artifact_type:"
-      - contains: "evidence_traceability:"
+      - contains_any_file_with: "artifact_type:"
+      - contains_any_file_with: "evidence_traceability:"
   - path: tracking.yaml
     checks:
       - event: extract_planned
@@ -129,10 +129,13 @@ expected_outputs:
 efficiency_focus:
   - "Does the agent generate the extract plan without re-reading the source file more than once?"
   - "Does it use rh-skills promote derive (not inline YAML construction) for the artifact?"
-  - "Does it pause correctly for reviewer approval before implementing?"
+  - "Does it combine --artifact and --finalize in a single approve invocation (not two parallel calls)?"
   - "Does it run rh-skills validate after producing the artifact?"
+  - "Does it fail fast on MCP errors (≤1 retry) rather than retrying multiple times?"
 
 quality_focus:
+  - "Does the plan propose multiple artifact types matching the source's clinical domains (eligibility, workflow, terminology, measure logic)?"
+  - "Does the agent critique the plan's artifact scope against the hybrid catalog before approving?"
   - "Does the L2 artifact contain the major CCM components (glycemic targets, BP, foot exam, UACR, eye exam)?"
   - "Is evidence traceability present for each major claim?"
   - "Are evidence levels consistent with the source (A/B from ADA → ia/ib)?"

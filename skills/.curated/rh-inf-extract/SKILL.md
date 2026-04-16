@@ -137,6 +137,22 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    - measure logic
    - evidence summary
    - custom artifact types when clearly justified
+
+   **After `rh-skills promote plan` runs**, review the proposed artifact list
+   critically against the source content and the catalog above:
+   - Does the plan capture all distinct clinical domains present in the source
+     (e.g., eligibility criteria, workflow steps, AND terminology — not just one)?
+   - Are any artifacts mis-typed (e.g., measure logic or billing codes classified
+     as `terminology-value-sets`)?
+   - Is the artifact granularity appropriate — one artifact per coherent clinical
+     question, not everything collapsed into a single artifact?
+
+   If the plan is too narrow or uses wrong artifact types, note the gaps in the
+   `review_summary` field when approving, and consider re-running `plan --force`
+   after clarifying the scope. The deterministic planner groups sources by type
+   but the **agent is responsible for judging whether the proposed scope matches
+   the source's clinical richness**.
+
 5. For each proposed `terminology-value-sets` artifact, **if reasonhub MCP tools
    are available**, resolve candidate codes before writing the plan:
    a. If the target code system is not yet clear, call
@@ -157,9 +173,10 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       each entry so the reviewer can evaluate and approve or remove codes before
       implement.
 
-   **If MCP tools are unavailable**, omit `candidate_codes[]` and note in the
-   Review Summary that terminology resolution was deferred. The plan is valid
-   without populated codes; resolution can be done in formalize mode.
+   **If MCP tools are unavailable or return errors**, do not retry more than once.
+   Omit `candidate_codes[]`, note in the Review Summary that terminology
+   resolution was deferred, and proceed. The plan is valid without populated
+   codes; resolution can be done in formalize mode.
 6. Run `rh-skills promote plan <topic>` to generate
    `topics/<topic>/process/plans/extract-plan.yaml`. This command also appends
    `extract_planned` to `tracking.yaml`.
@@ -186,16 +203,25 @@ to run until the plan is approved.**
 Use `rh-skills promote approve` to record decisions without editing YAML directly:
 
 ```sh
-# Approve a single artifact (use for each artifact in turn):
-rh-skills promote approve <topic> --artifact <name> --decision approved --notes "Optional note"
+# AI agent — recommended: approve artifact and finalize in ONE command:
+rh-skills promote approve <topic> \
+  --artifact <name> --decision approved --notes "Optional note" \
+  --finalize --reviewer "<reviewer-name>"
 
-# Reject or defer an artifact:
-rh-skills promote approve <topic> --artifact <name> --decision rejected
-rh-skills promote approve <topic> --artifact <name> --decision needs-revision
-
-# Finalize the plan once all artifact decisions are recorded:
+# If multiple artifacts need decisions, run one --artifact call per artifact
+# and finalize only in the last call:
+rh-skills promote approve <topic> --artifact <name1> --decision approved
+rh-skills promote approve <topic> --artifact <name2> --decision needs-revision
 rh-skills promote approve <topic> --finalize --reviewer "<reviewer-name>"
+
+# Reject or defer:
+rh-skills promote approve <topic> --artifact <name> --decision rejected
 ```
+
+> **Important for AI agents:** Do NOT run `--artifact` and `--finalize` as
+> parallel tool calls. They must run **sequentially** — finalize reads the file
+> written by the artifact approval. The safest pattern is to combine both flags
+> in a single invocation (shown above).
 
 `--finalize` sets `status: approved`, records `reviewed_at`, and regenerates
 `extract-plan-readout.md` with the final decisions. Only artifacts with
