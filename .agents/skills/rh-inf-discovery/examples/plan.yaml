@@ -1,0 +1,161 @@
+topic: "diabetes-ccm"
+version: "1.0"
+created: "2026-04-15T12:00:00Z"
+last_updated: "2026-04-15T12:00:00Z"
+status: "approved"
+session_id: "disc-2026-04-15-diabetes-ccm"
+domain_advice:
+  cms_program_alignment:
+    - "CMS122 (HbA1c Poor Control) is a core diabetes quality measure for CMS and MIPS/QPP alignment."
+    - "CCM billing codes 99490/99491 and complex CCM codes 99487/99489 support the operational case for a diabetes CCM workflow."
+  sdoh_relevance:
+    - "Food insecurity, transportation access, and financial strain directly affect diabetes outcomes and medication adherence."
+    - "Gravity Project artifacts are relevant when the workflow includes SDOH capture or exchange."
+  health_equity:
+    - "Diabetes burden and complications are disproportionately high in Black, Hispanic/Latino, and American Indian/Alaska Native populations."
+    - "Measure stratification and outreach design should explicitly consider underserved populations."
+  terminology_systems:
+    - "SNOMED CT for diabetes condition concepts"
+    - "LOINC for HbA1c and glucose laboratory observations"
+    - "ICD-10-CM for claims-oriented cohort definition"
+    - "RxNorm for anti-diabetic medication classes"
+  health_economics:
+    - "Use HCUP or MEPS to quantify preventable utilization and cost burden."
+    - "Include at least one cost-of-care source because this is a chronic-condition topic."
+  coverage_gaps:
+    - "Pediatric diabetes subgroup evidence"
+    - "Implementation barriers in safety-net primary care"
+expansion_suggestions:
+  - area: "Diabetic kidney disease prevention"
+    why_relevant: "Diabetes is the leading cause of CKD and ESRD, and nephropathy measures are common in quality programs."
+    first_command: 'rh-skills search pubmed --query "diabetic kidney disease prevention SGLT2 CKD" --max 15'
+  - area: "Medication adherence economics"
+    why_relevant: "Insulin and GLP-1 adherence gaps drive avoidable admissions and are often addressed in CCM business cases."
+    first_command: 'rh-skills search pubmed --query "diabetes medication adherence cost effectiveness pharmacist" --max 10'
+  - area: "Health equity in underserved populations"
+    why_relevant: "FQHC and safety-net populations have disproportionate diabetes burden and outcome gaps."
+    first_command: 'rh-skills search pubmed --query "diabetes disparities racial ethnic minority FQHC" --max 10'
+  - area: "Continuous glucose monitoring integration"
+    why_relevant: "CGM interoperability and CMS coverage policy affect modern diabetes workflows."
+    first_command: 'rh-skills search clinicaltrials --query "continuous glucose monitoring type 2 diabetes outcomes" --max 10'
+  - area: "Implementation science barriers"
+    why_relevant: "CCM adoption depends on workflow feasibility, staffing, and EHR template fit."
+    first_command: 'rh-skills search pubmed --query "chronic care model implementation barriers primary care diabetes" --max 10'
+sources:
+  - name: "ada-standards-2024"
+    title: "ADA Standards of Medical Care in Diabetes 2024"
+    type: "guideline"
+    url: "https://diabetesjournals.org/care/issue/47/Supplement_1"
+    access: "open"
+    evidence_level: "grade-a"
+    open_access: true
+    rationale: >
+      Core clinical guidance for screening, diagnosis, glycemic targets, and
+      treatment. This is the anchor guideline for any diabetes CCM topic.
+    search_terms:
+      - "ADA standards of care diabetes 2024"
+      - "diabetes clinical practice guideline 2024"
+
+  - name: "cms122-hba1c-poor-control"
+    title: "CMS122 — Diabetes: Hemoglobin A1c Poor Control (>9%)"
+    type: "measure-library"
+    url: "https://ecqi.healthit.gov/ecqm/ec/2024/cms0122v13"
+    access: "open"
+    evidence_level: "n/a"
+    open_access: true
+    rationale: >
+      Representative CMS quality measure for diabetes. Critical for measure
+      alignment, denominator logic, and value set planning.
+    search_terms:
+      - "CMS122 HbA1c poor control"
+      - "eCQM diabetes poor control"
+
+  - name: "snomed-diabetes-hierarchy"
+    title: "SNOMED CT — Diabetes Mellitus Hierarchy"
+    type: "terminology"
+    url: "https://browser.ihtsdotools.org/?perspective=full&conceptId1=73211009"
+    access: "open"
+    evidence_level: "reference-standard"
+    open_access: true
+    rationale: >
+      Provides the computable disease concept hierarchy needed for problem-list,
+      registry, and CDS use cases.
+    search_terms:
+      - "SNOMED diabetes mellitus"
+      - "73211009 diabetes mellitus"
+
+  - name: "loinc-hba1c-glucose-codes"
+    title: "LOINC — HbA1c and Glucose Observation Codes"
+    type: "terminology"
+    url: "https://loinc.org/4548-4/"
+    access: "open"
+    evidence_level: "reference-standard"
+    open_access: true
+    rationale: >
+      LOINC is required for interoperable HbA1c and glucose result capture in
+      US Core and downstream computable artifacts.
+    search_terms:
+      - "LOINC HbA1c 4548-4"
+      - "LOINC glucose 1558-6"
+
+  - name: "gravity-sdoh-fhir-ig"
+    title: "Gravity SDOH Clinical Care FHIR Implementation Guide"
+    type: "fhir-ig"
+    url: "https://hl7.org/fhir/us/sdoh-clinicalcare/"
+    access: "open"
+    evidence_level: "reference-standard"
+    open_access: true
+    rationale: >
+      Covers interoperable representation of food insecurity and related SDOH
+      concepts that commonly affect diabetes control and care coordination.
+    search_terms:
+      - "Gravity Project SDOH FHIR IG"
+      - "food insecurity diabetes FHIR"
+
+  - name: "hcup-diabetes-hospitalization-costs"
+    title: "HCUP National Inpatient Sample — Diabetes Hospitalization Costs"
+    type: "health-economics"
+    url: "https://www.hcup-us.ahrq.gov/nisoverview.jsp"
+    access: "open"
+    evidence_level: "n/a"
+    open_access: true
+    rationale: >
+      Provides cost and utilization context for preventable admissions, helping
+      justify the economics of a diabetes CCM intervention.
+    search_terms:
+      - "HCUP diabetes hospitalization costs"
+      - "diabetes preventable admissions NIS"
+
+  - name: "cochrane-intensive-glycemic-control"
+    title: "Cochrane Review — Intensive Glycemic Control in Type 2 Diabetes"
+    type: "systematic-review"
+    url: "https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD008143.pub2/full"
+    access: "authenticated"
+    evidence_level: "grade-a"
+    open_access: false
+    recommended: true
+    auth_note: >
+      Retrieve via institutional library proxy or Wiley-hosted Cochrane access.
+      Search for "intensive glycemic control type 2 diabetes cardiovascular"
+      after login.
+    rationale: >
+      High-value synthesis of glycemic target evidence that can shape CCM
+      target-setting and shared-decision support.
+    search_terms:
+      - "Cochrane intensive glycemic control type 2 diabetes"
+      - "HbA1c target cardiovascular outcomes"
+
+  - name: "nct04512345-diabetes-ccm-trial"
+    title: "Chronic Care Management for Diabetes Mellitus"
+    type: "registry"
+    url: "https://clinicaltrials.gov/study/NCT04512345"
+    access: "open"
+    evidence_level: "n/a"
+    open_access: true
+    nct_id: "NCT04512345"
+    rationale: >
+      Active or recently completed registry evidence highlights intervention
+      designs and implementation approaches that may not yet be fully published.
+    search_terms:
+      - "diabetes chronic care management clinical trial"
+      - "team-based diabetes care clinicaltrials"

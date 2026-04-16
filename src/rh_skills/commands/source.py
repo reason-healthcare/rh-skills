@@ -1,12 +1,14 @@
 """rh-skills source — Build and manage discovery-plan source entries."""
 
+import hashlib
+import json
 from pathlib import Path
 
 import click
 from ruamel.yaml import YAML
 
 from rh_skills.commands.validate import VALID_EVIDENCE_LEVELS, VALID_SOURCE_TYPES
-from rh_skills.common import log_info, log_warn, require_tracking, topic_dir
+from rh_skills.common import log_info, log_warn, require_tracking, sources_root, topic_dir
 
 
 def _yaml_rt() -> YAML:
@@ -170,3 +172,135 @@ def add(source_type, url, title, evidence, rationale, search_terms,
     _save_plan(plan_file, plan)
 
     log_info(f"Appended '{name}' to {plan_file}  ({len(sources)} sources total)")
+
+
+# ── rh-skills source scan ──────────────────────────────────────────────────────
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _type_hint(path: Path) -> str:
+    ext = path.suffix.lower()
+    return {
+        ".pdf": "document",
+        ".csv": "dataset",
+        ".tsv": "dataset",
+        ".xlsx": "dataset",
+        ".xls": "dataset",
+        ".md": "document",
+        ".txt": "document",
+        ".docx": "document",
+        ".xml": "data",
+        ".json": "data",
+    }.get(ext, "unknown")
+
+
+@source.command("scan")
+@click.option("--json", "as_json", is_flag=True, default=False,
+              help="Output results as JSON.")
+def scan(as_json):
+    """Scan sources/ for untracked files or files with SHA drift.
+
+    \b
+    Reports three categories:
+      UNTRACKED   — file is in sources/ but not registered in tracking.yaml
+      SHA-CHANGED — file is registered but its contents have changed
+      TRACKED     — file is registered and SHA matches
+
+    \b
+    Example:
+      rh-skills source scan
+    """
+    src_root = sources_root()
+    if not src_root.exists():
+        if as_json:
+            click.echo(json.dumps({"untracked": [], "sha_changed": [], "tracked": [],
+                                   "note": "sources/ directory does not exist"}))
+        else:
+            click.echo("sources/ directory does not exist.")
+        return
+
+    try:
+        tracking = require_tracking()
+    except SystemExit:
+        tracking = {}
+
+    tracked_entries: dict[str, dict] = {}
+    for source in tracking.get("sources", []):
+        file_key = source.get("file")
+        if file_key:
+            tracked_entries[file_key] = source
+
+    untracked: list[dict] = []
+    sha_changed: list[dict] = []
+    tracked_ok: list[dict] = []
+
+    for path in sorted(src_root.iterdir()):
+        if not path.is_file():
+            continue
+        rel = f"sources/{path.name}"
+        size_kb = round(path.stat().st_size / 1024, 1)
+        sha = _sha256_file(path)
+        hint = _type_hint(path)
+
+        entry = tracked_entries.get(rel)
+        if entry is None:
+            untracked.append({
+                "file": rel,
+                "size_kb": size_kb,
+                "sha256": sha,
+                "type_hint": hint,
+            })
+        elif entry.get("checksum") and entry["checksum"] != sha:
+            sha_changed.append({
+                "file": rel,
+                "name": entry.get("name"),
+                "size_kb": size_kb,
+                "sha256": sha,
+                "tracked_sha256": entry["checksum"],
+                "type_hint": hint,
+            })
+        else:
+            tracked_ok.append({
+                "file": rel,
+                "name": entry.get("name"),
+                "size_kb": size_kb,
+                "sha256": sha,
+                "type_hint": hint,
+            })
+
+    if as_json:
+        click.echo(json.dumps({
+            "untracked": untracked,
+            "sha_changed": sha_changed,
+            "tracked": tracked_ok,
+        }, indent=2))
+        return
+
+    total = len(untracked) + len(sha_changed) + len(tracked_ok)
+    click.echo(f"sources/ scan — {total} file(s)")
+    click.echo()
+
+    for item in untracked:
+        click.echo(f"  UNTRACKED    {item['file']:<50}  {item['size_kb']:>6} KB  [{item['type_hint']}]")
+    for item in sha_changed:
+        click.echo(f"  SHA-CHANGED  {item['file']:<50}  {item['size_kb']:>6} KB  [{item['type_hint']}]")
+    for item in tracked_ok:
+        click.echo(f"  TRACKED      {item['file']:<50}  {item['size_kb']:>6} KB  [{item['type_hint']}]")
+
+    if untracked or sha_changed:
+        click.echo()
+        click.echo(f"{len(untracked)} untracked, {len(sha_changed)} SHA-changed, {len(tracked_ok)} tracked")
+        if untracked:
+            click.echo()
+            click.echo("To add untracked files to your discovery plan:")
+            click.echo("  rh-skills source add --type <type> --name <slug> --title \"...\" \\")
+            click.echo("    --rationale \"...\" --access manual --append-to-plan <topic>")
+    else:
+        click.echo()
+        click.echo(f"All {total} file(s) are tracked and up to date.")

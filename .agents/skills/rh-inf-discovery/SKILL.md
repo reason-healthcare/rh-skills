@@ -10,10 +10,10 @@ description: >
   Modes: session · verify.
 compatibility: "rh-skills >= 0.1.0"
 context_files:
-  - reference.md          # domain advice checklist, source taxonomies, US gov coverage
-  - examples/plan.yaml    # worked example: diabetes-ccm discovery-plan.yaml (structured sources)
-  - examples/readout.md   # worked example: diabetes-ccm discovery-readout.md (domain narrative)
-  - examples/output.md    # worked example: session transcript excerpt
+  - .agents/skills/rh-inf-discovery/reference.md          # domain advice checklist, source taxonomies, US gov coverage
+  - .agents/skills/rh-inf-discovery/examples/plan.yaml    # worked example: diabetes-ccm discovery-plan.yaml (structured sources)
+  - .agents/skills/rh-inf-discovery/examples/readout.md   # worked example: diabetes-ccm discovery-readout.md (domain narrative)
+  - .agents/skills/rh-inf-discovery/examples/output.md    # worked example: session transcript excerpt
 metadata:
   author: "RH Skills"
   version: "1.0.0"
@@ -25,12 +25,8 @@ metadata:
     - topics/<name>/process/notes.md
   writes_via_cli:
     - "rh-skills search pubmed"
-    - "rh-skills search pubmed --offline"
     - "rh-skills search pmc"
     - "rh-skills search clinicaltrials"
-    - "rh-skills search pubmed --append-to-plan"
-    - "rh-skills source add"
-    - "rh-skills source scan"
     - "rh-skills init"
     - "rh-skills validate --plan"
 ---
@@ -123,41 +119,9 @@ ls topics/<topic>/process/plans/discovery-plan.yaml 2>/dev/null
 The session is an **interactive research loop**. Complete all steps; prompt the
 user after each major pass before proceeding.
 
-### Step 0 — Scan for Manually Placed Files
-
-Before starting searches, check whether the user has pre-placed any source
-files (PDFs, CSVs, etc.) in the `sources/` directory:
-
-```sh
-rh-skills source scan
-```
-
-Interpret the output:
-
-- **UNTRACKED** files — the user has placed a file that is not yet in the plan.
-  Read the filename and use `head -20 sources/<file>` (for text/CSV) to infer
-  content. Propose adding each as an `access: manual` source entry via
-  `rh-skills source add --access manual --append-to-plan <topic>`.
-  Infer `--type` from extension: `.pdf`/`.md`/`.txt` → `document` or
-  `clinical-guideline`; `.csv`/`.tsv`/`.xlsx` → `dataset`.
-- **SHA-CHANGED** files — a previously tracked file has changed on disk.
-  Warn the user and suggest re-running ingest to pick up changes.
-- **TRACKED** files — already registered; nothing to do.
-
-If `sources/` does not exist or is empty, skip this step silently and proceed
-to Step 1.
-
-Emit status block:
-```
-  Step:   0 — Manual File Scan · Complete
-  Found:  <N> untracked, <N> SHA-changed, <N> tracked
-  Plan:   <N> sources in memory
-  Next:   Step 1 — Domain Advice
-```
-
 ### Step 1 — Domain Advice
 
-Read `reference.md` → **Domain Advice Checklist**. Present domain-specific
+Read `.agents/skills/rh-inf-discovery/reference.md` → **Domain Advice Checklist**. Present domain-specific
 guidance for `<topic>`, addressing all checklist items relevant to the domain:
 
 - CMS program alignment (eCQMs, MIPS/QPP, Medicaid, CMMI models)
@@ -192,26 +156,13 @@ session.
 Parse the JSON results. For each result evaluate:
 
 - **Relevance** to the topic
-- **Evidence level** (see `reference.md` Evidence Level Taxonomy)
+- **Evidence level** (see `.agents/skills/rh-inf-discovery/reference.md` Evidence Level Taxonomy)
 - **Access**: PMC articles are `open`; PubMed abstracts are `open` (URL to
   abstract); full-text may require institutional access → `authenticated`
 
-**If the search commands fail** (e.g. network/DNS error in a sandboxed
-environment), retry with `--offline` to get reference links and record the
-query, then continue with domain-knowledge-based source selection:
-
-```sh
-rh-skills search pubmed --offline --query "<terms>"
-rh-skills search pmc    --offline --query "<terms>"
+Emit status block:
 ```
-
-Mark the step as `SKIPPED (offline)` in the status block and log the
-attempted queries in the plan's `notes` field so they can be re-run later.
-
-Emit status block — use the appropriate variant:
-```
-  Step:   2 — PubMed/PMC Search · Complete         ← network available
-  Step:   2 — PubMed/PMC Search · SKIPPED (offline) ← network unavailable
+  Step:   2 — PubMed/PMC Search · Complete
   Plan:   <N> sources in memory
   Next:   Step 3 — ClinicalTrials.gov search
 ```
@@ -225,19 +176,9 @@ rh-skills search clinicaltrials --query "<terms>" --max 20 --json
 Include active or completed trials relevant to the topic. These are `registry`
 type with `evidence_level: n/a` (trials are not yet evidence until published).
 
-**If the search command fails**, retry with `--offline`:
-
-```sh
-rh-skills search clinicaltrials --offline --query "<terms>"
-```
-
-Mark as `SKIPPED (offline)` and add a note in the plan to check
-ClinicalTrials.gov manually.
-
 Emit status block:
 ```
-  Step:   3 — ClinicalTrials.gov Search · Complete          ← network available
-  Step:   3 — ClinicalTrials.gov Search · SKIPPED (offline) ← network unavailable
+  Step:   3 — ClinicalTrials.gov Search · Complete
   Plan:   <N> sources in memory
   Next:   Step 4 — US government sources
 ```
@@ -258,7 +199,7 @@ present URLs for the user to confirm):
 | CDC / MMWR | Surveillance data, epidemiological burden |
 | HCUP / MEPS / GBD | Health economics and cost-of-care data |
 
-See `reference.md` → **US Government Healthcare Coverage** for full URLs and
+See `.agents/skills/rh-inf-discovery/reference.md` → **US Government Healthcare Coverage** for full URLs and
 guidance.
 
 Emit status block:
@@ -274,7 +215,7 @@ Identify the relevant medical societies and journals for the topic. Present
 these with recommended search terms even if they require authentication:
 
 - Include society clinical practice guidelines
-- Include specialty-specific journals from `reference.md` → **Medical Journals**
+- Include specialty-specific journals from `.agents/skills/rh-inf-discovery/reference.md` → **Medical Journals**
 - For authenticated sources, set `access: authenticated` and include `auth_note`
   with the specific login mechanism and suggested search terms
 
@@ -391,24 +332,6 @@ Cover at minimum (when applicable):
 **Do NOT add suggestions to `sources[]` automatically.** They are offered for
 the user to act on.
 
-Present the suggestions as a numbered list and explicitly offer to explore any
-of them now. Example:
-
-```
-Research Expansion Suggestions:
-  1. Diabetic kidney disease — comorbidity with shared CMS quality measures
-     → rh-skills search pubmed --query "diabetic nephropathy CKD quality measures"
-  2. Health equity in diabetes management — disparities by race/ethnicity
-     → rh-skills search pubmed --query "diabetes management disparities SDOH"
-  ...
-
-Would you like to explore any of these now? Reply with the number, or proceed
-to save the plan.
-```
-
-If the user selects an expansion area, loop back to Steps 2–9 for that area,
-merge new findings into the living plan, then return here.
-
 Emit status block:
 ```
   Step:   9 — Expansion Suggestions · Complete
@@ -437,7 +360,7 @@ Emit status block:
 > 
 > **What would you like to do next?**
 > 
-> A) Explore expansion area — reply with the number (e.g. "explore 2")
+> A) Explore an expansion area — tell me the number
 > B) Add, remove, or modify sources
 > C) Save the plan and move on to `rh-inf-ingest`
 > 
@@ -544,19 +467,19 @@ topic: "<topic>"
 date: "YYYY-MM-DD"
 sources:
   - name: "<display name>"
-    type: "<source type>"            # see reference.md Source Type Taxonomy
+    type: "<source type>"            # see .agents/skills/rh-inf-discovery/reference.md Source Type Taxonomy
     rationale: "<why this source>"
     search_terms:
       - "<term1>"
       - "<term2>"
-    evidence_level: "<level>"        # see reference.md Evidence Level Taxonomy
+    evidence_level: "<level>"        # see .agents/skills/rh-inf-discovery/reference.md Evidence Level Taxonomy
     access: "<open|authenticated|manual>"
     url: "<url>"                     # required when access: open
     auth_note: "<how to access>"     # required when access: authenticated
     recommended: true                # optional; true for high-value authenticated sources
 ```
 
-See `examples/plan.yaml` for a complete worked example.
+See `.agents/skills/rh-inf-discovery/examples/plan.yaml` for a complete worked example.
 
 ### `discovery-readout.md` — Generated Domain Narrative
 
@@ -569,7 +492,7 @@ Markdown prose. Generated by the agent; consumed by agents and humans for contex
 
 ## Domain Advice
 
-<Prose addressing the Domain Advice Checklist from reference.md:
+<Prose addressing the Domain Advice Checklist from .agents/skills/rh-inf-discovery/reference.md:
  CMS program alignment, SDOH relevance, health equity, quality measure landscape,
  terminology systems, health economics angle.>
 
@@ -581,7 +504,7 @@ Markdown prose. Generated by the agent; consumed by agents and humans for contex
 2. ...
 ```
 
-See `examples/readout.md` for a complete worked example.
+See `.agents/skills/rh-inf-discovery/examples/readout.md` for a complete worked example.
 
 ---
 
@@ -594,20 +517,3 @@ See `examples/readout.md` for a complete worked example.
 | More than 25 sources | Select top 25, log extras in expansion suggestions |
 | `rh-skills validate --plan` exits 1 | Report failures; do not proceed to ingest |
 | Plan already exists (no `--force`) | Offer continuation or fresh start |
-| `rh-skills search` network error | Retry with `--offline` flag; mark step `SKIPPED (offline)`; continue with domain knowledge |
-
-## CLI Quick Reference
-
-| Command | Purpose |
-|---------|---------|
-| `rh-skills search pubmed --query "..." --json` | Search PubMed (live) |
-| `rh-skills search pubmed --offline --query "..."` | Record query; get reference links (no network) |
-| `rh-skills search pmc --query "..." --json` | Search PMC open-access (live) |
-| `rh-skills search clinicaltrials --query "..." --json` | Search ClinicalTrials.gov (live) |
-| `rh-skills search pubmed --append-to-plan <topic> --query "..."` | Search and append results to plan |
-| `rh-skills source scan` | List untracked/SHA-changed files in sources/ |
-| `rh-skills source add --type <type> --title "..." --rationale "..." [--append-to-plan <topic>]` | Add a single source entry |
-| `rh-skills source add --dry-run ...` | Preview source entry without writing |
-| `rh-skills schema show discovery-plan` | Show plan schema and allowed taxonomies |
-| `rh-skills validate --plan <file>` | Validate a saved discovery plan |
-| `rh-skills validate --plan -` | Validate via stdin (pipe or heredoc) |
