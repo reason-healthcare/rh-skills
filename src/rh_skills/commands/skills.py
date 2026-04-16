@@ -99,6 +99,23 @@ def _render_cursor(skill_dir: Path) -> str:
     return f"---\ndescription: {description}\n---\n\n{body}"
 
 
+def _render_generic(skill_dir: Path) -> str:
+    """Return SKILL.md with support-file paths rewritten to their installed workspace location.
+
+    Bare references like ``reference.md`` and ``examples/plan.yaml`` become
+    ``.agents/skills/<name>/reference.md`` etc., so the agent can resolve them
+    from the workspace root where it normally runs.
+    """
+    name = skill_dir.name
+    prefix = f".agents/skills/{name}"
+    text = (skill_dir / "SKILL.md").read_text()
+    # Rewrite bare `reference.md` references (not already path-qualified)
+    text = re.sub(r'(?<![./\w])reference\.md', f'{prefix}/reference.md', text)
+    # Rewrite bare `examples/<file>` references
+    text = re.sub(r'(?<![./\w])examples/', f'{prefix}/examples/', text)
+    return text
+
+
 def _render_gemini(skill_dir: Path) -> str:
     preamble_file = _profiles_dir() / "gemini-preamble.md"
     suffix_file   = _profiles_dir() / "gemini-suffix.md"
@@ -123,6 +140,8 @@ def _install_skill(skill_dir: Path, platform: str, project_root: Path, force: bo
                 return _dir_checksum(dest)
             shutil.rmtree(dest)
         shutil.copytree(skill_dir, dest)
+        # Rewrite SKILL.md support-file paths to be workspace-root-relative
+        (dest / "SKILL.md").write_text(_render_generic(skill_dir))
         return _dir_checksum(dest)
 
     renderers = {
@@ -226,6 +245,8 @@ def install(source, dest, force):
         if skill_dest.exists():
             shutil.rmtree(skill_dest)
         shutil.copytree(skill_src, skill_dest)
+        # Rewrite SKILL.md support-file paths to be workspace-root-relative
+        (skill_dest / "SKILL.md").write_text(_render_generic(skill_src))
         installed.append(skill_src.name)
 
     for name in installed:
