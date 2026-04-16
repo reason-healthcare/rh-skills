@@ -414,3 +414,55 @@ def update(source):
 
     click.echo()
     click.echo(f"  Lockfile updated: {_lockfile_path(project_root)}")
+
+
+@skills.command()
+@click.argument("skill_name", metavar="SKILL", required=False)
+def info(skill_name):
+    """Show location and contents of a bundled curated skill.
+
+    \b
+    Without SKILL: list all available skills with their version and file counts.
+    With SKILL: show full paths to SKILL.md, reference.md, and examples/.
+
+    \b
+    Examples:
+      rh-skills skills info
+      rh-skills skills info rh-inf-discovery
+    """
+    src_dir = bundled_skills_dir()
+    if not src_dir.exists():
+        raise click.ClickException(f"Bundled skills directory not found: {src_dir}")
+
+    if skill_name is None:
+        skill_dirs = sorted(p for p in src_dir.iterdir() if p.is_dir() and (p / "SKILL.md").exists())
+        if not skill_dirs:
+            raise click.ClickException(f"No skills found in: {src_dir}")
+        click.echo(f"\nBundled skills  ({src_dir})\n")
+        for d in skill_dirs:
+            ver = _skill_version(d)
+            n_files = sum(1 for _ in d.rglob("*") if _.is_file())
+            click.echo(f"  {d.name:<28}  v{ver}  ({n_files} files)")
+        click.echo()
+        return
+
+    skill_dir = src_dir / skill_name
+    if not skill_dir.exists() or not (skill_dir / "SKILL.md").exists():
+        available = [d.name for d in src_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()]
+        raise click.ClickException(
+            f"Skill '{skill_name}' not found.\nAvailable: {', '.join(sorted(available))}"
+        )
+
+    ver = _skill_version(skill_dir)
+    click.echo(f"\n{skill_name}  (version {ver})\n")
+    click.echo(f"  Location:    {skill_dir}")
+
+    files = sorted(skill_dir.rglob("*"))
+    click.echo(f"\n  Files:")
+    for f in files:
+        if f.is_file():
+            rel = f.relative_to(skill_dir)
+            size = f.stat().st_size
+            click.echo(f"    {str(rel):<36}  {size:>6} bytes  {f}")
+    click.echo()
+
