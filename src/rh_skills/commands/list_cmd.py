@@ -4,7 +4,7 @@ import json
 
 import click
 
-from rh_skills.common import tracking_file
+from rh_skills.common import load_tracking, tracking_file
 
 
 def _compute_stage(sources_count: int, structured_count: int, computable_count: int) -> str:
@@ -30,11 +30,7 @@ def list_(as_json, stage):
             click.echo("No tracking.yaml found")
         return
 
-    from ruamel.yaml import YAML
-    y = YAML()
-    with open(tf) as f:
-        tracking = y.load(f)
-
+    tracking = load_tracking()
     topics = tracking.get("topics", [])
     sources_count = len(tracking.get("sources", []))
 

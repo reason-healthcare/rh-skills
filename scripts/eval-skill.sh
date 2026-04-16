@@ -237,6 +237,7 @@ echo
 
 # ── bootstrap workspace ───────────────────────────────────────────────────────
 cd "$WORKDIR"
+export UV_CACHE_DIR=/tmp/uv-cache
 uv init --quiet --name eval-project 2>/dev/null || true
 # Install from local repo into both uv venv and pipx global binary.
 # The uv venv is used by `uv run rh-skills` inside the bootstrap steps;
@@ -550,6 +551,7 @@ echo
 # Install rh-skills and the chosen skill into the temp workspace so the agent
 # sees a realistic project layout.
 cd "$WORKDIR"
+export UV_CACHE_DIR=/tmp/uv-cache
 uv init --quiet --name "$TOPIC" 2>/dev/null || true
 # Install from local repo into both uv venv and pipx global binary.
 # The uv venv is used by `uv run rh-skills` inside the bootstrap steps;
