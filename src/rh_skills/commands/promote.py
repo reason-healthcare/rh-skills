@@ -762,6 +762,7 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
         llm_output = _invoke_llm(system_prompt, user_prompt)
 
         l2_file = td / "structured" / f"{artifact_name}.yaml"
+        l2_file.parent.mkdir(parents=True, exist_ok=True)
 
         if llm_output == "Stub response":
             # Write a minimal valid L2 artifact template for stub mode
