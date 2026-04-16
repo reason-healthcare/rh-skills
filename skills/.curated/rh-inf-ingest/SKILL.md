@@ -59,6 +59,17 @@ reasoning (concept identification, classification proposals for manual sources).
   running `rh-skills ingest` subcommands. **The agent MUST NOT write Python scripts,
   shell scripts, or use curl/wget/requests to download sources directly.**
   All downloads go through `rh-skills ingest implement --url` — no exceptions.
+- **The `rh-skills` CLI is immutable.** The agent MUST NOT import the `rh_skills`
+  Python package, read CLI source code, or attempt to patch the installed package —
+  even if the `.venv/` directory is writable. The CLI is a black box; all interaction
+  is through subcommand invocation only.
+- **Troubleshooting apparent CLI failures.** If a CLI command succeeds (exit 0) but
+  the expected state does not appear: (1) re-run the relevant command **serially**,
+  waiting for full completion before proceeding; (2) run `rh-skills ingest verify
+  <topic>` to check current state; (3) if the issue persists after a serial retry,
+  report the exact command, exit code, and output to the user. **Never inspect
+  implementation files or attempt local patches.** Many apparent failures are timing
+  issues caused by running commands in parallel — always serialize before escalating.
 - **All reasoning by the agent.** Classification proposals for manual sources
   and concept identification require clinical judgment — the agent performs this
   and proposes values; the user confirms before CLI execution.
