@@ -312,7 +312,7 @@ case "$AGENT" in
   codex)
     MODEL_FLAG=""
     [[ -n "$MODEL" ]] && MODEL_FLAG="-c model=$MODEL"
-    AGENT_CMD="codex exec $MODEL_FLAG"
+    AGENT_CMD="codex exec -s workspace-write -C $WORKDIR $MODEL_FLAG"
     ;;
   ollama)
     MODEL="${MODEL:-llama3}"
@@ -582,7 +582,7 @@ case "$AGENT" in
   codex)
     MODEL_FLAG=""
     [[ -n "$MODEL" ]] && MODEL_FLAG="-c model=$MODEL"
-    AGENT_CMD="codex exec $MODEL_FLAG"
+    AGENT_CMD="codex exec -s workspace-write -C $WORKDIR $MODEL_FLAG"
     ;;
   ollama)
     MODEL="${MODEL:-llama3}"

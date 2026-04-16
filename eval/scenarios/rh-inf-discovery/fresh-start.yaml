@@ -39,7 +39,8 @@ prompt: |
 
   The RESEARCH.md file describes the clinical question. There is no existing
   discovery plan — start fresh. Run searches across PubMed, PMC, and
-  ClinicalTrials.gov. When complete, save the plan via `rh-skills validate --plan`.
+  ClinicalTrials.gov. When complete, validate the plan with `rh-skills validate --plan <file>`,
+  then write it to `topics/{topic}/process/plans/discovery-plan.yaml`.
 
 expected_outputs:
   - path: topics/diabetes-ccm/process/plans/discovery-plan.yaml
