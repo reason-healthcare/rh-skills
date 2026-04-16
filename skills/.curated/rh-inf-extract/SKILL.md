@@ -183,16 +183,28 @@ After plan mode completes, the plan is in `status: pending-review` and each
 artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
 
-A reviewer must edit `topics/<topic>/process/plans/extract-plan.yaml` and:
+Use `rh-skills promote approve` to record decisions without editing YAML directly:
 
-1. Set `status: pending-review` → `status: approved`
-2. Set each intended artifact's `reviewer_decision: pending-review` → `reviewer_decision: approved`
-   (or `rejected` / `needs-revision` to exclude it)
-3. Set `reviewed_at` to the current ISO-8601 timestamp
-4. Optionally add `approval_notes` per artifact
+```sh
+# Approve a single artifact (use for each artifact in turn):
+rh-skills promote approve <topic> --artifact <name> --decision approved --notes "Optional note"
 
-Only artifacts with `reviewer_decision: approved` will be implemented.
-Artifacts marked `rejected` or `needs-revision` are skipped without error.
+# Reject or defer an artifact:
+rh-skills promote approve <topic> --artifact <name> --decision rejected
+rh-skills promote approve <topic> --artifact <name> --decision needs-revision
+
+# Finalize the plan once all artifact decisions are recorded:
+rh-skills promote approve <topic> --finalize --reviewer "<reviewer-name>"
+```
+
+`--finalize` sets `status: approved`, records `reviewed_at`, and regenerates
+`extract-plan-readout.md` with the final decisions. Only artifacts with
+`reviewer_decision: approved` will be implemented; `rejected` and
+`needs-revision` artifacts are skipped without error.
+
+> **Human terminal:** Run `rh-skills promote approve <topic>` without flags for
+> an interactive walk-through that prompts for each artifact and then offers to
+> finalize.
 
 ---
 

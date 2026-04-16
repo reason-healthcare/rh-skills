@@ -20,9 +20,10 @@ Proposed artifacts:
 2. `risk-factors` — risk-factors
 
 Writing:
-`topics/diabetes-ccm/process/plans/extract-plan.md`
+`topics/diabetes-ccm/process/plans/extract-plan.yaml`
+`topics/diabetes-ccm/process/plans/extract-plan-readout.md`
 
-Review the plan, update reviewer decisions, then continue with:
+Review the plan using `rh-skills promote approve diabetes-ccm`, then continue with:
 
 ```sh
 rh-inf-extract implement diabetes-ccm
@@ -36,7 +37,7 @@ rh-inf-extract implement diabetes-ccm
 
 **Agent:**
 
-Reading `topics/diabetes-ccm/process/plans/extract-plan.md`...
+Reading `topics/diabetes-ccm/process/plans/extract-plan.yaml`...
 
 Approved artifacts:
 - `screening-criteria`

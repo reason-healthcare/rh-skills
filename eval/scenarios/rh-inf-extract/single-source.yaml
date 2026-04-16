@@ -109,10 +109,13 @@ prompt: |
   4. **verify** — validate the artifact with rh-skills validate
 
 expected_outputs:
-  - path: topics/diabetes-ccm/process/plans/extract-plan.md
+  - path: topics/diabetes-ccm/process/plans/extract-plan.yaml
     checks:
       - exists
       - contains: "ada-standards-2024"
+  - path: topics/diabetes-ccm/process/plans/extract-plan-readout.md
+    checks:
+      - exists
   - path: topics/diabetes-ccm/structured/diabetes-ccm-standards.yaml
     checks:
       - exists
@@ -121,7 +124,7 @@ expected_outputs:
   - path: tracking.yaml
     checks:
       - event: extract_planned
-      - event: extract_complete
+      - event: structured_derived
 
 efficiency_focus:
   - "Does the agent generate the extract plan without re-reading the source file more than once?"

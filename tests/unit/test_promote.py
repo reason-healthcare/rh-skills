@@ -617,3 +617,105 @@ def test_combine_fails_exit_2_if_only_one_arg(tmp_repo, monkeypatch):
     runner = CliRunner()
     result = runner.invoke(promote, ["combine", "my-skill", "only-target"])
     assert result.exit_code == 2
+
+
+# ── approve command ──────────────────────────────────────────────────────────
+
+def _read_plan(tmp_repo, topic="my-skill"):
+    from ruamel.yaml import YAML as _YAML
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "extract-plan.yaml"
+    return _YAML(typ="safe").load(plan_path.read_text())
+
+
+def test_approve_artifact_updates_yaml_and_readout(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[
+            {"name": "screening-criteria", "reviewer_decision": "pending-review", "approval_notes": ""},
+        ],
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        promote,
+        ["approve", "my-skill", "--artifact", "screening-criteria", "--decision", "approved", "--notes", "LGTM"],
+    )
+    assert result.exit_code == 0, result.output
+    plan = _read_plan(tmp_repo)
+    artifact = plan["artifacts"][0]
+    assert artifact["reviewer_decision"] == "approved"
+    assert artifact["approval_notes"] == "LGTM"
+
+    readout_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan-readout.md"
+    assert readout_path.exists()
+    assert "screening-criteria" in readout_path.read_text()
+
+
+def test_approve_artifact_unknown_raises(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "screening-criteria", "reviewer_decision": "pending-review", "approval_notes": ""}],
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        promote,
+        ["approve", "my-skill", "--artifact", "does-not-exist", "--decision", "approved"],
+    )
+    assert result.exit_code != 0
+
+
+def test_approve_requires_decision_with_artifact(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "screening-criteria", "reviewer_decision": "pending-review", "approval_notes": ""}],
+    )
+    runner = CliRunner()
+    result = runner.invoke(promote, ["approve", "my-skill", "--artifact", "screening-criteria"])
+    assert result.exit_code != 0
+
+
+def test_approve_finalize_sets_status_and_timestamp(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "screening-criteria", "reviewer_decision": "approved", "approval_notes": ""}],
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        promote,
+        ["approve", "my-skill", "--finalize", "--reviewer", "Jane"],
+    )
+    assert result.exit_code == 0, result.output
+    plan = _read_plan(tmp_repo)
+    assert plan["status"] == "approved"
+    assert plan["reviewer"] == "Jane"
+    assert plan["reviewed_at"] is not None
+
+
+def test_approve_no_plan_raises_usage_error(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(
+        promote,
+        ["approve", "my-skill", "--artifact", "x", "--decision", "approved"],
+    )
+    assert result.exit_code != 0
+
+
+def test_approve_no_args_non_tty_raises_usage_error(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "screening-criteria", "reviewer_decision": "pending-review", "approval_notes": ""}],
+    )
+    runner = CliRunner()
+    # CliRunner does not set up a TTY, so stdin.isatty() → False
+    result = runner.invoke(promote, ["approve", "my-skill"])
+    assert result.exit_code != 0

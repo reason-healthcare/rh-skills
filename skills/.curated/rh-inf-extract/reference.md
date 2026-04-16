@@ -15,7 +15,8 @@ The extract plan uses two files — matching the discovery pattern:
 | `topics/<topic>/process/plans/extract-plan-readout.md` | **Derived readout** — human-friendly narrative; do not edit directly |
 
 Both are written by `rh-skills promote plan <topic>`. Edit only `extract-plan.yaml`
-to approve or reject artifacts; the readout is regenerated automatically on each `--force` run.
+to approve or reject artifacts; the readout is regenerated automatically by
+`rh-skills promote approve` after each decision and on each `--force` re-plan.
 
 Framework compatibility naming:
 
