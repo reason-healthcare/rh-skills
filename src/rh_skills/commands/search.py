@@ -1,22 +1,73 @@
 """rh-skills search — Search biomedical databases for evidence-based sources."""
 
+import io
 import json
 import sys
 import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 import click
 import httpx
+from ruamel.yaml import YAML
 
-from rh_skills.common import log_warn
+from rh_skills.common import log_info, log_warn
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 NCBI_ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 CLINICALTRIALS_V2 = "https://clinicaltrials.gov/api/v2/studies"
+
+# ── Offline fallback guidance ──────────────────────────────────────────────────
+# Structured reference sources returned when network is unavailable.
+# Keyed by source type; each entry has the same fields as a live result.
+_OFFLINE_PUBMED: list[dict] = [
+    {
+        "title": "PubMed — MEDLINE literature database (NLM)",
+        "url":   "https://pubmed.ncbi.nlm.nih.gov/",
+        "year":  "",
+        "authors": ["National Library of Medicine"],
+        "abstract_snippet": (
+            "Search PubMed for peer-reviewed biomedical literature including "
+            "systematic reviews, RCTs, and clinical guidelines."
+        ),
+        "open_access": True,
+    },
+    {
+        "title": "PubMed Central (PMC) — Open Access full-text archive",
+        "url":   "https://pmc.ncbi.nlm.nih.gov/",
+        "year":  "",
+        "authors": ["National Library of Medicine"],
+        "abstract_snippet": (
+            "Free full-text archive of biomedical and life sciences journal articles "
+            "at the National Institutes of Health."
+        ),
+        "open_access": True,
+    },
+]
+
+_OFFLINE_CLINICALTRIALS: list[dict] = [
+    {
+        "title": "ClinicalTrials.gov — Registry of clinical studies",
+        "url":   "https://clinicaltrials.gov/",
+        "year":  "",
+        "authors": ["U.S. National Library of Medicine"],
+        "abstract_snippet": (
+            "Registry and results database of publicly and privately supported "
+            "clinical studies conducted around the world."
+        ),
+        "open_access": True,
+    },
+]
+
+_OFFLINE_NOTICE = (
+    "\nNetwork access unavailable — returning offline reference links.\n"
+    "Re-run this command in a network-enabled environment to retrieve live results.\n"
+    "Attempted query recorded; use it manually at the URL above.\n"
+)
 
 MIME_TO_EXT = {
     "application/pdf": ".pdf",
@@ -77,11 +128,12 @@ def _http_get_with_retry(url: str, params: dict, timeout: int) -> httpx.Response
             raise click.ClickException(
                 f"Network error: {e}\n\n"
                 "Network access may be restricted in this environment.\n"
-                "To build a discovery plan manually:\n"
+                "Re-run with --offline to get reference links and record the query:\n"
+                "  rh-skills search pubmed --offline --query \"...\"\n\n"
+                "Or build a discovery plan manually:\n"
                 "  1. Gather source URLs from your browser or a web search tool\n"
-                "  2. Construct a discovery-plan.yaml with your sources\n"
-                "  3. Validate it with: rh-skills validate --plan - < discovery-plan.yaml\n"
-                "  4. Run: rh-skills schema show discovery-plan  (to see required fields)"
+                "  2. Use: rh-skills source add --type <type> --url <url> ...\n"
+                "  3. Validate with: rh-skills validate --plan <file>"
             ) from e
 
     raise click.ClickException(
@@ -288,11 +340,12 @@ def _clinicaltrials_search(
         raise click.ClickException(
             f"ClinicalTrials.gov API failed: {e.format_message()}\n\n"
             "Network access may be restricted in this environment.\n"
-            "To build a discovery plan manually:\n"
+            "Re-run with --offline to get reference links and record the query:\n"
+            "  rh-skills search clinicaltrials --offline --query \"...\"\n\n"
+            "Or build a discovery plan manually:\n"
             "  1. Gather source URLs from your browser or a web search tool\n"
-            "  2. Construct a discovery-plan.yaml with your sources\n"
-            "  3. Validate it with: rh-skills validate --plan - < discovery-plan.yaml\n"
-            "  4. Run: rh-skills schema show discovery-plan  (to see required fields)"
+            "  2. Use: rh-skills source add --type registry --url <url> ...\n"
+            "  3. Validate with: rh-skills validate --plan <file>"
         ) from e
 
     data = r.json()
@@ -396,6 +449,78 @@ def _format_json(results: list[dict], query: str, source: str) -> None:
     click.echo(json.dumps(output, indent=2))
 
 
+# ── Plan append helper ─────────────────────────────────────────────────────────
+
+def _append_results_to_plan(results: list[dict], topic: str, source_type: str, query: str) -> None:
+    """Append search results as stub source entries to a topic's discovery-plan.yaml."""
+    from rh_skills.commands.validate import VALID_SOURCE_TYPES
+    from rh_skills.common import topic_dir
+
+    plan_path = topic_dir(topic) / "process" / "plans" / "discovery-plan.yaml"
+    if not plan_path.exists():
+        raise click.ClickException(
+            f"No discovery plan found at {plan_path}\n"
+            "Create one first with: rh-skills validate --plan <file>"
+        )
+
+    y_safe = YAML(typ="safe")
+    with plan_path.open() as f:
+        plan = y_safe.load(f) or {}
+
+    existing_urls = {s.get("url") for s in plan.get("sources", []) if isinstance(s, dict)}
+    existing_names = {s.get("name") for s in plan.get("sources", []) if isinstance(s, dict)}
+
+    import re
+    added = []
+    for r in results:
+        url = r.get("url", "")
+        if url and url in existing_urls:
+            continue  # skip duplicates by URL
+
+        title = r.get("title", "Untitled")
+        slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:60]
+        # ensure uniqueness
+        base, i = slug, 1
+        while slug in existing_names:
+            slug = f"{base}-{i}"
+            i += 1
+
+        entry = {
+            "name": slug,
+            "type": source_type,
+            "title": title,
+            "rationale": f"Retrieved via rh-skills search ({source_type}) for query: {query!r}",
+            "search_terms": [query],
+            "evidence_level": "n/a",
+            "access": "open" if r.get("open_access") else "authenticated",
+        }
+        if url:
+            entry["url"] = url
+        if r.get("year"):
+            entry["year"] = r["year"]
+        if r.get("authors"):
+            entry["authors"] = ", ".join(r["authors"][:5])
+
+        plan.setdefault("sources", []).append(entry)
+        existing_urls.add(url)
+        existing_names.add(slug)
+        added.append(slug)
+
+    if not added:
+        log_warn("No new sources to append (all results already in plan).")
+        return
+
+    y_rt = YAML()
+    y_rt.default_flow_style = False
+    y_rt.width = 120
+    with plan_path.open("w") as f:
+        y_rt.dump(plan, f)
+
+    log_info(f"Appended {len(added)} source(s) to {plan_path}")
+    for name in added:
+        click.echo(f"  + {name}")
+
+
 # ── Click command group ────────────────────────────────────────────────────────
 
 @click.group()
@@ -411,23 +536,40 @@ def search():
 @click.option("--filter", "filter_str", default=None, help='PubMed filter (e.g. "systematic review[pt]")')
 @click.option("--api-key", default=None, envvar="NCBI_API_KEY", help="NCBI API key (env: NCBI_API_KEY)")
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output structured JSON")
-def pubmed(query, max_results, filter_str, api_key, as_json):
+@click.option("--offline", is_flag=True, default=False,
+              help="Skip network call; return offline reference links with the attempted query.")
+@click.option("--append-to-plan", "append_to", default=None, metavar="TOPIC",
+              help="Append results as stub source entries to this topic's discovery-plan.yaml.")
+def pubmed(query, max_results, filter_str, api_key, as_json, offline, append_to):
     """Search PubMed via NCBI E-utilities."""
-    try:
-        results = _entrez_search_fetch(
-            query=query, db="pubmed", max_results=max_results,
-            api_key=api_key, filter_str=filter_str,
-        )
-    except click.ClickException:
-        raise
-    except Exception as e:
-        raise click.ClickException(str(e)) from e
+    if offline:
+        click.echo(_OFFLINE_NOTICE, err=True)
+        results = [
+            {**r, "id": "", "pmid": None, "nct_id": None, "doi": None,
+             "journal": "PubMed", "pmcid": None, "abstract_snippet": r["abstract_snippet"],
+             "status": None, "phase": None, "conditions": [], "interventions": [],
+             "_total_found": len(_OFFLINE_PUBMED)}
+            for r in _OFFLINE_PUBMED
+        ]
+        click.echo(f"Offline: query recorded → {query!r}")
+    else:
+        try:
+            results = _entrez_search_fetch(
+                query=query, db="pubmed", max_results=max_results,
+                api_key=api_key, filter_str=filter_str,
+            )
+        except click.ClickException:
+            raise
+        except Exception as e:
+            raise click.ClickException(str(e)) from e
 
-    if not results:
-        log_warn(f"No results found for query: {query}")
-        raise SystemExit(2)
+        if not results:
+            log_warn(f"No results found for query: {query}")
+            raise SystemExit(2)
 
-    if as_json:
+    if append_to:
+        _append_results_to_plan(results, append_to, "pubmed-article", query)
+    elif as_json:
         _format_json(results, query, "pubmed")
     else:
         total = results[0].pop("_total_found", len(results))
@@ -443,27 +585,44 @@ def pubmed(query, max_results, filter_str, api_key, as_json):
 @click.option("--filter", "filter_str", default=None, help="PMC filter string")
 @click.option("--api-key", default=None, envvar="NCBI_API_KEY", help="NCBI API key (env: NCBI_API_KEY)")
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output structured JSON")
-def pmc(query, max_results, filter_str, api_key, as_json):
+@click.option("--offline", is_flag=True, default=False,
+              help="Skip network call; return offline reference links with the attempted query.")
+@click.option("--append-to-plan", "append_to", default=None, metavar="TOPIC",
+              help="Append results as stub source entries to this topic's discovery-plan.yaml.")
+def pmc(query, max_results, filter_str, api_key, as_json, offline, append_to):
     """Search PubMed Central for open-access full-text articles."""
-    try:
-        results = _entrez_search_fetch(
-            query=query, db="pmc", max_results=max_results,
-            api_key=api_key, filter_str=filter_str,
-        )
-    except click.ClickException:
-        raise
-    except Exception as e:
-        raise click.ClickException(str(e)) from e
+    if offline:
+        click.echo(_OFFLINE_NOTICE, err=True)
+        results = [
+            {**r, "id": "", "pmid": None, "nct_id": None, "doi": None,
+             "journal": "PMC", "pmcid": None,
+             "status": None, "phase": None, "conditions": [], "interventions": [],
+             "_total_found": len(_OFFLINE_PUBMED)}
+            for r in _OFFLINE_PUBMED
+        ]
+        click.echo(f"Offline: query recorded → {query!r}")
+    else:
+        try:
+            results = _entrez_search_fetch(
+                query=query, db="pmc", max_results=max_results,
+                api_key=api_key, filter_str=filter_str,
+            )
+        except click.ClickException:
+            raise
+        except Exception as e:
+            raise click.ClickException(str(e)) from e
 
-    # All PMC results are open-access
-    for r in results:
-        r["open_access"] = True
+        # All PMC results are open-access
+        for r in results:
+            r["open_access"] = True
 
-    if not results:
-        log_warn(f"No PMC results found for query: {query}")
-        raise SystemExit(2)
+        if not results:
+            log_warn(f"No PMC results found for query: {query}")
+            raise SystemExit(2)
 
-    if as_json:
+    if append_to:
+        _append_results_to_plan(results, append_to, "pubmed-article", query)
+    elif as_json:
         _format_json(results, query, "pmc")
     else:
         total = results[0].pop("_total_found", len(results))
@@ -479,22 +638,39 @@ def pmc(query, max_results, filter_str, api_key, as_json):
 @click.option("--status", "status_filter", default="COMPLETED,RECRUITING",
               show_default=True, help="Filter by trial status")
 @click.option("--json", "as_json", is_flag=True, default=False, help="Output structured JSON")
-def clinicaltrials(query, max_results, status_filter, as_json):
+@click.option("--offline", is_flag=True, default=False,
+              help="Skip network call; return offline reference links with the attempted query.")
+@click.option("--append-to-plan", "append_to", default=None, metavar="TOPIC",
+              help="Append results as stub source entries to this topic's discovery-plan.yaml.")
+def clinicaltrials(query, max_results, status_filter, as_json, offline, append_to):
     """Search ClinicalTrials.gov via REST API v2."""
-    try:
-        results = _clinicaltrials_search(
-            query=query, max_results=max_results, status_filter=status_filter,
-        )
-    except click.ClickException:
-        raise
-    except Exception as e:
-        raise click.ClickException(str(e)) from e
+    if offline:
+        click.echo(_OFFLINE_NOTICE, err=True)
+        results = [
+            {**r, "id": "", "pmid": None, "nct_id": None, "doi": None,
+             "journal": None, "pmcid": None,
+             "status": None, "phase": None, "conditions": [], "interventions": [],
+             "_total_found": len(_OFFLINE_CLINICALTRIALS)}
+            for r in _OFFLINE_CLINICALTRIALS
+        ]
+        click.echo(f"Offline: query recorded → {query!r}")
+    else:
+        try:
+            results = _clinicaltrials_search(
+                query=query, max_results=max_results, status_filter=status_filter,
+            )
+        except click.ClickException:
+            raise
+        except Exception as e:
+            raise click.ClickException(str(e)) from e
 
-    if not results:
-        log_warn(f"No ClinicalTrials.gov results found for query: {query}")
-        raise SystemExit(2)
+        if not results:
+            log_warn(f"No ClinicalTrials.gov results found for query: {query}")
+            raise SystemExit(2)
 
-    if as_json:
+    if append_to:
+        _append_results_to_plan(results, append_to, "registry", query)
+    elif as_json:
         _format_json(results, query, "clinicaltrials")
     else:
         total = results[0].pop("_total_found", len(results))

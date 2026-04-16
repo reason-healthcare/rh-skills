@@ -25,8 +25,11 @@ metadata:
     - topics/<name>/process/notes.md
   writes_via_cli:
     - "rh-skills search pubmed"
+    - "rh-skills search pubmed --offline"
     - "rh-skills search pmc"
     - "rh-skills search clinicaltrials"
+    - "rh-skills search pubmed --append-to-plan"
+    - "rh-skills source add"
     - "rh-skills init"
     - "rh-skills validate --plan"
 ---
@@ -160,9 +163,22 @@ Parse the JSON results. For each result evaluate:
 - **Access**: PMC articles are `open`; PubMed abstracts are `open` (URL to
   abstract); full-text may require institutional access → `authenticated`
 
-Emit status block:
+**If the search commands fail** (e.g. network/DNS error in a sandboxed
+environment), retry with `--offline` to get reference links and record the
+query, then continue with domain-knowledge-based source selection:
+
+```sh
+rh-skills search pubmed --offline --query "<terms>"
+rh-skills search pmc    --offline --query "<terms>"
 ```
-  Step:   2 — PubMed/PMC Search · Complete
+
+Mark the step as `SKIPPED (offline)` in the status block and log the
+attempted queries in the plan's `notes` field so they can be re-run later.
+
+Emit status block — use the appropriate variant:
+```
+  Step:   2 — PubMed/PMC Search · Complete         ← network available
+  Step:   2 — PubMed/PMC Search · SKIPPED (offline) ← network unavailable
   Plan:   <N> sources in memory
   Next:   Step 3 — ClinicalTrials.gov search
 ```
@@ -176,9 +192,19 @@ rh-skills search clinicaltrials --query "<terms>" --max 20 --json
 Include active or completed trials relevant to the topic. These are `registry`
 type with `evidence_level: n/a` (trials are not yet evidence until published).
 
+**If the search command fails**, retry with `--offline`:
+
+```sh
+rh-skills search clinicaltrials --offline --query "<terms>"
+```
+
+Mark as `SKIPPED (offline)` and add a note in the plan to check
+ClinicalTrials.gov manually.
+
 Emit status block:
 ```
-  Step:   3 — ClinicalTrials.gov Search · Complete
+  Step:   3 — ClinicalTrials.gov Search · Complete          ← network available
+  Step:   3 — ClinicalTrials.gov Search · SKIPPED (offline) ← network unavailable
   Plan:   <N> sources in memory
   Next:   Step 4 — US government sources
 ```
@@ -332,6 +358,24 @@ Cover at minimum (when applicable):
 **Do NOT add suggestions to `sources[]` automatically.** They are offered for
 the user to act on.
 
+Present the suggestions as a numbered list and explicitly offer to explore any
+of them now. Example:
+
+```
+Research Expansion Suggestions:
+  1. Diabetic kidney disease — comorbidity with shared CMS quality measures
+     → rh-skills search pubmed --query "diabetic nephropathy CKD quality measures"
+  2. Health equity in diabetes management — disparities by race/ethnicity
+     → rh-skills search pubmed --query "diabetes management disparities SDOH"
+  ...
+
+Would you like to explore any of these now? Reply with the number, or proceed
+to save the plan.
+```
+
+If the user selects an expansion area, loop back to Steps 2–9 for that area,
+merge new findings into the living plan, then return here.
+
 Emit status block:
 ```
   Step:   9 — Expansion Suggestions · Complete
@@ -360,7 +404,7 @@ Emit status block:
 > 
 > **What would you like to do next?**
 > 
-> A) Explore an expansion area — tell me the number
+> A) Explore expansion area — reply with the number (e.g. "explore 2")
 > B) Add, remove, or modify sources
 > C) Save the plan and move on to `rh-inf-ingest`
 > 
@@ -517,3 +561,19 @@ See `examples/readout.md` for a complete worked example.
 | More than 25 sources | Select top 25, log extras in expansion suggestions |
 | `rh-skills validate --plan` exits 1 | Report failures; do not proceed to ingest |
 | Plan already exists (no `--force`) | Offer continuation or fresh start |
+| `rh-skills search` network error | Retry with `--offline` flag; mark step `SKIPPED (offline)`; continue with domain knowledge |
+
+## CLI Quick Reference
+
+| Command | Purpose |
+|---------|---------|
+| `rh-skills search pubmed --query "..." --json` | Search PubMed (live) |
+| `rh-skills search pubmed --offline --query "..."` | Record query; get reference links (no network) |
+| `rh-skills search pmc --query "..." --json` | Search PMC open-access (live) |
+| `rh-skills search clinicaltrials --query "..." --json` | Search ClinicalTrials.gov (live) |
+| `rh-skills search pubmed --append-to-plan <topic> --query "..."` | Search and append results to plan |
+| `rh-skills source add --type <type> --title "..." --rationale "..." [--append-to-plan <topic>]` | Add a single source entry |
+| `rh-skills source add --dry-run ...` | Preview source entry without writing |
+| `rh-skills schema show discovery-plan` | Show plan schema and allowed taxonomies |
+| `rh-skills validate --plan <file>` | Validate a saved discovery plan |
+| `rh-skills validate --plan -` | Validate via stdin (pipe or heredoc) |
