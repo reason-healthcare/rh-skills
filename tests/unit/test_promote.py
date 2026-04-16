@@ -136,23 +136,23 @@ def setup_topic_with_normalized_sources(tmp_repo, topic_name="my-skill", source_
 
 
 def write_extract_plan(tmp_repo, topic_name="my-skill", status="approved", artifacts=None):
-    plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "extract-plan.md"
+    plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "extract-plan.yaml"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     y = YAML()
     y.default_flow_style = False
-    frontmatter = {
+    plan = {
         "topic": topic_name,
         "plan_type": "extract",
         "status": status,
         "reviewer": "Reviewer",
         "reviewed_at": "2026-04-14T00:00:00Z" if status == "approved" else None,
+        "review_summary": "",
+        "cross_artifact_issues": [],
         "artifacts": artifacts or [],
     }
     buf = io.StringIO()
-    y.dump(frontmatter, buf)
-    plan_path.write_text(
-        f"---\n{buf.getvalue()}---\n\n# Review Summary\n\n# Proposed Artifacts\n\n# Cross-Artifact Issues\n\n# Implementation Readiness\n"
-    )
+    y.dump(plan, buf)
+    plan_path.write_text(buf.getvalue())
     return plan_path
 
 
@@ -375,13 +375,12 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     result = runner.invoke(promote, ["plan", "my-skill"])
     assert result.exit_code == 0, result.output
 
-    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.md"
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
     assert plan_path.exists()
-    raw = plan_path.read_text()
-    assert raw.index("# Review Summary") < raw.index("# Proposed Artifacts") < raw.index("# Cross-Artifact Issues") < raw.index("# Implementation Readiness")
+    readout_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan-readout.md"
+    assert readout_path.exists()
 
-    parts = raw.split("---\n", 2)
-    plan = YAML(typ="safe").load(parts[1])
+    plan = YAML(typ="safe").load(plan_path.read_text())
     assert plan["topic"] == "my-skill"
     assert plan["plan_type"] == "extract"
     assert plan["status"] == "pending-review"
@@ -390,6 +389,13 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     assert artifact["reviewer_decision"] == "pending-review"
     assert artifact["source_files"]
     assert "evidence_traceability" in artifact["required_sections"]
+
+    raw_readout = readout_path.read_text()
+    assert "extract-plan.yaml" in raw_readout
+    assert "Review Summary" in raw_readout
+    assert "Proposed Artifacts" in raw_readout
+    assert "Cross-Artifact Issues" in raw_readout
+    assert "Implementation Readiness" in raw_readout
 
     tracking = load_yaml(tmp_repo / "tracking.yaml")
     topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
@@ -402,7 +408,7 @@ def test_plan_warns_and_does_not_write_without_normalized_sources(tmp_repo):
     result = runner.invoke(promote, ["plan", "my-skill"])
     assert result.exit_code == 0
     assert "No normalized sources found" in result.output
-    assert not (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.md").exists()
+    assert not (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").exists()
 
 
 def test_approved_extract_artifacts_requires_approved_plan(tmp_repo):
@@ -478,7 +484,7 @@ def test_formalize_plan_warns_and_does_not_write_without_eligible_inputs(tmp_rep
     assert result.exit_code == 0
     assert (
         "No approved structured artifacts are ready for formalization" in result.output
-        or "extract-plan.md is not approved" in result.output
+        or "extract-plan.yaml is not approved" in result.output
         or "No plan found" in result.output
     )
     assert not (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.md").exists()

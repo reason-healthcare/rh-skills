@@ -15,7 +15,8 @@ metadata:
   lifecycle_stage: "l2-semi-structured"
   reads_from:
     - tracking.yaml
-    - topics/<topic>/process/plans/extract-plan.md
+    - topics/<topic>/process/plans/extract-plan.yaml       # control file (source of truth)
+    - topics/<topic>/process/plans/extract-plan-readout.md # human-friendly readout (derived, do not edit)
     - sources/normalized/
     - topics/<topic>/process/concepts.yaml
   writes_via_cli:
@@ -93,10 +94,10 @@ If `$ARGUMENTS` is empty or malformed, print the table above and exit.
    and normalized source files exist in `sources/normalized/`, the discovery phase was skipped
    (sources were manually collected and ingested directly). This is valid. Note in the plan's
    Review Summary that discovery was not run and proceed.
-5. For `implement` mode, confirm `topics/<topic>/process/plans/extract-plan.md` exists.
+5. For `implement` mode, confirm `topics/<topic>/process/plans/extract-plan.yaml` exists.
    Framework compatibility note: this skill also documents the conventional
-   `topics/<topic>/process/plans/rh-inf-extract-plan.md` naming pattern, but the
-   canonical 005 plan artifact is `extract-plan.md`.
+   `topics/<topic>/process/plans/rh-inf-extract-plan.yaml` naming pattern, but the
+   canonical 005 plan artifact is `extract-plan.yaml`.
 6. For `implement` mode, parse the plan frontmatter and fail if `status` is not
    `approved` or if any intended artifact has `reviewer_decision` other than
    `approved`.
@@ -107,9 +108,12 @@ If any check fails, exit immediately with a clear error. Do not do partial work.
 
 ## Mode: `plan`
 
-**Goal**: Produce `topics/<topic>/process/plans/extract-plan.md` as a durable
-review packet. Plan mode appends `extract_planned` to tracking.yaml via the
-appropriate `rh-skills` CLI boundary used by the workflow.
+**Goal**: Produce two files:
+- `topics/<topic>/process/plans/extract-plan.yaml` — pure YAML control file, single source of truth for downstream commands
+- `topics/<topic>/process/plans/extract-plan-readout.md` — derived human-friendly narrative (do not edit directly)
+
+Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
+`extract_planned` to tracking.yaml.
 
 ### Steps
 
@@ -157,9 +161,9 @@ appropriate `rh-skills` CLI boundary used by the workflow.
    Review Summary that terminology resolution was deferred. The plan is valid
    without populated codes; resolution can be done in formalize mode.
 6. Run `rh-skills promote plan <topic>` to generate
-   `topics/<topic>/process/plans/extract-plan.md`. This command also appends
+   `topics/<topic>/process/plans/extract-plan.yaml`. This command also appends
    `extract_planned` to `tracking.yaml`.
-7. If `extract-plan.md` already exists and `--force` is not present, warn and stop without overwriting.
+7. If `extract-plan.yaml` already exists and `--force` is not present, warn and stop without overwriting.
 8. Summarize the proposed artifacts and instruct the reviewer to edit approval fields before implement mode.
 
 ### What to capture per artifact
@@ -179,7 +183,7 @@ After plan mode completes, the plan is in `status: pending-review` and each
 artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
 
-A reviewer must edit `topics/<topic>/process/plans/extract-plan.md` and:
+A reviewer must edit `topics/<topic>/process/plans/extract-plan.yaml` and:
 
 1. Set `status: pending-review` → `status: approved`
 2. Set each intended artifact's `reviewer_decision: pending-review` → `reviewer_decision: approved`
@@ -200,7 +204,7 @@ all deterministic writes must go through `rh-skills promote derive` and
 
 ### Steps
 
-1. Read and validate `topics/<topic>/process/plans/extract-plan.md`.
+1. Read and validate `topics/<topic>/process/plans/extract-plan.yaml`.
 2. Fail if the plan is missing, if plan status is not `approved`, or if any
    target artifact remains `pending-review`, `needs-revision`, or `rejected`.
 3. For each approved artifact, map the review packet into CLI arguments and run:
@@ -242,7 +246,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 
 ### Steps
 
-1. Read `topics/<topic>/process/plans/extract-plan.md` if present to determine which artifacts were approved.
+1. Read `topics/<topic>/process/plans/extract-plan.yaml` if present to determine which artifacts were approved.
 2. Validate each expected artifact with:
 
    ```sh
@@ -266,7 +270,7 @@ Verify is read-only and safe to re-run at any time.
 | Unknown topic | `Error: Topic '<topic>' not found. Run \`rh-skills list\` to see available topics.` |
 | No normalized inputs | `Error: No normalized sources found. Run \`rh-inf-ingest\` first.` |
 | No plan | `Error: No plan found. Run \`rh-inf-extract plan <topic>\` first.` |
-| Unapproved plan | `Error: extract-plan.md is not approved. Review and update the plan before implement.` |
+| Unapproved plan | `Error: extract-plan.yaml is not approved. Review and update the plan before implement.` |
 | Unapproved artifact | `Error: Artifact '<name>' is not approved for implementation.` |
 
 ---

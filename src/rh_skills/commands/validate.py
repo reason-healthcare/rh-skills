@@ -94,16 +94,22 @@ def _validate_extract_artifact(
     *,
     emit: bool = True,
 ) -> tuple[int, int]:
-    plan_path = topic_dir(topic) / "process" / "plans" / "extract-plan.md"
+    plan_path = topic_dir(topic) / "process" / "plans" / "extract-plan.yaml"
+    if not plan_path.exists():
+        # fall back to legacy .md format for backward compatibility
+        plan_path = topic_dir(topic) / "process" / "plans" / "extract-plan.md"
     if not plan_path.exists():
         return 0, 0
 
-    plan = _parse_markdown_frontmatter(plan_path)
+    if plan_path.suffix == ".yaml":
+        plan = _yaml_safe().load(plan_path.read_text()) or {}
+    else:
+        plan = _parse_markdown_frontmatter(plan_path)
     artifacts = plan.get("artifacts", []) or []
     plan_entry = next((entry for entry in artifacts if entry.get("name") == artifact), None)
     if plan_entry is None:
         if any(key in artifact_data for key in ("artifact_type", "clinical_question", "sections", "conflicts")):
-            _report_warn("  extract-plan.md exists but this artifact is not listed there", emit=emit)
+            _report_warn("  extract-plan.yaml exists but this artifact is not listed there", emit=emit)
             return 0, 1
         return 0, 0
 

@@ -27,16 +27,18 @@ derived_from:
 
 
 def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, unresolved_conflicts=None):
-    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "extract-plan.md"
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "extract-plan.yaml"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     y = YAML()
     y.default_flow_style = False
-    frontmatter = {
+    plan = {
         "topic": topic,
         "plan_type": "extract",
         "status": "approved",
         "reviewer": "Tester",
         "reviewed_at": "2026-04-14T00:00:00Z",
+        "review_summary": "",
+        "cross_artifact_issues": [],
         "artifacts": [{
             "name": artifact,
             "artifact_type": "eligibility-criteria",
@@ -51,10 +53,8 @@ def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, 
     }
     from io import StringIO
     buf = StringIO()
-    y.dump(frontmatter, buf)
-    plan_path.write_text(
-        f"---\n{buf.getvalue()}---\n\n# Review Summary\n\n# Proposed Artifacts\n\n# Cross-Artifact Issues\n\n# Implementation Readiness\n"
-    )
+    y.dump(plan, buf)
+    plan_path.write_text(buf.getvalue())
     return plan_path
 
 

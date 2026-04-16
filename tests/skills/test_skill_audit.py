@@ -125,7 +125,7 @@ class TestFrameworkContracts:
         )
 
     def test_plan_mode_writes_to_process_plans(self, curated_skill: Path):
-        """FR-018: plan mode must write to topics/<name>/process/plans/<skill>-plan.md."""
+        """FR-018: plan mode must write to topics/<name>/process/plans/<skill>-plan.{yaml,md}."""
         body = skill_body(curated_skill / "SKILL.md")
         if "## Mode: `plan`" not in body and "### `plan`" not in body:
             pytest.skip(f"{curated_skill.name} has no plan mode")
@@ -133,8 +133,8 @@ class TestFrameworkContracts:
             f"{curated_skill.name}: plan mode must write to topics/<name>/process/plans/ (FR-018)"
         )
         skill_name = curated_skill.name
-        assert f"{skill_name}-plan.md" in body, (
-            f"{curated_skill.name}: plan mode must name its artifact '{skill_name}-plan.md' (FR-018)"
+        assert f"{skill_name}-plan.yaml" in body or f"{skill_name}-plan.md" in body, (
+            f"{curated_skill.name}: plan mode must name its artifact '{skill_name}-plan.yaml' or '{skill_name}-plan.md' (FR-018)"
         )
 
     def test_implement_mode_checks_for_plan(self, curated_skill: Path):
@@ -230,7 +230,7 @@ class TestRhInfExtractSkillContract:
         if not skill.exists():
             pytest.skip("rh-inf-extract skill not implemented")
         body = skill_body(skill)
-        assert "process/plans/extract-plan.md" in body
+        assert "process/plans/extract-plan.yaml" in body
         assert "pending-review" in body
 
     def test_extract_skill_implement_mode_mentions_approval_gate(self):

@@ -271,7 +271,7 @@ class TestRhInfStatusSkillSecurity:
         assert check_tracking_write_in_verify(content, skill.parent) is None
 
     def test_prompt_injection_passes_when_no_external_reads(self):
-        content = "Write a plan artifact to topics/<topic>/process/plans/extract-plan.md."
+        content = "Write a plan artifact to topics/<topic>/process/plans/extract-plan.yaml."
         assert check_prompt_injection(content) is None
 
     def test_credential_handling_flags_verbatim_copy_without_redaction(self):

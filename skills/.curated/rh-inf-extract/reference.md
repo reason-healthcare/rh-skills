@@ -5,17 +5,23 @@ validation guidance.
 
 ---
 
-## Review Packet Schema
+## Plan Files
 
-Canonical plan file:
+The extract plan uses two files — matching the discovery pattern:
 
-`topics/<topic>/process/plans/extract-plan.md`
+| File | Purpose |
+|------|---------|
+| `topics/<topic>/process/plans/extract-plan.yaml` | **Control file** — single source of truth; read by CLI commands |
+| `topics/<topic>/process/plans/extract-plan-readout.md` | **Derived readout** — human-friendly narrative; do not edit directly |
+
+Both are written by `rh-skills promote plan <topic>`. Edit only `extract-plan.yaml`
+to approve or reject artifacts; the readout is regenerated automatically on each `--force` run.
 
 Framework compatibility naming:
 
-`topics/<topic>/process/plans/rh-inf-extract-plan.md`
+`topics/<topic>/process/plans/rh-inf-extract-plan.yaml`
 
-Required frontmatter:
+### extract-plan.yaml schema
 
 ```yaml
 topic: <topic-slug>
@@ -23,6 +29,9 @@ plan_type: extract
 status: <pending-review | approved | rejected>
 reviewer: <string>
 reviewed_at: <ISO-8601 or null>
+review_summary: <free-text notes from reviewer>
+cross_artifact_issues:
+  - <issue summary>
 artifacts:
   - name: <kebab-case>
     artifact_type: <catalog type>
@@ -45,12 +54,6 @@ artifacts:
     reviewer_decision: <pending-review | approved | needs-revision | rejected>
     approval_notes: <string>
 ```
-
-Body sections, in order:
-1. `Review Summary`
-2. `Proposed Artifacts`
-3. `Cross-Artifact Issues`
-4. `Implementation Readiness`
 
 ---
 
@@ -176,7 +179,7 @@ Multiple `--evidence-ref` flags can be passed for a single artifact.
 
 `rh-skills validate <topic> <artifact-name>` should fail when:
 - required top-level fields are missing
-- `artifact_type` or `clinical_question` is missing for an artifact listed in `extract-plan.md`
+- `artifact_type` or `clinical_question` is missing for an artifact listed in `extract-plan.yaml`
 - `derived_from[]` does not match the approved plan source set
 - a required section from the plan is missing from `sections`
 - `evidence_traceability` is required but empty or missing claim/evidence locators
