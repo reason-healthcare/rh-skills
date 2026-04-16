@@ -44,6 +44,8 @@ PY
 }
 
 # Write inline `content:` blocks from a scenario file into the workspace.
+# Also copies any companion fixture directory (same name as scenario, no .yaml
+# extension) into the workspace — supports binary files like PDFs.
 # Uses Python so we don't need yq.
 apply_scenario_files() {
   local scenario_file="$1"
@@ -83,6 +85,15 @@ for entry in workspace.get("files") or []:
         dest.write_text(content)
         print(f"  wrote {rel}")
 PY
+
+  # Copy companion fixture directory if present — supports binary files (PDFs, etc.)
+  # Convention: eval/scenarios/<skill>/<scenario>/ mirrors what gets copied to workspace root.
+  local fixture_dir
+  fixture_dir="$(dirname "$scenario_file")/$(basename "$scenario_file" .yaml)"
+  if [[ -d "$fixture_dir" ]]; then
+    echo "  copying fixture directory: $(basename "$fixture_dir")/"
+    cp -r "$fixture_dir/." "$workdir/"
+  fi
 }
 
 # Render the expected_outputs checklist from a scenario file.

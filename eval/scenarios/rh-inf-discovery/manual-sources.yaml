@@ -6,6 +6,11 @@ description: >
   their contents, and incorporate the relevant ones into the discovery plan as
   manual sources before proceeding with network searches.
 
+  Fixture files (copied from eval/scenarios/rh-inf-discovery/manual-sources/):
+    sources/aha-guideline.pdf                    — AHA/ACC 2017 hypertension guideline (PDF)
+    sources/uspstf-htn-screening-adults-2021.md  — USPSTF Grade B screening recommendation
+    sources/cdc-htn-prevalence-adults-2023.csv   — CDC/NHANES prevalence data by age/sex/race
+
 topic: young-adult-hypertension
 
 workspace:
@@ -34,52 +39,6 @@ workspace:
         - CMS quality measure alignment (HEDIS, eCQMs)
         - SDOH considerations (food insecurity, housing stability)
 
-    - path: sources/uspstf-htn-screening-adults-2021.md
-      content: |
-        # USPSTF Hypertension in Adults: Screening (2021)
-
-        **Source:** U.S. Preventive Services Task Force
-        **Year:** 2021
-        **Grade:** B (adults 18+)
-        **URL:** https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/hypertension-in-adults-screening
-
-        ## Summary
-
-        The USPSTF recommends screening for hypertension in adults 18 years or
-        older. Screening should be obtained by measurement outside of a clinical
-        setting for diagnostic confirmation before starting treatment.
-
-        ## Key Points
-
-        - Grade B recommendation for all adults ≥ 18
-        - Ambulatory blood pressure monitoring (ABPM) is the reference standard
-          for confirming diagnosis
-        - Office-based measurement ≥ 130/80 mmHg warrants confirmation
-        - Young adults (18–39) with no risk factors may be screened less frequently
-          (every 3–5 years for those with normal BP)
-
-        ## Relevance to Young Adults
-
-        While overall guidance applies to all adults ≥ 18, the task force notes
-        that prevalence rises with age; targeted outreach to young adults at risk
-        (obesity, family history, race/ethnicity disparities) is warranted.
-
-    - path: sources/cdc-htn-prevalence-adults-2023.csv
-      content: |
-        age_group,sex,race_ethnicity,htn_prevalence_pct,n_surveyed,survey_year,source
-        18-24,Both,All,7.5,4821,2021-2022,NHANES
-        25-34,Both,All,14.2,5103,2021-2022,NHANES
-        35-44,Both,All,26.8,4956,2021-2022,NHANES
-        18-24,Male,All,9.1,2412,2021-2022,NHANES
-        18-24,Female,All,5.8,2409,2021-2022,NHANES
-        25-34,Male,All,17.3,2551,2021-2022,NHANES
-        25-34,Female,All,11.0,2552,2021-2022,NHANES
-        35-44,Male,All,29.4,2478,2021-2022,NHANES
-        35-44,Female,All,24.2,2478,2021-2022,NHANES
-        18-34,Both,Non-Hispanic Black,21.6,1842,2021-2022,NHANES
-        18-34,Both,Non-Hispanic White,10.4,2301,2021-2022,NHANES
-        18-34,Both,Hispanic,11.8,2187,2021-2022,NHANES
-
 prompt: |
   Use the rh-inf-discovery skill in **session** mode for the topic
   `young-adult-hypertension`.
@@ -88,25 +47,28 @@ prompt: |
   Topic: {topic}
 
   The RESEARCH.md file describes the clinical question. The user has also
-  pre-placed two source files in sources/ before starting the discovery session:
-    - sources/uspstf-htn-screening-adults-2021.md  (a local copy of the USPSTF recommendation summary)
-    - sources/cdc-htn-prevalence-adults-2023.csv   (CDC/NHANES prevalence data by age/sex/race)
+  pre-placed three source files in sources/ before starting the discovery session:
+    - sources/aha-guideline.pdf                   (AHA/ACC 2017 hypertension guideline, PDF)
+    - sources/uspstf-htn-screening-adults-2021.md (USPSTF Grade B screening recommendation)
+    - sources/cdc-htn-prevalence-adults-2023.csv  (CDC/NHANES prevalence data by age/sex/race)
 
   These files are NOT yet registered in tracking.yaml.
 
   Expected behavior:
-  1. The agent runs `rh-skills source scan` and detects both files as UNTRACKED
-  2. The agent inspects each file (head/cat), assesses relevance, and adds them
-     to the discovery plan as `access: manual` sources using `rh-skills source add`
+  1. The agent runs `rh-skills source scan` and detects all three files as UNTRACKED
+  2. The agent inspects each file (head/cat for text; filename heuristics for PDF),
+     assesses relevance, and adds them to the discovery plan as `access: manual`
+     sources using `rh-skills source add`
   3. The agent then proceeds with network searches (PubMed, ClinicalTrials, etc.)
      to complete the plan
-  4. The final discovery-plan.yaml should include both manually placed files
+  4. The final discovery-plan.yaml should include all three manually placed files
      alongside the network-discovered sources
 
 quality_items:
-  - "Step 0 scan: agent ran `rh-skills source scan` and identified 2 untracked files"
-  - "Manual sources: both uspstf-htn-screening-adults-2021 and cdc-htn-prevalence-adults-2023 added to plan with access: manual"
+  - "Step 0 scan: agent ran `rh-skills source scan` and identified 3 untracked files"
+  - "PDF handling: aha-guideline.pdf added to plan with access: manual and type: clinical-guideline"
+  - "Manual sources: all three files added to plan with access: manual"
   - "Type accuracy: USPSTF file typed as clinical-guideline or document; CDC CSV typed as dataset"
-  - "Plan completeness: plan has ≥ 6 total sources including the 2 manual ones"
+  - "Plan completeness: plan has ≥ 6 total sources including the 3 manual ones"
   - "Validation: `rh-skills validate` passes with no errors"
   - "No duplication: manual sources not also searched for online (they're already present)"
