@@ -1,0 +1,100 @@
+name: manually-downloaded-source
+skill: rh-inf-ingest
+description: >
+  Discovery plan has two sources: acc-aha-htn-guideline-2017 (open access,
+  to be downloaded) and jnc8-2014 (access: manual, PDF already placed in
+  sources/ by the user). Neither has been ingested yet. The agent must plan
+  and implement a full ingest cycle — downloading the open-access source via
+  the CLI and normalizing the manually-placed PDF — then verify.
+
+  Fixture files (copied from eval/scenarios/rh-inf-ingest/manually-downloaded-source/):
+    sources/jnc8-2014.pdf  — JNC 8 hypertension guidelines (raw PDF, pre-placed by user)
+
+topic: young-adult-hypertension
+
+workspace:
+  tracking_yaml: |
+    schema_version: "1.0"
+    topics:
+      young-adult-hypertension:
+        state: discovery_planned
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+    sources: []
+
+  files:
+    - path: topics/young-adult-hypertension/process/plans/discovery-plan.yaml
+      content: |
+        topic: young-adult-hypertension
+        clinical_question: >
+          What are the diagnostic thresholds, treatment targets, and lifestyle
+          interventions for hypertension in adults aged 18–39?
+        sources:
+          - id: acc-aha-htn-guideline-2017
+            title: "2017 ACC/AHA Guideline for the Prevention, Detection, Evaluation,
+              and Management of High Blood Pressure in Adults"
+            url: https://www.ahajournals.org/doi/10.1161/HYP.0000000000000065
+            type: clinical-guideline
+            evidence_level: ia
+            rationale: Primary ACC/AHA 2017 guideline defining 130/80 mmHg threshold.
+            open_access: true
+          - id: jnc8-2014
+            title: "2014 Evidence-Based Guideline for the Management of High Blood
+              Pressure in Adults (JNC 8)"
+            url: https://jamanetwork.com/journals/jama/fullarticle/1791497
+            type: clinical-guideline
+            evidence_level: ia
+            rationale: Older JNC 8 guideline defining 140/90 threshold; contrast with ACC/AHA 2017.
+            open_access: false
+            access: manual
+        status: approved
+
+prompt: |
+  Use the rh-inf-ingest skill for the topic `young-adult-hypertension`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  A validated discovery plan is at
+  `topics/young-adult-hypertension/process/plans/discovery-plan.yaml` with
+  two sources:
+    - acc-aha-htn-guideline-2017 — open access (download via CLI)
+    - jnc8-2014 — access: manual; the PDF is already at sources/jnc8-2014.pdf
+
+  Run the full ingest cycle:
+  1. **plan** — summarise both sources and note the manual PDF
+  2. **implement** — download and normalize acc-aha-htn-guideline-2017; normalize
+     the manually-placed jnc8-2014.pdf; classify and annotate both
+  3. **verify** — confirm both sources are ingested and concepts.yaml is valid
+
+expected_outputs:
+  - path: sources/normalized/acc-aha-htn-guideline-2017.md
+    checks:
+      - exists
+  - path: sources/normalized/jnc8-2014.md
+    checks:
+      - exists
+  - path: topics/young-adult-hypertension/process/concepts.yaml
+    checks:
+      - exists
+      - contains: "concepts:"
+  - path: tracking.yaml
+    checks:
+      - event: ingest_complete
+
+efficiency_focus:
+  - "Does the agent use rh-skills ingest implement --url for the open-access source?"
+  - "Does it use rh-skills ingest normalize for the manually-placed PDF?"
+  - "Does it classify and annotate both sources via CLI (not inline YAML)?"
+  - "Does it recognize access: manual and skip trying to download jnc8-2014?"
+
+quality_focus:
+  - "Both sources present in sources/normalized/ as .md files"
+  - "acc-aha-htn-guideline-2017 contains 130/80 mmHg diagnostic threshold"
+  - "jnc8-2014 normalization note: text_extracted field present in frontmatter"
+  - "Classification appropriate for both clinical guidelines (evidence_level: ia)"
+  - "concepts.yaml contains hypertension-relevant terms (blood pressure, HTN, DASH diet)"
+  - "rh-skills ingest verify reports zero errors"

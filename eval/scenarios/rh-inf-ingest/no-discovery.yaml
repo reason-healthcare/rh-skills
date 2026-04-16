@@ -1,0 +1,135 @@
+name: no-discovery
+skill: rh-inf-ingest
+description: >
+  The formal rh-inf-discovery pipeline was never run. The user manually
+  collected two heart failure guidelines and placed them as raw text files
+  in sources/. There is no discovery-plan.yaml and no discovery_planned event.
+  The agent must enter manual-source mode, detect the untracked files in
+  sources/, ingest them (normalize, classify, annotate), and produce
+  concepts.yaml — without any discovery plan to guide it.
+
+topic: heart-failure-management
+
+workspace:
+  tracking_yaml: |
+    schema_version: "1.0"
+    topics:
+      heart-failure-management:
+        state: initialized
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+    sources: []
+
+  files:
+    - path: sources/hfsa-hf-guideline-2022.txt
+      content: |
+        HFSA 2022 Comprehensive Heart Failure Guideline (excerpt)
+
+        DIAGNOSIS
+
+        Heart failure with reduced ejection fraction (HFrEF): symptomatic HF with
+        LVEF ≤40%. Heart failure with preserved ejection fraction (HFpEF): symptomatic
+        HF with LVEF ≥50%.
+
+        Recommended diagnostic workup:
+        - Echocardiography (LVEF measurement) — mandatory at initial diagnosis (Class I)
+        - BNP or NT-proBNP measurement to confirm diagnosis (Class I; Evidence: A)
+        - CBC, metabolic panel, thyroid function (Class I)
+
+        PHARMACOLOGICAL MANAGEMENT — HFrEF
+
+        Foundational therapy (all patients with HFrEF):
+        - ACE inhibitor or ARB or ARNI (sacubitril/valsartan) — reduces mortality (Class I; Evidence: A)
+        - Beta-blocker (carvedilol, metoprolol succinate, or bisoprolol) — reduces mortality (Class I; Evidence: A)
+        - Mineralocorticoid receptor antagonist (MRA) — reduces hospitalization (Class I; Evidence: A)
+        - SGLT2 inhibitor (dapagliflozin or empagliflozin) — reduces CV death and hospitalization (Class I; Evidence: A)
+
+        DEVICE THERAPY
+
+        ICD implantation recommended for LVEF ≤35% with NYHA Class II–III on GDMT for ≥3 months
+        (Class I; Evidence: A).
+
+        CRT indicated for LVEF ≤35%, LBBB, QRS ≥150 ms, NYHA Class II–III (Class I; Evidence: A).
+
+    - path: sources/acc-aha-hf-guideline-2022.txt
+      content: |
+        2022 AHA/ACC/HFSA Guideline for the Management of Heart Failure (excerpt)
+
+        CLASSIFICATION
+
+        NYHA Functional Classification:
+        - Class I: No symptoms with ordinary activity
+        - Class II: Mild symptoms with moderate exertion
+        - Class III: Marked limitation; symptoms with minimal exertion
+        - Class IV: Symptoms at rest
+
+        ACC/AHA Heart Failure Stages:
+        - Stage A: At risk (no symptoms, no structural disease)
+        - Stage B: Pre-heart failure (structural disease, no symptoms)
+        - Stage C: Symptomatic heart failure
+        - Stage D: Advanced refractory heart failure
+
+        GUIDELINE-DIRECTED MEDICAL THERAPY (GDMT)
+
+        For HFrEF (LVEF ≤40%):
+        ARNI (sacubitril/valsartan) preferred over ACE-I/ARB when tolerated (Class I; Evidence: B-R).
+        SGLT2 inhibitors (dapagliflozin, empagliflozin): Class I recommendation added in 2022;
+        reduces risk of CV death and worsening HF regardless of diabetes status (Evidence: A).
+
+        HOSPITALIZATION MANAGEMENT
+
+        Inpatient diuresis: IV furosemide to achieve euvolemia. Monitor daily weights and
+        urine output. Transition to oral diuretics when stable (Class I; Evidence: B-NR).
+
+        QUALITY MEASURES
+
+        CMS HF Core Measure: LVEF documentation in patients hospitalized for HF.
+        HEDIS measure: Follow-up visit within 7 days after HF hospitalization discharge.
+
+prompt: |
+  Use the rh-inf-ingest skill for the topic `heart-failure-management`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  There is no discovery-plan.yaml for this topic. The user manually collected
+  two heart failure guidelines and placed them as raw text files in sources/:
+    - sources/hfsa-hf-guideline-2022.txt
+    - sources/acc-aha-hf-guideline-2022.txt
+
+  Run the full ingest cycle in manual-source mode:
+  1. **plan** — note that discovery was skipped; identify the untracked files
+     in sources/ and describe the ingest approach
+  2. **implement** — normalize, classify, and annotate both sources; produce
+     concepts.yaml
+  3. **verify** — confirm both sources are ingested and concepts.yaml is valid
+
+expected_outputs:
+  - path: sources/normalized/hfsa-hf-guideline-2022.md
+    checks:
+      - exists
+  - path: sources/normalized/acc-aha-hf-guideline-2022.md
+    checks:
+      - exists
+  - path: topics/heart-failure-management/process/concepts.yaml
+    checks:
+      - exists
+      - contains: "concepts:"
+  - path: tracking.yaml
+    checks:
+      - event: ingest_complete
+
+efficiency_focus:
+  - "Does the agent detect missing discovery-plan.yaml and switch to manual-source mode?"
+  - "Does it find both .txt files in sources/ without a discovery plan to guide it?"
+  - "Does it use rh-skills ingest normalize for each file (not manual conversion)?"
+  - "Does it classify both sources using rh-skills ingest classify?"
+
+quality_focus:
+  - "Plan note: agent explicitly states discovery was not run and explains manual-source mode"
+  - "Both sources normalized to sources/normalized/ as .md files"
+  - "Classification appropriate for clinical guidelines (type: clinical-guideline)"
+  - "concepts.yaml contains HF-relevant terms (HFrEF, HFpEF, LVEF, GDMT, SGLT2 inhibitor)"
+  - "No download attempts made (sources are already local files)"
+  - "rh-skills ingest verify reports zero errors"
