@@ -151,7 +151,7 @@ usage() {
   echo "Options:"
   echo "  --skill <name>       Curated skill to evaluate (required)"
   echo "  --scenario <name>    Scenario name; must match a file in eval/scenarios/<skill>/ (required)"
-  echo "  --agent <name>       Agent driver: claude | ollama | generic (default: claude)"
+  echo "  --agent <name>       Agent driver: claude | codex | ollama | generic (default: claude)"
   echo "  --model <name>       Model override passed to agent"
   echo "  --topic <name>       Override the topic from the scenario file"
   echo "  --keep-workdir       Do not delete temp workspace after the run"
@@ -250,7 +250,7 @@ elif [[ ! -f "$WORKDIR/tracking.yaml" ]]; then
   uv run rh-skills init "$TOPIC" 2>/dev/null || true
 fi
 
-echo "Workspace ready. Starting $AGENT…"
+echo "Workspace ready. Starting ${AGENT}…"
 echo
 
 # ── compose the opening prompt ────────────────────────────────────────────────
@@ -309,6 +309,11 @@ case "$AGENT" in
     [[ -n "$MODEL" ]] && MODEL_FLAG="--model $MODEL"
     AGENT_CMD="claude $MODEL_FLAG --print"
     ;;
+  codex)
+    MODEL_FLAG=""
+    [[ -n "$MODEL" ]] && MODEL_FLAG="-c model=$MODEL"
+    AGENT_CMD="codex exec $MODEL_FLAG"
+    ;;
   ollama)
     MODEL="${MODEL:-llama3}"
     AGENT_CMD="ollama run $MODEL"
@@ -321,15 +326,14 @@ case "$AGENT" in
     AGENT_CMD=""
     ;;
   *)
-    die "Unknown agent: $AGENT. Supported: claude, ollama, generic"
+    die "Unknown agent: $AGENT. Supported: claude, codex, ollama, generic"
     ;;
 esac
 
 # ── capture transcript ────────────────────────────────────────────────────────
+SESSION_START=$(date +%s)
 {
-  echo "# Skill Eval Transcript"
   echo
-  echo "| Field | Value |"
   echo "|-------|-------|"
   echo "| skill | \`$SKILL\` |"
   echo "| scenario | $SCENARIO |"
@@ -354,6 +358,14 @@ fi
 
 echo >> "$TRANSCRIPT_FILE"
 echo "*(session end)*" >> "$TRANSCRIPT_FILE"
+
+# ── compute session stats ─────────────────────────────────────────────────────
+SESSION_END=$(date +%s)
+ELAPSED_SECS=$(( SESSION_END - SESSION_START ))
+ELAPSED_DISPLAY="$(( ELAPSED_SECS / 60 ))m $(( ELAPSED_SECS % 60 ))s"
+TRANSCRIPT_LINES=$(wc -l < "$TRANSCRIPT_FILE" | tr -d ' ')
+TRANSCRIPT_BYTES=$(wc -c < "$TRANSCRIPT_FILE" | tr -d ' ')
+APPROX_TOKENS=$(( TRANSCRIPT_BYTES / 4 ))
 
 # ── write review stub ─────────────────────────────────────────────────────────
 EFFICIENCY_ITEMS=""
@@ -384,6 +396,9 @@ cat > "$REVIEW_FILE" <<REVIEW_STUB
 | skill | \`$SKILL\` |
 | scenario | $SCENARIO |
 | transcript | \`$(basename "$TRANSCRIPT_FILE")\` |
+| elapsed | $ELAPSED_DISPLAY |
+| transcript_lines | $TRANSCRIPT_LINES |
+| approx_tokens | ~$APPROX_TOKENS |
 | reviewer | <!-- your name --> |
 | reviewed_at | <!-- date --> |
 
@@ -464,9 +479,7 @@ usage() {
   echo "Options:"
   echo "  --skill <name>       Curated skill to evaluate (required)"
   echo "  --scenario <name>    Scenario label for transcript naming (required)"
-  echo "  --agent <name>       Agent driver: claude | ollama | generic (default: claude)"
-  echo "  --model <name>       Model override passed to agent"
-  echo "  --topic <name>       Topic name to initialise in the workspace (default: eval-topic)"
+  echo "  --agent <name>       Agent driver: claude | codex | ollama | generic (default: claude)"
   echo "  --keep-workdir       Do not delete temp workspace after the run"
   echo "  --help               Show this help"
   exit 0
@@ -536,7 +549,7 @@ uv run rh-skills skills init \
 # Initialise a topic for the agent to work against
 uv run rh-skills init "$TOPIC" 2>/dev/null || true
 
-echo "Workspace ready. Starting $AGENT…"
+echo "Workspace ready. Starting ${AGENT}…"
 echo
 
 # ── compose the opening prompt ────────────────────────────────────────────────
@@ -566,6 +579,11 @@ case "$AGENT" in
     # claude CLI: https://docs.anthropic.com/claude-code
     AGENT_CMD="claude $MODEL_FLAG --print"
     ;;
+  codex)
+    MODEL_FLAG=""
+    [[ -n "$MODEL" ]] && MODEL_FLAG="-c model=$MODEL"
+    AGENT_CMD="codex exec $MODEL_FLAG"
+    ;;
   ollama)
     MODEL="${MODEL:-llama3}"
     AGENT_CMD="ollama run $MODEL"
@@ -582,11 +600,12 @@ case "$AGENT" in
     AGENT_CMD=""
     ;;
   *)
-    die "Unknown agent: $AGENT. Supported: claude, ollama, generic"
+    die "Unknown agent: $AGENT. Supported: claude, codex, ollama, generic"
     ;;
 esac
 
 # ── capture transcript ────────────────────────────────────────────────────────
+SESSION_START=$(date +%s)
 {
   echo "# Skill Eval Transcript"
   echo
@@ -616,6 +635,14 @@ fi
 echo >> "$TRANSCRIPT_FILE"
 echo "*(session end)*" >> "$TRANSCRIPT_FILE"
 
+# ── compute session stats ─────────────────────────────────────────────────────
+SESSION_END=$(date +%s)
+ELAPSED_SECS=$(( SESSION_END - SESSION_START ))
+ELAPSED_DISPLAY="$(( ELAPSED_SECS / 60 ))m $(( ELAPSED_SECS % 60 ))s"
+TRANSCRIPT_LINES=$(wc -l < "$TRANSCRIPT_FILE" | tr -d ' ')
+TRANSCRIPT_BYTES=$(wc -c < "$TRANSCRIPT_FILE" | tr -d ' ')
+APPROX_TOKENS=$(( TRANSCRIPT_BYTES / 4 ))
+
 # ── write review stub ─────────────────────────────────────────────────────────
 cat > "$REVIEW_FILE" <<REVIEW_STUB
 # Skill Eval Review
@@ -625,6 +652,9 @@ cat > "$REVIEW_FILE" <<REVIEW_STUB
 | skill | \`$SKILL\` |
 | scenario | $SCENARIO |
 | transcript | \`$TRANSCRIPT_FILE\` |
+| elapsed | $ELAPSED_DISPLAY |
+| transcript_lines | $TRANSCRIPT_LINES |
+| approx_tokens | ~$APPROX_TOKENS |
 | reviewer | <!-- your name --> |
 | reviewed_at | <!-- date --> |
 
