@@ -89,6 +89,6 @@ efficiency_focus:
 quality_focus:
   - "Are the new sources complementary (not duplicates) to the existing 3?"
   - "Is the USPSTF hypertension screening recommendation included?"
-  - "Is the health-economics source relevant to young adults specifically (not just general BP cost)?
+  - "Is the health-economics source relevant to young adults specifically (not just general BP cost)?"
   - "Are evidence levels on new sources correctly assigned?"
   - "Does the final plan have ≥ 5 sources and pass rh-skills validate --plan?"
