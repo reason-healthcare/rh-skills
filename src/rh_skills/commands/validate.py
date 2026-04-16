@@ -50,6 +50,7 @@ VALID_SOURCE_TYPES = {
     # Catchall
     "textbook", "document", "other",
 }
+VALID_ACCESS_VALUES = {"open", "authenticated", "manual"}
 
 
 def _get_nested(data: dict, field_path: str):
@@ -419,17 +420,24 @@ def validate_artifact_file(
 @click.argument("topic", required=False)
 @click.argument("level", required=False)
 @click.argument("artifact", required=False)
-@click.option("--plan", "plan_path", default=None, type=click.Path(),
-              help="Path to a discovery-plan.yaml to validate (FR-019 checks)")
-def validate(topic, level, artifact, plan_path):
+@click.option("--plan", "plan_path", default=None, type=click.Path(allow_dash=True),
+              help="Path to a discovery-plan.yaml to validate, or - to read from stdin (FR-019 checks)")
+@click.option("--check-urls", is_flag=True, default=False,
+              help="HTTP-check every source URL in the plan and report broken links (requires network)")
+def validate(topic, level, artifact, plan_path, check_urls):
     """Validate an artifact against its schema.
 
     LEVEL: l2 | structured | l3 | computable
 
     With --plan: validate a discovery-plan.yaml for structural completeness (FR-019).
+    Pass - as the path to read the plan from stdin:
+
+    \b
+      cat discovery-plan.yaml | rh-skills validate --plan -
+      rh-skills validate --plan - < discovery-plan.yaml
     """
     if plan_path:
-        _validate_discovery_plan(plan_path)
+        _validate_discovery_plan(plan_path, check_urls=check_urls)
         return
 
     if topic and level and artifact is None and level not in ("l2", "structured", "l3", "computable"):
@@ -452,18 +460,29 @@ def validate(topic, level, artifact, plan_path):
     click.echo(f"VALID — {artifact_file}")
 
 
-def _validate_discovery_plan(plan_path: str) -> None:
+def _validate_discovery_plan(plan_path: str, *, check_urls: bool = False) -> None:
     """Validate a discovery-plan.yaml per FR-019 checks. Read-only — no file writes."""
+    import sys
     from pathlib import Path
 
-    path = Path(plan_path)
-    if not path.exists():
-        click.echo(f"✗ Plan file not found: {plan_path}")
-        raise SystemExit(1)
+    if plan_path == "-":
+        label = "<stdin>"
+        try:
+            raw = sys.stdin.read()
+        except Exception as e:
+            click.echo(f"✗ Failed to read stdin: {e}")
+            raise SystemExit(1)
+    else:
+        path = Path(plan_path)
+        label = str(plan_path)
+        if not path.exists():
+            click.echo(f"✗ Plan file not found: {plan_path}")
+            raise SystemExit(1)
+        raw = path.read_text()
 
     y = YAML(typ="safe")
     try:
-        data = y.load(path.read_text())
+        data = y.load(raw)
     except Exception as e:
         click.echo(f"✗ YAML parse error: {e}")
         raise SystemExit(1)
@@ -475,7 +494,7 @@ def _validate_discovery_plan(plan_path: str) -> None:
     errors = 0
     warnings = 0
 
-    click.echo(f"Validating discovery plan: {plan_path}\n")
+    click.echo(f"Validating discovery plan: {label}\n")
 
     # (a) YAML parses successfully — already done above
     click.echo("✓ Parses as valid YAML")
@@ -551,6 +570,24 @@ def _validate_discovery_plan(plan_path: str) -> None:
         )
         warnings += 1
 
+    # (i-access) access values — warning only for invalid values when present
+    invalid_access = [(s.get("name", f"[index {i}]"), s.get("access"))
+                      for i, s in enumerate(sources)
+                      if s.get("access") and s.get("access") not in VALID_ACCESS_VALUES]
+    if invalid_access:
+        for name, acc in invalid_access:
+            click.echo(
+                f"⚠ Unknown access value '{acc}' on: {name} "
+                f"(expected: open | authenticated | manual)"
+            )
+        warnings += len(invalid_access)
+
+    # (i) Optional URL checking
+    if check_urls:
+        url_errors, url_warnings = _check_plan_urls(sources)
+        errors += url_errors
+        warnings += url_warnings
+
     # Summary
     click.echo("")
     if errors > 0:
@@ -560,3 +597,37 @@ def _validate_discovery_plan(plan_path: str) -> None:
         click.echo(f"VALID — all mandatory checks passed ({warnings} warning(s))")
     else:
         click.echo("VALID — all checks passed")
+
+
+def _check_plan_urls(sources: list) -> tuple[int, int]:
+    """HTTP-check every url field in the source list. Returns (errors, warnings)."""
+    try:
+        import httpx
+    except ImportError:
+        click.echo("⚠ httpx not available — skipping URL checks")
+        return 0, 1
+
+    errors = 0
+    warnings = 0
+    click.echo("\nChecking source URLs…")
+    for s in sources:
+        url = s.get("url") or s.get("access_url")
+        name = s.get("name", url or "[unnamed]")
+        if not url:
+            click.echo(f"  ⚠ No URL: {name}")
+            warnings += 1
+            continue
+        try:
+            r = httpx.head(url, timeout=10, follow_redirects=True)
+            if r.status_code == 405:
+                # HEAD not allowed — fall back to GET with streaming
+                r = httpx.get(url, timeout=10, follow_redirects=True)
+            if r.status_code >= 400:
+                click.echo(f"  ✗ HTTP {r.status_code}: {name}  {url}")
+                errors += 1
+            else:
+                click.echo(f"  ✓ {r.status_code}: {name}")
+        except Exception as e:
+            click.echo(f"  ✗ Network error ({e}): {name}  {url}")
+            errors += 1
+    return errors, warnings

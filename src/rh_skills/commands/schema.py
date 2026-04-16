@@ -4,7 +4,7 @@ import json
 
 import click
 
-from rh_skills.commands.validate import VALID_EVIDENCE_LEVELS, VALID_SOURCE_TYPES
+from rh_skills.commands.validate import VALID_EVIDENCE_LEVELS, VALID_SOURCE_TYPES, VALID_ACCESS_VALUES
 from rh_skills.common import load_schema
 
 
@@ -19,17 +19,18 @@ _DISCOVERY_PLAN_SCHEMA = {
         "name": "string — unique kebab-case identifier (required)",
         "type": "string — source type from taxonomy (required, see source_types)",
         "title": "string — human-readable title (required)",
-        "url": "string — canonical URL to the source (required)",
+        "url": "string — canonical URL to the source (required when access: open)",
         "rationale": "string — why this source is included (required)",
         "evidence_level": "string — from evidence_levels vocabulary (required)",
         "search_terms": "list of strings — terms used to find this source (required)",
-        "access": "string — open | restricted | requires-auth (optional)",
+        "access": "string — open | authenticated | manual (optional)",
         "year": "string or int — publication year (optional)",
         "authors": "list of strings (optional)",
         "notes": "string — additional context (optional)",
     },
     "source_types": sorted(VALID_SOURCE_TYPES),
     "evidence_levels": sorted(VALID_EVIDENCE_LEVELS),
+    "access_values": sorted(VALID_ACCESS_VALUES),
     "validation_checks": [
         "YAML parses successfully",
         "sources[] count between 5 and 25",
@@ -38,6 +39,7 @@ _DISCOVERY_PLAN_SCHEMA = {
         "every entry has non-empty search_terms",
         "every evidence_level is from the allowed vocabulary",
         "every type is from the allowed taxonomy (warning if unknown)",
+        "access value, if present, is open|authenticated|manual (warning if unknown)",
         "at least one 'health-economics' source (warning if missing)",
     ],
     "validate_command": "rh-skills validate --plan <path>  OR  rh-skills validate --plan -  (stdin)",
@@ -132,6 +134,9 @@ def _print_discovery_plan_schema(data: dict) -> None:
 
     click.echo(f"\nValid evidence levels ({len(data['evidence_levels'])}):")
     click.echo("  " + "  ".join(data["evidence_levels"]))
+
+    click.echo(f"\nValid access values ({len(data['access_values'])}):")
+    click.echo("  " + "  ".join(data["access_values"]))
 
     click.echo("\nValidation checks:")
     for check in data["validation_checks"]:

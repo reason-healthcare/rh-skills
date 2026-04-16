@@ -94,12 +94,20 @@ VALID_SOURCE_TYPES = {
 _RETRY_DELAYS = (1.0, 3.0, 10.0)  # seconds between retries on 429
 
 
-def _http_get_with_retry(url: str, params: dict, timeout: int) -> httpx.Response:
+def _http_get_with_retry(
+    url: str,
+    params: dict,
+    timeout: int,
+    subcmd: str = "pubmed",
+) -> httpx.Response:
     """GET with automatic retry on HTTP 429 (rate limited).
 
     Prints a warning to stderr on each retry so the caller can see progress
     without the agent needing to improvise its own retry commentary.
     Raises click.ClickException after all retries are exhausted.
+
+    ``subcmd`` is the search sub-command name (pubmed/pmc/clinicaltrials) used
+    to generate a correct ``--offline`` hint in network-error messages.
     """
     last_exc: Exception | None = None
     for attempt, delay in enumerate((_RETRY_DELAYS[0] - 1,) + _RETRY_DELAYS, start=0):
@@ -129,7 +137,7 @@ def _http_get_with_retry(url: str, params: dict, timeout: int) -> httpx.Response
                 f"Network error: {e}\n\n"
                 "Network access may be restricted in this environment.\n"
                 "Re-run with --offline to get reference links and record the query:\n"
-                "  rh-skills search pubmed --offline --query \"...\"\n\n"
+                f"  rh-skills search {subcmd} --offline --query \"...\"\n\n"
                 "Or build a discovery plan manually:\n"
                 "  1. Gather source URLs from your browser or a web search tool\n"
                 "  2. Use: rh-skills source add --type <type> --url <url> ...\n"
@@ -170,7 +178,7 @@ def _entrez_search_fetch(
         esearch_params["api_key"] = api_key
 
     try:
-        r = _http_get_with_retry(NCBI_ESEARCH, params=esearch_params, timeout=15)
+        r = _http_get_with_retry(NCBI_ESEARCH, params=esearch_params, timeout=15, subcmd=db)
     except click.ClickException as e:
         raise click.ClickException(f"NCBI esearch failed: {e.format_message()}") from e
 
@@ -194,7 +202,7 @@ def _entrez_search_fetch(
         efetch_params["api_key"] = api_key
 
     try:
-        r2 = _http_get_with_retry(NCBI_EFETCH, params=efetch_params, timeout=30)
+        r2 = _http_get_with_retry(NCBI_EFETCH, params=efetch_params, timeout=30, subcmd=db)
     except click.ClickException as e:
         raise click.ClickException(f"NCBI efetch failed: {e.format_message()}") from e
 
@@ -335,7 +343,7 @@ def _clinicaltrials_search(
     }
 
     try:
-        r = _http_get_with_retry(CLINICALTRIALS_V2, params=params, timeout=15)
+        r = _http_get_with_retry(CLINICALTRIALS_V2, params=params, timeout=15, subcmd="clinicaltrials")
     except click.ClickException as e:
         raise click.ClickException(
             f"ClinicalTrials.gov API failed: {e.format_message()}\n\n"
