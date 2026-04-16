@@ -1,4 +1,4 @@
-# Getting Started with the RH Skills
+# Getting Started with RH Skills
 
 ## Prerequisites
 
@@ -11,6 +11,19 @@
 uv tool install rh-skills
 rh-skills --help
 ```
+
+## Choose Your Workflow
+
+There are two ways to use RH Skills — pick the one that fits your workflow:
+
+| | [Agent-native](#agent-native) | [CLI-first](#cli-first) |
+|-|-------------------------------|------------------------|
+| **Interface** | Natural language with your AI agent | `rh-skills` terminal commands |
+| **Best for** | Clinical teams, conversational UX | Full control, CI/CD, scripting |
+| **LLM** | Your existing agent platform | Any provider you configure |
+
+Both modes produce identical outputs through the same `rh-skills` CLI. You can
+switch between them at any point in a workflow.
 
 ## Initialize a Topic
 
@@ -38,7 +51,7 @@ A `tracking.yaml` at the repo root records the topic's metadata and lifecycle ev
 
 ## The Lifecycle
 
-The RH Skills guides clinical knowledge through three artifact levels:
+RH Skills guides clinical knowledge through three artifact levels:
 
 ```
 L1 (sources)  →  L2 (structured)  →  L3 (computable)
@@ -46,63 +59,156 @@ L1 (sources)  →  L2 (structured)  →  L3 (computable)
 
 Each transition is guided by an **agent skill** — a SKILL.md prompt file invoked by an LLM agent — that follows a `plan → implement → verify` pattern. See [WORKFLOW.md](WORKFLOW.md) for the full lifecycle diagram.
 
-## Your First Topic Walkthrough
+---
 
-### Step 1: Discover sources
+## Agent-native
 
-```
-rh-inf-discovery plan diabetes-screening
-```
+Skills must be installed into your agent platform before use. Run once after
+install or upgrade:
 
-The agent generates `topics/diabetes-screening/process/plans/discovery-plan.md` — a list of suggested source types (guidelines, terminology systems, research papers). Review and edit the plan.
+```bash
+# Install skills for your platform (copilot, claude, gemini)
+rh-skills skills init
 
-```
-rh-inf-discovery implement diabetes-screening
-```
-
-Converts the approved plan into ingest tasks.
-
-### Step 2: Ingest raw sources
-
-```
-rh-inf-ingest plan diabetes-screening
+# Re-install after upgrading rh-skills
+rh-skills skills update
 ```
 
-Displays the ingest plan for review.
+Then work through the lifecycle by invoking skills in your agent. The agent
+reads the skill instructions and calls `rh-skills` commands on your behalf.
+
+### 1. Discover sources
+
+Invoke the discovery skill in your agent:
 
 ```
-rh-inf-ingest implement diabetes-screening
+# Claude Code
+/rh-inf-discovery plan diabetes-screening
+
+# GitHub Copilot — natural language
+run rh-inf-discovery plan diabetes-screening
+```
+
+The agent generates `topics/diabetes-screening/process/plans/discovery-plan.md` — a list of suggested source types (guidelines, terminology systems, research papers). Review and edit the plan, then implement:
+
+```
+/rh-inf-discovery implement diabetes-screening
+```
+
+### 2. Ingest and normalize
+
+```
+/rh-inf-ingest plan diabetes-screening
+```
+
+Review the ingest plan, then implement:
+
+```
+/rh-inf-ingest implement diabetes-screening
 ```
 
 Registers each source file with its SHA-256 checksum in `tracking.yaml`.
 
-### Step 3: Extract structured artifacts (L2)
+### 3. Extract structured artifacts (L2)
 
 ```
-rh-inf-extract plan diabetes-screening
+/rh-inf-extract plan diabetes-screening
 ```
 
-The agent proposes candidate structured artifact names (e.g., "screening-criteria", "diagnostic-thresholds"). Review the plan at `topics/diabetes-screening/process/plans/extract-plan.md`.
+The agent proposes L2 artifacts in a review packet
+(`topics/diabetes-screening/process/plans/extract-plan.md`). Edit and approve
+the plan — including any `candidate_codes[]` for terminology artifacts — then
+implement:
 
 ```
-rh-inf-extract implement diabetes-screening
+/rh-inf-extract implement diabetes-screening
 ```
 
-Calls `rh-skills promote derive` for each planned artifact, producing YAML files in `topics/diabetes-screening/structured/`.
-
-### Step 4: Formalize into computable artifact (L3)
+### 4. Formalize to a computable artifact (L3)
 
 ```
-rh-inf-formalize plan diabetes-screening
+/rh-inf-formalize plan diabetes-screening
 ```
 
-The agent identifies which structured artifacts to combine and drafts the computable artifact's sections.
+Review the formalize plan, then implement:
 
 ```
-rh-inf-formalize implement diabetes-screening
+/rh-inf-formalize implement diabetes-screening
 ```
 
-Calls `rh-skills promote combine`, producing a FHIR-compatible YAML file in `topics/diabetes-screening/computable/`.
+### 5. Verify at any stage
+
+```
+/rh-inf-extract verify diabetes-screening
+/rh-inf-formalize verify diabetes-screening
+```
+
+---
+
+## CLI-first
+
+Run every step yourself. An LLM is required for the reasoning steps (plan and
+implement modes); configure your provider via `.rh-skills.toml` or environment
+variables:
+
+```toml
+# .rh-skills.toml (local) or ~/.rh-skills.toml (global)
+[llm]
+provider = "anthropic"   # ollama | anthropic | openai
+model    = "claude-3-5-sonnet-20241022"
+api_key  = "sk-ant-..."
+```
+
+```bash
+# or via environment variables
+export LLM_PROVIDER=anthropic
+export ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+See [Usage Modes](USAGE_MODES.md) for all provider options.
+
+### 1. Discover and ingest source materials
+
+```bash
+# Discovery — identify and plan sources
+rh-skills discovery plan diabetes-screening
+rh-skills discovery implement diabetes-screening
+
+# Ingest — download, normalize, classify, annotate
+rh-skills ingest plan diabetes-screening
+rh-skills ingest implement diabetes-screening
+```
+
+### 2. Derive structured artifacts (L2)
+
+```bash
+rh-skills promote derive diabetes-screening --source ada-guidelines --name screening-criteria
+rh-skills promote derive diabetes-screening --source ada-guidelines --name risk-factors
+```
+
+### 3. Validate the L2 artifacts
+
+```bash
+rh-skills validate diabetes-screening screening-criteria
+rh-skills validate diabetes-screening risk-factors
+```
+
+### 4. Converge to a computable artifact (L3)
+
+```bash
+rh-skills promote combine diabetes-screening \
+  screening-criteria risk-factors \
+  diabetes-screening-pathway
+```
+
+### 5. Validate the L3 artifact
+
+```bash
+rh-skills validate diabetes-screening diabetes-screening-pathway
+```
+
+---
 
 ## Check Status Anytime
 
@@ -111,13 +217,6 @@ rh-skills status show diabetes-screening          # basic status
 rh-skills status progress diabetes-screening      # detailed progress with % complete
 rh-skills status next-steps diabetes-screening    # single most important next action
 rh-skills status check-changes diabetes-screening # detect changed source files
-```
-
-## Validate Artifacts
-
-```bash
-rh-skills validate diabetes-screening screening-criteria   # validate L2 artifact
-rh-skills validate diabetes-screening diabetes-pathway     # validate L3 artifact
 ```
 
 ## Track Tasks
@@ -134,7 +233,14 @@ rh-skills tasks complete diabetes-screening 1
 rh-skills test diabetes-screening rh-inf-extract      # run skill against fixtures
 ```
 
+## List All Topics
+
+```bash
+rh-skills list
+```
+
 ## Reference
 
 - [WORKFLOW.md](WORKFLOW.md) — full lifecycle diagram and many-to-many artifact relationships
 - [COMMANDS.md](COMMANDS.md) — complete CLI command reference
+- [Usage Modes](USAGE_MODES.md) — full comparison, LLM configuration, and platform support details

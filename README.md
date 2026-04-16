@@ -185,7 +185,7 @@ skills and versions are installed. Commit this file alongside your agent config.
 ## End-user documentation
 
 - Introduction: high-level orientation to RH Skills and its intended use cases
-- [Quickstart](docs/QUICKSTART.md): first hands-on walkthrough from topic init to validated outputs
+- [Getting Started](docs/GETTING_STARTED.md): prerequisites, installation, and first hands-on walkthrough
 - [Workflow](docs/WORKFLOW.md): lifecycle model, artifact flow, and repository structure
 - [Usage Modes](docs/USAGE_MODES.md): CLI-first vs agent-native usage and configuration guidance
 - [Commands](docs/COMMANDS.md): full CLI reference with commands, subcommands, and options

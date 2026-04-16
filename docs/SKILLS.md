@@ -29,5 +29,5 @@ interface and call the CLI on your behalf.
 See also:
 
 - [Usage Modes](USAGE_MODES.md)
-- [Quickstart](QUICKSTART.md)
+- [Getting Started](GETTING_STARTED.md)
 - [Skill Distribution](SKILL_DISTRIBUTION.md)
