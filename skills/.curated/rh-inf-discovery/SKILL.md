@@ -116,6 +116,14 @@ ls topics/<topic>/process/plans/discovery-plan.yaml 2>/dev/null
 - If it exists **and** `--force` was passed: proceed, overwriting on save.
 - If it does not exist: proceed normally.
 
+> **When continuing an existing plan:** Load the saved plan into memory as the
+> starting `sources[]` list. Resume at Step 1 to refresh domain advice, then run
+> Steps 2–5 to fill any identified gaps. **Always run the full Steps 7–10 before
+> saving** — source review table, access advisories (for any authenticated/manual
+> sources), expansion suggestions, and interactive prompt. Do not skip these steps
+> even when the session prompt is task-framed ("add them and re-validate") or when
+> running in an automated eval context.
+
 ---
 
 ## session Mode
@@ -246,7 +254,9 @@ Emit status block:
 
 For any topic with a US clinical care or population health angle, **actively
 search** the following (not via `rh-skills search` — reason from your knowledge and
-present URLs for the user to confirm):
+present URLs for the user to confirm). **Do not use web search tools.** Supply URLs
+from domain knowledge; if uncertain about a specific URL, record the field as `tbd`
+with a note to verify rather than searching the web:
 
 | Source | Check for |
 |--------|-----------|
@@ -298,7 +308,11 @@ compile the list applying these rules:
   source categories before presenting
 - **Maximum 25 sources**: if more than 25 high-quality candidates, select the
   25 most relevant; log extras as expansion candidates
-- At least one `terminology` entry (SNOMED, LOINC, ICD-10, RxNorm, etc.)
+- At least one `terminology` entry (SNOMED, LOINC, ICD-10, RxNorm, etc.). Add a
+  `terminology` source for **each** system explicitly named in the domain advice —
+  one entry is the floor, not the target. For most clinical topics, domain advice
+  will identify SNOMED CT, LOINC, ICD-10-CM, and RxNorm; each should have its own
+  entry.
 - At least one `health-economics` entry when topic involves chronic conditions,
   preventive interventions, or CMS programs
 - All mandatory fields per FR-005: `name`, `type`, `rationale`, `search_terms[]`,

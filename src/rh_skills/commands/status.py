@@ -186,6 +186,7 @@ def status_show(topic, as_json):
     structured_count = len(topic_entry.get("structured", []))
     computable_count = len(topic_entry.get("computable", []))
     stage = _compute_stage(sources_count, structured_count, computable_count)
+    workflow_state = topic_entry.get("state", "")
 
     events = topic_entry.get("events", [])
     last_event = events[-1] if events else {}
@@ -197,6 +198,7 @@ def status_show(topic, as_json):
             "author": topic_entry.get("author", ""),
             "created_at": topic_entry.get("created_at", ""),
             "stage": stage,
+            "workflow_state": workflow_state,
             "sources": sources_count,
             "structured": structured_count,
             "computable": computable_count,
@@ -213,6 +215,8 @@ def status_show(topic, as_json):
     click.echo(f"Author:   {topic_entry.get('author', '')}")
     click.echo(f"Created:  {topic_entry.get('created_at', '')}")
     click.echo(f"Stage:    {stage}")
+    if workflow_state and workflow_state != "initialized":
+        click.echo(f"Workflow: {workflow_state}")
     click.echo("")
     click.echo("Artifacts:")
     click.echo(f"  L1 (sources):          {sources_count}")
