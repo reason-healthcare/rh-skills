@@ -1,0 +1,182 @@
+name: no-discovery
+skill: rh-inf-extract
+description: >
+  The formal rh-inf-discovery pipeline was never run. The user manually
+  collected two sources on heart failure management, placed them as raw files,
+  and ran rh-inf-ingest to normalize them. There is no discovery-plan.yaml
+  and no discovery_planned event in tracking.yaml.
+
+  The agent must detect that discovery was skipped, note it in the plan's
+  Review Summary, and proceed normally with the two ingest-normalized sources.
+
+topic: heart-failure-management
+
+workspace:
+  tracking_yaml: |
+    schema_version: "1.0"
+    topics:
+      heart-failure-management:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-13T00:00:00Z"
+    sources:
+      - id: hfsa-hf-guideline-2022
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/hfsa-hf-guideline-2022.md
+      - id: acc-aha-hf-guideline-2022
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/acc-aha-hf-guideline-2022.md
+
+  files:
+    - path: sources/normalized/hfsa-hf-guideline-2022.md
+      content: |
+        # HFSA 2022 Comprehensive Heart Failure Guideline
+
+        ## Diagnosis
+
+        Heart failure with reduced ejection fraction (HFrEF) is defined as symptomatic
+        heart failure with LVEF ≤40%. Heart failure with preserved ejection fraction
+        (HFpEF) is defined as symptomatic heart failure with LVEF ≥50% (Evidence: B-NR).
+
+        Recommended diagnostic workup:
+        - Echocardiography (LVEF measurement) — mandatory at initial diagnosis (Class I)
+        - BNP or NT-proBNP measurement to confirm diagnosis (Class I; Evidence: A)
+        - CBC, metabolic panel, thyroid function (Class I)
+
+        ## Pharmacological Management — HFrEF
+
+        Foundational therapy (all patients with HFrEF):
+        - ACE inhibitor or ARB or ARNI (sacubitril/valsartan) — reduces mortality (Class I; Evidence: A)
+        - Beta-blocker (carvedilol, metoprolol succinate, or bisoprolol) — reduces mortality (Class I; Evidence: A)
+        - Mineralocorticoid receptor antagonist (MRA) — reduces hospitalization (Class I; Evidence: A)
+        - SGLT2 inhibitor (dapagliflozin or empagliflozin) — reduces CV death and hospitalization (Class I; Evidence: A)
+
+        ## Device Therapy
+
+        ICD implantation recommended for LVEF ≤35% with NYHA Class II–III on GDMT for ≥3 months
+        (Class I; Evidence: A).
+
+        CRT indicated for LVEF ≤35%, LBBB, QRS ≥150 ms, NYHA Class II–III (Class I; Evidence: A).
+
+        ## Monitoring
+
+        Reassess LVEF 3–6 months after initiating GDMT to guide device therapy decisions.
+        Monitor potassium and renal function at initiation and after dose changes of ACE-I/ARB/ARNI/MRA.
+
+    - path: sources/normalized/acc-aha-hf-guideline-2022.md
+      content: |
+        # 2022 AHA/ACC/HFSA Guideline for the Management of Heart Failure
+
+        ## Classification
+
+        NYHA Functional Classification:
+        - Class I: No symptoms with ordinary activity
+        - Class II: Mild symptoms with moderate exertion
+        - Class III: Marked limitation; symptoms with minimal exertion
+        - Class IV: Symptoms at rest
+
+        ACC/AHA Heart Failure Stages:
+        - Stage A: At risk (no symptoms, no structural disease)
+        - Stage B: Pre-heart failure (structural disease, no symptoms)
+        - Stage C: Symptomatic heart failure
+        - Stage D: Advanced refractory heart failure
+
+        ## Guideline-Directed Medical Therapy (GDMT)
+
+        For HFrEF (LVEF ≤40%):
+        ARNI (sacubitril/valsartan) preferred over ACE-I/ARB when tolerated (Class I; Evidence: B-R).
+        Target doses from PARADIGM-HF trial.
+
+        SGLT2 inhibitors (dapagliflozin, empagliflozin): Class I recommendation added in 2022;
+        reduces risk of CV death and worsening HF regardless of diabetes status (Evidence: A).
+
+        ## Hospitalization Management
+
+        Inpatient diuresis: IV furosemide to achieve euvolemia. Monitor daily weights and
+        urine output. Transition to oral diuretics when stable (Class I; Evidence: B-NR).
+
+        ## Quality Measures
+
+        CMS HF Core Measure: LVEF documentation in patients hospitalized for HF.
+        HEDIS measure: Follow-up visit within 7 days after HF hospitalization discharge.
+
+    - path: topics/heart-failure-management/process/concepts.yaml
+      content: |
+        topic: heart-failure-management
+        concepts:
+          - term: heart failure with reduced ejection fraction
+            aliases: [HFrEF, systolic heart failure]
+            category: condition
+          - term: heart failure with preserved ejection fraction
+            aliases: [HFpEF, diastolic heart failure]
+            category: condition
+          - term: left ventricular ejection fraction
+            aliases: [LVEF, EF]
+            category: measurement
+          - term: BNP
+            aliases: [B-type natriuretic peptide, brain natriuretic peptide]
+            category: biomarker
+          - term: NT-proBNP
+            aliases: [N-terminal pro-BNP]
+            category: biomarker
+          - term: GDMT
+            aliases: [guideline-directed medical therapy]
+            category: care-model
+          - term: SGLT2 inhibitor
+            aliases: [SGLT2i, sodium-glucose cotransporter-2 inhibitor]
+            category: drug-class
+          - term: ARNI
+            aliases: [angiotensin receptor-neprilysin inhibitor, sacubitril/valsartan, Entresto]
+            category: drug-class
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `heart-failure-management`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  The formal rh-inf-discovery pipeline was never run for this topic. The user
+  manually collected two sources, ingested them directly via rh-inf-ingest, and
+  they are now normalized in sources/normalized/. There is no discovery-plan.yaml
+  and no discovery_planned event in tracking.yaml.
+
+  Run the full extract cycle:
+  1. **plan** — note that discovery was skipped, then proceed to generate an
+     extract plan from the two ingest-normalized sources
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L2 structured artifact(s) for the approved plan
+  4. **verify** — validate the artifact with rh-skills validate
+
+expected_outputs:
+  - path: topics/heart-failure-management/process/plans/extract-plan.md
+    checks:
+      - exists
+      - contains: "hfsa-hf-guideline-2022"
+      - contains: "acc-aha-hf-guideline-2022"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: extract_complete
+
+efficiency_focus:
+  - "Does the agent check rh-skills status show and proceed (not abort) when discovery was not run?"
+  - "Does it note in the plan's Review Summary that discovery was skipped?"
+  - "Does it read both normalized sources exactly once each?"
+  - "Does it use rh-skills promote derive (not inline YAML) for the artifact?"
+
+quality_focus:
+  - "Discovery note: plan's Review Summary states discovery was not formally run"
+  - "Coverage: both HFSA and ACC/AHA sources used in the plan"
+  - "HFrEF diagnostic criteria included (LVEF ≤40%)"
+  - "All four GDMT pillars represented (ACE-I/ARB/ARNI, beta-blocker, MRA, SGLT2i)"
+  - "NYHA classification and ACC/AHA staging included"
+  - "Quality measures captured (CMS HF core measure, HEDIS 7-day follow-up)"
+  - "Evidence traceability present for each major claim"
+  - "rh-skills validate passes with no errors"

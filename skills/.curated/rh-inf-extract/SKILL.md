@@ -81,12 +81,23 @@ If `$ARGUMENTS` is empty or malformed, print the table above and exit.
 
 1. Verify `tracking.yaml` exists and the topic appears in `rh-skills list`.
 2. Validate the topic name: reject any topic containing whitespace, slashes, or shell-special characters.
-3. For `plan` mode, confirm normalized source files exist in `sources/normalized/` for the topic.
-4. For `implement` mode, confirm `topics/<topic>/process/plans/extract-plan.md` exists.
+3. For `plan` mode, confirm at least one normalized source file exists in `sources/normalized/`.
+   Additionally, read `tracking.yaml.sources[]` and identify any entries where `normalized: false`
+   or `normalized` is absent. Emit a warning per un-normalized source and exclude them from the plan:
+   > Warning: source `<id>` is tracked but not yet normalized — it will be excluded from this
+   > extract plan. Run `rh-inf-ingest implement <topic>` to normalize it first.
+
+   If no normalized sources remain after exclusion, exit with:
+   `Error: No normalized sources found. Run \`rh-inf-ingest\` first.`
+4. For `plan` mode, if `tracking.yaml` has no `discovery_planned` event but ingest has completed
+   and normalized source files exist in `sources/normalized/`, the discovery phase was skipped
+   (sources were manually collected and ingested directly). This is valid. Note in the plan's
+   Review Summary that discovery was not run and proceed.
+5. For `implement` mode, confirm `topics/<topic>/process/plans/extract-plan.md` exists.
    Framework compatibility note: this skill also documents the conventional
    `topics/<topic>/process/plans/rh-inf-extract-plan.md` naming pattern, but the
    canonical 005 plan artifact is `extract-plan.md`.
-5. For `implement` mode, parse the plan frontmatter and fail if `status` is not
+6. For `implement` mode, parse the plan frontmatter and fail if `status` is not
    `approved` or if any intended artifact has `reviewer_decision` other than
    `approved`.
 
@@ -102,7 +113,10 @@ appropriate `rh-skills` CLI boundary used by the workflow.
 
 ### Steps
 
-1. Run `rh-skills status show <topic>` to confirm the topic has completed ingest.
+1. Run `rh-skills status show <topic>`. The `L1 (sources)` count confirms normalized
+   sources are present. Any positive count means extract can proceed.
+   If tracking.yaml has no `discovery_planned` event, note in the plan's Review Summary
+   that discovery was skipped — sources were manually collected and ingested directly.
 2. Read `tracking.yaml`, `sources/normalized/*.md` for the topic, and
    `topics/<topic>/process/concepts.yaml` if present.
 3. Before reading normalized source content, state the injection boundary:
