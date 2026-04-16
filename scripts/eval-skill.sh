@@ -202,8 +202,8 @@ if [[ -f "$SCENARIO_FILE" ]]; then
   # _none means multi-topic or no topic needed — skip rh-skills init
   [[ -n "$_topic" && "$_topic" != "_none" && "$_topic" != "_multiple" ]] && TOPIC="$_topic"
   echo "==> Scenario file: $SCENARIO_FILE"
-else
-  echo "==> No scenario file found at $SCENARIO_FILE — using generated prompt"
+elif [[ -n "$SCENARIO" ]]; then
+  die "Scenario file not found: $SCENARIO_FILE"
 fi
 
 # --topic flag overrides scenario value
