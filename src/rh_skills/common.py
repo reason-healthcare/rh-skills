@@ -175,11 +175,30 @@ def _yaml_safe() -> YAML:
     return y
 
 
+def _normalize_topics(topics) -> list:
+    """Normalize topics to a list of dicts with a 'name' key.
+
+    Handles the legacy dict-keyed format written by old eval fixtures:
+      topics:
+        my-topic:
+          state: initialized
+    as well as the canonical list format produced by ``rh-skills init``:
+      topics:
+        - name: my-topic
+          ...
+    """
+    if isinstance(topics, dict):
+        return [{"name": k, **v} if isinstance(v, dict) else {"name": k} for k, v in topics.items()]
+    return list(topics) if topics else []
+
+
 def load_tracking() -> dict:
-    """Load tracking.yaml and return as dict."""
+    """Load tracking.yaml and return as dict, normalizing the topics list."""
     y = _yaml_rt()
     with open(tracking_file()) as f:
-        return y.load(f)
+        data = y.load(f)
+    data["topics"] = _normalize_topics(data.get("topics", []))
+    return data
 
 
 def save_tracking(data: dict) -> None:
