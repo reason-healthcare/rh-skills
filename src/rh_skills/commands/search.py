@@ -74,7 +74,15 @@ def _http_get_with_retry(url: str, params: dict, timeout: int) -> httpx.Response
                 continue
             raise click.ClickException(f"HTTP error: {e}") from e
         except httpx.HTTPError as e:
-            raise click.ClickException(f"Network error: {e}") from e
+            raise click.ClickException(
+                f"Network error: {e}\n\n"
+                "Network access may be restricted in this environment.\n"
+                "To build a discovery plan manually:\n"
+                "  1. Gather source URLs from your browser or a web search tool\n"
+                "  2. Construct a discovery-plan.yaml with your sources\n"
+                "  3. Validate it with: rh-skills validate --plan - < discovery-plan.yaml\n"
+                "  4. Run: rh-skills schema show discovery-plan  (to see required fields)"
+            ) from e
 
     raise click.ClickException(
         f"Rate limit persists after {len(_RETRY_DELAYS)} retries. "
@@ -277,7 +285,15 @@ def _clinicaltrials_search(
     try:
         r = _http_get_with_retry(CLINICALTRIALS_V2, params=params, timeout=15)
     except click.ClickException as e:
-        raise click.ClickException(f"ClinicalTrials.gov API failed: {e.format_message()}") from e
+        raise click.ClickException(
+            f"ClinicalTrials.gov API failed: {e.format_message()}\n\n"
+            "Network access may be restricted in this environment.\n"
+            "To build a discovery plan manually:\n"
+            "  1. Gather source URLs from your browser or a web search tool\n"
+            "  2. Construct a discovery-plan.yaml with your sources\n"
+            "  3. Validate it with: rh-skills validate --plan - < discovery-plan.yaml\n"
+            "  4. Run: rh-skills schema show discovery-plan  (to see required fields)"
+        ) from e
 
     data = r.json()
     studies = data.get("studies", [])[:max_results]

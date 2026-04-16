@@ -4,6 +4,7 @@ from rh_skills.commands import (
     init,
     list_cmd,
     promote,
+    schema,
     search,
     skills,
     status,
@@ -23,6 +24,7 @@ main.add_command(init.init)
 main.add_command(status.status)
 main.add_command(list_cmd.list_)
 main.add_command(promote.promote)
+main.add_command(schema.schema)
 main.add_command(validate.validate)
 main.add_command(ingest.ingest)
 main.add_command(tasks.tasks)
