@@ -32,3 +32,14 @@ tests/output/
 
 # Shell script temp files
 *.bak
+
+
+# Ignore rh-inf skills
+.agents/skills/rh-inf*
+
+# For now
+eval/reviews
+eval/transcripts
+
+
+
