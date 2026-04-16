@@ -221,8 +221,6 @@ REVIEW_FILE="$REVIEW_DIR/${SCENARIO}-${TS}-review.md"
 cleanup() {
   if [[ "$KEEP_WORKDIR" == "false" ]]; then
     rm -rf "$WORKDIR"
-  else
-    echo "Workspace kept at: $WORKDIR"
   fi
 }
 trap cleanup EXIT
@@ -456,6 +454,9 @@ REVIEW_STUB
 echo
 echo "==> Transcript : $TRANSCRIPT_FILE"
 echo "==> Review stub: $REVIEW_FILE"
+if [[ "$KEEP_WORKDIR" == "true" ]]; then
+echo "==> Workspace  : $WORKDIR (kept)"
+fi
 echo
 echo "Open the review file, work through the checklist, and commit both files:"
 echo "  git add eval/ && git commit -m 'eval($SKILL/$SCENARIO): <summary>'"
