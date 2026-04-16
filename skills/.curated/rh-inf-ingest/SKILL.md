@@ -266,6 +266,12 @@ rh-skills ingest annotate <name> --topic <topic> \
   --concept "<name>:<type>" ...
 ```
 
+**⚠️ CRITICAL — annotate commands MUST be run serially (one at a time).** All
+`annotate` calls write to the same `topics/<topic>/process/concepts.yaml` file.
+Running two annotate commands concurrently causes a write race — the second write
+overwrites the first, silently dropping concepts. Always wait for each `annotate`
+to complete before starting the next.
+
 See `reference.md` for the concept type vocabulary.
 
 After all sources complete, emit final status block.
