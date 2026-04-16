@@ -227,8 +227,9 @@ echo
 # ── bootstrap workspace ───────────────────────────────────────────────────────
 cd "$WORKDIR"
 uv init --quiet --name eval-project 2>/dev/null || true
-uv add --quiet rh-skills 2>/dev/null || \
-  uv add --quiet "rh-skills @ $REPO_ROOT" 2>/dev/null
+# Always install from local repo so any source changes are picked up without
+# needing a manual pipx reinstall before running eval.
+uv add --quiet "rh-skills @ $REPO_ROOT" 2>/dev/null
 
 # Apply scenario workspace fixtures before rh-skills init so that any
 # pre-seeded tracking.yaml is in place.
@@ -238,10 +239,9 @@ if [[ "$SCENARIO_LOADED" == "true" ]]; then
 fi
 
 # Install the skill into .agents/skills/ so the agent can find it.
-uv run rh-skills skills init \
+uv run rh-skills skills install \
   --from "$REPO_ROOT/skills/.curated" \
-  --platforms generic \
-  --yes 2>/dev/null || true
+  --force 2>/dev/null || true
 
 # Initialise topic (unless scenario says none/multiple — tracking.yaml already seeded).
 if [[ -n "$TOPIC" && "$TOPIC" != "eval-topic" ]]; then
@@ -537,14 +537,14 @@ echo
 # sees a realistic project layout.
 cd "$WORKDIR"
 uv init --quiet --name "$TOPIC" 2>/dev/null || true
-uv add --quiet rh-skills 2>/dev/null || \
-  uv add --quiet "rh-skills @ $REPO_ROOT" 2>/dev/null
+# Always install from local repo so any source changes are picked up without
+# needing a manual pipx reinstall before running eval.
+uv add --quiet "rh-skills @ $REPO_ROOT" 2>/dev/null
 
 # Install the skill for the target agent
-uv run rh-skills skills init \
+uv run rh-skills skills install \
   --from "$REPO_ROOT/skills/.curated" \
-  --platforms generic \
-  --yes 2>/dev/null || true
+  --force 2>/dev/null || true
 
 # Initialise a topic for the agent to work against
 uv run rh-skills init "$TOPIC" 2>/dev/null || true
