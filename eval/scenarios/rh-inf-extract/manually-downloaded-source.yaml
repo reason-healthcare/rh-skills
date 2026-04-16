@@ -30,12 +30,12 @@ workspace:
           - event: ingest_complete
             timestamp: "2026-04-14T00:00:00Z"
     sources:
-      - id: acc-aha-htn-guideline-2017
+      - name: acc-aha-htn-guideline-2017
         normalized: true
         classified: true
         annotated: true
         path: sources/normalized/acc-aha-htn-guideline-2017.md
-      - id: jnc8-2014
+      - name: jnc8-2014
         normalized: false
         path: sources/jnc8-2014.pdf
 

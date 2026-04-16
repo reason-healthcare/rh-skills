@@ -20,7 +20,7 @@ workspace:
           - event: ingest_complete
             timestamp: "2026-04-14T00:00:00Z"
     sources:
-      - id: ada-standards-2024
+      - name: ada-standards-2024
         normalized: true
         classified: true
         annotated: true

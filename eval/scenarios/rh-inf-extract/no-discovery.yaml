@@ -23,12 +23,12 @@ workspace:
           - event: ingest_complete
             timestamp: "2026-04-13T00:00:00Z"
     sources:
-      - id: hfsa-hf-guideline-2022
+      - name: hfsa-hf-guideline-2022
         normalized: true
         classified: true
         annotated: true
         path: sources/normalized/hfsa-hf-guideline-2022.md
-      - id: acc-aha-hf-guideline-2022
+      - name: acc-aha-hf-guideline-2022
         normalized: true
         classified: true
         annotated: true

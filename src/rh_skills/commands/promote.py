@@ -417,8 +417,8 @@ def _build_stub_l2_artifact(
         "title": _human_title(artifact_name),
         "version": "1.0.0",
         "status": "draft",
-        "domain": "",
-        "description": "",
+        "domain": (artifact_type or "clinical").replace("-", " "),
+        "description": clinical_question or f"Stub artifact for {artifact_name}.",
         "derived_from": list(source),
         "artifact_type": artifact_type or "evidence-summary",
         "clinical_question": clinical_question or "",
@@ -437,12 +437,20 @@ def _normalized_source_records(tracking: dict, topic: str) -> list[dict]:
         source_topic = source.get("topic")
         if source_topic not in (None, topic):
             continue
-        normalized_path = normalized_root / f"{source['name']}.md"
+        # Support both `name` (written by ingest) and `id` (used in eval fixtures).
+        source_name = source.get("name") or source.get("id", "")
+        if not source_name:
+            continue
+        if source.get("normalized") is False:
+            log_warn(f"Source '{source_name}' is not yet normalized — excluding from extract plan. "
+                     "Run 'rh-inf-ingest implement' to normalize it first.")
+            continue
+        normalized_path = normalized_root / f"{source_name}.md"
         if normalized_path.exists():
             records.append({
-                "name": source["name"],
+                "name": source_name,
                 "path": normalized_path,
-                "relative_path": f"sources/normalized/{source['name']}.md",
+                "relative_path": f"sources/normalized/{source_name}.md",
                 "content": normalized_path.read_text(),
             })
     return records
@@ -712,8 +720,8 @@ def derive(
     tracking = require_tracking()
     require_topic(tracking, topic)
 
-    # Validate each source exists in tracking
-    registered_sources = {s["name"] for s in tracking.get("sources", [])}
+    # Validate each source exists in tracking; support both `name` and `id` keys.
+    registered_sources = {s.get("name") or s.get("id", "") for s in tracking.get("sources", [])}
     for src in source:
         if src not in registered_sources:
             raise click.UsageError(f"Source '{src}' not found in tracking.yaml sources")
@@ -783,7 +791,7 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
         timestamp = now_iso()
         checksum = sha256_file(l2_file)
         topic_entry = require_topic(tracking, topic)
-        topic_entry["structured"].append({
+        topic_entry.setdefault("structured", []).append({
             "name": artifact_name,
             "file": f"topics/{topic}/structured/{artifact_name}.yaml",
             "created_at": timestamp,
