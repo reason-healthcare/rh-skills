@@ -456,8 +456,9 @@ def validate(topic, level, artifact, plan_path, check_urls):
         click.echo(f"INVALID — {errors} required field(s) missing")
         raise SystemExit(1)
     if warnings > 0:
-        click.echo(f"VALID (with {warnings} optional field warning(s))", err=True)
-    click.echo(f"VALID — {artifact_file}")
+        click.echo(f"VALID (with {warnings} optional field warning(s)) — {artifact_file}")
+    else:
+        click.echo(f"VALID — {artifact_file}")
 
 
 def _validate_discovery_plan(plan_path: str, *, check_urls: bool = False) -> None:

@@ -398,7 +398,7 @@ def _build_sections(
         elif name == "evidence_traceability":
             sections[name] = evidence_entries
         else:
-            sections[name] = []
+            sections[name] = f"<stub: populate {name} content>"
     return sections
 
 
@@ -491,8 +491,6 @@ def _build_plan_artifact_entry(group: dict) -> dict:
     source_files = [record["relative_path"] for record in group["sources"]]
     source_count = len(source_files)
     artifact_name = group["artifact_type"]
-    if source_count == 1:
-        artifact_name = _slugify(source_names[0])
 
     unresolved_conflicts: list[str] = []
     if source_count > 1:

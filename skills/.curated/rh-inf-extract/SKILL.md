@@ -195,6 +195,12 @@ all deterministic writes must go through `rh-skills promote derive` and
      --conflict "<issue|source|statement|preferred_source|preferred_rationale>"
    ```
 
+   > **LLM provider note**: `rh-skills promote derive` requires an LLM backend.
+   > Set `LLM_PROVIDER=stub` for testing/evaluation (produces a scaffold artifact
+   > with placeholder content that passes schema validation). Provide
+   > `RH_STUB_RESPONSE="<full yaml>"` to inject a complete stub artifact.
+   > In production, configure `LLM_PROVIDER` to a supported backend before running.
+
 4. Immediately validate each derived artifact with:
 
    ```sh
