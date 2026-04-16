@@ -238,9 +238,12 @@ echo
 # ── bootstrap workspace ───────────────────────────────────────────────────────
 cd "$WORKDIR"
 uv init --quiet --name eval-project 2>/dev/null || true
-# Always install from local repo so any source changes are picked up without
-# needing a manual pipx reinstall before running eval.
+# Install from local repo into both uv venv and pipx global binary.
+# The uv venv is used by `uv run rh-skills` inside the bootstrap steps;
+# the pipx binary is what the agent's shell PATH resolves when it runs
+# `rh-skills` directly (e.g. codex workspace-write mode).
 uv add --quiet "rh-skills @ $REPO_ROOT" 2>/dev/null
+pipx install --force "$REPO_ROOT" --quiet 2>/dev/null || true
 
 # Apply scenario workspace fixtures before rh-skills init so that any
 # pre-seeded tracking.yaml is in place.
@@ -548,9 +551,12 @@ echo
 # sees a realistic project layout.
 cd "$WORKDIR"
 uv init --quiet --name "$TOPIC" 2>/dev/null || true
-# Always install from local repo so any source changes are picked up without
-# needing a manual pipx reinstall before running eval.
+# Install from local repo into both uv venv and pipx global binary.
+# The uv venv is used by `uv run rh-skills` inside the bootstrap steps;
+# the pipx binary is what the agent's shell PATH resolves when it runs
+# `rh-skills` directly (e.g. codex workspace-write mode).
 uv add --quiet "rh-skills @ $REPO_ROOT" 2>/dev/null
+pipx install --force "$REPO_ROOT" --quiet 2>/dev/null || true
 
 # Install the skill for the target agent
 uv run rh-skills skills install \

@@ -144,8 +144,11 @@ Interpret the output:
 
 - **UNTRACKED** files — the user has placed a file that is not yet in the plan.
   Read the filename and use `head -20 sources/<file>` (for text/CSV) to infer
-  content. Propose adding each as an `access: manual` source entry via
-  `rh-skills source add --access manual --append-to-plan <topic>`.
+  content. Preview each as an `access: manual` source entry via
+  `rh-skills source add --dry-run --access manual ...` to generate and review
+  the YAML snippet. Hold these entries in memory — do **not** use
+  `--append-to-plan` here because no plan file exists yet. They are merged
+  into `sources[]` when the plan is written in Step 11.
   Infer `--type` from extension: `.pdf`/`.md`/`.txt` → `document` or
   `clinical-guideline`; `.csv`/`.tsv`/`.xlsx` → `dataset`.
 - **SHA-CHANGED** files — a previously tracked file has changed on disk.
