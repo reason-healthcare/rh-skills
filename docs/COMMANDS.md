@@ -189,10 +189,37 @@ rh-skills promote formalize-plan <topic> [--force]
 
 ## `rh-skills validate`
 
-Schema-validate any named artifact.
+Two modes: discovery-plan validation (L1) and artifact schema validation (L2/L3).
+
+### Discovery plan validation (`--plan`)
+
+Validate a `discovery-plan.yaml` before handing off to `rh-inf-ingest`:
 
 ```
-rh-skills validate <topic> <artifact>
+rh-skills validate --plan <path>
+rh-skills validate --plan -                          # read from stdin
+cat discovery-plan.yaml | rh-skills validate --plan -
+```
+
+Checks: YAML structure, required fields per source entry, evidence level vocabulary,
+source type taxonomy, source count (5–25), presence of a `terminology` source.
+
+Add `--check-urls` to HTTP-verify every source URL (requires network):
+
+```
+rh-skills validate --plan discovery-plan.yaml --check-urls
+```
+
+**Output:** Errors (blocking, exit 1) and warnings (advisory, exit 0).
+
+See valid field values with `rh-skills schema show discovery-plan`.
+
+### Artifact schema validation
+
+Schema-validate a named L2 or L3 artifact:
+
+```
+rh-skills validate <topic> <level> <artifact>
 ```
 
 **Output:** Required-field errors (blocking, exit 1) and optional-field warnings (advisory, exit 0).
@@ -202,6 +229,31 @@ lists the artifact as the implementation target, validation also checks:
 - approved `input_artifacts[]` vs `converged_from[]`
 - required computable sections from the approved plan
 - minimum completeness for section types such as pathways, actions, value sets, measures, libraries, and assessments
+
+---
+
+## `rh-skills schema`
+
+Show schemas and valid vocabularies for RH Skills artifacts.
+
+```
+rh-skills schema show <type>
+rh-skills schema show <type> --json
+```
+
+Types:
+
+| Type | Description |
+|---|---|
+| `discovery-plan` | Fields, valid source types, evidence levels, and validation rules for `discovery-plan.yaml` |
+| `l2` / `structured` | Required and optional fields for L2 structured artifacts |
+| `l3` / `computable` | Required and optional fields for L3 computable artifacts |
+
+Use during discovery to understand required source fields before writing a plan:
+
+```
+rh-skills schema show discovery-plan
+```
 
 ---
 
