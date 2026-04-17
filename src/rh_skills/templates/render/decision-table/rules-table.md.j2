@@ -7,8 +7,31 @@
 {% for c in conditions %}{% set _ = cond_map.update({c.id: c.label or c.id}) %}{% endfor %}
 # Decision Table — {{ data.title or data.name or '' }}
 
+{% if data.clinical_question %}**Clinical Question**: {{ data.clinical_question }}
+{% endif %}
+{% if data.derived_from %}**Derived From**: {{ data.derived_from | join(', ') }}
+{% endif %}
+
+{% set sections = data.sections or {} %}
+{% if sections.summary %}
+## Summary
+
+{{ sections.summary }}
+
+{% endif %}
 | Rule |{% for c in conditions %} {{ cond_map[c.id] }} |{% endfor %} Actions |
 |---|{% for c in conditions %}---|{% endfor %}---|
 {% for rule in rules -%}
 | {{ rule.id or '?' }} |{% for c in conditions %} {{ rule.when.get(c.id, '-') if rule.when is mapping else '-' }} |{% endfor %} {% if rule.then %}{% for aid in rule.then %}{{ action_map.get(aid, aid) }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %} |
 {% endfor %}
+
+{% set traceability = sections.evidence_traceability or [] %}
+{% if traceability %}
+## Evidence Traceability
+
+{% for entry in traceability -%}
+- **{{ entry.claim_id or '?' }}**: {{ entry.statement or '' }}
+{% for ev in (entry.evidence or []) %}  - Source: {{ ev.source or '?' }}, Locator: {{ ev.locator or '?' }}
+{% endfor %}
+{% endfor %}
+{% endif %}

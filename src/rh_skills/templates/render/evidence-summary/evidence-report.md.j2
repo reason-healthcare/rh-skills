@@ -2,6 +2,8 @@
 
 {% if data.clinical_question %}**Clinical Question**: {{ data.clinical_question }}
 {% endif %}
+{% if data.derived_from %}**Derived From**: {{ data.derived_from | join(', ') }}
+{% endif %}
 {% if data.domain %}**Domain**: {{ data.domain }}
 {% endif %}
 
