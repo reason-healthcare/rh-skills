@@ -1,0 +1,114 @@
+name: terminology
+skill: rh-inf-formalize
+description: >
+  Approved L2 terminology artifact; agent must plan formalization using the
+  terminology strategy, proposing ValueSet + ConceptMap as L3 FHIR targets.
+
+topic: diabetes-terminology
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-terminology:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: diabetes-value-sets
+            file: topics/diabetes-terminology/structured/diabetes-value-sets/diabetes-value-sets.yaml
+            artifact_type: terminology
+            status: approved
+    sources:
+      - id: ada-standards-2024
+        normalized: true
+        path: sources/normalized/ada-standards-2024.md
+
+  files:
+    - path: topics/diabetes-terminology/process/plans/extract-plan.yaml
+      content: |
+        topic: diabetes-terminology
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: diabetes-value-sets
+            artifact_type: terminology
+            source_files:
+              - sources/normalized/ada-standards-2024.md
+            clinical_question: "What coded value sets are needed for diabetes CCM?"
+            required_sections:
+              - value_sets
+              - concept_mappings
+            candidate_codes:
+              - system: http://snomed.info/sct
+                code: "44054006"
+                display: "Diabetes mellitus type 2"
+              - system: http://loinc.org
+                code: "4548-4"
+                display: "Hemoglobin A1c"
+            reviewer_decision: approved
+
+    - path: topics/diabetes-terminology/structured/diabetes-value-sets/diabetes-value-sets.yaml
+      content: |
+        id: diabetes-value-sets
+        name: diabetes-value-sets
+        title: "Diabetes CCM: Clinical Terminology"
+        version: "1.0.0"
+        status: active
+        domain: diabetes
+        artifact_type: terminology
+        derived_from:
+          - ada-standards-2024
+        clinical_question: "What coded value sets are needed for diabetes CCM?"
+        sections:
+          value_sets:
+            - name: diabetes-conditions
+              description: "Diabetes mellitus conditions for patient identification"
+              concepts:
+                - term: "Type 2 diabetes mellitus"
+                  system: SNOMED CT
+                - term: "Type 1 diabetes mellitus"
+                  system: SNOMED CT
+            - name: hba1c-lab-codes
+              description: "HbA1c laboratory observation codes"
+              concepts:
+                - term: "Hemoglobin A1c/Hemoglobin.total in Blood"
+                  system: LOINC
+          concept_mappings:
+            - source: "elevated blood sugar"
+              target_system: SNOMED CT
+              target_concept: "Hyperglycemia"
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `diabetes-terminology`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One approved L2 terminology artifact is ready:
+  - `diabetes-value-sets` (terminology — ADA standards)
+
+  Run formalize plan mode only:
+  1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+
+expected_outputs:
+  - path: topics/diabetes-terminology/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "diabetes-value-sets"
+      - contains: "terminology"
+      - contains: "ValueSet"
+      - contains: "ConceptMap"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+
+quality_focus:
+  - "Does the plan propose ValueSet + ConceptMap as L3 targets?"
+  - "Is the strategy identified as 'terminology' (not generic pathway-package)?"
+  - "Does the plan include 'value_sets' in required sections?"
+  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"

@@ -1,0 +1,105 @@
+name: measure
+skill: rh-inf-formalize
+description: >
+  Approved L2 measure artifact; agent must plan formalization using the
+  measure strategy, proposing Measure + Library (CQL) as L3 FHIR targets.
+
+topic: diabetes-quality
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-quality:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: hba1c-measure
+            file: topics/diabetes-quality/structured/hba1c-measure/hba1c-measure.yaml
+            artifact_type: measure
+            status: approved
+    sources:
+      - id: cms-diabetes-measures
+        normalized: true
+        path: sources/normalized/cms-diabetes-measures.md
+
+  files:
+    - path: topics/diabetes-quality/process/plans/extract-plan.yaml
+      content: |
+        topic: diabetes-quality
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: hba1c-measure
+            artifact_type: measure
+            source_files:
+              - sources/normalized/cms-diabetes-measures.md
+            clinical_question: "How is HbA1c poor control measured for MIPS reporting?"
+            required_sections:
+              - populations
+              - scoring
+              - improvement_notation
+            reviewer_decision: approved
+
+    - path: topics/diabetes-quality/structured/hba1c-measure/hba1c-measure.yaml
+      content: |
+        id: hba1c-measure
+        name: hba1c-measure
+        title: "CMS122: Diabetes HbA1c Poor Control (>9%)"
+        version: "1.0.0"
+        status: active
+        domain: diabetes
+        artifact_type: measure
+        derived_from:
+          - cms-diabetes-measures
+        clinical_question: "How is HbA1c poor control measured for MIPS reporting?"
+        sections:
+          populations:
+            initial_population:
+              description: "Patients ≥18 with diabetes and at least 2 encounters"
+              age_range: "18-75"
+            denominator:
+              description: "Equals initial population"
+            numerator:
+              description: "Patients with most recent HbA1c >9% or no HbA1c during measurement period"
+              inverse: true
+            denominator_exclusion:
+              description: "Hospice, palliative care, or end-stage renal disease"
+          scoring:
+            type: proportion
+            improvement_notation: decrease
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `diabetes-quality`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One approved L2 measure artifact is ready:
+  - `hba1c-measure` (measure — CMS122 eCQM)
+
+  Run formalize plan mode only:
+  1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+
+expected_outputs:
+  - path: topics/diabetes-quality/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "hba1c-measure"
+      - contains: "measure"
+      - contains: "Measure"
+      - contains: "Library"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+
+quality_focus:
+  - "Does the plan propose Measure + Library (CQL) as L3 targets?"
+  - "Is the strategy identified as 'measure' (not generic pathway-package)?"
+  - "Does the plan include 'measures' and 'libraries' in required sections?"
+  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"

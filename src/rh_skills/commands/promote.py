@@ -197,15 +197,53 @@ def _eligible_formalize_inputs(topic: str) -> tuple[list[dict], list[str]]:
     return eligible, blocked
 
 
+# L2 artifact_type → L3 FHIR target mapping per docs/FORMALIZE_STRATEGIES.md
+_L3_TARGET_MAP: dict[str, dict] = {
+    "evidence-summary": {
+        "primary": "Evidence",
+        "supporting": ["EvidenceVariable", "Citation"],
+        "l3_targets": ["Evidence", "EvidenceVariable", "Citation"],
+    },
+    "decision-table": {
+        "primary": "PlanDefinition",
+        "supporting": ["Library"],
+        "l3_targets": ["PlanDefinition (eca-rule)", "Library (CQL)"],
+    },
+    "care-pathway": {
+        "primary": "PlanDefinition",
+        "supporting": ["ActivityDefinition"],
+        "l3_targets": ["PlanDefinition (clinical-protocol)", "ActivityDefinition"],
+    },
+    "terminology": {
+        "primary": "ValueSet",
+        "supporting": ["ConceptMap"],
+        "l3_targets": ["ValueSet", "ConceptMap"],
+    },
+    "measure": {
+        "primary": "Measure",
+        "supporting": ["Library"],
+        "l3_targets": ["Measure", "Library (CQL)"],
+    },
+    "assessment": {
+        "primary": "Questionnaire",
+        "supporting": [],
+        "l3_targets": ["Questionnaire"],
+    },
+    "policy": {
+        "primary": "PlanDefinition",
+        "supporting": ["Questionnaire", "Library"],
+        "l3_targets": ["PlanDefinition (eca-rule)", "Questionnaire (DTR)", "Library (CQL)"],
+    },
+}
+
+
 def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
-    required_sections = ["pathways"]
+    required_sections = []
     artifact_types = {artifact.get("artifact_type") for artifact in artifacts}
 
-    if artifact_types & {
-        "decision-table",
-        "care-pathway",
-        "policy",
-    }:
+    if artifact_types & {"care-pathway"}:
+        required_sections.append("pathways")
+    if artifact_types & {"decision-table", "care-pathway", "policy"}:
         required_sections.append("actions")
     if "terminology" in artifact_types:
         required_sections.append("value_sets")
@@ -213,6 +251,10 @@ def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
         required_sections.append("measures")
     if "assessment" in artifact_types:
         required_sections.append("assessments")
+    if artifact_types & {"decision-table", "measure", "policy"}:
+        required_sections.append("libraries")
+    if "evidence-summary" in artifact_types:
+        required_sections.append("evidence")
 
     deduped: list[str] = []
     for section in required_sections:
@@ -222,13 +264,30 @@ def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
 
 
 def _build_formalize_artifacts(topic: str, eligible_inputs: list[dict]) -> list[dict]:
+    input_types = {a.get("artifact_type", "unknown") for a in eligible_inputs}
+
+    # Determine strategy: use the single L2 type when uniform, otherwise mixed
+    if len(input_types) == 1:
+        strategy = next(iter(input_types))
+    else:
+        strategy = "mixed"
+
+    target_info = _L3_TARGET_MAP.get(strategy, {})
+    l3_targets = target_info.get("l3_targets", ["PlanDefinition"])
+
+    # Determine artifact_type from the strategy
+    artifact_type = strategy if strategy in _L3_TARGET_MAP else "pathway-package"
+
     candidate = {
-        "name": f"{topic}-pathway",
-        "artifact_type": "pathway-package",
+        "name": f"{topic}-{strategy}" if strategy != "mixed" else f"{topic}-pathway",
+        "artifact_type": artifact_type,
+        "strategy": strategy,
+        "l3_targets": l3_targets,
         "input_artifacts": [artifact["name"] for artifact in eligible_inputs],
         "rationale": (
-            f"Combines {len(eligible_inputs)} approved structured artifact(s) into "
-            "one primary pathway-oriented computable package."
+            f"Combines {len(eligible_inputs)} approved structured artifact(s) "
+            f"using '{strategy}' strategy → "
+            f"{', '.join(l3_targets)}."
         ),
         "required_sections": _formalize_required_sections(eligible_inputs),
         "implementation_target": True,
@@ -272,10 +331,14 @@ def _render_formalize_plan(topic: str, artifacts: list[dict], blocked_inputs: li
         decision = artifact.get("reviewer_decision", "pending-review")
         decision_icon = _DECISION_ICON.get(decision, "⏳")
         notes_text = artifact.get("approval_notes") or "_pending reviewer input_"
+        strategy = artifact.get("strategy", "unknown")
+        l3_targets = artifact.get("l3_targets", [])
         lines.extend([
             f"## {artifact.get('name', 'unknown')}",
             "",
             f"- Type: `{artifact.get('artifact_type', 'unknown')}`",
+            f"- Strategy: `{strategy}`",
+            f"- L3 FHIR targets: {', '.join(l3_targets) if l3_targets else '_none specified_'}",
             f"- Eligible structured inputs: {', '.join(artifact.get('input_artifacts', []))}",
             f"- Rationale: {artifact.get('rationale', '')}",
             f"- Required computable sections: {', '.join(artifact.get('required_sections', []))}",

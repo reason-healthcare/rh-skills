@@ -1,0 +1,114 @@
+name: evidence-summary
+skill: rh-inf-formalize
+description: >
+  Approved L2 evidence-summary artifact; agent must plan formalization using
+  the evidence-summary strategy, proposing Evidence + EvidenceVariable + Citation
+  as L3 FHIR targets.
+
+topic: copd-evidence
+
+workspace:
+  tracking_yaml: |
+    topics:
+      copd-evidence:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: copd-exacerbation-evidence
+            file: topics/copd-evidence/structured/copd-exacerbation-evidence/copd-exacerbation-evidence.yaml
+            artifact_type: evidence-summary
+            status: approved
+    sources:
+      - id: gold-report-2024
+        normalized: true
+        path: sources/normalized/gold-report-2024.md
+
+  files:
+    - path: topics/copd-evidence/process/plans/extract-plan.yaml
+      content: |
+        topic: copd-evidence
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: copd-exacerbation-evidence
+            artifact_type: evidence-summary
+            source_files:
+              - sources/normalized/gold-report-2024.md
+            clinical_question: "What is the evidence for systemic corticosteroids in COPD exacerbations?"
+            required_sections:
+              - findings
+              - populations
+              - interventions
+              - outcomes
+              - evidence_quality
+            reviewer_decision: approved
+
+    - path: topics/copd-evidence/structured/copd-exacerbation-evidence/copd-exacerbation-evidence.yaml
+      content: |
+        id: copd-exacerbation-evidence
+        name: copd-exacerbation-evidence
+        title: "COPD Exacerbation: Systemic Corticosteroid Evidence"
+        version: "1.0.0"
+        status: active
+        domain: pulmonology
+        artifact_type: evidence-summary
+        derived_from:
+          - gold-report-2024
+        clinical_question: "What is the evidence for systemic corticosteroids in COPD exacerbations?"
+        sections:
+          findings:
+            - claim_id: steroid-duration
+              statement: "Short course (5 days) systemic corticosteroids improve FEV1 and reduce treatment failure"
+              grade: moderate
+              source: gold-report-2024
+          populations:
+            - name: adults-copd-exacerbation
+              description: "Adults ≥40 years with COPD exacerbation"
+              criteria: "FEV1/FVC <0.70 post-bronchodilator"
+          interventions:
+            - name: prednisone-40mg
+              description: "Prednisone 40mg daily for 5 days"
+          outcomes:
+            - name: fev1-improvement
+              description: "FEV1 improvement at day 3"
+              direction: improvement
+            - name: treatment-failure
+              description: "Treatment failure at 30 days"
+              direction: reduction
+          evidence_quality: moderate
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `copd-evidence`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One approved L2 evidence-summary artifact is ready:
+  - `copd-exacerbation-evidence` (evidence-summary — GOLD guideline)
+
+  Run formalize plan mode only:
+  1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+
+expected_outputs:
+  - path: topics/copd-evidence/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "copd-exacerbation-evidence"
+      - contains: "evidence-summary"
+      - contains: "Evidence"
+      - contains: "EvidenceVariable"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+
+quality_focus:
+  - "Does the plan propose Evidence + EvidenceVariable + Citation as L3 targets?"
+  - "Is the strategy identified as 'evidence-summary' (not generic pathway-package)?"
+  - "Are the required sections appropriate for evidence-summary type?"
+  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"

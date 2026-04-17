@@ -1,0 +1,141 @@
+name: assessment
+skill: rh-inf-formalize
+description: >
+  Approved L2 assessment artifact; agent must plan formalization using the
+  assessment strategy, proposing Questionnaire as L3 FHIR target.
+
+topic: phq9-screening
+
+workspace:
+  tracking_yaml: |
+    topics:
+      phq9-screening:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: phq9-instrument
+            file: topics/phq9-screening/structured/phq9-instrument/phq9-instrument.yaml
+            artifact_type: assessment
+            status: approved
+    sources:
+      - id: kroenke-phq9-2001
+        normalized: true
+        path: sources/normalized/kroenke-phq9-2001.md
+
+  files:
+    - path: topics/phq9-screening/process/plans/extract-plan.yaml
+      content: |
+        topic: phq9-screening
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: phq9-instrument
+            artifact_type: assessment
+            source_files:
+              - sources/normalized/kroenke-phq9-2001.md
+            clinical_question: "What items and scoring apply to PHQ-9 depression screening?"
+            required_sections:
+              - items
+              - scoring
+              - interpretation
+            reviewer_decision: approved
+
+    - path: topics/phq9-screening/structured/phq9-instrument/phq9-instrument.yaml
+      content: |
+        id: phq9-instrument
+        name: phq9-instrument
+        title: "PHQ-9 Depression Screening Instrument"
+        version: "1.0.0"
+        status: active
+        domain: behavioral-health
+        artifact_type: assessment
+        derived_from:
+          - kroenke-phq9-2001
+        clinical_question: "What items and scoring apply to PHQ-9 depression screening?"
+        sections:
+          items:
+            - linkId: phq9-q1
+              text: "Little interest or pleasure in doing things"
+              type: choice
+              options:
+                - value: 0
+                  label: "Not at all"
+                - value: 1
+                  label: "Several days"
+                - value: 2
+                  label: "More than half the days"
+                - value: 3
+                  label: "Nearly every day"
+            - linkId: phq9-q2
+              text: "Feeling down, depressed, or hopeless"
+              type: choice
+              options:
+                - value: 0
+                  label: "Not at all"
+                - value: 1
+                  label: "Several days"
+                - value: 2
+                  label: "More than half the days"
+                - value: 3
+                  label: "Nearly every day"
+            - linkId: phq9-q9
+              text: "Thoughts that you would be better off dead or of hurting yourself"
+              type: choice
+              options:
+                - value: 0
+                  label: "Not at all"
+                - value: 1
+                  label: "Several days"
+                - value: 2
+                  label: "More than half the days"
+                - value: 3
+                  label: "Nearly every day"
+          scoring:
+            method: sum
+            range: "0-27"
+          interpretation:
+            - range: "0-4"
+              severity: "Minimal"
+            - range: "5-9"
+              severity: "Mild"
+            - range: "10-14"
+              severity: "Moderate"
+            - range: "15-19"
+              severity: "Moderately severe"
+            - range: "20-27"
+              severity: "Severe"
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `phq9-screening`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One approved L2 assessment artifact is ready:
+  - `phq9-instrument` (assessment — PHQ-9 instrument)
+
+  Run formalize plan mode only:
+  1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+
+expected_outputs:
+  - path: topics/phq9-screening/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "phq9-instrument"
+      - contains: "assessment"
+      - contains: "Questionnaire"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+
+quality_focus:
+  - "Does the plan propose Questionnaire as the L3 target?"
+  - "Is the strategy identified as 'assessment' (not generic pathway-package)?"
+  - "Does the plan include 'assessments' in required sections?"
+  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"

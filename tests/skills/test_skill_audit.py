@@ -259,7 +259,7 @@ class TestRhInfFormalizeSkillContract:
             pytest.skip("rh-inf-formalize skill not implemented")
         body = skill_body(skill)
         assert "implementation_target" in body
-        assert "rh-skills promote combine" in body
+        assert "rh-skills formalize" in body
         assert "rh-skills validate" in body
 
 

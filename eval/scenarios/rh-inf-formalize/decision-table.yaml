@@ -1,0 +1,102 @@
+name: decision-table
+skill: rh-inf-formalize
+description: >
+  Approved L2 decision-table artifact; agent must plan formalization using
+  the decision-table strategy, proposing PlanDefinition (eca-rule) + Library
+  as L3 FHIR targets.
+
+topic: sepsis-screening
+
+workspace:
+  tracking_yaml: |
+    topics:
+      sepsis-screening:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: sepsis-screening-rules
+            file: topics/sepsis-screening/structured/sepsis-screening-rules/sepsis-screening-rules.yaml
+            artifact_type: decision-table
+            status: approved
+    sources:
+      - id: surviving-sepsis-2021
+        normalized: true
+        path: sources/normalized/surviving-sepsis-2021.md
+
+  files:
+    - path: topics/sepsis-screening/process/plans/extract-plan.yaml
+      content: |
+        topic: sepsis-screening
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: sepsis-screening-rules
+            artifact_type: decision-table
+            source_files:
+              - sources/normalized/surviving-sepsis-2021.md
+            clinical_question: "What decision rules apply for early sepsis screening?"
+            required_sections:
+              - conditions
+              - actions
+              - logic
+            reviewer_decision: approved
+
+    - path: topics/sepsis-screening/structured/sepsis-screening-rules/sepsis-screening-rules.yaml
+      content: |
+        id: sepsis-screening-rules
+        name: sepsis-screening-rules
+        title: "Sepsis Screening: Early Detection Decision Table"
+        version: "1.0.0"
+        status: active
+        domain: critical-care
+        artifact_type: decision-table
+        derived_from:
+          - surviving-sepsis-2021
+        clinical_question: "What decision rules apply for early sepsis screening?"
+        sections:
+          decision_table:
+            - condition: "qSOFA ≥ 2"
+              action: "Order blood cultures and serum lactate"
+              priority: high
+            - condition: "Temperature > 38.3°C or < 36°C AND HR > 90"
+              action: "Initiate SIRS screening pathway"
+              priority: medium
+            - condition: "Serum lactate ≥ 2 mmol/L"
+              action: "Administer IV fluids 30 mL/kg within 3 hours"
+              priority: high
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `sepsis-screening`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One approved L2 decision-table artifact is ready:
+  - `sepsis-screening-rules` (decision-table — Surviving Sepsis Campaign)
+
+  Run formalize plan mode only:
+  1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+
+expected_outputs:
+  - path: topics/sepsis-screening/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "sepsis-screening-rules"
+      - contains: "decision-table"
+      - contains: "PlanDefinition"
+      - contains: "eca-rule"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+
+quality_focus:
+  - "Does the plan propose PlanDefinition (eca-rule) + Library as L3 targets?"
+  - "Is the strategy identified as 'decision-table' (not generic pathway-package)?"
+  - "Does the plan include 'actions' and 'libraries' in required sections?"
+  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"

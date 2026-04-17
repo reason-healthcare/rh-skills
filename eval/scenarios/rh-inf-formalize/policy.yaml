@@ -1,0 +1,118 @@
+name: policy
+skill: rh-inf-formalize
+description: >
+  Approved L2 policy artifact; agent must plan formalization using the
+  policy strategy, proposing PlanDefinition (eca-rule) + Questionnaire (DTR) +
+  Library (CQL) as L3 FHIR targets.
+
+topic: prior-auth-policy
+
+workspace:
+  tracking_yaml: |
+    topics:
+      prior-auth-policy:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: knee-replacement-pa
+            file: topics/prior-auth-policy/structured/knee-replacement-pa/knee-replacement-pa.yaml
+            artifact_type: policy
+            status: approved
+    sources:
+      - id: payer-policy-tka-2024
+        normalized: true
+        path: sources/normalized/payer-policy-tka-2024.md
+
+  files:
+    - path: topics/prior-auth-policy/process/plans/extract-plan.yaml
+      content: |
+        topic: prior-auth-policy
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: knee-replacement-pa
+            artifact_type: policy
+            source_files:
+              - sources/normalized/payer-policy-tka-2024.md
+            clinical_question: "What are the prior authorization criteria for total knee arthroplasty?"
+            required_sections:
+              - eligibility_criteria
+              - documentation_requirements
+              - decision_logic
+            reviewer_decision: approved
+
+    - path: topics/prior-auth-policy/structured/knee-replacement-pa/knee-replacement-pa.yaml
+      content: |
+        id: knee-replacement-pa
+        name: knee-replacement-pa
+        title: "Prior Authorization: Total Knee Arthroplasty"
+        version: "1.0.0"
+        status: active
+        domain: orthopedics
+        artifact_type: policy
+        derived_from:
+          - payer-policy-tka-2024
+        clinical_question: "What are the prior authorization criteria for total knee arthroplasty?"
+        sections:
+          eligibility_criteria:
+            - criterion: "BMI ≤ 40 kg/m²"
+              type: clinical
+              required: true
+            - criterion: "Failed conservative treatment ≥ 3 months"
+              type: clinical
+              required: true
+              details: "Physical therapy, NSAIDs, corticosteroid injection"
+            - criterion: "Radiographic evidence of ≥ Grade 3 OA (Kellgren-Lawrence)"
+              type: diagnostic
+              required: true
+          documentation_requirements:
+            - document: "Orthopedic consultation note"
+              required: true
+            - document: "Knee radiograph report (within 6 months)"
+              required: true
+            - document: "Physical therapy records (≥ 6 visits)"
+              required: true
+          decision_logic:
+            - condition: "All eligibility criteria met AND all documentation submitted"
+              action: "Approve"
+            - condition: "Missing documentation"
+              action: "Pend for additional information (14 business days)"
+            - condition: "BMI > 40 OR no failed conservative treatment"
+              action: "Deny — does not meet medical necessity criteria"
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `prior-auth-policy`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One approved L2 policy artifact is ready:
+  - `knee-replacement-pa` (policy — payer prior authorization)
+
+  Run formalize plan mode only:
+  1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+
+expected_outputs:
+  - path: topics/prior-auth-policy/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "knee-replacement-pa"
+      - contains: "policy"
+      - contains: "PlanDefinition"
+      - contains: "eca-rule"
+      - contains: "Questionnaire"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+
+quality_focus:
+  - "Does the plan propose PlanDefinition (eca-rule) + Questionnaire (DTR) + Library (CQL) as L3 targets?"
+  - "Is the strategy identified as 'policy' (not generic pathway-package)?"
+  - "Does the plan include 'actions' and 'libraries' in required sections?"
+  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"

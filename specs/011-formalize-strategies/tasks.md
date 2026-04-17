@@ -57,21 +57,21 @@
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Update strategy-to-target mapping in `src/rh_skills/commands/promote.py` `_formalize_required_sections()` — replace current generic section mapping with the 7-type L3 target mapping from `docs/FORMALIZE_STRATEGIES.md`: evidence-summary→Evidence/EvidenceVariable/Citation, decision-table→PlanDefinition(eca-rule)/Library, care-pathway→PlanDefinition(clinical-protocol)/ActivityDefinition, terminology→ValueSet/ConceptMap, measure→Measure/Library, assessment→Questionnaire, policy→PlanDefinition(eca-rule)/Questionnaire(DTR)
-- [ ] T015 [US1] Update `_build_formalize_artifacts()` in `src/rh_skills/commands/promote.py` — populate `artifact_type` from actual L2 type (not fixed `pathway-package`), add `strategy` and `l3_targets` fields per data-model.md Entity 6
-- [ ] T016 [US1] Update `_render_formalize_plan()` in `src/rh_skills/commands/promote.py` — render strategy name, L3 target resource types, and type-specific required sections in the plan markdown
-- [ ] T017 [US1] Update formalize SKILL.md plan mode section in `skills/.curated/rh-inf-formalize/SKILL.md` — replace generic pathway-package instructions with type-specific strategy selection instructions; reference the 7-strategy table; instruct agent to read `artifact_type` from each L2 input and match to strategy
-- [ ] T018 [US1] Update formalize reference.md plan schema in `skills/.curated/rh-inf-formalize/reference.md` — update `artifacts[].artifact_type` from fixed `pathway-package` to actual L2 type; add `artifacts[].strategy` and `artifacts[].l3_targets` fields; update L3 target schema from YAML sections to FHIR resource types
+- [X] T014 [US1] Update strategy-to-target mapping in `src/rh_skills/commands/promote.py` `_formalize_required_sections()` — replace current generic section mapping with the 7-type L3 target mapping from `docs/FORMALIZE_STRATEGIES.md`: evidence-summary→Evidence/EvidenceVariable/Citation, decision-table→PlanDefinition(eca-rule)/Library, care-pathway→PlanDefinition(clinical-protocol)/ActivityDefinition, terminology→ValueSet/ConceptMap, measure→Measure/Library, assessment→Questionnaire, policy→PlanDefinition(eca-rule)/Questionnaire(DTR)
+- [X] T015 [US1] Update `_build_formalize_artifacts()` in `src/rh_skills/commands/promote.py` — populate `artifact_type` from actual L2 type (not fixed `pathway-package`), add `strategy` and `l3_targets` fields per data-model.md Entity 6
+- [X] T016 [US1] Update `_render_formalize_plan()` in `src/rh_skills/commands/promote.py` — render strategy name, L3 target resource types, and type-specific required sections in the plan markdown
+- [X] T017 [US1] Update formalize SKILL.md plan mode section in `skills/.curated/rh-inf-formalize/SKILL.md` — replace generic pathway-package instructions with type-specific strategy selection instructions; reference the 7-strategy table; instruct agent to read `artifact_type` from each L2 input and match to strategy
+- [X] T018 [US1] Update formalize reference.md plan schema in `skills/.curated/rh-inf-formalize/reference.md` — update `artifacts[].artifact_type` from fixed `pathway-package` to actual L2 type; add `artifacts[].strategy` and `artifacts[].l3_targets` fields; update L3 target schema from YAML sections to FHIR resource types
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T019 [P] [US1] Write eval scenario for plan with `evidence-summary` input in `eval/scenarios/rh-inf-formalize/evidence-summary.yaml` — provide approved L2 evidence-summary, expect plan proposes Evidence + EvidenceVariable + Citation targets
-- [ ] T020 [P] [US1] Write eval scenario for plan with `decision-table` input in `eval/scenarios/rh-inf-formalize/decision-table.yaml` — provide approved L2 decision-table, expect plan proposes PlanDefinition (eca-rule) + Library targets
-- [ ] T021 [P] [US1] Write eval scenario for plan with `care-pathway` input in `eval/scenarios/rh-inf-formalize/care-pathway.yaml` — provide approved L2 care-pathway, expect plan proposes PlanDefinition (clinical-protocol) + ActivityDefinition targets
-- [ ] T022 [P] [US1] Write eval scenario for plan with `terminology` input in `eval/scenarios/rh-inf-formalize/terminology.yaml` — provide approved L2 terminology, expect plan proposes ValueSet + ConceptMap targets
-- [ ] T023 [P] [US1] Write eval scenario for plan with `measure` input in `eval/scenarios/rh-inf-formalize/measure.yaml` — provide approved L2 measure, expect plan proposes Measure + Library targets
-- [ ] T024 [P] [US1] Write eval scenario for plan with `assessment` input in `eval/scenarios/rh-inf-formalize/assessment.yaml` — provide approved L2 assessment, expect plan proposes Questionnaire target
-- [ ] T025 [P] [US1] Write eval scenario for plan with `policy` input in `eval/scenarios/rh-inf-formalize/policy.yaml` — provide approved L2 policy, expect plan proposes PlanDefinition (eca-rule) + Questionnaire (DTR) targets
+- [X] T019 [P] [US1] Write eval scenario for plan with `evidence-summary` input in `eval/scenarios/rh-inf-formalize/evidence-summary.yaml` — provide approved L2 evidence-summary, expect plan proposes Evidence + EvidenceVariable + Citation targets
+- [X] T020 [P] [US1] Write eval scenario for plan with `decision-table` input in `eval/scenarios/rh-inf-formalize/decision-table.yaml` — provide approved L2 decision-table, expect plan proposes PlanDefinition (eca-rule) + Library targets
+- [X] T021 [P] [US1] Write eval scenario for plan with `care-pathway` input in `eval/scenarios/rh-inf-formalize/care-pathway.yaml` — provide approved L2 care-pathway, expect plan proposes PlanDefinition (clinical-protocol) + ActivityDefinition targets
+- [X] T022 [P] [US1] Write eval scenario for plan with `terminology` input in `eval/scenarios/rh-inf-formalize/terminology.yaml` — provide approved L2 terminology, expect plan proposes ValueSet + ConceptMap targets
+- [X] T023 [P] [US1] Write eval scenario for plan with `measure` input in `eval/scenarios/rh-inf-formalize/measure.yaml` — provide approved L2 measure, expect plan proposes Measure + Library targets
+- [X] T024 [P] [US1] Write eval scenario for plan with `assessment` input in `eval/scenarios/rh-inf-formalize/assessment.yaml` — provide approved L2 assessment, expect plan proposes Questionnaire target
+- [X] T025 [P] [US1] Write eval scenario for plan with `policy` input in `eval/scenarios/rh-inf-formalize/policy.yaml` — provide approved L2 policy, expect plan proposes PlanDefinition (eca-rule) + Questionnaire (DTR) targets
 
 **Checkpoint**: Plan mode produces type-specific strategies for all 7 L2 types. Each eval scenario validates the correct L3 target selection.
 

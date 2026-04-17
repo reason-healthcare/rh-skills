@@ -827,27 +827,45 @@ def test_approve_add_conflict_appends_to_conflicts(tmp_repo):
 class TestFormalizeSectionMapping:
     """Test _formalize_required_sections() returns correct sections by type."""
 
-    def test_decision_table_includes_actions(self):
+    def test_decision_table_includes_actions_and_libraries(self):
         from rh_skills.commands.promote import _formalize_required_sections
         result = _formalize_required_sections([{"artifact_type": "decision-table"}])
         assert "actions" in result
-        assert "pathways" in result
+        assert "libraries" in result
 
-    def test_policy_includes_actions(self):
+    def test_policy_includes_actions_and_libraries(self):
         from rh_skills.commands.promote import _formalize_required_sections
         result = _formalize_required_sections([{"artifact_type": "policy"}])
         assert "actions" in result
+        assert "libraries" in result
 
-    def test_assessment_includes_assessments(self):
+    def test_assessment_includes_assessments_only(self):
         from rh_skills.commands.promote import _formalize_required_sections
         result = _formalize_required_sections([{"artifact_type": "assessment"}])
         assert "assessments" in result
-        assert "pathways" in result
+        assert "pathways" not in result
 
-    def test_evidence_summary_no_extra_sections(self):
+    def test_evidence_summary_includes_evidence(self):
         from rh_skills.commands.promote import _formalize_required_sections
         result = _formalize_required_sections([{"artifact_type": "evidence-summary"}])
-        assert result == ["pathways"]
+        assert result == ["evidence"]
+
+    def test_care_pathway_includes_pathways_and_actions(self):
+        from rh_skills.commands.promote import _formalize_required_sections
+        result = _formalize_required_sections([{"artifact_type": "care-pathway"}])
+        assert "pathways" in result
+        assert "actions" in result
+
+    def test_measure_includes_measures_and_libraries(self):
+        from rh_skills.commands.promote import _formalize_required_sections
+        result = _formalize_required_sections([{"artifact_type": "measure"}])
+        assert "measures" in result
+        assert "libraries" in result
+
+    def test_terminology_includes_value_sets(self):
+        from rh_skills.commands.promote import _formalize_required_sections
+        result = _formalize_required_sections([{"artifact_type": "terminology"}])
+        assert "value_sets" in result
 
     def test_mixed_types_union(self):
         from rh_skills.commands.promote import _formalize_required_sections
@@ -856,10 +874,10 @@ class TestFormalizeSectionMapping:
             {"artifact_type": "assessment"},
             {"artifact_type": "terminology"},
         ])
-        assert "pathways" in result
         assert "actions" in result
         assert "assessments" in result
         assert "value_sets" in result
+        assert "libraries" in result
 
 
 class TestInferArtifactProfiles:

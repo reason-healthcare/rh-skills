@@ -25,18 +25,31 @@ reviewer: <string>
 reviewed_at: <ISO-8601 or null>
 artifacts:
   - name: <kebab-case target name>
-    artifact_type: pathway-package
+    artifact_type: <L2 type: evidence-summary | decision-table | care-pathway | terminology | measure | assessment | policy>
+    strategy: <matching L2 type or "mixed" for multi-type convergence>
+    l3_targets:
+      - <FHIR resource type with qualifier, e.g. "PlanDefinition (eca-rule)">
     input_artifacts:
       - <approved-l2-artifact-name>
     rationale: <string>
     required_sections:
-      - pathways
-      - actions
-      - value_sets
+      - <section-name>
     implementation_target: <true | false>
     reviewer_decision: <pending-review | approved | needs-revision | rejected>
     approval_notes: <string>
 ```
+
+### Strategy-to-L3 Target Mapping
+
+| `artifact_type` | `strategy` | `l3_targets` |
+|-----------------|------------|-------------|
+| `evidence-summary` | `evidence-summary` | Evidence, EvidenceVariable, Citation |
+| `decision-table` | `decision-table` | PlanDefinition (eca-rule), Library (CQL) |
+| `care-pathway` | `care-pathway` | PlanDefinition (clinical-protocol), ActivityDefinition |
+| `terminology` | `terminology` | ValueSet, ConceptMap |
+| `measure` | `measure` | Measure, Library (CQL) |
+| `assessment` | `assessment` | Questionnaire |
+| `policy` | `policy` | PlanDefinition (eca-rule), Questionnaire (DTR), Library (CQL) |
 
 Body sections, in order:
 1. `Review Summary`
@@ -46,57 +59,62 @@ Body sections, in order:
 
 Scanability expectation:
 - the review summary or first artifact card should expose the primary target,
-  selected structured inputs, and required sections without deep scrolling or
-  cross-referencing
+  strategy, L3 FHIR targets, and selected structured inputs without deep
+  scrolling or cross-referencing
 
 ---
 
 ## Primary Output Shape
 
-Formalize v1 produces one primary pathway-oriented computable package per
-approved plan. Supporting sections may be required when the approved inputs
-justify them:
+Formalize v2 produces individual FHIR R4 JSON resources per approved artifact.
+Each L2 artifact type maps to specific FHIR resources via the strategy table:
 
-| Section | Typical upstream trigger |
-|---------|--------------------------|
-| `pathways` | care-pathway steps, decision-table logic |
-| `actions` | actionable steps, branching logic |
-| `value_sets` | terminology artifacts |
-| `measures` | measure artifacts |
-| `assessments` | structured assessment instruments |
-| `libraries` | reusable logic blocks or downstream computable expressions |
+| Strategy | Output Files |
+|----------|-------------|
+| `evidence-summary` | `Evidence-<id>.json`, `EvidenceVariable-<id>.json`, `Citation-<id>.json` |
+| `decision-table` | `PlanDefinition-<id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
+| `care-pathway` | `PlanDefinition-<id>.json`, `ActivityDefinition-<id>.json` |
+| `terminology` | `ValueSet-<id>.json`, `ConceptMap-<id>.json` |
+| `measure` | `Measure-<id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
+| `assessment` | `Questionnaire-<id>.json` |
+| `policy` | `PlanDefinition-<id>.json`, `Questionnaire-<id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
 
-Alternates may be documented for review, but only one entry can set
-`implementation_target: true`.
+All files are written to `topics/<topic>/computable/` by `rh-skills formalize`.
+`rh-skills package` bundles them into a FHIR NPM package at `topics/<topic>/package/`.
+
+Only one artifact can set `implementation_target: true` per plan.
 
 ---
 
 ## L3 Validation Rules
 
-`rh-skills validate <topic> <artifact-name>` should fail when an approved
-`formalize-plan.md` exists and:
+`rh-skills validate <topic> <artifact-name>` and the FHIR structural validator
+(`src/rh_skills/fhir/validate.py`) enforce per-resource-type rules:
 
-- `converged_from[]` does not match the approved `input_artifacts[]` list
-- a required section from the approved plan is absent
-- a required section is present but incomplete for its type
+| Resource Type | Required Fields |
+|--------------|----------------|
+| PlanDefinition | `type`, `action[]` with at least one entry |
+| Measure | `group[].population[]` (numerator + denominator), `scoring` |
+| Questionnaire | `item[]` with `linkId` per item |
+| ValueSet | `compose.include[]` with at least one entry |
+| Evidence | `certainty[]` with at least one rating |
+| Library | `type` |
+| ConceptMap | `group[]` with at least one entry |
+| ActivityDefinition | `kind` |
+| EvidenceVariable | `characteristic[]` with at least one entry |
 
-Minimum completeness rules:
-
-- `pathways` must contain at least one pathway with one or more `steps`
-- `actions` must contain at least one action with `intent` and either
-  `description` or `conditions`
-- `value_sets` must contain at least one coded entry in `codes`
-- every code in `value_sets[].codes[]` must pass `reasonhub-codesystem_verify_code` against the declared `system`
-- `measures` must contain both `numerator` and `denominator`
-- `libraries` must contain both `language` and `content`
-- `assessments` must contain one or more `items`
+Additional checks:
+- MCP-UNREACHABLE placeholders (`TODO:MCP-UNREACHABLE`) are flagged as errors
+- `converged_from[]` in tracking must match the approved `input_artifacts[]`
+- `strategy` in tracking must match the plan's `strategy` field
 
 ---
 
 ## Terminology Resolution (Implement Mode)
 
-When the approved formalize plan requires a `value_sets` section, resolve codes
-using reasonhub MCP tools before calling `rh-skills promote combine`.
+When the approved formalize plan produces terminology resources (ValueSet,
+ConceptMap) or any strategy that includes coded concepts, resolve codes using
+reasonhub MCP tools before calling `rh-skills formalize`.
 
 ### Tool selection
 

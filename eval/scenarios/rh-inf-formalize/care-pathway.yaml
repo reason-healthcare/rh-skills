@@ -1,0 +1,113 @@
+name: care-pathway
+skill: rh-inf-formalize
+description: >
+  Approved L2 care-pathway artifact; agent must plan formalization using
+  the care-pathway strategy, proposing PlanDefinition (clinical-protocol) +
+  ActivityDefinition as L3 FHIR targets.
+
+topic: heart-failure-pathway
+
+workspace:
+  tracking_yaml: |
+    topics:
+      heart-failure-pathway:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: hf-discharge-pathway
+            file: topics/heart-failure-pathway/structured/hf-discharge-pathway/hf-discharge-pathway.yaml
+            artifact_type: care-pathway
+            status: approved
+    sources:
+      - id: acc-aha-hf-guideline-2022
+        normalized: true
+        path: sources/normalized/acc-aha-hf-guideline-2022.md
+
+  files:
+    - path: topics/heart-failure-pathway/process/plans/extract-plan.yaml
+      content: |
+        topic: heart-failure-pathway
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: hf-discharge-pathway
+            artifact_type: care-pathway
+            source_files:
+              - sources/normalized/acc-aha-hf-guideline-2022.md
+            clinical_question: "What is the discharge care pathway for HFrEF patients?"
+            required_sections:
+              - steps
+              - transitions
+              - activities
+            reviewer_decision: approved
+
+    - path: topics/heart-failure-pathway/structured/hf-discharge-pathway/hf-discharge-pathway.yaml
+      content: |
+        id: hf-discharge-pathway
+        name: hf-discharge-pathway
+        title: "Heart Failure: HFrEF Discharge Care Pathway"
+        version: "1.0.0"
+        status: active
+        domain: cardiology
+        artifact_type: care-pathway
+        derived_from:
+          - acc-aha-hf-guideline-2022
+        clinical_question: "What is the discharge care pathway for HFrEF patients?"
+        sections:
+          steps:
+            - id: step-1
+              name: "Pre-discharge medication optimization"
+              description: "Optimize GDMT: ACEi/ARB/ARNI, beta-blocker, MRA, SGLT2i"
+              activities:
+                - "Titrate ACEi/ARB to target dose or max tolerated"
+                - "Start/titrate beta-blocker if hemodynamically stable"
+            - id: step-2
+              name: "Discharge education"
+              description: "Educate patient on daily weight, sodium restriction, medication adherence"
+            - id: step-3
+              name: "Follow-up scheduling"
+              description: "Schedule cardiology follow-up within 7 days of discharge"
+          transitions:
+            - from: step-1
+              to: step-2
+              condition: "Medications optimized or documented reason for deferral"
+            - from: step-2
+              to: step-3
+              condition: "Education completed"
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `heart-failure-pathway`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One approved L2 care-pathway artifact is ready:
+  - `hf-discharge-pathway` (care-pathway — ACC/AHA HF guideline)
+
+  Run formalize plan mode only:
+  1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+
+expected_outputs:
+  - path: topics/heart-failure-pathway/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "hf-discharge-pathway"
+      - contains: "care-pathway"
+      - contains: "PlanDefinition"
+      - contains: "clinical-protocol"
+      - contains: "ActivityDefinition"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+
+quality_focus:
+  - "Does the plan propose PlanDefinition (clinical-protocol) + ActivityDefinition as L3 targets?"
+  - "Is the strategy identified as 'care-pathway' (not generic pathway-package)?"
+  - "Does the plan include 'pathways' and 'actions' in required sections?"
+  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"
