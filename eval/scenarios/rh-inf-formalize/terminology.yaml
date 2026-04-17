@@ -92,8 +92,10 @@ prompt: |
   One approved L2 terminology artifact is ready:
   - `diabetes-value-sets` (terminology — ADA standards)
 
-  Run formalize plan mode only:
+  Run the full formalize cycle:
   1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L3 FHIR JSON resources via rh-skills formalize
 
 expected_outputs:
   - path: topics/diabetes-terminology/process/plans/formalize-plan.md
@@ -103,12 +105,23 @@ expected_outputs:
       - contains: "terminology"
       - contains: "ValueSet"
       - contains: "ConceptMap"
+  - path: topics/diabetes-terminology/computable/ValueSet-diabetes-diagnosis-codes.json
+    checks:
+      - exists
+      - contains: '"resourceType": "ValueSet"'
+      - contains: '"compose"'
+  - path: topics/diabetes-terminology/computable/ConceptMap-diabetes-concept-mappings.json
+    checks:
+      - exists
+      - contains: '"resourceType": "ConceptMap"'
+      - contains: '"group"'
   - path: tracking.yaml
     checks:
       - event: formalize_planned
+      - event: computable_converged
 
 quality_focus:
   - "Does the plan propose ValueSet + ConceptMap as L3 targets?"
   - "Is the strategy identified as 'terminology' (not generic pathway-package)?"
-  - "Does the plan include 'value_sets' in required sections?"
-  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"
+  - "Do FHIR JSON files contain required fields (compose.include[], group[])?"
+  - "Does it use rh-skills formalize (not promote combine)?"

@@ -110,6 +110,85 @@ Additional checks:
 
 ---
 
+## Type-Specific Conversion Rules (Implement Mode)
+
+When implementing each artifact, follow the conversion rules for its strategy.
+Full business rules are in `docs/FORMALIZE_STRATEGIES.md`; summaries below.
+
+### evidence-summary → Evidence Package
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `sections.findings[]` | One **Evidence** per finding. `description` from statement, `certainty[].rating` from grade. |
+| `sections.populations[]`, `interventions[]`, `outcomes[]` | One **EvidenceVariable** per PICOTS concept. `characteristic[]` with coded criteria. |
+| `references[]` / `derived_from[]` | One **Citation** per source. Link via `Evidence.relatedArtifact[]`. |
+
+**MCP**: Search for coded criteria in EvidenceVariable characteristics.
+**CQL**: Not applicable.
+
+### decision-table → ECA Rule Set
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `sections.decision_table[]` rows | **PlanDefinition** (type: `eca-rule`). Each row → one `action[]` entry with `condition[].expression` (CQL). |
+| CQL expressions | **Library** with CQL source. Each condition/action → named CQL define. |
+
+**MCP**: Search for coded concepts in conditions/actions.
+**CQL**: Required. Generate compilable CQL with `context Patient` and `using FHIR version '4.0.1'`.
+
+### care-pathway → Clinical Protocol
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `sections.steps[]` | **PlanDefinition** (type: `clinical-protocol`). Each step → one `action[]`. Step transitions → `relatedAction[]` with `relationship: before-start`. |
+| Step activities | **ActivityDefinition** per reusable activity. Referenced via `action[].definitionCanonical`. |
+
+**MCP**: Search for coded activities (procedures, medications).
+**CQL**: Not required (pathway logic is structural, not expression-based).
+
+### terminology → Value Set Bundle
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `sections.value_sets[]` | One **ValueSet** per named set. `compose.include[]` with system + codes resolved via MCP. |
+| `sections.concept_mappings[]` | **ConceptMap** with `group[].element[].target[]` mappings. |
+
+**MCP**: Primary strategy. Use `reasonhub-search_*` → `codesystem_lookup` → `valueset_expand` for hierarchical sets.
+**CQL**: Not applicable.
+
+### measure → Quality Measure
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `sections.populations` | **Measure** with `group[0].population[]`: initial-population, denominator, numerator, denominator-exclusion. `scoring.coding[0].code` from `scoring.type`. |
+| Population logic | **Library** with CQL. Each population → one named CQL define (e.g., `Initial Population`, `Denominator`). |
+
+**MCP**: Search for coded criteria in population definitions (diagnoses, procedures).
+**CQL**: Required. Generate compilable CQL with population expressions.
+
+### assessment → Questionnaire
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `sections.items[]` | **Questionnaire** with `item[]`. Each item → `linkId`, `text`, `type` (choice/integer/string). Answer options → `answerOption[]` with coded or value entries. |
+| `sections.scoring` | Extension or contained scoring logic. |
+
+**MCP**: Search for LOINC panel codes for the instrument.
+**CQL**: Not required (scoring is structural).
+
+### policy → Payer Policy
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `sections.eligibility_criteria[]` + `decision_logic[]` | **PlanDefinition** (type: `eca-rule`). Criteria → `action[].condition[]`. Decision logic → action priorities. |
+| `sections.documentation_requirements[]` | **Questionnaire** (DTR-compatible). Each doc requirement → `item[]` with `linkId`. |
+| CQL pre-population | **Library** with CQL for auto-populating questionnaire from EHR data. |
+
+**MCP**: Search for CPT/HCPCS codes for procedures, ICD-10 for conditions.
+**CQL**: Required for pre-population logic and eligibility expressions.
+
+---
+
 ## Terminology Resolution (Implement Mode)
 
 When the approved formalize plan produces terminology resources (ValueSet,

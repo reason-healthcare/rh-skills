@@ -95,8 +95,10 @@ prompt: |
   One approved L2 policy artifact is ready:
   - `knee-replacement-pa` (policy — payer prior authorization)
 
-  Run formalize plan mode only:
+  Run the full formalize cycle:
   1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L3 FHIR JSON resources via rh-skills formalize
 
 expected_outputs:
   - path: topics/prior-auth-policy/process/plans/formalize-plan.md
@@ -107,12 +109,27 @@ expected_outputs:
       - contains: "PlanDefinition"
       - contains: "eca-rule"
       - contains: "Questionnaire"
+  - path: topics/prior-auth-policy/computable/PlanDefinition-knee-replacement-pa.json
+    checks:
+      - exists
+      - contains: '"resourceType": "PlanDefinition"'
+      - contains: '"action"'
+  - path: topics/prior-auth-policy/computable/Questionnaire-knee-replacement-pa-dtr.json
+    checks:
+      - exists
+      - contains: '"resourceType": "Questionnaire"'
+      - contains: '"item"'
+  - path: topics/prior-auth-policy/computable/Library-knee-replacement-pa.json
+    checks:
+      - exists
+      - contains: '"resourceType": "Library"'
   - path: tracking.yaml
     checks:
       - event: formalize_planned
+      - event: computable_converged
 
 quality_focus:
   - "Does the plan propose PlanDefinition (eca-rule) + Questionnaire (DTR) + Library (CQL) as L3 targets?"
   - "Is the strategy identified as 'policy' (not generic pathway-package)?"
-  - "Does the plan include 'actions' and 'libraries' in required sections?"
-  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"
+  - "Do FHIR JSON files contain required fields (action[], item[].linkId, CQL)?"
+  - "Does it use rh-skills formalize (not promote combine)?"

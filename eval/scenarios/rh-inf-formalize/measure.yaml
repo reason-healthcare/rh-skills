@@ -83,8 +83,10 @@ prompt: |
   One approved L2 measure artifact is ready:
   - `hba1c-measure` (measure — CMS122 eCQM)
 
-  Run formalize plan mode only:
+  Run the full formalize cycle:
   1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L3 FHIR JSON resources via rh-skills formalize
 
 expected_outputs:
   - path: topics/diabetes-quality/process/plans/formalize-plan.md
@@ -94,12 +96,23 @@ expected_outputs:
       - contains: "measure"
       - contains: "Measure"
       - contains: "Library"
+  - path: topics/diabetes-quality/computable/Measure-hba1c-measure.json
+    checks:
+      - exists
+      - contains: '"resourceType": "Measure"'
+      - contains: '"group"'
+      - contains: '"scoring"'
+  - path: topics/diabetes-quality/computable/Library-hba1c-measure.json
+    checks:
+      - exists
+      - contains: '"resourceType": "Library"'
   - path: tracking.yaml
     checks:
       - event: formalize_planned
+      - event: computable_converged
 
 quality_focus:
   - "Does the plan propose Measure + Library (CQL) as L3 targets?"
   - "Is the strategy identified as 'measure' (not generic pathway-package)?"
-  - "Does the plan include 'measures' and 'libraries' in required sections?"
-  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"
+  - "Do FHIR JSON files contain required fields (group[].population[], scoring)?"
+  - "Does it use rh-skills formalize (not promote combine)?"

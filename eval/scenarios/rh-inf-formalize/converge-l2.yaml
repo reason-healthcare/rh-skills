@@ -154,11 +154,10 @@ prompt: |
   - `diabetes-ccm-quality-measures` (quality measure set — CMS eCQM)
 
   Run the full formalize cycle:
-  1. **plan** — generate a formalize plan proposing the L3 package structure
+  1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
   2. Wait for reviewer approval (simulate approval by responding "approved")
-  3. **implement** — produce the L3 FHIR-aligned computable package via
-     rh-skills promote combine
-  4. **verify** — validate the L3 artifact
+  3. **implement** — produce the L3 FHIR JSON resources via rh-skills formalize
+  4. **package** — bundle all resources via rh-skills package
 
 expected_outputs:
   - path: topics/diabetes-ccm/process/plans/formalize-plan.md
@@ -166,25 +165,27 @@ expected_outputs:
       - exists
       - contains: "diabetes-ccm-standards"
       - contains: "diabetes-ccm-quality-measures"
-  - path: topics/diabetes-ccm/computable/diabetes-ccm-package.yaml
+  - path: topics/diabetes-ccm/computable/PlanDefinition-diabetes-ccm-standards.json
     checks:
       - exists
-      - contains: "converged_from:"
-      - contains: "pathways:"
+      - contains: '"resourceType": "PlanDefinition"'
+  - path: topics/diabetes-ccm/computable/Measure-diabetes-ccm-quality-measures.json
+    checks:
+      - exists
+      - contains: '"resourceType": "Measure"'
   - path: tracking.yaml
     checks:
       - event: formalize_planned
-      - event: formalize_complete
+      - event: computable_converged
 
 efficiency_focus:
   - "Does the agent use rh-skills promote formalize-plan rather than writing the plan inline?"
   - "Does it correctly pause for reviewer approval between plan and implement?"
-  - "Does it use rh-skills promote combine (not inline YAML construction) for the L3 artifact?"
-  - "Does it re-read the L2 artifacts more than once each?"
+  - "Does it use rh-skills formalize (not inline FHIR construction) for each artifact?"
+  - "Does it apply the correct strategy per L2 type (evidence-summary vs measure)?"
 
 quality_focus:
-  - "Does the L3 package reference both input L2 artifacts in converged_from?"
-  - "Is there a pathways section with at least one clinical decision pathway?"
-  - "Are the quality measures from the second artifact integrated into the L3 package?"
-  - "Does rh-skills validate report zero errors on the L3 artifact?"
-  - "Is the FHIR alignment section present (even if minimal)?"
+  - "Are both L2 artifacts formalized with their respective strategies?"
+  - "Does the Measure contain group[].population[] with numerator/denominator?"
+  - "Does the PlanDefinition reference the clinical standards?"
+  - "Does rh-skills validate report zero structural errors?"

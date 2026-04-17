@@ -80,8 +80,10 @@ prompt: |
   One approved L2 decision-table artifact is ready:
   - `sepsis-screening-rules` (decision-table — Surviving Sepsis Campaign)
 
-  Run formalize plan mode only:
+  Run the full formalize cycle:
   1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L3 FHIR JSON resources via rh-skills formalize
 
 expected_outputs:
   - path: topics/sepsis-screening/process/plans/formalize-plan.md
@@ -91,12 +93,23 @@ expected_outputs:
       - contains: "decision-table"
       - contains: "PlanDefinition"
       - contains: "eca-rule"
+  - path: topics/sepsis-screening/computable/PlanDefinition-sepsis-screening-rules.json
+    checks:
+      - exists
+      - contains: '"resourceType": "PlanDefinition"'
+      - contains: '"type"'
+      - contains: '"action"'
+  - path: topics/sepsis-screening/computable/Library-sepsis-screening-rules.json
+    checks:
+      - exists
+      - contains: '"resourceType": "Library"'
   - path: tracking.yaml
     checks:
       - event: formalize_planned
+      - event: computable_converged
 
 quality_focus:
   - "Does the plan propose PlanDefinition (eca-rule) + Library as L3 targets?"
   - "Is the strategy identified as 'decision-table' (not generic pathway-package)?"
-  - "Does the plan include 'actions' and 'libraries' in required sections?"
-  - "Does it use rh-skills promote formalize-plan (not inline plan writing)?"
+  - "Do the FHIR JSON files contain required fields (action[], condition[], CQL)?"
+  - "Does it use rh-skills formalize (not promote combine)?"

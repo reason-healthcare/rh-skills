@@ -85,16 +85,16 @@
 
 ### Implementation for User Story 2
 
-- [ ] T026 [US2] Update formalize SKILL.md implement mode in `skills/.curated/rh-inf-formalize/SKILL.md` — replace generic combine instructions with: (1) read L2 artifact_type, (2) consult reference.md for type-specific conversion rules, (3) generate FHIR JSON per strategy, (4) call `rh-skills formalize <topic> <artifact>` for each artifact. Reference `docs/FORMALIZE_STRATEGIES.md` for detailed business rules.
-- [ ] T027 [US2] Update formalize reference.md implement section in `skills/.curated/rh-inf-formalize/reference.md` — add per-type conversion rule summaries: L2 input shape → FHIR resource structure mapping, MCP tool usage per type (which searches/lookups needed), CQL generation guidance (when compilable vs stub), required FHIR fields per resource type. Source from `docs/FORMALIZE_STRATEGIES.md` sections §1–§7.
-- [ ] T028 [US2] Build type-specific LLM system prompts in `src/rh_skills/commands/formalize.py` `formalize` command — for each `artifact_type`, construct a system prompt that includes: the specific FHIR resource type(s) to produce, required fields and structure, section mapping rules, CQL conventions. Use reference.md as the prompt source.
-- [ ] T029 [US2] Implement FHIR JSON response parsing in `rh-skills formalize` command — parse LLM response as JSON array of FHIR resources, handle cases where LLM returns markdown-fenced JSON, split into individual resource files by resourceType
-- [ ] T030 [US2] Wire normalization + validation into `rh-skills formalize` command — after LLM response parsed: run `fhir/normalize.py` on each resource dict, run `fhir/validate.py` for structural checks, warn on validation errors but still write (verify catches them later)
+- [X] T026 [US2] Update formalize SKILL.md implement mode in `skills/.curated/rh-inf-formalize/SKILL.md` — replace generic combine instructions with: (1) read L2 artifact_type, (2) consult reference.md for type-specific conversion rules, (3) generate FHIR JSON per strategy, (4) call `rh-skills formalize <topic> <artifact>` for each artifact. Reference `docs/FORMALIZE_STRATEGIES.md` for detailed business rules.
+- [X] T027 [US2] Update formalize reference.md implement section in `skills/.curated/rh-inf-formalize/reference.md` — add per-type conversion rule summaries: L2 input shape → FHIR resource structure mapping, MCP tool usage per type (which searches/lookups needed), CQL generation guidance (when compilable vs stub), required FHIR fields per resource type. Source from `docs/FORMALIZE_STRATEGIES.md` sections §1–§7.
+- [X] T028 [US2] Build type-specific LLM system prompts in `src/rh_skills/commands/formalize.py` `formalize` command — for each `artifact_type`, construct a system prompt that includes: the specific FHIR resource type(s) to produce, required fields and structure, section mapping rules, CQL conventions. Use reference.md as the prompt source.
+- [X] T029 [US2] Implement FHIR JSON response parsing in `rh-skills formalize` command — parse LLM response as JSON array of FHIR resources, handle cases where LLM returns markdown-fenced JSON, split into individual resource files by resourceType
+- [X] T030 [US2] Wire normalization + validation into `rh-skills formalize` command — after LLM response parsed: run `fhir/normalize.py` on each resource dict, run `fhir/validate.py` for structural checks, warn on validation errors but still write (verify catches them later)
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T031 [P] [US2] Extend eval scenarios (T019–T025) with implement phase — each scenario should include full plan→approve→implement cycle; expected outputs check for correct FHIR resourceType, required fields present, `computable_converged` event in tracking
-- [ ] T032 [P] [US2] Update existing `eval/scenarios/rh-inf-formalize/converge-l2.yaml` for new output format — change expected outputs from `.yaml` to `.json` FHIR resources; update tracking checks for `files` (list) and `checksums` (dict)
+- [X] T031 [P] [US2] Extend eval scenarios (T019–T025) with implement phase — each scenario should include full plan→approve→implement cycle; expected outputs check for correct FHIR resourceType, required fields present, `computable_converged` event in tracking
+- [X] T032 [P] [US2] Update existing `eval/scenarios/rh-inf-formalize/converge-l2.yaml` for new output format — change expected outputs from `.yaml` to `.json` FHIR resources; update tracking checks for `files` (list) and `checksums` (dict)
 
 **Checkpoint**: Implement produces FHIR JSON + CQL for all 7 L2 types. Each scenario validates structural correctness.
 
