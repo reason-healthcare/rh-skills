@@ -128,8 +128,12 @@ def _render_from_templates(data: dict, views_dir: Path) -> list[str]:
     written: list[str] = []
     for tmpl_path in sorted(type_dir.glob("*.j2")):
         out_name = tmpl_path.stem  # e.g. "rules-table.md" from "rules-table.md.j2"
-        out = views_dir / out_name
         rendered = env.get_template(tmpl_path.name).render(data=data, **extra)
+        # Wrap .mmd output in a fenced ```mermaid block inside a .md file
+        if out_name.endswith(".mmd"):
+            out_name = out_name[:-4] + ".md"
+            rendered = f"```mermaid\n{rendered.rstrip()}\n```\n"
+        out = views_dir / out_name
         out.write_text(rendered)
         written.append(str(out))
 

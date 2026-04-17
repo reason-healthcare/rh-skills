@@ -409,8 +409,9 @@ all deterministic writes must go through `rh-skills promote derive` and
    `render` writes one or more view files into
    `topics/<topic>/structured/<artifact-name>/views/`. The filenames depend
    on the artifact type (e.g. `summary.md` for generic types;
-   `rules-table.md`, `decision-tree.mmd`, `completeness-report.md` for
-   `decision-table`). These are the generated human-readable representations
+   `rules-table.md`, `decision-tree.md`, `completeness-report.md` for
+   `decision-table`). Mermaid diagrams are wrapped in a fenced ` ```mermaid `
+   block inside `.md` files. These are the generated human-readable representations
    for SME review — do not edit them manually.
 
 6. Report `✓` or `✗` per artifact. Stop on blocking CLI failures; do not silently continue past a failed derive/validate command.

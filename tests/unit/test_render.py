@@ -186,9 +186,10 @@ def test_render_policy(tmp_repo):
     result = runner.invoke(render, ["my-skill", "auth-policy"])
     assert result.exit_code == 0
     views = tmp_repo / "topics" / "my-skill" / "structured" / "auth-policy" / "views"
-    assert (views / "criteria-flowchart.mmd").exists()
+    assert (views / "criteria-flowchart.md").exists()
     assert (views / "requirements-checklist.md").exists()
-    flowchart = (views / "criteria-flowchart.mmd").read_text()
+    flowchart = (views / "criteria-flowchart.md").read_text()
+    assert "```mermaid" in flowchart
     assert "flowchart" in flowchart
     checklist = (views / "requirements-checklist.md").read_text()
     assert "Clinical necessity" in checklist
@@ -234,7 +235,7 @@ def test_render_decision_table_complete(tmp_repo):
     assert result.exit_code == 0
     views = tmp_repo / "topics" / "my-skill" / "structured" / "dt-complete" / "views"
     assert (views / "rules-table.md").exists()
-    assert (views / "decision-tree.mmd").exists()
+    assert (views / "decision-tree.md").exists()
     assert (views / "completeness-report.md").exists()
     report = (views / "completeness-report.md").read_text()
     assert "**Complete**: Yes" in report
