@@ -860,3 +860,64 @@ class TestFormalizeSectionMapping:
         assert "actions" in result
         assert "assessments" in result
         assert "value_sets" in result
+
+
+class TestInferArtifactProfiles:
+    def test_single_match_returns_one_profile(self):
+        from rh_skills.commands.promote import _infer_artifact_profiles
+        profiles = _infer_artifact_profiles("ada-guidelines", "risk factors and thresholds for patients")
+        types = [p["artifact_type"] for p in profiles]
+        assert "risk-factors" in types
+
+    def test_multi_keyword_source_returns_multiple_profiles(self):
+        from rh_skills.commands.promote import _infer_artifact_profiles
+        content = "screening criteria for eligibility, workflow algorithm steps, and risk factor scoring"
+        profiles = _infer_artifact_profiles("guideline", content)
+        types = {p["artifact_type"] for p in profiles}
+        assert "eligibility-criteria" in types
+        assert "workflow-steps" in types
+        assert "risk-factors" in types
+
+    def test_no_match_returns_evidence_summary_fallback(self):
+        from rh_skills.commands.promote import _infer_artifact_profiles
+        profiles = _infer_artifact_profiles("report", "this document has no clinical keyword matches xyz")
+        assert len(profiles) == 1
+        assert profiles[0]["artifact_type"] == "evidence-summary"
+
+
+class TestGroupSourcesManyToMany:
+    def test_one_source_produces_multiple_artifact_groups(self):
+        from rh_skills.commands.promote import _group_sources_for_extract_plan
+        records = [
+            {
+                "name": "acc-aha-lipid",
+                "content": "risk factors, exclusions, decision points, and evidence summary for lipid management",
+                "relative_path": "sources/normalized/acc-aha-lipid.md",
+            }
+        ]
+        groups = _group_sources_for_extract_plan(records)
+        types = {g["artifact_type"] for g in groups}
+        assert len(types) > 1
+        assert "risk-factors" in types
+        assert "exclusions" in types
+
+    def test_source_not_duplicated_within_group(self):
+        from rh_skills.commands.promote import _group_sources_for_extract_plan
+        record = {
+            "name": "risk-and-risk-again",
+            "content": "risk risk risk factors for many risk conditions",
+            "relative_path": "sources/normalized/r.md",
+        }
+        groups = _group_sources_for_extract_plan([record])
+        risk_group = next(g for g in groups if g["artifact_type"] == "risk-factors")
+        assert len(risk_group["sources"]) == 1
+
+    def test_two_sources_same_type_grouped_together(self):
+        from rh_skills.commands.promote import _group_sources_for_extract_plan
+        records = [
+            {"name": "src-a", "content": "risk factors for cardiovascular events", "relative_path": "a.md"},
+            {"name": "src-b", "content": "additional risk factor analysis", "relative_path": "b.md"},
+        ]
+        groups = _group_sources_for_extract_plan(records)
+        risk_group = next(g for g in groups if g["artifact_type"] == "risk-factors")
+        assert len(risk_group["sources"]) == 2

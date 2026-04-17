@@ -546,33 +546,41 @@ def _normalized_source_records(tracking: dict, topic: str) -> list[dict]:
     return records
 
 
-def _infer_artifact_profile(source_name: str, content: str) -> dict:
+_EVIDENCE_SUMMARY_FALLBACK = {
+    "artifact_type": "evidence-summary",
+    "section": "summary_points",
+    "key_question": "What evidence should be preserved for downstream reasoning?",
+}
+
+
+def _infer_artifact_profiles(source_name: str, content: str) -> list[dict]:
+    """Return all matching artifact profiles for a source (many-to-many)."""
     haystack = f"{source_name} {content[:1000]}".lower()
-    for profile in EXTRACT_ARTIFACT_PROFILES:
-        if any(keyword in haystack for keyword in profile["keywords"]):
-            return profile
-    return {
-        "artifact_type": "evidence-summary",
-        "section": "summary_points",
-        "key_question": "What evidence should be preserved for downstream reasoning?",
-    }
+    matched = [
+        profile
+        for profile in EXTRACT_ARTIFACT_PROFILES
+        if any(keyword in haystack for keyword in profile["keywords"])
+    ]
+    return matched if matched else [_EVIDENCE_SUMMARY_FALLBACK]
 
 
 def _group_sources_for_extract_plan(source_records: list[dict]) -> list[dict]:
+    """Group source records by artifact type — one source may contribute to many types."""
     grouped: dict[str, dict] = {}
     for record in source_records:
-        profile = _infer_artifact_profile(record["name"], record["content"])
-        artifact_type = profile["artifact_type"]
-        group = grouped.setdefault(
-            artifact_type,
-            {
-                "artifact_type": artifact_type,
-                "section": profile["section"],
-                "key_question": profile["key_question"],
-                "sources": [],
-            },
-        )
-        group["sources"].append(record)
+        for profile in _infer_artifact_profiles(record["name"], record["content"]):
+            artifact_type = profile["artifact_type"]
+            group = grouped.setdefault(
+                artifact_type,
+                {
+                    "artifact_type": artifact_type,
+                    "section": profile["section"],
+                    "key_question": profile["key_question"],
+                    "sources": [],
+                },
+            )
+            if record not in group["sources"]:
+                group["sources"].append(record)
     return list(grouped.values())
 
 
