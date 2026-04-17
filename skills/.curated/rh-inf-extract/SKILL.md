@@ -146,12 +146,23 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
      as `terminology-value-sets`)?
    - Is the artifact granularity appropriate — one artifact per coherent clinical
      question, not everything collapsed into a single artifact?
+   - **Does the plan group sources that share a conflicting value into the same
+     artifact?** The planner assigns sources by count/type — it does NOT detect
+     cross-source conflicts. If two sources disagree on the same clinical value
+     (e.g., HbA1c targets), they must end up in the same artifact so the conflict
+     can be recorded. If they are in separate artifacts, re-run with `--force`.
 
    If the plan is too narrow or uses wrong artifact types, note the gaps in the
    `review_summary` field when approving, and consider re-running `plan --force`
    after clarifying the scope. The deterministic planner groups sources by type
    but the **agent is responsible for judging whether the proposed scope matches
    the source's clinical richness**.
+
+   **When the plan splits conflicting sources into separate artifacts**, use
+   `rh-skills promote plan <topic> --force` to regenerate. After re-running,
+   if the conflict is still present (sources still grouped together), record it
+   during approval with `--add-conflict`. Do NOT edit `extract-plan.yaml`
+   directly.
 
    **Decision rule for scope gaps**: A narrower-than-ideal plan is acceptable
    — approve it with documented gaps in `review_summary` and proceed. Only
@@ -226,6 +237,20 @@ Use `rh-skills promote approve` to record decisions without editing YAML directl
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved --notes "Optional note" \
   --finalize --reviewer "<reviewer-name>"
+
+# When the planner missed a cross-source conflict, record it with --add-conflict:
+rh-skills promote approve <topic> \
+  --artifact <name> --decision approved \
+  --add-conflict "HbA1c threshold: ADA 2024 <7.0% vs AACE 2022 ≤6.5%" \
+  --review-summary "Cross-source HbA1c conflict added during review; planner split sources into separate artifacts." \
+  --finalize --reviewer "<reviewer-name>"
+
+# --add-conflict is repeatable for multiple conflicts on one artifact:
+rh-skills promote approve <topic> \
+  --artifact <name> --decision approved \
+  --add-conflict "Conflict A description" \
+  --add-conflict "Conflict B description" \
+  --finalize
 
 # If multiple artifacts need decisions, run one --artifact call per artifact
 # and finalize only in the last call:

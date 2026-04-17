@@ -652,14 +652,18 @@ def _write_plan_and_readout(plan_path: Path, readout_path: Path, plan: dict) -> 
 
 
 def _apply_artifact_decision(
-    plan: dict, artifact_name: str, decision: str, notes: str = ""
+    plan: dict, artifact_name: str, decision: str, notes: str = "",
+    add_conflicts: tuple[str, ...] = (),
 ) -> None:
-    """Mutate plan in-place: set reviewer_decision (and optional notes) on one artifact."""
+    """Mutate plan in-place: set reviewer_decision, optional notes, and append conflicts."""
     for artifact in plan.get("artifacts", []) or []:
         if artifact.get("name") == artifact_name:
             artifact["reviewer_decision"] = decision
             if notes:
                 artifact["approval_notes"] = notes
+            if add_conflicts:
+                existing = artifact.get("unresolved_conflicts") or []
+                artifact["unresolved_conflicts"] = existing + list(add_conflicts)
             return
     raise click.UsageError(
         f"Artifact '{artifact_name}' not found in extract-plan.yaml. "
@@ -791,6 +795,10 @@ def plan(topic, force):
     help="Decision for --artifact.",
 )
 @click.option("--notes", default="", help="Approval notes (used with --artifact).")
+@click.option(
+    "--add-conflict", "add_conflicts", multiple=True, metavar="TEXT",
+    help="Append a conflict description to the artifact's unresolved_conflicts list (repeatable).",
+)
 @click.option("--reviewer", default=None, help="Reviewer name written to plan header.")
 @click.option(
     "--review-summary", "review_summary", default=None,
@@ -800,13 +808,17 @@ def plan(topic, force):
     "--finalize", is_flag=True,
     help="Set plan status to 'approved' and record reviewer/timestamp.",
 )
-def approve(topic, artifact_name, decision, notes, reviewer, review_summary, finalize):
+def approve(topic, artifact_name, decision, notes, add_conflicts, reviewer, review_summary, finalize):
     """Record reviewer decisions on extract-plan.yaml artifacts.
 
     \b
     Non-interactive (AI agent / script):
       # Approve one artifact and finalize in a single atomic call (recommended):
       rh-skills promote approve TOPIC --artifact NAME --decision approved --finalize [--reviewer NAME]
+
+      # Record a cross-source conflict and finalize:
+      rh-skills promote approve TOPIC --artifact NAME --decision approved \\
+        --add-conflict "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%" --finalize
 
       # Or as separate sequential calls:
       rh-skills promote approve TOPIC --artifact NAME --decision approved [--notes TEXT]
@@ -832,7 +844,7 @@ def approve(topic, artifact_name, decision, notes, reviewer, review_summary, fin
     if artifact_name:
         if not decision:
             raise click.UsageError("--decision is required when --artifact is specified.")
-        _apply_artifact_decision(plan, artifact_name, decision, notes)
+        _apply_artifact_decision(plan, artifact_name, decision, notes, add_conflicts)
         if review_summary is not None:
             plan["review_summary"] = review_summary
         _write_plan_and_readout(plan_path, readout_path, plan)

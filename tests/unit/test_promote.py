@@ -764,3 +764,29 @@ def test_approve_review_summary_written_to_plan(tmp_repo):
     plan = _read_plan(tmp_repo)
     assert plan["review_summary"] == "ADA vs AACE conflict documented; plan approved."
     assert plan["status"] == "approved"
+
+
+def test_approve_add_conflict_appends_to_unresolved_conflicts(tmp_repo):
+    """--add-conflict appends to artifact's unresolved_conflicts list."""
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "hba1c-target", "reviewer_decision": "pending-review",
+                    "approval_notes": "", "unresolved_conflicts": []}],
+    )
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "approve", "my-skill",
+        "--artifact", "hba1c-target",
+        "--decision", "approved",
+        "--add-conflict", "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%",
+        "--add-conflict", "Monitoring frequency differs",
+        "--finalize", "--reviewer", "Test",
+    ])
+    assert result.exit_code == 0, result.output
+    plan = _read_plan(tmp_repo)
+    conflicts = plan["artifacts"][0]["unresolved_conflicts"]
+    assert "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%" in conflicts
+    assert "Monitoring frequency differs" in conflicts
+    assert len(conflicts) == 2
