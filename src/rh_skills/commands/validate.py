@@ -87,6 +87,20 @@ def _report_warn(message: str, *, emit: bool) -> None:
         log_warn(message)
 
 
+def _collect_stub_paths(value, path: str = "") -> list[str]:
+    """Walk nested dicts/lists and return dotted paths of any string containing '<stub:'."""
+    stubs = []
+    if isinstance(value, str) and "<stub:" in value:
+        stubs.append(path)
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            stubs.extend(_collect_stub_paths(v, f"{path}.{k}" if path else k))
+    elif isinstance(value, list):
+        for i, item in enumerate(value):
+            stubs.extend(_collect_stub_paths(item, f"{path}[{i}]"))
+    return stubs
+
+
 def _validate_extract_artifact(
     topic: str,
     artifact: str,
@@ -187,6 +201,14 @@ def _validate_extract_artifact(
         errors += 1
     elif conflicts and not isinstance(conflicts, list):
         _report_error("  conflicts must be a list", emit=emit)
+        errors += 1
+
+    stub_paths = _collect_stub_paths(sections, path="sections")
+    for stub_path in stub_paths:
+        _report_error(
+            f"  UNRESOLVED stub value at {stub_path} — re-derive with RH_STUB_RESPONSE containing real content",
+            emit=emit,
+        )
         errors += 1
 
     return errors, warnings

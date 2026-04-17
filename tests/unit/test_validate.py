@@ -386,3 +386,68 @@ measures:
     result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
     assert result.exit_code == 1
     assert "measures require numerator and denominator" in result.output
+
+
+def test_validate_extract_artifact_fails_unresolved_stub_values(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with stub values"
+derived_from:
+  - source-l1
+artifact_type: eligibility-criteria
+clinical_question: "Who should be screened?"
+sections:
+  summary: "Adults at risk should be screened."
+  criteria:
+    - id: cr-001
+      description: "<stub: criterion>"
+      requirement_type: clinical
+      rule: "<stub: rule>"
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Screen adults at risk"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+conflicts: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "UNRESOLVED stub" in result.output
+    assert "sections.criteria[0].description" in result.output
+    assert "re-derive" in result.output
+
+
+def test_collect_stub_paths_finds_nested_stubs():
+    from rh_skills.commands.validate import _collect_stub_paths
+    data = {
+        "summary": "Real summary",
+        "factors": [
+            {"factor": "<stub: factor name>", "threshold": "LDL >= 190"},
+            {"factor": "Diabetes", "threshold": "<stub: threshold>"},
+        ],
+        "conflicts": "<stub: populate conflicts content>",
+    }
+    paths = _collect_stub_paths(data)
+    assert "factors[0].factor" in paths
+    assert "factors[1].threshold" in paths
+    assert "conflicts" in paths
+    assert "summary" not in paths
+
+
+def test_collect_stub_paths_empty_on_clean_data():
+    from rh_skills.commands.validate import _collect_stub_paths
+    data = {
+        "summary": "Clean content",
+        "criteria": [{"id": "c1", "description": "Screen adults", "rule": "age >= 40"}],
+    }
+    assert _collect_stub_paths(data) == []
