@@ -1,0 +1,117 @@
+name: unknown-type-fallback
+skill: rh-inf-formalize
+description: >
+  L2 artifact with an unrecognized artifact_type; agent must detect the unknown
+  type, fall back to the generic PlanDefinition strategy with a warning, and
+  record strategy: generic in tracking.
+
+topic: custom-protocol
+
+workspace:
+  tracking_yaml: |
+    topics:
+      custom-protocol:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: custom-workflow
+            file: topics/custom-protocol/structured/custom-workflow/custom-workflow.yaml
+            artifact_type: custom-workflow-type
+            status: approved
+    sources:
+      - id: internal-protocol-v3
+        normalized: true
+        path: sources/normalized/internal-protocol-v3.md
+
+  files:
+    - path: topics/custom-protocol/process/plans/extract-plan.yaml
+      content: |
+        topic: custom-protocol
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: custom-workflow
+            artifact_type: custom-workflow-type
+            reviewer_decision: approved
+            approval_notes: "Approved for formalization"
+
+    - path: topics/custom-protocol/structured/custom-workflow/custom-workflow.yaml
+      content: |
+        id: custom-workflow
+        name: custom-workflow
+        title: Custom Workflow Protocol
+        version: "1.0.0"
+        status: draft
+        domain: internal-medicine
+        description: >
+          An internal protocol workflow that uses a non-standard artifact type
+          not in the L2 hybrid catalog.
+        derived_from:
+          - internal-protocol-v3
+        artifact_type: custom-workflow-type
+        clinical_question: >
+          What workflow steps should clinicians follow for this internal protocol?
+        sections:
+          summary: >
+            A custom internal protocol with 3 workflow steps for patient triage,
+            assessment, and disposition.
+          steps:
+            - step: "1. Triage patient using ESI criteria"
+            - step: "2. Perform focused clinical assessment"
+            - step: "3. Determine disposition (admit/discharge/observe)"
+          evidence_traceability:
+            - claim_id: custom-001
+              statement: "ESI triage improves patient flow"
+              evidence:
+                - source: internal-protocol-v3
+                  locator: "Section 2.1"
+        conflicts: []
+
+steps:
+  - action: plan
+    description: >
+      Run rh-inf-formalize plan on a topic with an unrecognized artifact_type.
+      The plan should detect the unknown type, fall back to the generic
+      PlanDefinition strategy, and emit a warning about the unrecognized type.
+    expected:
+      - formalize-plan.md is created
+      - Plan contains a warning about unrecognized artifact_type 'custom-workflow-type'
+      - Strategy falls back to generic PlanDefinition
+      - Plan proposes PlanDefinition as the L3 target
+      - required_sections include a reasonable default set
+
+  - action: approve
+    description: >
+      Reviewer approves the formalize plan, acknowledging the generic fallback.
+    changes:
+      - file: topics/custom-protocol/process/plans/formalize-plan.md
+        frontmatter:
+          status: approved
+          reviewer: reviewer
+          reviewed_at: "2026-04-16T14:00:00Z"
+          artifacts[0].reviewer_decision: approved
+
+  - action: implement
+    description: >
+      Run rh-skills formalize on the approved artifact. The command should use
+      the generic strategy, producing a PlanDefinition JSON resource.
+    expected:
+      - computable/ directory contains PlanDefinition-*.json
+      - tracking records strategy as 'generic' (not a standard L2 type)
+      - computable_converged event appended
+      - Output includes a warning about unknown artifact type
+
+  - action: verify
+    description: >
+      Run rh-inf-formalize verify. Verify should check the generic
+      PlanDefinition against basic structural rules.
+    expected:
+      - PlanDefinition has required fields (resourceType, id, status, type)
+      - No MCP-UNREACHABLE placeholders (generic strategy may skip MCP)
+      - converged_from matches approved plan inputs

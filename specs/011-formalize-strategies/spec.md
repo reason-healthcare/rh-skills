@@ -2,7 +2,7 @@
 
 **Feature Branch**: `011-formalize-strategies`  
 **Created**: 2026-04-17  
-**Status**: Draft  
+**Status**: Complete  
 **Depends On**: [006 — rh-inf-formalize](../006-rh-inf-formalize/), [010 — L2 artifact catalog](../010-l2-artifact-catalog/)  
 **Input**: User description: "L2 to L3 formalization strategy business rules and type-specific FHIR conversion mappings for the rh-inf-formalize skill"
 
@@ -148,7 +148,7 @@ input and documents merge precedence for overlapping FHIR resource types.
 
 ### Edge Cases
 
-- What happens when an L2 artifact type is `custom` (not one of the 7 standard types)? The system should fall back to generic pathway-package strategy and warn.
+- What happens when an L2 artifact type is `custom` (not one of the 7 standard types)? The system should fall back to the generic PlanDefinition strategy and warn.
 - What happens when a `terminology` artifact has zero codes (only concept names without systems)? Implement must still attempt MCP resolution and report any codes it cannot resolve.
 - What happens when a `decision-table` has 5+ levels of nesting? The strategy must preserve full depth without flattening; verify confirms nesting integrity.
 - What happens when a `measure` has composite scoring (multiple measure groups)? Each group must produce its own population set.

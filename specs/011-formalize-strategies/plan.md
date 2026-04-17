@@ -69,15 +69,17 @@ skills/.curated/rh-inf-formalize/
 └── reference.md         # MODIFY: replace YAML schema with FHIR JSON + strategy rules
 
 eval/scenarios/rh-inf-formalize/
-├── converge-l2.yaml     # EXISTING: update for new output format
-├── evidence-summary.yaml    # NEW
-├── decision-table.yaml      # NEW
-├── care-pathway.yaml        # NEW
-├── terminology.yaml         # NEW
-├── measure.yaml             # NEW
-├── assessment.yaml          # NEW
-├── policy.yaml              # NEW
-└── multi-type-convergence.yaml  # NEW
+├── converge-l2.yaml             # EXISTING: updated for FHIR JSON output
+├── evidence-summary.yaml        # NEW
+├── decision-table.yaml          # NEW
+├── care-pathway.yaml            # NEW
+├── terminology.yaml             # NEW
+├── measure.yaml                 # NEW
+├── assessment.yaml              # NEW
+├── policy.yaml                  # NEW
+├── unknown-type-fallback.yaml   # NEW: FR-009 generic fallback
+├── multi-type-convergence.yaml  # NEW: US4 multi-type
+└── convergence-overlap.yaml     # NEW: US4 overlap detection
 
 docs/
 └── FORMALIZE_STRATEGIES.md  # EXISTING: authoritative reference (already complete)
