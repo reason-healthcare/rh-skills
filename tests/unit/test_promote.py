@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from rh_skills.commands.promote import _approved_extract_artifacts, _approved_formalize_target, promote
+from rh_skills.commands.promote import _approved_extract_artifacts, _approved_formalize_target, _sanitize_yaml, promote
 
 
 def load_yaml(path):
@@ -921,3 +921,66 @@ class TestGroupSourcesManyToMany:
         groups = _group_sources_for_extract_plan(records)
         ev_group = next(g for g in groups if g["artifact_type"] == "evidence-summary")
         assert len(ev_group["sources"]) == 2
+
+
+# ── _sanitize_yaml tests ──────────────────────────────────────────────
+
+
+def test_sanitize_yaml_quotes_gt_lt_scalars():
+    """Values starting with > or < get safely quoted after round-trip."""
+    raw = "magnitude: >=190 mg/dL\nage: >75 years\nlow: <40 mg/dL\n"
+    result = _sanitize_yaml(raw)
+    y = YAML()
+    data = y.load(result)
+    assert data["magnitude"] == ">=190 mg/dL"
+    assert data["age"] == ">75 years"
+    assert data["low"] == "<40 mg/dL"
+
+
+def test_sanitize_yaml_returns_raw_on_parse_failure():
+    """Unparseable YAML is returned unchanged (validation will catch it)."""
+    bad = "key: [\ninvalid\n"
+    assert _sanitize_yaml(bad) == bad
+
+
+def test_sanitize_yaml_preserves_valid_yaml():
+    """Already-valid YAML passes through without data loss."""
+    raw = 'id: my-artifact\nvalues:\n  - ">=20%"\n  - 40-75 years\n'
+    result = _sanitize_yaml(raw)
+    y = YAML()
+    data = y.load(result)
+    assert data["id"] == "my-artifact"
+    assert data["values"] == [">=20%", "40-75 years"]
+
+
+def test_sanitize_yaml_handles_bare_dash_in_mapping_value():
+    """Bare '-' as a mapping value is preserved as a string."""
+    raw = 'when:\n  c-diabetes: "-"\n  c-risk: not-applicable\n'
+    result = _sanitize_yaml(raw)
+    y = YAML()
+    data = y.load(result)
+    assert data["when"]["c-diabetes"] == "-"
+    assert data["when"]["c-risk"] == "not-applicable"
+
+
+def test_sanitize_yaml_quotes_gt_lt_in_list_values():
+    """Sequence values starting with > or < get quoted via the pre-pass."""
+    raw = (
+        "values:\n"
+        "  - 40-75 years\n"
+        "  - <40 years\n"
+        "  - >75 years\n"
+    )
+    result = _sanitize_yaml(raw)
+    y = YAML()
+    data = y.load(result)
+    assert data["values"] == ["40-75 years", "<40 years", ">75 years"]
+
+
+def test_sanitize_yaml_quotes_bare_dash_mapping_value():
+    """Unquoted bare '-' mapping value gets quoted to avoid sequence parse."""
+    raw = "when:\n  c-diabetes: -\n  c-risk: not-applicable\n"
+    result = _sanitize_yaml(raw)
+    y = YAML()
+    data = y.load(result)
+    assert data["when"]["c-diabetes"] == "-"

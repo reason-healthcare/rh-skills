@@ -835,6 +835,67 @@ def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     )
 
 
+def _sanitize_yaml(raw_text: str) -> str:
+    """Round-trip YAML through ruamel to fix quoting issues.
+
+    LLM-generated YAML often contains unquoted scalars that start with ``>``,
+    ``<``, ``>=``, ``<=``, or bare ``-`` which YAML interprets as block-scalar
+    indicators or sequence entries.
+
+    Strategy:
+    1. **Regex pre-pass** — quote values that match known-dangerous patterns.
+    2. **Round-trip** through ruamel.yaml so the output is canonical.
+
+    Returns sanitized text, or the original text if repair still fails.
+    """
+    import re
+    from ruamel.yaml.error import YAMLError as _YE
+
+    # Pre-pass: quote unquoted mapping values starting with >, <, or bare -
+    def _quote_value(m):
+        prefix = m.group(1)
+        value = m.group(2)
+        if value.startswith('"') or value.startswith("'"):
+            return m.group(0)
+        return f'{prefix}"{value}"'
+
+    # Pattern 1: mapping values — `key: <dangerous-value>`
+    patched = re.sub(
+        r'^( *[A-Za-z_][A-Za-z0-9_-]*: )((?:[><])(?:[^\n]*))$',
+        _quote_value,
+        raw_text,
+        flags=re.MULTILINE,
+    )
+    # Also quote bare `-` as a mapping value (YAML treats it as sequence)
+    patched = re.sub(
+        r'^( *[A-Za-z_][A-Za-z0-9_-]*: )(-)$',
+        _quote_value,
+        patched,
+        flags=re.MULTILINE,
+    )
+
+    # Pattern 2: sequence entries — `  - <dangerous-value>`
+    # Only quote if the value after `- ` starts with > or <
+    patched = re.sub(
+        r'^( *- )([><][^\n]*)$',
+        _quote_value,
+        patched,
+        flags=re.MULTILINE,
+    )
+
+    y = YAML()
+    y.preserve_quotes = True
+    try:
+        data = y.load(patched)
+    except _YE:
+        return raw_text  # let downstream validate surface the error
+    if data is None:
+        return raw_text
+    buf = io.StringIO()
+    y.dump(data, buf)
+    return buf.getvalue()
+
+
 @click.group()
 def promote():
     """Promote artifacts between lifecycle levels."""
@@ -1125,7 +1186,7 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
                 )
             )
         else:
-            l2_file.write_text(llm_output + "\n")
+            l2_file.write_text(_sanitize_yaml(llm_output + "\n"))
 
         timestamp = now_iso()
         checksum = sha256_file(l2_file)
@@ -1223,7 +1284,7 @@ converged_from:
 {chr(10).join(f"  - {s}" for s in l2_source_names)}
 """)
     else:
-        l3_file.write_text(llm_output + "\n")
+        l3_file.write_text(_sanitize_yaml(llm_output + "\n"))
 
     timestamp = now_iso()
     checksum = sha256_file(l3_file)

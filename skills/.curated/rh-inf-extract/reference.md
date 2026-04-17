@@ -109,6 +109,17 @@ Custom types are allowed when a standard type would obscure the clinical purpose
 
 `rh-skills promote derive` should write L2 YAML with:
 
+> **YAML quoting rule:** Values starting with `>`, `<`, `>=`, `<=`, `*`,
+> `&`, `!`, `{`, `[`, `%`, `@`, or bare `-` MUST be quoted.
+> Example: `magnitude: ">=190 mg/dL"` — not `magnitude: >=190 mg/dL`.
+> Use `"N/A"` or `not-applicable` instead of bare `-` for irrelevant conditions.
+
+> **`conflicts` placement:** When `conflicts` is a required section, it must
+> appear in **both** `sections.conflicts` (short summary with disposition)
+> **and** top-level `conflicts` (full positions/preferred_interpretation).
+> The validator checks `sections.conflicts`; the top-level block preserves
+> full provenance for downstream formalization.
+
 ```yaml
 id: <kebab-case>
 name: <machine name>
@@ -129,6 +140,9 @@ sections:
       evidence:
         - source: <source-name>
           locator: <section/page/heading>
+  conflicts:                      # required when plan lists conflicts
+    - issue: <summary>
+      disposition: <how resolved>
 conflicts:
   - issue: <summary>
     positions:
@@ -156,7 +170,7 @@ sections:
     - id: rf-1
       factor: <risk factor name>
       direction: <increases|decreases>
-      magnitude: <effect size>
+      magnitude: <effect size>          # quote if starts with > or <: ">=190 mg/dL"
       evidence_quality: <grade>
   frames:                 # optional — PICOTS clinical framing
     - id: frame-1
@@ -167,6 +181,9 @@ sections:
         - <expected outcome>
       timing: <time horizon>
       setting: <clinical setting>
+  conflicts:              # required when plan lists conflicts
+    - issue: <summary>
+      disposition: <how resolved>
 ```
 
 #### decision-table
@@ -179,16 +196,19 @@ sections:
     - id: c1
       label: <condition name>
       values:
-        - <possible value>
+        - <possible value>            # quote values starting with > or <: ">75 years"
   actions:
     - id: a1
       label: <action name>
   rules:
     - id: r1
       when:
-        c1: <value or "-" for irrelevant>
+        c1: <value or "N/A" for irrelevant>
       then:
         - a1
+  conflicts:                           # required when plan lists conflicts
+    - issue: <summary>
+      disposition: <how resolved>
 ```
 
 #### care-pathway
