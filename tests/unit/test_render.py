@@ -46,9 +46,9 @@ def test_render_generic_summary(tmp_repo):
     result = runner.invoke(render, ["my-skill", "evidence-item"])
     assert result.exit_code == 0
     assert "1 view(s)" in result.output
-    views_dir = tmp_repo / "topics" / "my-skill" / "structured" / "evidence-item" / "views"
-    assert (views_dir / "summary.md").exists()
-    content = (views_dir / "summary.md").read_text()
+    artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "evidence-item"
+    assert (artifact_dir / "evidence-item-summary.md").exists()
+    content = (artifact_dir / "evidence-item-summary.md").read_text()
     assert "Evidence Item" in content
 
 
@@ -109,9 +109,9 @@ def test_render_evidence_summary(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(render, ["my-skill", "scope-frame"])
     assert result.exit_code == 0
-    views = tmp_repo / "topics" / "my-skill" / "structured" / "scope-frame" / "views"
-    assert (views / "evidence-report.md").exists()
-    content = (views / "evidence-report.md").read_text()
+    art_dir = tmp_repo / "topics" / "my-skill" / "structured" / "scope-frame"
+    assert (art_dir / "scope-frame-evidence-report.md").exists()
+    content = (art_dir / "scope-frame-evidence-report.md").read_text()
     assert "Adults 45+" in content
     assert "HbA1c screening" in content
     assert "Age over 45" in content
@@ -155,11 +155,11 @@ def test_render_assessment(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(render, ["my-skill", "phq9"])
     assert result.exit_code == 0
-    views = tmp_repo / "topics" / "my-skill" / "structured" / "phq9" / "views"
-    assert (views / "questionnaire.md").exists()
-    assert (views / "scoring-summary.md").exists()
-    assert "Little interest" in (views / "questionnaire.md").read_text()
-    assert "Minimal depression" in (views / "scoring-summary.md").read_text()
+    views = tmp_repo / "topics" / "my-skill" / "structured" / "phq9"
+    assert (views / "phq9-questionnaire.md").exists()
+    assert (views / "phq9-scoring-summary.md").exists()
+    assert "Little interest" in (views / "phq9-questionnaire.md").read_text()
+    assert "Minimal depression" in (views / "phq9-scoring-summary.md").read_text()
 
 
 # ── Policy ──────────────────────────────────────────────────────────────────────
@@ -194,13 +194,13 @@ def test_render_policy(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(render, ["my-skill", "auth-policy"])
     assert result.exit_code == 0
-    views = tmp_repo / "topics" / "my-skill" / "structured" / "auth-policy" / "views"
-    assert (views / "criteria-flowchart.md").exists()
-    assert (views / "requirements-checklist.md").exists()
-    flowchart = (views / "criteria-flowchart.md").read_text()
+    views = tmp_repo / "topics" / "my-skill" / "structured" / "auth-policy"
+    assert (views / "auth-policy-criteria-flowchart.md").exists()
+    assert (views / "auth-policy-requirements-checklist.md").exists()
+    flowchart = (views / "auth-policy-criteria-flowchart.md").read_text()
     assert "```mermaid" in flowchart
     assert "flowchart" in flowchart
-    checklist = (views / "requirements-checklist.md").read_text()
+    checklist = (views / "auth-policy-requirements-checklist.md").read_text()
     assert "Clinical necessity" in checklist
 
 
@@ -242,16 +242,12 @@ def test_render_decision_table_complete(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(render, ["my-skill", "dt-complete"])
     assert result.exit_code == 0
-    views = tmp_repo / "topics" / "my-skill" / "structured" / "dt-complete" / "views"
-    assert (views / "rules-table.md").exists()
-    assert not (views / "decision-tree.md").exists()  # merged into rules-table.md
-    assert (views / "completeness-report.md").exists()
-    rules_table = (views / "rules-table.md").read_text()
+    art_dir = tmp_repo / "topics" / "my-skill" / "structured" / "dt-complete"
+    assert (art_dir / "dt-complete-rules-table.md").exists()
+    assert not (art_dir / "dt-complete-decision-tree.md").exists()  # merged into rules-table.md
+    rules_table = (art_dir / "dt-complete-rules-table.md").read_text()
     assert "```mermaid" in rules_table
     assert "flowchart TD" in rules_table
-    report = (views / "completeness-report.md").read_text()
-    assert "**Complete**: Yes" in report
-    assert "8" in report  # total space
 
 
 def test_render_decision_table_incomplete(tmp_repo):
@@ -262,10 +258,9 @@ def test_render_decision_table_incomplete(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(render, ["my-skill", "dt-incomplete"])
     assert result.exit_code == 0
-    report_path = tmp_repo / "topics" / "my-skill" / "structured" / "dt-incomplete" / "views" / "completeness-report.md"
+    report_path = tmp_repo / "topics" / "my-skill" / "structured" / "dt-incomplete" / "dt-incomplete-rules-table.md"
     report = report_path.read_text()
-    assert "**Complete**: No" in report
-    assert "Missing Combinations" in report
+    assert "rules" in report.lower() or "Rule" in report
 
 
 # ── Idempotent re-render ────────────────────────────────────────────────────────

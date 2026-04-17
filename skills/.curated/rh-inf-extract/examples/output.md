@@ -79,13 +79,13 @@ rh-skills render diabetes-ccm screening-decisions
 Expected report:
 
 ```text
-Rendered 2 view(s) for 'screening-decisions' (decision-table):
-  topics/diabetes-ccm/structured/screening-decisions/views/rules-table.md
-  topics/diabetes-ccm/structured/screening-decisions/views/completeness-report.md
+Rendered 1 view(s) for 'screening-decisions' (decision-table):
+  topics/diabetes-ccm/structured/screening-decisions/screening-decisions-rules-table.md
 ```
 
-The view files are written to `views/` inside the artifact directory. They should
-not be edited manually — re-run `rh-skills render` to regenerate them.
+The rendered report files are written alongside the YAML source in the artifact
+directory. They should not be edited manually — re-run `rh-skills render` to
+regenerate them.
 
 ---
 
@@ -106,9 +106,8 @@ Example result:
 
 ```text
 ✓ screening-decisions  — all required fields, traceability entries, and conflict records present
-Rendered 2 view(s) for 'screening-decisions' (decision-table):
-  topics/diabetes-ccm/structured/screening-decisions/views/rules-table.md
-  topics/diabetes-ccm/structured/screening-decisions/views/completeness-report.md
+Rendered 1 view(s) for 'screening-decisions' (decision-table):
+  topics/diabetes-ccm/structured/screening-decisions/screening-decisions-rules-table.md
 ```
 
 Verify is non-destructive: it does not create, modify, or delete files and does

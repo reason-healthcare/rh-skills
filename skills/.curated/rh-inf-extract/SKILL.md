@@ -407,13 +407,13 @@ all deterministic writes must go through `rh-skills promote derive` and
    rh-skills render <topic> <artifact-name>
    ```
 
-   `render` writes one or more view files into
-   `topics/<topic>/structured/<artifact-name>/views/`. The filenames depend
-   on the artifact type (e.g. `summary.md` for generic types;
-   `rules-table.md`, `decision-tree.md`, `completeness-report.md` for
-   `decision-table`). Mermaid diagrams are wrapped in a fenced ` ```mermaid `
-   block inside `.md` files. These are the generated human-readable representations
-   for SME review — do not edit them manually.
+   `render` writes one or more report files alongside the YAML source in
+   `topics/<topic>/structured/<artifact-name>/`, prefixed with the artifact
+   name (e.g. `my-artifact-rules-table.md` for a decision-table;
+   `my-artifact-evidence-report.md` for an evidence-summary). Mermaid diagrams
+   are wrapped in a fenced ` ```mermaid ` block inside `.md` files. These are
+   the generated human-readable representations for SME review — do not edit
+   them manually.
 
 6. Report `✓` or `✗` per artifact. Stop on blocking CLI failures; do not silently continue past a failed derive/validate command.
 
@@ -445,7 +445,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 
 4. Confirm:
    - each approved artifact YAML exists in `topics/<topic>/structured/<artifact-name>/`
-   - each approved artifact has one or more rendered view files in `topics/<topic>/structured/<artifact-name>/views/`
+   - each approved artifact has one or more rendered report files (`<artifact>-*.md`) in the artifact directory
    - required traceability sections are present
    - conflict records are present when the approved plan listed unresolved conflicts
 5. Report pass/fail per artifact and exit non-zero only when required checks fail.

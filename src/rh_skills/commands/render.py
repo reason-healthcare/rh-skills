@@ -111,8 +111,12 @@ def _check_completeness(conditions: list[dict], rules: list[dict]) -> dict:
 # ── Template-driven renderer ─────────────────────────────────────────────────
 
 
-def _render_from_templates(data: dict, views_dir: Path) -> list[str]:
-    """Render all templates for the artifact's type; fall back to _generic."""
+def _render_from_templates(data: dict, artifact_dir: Path, artifact_name: str) -> list[str]:
+    """Render all templates for the artifact's type; fall back to _generic.
+
+    Output files are written directly into *artifact_dir* (no views/ sub-dir)
+    and prefixed with ``<artifact_name>-``.
+    """
     artifact_type = data.get("artifact_type", "")
     type_dir = _TEMPLATES_DIR / artifact_type
     if not type_dir.is_dir() or not list(type_dir.glob("*.j2")):
@@ -137,7 +141,8 @@ def _render_from_templates(data: dict, views_dir: Path) -> list[str]:
         if out_name.endswith(".mmd"):
             out_name = out_name[:-4] + ".md"
             rendered = f"```mermaid\n{rendered.rstrip()}\n```\n"
-        out = views_dir / out_name
+        # Prefix with artifact name: e.g. "my-decision-rules-table.md"
+        out = artifact_dir / f"{artifact_name}-{out_name}"
         out.write_text(rendered)
         written.append(str(out))
 
@@ -174,10 +179,9 @@ def render(topic: str, artifact: str) -> None:
     sections = data.get("sections")
     _validate_sections(sections, artifact_type)
 
-    views_dir = artifact_file.parent / "views"
-    views_dir.mkdir(parents=True, exist_ok=True)
+    artifact_dir = artifact_file.parent
 
-    written = _render_from_templates(data, views_dir)
+    written = _render_from_templates(data, artifact_dir, artifact)
 
     click.echo(f"Rendered {len(written)} view(s) for '{artifact}' ({artifact_type or 'generic'}):")
     for path in written:
