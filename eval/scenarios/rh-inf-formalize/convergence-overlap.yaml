@@ -1,0 +1,140 @@
+name: convergence-overlap
+skill: rh-inf-formalize
+description: >
+  Topic with two L2 artifact types that both produce PlanDefinition —
+  decision-table and care-pathway. Tests that the formalize plan detects
+  the resource type overlap and flags it for reviewer resolution.
+
+topic: sepsis-management
+
+workspace:
+  tracking_yaml: |
+    topics:
+      sepsis-management:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: sepsis-screening-rules
+            file: topics/sepsis-management/structured/sepsis-screening-rules/sepsis-screening-rules.yaml
+          - name: sepsis-treatment-pathway
+            file: topics/sepsis-management/structured/sepsis-treatment-pathway/sepsis-treatment-pathway.yaml
+    sources:
+      - id: surviving-sepsis-campaign
+        normalized: true
+        path: sources/normalized/surviving-sepsis-campaign.md
+
+  files:
+    - path: topics/sepsis-management/process/plans/extract-plan.yaml
+      content: |
+        topic: sepsis-management
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        review_summary: "Two artifact types extracted — screening rules and treatment pathway."
+        artifacts:
+          - name: sepsis-screening-rules
+            artifact_type: decision-table
+            source_files:
+              - sources/normalized/surviving-sepsis-campaign.md
+            clinical_question: "When should sepsis screening be triggered?"
+            required_sections:
+              - decision_table
+            conflicts: []
+            reviewer_decision: approved
+            approval_notes: ""
+          - name: sepsis-treatment-pathway
+            artifact_type: care-pathway
+            source_files:
+              - sources/normalized/surviving-sepsis-campaign.md
+            clinical_question: "What is the treatment protocol for suspected sepsis?"
+            required_sections:
+              - steps
+            conflicts: []
+            reviewer_decision: approved
+            approval_notes: ""
+
+    - path: topics/sepsis-management/structured/sepsis-screening-rules/sepsis-screening-rules.yaml
+      content: |
+        id: sepsis-screening-rules
+        name: sepsis-screening-rules
+        title: "Sepsis Screening Decision Table"
+        version: "1.0.0"
+        status: active
+        artifact_type: decision-table
+        sections:
+          decision_table:
+            - condition: "SIRS criteria ≥ 2 AND suspected infection"
+              action: "Activate sepsis alert"
+              priority: high
+            - condition: "qSOFA score ≥ 2"
+              action: "Activate sepsis alert"
+              priority: high
+            - condition: "Lactate ≥ 2 mmol/L"
+              action: "Escalate to severe sepsis protocol"
+              priority: critical
+
+    - path: topics/sepsis-management/structured/sepsis-treatment-pathway/sepsis-treatment-pathway.yaml
+      content: |
+        id: sepsis-treatment-pathway
+        name: sepsis-treatment-pathway
+        title: "Sepsis Treatment Pathway"
+        version: "1.0.0"
+        status: active
+        artifact_type: care-pathway
+        sections:
+          steps:
+            - id: step-1
+              name: "Initial resuscitation"
+              description: "30 mL/kg crystalloid within 3 hours of sepsis recognition"
+            - id: step-2
+              name: "Blood cultures and antibiotics"
+              description: "Obtain blood cultures then administer broad-spectrum IV antibiotics within 1 hour"
+            - id: step-3
+              name: "Reassess hemodynamics"
+              description: "Reassess volume status and tissue perfusion after initial bolus"
+          transitions:
+            - from: step-1
+              to: step-2
+              condition: "Fluid resuscitation initiated"
+            - from: step-2
+              to: step-3
+              condition: "Antibiotics administered"
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `sepsis-management`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  Two approved L2 artifacts that both produce PlanDefinition:
+  - `sepsis-screening-rules` (decision-table → PlanDefinition eca-rule)
+  - `sepsis-treatment-pathway` (care-pathway → PlanDefinition clinical-protocol)
+
+  Run formalize plan mode only:
+  1. **plan** — generate a formalize plan. The plan MUST detect and flag the
+     PlanDefinition resource type overlap between the two strategies.
+
+expected_outputs:
+  - path: topics/sepsis-management/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "sepsis-screening-rules"
+      - contains: "sepsis-treatment-pathway"
+      - contains: "decision-table"
+      - contains: "care-pathway"
+      - contains: "PlanDefinition"
+      - contains: "overlap"
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+
+quality_focus:
+  - "Does the plan create two separate artifacts (one per strategy), not one merged artifact?"
+  - "Is the PlanDefinition overlap explicitly flagged in Cross-Artifact Issues?"
+  - "Does it recommend separate resources as the default resolution (different types: eca-rule vs clinical-protocol)?"
+  - "Are the strategies correctly assigned (decision-table for screening, care-pathway for treatment)?"

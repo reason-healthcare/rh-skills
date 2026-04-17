@@ -129,14 +129,14 @@
 
 ### Implementation for User Story 4
 
-- [ ] T038 [US4] Update formalize SKILL.md convergence instructions in `skills/.curated/rh-inf-formalize/SKILL.md` — add convergence section: (1) run plan for each L2 artifact with its type-specific strategy, (2) detect overlapping FHIR resource types across artifacts, (3) flag overlaps for reviewer resolution, (4) after approval, run `rh-skills formalize` per artifact sequentially, (5) run `rh-skills package` to bundle all computable resources
-- [ ] T039 [US4] Update formalize reference.md convergence section in `skills/.curated/rh-inf-formalize/reference.md` — add merge precedence rules for common overlaps (e.g., two PlanDefinitions from decision-table + care-pathway: compose vs separate resources); add cross-reference binding rules (e.g., decision-table PlanDefinition references terminology ValueSet via canonical URL)
-- [ ] T040 [US4] Implement overlap detection in `src/rh_skills/commands/formalize.py` or `promote.py` `_build_formalize_artifacts()` — when building plan for multiple artifacts, detect if two artifacts would produce the same FHIR resource type; add warning in plan markdown; require reviewer to document resolution
+- [X] T038 [US4] Update formalize SKILL.md convergence instructions in `skills/.curated/rh-inf-formalize/SKILL.md` — add convergence section: (1) run plan for each L2 artifact with its type-specific strategy, (2) detect overlapping FHIR resource types across artifacts, (3) flag overlaps for reviewer resolution, (4) after approval, run `rh-skills formalize` per artifact sequentially, (5) run `rh-skills package` to bundle all computable resources
+- [X] T039 [US4] Update formalize reference.md convergence section in `skills/.curated/rh-inf-formalize/reference.md` — add merge precedence rules for common overlaps (e.g., two PlanDefinitions from decision-table + care-pathway: compose vs separate resources); add cross-reference binding rules (e.g., decision-table PlanDefinition references terminology ValueSet via canonical URL)
+- [X] T040 [US4] Implement overlap detection in `src/rh_skills/commands/formalize.py` or `promote.py` `_build_formalize_artifacts()` — when building plan for multiple artifacts, detect if two artifacts would produce the same FHIR resource type; add warning in plan markdown; require reviewer to document resolution
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T041 [P] [US4] Write eval scenario for multi-type convergence in `eval/scenarios/rh-inf-formalize/multi-type-convergence.yaml` — provide 3+ L2 artifacts of different types (e.g., decision-table + terminology + measure), test full plan→approve→implement→verify→package cycle; verify each artifact uses correct strategy; verify package contains all resources; verify cross-references (ValueSet URLs in PlanDefinition conditions)
-- [ ] T042 [P] [US4] Write eval scenario for resource type overlap in `eval/scenarios/rh-inf-formalize/convergence-overlap.yaml` — provide decision-table + care-pathway (both produce PlanDefinition), verify plan flags overlap for reviewer resolution
+- [X] T041 [P] [US4] Write eval scenario for multi-type convergence in `eval/scenarios/rh-inf-formalize/multi-type-convergence.yaml` — provide 3+ L2 artifacts of different types (e.g., decision-table + terminology + measure), test full plan→approve→implement→verify→package cycle; verify each artifact uses correct strategy; verify package contains all resources; verify cross-references (ValueSet URLs in PlanDefinition conditions)
+- [X] T042 [P] [US4] Write eval scenario for resource type overlap in `eval/scenarios/rh-inf-formalize/convergence-overlap.yaml` — provide decision-table + care-pathway (both produce PlanDefinition), verify plan flags overlap for reviewer resolution
 
 **Checkpoint**: Convergence produces coherent multi-type FHIR packages. Overlaps detected and surfaced.
 

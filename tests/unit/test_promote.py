@@ -491,13 +491,15 @@ def test_formalize_plan_writes_review_packet_and_records_event(tmp_repo):
     assert plan["topic"] == "my-skill"
     assert plan["plan_type"] == "formalize"
     assert plan["status"] == "pending-review"
-    assert len(plan["artifacts"]) == 1
-    artifact = plan["artifacts"][0]
-    assert artifact["name"] == "my-skill-pathway"
-    assert artifact["implementation_target"] is True
-    assert artifact["input_artifacts"] == ["screening-criteria", "care-steps", "code-sets"]
-    assert "pathways" in artifact["required_sections"]
-    assert "value_sets" in artifact["required_sections"]
+    # Multi-type inputs produce per-type artifacts
+    assert len(plan["artifacts"]) == 3
+    strategies = {a["strategy"] for a in plan["artifacts"]}
+    assert strategies == {"decision-table", "care-pathway", "terminology"}
+    # First artifact is the implementation target
+    assert plan["artifacts"][0]["implementation_target"] is True
+    # Overlap between decision-table and care-pathway (both produce PlanDefinition)
+    rationales = " ".join(a["rationale"] for a in plan["artifacts"])
+    assert "Overlaps" in rationales or "overlap" in rationales.lower()
 
     tracking = load_yaml(tmp_repo / "tracking.yaml")
     topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
@@ -878,6 +880,80 @@ class TestFormalizeSectionMapping:
         assert "assessments" in result
         assert "value_sets" in result
         assert "libraries" in result
+
+
+class TestBuildFormalizeArtifacts:
+    def test_single_type_produces_one_artifact(self):
+        from rh_skills.commands.promote import _build_formalize_artifacts
+        result = _build_formalize_artifacts("test-topic", [
+            {"name": "a1", "artifact_type": "decision-table"},
+        ])
+        assert len(result) == 1
+        assert result[0]["strategy"] == "decision-table"
+        assert result[0]["implementation_target"] is True
+
+    def test_multi_type_produces_per_type_artifacts(self):
+        from rh_skills.commands.promote import _build_formalize_artifacts
+        result = _build_formalize_artifacts("test-topic", [
+            {"name": "a1", "artifact_type": "decision-table"},
+            {"name": "a2", "artifact_type": "terminology"},
+            {"name": "a3", "artifact_type": "measure"},
+        ])
+        assert len(result) == 3
+        strategies = {a["strategy"] for a in result}
+        assert strategies == {"decision-table", "terminology", "measure"}
+        # Only first artifact is implementation_target
+        targets = [a for a in result if a["implementation_target"]]
+        assert len(targets) == 1
+
+    def test_overlap_detection_flagged_in_rationale(self):
+        from rh_skills.commands.promote import _build_formalize_artifacts
+        result = _build_formalize_artifacts("test-topic", [
+            {"name": "a1", "artifact_type": "decision-table"},
+            {"name": "a2", "artifact_type": "care-pathway"},
+        ])
+        assert len(result) == 2
+        rationales = " ".join(a["rationale"] for a in result)
+        assert "Overlaps" in rationales or "overlap" in rationales.lower()
+
+    def test_no_overlap_for_distinct_resource_types(self):
+        from rh_skills.commands.promote import _build_formalize_artifacts
+        result = _build_formalize_artifacts("test-topic", [
+            {"name": "a1", "artifact_type": "terminology"},
+            {"name": "a2", "artifact_type": "measure"},
+        ])
+        rationales = " ".join(a["rationale"] for a in result)
+        assert "Overlaps" not in rationales
+
+
+class TestDetectResourceTypeOverlaps:
+    def test_plandefinition_overlap(self):
+        from rh_skills.commands.promote import _detect_resource_type_overlaps
+        overlaps = _detect_resource_type_overlaps({
+            "decision-table": [{"name": "a1"}],
+            "care-pathway": [{"name": "a2"}],
+        })
+        assert len(overlaps) == 1
+        assert overlaps[0]["resource_type"] == "PlanDefinition"
+        assert set(overlaps[0]["strategies"]) == {"decision-table", "care-pathway"}
+
+    def test_no_overlap(self):
+        from rh_skills.commands.promote import _detect_resource_type_overlaps
+        overlaps = _detect_resource_type_overlaps({
+            "terminology": [{"name": "a1"}],
+            "measure": [{"name": "a2"}],
+        })
+        assert len(overlaps) == 0
+
+    def test_triple_overlap(self):
+        from rh_skills.commands.promote import _detect_resource_type_overlaps
+        overlaps = _detect_resource_type_overlaps({
+            "decision-table": [{"name": "a1"}],
+            "care-pathway": [{"name": "a2"}],
+            "policy": [{"name": "a3"}],
+        })
+        assert len(overlaps) == 1
+        assert len(overlaps[0]["strategies"]) == 3
 
 
 class TestInferArtifactProfiles:

@@ -221,6 +221,44 @@ Full business rules are in `docs/FORMALIZE_STRATEGIES.md`; summaries below.
 
 ---
 
+## Multi-Type Convergence Rules
+
+### Common Overlap Patterns
+
+| Overlap | Strategies Involved | Default Resolution |
+|---------|--------------------|--------------------|
+| PlanDefinition × 2 | decision-table + care-pathway | Separate resources (different `id`, `type` values: `eca-rule` vs `clinical-protocol`) |
+| PlanDefinition × 2 | decision-table + policy | Separate resources (clinical vs payer context) |
+| Library × 2 | decision-table + measure | Separate Libraries (one for ECA conditions, one for measure populations) |
+
+### Merge Precedence
+
+When the reviewer approves a compose resolution (single resource from multiple
+L2 inputs):
+1. The earlier artifact in the plan's `artifacts[]` list is the **base resource**.
+2. The later artifact's content is merged as additional `action[]` entries
+   (PlanDefinition) or additional `define` statements (Library CQL).
+3. Conflicting top-level fields (e.g., `type`) take the base resource's value.
+4. The `converged_from[]` tracking entry lists all contributing L2 artifacts.
+
+### Cross-Reference Canonical URLs
+
+All inter-resource references use canonical URLs:
+
+```text
+http://example.org/fhir/<ResourceType>/<id>
+```
+
+Common reference patterns:
+- PlanDefinition → Library: `library: ["http://example.org/fhir/Library/<id>"]`
+- Measure → Library: `library: ["http://example.org/fhir/Library/<id>"]`
+- PlanDefinition → ValueSet: `action[].input[].type` code binding
+- PlanDefinition → ActivityDefinition: `action[].definitionCanonical`
+
+The actual base URL is set by `rh-skills package` at bundling time.
+
+---
+
 ## Terminology Resolution (Implement Mode)
 
 When the approved formalize plan produces terminology resources (ValueSet,

@@ -1,0 +1,182 @@
+name: multi-type-convergence
+skill: rh-inf-formalize
+description: >
+  Topic with 3 different L2 artifact types — decision-table, terminology, and
+  measure — exercises multi-type convergence: per-type strategy selection,
+  independent formalization, cross-reference binding, and unified FHIR packaging.
+
+topic: diabetes-screening
+
+workspace:
+  tracking_yaml: |
+    topics:
+      diabetes-screening:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: diabetes-screening-rules
+            file: topics/diabetes-screening/structured/diabetes-screening-rules/diabetes-screening-rules.yaml
+          - name: diabetes-terminology
+            file: topics/diabetes-screening/structured/diabetes-terminology/diabetes-terminology.yaml
+          - name: diabetes-screening-measure
+            file: topics/diabetes-screening/structured/diabetes-screening-measure/diabetes-screening-measure.yaml
+    sources:
+      - id: ada-guidelines-2024
+        normalized: true
+        path: sources/normalized/ada-guidelines-2024.md
+
+  files:
+    - path: topics/diabetes-screening/process/plans/extract-plan.yaml
+      content: |
+        topic: diabetes-screening
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        review_summary: "Three distinct artifact types extracted."
+        artifacts:
+          - name: diabetes-screening-rules
+            artifact_type: decision-table
+            source_files:
+              - sources/normalized/ada-guidelines-2024.md
+            clinical_question: "When should adults be screened for T2D?"
+            required_sections:
+              - decision_table
+            conflicts: []
+            reviewer_decision: approved
+            approval_notes: ""
+          - name: diabetes-terminology
+            artifact_type: terminology
+            source_files:
+              - sources/normalized/ada-guidelines-2024.md
+            clinical_question: "What codes define diabetes screening concepts?"
+            required_sections:
+              - value_sets
+            conflicts: []
+            reviewer_decision: approved
+            approval_notes: ""
+          - name: diabetes-screening-measure
+            artifact_type: measure
+            source_files:
+              - sources/normalized/ada-guidelines-2024.md
+            clinical_question: "How is diabetes screening adherence measured?"
+            required_sections:
+              - populations
+            conflicts: []
+            reviewer_decision: approved
+            approval_notes: ""
+
+    - path: topics/diabetes-screening/structured/diabetes-screening-rules/diabetes-screening-rules.yaml
+      content: |
+        id: diabetes-screening-rules
+        name: diabetes-screening-rules
+        title: "Diabetes Screening Decision Table"
+        version: "1.0.0"
+        status: active
+        artifact_type: decision-table
+        sections:
+          decision_table:
+            - condition: "Age ≥ 35 years"
+              action: "Screen with fasting plasma glucose or HbA1c"
+              priority: standard
+            - condition: "BMI ≥ 25 AND age ≥ 18"
+              action: "Screen regardless of age threshold"
+              priority: high
+            - condition: "Prior gestational diabetes"
+              action: "Screen every 3 years"
+              priority: high
+
+    - path: topics/diabetes-screening/structured/diabetes-terminology/diabetes-terminology.yaml
+      content: |
+        id: diabetes-terminology
+        name: diabetes-terminology
+        title: "Diabetes Screening Terminology"
+        version: "1.0.0"
+        status: active
+        artifact_type: terminology
+        sections:
+          value_sets:
+            - name: diabetes-screening-tests
+              description: "Lab tests for diabetes screening"
+              concepts:
+                - term: "Hemoglobin A1c"
+                  system: LOINC
+                - term: "Fasting glucose"
+                  system: LOINC
+
+    - path: topics/diabetes-screening/structured/diabetes-screening-measure/diabetes-screening-measure.yaml
+      content: |
+        id: diabetes-screening-measure
+        name: diabetes-screening-measure
+        title: "Diabetes Screening Quality Measure"
+        version: "1.0.0"
+        status: active
+        artifact_type: measure
+        sections:
+          populations:
+            initial_population:
+              description: "Adults aged 35-70 with no prior diabetes diagnosis"
+            denominator:
+              description: "Initial population"
+            numerator:
+              description: "Patients with HbA1c or FPG result in measurement period"
+            denominator_exclusion:
+              description: "Patients with existing diabetes diagnosis"
+          scoring:
+            type: proportion
+            improvement_notation: increase
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `diabetes-screening`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  Three approved L2 artifacts of different types are ready:
+  - `diabetes-screening-rules` (decision-table)
+  - `diabetes-terminology` (terminology)
+  - `diabetes-screening-measure` (measure)
+
+  Run the full formalize cycle:
+  1. **plan** — generate a formalize plan with per-type strategy selection
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — formalize each artifact using its type-specific strategy
+  4. **verify** — validate all generated resources
+  5. **package** — bundle into a FHIR NPM package
+
+expected_outputs:
+  - path: topics/diabetes-screening/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "decision-table"
+      - contains: "terminology"
+      - contains: "measure"
+      - contains: "PlanDefinition"
+      - contains: "ValueSet"
+      - contains: "Measure"
+  - path: topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-decision-table.json
+    checks:
+      - exists
+      - contains: '"resourceType": "PlanDefinition"'
+  - path: topics/diabetes-screening/computable/ValueSet-diabetes-screening-tests.json
+    checks:
+      - exists
+      - contains: '"resourceType": "ValueSet"'
+  - path: topics/diabetes-screening/computable/Measure-diabetes-screening-measure.json
+    checks:
+      - exists
+      - contains: '"resourceType": "Measure"'
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+      - event: computable_converged
+
+quality_focus:
+  - "Does the plan create separate artifacts per type (not a single mixed artifact)?"
+  - "Is each artifact assigned its correct strategy (decision-table, terminology, measure)?"
+  - "Do cross-references use canonical URLs (e.g., PlanDefinition → ValueSet)?"
+  - "Does the package contain resources from all three strategies?"

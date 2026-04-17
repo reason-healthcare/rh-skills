@@ -266,36 +266,95 @@ def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
 def _build_formalize_artifacts(topic: str, eligible_inputs: list[dict]) -> list[dict]:
     input_types = {a.get("artifact_type", "unknown") for a in eligible_inputs}
 
-    # Determine strategy: use the single L2 type when uniform, otherwise mixed
+    # Single type: one artifact with type-specific strategy
     if len(input_types) == 1:
         strategy = next(iter(input_types))
-    else:
-        strategy = "mixed"
+        target_info = _L3_TARGET_MAP.get(strategy, {})
+        l3_targets = target_info.get("l3_targets", ["PlanDefinition"])
+        artifact_type = strategy if strategy in _L3_TARGET_MAP else "pathway-package"
 
-    target_info = _L3_TARGET_MAP.get(strategy, {})
-    l3_targets = target_info.get("l3_targets", ["PlanDefinition"])
+        candidate = {
+            "name": f"{topic}-{strategy}",
+            "artifact_type": artifact_type,
+            "strategy": strategy,
+            "l3_targets": l3_targets,
+            "input_artifacts": [a["name"] for a in eligible_inputs],
+            "rationale": (
+                f"Combines {len(eligible_inputs)} approved structured artifact(s) "
+                f"using '{strategy}' strategy → "
+                f"{', '.join(l3_targets)}."
+            ),
+            "required_sections": _formalize_required_sections(eligible_inputs),
+            "implementation_target": True,
+            "reviewer_decision": "pending-review",
+            "approval_notes": "",
+        }
+        return [candidate]
 
-    # Determine artifact_type from the strategy
-    artifact_type = strategy if strategy in _L3_TARGET_MAP else "pathway-package"
+    # Multi-type: one artifact per unique type + overlap detection
+    artifacts = []
+    type_to_inputs: dict[str, list[dict]] = {}
+    for a in eligible_inputs:
+        atype = a.get("artifact_type", "unknown")
+        type_to_inputs.setdefault(atype, []).append(a)
 
-    candidate = {
-        "name": f"{topic}-{strategy}" if strategy != "mixed" else f"{topic}-pathway",
-        "artifact_type": artifact_type,
-        "strategy": strategy,
-        "l3_targets": l3_targets,
-        "input_artifacts": [artifact["name"] for artifact in eligible_inputs],
-        "rationale": (
-            f"Combines {len(eligible_inputs)} approved structured artifact(s) "
-            f"using '{strategy}' strategy → "
-            f"{', '.join(l3_targets)}."
-        ),
-        "required_sections": _formalize_required_sections(eligible_inputs),
-        "implementation_target": True,
-        "reviewer_decision": "pending-review",
-        "approval_notes": "",
-    }
+    # Detect resource type overlaps across strategies
+    overlaps = _detect_resource_type_overlaps(type_to_inputs)
 
-    return [candidate]
+    first = True
+    for atype, inputs in type_to_inputs.items():
+        target_info = _L3_TARGET_MAP.get(atype, {})
+        l3_targets = target_info.get("l3_targets", ["PlanDefinition"])
+        artifact_type = atype if atype in _L3_TARGET_MAP else "pathway-package"
+
+        overlap_notes = ""
+        if overlaps:
+            relevant = [o for o in overlaps if atype in o["strategies"]]
+            if relevant:
+                overlap_notes = " ".join(
+                    f"⚠ Overlaps with {', '.join(s for s in o['strategies'] if s != atype)} "
+                    f"on {o['resource_type']}."
+                    for o in relevant
+                )
+
+        candidate = {
+            "name": f"{topic}-{atype}",
+            "artifact_type": artifact_type,
+            "strategy": atype,
+            "l3_targets": l3_targets,
+            "input_artifacts": [a["name"] for a in inputs],
+            "rationale": (
+                f"Formalizes {len(inputs)} '{atype}' artifact(s) → "
+                f"{', '.join(l3_targets)}."
+                + (f" {overlap_notes}" if overlap_notes else "")
+            ),
+            "required_sections": _formalize_required_sections(inputs),
+            "implementation_target": first,
+            "reviewer_decision": "pending-review",
+            "approval_notes": "",
+        }
+        artifacts.append(candidate)
+        first = False
+
+    return artifacts
+
+
+def _detect_resource_type_overlaps(
+    type_to_inputs: dict[str, list[dict]],
+) -> list[dict]:
+    """Detect when different L2 strategies produce the same FHIR resource type."""
+    resource_to_strategies: dict[str, list[str]] = {}
+    for atype in type_to_inputs:
+        target_info = _L3_TARGET_MAP.get(atype, {})
+        primary = target_info.get("primary", "")
+        if primary:
+            resource_to_strategies.setdefault(primary, []).append(atype)
+
+    return [
+        {"resource_type": rt, "strategies": strategies}
+        for rt, strategies in resource_to_strategies.items()
+        if len(strategies) > 1
+    ]
 
 
 def _render_formalize_plan(topic: str, artifacts: list[dict], blocked_inputs: list[str]) -> str:

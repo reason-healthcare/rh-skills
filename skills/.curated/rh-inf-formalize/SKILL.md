@@ -277,6 +277,41 @@ Verify is read-only and safe to re-run at any time.
 
 ---
 
+## Multi-Type Convergence
+
+When a topic has multiple L2 artifacts of different types, the formalize cycle
+handles each independently with its type-specific strategy, then bundles all
+resources into a single FHIR package.
+
+### Convergence Plan Rules
+
+1. Group L2 artifacts by `artifact_type`. Each unique type gets its own strategy.
+2. If two artifacts share the same type, they share one strategy entry in the plan.
+3. If artifacts of different types both produce the same FHIR resource type
+   (e.g., `decision-table` and `care-pathway` both produce PlanDefinition),
+   flag the overlap in the plan under `Cross-Artifact Issues` for reviewer
+   resolution. Common resolutions:
+   - **Separate resources**: Each artifact produces its own named PlanDefinition
+     (different `id` values). This is the default recommendation.
+   - **Compose**: Merge into one PlanDefinition with sub-actions grouped by source.
+     Only if the reviewer explicitly approves.
+4. Each artifact is formalized independently via `rh-skills formalize`.
+5. `rh-skills package` bundles all outputs into one FHIR NPM package.
+
+### Cross-Reference Binding
+
+When multiple strategies produce resources that reference each other:
+- A PlanDefinition `action[].condition[].expression` may reference a Library
+  by canonical URL.
+- A PlanDefinition may reference a ValueSet via
+  `action[].input[].type` or `useContext[].valueCodeableConcept`.
+- A Measure references its Library via `library[]`.
+- Use canonical URLs in the form
+  `http://example.org/fhir/<ResourceType>/<id>` for cross-references.
+  The actual base URL is set during `rh-skills package`.
+
+---
+
 ## Error Messages
 
 | Situation | Message |
