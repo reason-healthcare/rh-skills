@@ -12,6 +12,7 @@ from ruamel.yaml import YAML
 from rh_skills.common import (
     append_topic_event,
     config_value,
+    lock_file,
     log_info,
     log_warn,
     now_iso,
@@ -22,6 +23,7 @@ from rh_skills.common import (
     sources_root,
     today_date,
     topic_dir,
+    unlock_file,
 )
 from rh_skills.commands.validate import validate_artifact_file
 
@@ -863,10 +865,10 @@ def _lock_plan(plan_path: Path):
     lock_path = plan_path.with_suffix(".lock")
     lock_fd = lock_path.open("w")
     try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        lock_file(lock_fd)
         yield
     finally:
-        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        unlock_file(lock_fd)
         lock_fd.close()
 
 
