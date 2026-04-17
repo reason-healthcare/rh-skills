@@ -92,7 +92,7 @@ artifacts will contain placeholder text rather than validated codes.
 {
   "mcpServers": {
     "reasonhub": {
-      "url": "https://mcp.reasonhub.app/mcp",
+      "url": "https://reasonhub.app/mcp",
       "headers": {
         "Authorization": "Bearer <your-api-key>"
       }
@@ -186,6 +186,7 @@ skills and versions are installed. Commit this file alongside your agent config.
 
 - Introduction: high-level orientation to RH Skills and its intended use cases
 - [Getting Started](docs/GETTING_STARTED.md): prerequisites, installation, and first hands-on walkthrough
+- [Windows Installation](docs/WINDOWS_PYTHON_INSTALLATION.md): instructions for Python and CLI installation on Windows
 - [Workflow](docs/WORKFLOW.md): lifecycle model, artifact flow, and repository structure
 - [Usage Modes](docs/USAGE_MODES.md): CLI-first vs agent-native usage and configuration guidance
 - [Commands](docs/COMMANDS.md): full CLI reference with commands, subcommands, and options
