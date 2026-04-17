@@ -7,11 +7,9 @@ The simplest Windows setup for Python CLI tools:
 3. Install Git
 4. Use pipx to install each CLI globally for that user
 
-pipx keeps each tool isolated in its own virtual environment while exposing a normal command on PATH. pipx requires Python 3.9+.
-
 ## 1) Install Python
 
-Download and run the official Python for Windows installer from [python.org](https://www.python.org/downloads/windows/).
+Python 3.13+ is required. Download and run the official Python 3.13 or newer Windows installer from [python.org](https://www.python.org/downloads/windows/).
 
 During installation, check **"Add python.exe to PATH"**.
 
@@ -30,6 +28,8 @@ python --version
 On Windows, `py` is often the safest command to use because it avoids some PATH confusion.
 
 ## 2) Install pipx
+
+Pipx keeps each tool isolated in its own virtual environment while exposing a normal command on PATH.
 
 In PowerShell:
 
@@ -55,7 +55,7 @@ pipx --version
 
 ## 3) Install Git
 
-pipx needs Git to install packages directly from GitHub repositories.
+Pipx needs Git to install packages directly from GitHub repositories.
 
 Download and run the official installer from [git-scm.com](https://git-scm.com/download/win).
 
