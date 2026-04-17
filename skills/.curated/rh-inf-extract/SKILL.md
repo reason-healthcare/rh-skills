@@ -168,10 +168,11 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    the source's clinical richness**.
 
    **When the plan splits conflicting sources into separate artifacts**, use
-   `rh-skills promote plan <topic> --force` to regenerate. After re-running,
-   if the conflict is still present (sources still grouped together), record it
-   during approval with `--add-conflict`. Do NOT edit `extract-plan.yaml`
-   directly.
+   `rh-skills promote plan <topic> --force` to regenerate. If `--force` still
+   produces separate artifacts (the planner groups by type, not clinical concept),
+   use `--add-source <slug>` at approve time to add the missing source to the
+   artifact that will capture both positions. Then pass both sources to `derive`
+   with `--source`. Do NOT edit `extract-plan.yaml` directly.
 
    **Decision rule for scope gaps**: A narrower-than-ideal plan is acceptable
    — approve it with documented gaps in `review_summary` and proceed. Only
@@ -266,6 +267,16 @@ rh-skills promote approve <topic> \
   --add-conflict "Conflict A description" \
   --add-conflict "Conflict B|Resolution B" \
   --finalize
+
+# When the planner split conflicting sources into separate artifacts, add the
+# missing source to the artifact that will capture both positions.
+# Use --add-source to add it to source_files[] so derive can reference it:
+rh-skills promote approve <topic> \
+  --artifact <name> --decision approved \
+  --add-source aace-guidelines-2022 \
+  --add-conflict "HbA1c target: ADA <7.0% vs AACE ≤6.5%" \
+  --review-summary "Added AACE source; planner separated conflicting sources. Both positions captured in conflicts[]." \
+  --finalize --reviewer "<reviewer-name>"
 
 # If multiple artifacts need decisions, run one --artifact call per artifact
 # and finalize only in the last call:

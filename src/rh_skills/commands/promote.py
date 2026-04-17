@@ -621,9 +621,8 @@ def _render_extract_readout(plan: dict) -> str:
             for item in conflicts:
                 c = item.get("conflict", item) if isinstance(item, dict) else item
                 r = item.get("resolution", "") if isinstance(item, dict) else ""
-                lines.append(f"  - {c}")
-                if r:
-                    lines.append(f"    Resolution: {r}")
+                lines.append(f"  - **Conflict:** {c}")
+                lines.append(f"    - **Resolution:** {r if r else '_pending_'}")
         else:
             lines.append("- Conflicts: none identified during deterministic planning")
         lines.append(f"- **Reviewer decision: `{decision}`**")
@@ -668,8 +667,9 @@ def _write_plan_and_readout(plan_path: Path, readout_path: Path, plan: dict) -> 
 def _apply_artifact_decision(
     plan: dict, artifact_name: str, decision: str, notes: str = "",
     add_conflicts: tuple[str, ...] = (),
+    add_sources: tuple[str, ...] = (),
 ) -> None:
-    """Mutate plan in-place: set reviewer_decision, optional notes, and append conflicts."""
+    """Mutate plan in-place: set reviewer_decision, optional notes, append conflicts/sources."""
     for artifact in plan.get("artifacts", []) or []:
         if artifact.get("name") == artifact_name:
             artifact["reviewer_decision"] = decision
@@ -685,6 +685,13 @@ def _apply_artifact_decision(
                         "resolution": parts[1].strip() if len(parts) > 1 else "",
                     })
                 artifact["conflicts"] = existing + new_entries
+            if add_sources:
+                existing_sources = list(artifact.get("source_files") or [])
+                for src in add_sources:
+                    src = src.strip()
+                    if src and src not in existing_sources:
+                        existing_sources.append(src)
+                artifact["source_files"] = existing_sources
             return
     raise click.UsageError(
         f"Artifact '{artifact_name}' not found in extract-plan.yaml. "
@@ -821,6 +828,10 @@ def plan(topic, force):
     "--add-conflict", "add_conflicts", multiple=True, metavar="TEXT",
     help="Append a conflict to the artifact's conflicts list. Use 'conflict text' or 'conflict|resolution' format (repeatable).",
 )
+@click.option(
+    "--add-source", "add_sources", multiple=True, metavar="SLUG",
+    help="Add a missing source slug to the artifact's source_files list (repeatable).",
+)
 @click.option("--reviewer", default=None, help="Reviewer name written to plan header.")
 @click.option(
     "--review-summary", "review_summary", default=None,
@@ -830,7 +841,7 @@ def plan(topic, force):
     "--finalize", is_flag=True,
     help="Set plan status to 'approved' and record reviewer/timestamp.",
 )
-def approve(topic, artifact_name, decision, notes, add_conflicts, reviewer, review_summary, finalize):
+def approve(topic, artifact_name, decision, notes, add_conflicts, add_sources, reviewer, review_summary, finalize):
     """Record reviewer decisions on extract-plan.yaml artifacts.
 
     \b
@@ -841,6 +852,10 @@ def approve(topic, artifact_name, decision, notes, add_conflicts, reviewer, revi
       # Record a cross-source conflict and finalize:
       rh-skills promote approve TOPIC --artifact NAME --decision approved \\
         --add-conflict "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%" --finalize
+
+      # Add a source the planner omitted (e.g. planner split conflicting sources):
+      rh-skills promote approve TOPIC --artifact NAME --decision approved \\
+        --add-source aace-guidelines-2022 --add-conflict "HbA1c target" --finalize
 
       # Or as separate sequential calls:
       rh-skills promote approve TOPIC --artifact NAME --decision approved [--notes TEXT]
@@ -866,7 +881,7 @@ def approve(topic, artifact_name, decision, notes, add_conflicts, reviewer, revi
     if artifact_name:
         if not decision:
             raise click.UsageError("--decision is required when --artifact is specified.")
-        _apply_artifact_decision(plan, artifact_name, decision, notes, add_conflicts)
+        _apply_artifact_decision(plan, artifact_name, decision, notes, add_conflicts, add_sources)
         if review_summary is not None:
             plan["review_summary"] = review_summary
         _write_plan_and_readout(plan_path, readout_path, plan)
