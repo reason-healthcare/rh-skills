@@ -409,8 +409,7 @@ all deterministic writes must go through `rh-skills promote derive` and
 
    `render` writes one or more report files alongside the YAML source in
    `topics/<topic>/structured/<artifact-name>/`, prefixed with the artifact
-   name (e.g. `my-artifact-rules-table.md` for a decision-table;
-   `my-artifact-evidence-report.md` for an evidence-summary). Mermaid diagrams
+   name (e.g. `my-artifact-report.md` for any artifact type). Mermaid diagrams
    are wrapped in a fenced ` ```mermaid ` block inside `.md` files. These are
    the generated human-readable representations for SME review — do not edit
    them manually.

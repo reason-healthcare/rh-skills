@@ -80,7 +80,7 @@ Expected report:
 
 ```text
 Rendered 1 view(s) for 'screening-decisions' (decision-table):
-  topics/diabetes-ccm/structured/screening-decisions/screening-decisions-rules-table.md
+  topics/diabetes-ccm/structured/screening-decisions/screening-decisions-report.md
 ```
 
 The rendered report files are written alongside the YAML source in the artifact
@@ -107,8 +107,5 @@ Example result:
 ```text
 ✓ screening-decisions  — all required fields, traceability entries, and conflict records present
 Rendered 1 view(s) for 'screening-decisions' (decision-table):
-  topics/diabetes-ccm/structured/screening-decisions/screening-decisions-rules-table.md
-```
-
-Verify is non-destructive: it does not create, modify, or delete files and does
+  topics/diabetes-ccm/structured/screening-decisions/screening-decisions-report.md: it does not create, modify, or delete files and does
 not write to tracking.yaml.
