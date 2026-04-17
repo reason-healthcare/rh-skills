@@ -22,6 +22,7 @@ metadata:
   writes_via_cli:
     - "rh-skills promote derive"
     - "rh-skills validate"
+    - "rh-skills render"
   uses_mcp:
     - tool: reasonhub-search_all_codesystems
       when: plan — first-pass concept search when target code system is unknown
@@ -399,7 +400,19 @@ all deterministic writes must go through `rh-skills promote derive` and
    rh-skills validate <topic> <artifact-name>
    ```
 
-5. Report `✓` or `✗` per artifact. Stop on blocking CLI failures; do not silently continue past a failed derive/validate command.
+5. After successful validation, render a human-readable view of each artifact:
+
+   ```sh
+   rh-skills render <topic> <artifact-name>
+   ```
+
+   `render` writes a Markdown file alongside the control YAML at
+   `topics/<topic>/structured/<artifact-name>/<artifact-name>.md`.
+   This is the generated human-readable representation for SME review — do
+   not edit it manually. For `decision-table` artifacts, the render output
+   also includes a completeness report.
+
+6. Report `✓` or `✗` per artifact. Stop on blocking CLI failures; do not silently continue past a failed derive/validate command.
 
 ### Events
 
@@ -421,11 +434,18 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    rh-skills validate <topic> <artifact-name>
    ```
 
-3. Confirm:
-   - each approved artifact file exists in `topics/<topic>/structured/`
+3. Render each expected artifact to confirm the human-readable view is present:
+
+   ```sh
+   rh-skills render <topic> <artifact-name>
+   ```
+
+4. Confirm:
+   - each approved artifact YAML exists in `topics/<topic>/structured/<artifact-name>/`
+   - each approved artifact has a companion `.md` render file in the same directory
    - required traceability sections are present
    - conflict records are present when the approved plan listed unresolved conflicts
-4. Report pass/fail per artifact and exit non-zero only when required checks fail.
+5. Report pass/fail per artifact and exit non-zero only when required checks fail.
 
 Verify is read-only and safe to re-run at any time.
 
