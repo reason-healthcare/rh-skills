@@ -394,6 +394,11 @@ all deterministic writes must go through `rh-skills promote derive` and
    > with placeholder content that passes schema validation). Provide
    > `RH_STUB_RESPONSE="<full yaml>"` to inject a complete stub artifact.
    > In production, configure `LLM_PROVIDER` to a supported backend before running.
+   >
+   > **YAML quoting note**: In `RH_STUB_RESPONSE` YAML, values starting with `>`
+   > or `<` **must be quoted** or they will cause a parse error at validate/render time.
+   > Example: `threshold: ">=190 mg/dL"` (not `threshold: >=190 mg/dL`).
+   > This applies to any value in any field: thresholds, ranges, comparators.
 
 4. Immediately validate each derived artifact with:
 

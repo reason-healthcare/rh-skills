@@ -7,6 +7,7 @@ from pathlib import Path
 import click
 from jinja2 import Environment, FileSystemLoader, Undefined
 from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 from rh_skills.common import topic_dir
 
@@ -155,7 +156,16 @@ def render(topic: str, artifact: str) -> None:
         raise SystemExit(1)
 
     y = YAML(typ="safe")
-    data = y.load(artifact_file.read_text())
+    try:
+        data = y.load(artifact_file.read_text())
+    except YAMLError as exc:
+        click.echo(
+            f"Error: YAML parse error in {artifact_file.name}: {exc}\n"
+            "Hint: values starting with '>' or '<' must be quoted. "
+            "Example: threshold: \">=190 mg/dL\" (not: threshold: >=190 mg/dL)",
+            err=True,
+        )
+        raise SystemExit(1)
 
     artifact_type = data.get("artifact_type", "")
     sections = data.get("sections")

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 from rh_skills.common import (
     load_schema,
@@ -399,8 +400,17 @@ def validate_artifact_file(
     schema = load_schema(schema_name)
 
     y = YAML()
-    with open(artifact_file) as f:
-        artifact_data = y.load(f)
+    try:
+        with open(artifact_file) as f:
+            artifact_data = y.load(f)
+    except YAMLError as exc:
+        _report_error(
+            f"  YAML parse error in {artifact_file.name}: {exc}\n"
+            "  Hint: values starting with '>' or '<' must be quoted. "
+            "Example: threshold: \">=190 mg/dL\" (not: threshold: >=190 mg/dL)",
+            emit=emit,
+        )
+        return 1, 0
 
     if artifact_data is None:
         artifact_data = {}

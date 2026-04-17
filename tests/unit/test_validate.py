@@ -451,3 +451,19 @@ def test_collect_stub_paths_empty_on_clean_data():
         "criteria": [{"id": "c1", "description": "Screen adults", "rule": "age >= 40"}],
     }
     assert _collect_stub_paths(data) == []
+
+
+def test_validate_fails_with_clear_message_on_yaml_parse_error(tmp_repo):
+    """Unquoted >= or <= in YAML causes a parse error; validate must report it clearly."""
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text(
+        "id: test-artifact\n"
+        "threshold: >=190 mg/dL\n"  # unquoted > at start causes ScannerError
+    )
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "YAML parse error" in result.output
+    assert "quoted" in result.output
