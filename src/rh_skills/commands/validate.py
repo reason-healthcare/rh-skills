@@ -348,6 +348,16 @@ def _validate_formalize_artifact(
         )
         errors += 1
 
+    # Strategy match check
+    plan_strategy = target_entry.get("strategy", "")
+    actual_strategy = artifact_data.get("strategy", "")
+    if plan_strategy and actual_strategy and plan_strategy != actual_strategy:
+        _report_error(
+            f"  strategy mismatch: plan says '{plan_strategy}', tracking says '{actual_strategy}'",
+            emit=emit,
+        )
+        errors += 1
+
     for section_name in target_entry.get("required_sections", []) or []:
         if section_name not in artifact_data:
             _report_error(f"  MISSING required formalize section: {section_name}", emit=emit)
@@ -358,6 +368,76 @@ def _validate_formalize_artifact(
             artifact_data.get(section_name),
             emit=emit,
         )
+
+    # L3 FHIR JSON file validation
+    fhir_errors, fhir_warnings = _validate_fhir_json_files(
+        topic, artifact, target_entry, emit=emit,
+    )
+    errors += fhir_errors
+    warnings += fhir_warnings
+
+    return errors, warnings
+
+
+def _validate_fhir_json_files(
+    topic: str,
+    artifact: str,
+    target_entry: dict,
+    *,
+    emit: bool = True,
+) -> tuple[int, int]:
+    """Validate FHIR JSON files in computable/ against per-resource-type rules."""
+    import json as _json
+    from rh_skills.fhir.validate import validate_resource
+
+    errors = 0
+    warnings = 0
+
+    computable_dir = topic_dir(topic) / "computable"
+    if not computable_dir.exists():
+        return 0, 0
+
+    # Check that all l3_targets have at least one generated file
+    l3_targets = target_entry.get("l3_targets", []) or []
+    json_files = list(computable_dir.glob("*.json"))
+
+    if not json_files:
+        if l3_targets:
+            _report_error(
+                f"  No FHIR JSON files found in computable/ but plan expects: {l3_targets}",
+                emit=emit,
+            )
+            errors += 1
+        return errors, warnings
+
+    # Map resourceType from filenames to check l3_targets coverage
+    found_types: set[str] = set()
+    for json_file in json_files:
+        try:
+            resource = _json.loads(json_file.read_text())
+        except (ValueError, OSError):
+            _report_error(f"  Cannot parse FHIR JSON: {json_file.name}", emit=emit)
+            errors += 1
+            continue
+
+        rt = resource.get("resourceType", "")
+        found_types.add(rt)
+
+        # Run structural validation
+        resource_errors = validate_resource(resource)
+        for err in resource_errors:
+            _report_error(f"  {json_file.name}: {err}", emit=emit)
+            errors += 1
+
+    # Check l3_targets coverage (strip qualifiers like "(eca-rule)")
+    for target in l3_targets:
+        base_type = target.split("(")[0].strip().split(" ")[0]
+        if base_type not in found_types:
+            _report_warn(
+                f"  L3 target '{target}' has no generated file in computable/",
+                emit=emit,
+            )
+            warnings += 1
 
     return errors, warnings
 

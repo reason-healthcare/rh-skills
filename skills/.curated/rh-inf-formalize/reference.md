@@ -108,6 +108,38 @@ Additional checks:
 - `converged_from[]` in tracking must match the approved `input_artifacts[]`
 - `strategy` in tracking must match the plan's `strategy` field
 
+### Per-Type Completeness Rules (Verify Mode)
+
+Beyond structural field validation, verify mode checks semantic completeness
+per strategy type:
+
+**evidence-summary**: Each Evidence resource must have at least one `certainty`
+entry with a `rating` value. Each EvidenceVariable must define its role (e.g.,
+population, intervention, outcome) via characteristic criteria.
+
+**decision-table**: PlanDefinition `action[].condition[]` must include at
+least one `expression` with `language: text/cql`. The companion Library must
+contain CQL with `context Patient` and `using FHIR version '4.0.1'`.
+
+**care-pathway**: PlanDefinition `action[]` entries must form a sequence via
+`relatedAction[]` with `relationship: before-start`. At least one
+ActivityDefinition must be referenced via `definitionCanonical`.
+
+**terminology**: Every ValueSet `compose.include[].concept[].code` must pass
+`reasonhub-codesystem_verify_code` against its declared `system`. ConceptMap
+`group[].element[]` must have at least one `target[]` mapping.
+
+**measure**: Measure must have `scoring.coding[0].code` set. Each `group[0].population[]`
+must include at least `initial-population`, `denominator`, and `numerator`.
+The companion Library CQL must define expressions matching population names.
+
+**assessment**: Questionnaire `item[]` must have `type` set on every item.
+Items of type `choice` must have at least one `answerOption[]` entry.
+
+**policy**: PlanDefinition (eca-rule) must have `action[].condition[]` with
+CQL expressions. The DTR Questionnaire must have `item[]` entries that map
+to documentation requirements from the L2 source.
+
 ---
 
 ## Type-Specific Conversion Rules (Implement Mode)

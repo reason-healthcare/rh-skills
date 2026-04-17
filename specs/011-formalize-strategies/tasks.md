@@ -108,14 +108,14 @@
 
 ### Implementation for User Story 3
 
-- [ ] T033 [US3] Update formalize SKILL.md verify mode in `skills/.curated/rh-inf-formalize/SKILL.md` — replace generic section-presence checks with type-specific verification instructions: what to check per FHIR resource type, how to use MCP `codesystem_verify_code` for terminology validation, how to detect `TODO:MCP-UNREACHABLE` placeholders
-- [ ] T034 [US3] Update formalize reference.md verify section in `skills/.curated/rh-inf-formalize/reference.md` — add per-type verification rules: PlanDefinition must have `action[]` with `condition[]` for eca-rule; Measure must have `group[].population[]` with numerator/denominator; Questionnaire must have `item[].linkId`; ValueSet must have `compose.include[]`; Evidence must have `certainty[]`; Library must have companion `.cql` file
-- [ ] T035 [US3] Update `validate.py` L3 formalize validation in `src/rh_skills/commands/validate.py` — add type-specific completeness checks using `fhir/validate.py` module; check `converged_from` matches tracking entry; verify all expected resource files exist on disk; detect and report `TODO:MCP-UNREACHABLE` placeholders; exit non-zero on structural errors
+- [X] T033 [US3] Update formalize SKILL.md verify mode in `skills/.curated/rh-inf-formalize/SKILL.md` — replace generic section-presence checks with type-specific verification instructions: what to check per FHIR resource type, how to use MCP `codesystem_verify_code` for terminology validation, how to detect `TODO:MCP-UNREACHABLE` placeholders
+- [X] T034 [US3] Update formalize reference.md verify section in `skills/.curated/rh-inf-formalize/reference.md` — add per-type verification rules: PlanDefinition must have `action[]` with `condition[]` for eca-rule; Measure must have `group[].population[]` with numerator/denominator; Questionnaire must have `item[].linkId`; ValueSet must have `compose.include[]`; Evidence must have `certainty[]`; Library must have companion `.cql` file
+- [X] T035 [US3] Update `validate.py` L3 formalize validation in `src/rh_skills/commands/validate.py` — add type-specific completeness checks using `fhir/validate.py` module; check `converged_from` matches tracking entry; verify all expected resource files exist on disk; detect and report `TODO:MCP-UNREACHABLE` placeholders; exit non-zero on structural errors
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T036 [P] [US3] Extend eval scenarios (T019–T025) with verify phase — each scenario should include plan→approve→implement→verify cycle; expected verify output confirms type-specific checks pass
-- [ ] T037 [P] [US3] Add negative verify test cases to existing `tests/test_fhir_validate.py` (extends T006) — Measure missing denominator, Questionnaire missing linkId, PlanDefinition missing action, ValueSet empty compose, Evidence missing certainty, resource with MCP-UNREACHABLE placeholders
+- [X] T036 [P] [US3] Extend eval scenarios (T019–T025) with verify phase — each scenario should include plan→approve→implement→verify cycle; expected verify output confirms type-specific checks pass
+- [X] T037 [P] [US3] Add negative verify test cases to existing `tests/test_fhir_validate.py` (extends T006) — Measure missing denominator, Questionnaire missing linkId, PlanDefinition missing action, ValueSet empty compose, Evidence missing certainty, resource with MCP-UNREACHABLE placeholders
 
 **Checkpoint**: Verify catches type-specific structural errors that generic checks would miss. All 7 types have verification rules.
 

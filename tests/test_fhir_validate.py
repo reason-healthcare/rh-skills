@@ -179,3 +179,118 @@ class TestValidateResources:
         ])
         assert "PlanDefinition/ok" not in results
         assert "Measure/bad" in results
+
+
+class TestNegativeVerifyCases:
+    """T037: Negative verification test cases — each tests a type-specific
+    structural error that generic checks would miss."""
+
+    def test_measure_missing_denominator(self):
+        errors = validate_resource({
+            "resourceType": "Measure",
+            "id": "cms122",
+            "scoring": {"coding": [{"code": "proportion"}]},
+            "group": [{
+                "population": [
+                    {"code": {"coding": [{"code": "numerator"}]}, "criteria": {"expression": "x"}},
+                ],
+            }],
+        })
+        assert any("denominator" in e.lower() for e in errors)
+
+    def test_measure_missing_numerator(self):
+        errors = validate_resource({
+            "resourceType": "Measure",
+            "id": "cms122",
+            "scoring": {"coding": [{"code": "proportion"}]},
+            "group": [{
+                "population": [
+                    {"code": {"coding": [{"code": "denominator"}]}, "criteria": {"expression": "x"}},
+                ],
+            }],
+        })
+        assert any("numerator" in e.lower() for e in errors)
+
+    def test_questionnaire_missing_linkid(self):
+        errors = validate_resource({
+            "resourceType": "Questionnaire",
+            "id": "phq9",
+            "item": [
+                {"text": "Question 1"},
+                {"linkId": "q2", "text": "Question 2"},
+            ],
+        })
+        assert any("linkId" in e for e in errors)
+
+    def test_plandefinition_missing_action(self):
+        errors = validate_resource({
+            "resourceType": "PlanDefinition",
+            "id": "sepsis",
+            "type": {"coding": [{"code": "eca-rule"}]},
+        })
+        assert any("action" in e.lower() for e in errors)
+
+    def test_valueset_empty_compose(self):
+        errors = validate_resource({
+            "resourceType": "ValueSet",
+            "id": "diabetes-dx",
+            "compose": {"include": []},
+        })
+        assert any("compose.include" in e for e in errors)
+
+    def test_valueset_no_compose(self):
+        errors = validate_resource({
+            "resourceType": "ValueSet",
+            "id": "diabetes-dx",
+        })
+        assert any("compose.include" in e for e in errors)
+
+    def test_evidence_missing_certainty(self):
+        errors = validate_resource({
+            "resourceType": "Evidence",
+            "id": "copd-evidence",
+            "description": "COPD evidence synthesis",
+        })
+        assert any("certainty" in e.lower() for e in errors)
+
+    def test_evidence_variable_missing_characteristic(self):
+        errors = validate_resource({
+            "resourceType": "EvidenceVariable",
+            "id": "copd-population",
+            "description": "Adults with COPD",
+        })
+        assert any("characteristic" in e.lower() for e in errors)
+
+    def test_resource_with_mcp_unreachable(self):
+        errors = validate_resource({
+            "resourceType": "ValueSet",
+            "id": "test-vs",
+            "compose": {
+                "include": [{
+                    "system": "http://snomed.info/sct",
+                    "concept": [{"code": "TODO:MCP-UNREACHABLE", "display": "Unknown concept"}],
+                }],
+            },
+        })
+        assert any("MCP-UNREACHABLE" in e for e in errors)
+
+    def test_library_missing_type(self):
+        errors = validate_resource({
+            "resourceType": "Library",
+            "id": "cql-lib",
+        })
+        assert any("type" in e.lower() for e in errors)
+
+    def test_concept_map_missing_group(self):
+        errors = validate_resource({
+            "resourceType": "ConceptMap",
+            "id": "dx-map",
+        })
+        assert any("group" in e.lower() for e in errors)
+
+    def test_activity_definition_missing_kind(self):
+        errors = validate_resource({
+            "resourceType": "ActivityDefinition",
+            "id": "med-admin",
+        })
+        assert any("kind" in e.lower() for e in errors)

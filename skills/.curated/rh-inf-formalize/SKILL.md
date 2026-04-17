@@ -244,11 +244,34 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    - the `strategy` in tracking matches the approved artifact's `strategy`
    - every `l3_targets[]` resource type from the plan has at least one generated file
    - all generated FHIR resources pass structural validation
-4. For each ValueSet or ConceptMap resource, call
+4. **Type-specific structural checks** — for each FHIR JSON file, apply the
+   required-field rules for its `resourceType`:
+
+   | ResourceType | Required Fields |
+   |-------------|----------------|
+   | PlanDefinition | `type` (eca-rule or clinical-protocol), `action[]` with at least one entry |
+   | Library | `type`, `content[].contentType` |
+   | Measure | `group[].population[]` with both numerator and denominator, `scoring` |
+   | Questionnaire | `item[]` with `linkId` on every item |
+   | ValueSet | `compose.include[]` with at least one entry |
+   | ConceptMap | `group[]` with `element[].target[]` |
+   | Evidence | `certainty[]` with at least one entry |
+   | EvidenceVariable | `characteristic[]` with at least one entry |
+   | ActivityDefinition | `kind` |
+
+   Report each missing field as an error (not a warning).
+
+5. **MCP-UNREACHABLE placeholder detection** — scan all FHIR JSON files for
+   the literal string `TODO:MCP-UNREACHABLE`. Each occurrence indicates a code
+   that the LLM could not resolve via reasonhub MCP tools. Report each as a
+   warning with the file path and field location. If the count exceeds 3 per
+   resource, report it as an error.
+
+6. For each ValueSet or ConceptMap resource, call
    `reasonhub-codesystem_verify_code` with each coded entry's `system` and
    `code`. Report any code that fails verification as a terminology error.
    Treat terminology errors as verify failures (exit non-zero).
-5. Report pass/fail per artifact and exit non-zero only when required checks fail.
+7. Report pass/fail per artifact and exit non-zero only when required checks fail.
 
 Verify is read-only and safe to re-run at any time.
 

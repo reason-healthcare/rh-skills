@@ -94,6 +94,7 @@ prompt: |
   1. **plan** — generate a formalize plan proposing the L3 FHIR package structure
   2. Wait for reviewer approval (simulate approval by responding "approved")
   3. **implement** — produce the L3 FHIR JSON resources via rh-skills formalize
+  4. **verify** — validate structural correctness of all generated resources
 
 expected_outputs:
   - path: topics/heart-failure-pathway/process/plans/formalize-plan.md
