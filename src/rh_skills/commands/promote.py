@@ -793,10 +793,14 @@ def plan(topic, force):
 @click.option("--notes", default="", help="Approval notes (used with --artifact).")
 @click.option("--reviewer", default=None, help="Reviewer name written to plan header.")
 @click.option(
+    "--review-summary", "review_summary", default=None,
+    help="Plan-level review summary written to extract-plan.yaml (required when conflicts exist).",
+)
+@click.option(
     "--finalize", is_flag=True,
     help="Set plan status to 'approved' and record reviewer/timestamp.",
 )
-def approve(topic, artifact_name, decision, notes, reviewer, finalize):
+def approve(topic, artifact_name, decision, notes, reviewer, review_summary, finalize):
     """Record reviewer decisions on extract-plan.yaml artifacts.
 
     \b
@@ -829,6 +833,8 @@ def approve(topic, artifact_name, decision, notes, reviewer, finalize):
         if not decision:
             raise click.UsageError("--decision is required when --artifact is specified.")
         _apply_artifact_decision(plan, artifact_name, decision, notes)
+        if review_summary is not None:
+            plan["review_summary"] = review_summary
         _write_plan_and_readout(plan_path, readout_path, plan)
         log_info(f"Artifact '{artifact_name}' → {_DECISION_ICON.get(decision, '')} {decision}")
 
@@ -844,6 +850,8 @@ def approve(topic, artifact_name, decision, notes, reviewer, finalize):
         plan["status"] = "approved"
         plan["reviewer"] = rev
         plan["reviewed_at"] = now_iso()
+        if review_summary is not None:
+            plan["review_summary"] = review_summary
         _write_plan_and_readout(plan_path, readout_path, plan)
         approved = sum(1 for a in plan.get("artifacts", []) if a.get("reviewer_decision") == "approved")
         total = len(plan.get("artifacts", []))

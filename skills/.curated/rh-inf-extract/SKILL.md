@@ -187,8 +187,20 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 6. Run `rh-skills promote plan <topic>` to generate
    `topics/<topic>/process/plans/extract-plan.yaml`. This command also appends
    `extract_planned` to `tracking.yaml`.
-7. If `extract-plan.yaml` already exists and `--force` is not present, warn and stop without overwriting.
-8. Summarize the proposed artifacts and instruct the reviewer to edit approval fields before implement mode.
+7. **Review the planner output before approving.** The deterministic planner
+   assigns artifacts by source count and type — it does not reason about
+   cross-source clinical conflicts. If the output is clinically wrong (e.g.,
+   splits two sources that share a conflicting threshold into unrelated artifact
+   types, or misses a cross-source conflict entirely), re-run with `--force` to
+   regenerate:
+   ```sh
+   rh-skills promote plan <topic> --force
+   ```
+   After re-running, re-review the new plan. **Do not manually patch
+   `extract-plan.yaml` with file-editing tools** — use `--force` to regenerate
+   or record corrections in `review_summary` when approving.
+8. If `extract-plan.yaml` already exists and `--force` is not present, warn and stop without overwriting.
+9. Summarize the proposed artifacts and instruct the reviewer to edit approval fields before implement mode.
 
 ### What to capture per artifact
 
@@ -234,6 +246,24 @@ rh-skills promote approve <topic> --artifact <name> --decision rejected
 `extract-plan-readout.md` with the final decisions. Only artifacts with
 `reviewer_decision: approved` will be implemented; `rejected` and
 `needs-revision` artifacts are skipped without error.
+
+**`review_summary` is required (non-empty) when any of the following apply:**
+- Any artifact has entries in `unresolved_conflicts[]`
+- The plan was regenerated with `--force` after the initial run
+- The plan scope is narrower than the source's clinical content
+- Any artifact type was changed from the planner's original proposal
+
+Use the `--notes` flag on the approve command for per-artifact notes; use
+`--review-summary` to set the plan-level summary in the same call:
+
+```sh
+# When unresolved conflicts or scope gaps exist — add --review-summary:
+rh-skills promote approve <topic> \
+  --artifact <name> --decision approved \
+  --notes "Preferred ADA threshold; AACE variant documented in conflicts" \
+  --review-summary "ADA vs AACE HbA1c conflict documented. Plan approved with conflict preserved for formalize resolution." \
+  --finalize --reviewer "<reviewer-name>"
+```
 
 > **Human terminal:** Run `rh-skills promote approve <topic>` without flags for
 > an interactive walk-through that prompts for each artifact and then offers to

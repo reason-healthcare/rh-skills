@@ -742,3 +742,25 @@ def test_approve_finalize_after_separate_artifact_approval_preserves_decision(tm
     plan = _read_plan(tmp_repo)
     assert plan["status"] == "approved"
     assert plan["artifacts"][0]["reviewer_decision"] == "approved"
+
+
+def test_approve_review_summary_written_to_plan(tmp_repo):
+    """--review-summary flag sets plan-level review_summary in extract-plan.yaml."""
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "decision-points", "reviewer_decision": "pending-review", "approval_notes": ""}],
+    )
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "approve", "my-skill",
+        "--artifact", "decision-points",
+        "--decision", "approved",
+        "--review-summary", "ADA vs AACE conflict documented; plan approved.",
+        "--finalize", "--reviewer", "Test",
+    ])
+    assert result.exit_code == 0, result.output
+    plan = _read_plan(tmp_repo)
+    assert plan["review_summary"] == "ADA vs AACE conflict documented; plan approved."
+    assert plan["status"] == "approved"
