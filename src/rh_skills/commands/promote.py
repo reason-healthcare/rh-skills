@@ -424,10 +424,57 @@ def _parse_conflicts(raw_conflicts: tuple[str, ...]) -> list[dict]:
     return list(merged.values())
 
 
+# Structurally valid stub shapes for known section names.
+# Renderers iterate these as lists/dicts, so they must have the right shape.
+_STUB_SECTION_SHAPES: dict[str, object] = {
+    # Generic L2 sections (used by generic summary renderer)
+    "factors": [{"factor": "<stub: factor name>", "threshold": "<stub: threshold>", "category": "<stub: category>"}],
+    "exclusions": [{"id": "excl-001", "description": "<stub: exclusion>", "type": "absolute", "reason": "<stub: reason>"}],
+    "criteria": [{"id": "cr-001", "description": "<stub: criterion>", "requirement_type": "clinical", "rule": "<stub: rule>"}],
+    "decision_points": [{"id": "dp-001", "description": "<stub: decision point>", "threshold": "<stub: threshold>", "if_met": "<stub: action>", "if_not_met": "<stub: action>"}],
+    "steps": [{"step": 1, "description": "<stub: step>", "actor": "<stub: actor>"}],
+    "value_sets": [{"id": "vs-001", "name": "<stub: value set>", "system": "<stub: system>", "codes": []}],
+    "measures": [{"id": "m-001", "name": "<stub: measure>", "logic": "<stub: logic>"}],
+    "findings": [{"finding_id": "f-001", "statement": "<stub: finding>", "grade": "<stub: grade>"}],
+    # clinical-frame
+    "frames": [{"id": "frame-001", "population": "<stub: population>", "intervention": "<stub: intervention>",
+                "comparison": "<stub: comparison>", "outcomes": ["<stub: outcome>"], "timing": "<stub: timing>", "setting": "<stub: setting>"}],
+    # decision-table (actions handled separately — differs from policy actions)
+    "conditions": [{"id": "cond-001", "label": "<stub: condition>", "values": ["Yes", "No"]}],
+    "rules": [{"id": "rule-001", "when": {"cond-001": "Yes"}, "then": ["approve"]},
+              {"id": "rule-002", "when": {"cond-001": "No"}, "then": ["deny"]}],
+    # assessment
+    "instrument": {"name": "<stub: instrument name>", "purpose": "<stub: purpose>", "population": "<stub: population>"},
+    "items": [{"id": "item-001", "text": "<stub: item text>", "type": "likert",
+               "options": [{"value": 0, "label": "Not at all"}, {"value": 3, "label": "Nearly every day"}]}],
+    "scoring": {"method": "sum", "range": {"min": 0, "max": 0},
+                "ranges": [{"range": "0-9", "interpretation": "<stub: interpretation>"},
+                            {"range": "10+", "interpretation": "<stub: interpretation>"}]},
+    # policy (applicability dict; criteria list same shape as eligibility-criteria)
+    "applicability": {"populations": ["<stub: population>"], "service_category": "<stub: service>"},
+}
+
+
+def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
+    """Return a structurally valid stub placeholder for a section.
+
+    The ``actions`` section has different shapes for decision-table (list of
+    action dicts) vs policy (dict of approve/deny/pend dicts), so it is
+    dispatched by artifact_type.  All other sections use _STUB_SECTION_SHAPES.
+    """
+    if section_name == "actions":
+        if artifact_type == "decision-table":
+            return [{"id": "approve", "label": "Approve"}, {"id": "deny", "label": "Deny"}]
+        # policy (and any other type)
+        return {"approve": {"conditions": "<stub: approval conditions>"}, "deny": {"conditions": "<stub: denial conditions>"}}
+    return _STUB_SECTION_SHAPES.get(section_name, f"<stub: populate {section_name} content>")
+
+
 def _build_sections(
     required_sections: tuple[str, ...],
     clinical_question: str | None,
     evidence_refs: tuple[str, ...],
+    artifact_type: str | None = None,
 ) -> dict:
     section_names = list(required_sections) if required_sections else ["summary"]
     evidence_entries = _parse_evidence_refs(evidence_refs)
@@ -441,7 +488,7 @@ def _build_sections(
         elif name == "evidence_traceability":
             sections[name] = evidence_entries
         else:
-            sections[name] = f"<stub: populate {name} content>"
+            sections[name] = _stub_section_value(name, artifact_type)
     return sections
 
 
@@ -465,7 +512,7 @@ def _build_stub_l2_artifact(
         "derived_from": list(source),
         "artifact_type": artifact_type or "evidence-summary",
         "clinical_question": clinical_question or "",
-        "sections": _build_sections(required_sections, clinical_question, evidence_refs),
+        "sections": _build_sections(required_sections, clinical_question, evidence_refs, artifact_type),
         "conflicts": _parse_conflicts(conflicts),
     }
     buf = io.StringIO()
