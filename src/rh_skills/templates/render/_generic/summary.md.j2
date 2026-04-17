@@ -1,0 +1,22 @@
+# {{ data.title or data.name or 'Untitled' }}
+
+{% for field in ['id', 'title', 'domain', 'description', 'artifact_type', 'clinical_question'] -%}
+{% if data[field] is defined and data[field] %}**{{ field }}**: {{ data[field] }}
+{% endif %}
+{%- endfor %}
+
+{% set sections = data.sections or {} %}
+{% for key, val in sections.items() %}
+## {{ key }}
+
+{% if val is mapping %}
+{% for k, v in val.items() %}- **{{ k }}**: {{ v }}
+{% endfor %}
+{% elif val is iterable and val is not string %}
+{% for item in val %}- {{ item }}
+{% endfor %}
+{% else %}
+{{ val }}
+{% endif %}
+
+{% endfor %}

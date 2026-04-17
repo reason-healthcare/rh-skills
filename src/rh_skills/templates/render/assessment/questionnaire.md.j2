@@ -1,0 +1,12 @@
+{% set instrument = data.sections.instrument %}
+{% set items = data.sections['items'] %}
+# {{ instrument.name or 'Assessment' }}
+
+**Purpose**: {{ instrument.purpose or 'N/A' }}
+**Population**: {{ instrument.population or 'N/A' }}
+
+{% for item in items -%}
+**{{ loop.index }}. {{ item.text or '' }}** ({{ item.type or 'text' }})
+{% for opt in (item.options or []) %}   - [{{ opt.value }}] {{ opt.label }}
+{% endfor %}
+{% endfor %}

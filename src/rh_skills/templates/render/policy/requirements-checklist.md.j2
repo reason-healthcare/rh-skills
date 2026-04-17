@@ -1,0 +1,16 @@
+# Requirements Checklist — {{ data.title or data.name or '' }}
+
+{% set criteria = data.sections.criteria or [] %}
+{% for crit in criteria -%}
+- [ ] **{{ crit.id or '?' }}** [{{ crit.requirement_type or '' }}]: {{ crit.description or '' }}
+  - Rule: {{ crit.rule or 'N/A' }}
+{% endfor %}
+
+## Actions
+
+{% set actions = data.sections.actions or {} %}
+{% for action_name in ['approve', 'deny', 'pend'] -%}
+{% set action = actions[action_name] if action_name in actions else {} %}
+{% if action %}- **{{ action_name | title }}**: {{ action.conditions or 'N/A' }}
+{% endif %}
+{%- endfor %}

@@ -1,0 +1,11 @@
+{% set instrument = data.sections.instrument %}
+{% set scoring = data.sections.scoring %}
+# Scoring — {{ instrument.name or 'Assessment' }}
+
+**Method**: {{ scoring.method or 'N/A' }}
+
+| Range | Interpretation |
+|---|---|
+{% for r in (scoring.ranges or []) -%}
+| {{ r.range or '' }} | {{ r.interpretation or '' }} |
+{% endfor %}

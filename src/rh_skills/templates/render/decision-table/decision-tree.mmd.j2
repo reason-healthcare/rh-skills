@@ -1,0 +1,16 @@
+{% set conditions = data.sections.conditions or [] %}
+flowchart TD
+{% for cond in conditions -%}
+    {{ cond.id }}{{"{"}}{{ cond.label or cond.id }}?{{"}"}}
+{% if loop.first %}    Start([Start]) --> {{ cond.id }}
+{% else %}
+{% set prev = conditions[loop.index0 - 1] %}
+{% for val in (prev['values'] or []) %}    {{ prev.id }} -->|{{ val }}| {{ cond.id }}
+{% endfor %}
+{% endif %}
+{%- endfor %}
+{% if conditions %}
+{% set last = conditions[-1] %}
+{% for val in (last['values'] or []) %}    {{ last.id }} -->|{{ val }}| action_{{ val | replace(' ', '_') }}([Action])
+{% endfor %}
+{% endif %}

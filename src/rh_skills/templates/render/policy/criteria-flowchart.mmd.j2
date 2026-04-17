@@ -1,0 +1,18 @@
+{% set criteria = data.sections.criteria or [] %}
+{% set actions = data.sections.actions or {} %}
+flowchart TD
+    Start([Request Received])
+{% for crit in criteria -%}
+    {{ crit.id }}{{"{"}}{{ crit.description or 'Check' }}{{"}"}}
+{% if loop.first %}    Start --> {{ crit.id }}
+{% else %}    {{ criteria[loop.index0 - 1].id }} -->|Met| {{ crit.id }}
+{% endif %}
+{%- endfor %}
+{% if criteria %}
+{% set last = criteria[-1] %}
+    {{ last.id }} -->|Met| Approve([Approve])
+    {{ last.id }} -->|Not Met| Deny([Deny])
+{% if actions.pend %}
+    {{ last.id }} -->|Insufficient Info| Pend([Pend for Review])
+{% endif %}
+{% endif %}
