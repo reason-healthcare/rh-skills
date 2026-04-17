@@ -22,7 +22,7 @@
 {% elif val is iterable and val is not string %}
 {% for item in val %}
 {% if item is mapping %}
-{% if item.get('label') %}{% set pk = 'label' %}{% elif item.get('name') %}{% set pk = 'name' %}{% elif item.get('title') %}{% set pk = 'title' %}{% elif item.get('statement') %}{% set pk = 'statement' %}{% elif item.get('issue') %}{% set pk = 'issue' %}{% else %}{% set pk = '' %}{% endif %}
+{% if item.get('label') %}{% set pk = 'label' %}{% elif item.get('name') %}{% set pk = 'name' %}{% elif item.get('title') %}{% set pk = 'title' %}{% elif item.get('factor') %}{% set pk = 'factor' %}{% elif item.get('statement') %}{% set pk = 'statement' %}{% elif item.get('description') %}{% set pk = 'description' %}{% elif item.get('issue') %}{% set pk = 'issue' %}{% else %}{% set pk = '' %}{% endif %}
 - **{{ item.get(pk) or item.get('id') or '—' }}**{% if pk and item.get('id') and pk != 'id' %} `{{ item.id }}`{% endif %}
 
 {% for k, v in item.items() if k != pk and k != 'id' or (k == 'id' and not pk) %}  - *{{ k }}*: {{ render_val(v) }}

@@ -43,10 +43,10 @@ EXTRACT_ARTIFACT_PROFILES = (
         "key_question": "Which risk factors materially change clinical decisions?",
     },
     {
-        "artifact_type": "decision-points",
-        "keywords": ("decision", "threshold", "diagnostic"),
-        "section": "decision_points",
-        "key_question": "Which decision points or thresholds govern next actions?",
+        "artifact_type": "decision-table",
+        "keywords": ("decision table", "decision", "condition", "action", "rule", "if-then", "threshold", "diagnostic"),
+        "section": "decision_table",
+        "key_question": "What conditions and actions form the decision logic?",
     },
     {
         "artifact_type": "workflow-steps",
@@ -71,12 +71,6 @@ EXTRACT_ARTIFACT_PROFILES = (
         "keywords": ("picot", "pico", "clinical question", "scope", "framing"),
         "section": "frames",
         "key_question": "What are the clinical questions this topic must answer (PICOTS)?",
-    },
-    {
-        "artifact_type": "decision-table",
-        "keywords": ("decision table", "condition", "action", "rule", "if-then"),
-        "section": "decision_table",
-        "key_question": "What conditions and actions form the decision logic?",
     },
     {
         "artifact_type": "assessment",
@@ -225,7 +219,6 @@ def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
         "eligibility-criteria",
         "exclusions",
         "risk-factors",
-        "decision-points",
         "workflow-steps",
         "decision-table",
         "policy",

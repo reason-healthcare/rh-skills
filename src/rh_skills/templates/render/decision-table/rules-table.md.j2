@@ -12,3 +12,23 @@
 {% for rule in rules -%}
 | {{ rule.id or '?' }} |{% for c in conditions %} {{ rule.when.get(c.id, '-') if rule.when is mapping else '-' }} |{% endfor %} {% if rule.then %}{% for aid in rule.then %}{{ action_map.get(aid, aid) }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %} |
 {% endfor %}
+
+{% if conditions %}
+## Decision Flow
+
+```mermaid
+flowchart TD
+{% for cond in conditions -%}
+    {{ cond.id }}{{"{"}}{{ cond.label or cond.id }}?{{"}"}}
+{% if loop.first %}    Start([Start]) --> {{ cond.id }}
+{% else %}
+{% set prev = conditions[loop.index0 - 1] %}
+{% for val in (prev['values'] or []) %}    {{ prev.id }} -->|{{ val }}| {{ cond.id }}
+{% endfor %}
+{% endif %}
+{%- endfor %}
+{% set last = conditions[-1] %}
+{% for val in (last['values'] or []) %}    {{ last.id }} -->|{{ val }}| action_{{ val | replace(' ', '_') }}([Action])
+{% endfor %}
+```
+{% endif %}

@@ -96,13 +96,12 @@ Use these standard types unless the topic clearly requires a custom type:
 | `eligibility-criteria` | inclusion or screening criteria |
 | `exclusions` | explicit exclusions or contraindications |
 | `risk-factors` | patient/contextual risk factors |
-| `decision-points` | branching clinical decisions |
 | `workflow-steps` | ordered workflow or care pathway steps |
 | `terminology-value-sets` | code systems, value sets, terminology notes |
 | `measure-logic` | quality measure or scoring logic |
 | `evidence-summary` | narrative evidence synthesis |
 | `clinical-frame` | PICOTS scope framing for clinical questions |
-| `decision-table` | condition/action/rule decision tables (Shiffman model) |
+| `decision-table` | branching clinical decisions, conditions/actions/rules (Shiffman model) |
 | `assessment` | screening instruments and scoring tools |
 | `policy` | coverage, prior-auth criteria, documentation requirements |
 

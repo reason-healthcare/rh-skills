@@ -378,7 +378,7 @@ def test_derive_conflict_same_issue_merges_positions(tmp_repo, monkeypatch):
     result = runner.invoke(promote, [
         "derive", "my-skill", "hba1c-target",
         "--source", "ada-guidelines",
-        "--artifact-type", "decision-points",
+        "--artifact-type", "decision-table",
         "--conflict", "HbA1c target|ada-guidelines|ADA recommends <7.0%",
         "--conflict", "HbA1c target|aace-guidelines|AACE recommends ≤6.5%|aace-guidelines|More specific target",
     ])
@@ -777,12 +777,12 @@ def test_approve_review_summary_written_to_plan(tmp_repo):
     write_extract_plan(
         tmp_repo,
         status="pending-review",
-        artifacts=[{"name": "decision-points", "reviewer_decision": "pending-review", "approval_notes": ""}],
+        artifacts=[{"name": "decision-table", "reviewer_decision": "pending-review", "approval_notes": ""}],
     )
     runner = CliRunner()
     result = runner.invoke(promote, [
         "approve", "my-skill",
-        "--artifact", "decision-points",
+        "--artifact", "decision-table",
         "--decision", "approved",
         "--review-summary", "ADA vs AACE conflict documented; plan approved.",
         "--finalize", "--reviewer", "Test",

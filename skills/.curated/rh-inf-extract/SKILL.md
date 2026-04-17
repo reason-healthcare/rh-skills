@@ -161,10 +161,11 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
      (e.g., eligibility criteria, workflow steps, AND terminology — not just one)?
    - **Are any artifacts mis-typed?** Apply this rule first:
 
-     > **If the artifact involves choosing between two guideline recommendations
-     > (e.g., "which HbA1c target to use") → artifact_type MUST be `decision-points`.**
+     > **If the artifact involves branching clinical decisions or choosing between
+     > guideline recommendations (e.g., "which HbA1c target to use") → artifact_type
+     > MUST be `decision-table`.**
      > `evidence-summary` is ONLY for narrative literature reviews with no branching choice.
-     > When in doubt: conflicting guidelines = `decision-points`.
+     > When in doubt: conflicting guidelines with conditions/actions = `decision-table`.
 
      If the type is wrong, document the correct type in `approval_notes` and use
      `--artifact-type` to override it at `derive` time.

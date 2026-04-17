@@ -235,8 +235,11 @@ def test_render_decision_table_complete(tmp_repo):
     assert result.exit_code == 0
     views = tmp_repo / "topics" / "my-skill" / "structured" / "dt-complete" / "views"
     assert (views / "rules-table.md").exists()
-    assert (views / "decision-tree.md").exists()
+    assert not (views / "decision-tree.md").exists()  # merged into rules-table.md
     assert (views / "completeness-report.md").exists()
+    rules_table = (views / "rules-table.md").read_text()
+    assert "```mermaid" in rules_table
+    assert "flowchart TD" in rules_table
     report = (views / "completeness-report.md").read_text()
     assert "**Complete**: Yes" in report
     assert "8" in report  # total space
