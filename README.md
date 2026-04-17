@@ -92,7 +92,7 @@ artifacts will contain placeholder text rather than validated codes.
 {
   "mcpServers": {
     "reasonhub": {
-      "url": "https://mcp.reasonhub.app/mcp",
+      "url": "https://reasonhub.app/mcp",
       "headers": {
         "Authorization": "Bearer <your-api-key>"
       }
@@ -133,6 +133,22 @@ repo_root = "/path/to/repo"
 
 Supported precedence is: **environment variables > local `.rh-skills.toml` >
 global `~/.rh-skills.toml`**.
+
+### Troubleshooting: `rh-skills: command not found`
+
+If the command isn't found after install, pipx's bin directory likely isn't on your `PATH`. Fix it with:
+
+```
+pipx ensurepath
+```
+
+Then **open a new terminal** (PATH changes don't apply to your current session) and try again.
+
+```
+source ~/.zshrc
+```
+
+**Windows users:**  After running `pipx ensurepath`, close and reopen your terminal entirely — not just the tab. VS Code users may need to restart VS Code itself for its integrated terminal to pick up the new PATH.
 
 ## Usage Modes
 
