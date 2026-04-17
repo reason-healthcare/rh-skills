@@ -42,7 +42,7 @@ structure:
 
       structured:                 # Semi-structured artifacts derived from sources (L2)
         - name: string
-          file: string            # topics/<name>/structured/<name>.yaml
+          file: string            # topics/<name>/structured/<name>/<name>.yaml
           created_at: string
           checksum: string        # SHA-256 hex at creation time
           derived_from: list      # source names (references root sources[].name)

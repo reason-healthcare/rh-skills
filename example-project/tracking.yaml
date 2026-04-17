@@ -14,13 +14,13 @@ topics:
     created_at: "2026-04-03T00:00:00Z"
     structured:
       - name: screening-criteria
-        file: topics/diabetes-screening/structured/screening-criteria.yaml
+        file: topics/diabetes-screening/structured/screening-criteria/screening-criteria.yaml
         created_at: "2026-04-03T00:00:00Z"
         checksum: "b61662af23fa7b93b679055389aaa5fb2a7efa8b668225c7fff618fa2792ee10"
         derived_from:
           - ada-guidelines-2024
       - name: risk-factors
-        file: topics/diabetes-screening/structured/risk-factors.yaml
+        file: topics/diabetes-screening/structured/risk-factors/risk-factors.yaml
         created_at: "2026-04-03T00:00:00Z"
         checksum: "9a295b631ca73c257eabbf2dbbcfb0d42befad2c83327c1280792c821e9c7ab7"
         derived_from:

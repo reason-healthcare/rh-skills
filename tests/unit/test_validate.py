@@ -10,7 +10,7 @@ from rh_skills.commands.validate import validate
 
 
 def make_valid_l2(tmp_repo, skill="my-skill", artifact="test-artifact"):
-    td = tmp_repo / "topics" / skill / "structured"
+    td = tmp_repo / "topics" / skill / "structured" / artifact
     td.mkdir(parents=True, exist_ok=True)
     (td / f"{artifact}.yaml").write_text(f"""\
 id: {artifact}
@@ -59,7 +59,7 @@ def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, 
 
 
 def make_valid_extract_l2(tmp_repo, skill="my-skill", artifact="test-artifact"):
-    td = tmp_repo / "topics" / skill / "structured"
+    td = tmp_repo / "topics" / skill / "structured" / artifact
     td.mkdir(parents=True, exist_ok=True)
     (td / f"{artifact}.yaml").write_text(f"""\
 id: {artifact}
@@ -87,7 +87,7 @@ conflicts: []
 
 
 def make_invalid_l2(tmp_repo, skill="my-skill", artifact="bad-artifact"):
-    td = tmp_repo / "topics" / skill / "structured"
+    td = tmp_repo / "topics" / skill / "structured" / artifact
     td.mkdir(parents=True, exist_ok=True)
     (td / f"{artifact}.yaml").write_text(f"""\
 name: BadArtifact
@@ -294,7 +294,7 @@ def test_validate_extract_artifact_checks_plan_requirements(tmp_repo):
 
 def test_validate_extract_artifact_fails_missing_traceability(tmp_repo):
     write_extract_plan(tmp_repo)
-    td = tmp_repo / "topics" / "my-skill" / "structured"
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
     td.mkdir(parents=True, exist_ok=True)
     (td / "test-artifact.yaml").write_text("""\
 id: test-artifact
@@ -321,7 +321,7 @@ conflicts: []
 def test_validate_extract_artifact_fails_missing_conflicts_when_plan_requires_them(tmp_repo):
     write_extract_plan(tmp_repo, conflicts=[{"conflict": "Guidelines disagree", "resolution": ""}])
     make_valid_extract_l2(tmp_repo)
-    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact.yaml"
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact" / "test-artifact.yaml"
     data = YAML().load(td.read_text())
     data["conflicts"] = []
     y = YAML()

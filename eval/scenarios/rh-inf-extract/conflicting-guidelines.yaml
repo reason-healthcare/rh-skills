@@ -112,7 +112,7 @@ expected_outputs:
     checks:
       - exists
       - contains: "conflict"
-  - path: topics/diabetes-ccm/structured/diabetes-ccm-standards.yaml
+  - path: topics/diabetes-ccm/structured/diabetes-ccm-standards/diabetes-ccm-standards.yaml
     checks:
       - exists
       - contains: "conflicts:"

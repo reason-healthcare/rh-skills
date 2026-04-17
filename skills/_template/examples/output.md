@@ -10,7 +10,7 @@ Clinical content is illustrative only.
 
 ## L2 Structured Artifact Example
 
-**Location**: `topics/diabetes-screening/structured/screening-criteria.yaml`
+**Location**: `topics/diabetes-screening/structured/screening-criteria/screening-criteria.yaml`
 
 ```yaml
 # ── Provenance ─────────────────────────────────────────────────────────────
@@ -142,7 +142,7 @@ topics:
   - name: diabetes-screening
     structured:
       - name: screening-criteria
-        file: topics/diabetes-screening/structured/screening-criteria.yaml
+        file: topics/diabetes-screening/structured/screening-criteria/screening-criteria.yaml
         derived_from: [ada-guidelines-2024]
         created_at: "2026-04-04T15:00:00Z"
     computable:

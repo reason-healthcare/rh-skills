@@ -78,7 +78,9 @@ def test_lifecycle_derive_dry_run_prints_prompt(tmp_repo, monkeypatch):
 def test_lifecycle_validate_accepts_well_formed_l2(tmp_repo):
     runner = CliRunner()
     runner.invoke(init, ["test-workflow-skill"])
-    l2_file = tmp_repo / "topics" / "test-workflow-skill" / "structured" / "criteria.yaml"
+    l2_dir = tmp_repo / "topics" / "test-workflow-skill" / "structured" / "criteria"
+    l2_dir.mkdir(parents=True, exist_ok=True)
+    l2_file = l2_dir / "criteria.yaml"
     l2_file.write_text("""\
 id: criteria
 name: Criteria
@@ -98,7 +100,9 @@ derived_from:
 def test_lifecycle_validate_rejects_missing_fields_l2(tmp_repo):
     runner = CliRunner()
     runner.invoke(init, ["test-workflow-skill"])
-    bad_file = tmp_repo / "topics" / "test-workflow-skill" / "structured" / "bad.yaml"
+    bad_dir = tmp_repo / "topics" / "test-workflow-skill" / "structured" / "bad"
+    bad_dir.mkdir(parents=True, exist_ok=True)
+    bad_file = bad_dir / "bad.yaml"
     bad_file.write_text("name: Bad\n")
     result = runner.invoke(validate, ["test-workflow-skill", "l2", "bad"])
     assert result.exit_code == 1
@@ -112,7 +116,9 @@ def test_lifecycle_combine_dry_run_prints_prompt(tmp_repo, monkeypatch):
     runner.invoke(init, ["test-workflow-skill"])
 
     # Create an L2 artifact and register it
-    l2_file = tmp_repo / "topics" / "test-workflow-skill" / "structured" / "criteria.yaml"
+    l2_dir = tmp_repo / "topics" / "test-workflow-skill" / "structured" / "criteria"
+    l2_dir.mkdir(parents=True, exist_ok=True)
+    l2_file = l2_dir / "criteria.yaml"
     l2_file.write_text("""\
 id: criteria
 name: Criteria
@@ -132,7 +138,7 @@ derived_from:
         if t["name"] == "test-workflow-skill":
             t["structured"].append({
                 "name": "criteria",
-                "file": "topics/test-workflow-skill/structured/criteria.yaml",
+                "file": "topics/test-workflow-skill/structured/criteria/criteria.yaml",
                 "created_at": "2026-04-03T00:00:00Z",
                 "derived_from": ["guideline"],
             })

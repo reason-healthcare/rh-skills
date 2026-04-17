@@ -101,6 +101,10 @@ Use these standard types unless the topic clearly requires a custom type:
 | `terminology-value-sets` | code systems, value sets, terminology notes |
 | `measure-logic` | quality measure or scoring logic |
 | `evidence-summary` | narrative evidence synthesis |
+| `clinical-frame` | PICOTS scope framing for clinical questions |
+| `decision-table` | condition/action/rule decision tables (Shiffman model) |
+| `assessment` | screening instruments and scoring tools |
+| `policy` | coverage, prior-auth criteria, documentation requirements |
 
 Custom types are allowed when a standard type would obscure the clinical purpose.
 
@@ -138,6 +142,95 @@ conflicts:
     preferred_interpretation:
       source: <source-name>
       rationale: <why preferred>
+```
+
+### Type-Specific Section Shapes
+
+Each new artifact type uses a specific section structure. The `sections:` key
+in the L2 YAML must contain the type-appropriate keys.
+
+#### clinical-frame
+
+```yaml
+sections:
+  frames:
+    - id: frame-1
+      population: <target population>
+      intervention: <intervention or exposure>
+      comparison: <comparator>
+      outcomes:
+        - <expected outcome>
+      timing: <time horizon>
+      setting: <clinical setting>
+```
+
+#### decision-table
+
+```yaml
+sections:
+  conditions:
+    - id: c1
+      label: <condition name>
+      values:
+        - <possible value>
+  actions:
+    - id: a1
+      label: <action name>
+  rules:
+    - id: r1
+      when:
+        c1: <value or "-" for irrelevant>
+      then:
+        - a1
+```
+
+#### assessment
+
+```yaml
+sections:
+  instrument:
+    name: <instrument name>
+    purpose: <what it measures>
+    population: <target population>
+  items:
+    - id: q1
+      text: <question text>
+      type: <ordinal|boolean|choice|numeric|text>
+      options:
+        - value: <int or string>
+          label: <display label>
+  scoring:
+    method: <sum|weighted|algorithm>
+    ranges:
+      - range: <e.g. "0-4">
+        interpretation: <e.g. "Minimal depression">
+```
+
+#### policy
+
+```yaml
+sections:
+  applicability:
+    payer_types:
+      - <payer type>
+    service_category: <service category>
+    codes:
+      - system: <code system>
+        values:
+          - <code>
+  criteria:
+    - id: cr1
+      description: <criterion description>
+      requirement_type: <clinical|documentation|temporal>
+      rule: <human-readable rule>
+  actions:
+    approve:
+      conditions: <when to approve>
+    deny:
+      conditions: <when to deny>
+      details: <denial details>
+    pend:
+      conditions: <when to pend>
 ```
 
 ---

@@ -66,6 +66,30 @@ EXTRACT_ARTIFACT_PROFILES = (
         "section": "measure_logic",
         "key_question": "What measure logic or reporting rules should be preserved?",
     },
+    {
+        "artifact_type": "clinical-frame",
+        "keywords": ("picot", "pico", "clinical question", "scope", "framing"),
+        "section": "frames",
+        "key_question": "What are the clinical questions this topic must answer (PICOTS)?",
+    },
+    {
+        "artifact_type": "decision-table",
+        "keywords": ("decision table", "condition", "action", "rule", "if-then"),
+        "section": "decision_table",
+        "key_question": "What conditions and actions form the decision logic?",
+    },
+    {
+        "artifact_type": "assessment",
+        "keywords": ("assessment", "screening", "questionnaire", "instrument", "phq", "gad", "score"),
+        "section": "assessment",
+        "key_question": "What assessment instruments or scoring tools are specified?",
+    },
+    {
+        "artifact_type": "policy",
+        "keywords": ("policy", "prior auth", "authorization", "coverage", "documentation requirement", "payer"),
+        "section": "policy",
+        "key_question": "What coverage, authorization, or documentation policies apply?",
+    },
 )
 
 
@@ -203,12 +227,16 @@ def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
         "risk-factors",
         "decision-points",
         "workflow-steps",
+        "decision-table",
+        "policy",
     }:
         required_sections.append("actions")
     if "terminology-value-sets" in artifact_types:
         required_sections.append("value_sets")
     if "measure-logic" in artifact_types:
         required_sections.append("measures")
+    if "assessment" in artifact_types:
+        required_sections.append("assessments")
 
     deduped: list[str] = []
     for section in required_sections:
@@ -1039,7 +1067,7 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
 
         llm_output = _invoke_llm(system_prompt, user_prompt)
 
-        l2_file = td / "structured" / f"{artifact_name}.yaml"
+        l2_file = td / "structured" / artifact_name / f"{artifact_name}.yaml"
         l2_file.parent.mkdir(parents=True, exist_ok=True)
 
         if llm_output == "Stub response":
@@ -1063,7 +1091,7 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
         topic_entry = require_topic(tracking, topic)
         topic_entry.setdefault("structured", []).append({
             "name": artifact_name,
-            "file": f"topics/{topic}/structured/{artifact_name}.yaml",
+            "file": f"topics/{topic}/structured/{artifact_name}/{artifact_name}.yaml",
             "created_at": timestamp,
             "checksum": checksum,
             "derived_from": list(source),

@@ -1,0 +1,364 @@
+"""Tests for rh-skills render command."""
+
+from pathlib import Path
+
+import pytest
+from click.testing import CliRunner
+from ruamel.yaml import YAML
+
+from rh_skills.commands.render import (
+    render,
+    _check_completeness,
+    REQUIRED_SECTIONS,
+)
+
+
+def _write_artifact(tmp_repo, topic, artifact, data):
+    """Write a YAML artifact at the subdirectory path."""
+    artifact_dir = tmp_repo / "topics" / topic / "structured" / artifact
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    path = artifact_dir / f"{artifact}.yaml"
+    from io import StringIO
+    buf = StringIO()
+    y.dump(data, buf)
+    path.write_text(buf.getvalue())
+    return path
+
+
+# ── Generic renderer ────────────────────────────────────────────────────────────
+
+
+def test_render_generic_summary(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "evidence-item", {
+        "id": "evidence-item",
+        "name": "evidence-item",
+        "title": "Evidence Item",
+        "version": "1.0.0",
+        "status": "draft",
+        "domain": "testing",
+        "description": "A test artifact.",
+        "artifact_type": "evidence-summary",
+        "sections": {"summary": "This is a summary."},
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "evidence-item"])
+    assert result.exit_code == 0
+    assert "1 view(s)" in result.output
+    views_dir = tmp_repo / "topics" / "my-skill" / "structured" / "evidence-item" / "views"
+    assert (views_dir / "summary.md").exists()
+    content = (views_dir / "summary.md").read_text()
+    assert "Evidence Item" in content
+
+
+# ── Missing artifact ────────────────────────────────────────────────────────────
+
+
+def test_render_missing_artifact_exits_1(tmp_repo):
+    (tmp_repo / "topics" / "my-skill").mkdir(parents=True, exist_ok=True)
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "nonexistent"])
+    assert result.exit_code == 1
+    assert "not found" in result.output.lower()
+
+
+# ── Missing required sections ───────────────────────────────────────────────────
+
+
+def test_render_missing_required_sections_exits_2(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "bad-dt", {
+        "id": "bad-dt",
+        "artifact_type": "decision-table",
+        "sections": {"conditions": []},  # missing actions, rules
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "bad-dt"])
+    assert result.exit_code == 2
+    assert "missing required sections" in result.output.lower()
+
+
+# ── Clinical-frame ──────────────────────────────────────────────────────────────
+
+
+def test_render_clinical_frame(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "scope-frame", {
+        "id": "scope-frame",
+        "title": "Screening Scope",
+        "artifact_type": "clinical-frame",
+        "sections": {
+            "frames": [
+                {
+                    "id": "frame-1",
+                    "population": "Adults 45+",
+                    "intervention": "HbA1c screening",
+                    "comparison": "No screening",
+                    "outcomes": ["Early detection", "Reduced complications"],
+                    "timing": "Annual",
+                    "setting": "Primary care",
+                },
+            ],
+        },
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "scope-frame"])
+    assert result.exit_code == 0
+    views = tmp_repo / "topics" / "my-skill" / "structured" / "scope-frame" / "views"
+    assert (views / "picots-summary.md").exists()
+    content = (views / "picots-summary.md").read_text()
+    assert "Adults 45+" in content
+    assert "HbA1c screening" in content
+
+
+# ── Assessment ──────────────────────────────────────────────────────────────────
+
+
+def test_render_assessment(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "phq9", {
+        "id": "phq9",
+        "title": "PHQ-9",
+        "artifact_type": "assessment",
+        "sections": {
+            "instrument": {
+                "name": "PHQ-9",
+                "purpose": "Depression screening",
+                "population": "Adults",
+            },
+            "items": [
+                {
+                    "id": "q1",
+                    "text": "Little interest or pleasure?",
+                    "type": "ordinal",
+                    "options": [
+                        {"value": 0, "label": "Not at all"},
+                        {"value": 1, "label": "Several days"},
+                    ],
+                },
+            ],
+            "scoring": {
+                "method": "sum",
+                "ranges": [
+                    {"range": "0-4", "interpretation": "Minimal depression"},
+                    {"range": "5-9", "interpretation": "Mild depression"},
+                ],
+            },
+        },
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "phq9"])
+    assert result.exit_code == 0
+    views = tmp_repo / "topics" / "my-skill" / "structured" / "phq9" / "views"
+    assert (views / "questionnaire.md").exists()
+    assert (views / "scoring-summary.md").exists()
+    assert "Little interest" in (views / "questionnaire.md").read_text()
+    assert "Minimal depression" in (views / "scoring-summary.md").read_text()
+
+
+# ── Policy ──────────────────────────────────────────────────────────────────────
+
+
+def test_render_policy(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "auth-policy", {
+        "id": "auth-policy",
+        "title": "Prior Auth Policy",
+        "artifact_type": "policy",
+        "sections": {
+            "applicability": {
+                "payer_types": ["Commercial"],
+                "service_category": "outpatient",
+                "codes": [{"system": "CPT", "values": ["99213"]}],
+            },
+            "criteria": [
+                {
+                    "id": "cr1",
+                    "description": "Clinical necessity documented",
+                    "requirement_type": "clinical",
+                    "rule": "Must have documented diagnosis",
+                },
+            ],
+            "actions": {
+                "approve": {"conditions": "All criteria met"},
+                "deny": {"conditions": "Criteria not met", "details": "Appeal available"},
+                "pend": {"conditions": "Insufficient documentation"},
+            },
+        },
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "auth-policy"])
+    assert result.exit_code == 0
+    views = tmp_repo / "topics" / "my-skill" / "structured" / "auth-policy" / "views"
+    assert (views / "criteria-flowchart.mmd").exists()
+    assert (views / "requirements-checklist.md").exists()
+    flowchart = (views / "criteria-flowchart.mmd").read_text()
+    assert "flowchart" in flowchart
+    checklist = (views / "requirements-checklist.md").read_text()
+    assert "Clinical necessity" in checklist
+
+
+# ── Decision-table ──────────────────────────────────────────────────────────────
+
+
+def _make_complete_binary_table():
+    """3 binary conditions, 8 rules → complete."""
+    return {
+        "id": "dt-complete",
+        "title": "Complete Decision Table",
+        "artifact_type": "decision-table",
+        "sections": {
+            "conditions": [
+                {"id": "c1", "label": "Condition A", "values": ["yes", "no"]},
+                {"id": "c2", "label": "Condition B", "values": ["yes", "no"]},
+                {"id": "c3", "label": "Condition C", "values": ["yes", "no"]},
+            ],
+            "actions": [
+                {"id": "a1", "label": "Action 1"},
+                {"id": "a2", "label": "Action 2"},
+            ],
+            "rules": [
+                {"id": "r1", "when": {"c1": "yes", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+                {"id": "r2", "when": {"c1": "yes", "c2": "yes", "c3": "no"}, "then": ["a1"]},
+                {"id": "r3", "when": {"c1": "yes", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+                {"id": "r4", "when": {"c1": "yes", "c2": "no", "c3": "no"}, "then": ["a2"]},
+                {"id": "r5", "when": {"c1": "no", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+                {"id": "r6", "when": {"c1": "no", "c2": "yes", "c3": "no"}, "then": ["a2"]},
+                {"id": "r7", "when": {"c1": "no", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+                {"id": "r8", "when": {"c1": "no", "c2": "no", "c3": "no"}, "then": ["a2"]},
+            ],
+        },
+    }
+
+
+def test_render_decision_table_complete(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "dt-complete", _make_complete_binary_table())
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "dt-complete"])
+    assert result.exit_code == 0
+    views = tmp_repo / "topics" / "my-skill" / "structured" / "dt-complete" / "views"
+    assert (views / "rules-table.md").exists()
+    assert (views / "decision-tree.mmd").exists()
+    assert (views / "completeness-report.md").exists()
+    report = (views / "completeness-report.md").read_text()
+    assert "**Complete**: Yes" in report
+    assert "8" in report  # total space
+
+
+def test_render_decision_table_incomplete(tmp_repo):
+    data = _make_complete_binary_table()
+    # Remove last rule to make it incomplete
+    data["sections"]["rules"] = data["sections"]["rules"][:7]
+    _write_artifact(tmp_repo, "my-skill", "dt-incomplete", data)
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "dt-incomplete"])
+    assert result.exit_code == 0
+    report_path = tmp_repo / "topics" / "my-skill" / "structured" / "dt-incomplete" / "views" / "completeness-report.md"
+    report = report_path.read_text()
+    assert "**Complete**: No" in report
+    assert "Missing Combinations" in report
+
+
+# ── Idempotent re-render ────────────────────────────────────────────────────────
+
+
+def test_render_is_idempotent(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "evidence-item", {
+        "id": "evidence-item",
+        "artifact_type": "evidence-summary",
+        "sections": {"summary": "Original."},
+    })
+    runner = CliRunner()
+    runner.invoke(render, ["my-skill", "evidence-item"])
+    # Render again — should overwrite without error
+    result = runner.invoke(render, ["my-skill", "evidence-item"])
+    assert result.exit_code == 0
+
+
+# ── Completeness unit tests (T027) ─────────────────────────────────────────────
+
+
+def test_completeness_complete_table():
+    """3 binary conditions, 8 rules → 8/8 complete."""
+    conditions = [
+        {"id": "c1", "values": ["yes", "no"]},
+        {"id": "c2", "values": ["yes", "no"]},
+        {"id": "c3", "values": ["yes", "no"]},
+    ]
+    rules = [
+        {"id": "r1", "when": {"c1": "yes", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+        {"id": "r2", "when": {"c1": "yes", "c2": "yes", "c3": "no"}, "then": ["a1"]},
+        {"id": "r3", "when": {"c1": "yes", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+        {"id": "r4", "when": {"c1": "yes", "c2": "no", "c3": "no"}, "then": ["a2"]},
+        {"id": "r5", "when": {"c1": "no", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+        {"id": "r6", "when": {"c1": "no", "c2": "yes", "c3": "no"}, "then": ["a2"]},
+        {"id": "r7", "when": {"c1": "no", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+        {"id": "r8", "when": {"c1": "no", "c2": "no", "c3": "no"}, "then": ["a2"]},
+    ]
+    result = _check_completeness(conditions, rules)
+    assert result["total_space"] == 8
+    assert result["complete"] is True
+    assert len(result["missing"]) == 0
+
+
+def test_completeness_incomplete_table():
+    """Missing 1 rule from 8 → 7/8, identifies missing combo."""
+    conditions = [
+        {"id": "c1", "values": ["yes", "no"]},
+        {"id": "c2", "values": ["yes", "no"]},
+        {"id": "c3", "values": ["yes", "no"]},
+    ]
+    rules = [
+        {"id": "r1", "when": {"c1": "yes", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+        {"id": "r2", "when": {"c1": "yes", "c2": "yes", "c3": "no"}, "then": ["a1"]},
+        {"id": "r3", "when": {"c1": "yes", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+        {"id": "r4", "when": {"c1": "yes", "c2": "no", "c3": "no"}, "then": ["a2"]},
+        {"id": "r5", "when": {"c1": "no", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+        {"id": "r6", "when": {"c1": "no", "c2": "yes", "c3": "no"}, "then": ["a2"]},
+        {"id": "r7", "when": {"c1": "no", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+        # r8 omitted
+    ]
+    result = _check_completeness(conditions, rules)
+    assert result["complete"] is False
+    assert len(result["missing"]) == 1
+    assert result["missing"][0] == {"c1": "no", "c2": "no", "c3": "no"}
+
+
+def test_completeness_contradiction():
+    """Two rules cover same combo with different actions → flags conflict."""
+    conditions = [
+        {"id": "c1", "values": ["yes", "no"]},
+    ]
+    rules = [
+        {"id": "r1", "when": {"c1": "yes"}, "then": ["a1"]},
+        {"id": "r2", "when": {"c1": "yes"}, "then": ["a2"]},
+        {"id": "r3", "when": {"c1": "no"}, "then": ["a1"]},
+    ]
+    result = _check_completeness(conditions, rules)
+    assert result["complete"] is True  # all combos covered
+    assert len(result["contradictions"]) == 1
+    assert set(result["contradictions"][0]["rules"]) == {"r1", "r2"}
+
+
+def test_completeness_wildcard_dash():
+    """Rule with dash in binary condition covers 2 combos."""
+    conditions = [
+        {"id": "c1", "values": ["yes", "no"]},
+        {"id": "c2", "values": ["yes", "no"]},
+    ]
+    rules = [
+        {"id": "r1", "when": {"c1": "yes", "c2": "-"}, "then": ["a1"]},  # covers 2
+        {"id": "r2", "when": {"c1": "no", "c2": "yes"}, "then": ["a2"]},
+        {"id": "r3", "when": {"c1": "no", "c2": "no"}, "then": ["a2"]},
+    ]
+    result = _check_completeness(conditions, rules)
+    assert result["total_space"] == 4
+    assert result["covered"] == 4  # r1 covers 2 + r2 covers 1 + r3 covers 1
+    assert result["complete"] is True
+
+
+def test_completeness_large_table_warning():
+    """>10 binary conditions → total_space > 1024 → warning."""
+    conditions = [{"id": f"c{i}", "values": ["yes", "no"]} for i in range(11)]
+    # No rules — just testing the warning
+    result = _check_completeness(conditions, [])
+    assert result["total_space"] == 2048
+    assert result["large_table_warning"] is True
+    assert result["complete"] is False

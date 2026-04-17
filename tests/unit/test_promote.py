@@ -66,7 +66,9 @@ def setup_topic_with_l2(tmp_repo, topic_name="my-skill"):
 
     td = tmp_repo / "topics" / topic_name
     for artifact_name in ["l2-artifact-a", "l2-artifact-b"]:
-        l2_file = td / "structured" / f"{artifact_name}.yaml"
+        l2_dir = td / "structured" / artifact_name
+        l2_dir.mkdir(parents=True, exist_ok=True)
+        l2_file = l2_dir / f"{artifact_name}.yaml"
         l2_file.write_text(f"""\
 id: {artifact_name}
 name: {artifact_name}
@@ -83,7 +85,7 @@ derived_from:
             if t["name"] == topic_name:
                 t["structured"].append({
                     "name": artifact_name,
-                    "file": f"topics/{topic_name}/structured/{artifact_name}.yaml",
+                    "file": f"topics/{topic_name}/structured/{artifact_name}/{artifact_name}.yaml",
                     "created_at": "2026-04-03T00:00:00Z",
                     "derived_from": ["ada-guidelines"],
                 })
@@ -206,12 +208,14 @@ def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", ar
             "sections": sections,
             "conflicts": [],
         }, buf)
-        (td / f"{artifact_name}.yaml").write_text(buf.getvalue())
+        artifact_dir = td / artifact_name
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        (artifact_dir / f"{artifact_name}.yaml").write_text(buf.getvalue())
 
         topic = next(t for t in tracking["topics"] if t["name"] == topic_name)
         topic["structured"].append({
             "name": artifact_name,
-            "file": f"topics/{topic_name}/structured/{artifact_name}.yaml",
+            "file": f"topics/{topic_name}/structured/{artifact_name}/{artifact_name}.yaml",
             "created_at": "2026-04-14T00:00:00Z",
             "checksum": "abc123",
             "derived_from": ["ada-guidelines"],
@@ -270,7 +274,7 @@ def test_derive_creates_l2_artifact_file(tmp_repo, monkeypatch):
     runner = CliRunner()
     result = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
     assert result.exit_code == 0, result.output
-    assert (tmp_repo / "topics" / "my-skill" / "structured" / "criteria.yaml").exists()
+    assert (tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml").exists()
 
 
 def test_derive_updates_tracking_structured_list(tmp_repo, monkeypatch):
@@ -300,9 +304,9 @@ def test_derive_count_creates_n_artifacts(tmp_repo, monkeypatch):
     runner = CliRunner()
     result = runner.invoke(promote, ["derive", "my-skill", "risk", "--source", "ada-guidelines", "--count", "3"])
     assert result.exit_code == 0, result.output
-    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-1.yaml").exists()
-    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-2.yaml").exists()
-    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-3.yaml").exists()
+    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-1" / "risk-1.yaml").exists()
+    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-2" / "risk-2.yaml").exists()
+    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-3" / "risk-3.yaml").exists()
 
 
 def test_derive_dry_run_does_not_create_file(tmp_repo, monkeypatch):
@@ -311,7 +315,7 @@ def test_derive_dry_run_does_not_create_file(tmp_repo, monkeypatch):
     runner = CliRunner()
     result = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines", "--dry-run"])
     assert result.exit_code == 0
-    assert not (tmp_repo / "topics" / "my-skill" / "structured" / "criteria.yaml").exists()
+    assert not (tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml").exists()
     assert "DRY RUN" in result.output
 
 
@@ -345,7 +349,7 @@ def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
         "--conflict", "Interval differs|ada-guidelines|Annual screening|ada-guidelines|Explicit interval language",
     ])
     assert result.exit_code == 0, result.output
-    data = load_yaml(tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria.yaml")
+    data = load_yaml(tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml")
     assert data["artifact_type"] == "eligibility-criteria"
     assert data["clinical_question"] == "Who should be screened?"
     assert "evidence_traceability" in data["sections"]
@@ -379,7 +383,7 @@ def test_derive_conflict_same_issue_merges_positions(tmp_repo, monkeypatch):
         "--conflict", "HbA1c target|aace-guidelines|AACE recommends ≤6.5%|aace-guidelines|More specific target",
     ])
     assert result.exit_code == 0, result.output
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "hba1c-target.yaml"
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "hba1c-target" / "hba1c-target.yaml"
     data = YAML(typ="safe").load(artifact_path.read_text())
     conflicts = data.get("conflicts", [])
     assert len(conflicts) == 1, f"Expected 1 merged conflict entry, got {len(conflicts)}"
@@ -548,7 +552,7 @@ def test_approved_formalize_target_requires_approved_target_and_valid_inputs(tmp
 
 def test_approved_formalize_target_blocks_invalid_inputs(tmp_repo):
     setup_topic_with_valid_extract_artifacts(tmp_repo)
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "workflow-steps.yaml"
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "workflow-steps" / "workflow-steps.yaml"
     data = load_yaml(artifact_path)
     data["sections"].pop("evidence_traceability")
     y = YAML()
@@ -815,3 +819,44 @@ def test_approve_add_conflict_appends_to_conflicts(tmp_repo):
     assert conflicts[0]["resolution"] == ""
     assert conflicts[1]["conflict"] == "Monitoring frequency"
     assert conflicts[1]["resolution"] == "ADA annual preferred"
+
+
+# ── Formalize section mapping tests (T031) ───────────────────────────────────
+
+
+class TestFormalizeSectionMapping:
+    """Test _formalize_required_sections() returns correct sections by type."""
+
+    def test_decision_table_includes_actions(self):
+        from rh_skills.commands.promote import _formalize_required_sections
+        result = _formalize_required_sections([{"artifact_type": "decision-table"}])
+        assert "actions" in result
+        assert "pathways" in result
+
+    def test_policy_includes_actions(self):
+        from rh_skills.commands.promote import _formalize_required_sections
+        result = _formalize_required_sections([{"artifact_type": "policy"}])
+        assert "actions" in result
+
+    def test_assessment_includes_assessments(self):
+        from rh_skills.commands.promote import _formalize_required_sections
+        result = _formalize_required_sections([{"artifact_type": "assessment"}])
+        assert "assessments" in result
+        assert "pathways" in result
+
+    def test_clinical_frame_no_extra_sections(self):
+        from rh_skills.commands.promote import _formalize_required_sections
+        result = _formalize_required_sections([{"artifact_type": "clinical-frame"}])
+        assert result == ["pathways"]
+
+    def test_mixed_types_union(self):
+        from rh_skills.commands.promote import _formalize_required_sections
+        result = _formalize_required_sections([
+            {"artifact_type": "decision-table"},
+            {"artifact_type": "assessment"},
+            {"artifact_type": "terminology-value-sets"},
+        ])
+        assert "pathways" in result
+        assert "actions" in result
+        assert "assessments" in result
+        assert "value_sets" in result

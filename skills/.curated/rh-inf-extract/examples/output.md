@@ -66,8 +66,8 @@ rh-skills validate diabetes-ccm screening-criteria
 Expected report:
 
 ```text
-✓ Created: topics/diabetes-ccm/structured/screening-criteria.yaml
-VALID — topics/diabetes-ccm/structured/screening-criteria.yaml
+✓ Created: topics/diabetes-ccm/structured/screening-criteria/screening-criteria.yaml
+VALID — topics/diabetes-ccm/structured/screening-criteria/screening-criteria.yaml
 ```
 
 ---

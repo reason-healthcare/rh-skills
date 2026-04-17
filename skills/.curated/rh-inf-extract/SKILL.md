@@ -148,6 +148,10 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    - terminology / value sets
    - measure logic
    - evidence summary
+   - clinical frame (PICOTS scope)
+   - decision table (condition/action/rule)
+   - assessment (screening instruments / scoring)
+   - policy (coverage / prior-auth criteria)
    - custom artifact types when clearly justified
 
    **After `rh-skills promote plan` runs**, review the proposed artifact list

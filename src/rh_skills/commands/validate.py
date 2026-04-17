@@ -363,7 +363,10 @@ def validate_artifact_file(
     if not td.exists():
         raise click.UsageError(f"Topic '{topic}' not found")
 
-    artifact_file = td / artifact_subdir / f"{artifact}.yaml"
+    if normalized_level == "l2":
+        artifact_file = td / artifact_subdir / artifact / f"{artifact}.yaml"
+    else:
+        artifact_file = td / artifact_subdir / f"{artifact}.yaml"
     if not artifact_file.exists():
         raise click.UsageError(f"Artifact not found: {artifact_file}")
 
@@ -457,7 +460,10 @@ def validate(topic, level, artifact, plan_path, check_urls):
     click.echo(f"Validating {topic}/{level}/{artifact}...")
     errors, warnings = validate_artifact_file(topic, level, artifact, emit=True)
     artifact_dir = "structured" if level in ("l2", "structured") else "computable"
-    artifact_file = topic_dir(topic) / artifact_dir / f"{artifact}.yaml"
+    if level in ("l2", "structured"):
+        artifact_file = topic_dir(topic) / artifact_dir / artifact / f"{artifact}.yaml"
+    else:
+        artifact_file = topic_dir(topic) / artifact_dir / f"{artifact}.yaml"
     if errors > 0:
         click.echo(f"INVALID — {errors} required field(s) missing")
         raise SystemExit(1)
