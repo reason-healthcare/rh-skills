@@ -1,0 +1,261 @@
+name: anticoagulation-deep-logic
+skill: rh-inf-extract
+description: >
+  Complex anticoagulation management guideline with deep branching logic —
+  source contains nested decision trees (CHA₂DS₂-VASc score → drug selection →
+  renal adjustment → bridging decisions → bleeding risk modifiers). Tests that
+  the agent can handle realistic multi-level decision tables with conditional
+  cascades, not just flat condition/action grids.
+
+topic: anticoagulation-management
+
+workspace:
+  tracking_yaml: |
+    topics:
+      anticoagulation-management:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources:
+      - name: aha-anticoag-afib-2023
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/aha-anticoag-afib-2023.md
+
+  files:
+    - path: topics/anticoagulation-management/process/plans/discovery-plan.yaml
+      content: |
+        topic: anticoagulation-management
+        clinical_question: >
+          What is the recommended decision logic for initiating, selecting,
+          adjusting, and bridging anticoagulation therapy in patients with
+          non-valvular atrial fibrillation?
+        sources:
+          - id: aha-anticoag-afib-2023
+            title: "AHA/ACC/HRS Guideline for Management of Atrial Fibrillation: Anticoagulation 2023"
+            type: clinical-guideline
+            evidence_level: ia
+            open_access: true
+        status: approved
+
+    - path: sources/normalized/aha-anticoag-afib-2023.md
+      content: |
+        # AHA/ACC/HRS Guideline: Anticoagulation in Non-Valvular Atrial Fibrillation (2023)
+
+        ## Risk Stratification: CHA₂DS₂-VASc Score
+
+        The CHA₂DS₂-VASc score determines stroke risk and anticoagulation eligibility.
+
+        | Factor | Points |
+        |--------|--------|
+        | Congestive heart failure | 1 |
+        | Hypertension | 1 |
+        | Age ≥75 years | 2 |
+        | Diabetes mellitus | 1 |
+        | Stroke/TIA/thromboembolism history | 2 |
+        | Vascular disease (prior MI, PAD, aortic plaque) | 1 |
+        | Age 65–74 years | 1 |
+        | Sex category (female) | 1 |
+
+        Maximum score: 9.
+
+        ### Initiation Decision Tree
+
+        **Level 1: Score-based eligibility**
+
+        - Score = 0 (males) or ≤1 (females, sex factor only): No anticoagulation
+          recommended. Reassess annually. (Class III, LOE B-NR)
+        - Score = 1 (males): Anticoagulation MAY be considered. Shared decision-making
+          with patient weighing stroke vs bleeding risk. (Class IIb, LOE C-LD)
+        - Score ≥2: Oral anticoagulation IS recommended. (Class I, LOE A)
+
+        **Level 2: Drug class selection (when anticoagulation indicated)**
+
+        - If no mechanical heart valve AND no moderate-to-severe mitral stenosis:
+          DOAC preferred over warfarin (Class I, LOE A).
+        - If mechanical heart valve OR moderate-to-severe mitral stenosis:
+          Warfarin REQUIRED; DOACs are contraindicated (Class III: Harm, LOE B-NR).
+
+        **Level 3: DOAC selection (when DOAC indicated)**
+
+        - CrCl ≥50 mL/min: Any DOAC acceptable (apixaban, rivaroxaban, dabigatran, edoxaban).
+        - CrCl 30–49 mL/min: Apixaban preferred. Rivaroxaban acceptable. Dabigatran
+          dose reduction to 75 mg BID. Edoxaban 30 mg daily.
+        - CrCl 15–29 mL/min: Apixaban 2.5 mg BID (if ≥2 of: age ≥80, weight ≤60 kg,
+          Cr ≥1.5). Rivaroxaban 15 mg daily with food. Dabigatran NOT recommended.
+          Edoxaban NOT recommended.
+        - CrCl <15 mL/min or dialysis: Apixaban 5 mg BID (or 2.5 mg BID with dose
+          reduction criteria). Other DOACs NOT recommended. Consider warfarin.
+
+        **Level 4: Bleeding risk modification (HAS-BLED overlay)**
+
+        | Factor | Points |
+        |--------|--------|
+        | Hypertension (uncontrolled, SBP >160) | 1 |
+        | Abnormal renal function | 1 |
+        | Abnormal liver function | 1 |
+        | Stroke history | 1 |
+        | Bleeding history or predisposition | 1 |
+        | Labile INR (if on warfarin) | 1 |
+        | Elderly (age >65) | 1 |
+        | Drugs (antiplatelet/NSAIDs) | 1 |
+        | Alcohol excess | 1 |
+
+        - HAS-BLED ≥3: High bleeding risk. Does NOT contraindicate anticoagulation
+          but requires: (a) more frequent monitoring, (b) modifiable risk factor
+          correction, (c) GI-protective agent consideration, (d) preference for
+          apixaban (lowest GI bleed rate among DOACs). (Class I, LOE B-NR)
+        - HAS-BLED <3: Standard monitoring frequency.
+
+        **Level 5: Periprocedural bridging decisions**
+
+        When anticoagulated patients require elective surgery:
+
+        - Low thromboembolic risk (CHA₂DS₂-VASc ≤4 without prior stroke):
+          Interrupt anticoagulation WITHOUT bridging. (Class I, LOE B-R)
+        - High thromboembolic risk (CHA₂DS₂-VASc ≥5 OR prior stroke/TIA within 3 months):
+          Case-by-case bridging decision. Heparin bridging MAY be considered.
+          (Class IIb, LOE C-LD)
+        - Mechanical heart valve: Heparin bridging IS recommended during warfarin
+          interruption. (Class I, LOE C-LD)
+        - DOAC patients: Generally NO bridging needed due to short half-life.
+          Hold 24–48h pre-procedure based on renal function and bleeding risk.
+          (Class IIa, LOE B-NR)
+
+        DOAC hold timing by renal function:
+        - CrCl ≥50: Hold 24h before low-bleed-risk procedure, 48h before high-bleed-risk.
+        - CrCl 30–49: Hold 36h before low-bleed-risk, 72h before high-bleed-risk.
+        - CrCl 15–29 (dabigatran excluded): Hold 48h before low-bleed-risk, 96h before high.
+
+        Resume DOAC 24–72h post-procedure based on surgical hemostasis.
+
+        ## Special Populations
+
+        ### Elderly (>75 years)
+
+        - CHA₂DS₂-VASc ≥2 by definition; anticoagulation recommended.
+        - Fall risk alone is NOT a contraindication. A patient would need to fall
+          ~295 times/year for fall-related subdural risk to outweigh stroke prevention.
+        - Dose-reduce dabigatran if CrCl 30–50. Apixaban preferred if CrCl <30.
+        - Monitor renal function every 6 months (not annually).
+
+        ### Obesity (BMI ≥40 or weight >120 kg)
+
+        - Standard DOAC dosing may be used (no dose increase).
+        - Limited pharmacokinetic data for extremes of weight with edoxaban.
+        - Anti-Xa monitoring NOT routinely recommended but may be considered.
+
+        ### CKD Stage 4–5 / Dialysis
+
+        - Apixaban is the only DOAC with safety data in dialysis patients.
+        - Warfarin remains an option but with careful INR management.
+        - Avoid rivaroxaban, dabigatran, and edoxaban.
+
+        ## Evidence Summary Table
+
+        | Decision Point | Class | LOE | Key Reference |
+        |---------------|-------|-----|---------------|
+        | Score 0/1(F): no anticoag | III | B-NR | Lip 2018 |
+        | Score 1(M): consider | IIb | C-LD | Chao 2018 |
+        | Score ≥2: anticoag recommended | I | A | January 2019 |
+        | DOAC preferred over warfarin | I | A | Ruff 2014 meta-analysis |
+        | Warfarin for mechanical valve | III: Harm (for DOACs) | B-NR | Eikelboom 2013 |
+        | Apixaban preferred CrCl 15–29 | IIa | B-NR | Granger 2011 |
+        | No bridging low-risk surgery | I | B-R | BRIDGE trial 2015 |
+        | HAS-BLED ≥3: address modifiable risks | I | B-NR | Pisters 2010 |
+
+    - path: topics/anticoagulation-management/process/concepts.yaml
+      content: |
+        topic: anticoagulation-management
+        concepts:
+          - term: CHA₂DS₂-VASc
+            aliases: [CHADS-VASc, CHA2DS2-VASc, stroke risk score]
+            category: risk-score
+          - term: HAS-BLED
+            aliases: [bleeding risk score]
+            category: risk-score
+          - term: DOAC
+            aliases: [direct oral anticoagulant, NOAC, novel oral anticoagulant]
+            category: drug-class
+          - term: warfarin
+            aliases: [Coumadin, vitamin K antagonist, VKA]
+            category: medication
+          - term: apixaban
+            aliases: [Eliquis]
+            category: medication
+          - term: CrCl
+            aliases: [creatinine clearance, renal function]
+            category: lab-value
+          - term: periprocedural bridging
+            aliases: [bridging anticoagulation, heparin bridge]
+            category: clinical-process
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `anticoagulation-management`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One source is fully ingested: `aha-anticoag-afib-2023`. It contains
+  **deeply nested decision logic** across 5 levels:
+  1. CHA₂DS₂-VASc score → anticoagulation eligibility
+  2. Valve status → drug class selection (DOAC vs warfarin)
+  3. Renal function (CrCl) → specific DOAC selection and dose adjustment
+  4. HAS-BLED score → bleeding risk modification and monitoring intensity
+  5. Periprocedural bridging decisions based on thromboembolic risk + drug class
+
+  Plus special population modifiers (elderly, obesity, CKD/dialysis) that
+  cross-cut the main logic.
+
+  Run the full extract cycle:
+  1. **plan** — generate an extract plan identifying artifact candidates;
+     the agent SHOULD recognize that this source requires MULTIPLE
+     decision-table artifacts to capture the layered logic (e.g., one for
+     initiation/drug selection, one for periprocedural bridging) rather than
+     cramming everything into a single flat table
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L2 structured artifacts via rh-skills promote derive
+  4. **verify** — validate each artifact with rh-skills validate
+
+expected_outputs:
+  - path: topics/anticoagulation-management/process/plans/extract-plan.yaml
+    checks:
+      - exists
+      - contains: "decision-table"
+  - path: topics/anticoagulation-management/structured
+    checks:
+      - exists
+      - contains_any_file_with: "artifact_type: decision-table"
+      - contains_any_file_with: "conditions:"
+      - contains_any_file_with: "rules:"
+      - contains_any_file_with: "evidence_traceability:"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: structured_derived
+
+efficiency_focus:
+  - "Does the agent recognize the 5-level logic tree as requiring multiple decision tables (not one flat table)?"
+  - "Does the agent propose separate artifacts for initiation/selection logic vs periprocedural bridging?"
+  - "Does it use rh-skills promote derive with correct artifact_type for each?"
+  - "Does it avoid re-reading the source file more than once?"
+  - "Does it run sequential approve calls (not parallel)?"
+
+quality_focus:
+  - "Does the extract plan propose multiple decision-table artifacts to capture the layered logic?"
+  - "Does at least one decision-table capture the CHA₂DS₂-VASc → eligibility → drug class → renal adjustment cascade?"
+  - "Are CrCl thresholds accurately captured as condition values (≥50, 30–49, 15–29, <15)?"
+  - "Are the DOAC-specific dose adjustments present in the rules (e.g., dabigatran 75mg BID for CrCl 30–49)?"
+  - "Does a bridging decision-table capture the risk-stratified logic (low vs high thromboembolic risk, valve status)?"
+  - "Does the DOAC hold timing by renal function appear somewhere (24h/48h/36h/72h/48h/96h grid)?"
+  - "Are special population modifiers (elderly, obesity, dialysis) captured — either as additional conditions in the main tables or as a separate artifact?"
+  - "Does each artifact have evidence_traceability linking to Class/LOE from the evidence summary table?"
+  - "Are YAML values properly quoted (e.g., \">=50 mL/min\", \"<15 mL/min\")?"
+  - "Does rh-skills validate report zero errors on each artifact?"
+  - "Would the rendered decision-table report be clinically useful to an SME reviewing the logic?"

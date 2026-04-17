@@ -1,0 +1,224 @@
+name: sepsis-bundle-pathway
+skill: rh-inf-extract
+description: >
+  Surviving Sepsis Campaign 2021 early management bundle — source contains a
+  timed, sequential care pathway (hour-1 bundle and hour-3 reassessment),
+  terminology (lactate, blood cultures, ICD-10 sepsis codes), and an evidence
+  summary. Primary coverage target: care-pathway and terminology artifact types.
+
+topic: sepsis-management
+
+workspace:
+  tracking_yaml: |
+    topics:
+      sepsis-management:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources:
+      - name: ssc-bundle-2021
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/ssc-bundle-2021.md
+
+  files:
+    - path: topics/sepsis-management/process/plans/discovery-plan.yaml
+      content: |
+        topic: sepsis-management
+        clinical_question: >
+          What are the recommended time-sequenced interventions in the
+          Surviving Sepsis Campaign hour-1 bundle, and what clinical
+          terminology defines the relevant concepts?
+        sources:
+          - id: ssc-bundle-2021
+            title: "Surviving Sepsis Campaign: International Guidelines 2021 — Hour-1 Bundle"
+            type: clinical-guideline
+            evidence_level: ia
+            open_access: true
+        status: approved
+
+    - path: sources/normalized/ssc-bundle-2021.md
+      content: |
+        # Surviving Sepsis Campaign: International Guidelines 2021
+
+        ## Definition and Diagnosis
+
+        **Sepsis** is defined as life-threatening organ dysfunction caused by a
+        dysregulated host response to infection (Sepsis-3, Singer et al. 2016).
+
+        **Septic shock** is a subset of sepsis with circulatory and cellular/metabolic
+        dysfunction associated with a higher mortality. Operationally defined as
+        requiring vasopressors to maintain MAP ≥65 mmHg AND serum lactate >2 mmol/L
+        after adequate fluid resuscitation.
+
+        ### Diagnostic Criteria
+
+        - Suspected or documented infection PLUS
+        - Acute change in total SOFA score ≥2 points (organ dysfunction)
+        - qSOFA (quick SOFA) for bedside screening: ≥2 of the following —
+          altered mentation (GCS <15), systolic BP ≤100 mmHg, respiratory rate ≥22
+
+        ### Relevant ICD-10 Codes
+
+        - A41.9 — Sepsis, unspecified organism
+        - R65.20 — Severe sepsis without septic shock
+        - R65.21 — Severe sepsis with septic shock
+        - A40.0–A40.9 — Streptococcal sepsis
+        - A41.01 — Sepsis due to Methicillin susceptible Staphylococcus aureus
+
+        ### Relevant LOINC Codes
+
+        - 2524-7 — Lactate [Moles/volume] in Serum or Plasma
+        - 600-7 — Bacteria identified in Blood by Culture
+        - 33762-6 — Natriuretic peptide B [Mass/volume] in Serum or Plasma (proBNP)
+
+        ## Hour-1 Bundle (to be initiated within 1 hour of sepsis recognition)
+
+        The following interventions must begin within 1 hour of sepsis recognition.
+        "Begin" means the order is placed and the first action has started — it does
+        not require completion within 1 hour.
+
+        ### Step 1: Measure Lactate Level
+
+        - Order serum lactate (LOINC 2524-7).
+        - If initial lactate is >2 mmol/L, re-measure within 2–4 hours to guide
+          resuscitation (Strong recommendation, low quality of evidence).
+
+        ### Step 2: Obtain Blood Cultures Before Antibiotics
+
+        - Obtain at least 2 sets of blood cultures (aerobic and anaerobic) before
+          administering antimicrobials (Best practice statement).
+        - Do NOT delay antimicrobials if cultures cannot be obtained promptly.
+
+        ### Step 3: Administer Broad-Spectrum Antibiotics
+
+        - Administer empiric broad-spectrum antimicrobials within 1 hour of sepsis
+          recognition (Strong recommendation, moderate quality of evidence).
+        - De-escalate once culture results and sensitivities are available.
+        - For septic shock: antimicrobials within 1 hour is CRITICAL — each hour
+          of delay is associated with measurable increases in mortality.
+
+        ### Step 4: Begin Rapid Fluid Resuscitation
+
+        - Administer 30 mL/kg crystalloid for hypotension or lactate ≥4 mmol/L
+          (Strong recommendation, low quality of evidence).
+        - Begin within 1 hour; complete within 3 hours.
+        - Reassess volume status and tissue perfusion frequently.
+
+        ### Step 5: Apply Vasopressors
+
+        - If hypotension persists during or after fluid resuscitation, start
+          vasopressors to maintain MAP ≥65 mmHg (Strong recommendation, moderate
+          quality of evidence).
+        - First-line agent: norepinephrine.
+        - Second-line agent: vasopressin (up to 0.03 U/min) as adjunct.
+
+        ## Hour-3 Reassessment
+
+        Within 3 hours of sepsis recognition:
+
+        1. Reassess volume status using dynamic measures (passive leg raise,
+           fluid challenge, stroke volume variation) — NOT static CVP alone.
+        2. If lactate was initially elevated, repeat lactate measurement.
+        3. Document clinical response: MAP, urine output, capillary refill,
+           mental status.
+        4. If patient not improving: consider broadening antimicrobial coverage,
+           source control imaging, and ICU consultation.
+
+        ## Evidence Grades
+
+        | Recommendation | Strength | Quality |
+        |---------------|----------|---------|
+        | Measure lactate within 1h | Strong | Low |
+        | Blood cultures before antibiotics | Best practice | N/A |
+        | Antibiotics within 1h | Strong | Moderate |
+        | 30 mL/kg crystalloid for hypotension/lactate ≥4 | Strong | Low |
+        | Norepinephrine first-line vasopressor | Strong | Moderate |
+        | Reassess within 3h | Strong | Low |
+
+    - path: topics/sepsis-management/process/concepts.yaml
+      content: |
+        topic: sepsis-management
+        concepts:
+          - term: sepsis
+            aliases: [systemic infection, septicemia]
+            category: condition
+          - term: septic shock
+            aliases: [distributive shock from sepsis]
+            category: condition
+          - term: lactate
+            aliases: [serum lactate, lactic acid]
+            category: biomarker
+          - term: hour-1 bundle
+            aliases: [SEP-1, sepsis bundle, early management bundle]
+            category: care-bundle
+          - term: qSOFA
+            aliases: [quick SOFA, quick sequential organ failure assessment]
+            category: assessment-tool
+          - term: MAP
+            aliases: [mean arterial pressure]
+            category: vital-sign
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `sepsis-management`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One source is fully ingested: `ssc-bundle-2021`. It contains:
+  - A timed sequential care pathway (hour-1 bundle with 5 ordered steps,
+    hour-3 reassessment with 4 ordered steps)
+  - Terminology: ICD-10 sepsis codes and LOINC lab codes
+  - Evidence summary with recommendation grades
+
+  Run the full extract cycle:
+  1. **plan** — generate an extract plan identifying artifact candidates;
+     the plan SHOULD propose at least a `care-pathway` artifact (the timed
+     bundle steps), a `terminology` artifact (ICD-10 and LOINC codes), and
+     an `evidence-summary` artifact
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L2 structured artifacts via rh-skills promote derive
+  4. **verify** — validate each artifact with rh-skills validate
+
+expected_outputs:
+  - path: topics/sepsis-management/process/plans/extract-plan.yaml
+    checks:
+      - exists
+      - contains: "care-pathway"
+      - contains: "terminology"
+  - path: topics/sepsis-management/structured
+    checks:
+      - exists
+      - contains_any_file_with: "artifact_type: care-pathway"
+      - contains_any_file_with: "artifact_type: terminology"
+      - contains_any_file_with: "triggers:"
+      - contains_any_file_with: "steps:"
+      - contains_any_file_with: "value_sets:"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: structured_derived
+
+efficiency_focus:
+  - "Does the agent recognize the timed bundle as a care-pathway (not a decision-table)?"
+  - "Does the agent recognize the ICD-10 and LOINC codes as a terminology artifact?"
+  - "Does it use rh-skills promote derive with correct artifact_type for each?"
+  - "Does it avoid re-reading the source file more than once?"
+  - "Does it run sequential approve calls (not parallel)?"
+
+quality_focus:
+  - "Does the extract plan propose at least care-pathway, terminology, and evidence-summary?"
+  - "Does the care-pathway artifact have triggers (sepsis recognition) and ordered steps with actor and timing?"
+  - "Does the care-pathway capture both the hour-1 bundle (5 steps) and hour-3 reassessment (4 steps)?"
+  - "Does the step ordering reflect clinical priority (lactate → cultures → antibiotics → fluids → vasopressors)?"
+  - "Does the terminology artifact include ICD-10 codes (A41.9, R65.20, R65.21) and LOINC codes (2524-7, 600-7)?"
+  - "Does the terminology use correct system URIs (http://hl7.org/fhir/sid/icd-10-cm, http://loinc.org)?"
+  - "Does the evidence-summary artifact capture recommendation strength and evidence quality grades?"
+  - "Is evidence_traceability present linking claims to ssc-bundle-2021?"
+  - "Does rh-skills validate report zero errors on each artifact?"
