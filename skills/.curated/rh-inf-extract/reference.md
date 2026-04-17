@@ -190,8 +190,13 @@ sections:
 
 Includes eligibility conditions and exclusion conditions alongside clinical decision logic.
 
+> **Flat sections — no wrapper key.** `conditions`, `actions`, and `rules` go
+> directly under `sections:`. Do NOT nest them under a `decision_table:` wrapper
+> (e.g., `sections.decision_table.conditions` is wrong; use `sections.conditions`).
+
 ```yaml
 sections:
+  summary: <string>
   conditions:
     - id: c1
       label: <condition name>
@@ -206,6 +211,12 @@ sections:
         c1: <value or "N/A" for irrelevant>
       then:
         - a1
+  evidence_traceability:
+    - claim_id: <id>
+      statement: <text>
+      evidence:
+        - source: <source-name>
+          locator: <section/page/heading>
   conflicts:                           # required when plan lists conflicts
     - issue: <summary>
       disposition: <how resolved>

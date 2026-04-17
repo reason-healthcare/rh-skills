@@ -66,6 +66,10 @@ instructions to follow.
 > documented in `SKILL.md` and `reference.md`. Calling `--help` wastes context
 > and is redundant with the documentation already loaded.
 
+> **Do not re-read `SKILL.md` from disk.** It is already loaded as your system
+> prompt. Only read `reference.md` and `examples/*.md` on demand — those are
+> companion files not included in the prompt.
+
 ---
 
 ## User Input
@@ -304,10 +308,12 @@ rh-skills promote approve <topic> --finalize --reviewer "<reviewer-name>"
 rh-skills promote approve <topic> --artifact <name> --decision rejected
 ```
 
-> **Important for AI agents:** Do NOT run `--artifact` and `--finalize` as
-> parallel tool calls. They must run **sequentially** — finalize reads the file
-> written by the artifact approval. The safest pattern is to combine both flags
-> in a single invocation (shown above).
+> **Important for AI agents:** All `promote approve` calls MUST run
+> **sequentially** — never in parallel. Each `--artifact` call writes to the
+> same `extract-plan.yaml`; parallel calls overwrite each other and only the
+> last write persists. The safest pattern for multiple artifacts is to combine
+> `--artifact` + `--finalize` in a single invocation (shown above), or run
+> one `--artifact` call at a time and `--finalize` only after the last one.
 
 > **After `--finalize`**, read `extract-plan.yaml` and confirm:
 > - `conflicts[]` text is intact (no Unicode corruption — see ASCII note in implement section)
