@@ -1239,7 +1239,22 @@ def combine(topic, sources, dry_run):
 
     Sources: all positional args — last one is the target name, rest are L2 source names.
     Example: rh-skills promote combine mytopic l2-a l2-b l3-target
+
+    DEPRECATED: Use 'rh-skills formalize' + 'rh-skills package' instead.
     """
+    import warnings
+    warnings.warn(
+        "promote combine is deprecated. Use 'rh-skills formalize <topic> <artifact>' "
+        "for individual FHIR JSON generation and 'rh-skills package <topic>' "
+        "for FHIR NPM packaging.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    log_warn(
+        "DEPRECATED: 'promote combine' will be removed in a future release. "
+        "Use 'rh-skills formalize' + 'rh-skills package' instead."
+    )
+
     if len(sources) < 2:
         raise click.UsageError("combine requires at least one source and one target name")
 

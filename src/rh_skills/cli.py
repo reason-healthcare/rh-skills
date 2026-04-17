@@ -1,8 +1,10 @@
 import click
 from rh_skills.commands import (
+    formalize,
     ingest,
     init,
     list_cmd,
+    package,
     promote,
     render,
     schema,
@@ -26,6 +28,8 @@ main.add_command(init.init)
 main.add_command(status.status)
 main.add_command(list_cmd.list_)
 main.add_command(promote.promote)
+main.add_command(formalize.formalize)
+main.add_command(package.package)
 main.add_command(schema.schema)
 main.add_command(source.source)
 main.add_command(validate.validate)
