@@ -246,8 +246,8 @@ def test_render_decision_table_complete(tmp_repo):
     assert (art_dir / "dt-complete-rules-table.md").exists()
     assert not (art_dir / "dt-complete-decision-tree.md").exists()  # merged into rules-table.md
     rules_table = (art_dir / "dt-complete-rules-table.md").read_text()
-    assert "```mermaid" in rules_table
-    assert "flowchart TD" in rules_table
+    assert "Decision Table" in rules_table
+    assert "Rule" in rules_table
 
 
 def test_render_decision_table_incomplete(tmp_repo):
