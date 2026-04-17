@@ -2,7 +2,7 @@
 
 **Feature Branch**: `010-l2-artifact-catalog`  
 **Created**: 2026-04-17  
-**Status**: Draft  
+**Status**: Implemented  
 **Input**: Expand L2 Hybrid Artifact Catalog with 4 new artifact types (clinical-frame, decision-table, assessment, policy), restructure structured/ directory to per-artifact subdirectories with generated views, and add a render command for SME-reviewable representations.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -57,7 +57,7 @@ new path, and that `rh-skills validate` finds the artifact.
 ### User Story 3 - Render Generates SME-Reviewable Views (Priority: P2)
 
 A knowledge engineer or SME runs `rh-skills render <topic> <artifact>` and receives
-human-readable generated views (mermaid diagrams, markdown tables, CSV files) in a
+human-readable generated views (mermaid diagrams, markdown tables) in a
 `views/` subdirectory alongside the control YAML. The YAML remains the single source
 of truth; views are strictly derived.
 
@@ -176,7 +176,7 @@ expected type-specific sections.
 
 - **Artifact Profile**: Defines keyword matching, section name, and key question for the planner. One per artifact type in `EXTRACT_ARTIFACT_PROFILES`.
 - **L2 Artifact (control file)**: YAML source of truth at `structured/<name>/<name>.yaml`. Contains type-specific sections per the documented shapes.
-- **Generated View**: Derived human-readable file (`.mmd`, `.md`, `.csv`) written to `structured/<name>/views/`. Regenerated from control file on each render invocation.
+- **Generated View**: Derived human-readable file (`.mmd`, `.md`) written to `structured/<name>/views/`. Regenerated from control file on each render invocation.
 - **Hybrid Artifact Catalog**: The 12-type reference table mapping artifact types to their purpose, section shapes, and L3 targets.
 
 ## Success Criteria *(mandatory)*

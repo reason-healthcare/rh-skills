@@ -125,7 +125,7 @@ sections:
 | Field | Type | Description |
 |-------|------|-------------|
 | path | string | `structured/<name>/views/<filename>` |
-| format | string | `.mmd` (mermaid), `.md` (markdown), `.csv` (tabular) |
+| format | string | `.mmd` (mermaid), `.md` (markdown) |
 | source | string | Artifact type that generated it |
 
 **Type → View mapping**:

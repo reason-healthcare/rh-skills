@@ -23,15 +23,19 @@ def _validate_sections(sections: dict | None, artifact_type: str) -> None:
     if not required:
         return
     if not sections:
-        raise click.UsageError(
+        click.echo(
             f"Artifact type '{artifact_type}' requires sections: {', '.join(required)} — "
-            "but 'sections' key is missing or empty"
+            "but 'sections' key is missing or empty",
+            err=True,
         )
+        raise SystemExit(1)
     missing = [key for key in required if key not in sections]
     if missing:
-        raise click.UsageError(
-            f"Missing required sections for '{artifact_type}': {', '.join(missing)}"
+        click.echo(
+            f"Missing required sections for '{artifact_type}': {', '.join(missing)}",
+            err=True,
         )
+        raise SystemExit(1)
 
 
 # ── Renderers ───────────────────────────────────────────────────────────────────

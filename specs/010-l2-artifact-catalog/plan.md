@@ -10,7 +10,7 @@ decision-table, assessment, and policy. Restructure the `structured/` directory 
 flat files to per-artifact subdirectories (`structured/<name>/<name>.yaml`) with a
 `views/` folder for generated representations. Add a new `rh-skills render` CLI
 command that deterministically generates type-specific views (mermaid, markdown tables,
-CSV, completeness reports) from L2 YAML control files. Update all path references
+completeness reports) from L2 YAML control files. Update all path references
 across promote, validate, tracking, extract SKILL/reference, eval fixtures, and tests.
 
 ## Technical Context

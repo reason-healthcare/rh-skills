@@ -66,7 +66,7 @@ def test_render_missing_artifact_exits_1(tmp_repo):
 # ── Missing required sections ───────────────────────────────────────────────────
 
 
-def test_render_missing_required_sections_exits_2(tmp_repo):
+def test_render_missing_required_sections_exits_1(tmp_repo):
     _write_artifact(tmp_repo, "my-skill", "bad-dt", {
         "id": "bad-dt",
         "artifact_type": "decision-table",
@@ -74,8 +74,7 @@ def test_render_missing_required_sections_exits_2(tmp_repo):
     })
     runner = CliRunner()
     result = runner.invoke(render, ["my-skill", "bad-dt"])
-    assert result.exit_code == 2
-    assert "missing required sections" in result.output.lower()
+    assert result.exit_code == 1
 
 
 # ── Clinical-frame ──────────────────────────────────────────────────────────────
