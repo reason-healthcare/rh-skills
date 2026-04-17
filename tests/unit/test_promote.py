@@ -366,6 +366,29 @@ def test_derive_invalid_evidence_ref_format_exits_2(tmp_repo, monkeypatch):
     assert result.exit_code == 2
 
 
+def test_derive_conflict_same_issue_merges_positions(tmp_repo, monkeypatch):
+    """Two --conflict flags with the same issue merge into one entry with multiple positions."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "hba1c-target",
+        "--source", "ada-guidelines",
+        "--artifact-type", "decision-points",
+        "--conflict", "HbA1c target|ada-guidelines|ADA recommends <7.0%",
+        "--conflict", "HbA1c target|aace-guidelines|AACE recommends ≤6.5%|aace-guidelines|More specific target",
+    ])
+    assert result.exit_code == 0, result.output
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "hba1c-target.yaml"
+    data = YAML(typ="safe").load(artifact_path.read_text())
+    conflicts = data.get("conflicts", [])
+    assert len(conflicts) == 1, f"Expected 1 merged conflict entry, got {len(conflicts)}"
+    assert len(conflicts[0]["positions"]) == 2
+    sources = {p["source"] for p in conflicts[0]["positions"]}
+    assert sources == {"ada-guidelines", "aace-guidelines"}
+    assert conflicts[0]["preferred_interpretation"]["source"] == "aace-guidelines"
+
+
 def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     setup_topic_with_normalized_sources(
         tmp_repo,

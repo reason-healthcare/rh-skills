@@ -367,7 +367,16 @@ def _parse_evidence_refs(raw_refs: tuple[str, ...]) -> list[dict]:
 
 
 def _parse_conflicts(raw_conflicts: tuple[str, ...]) -> list[dict]:
-    entries: list[dict] = []
+    """Parse --conflict flags into conflict entries.
+
+    Flags with the same issue are merged into one entry with multiple positions.
+    The preferred_interpretation comes from whichever flag supplies it.
+
+    Formats:
+      issue|source|statement
+      issue|source|statement|preferred_source|preferred_rationale
+    """
+    merged: dict[str, dict] = {}
     for raw in raw_conflicts:
         parts = [part.strip() for part in raw.split("|")]
         if len(parts) < 3:
@@ -376,17 +385,15 @@ def _parse_conflicts(raw_conflicts: tuple[str, ...]) -> list[dict]:
                 "'issue|source|statement|preferred_source|preferred_rationale'"
             )
         issue, source, statement = parts[:3]
-        entry = {
-            "issue": issue,
-            "positions": [{"source": source, "statement": statement}],
-        }
+        if issue not in merged:
+            merged[issue] = {"issue": issue, "positions": []}
+        merged[issue]["positions"].append({"source": source, "statement": statement})
         if len(parts) >= 5:
-            entry["preferred_interpretation"] = {
+            merged[issue]["preferred_interpretation"] = {
                 "source": parts[3],
                 "rationale": parts[4],
             }
-        entries.append(entry)
-    return entries
+    return list(merged.values())
 
 
 def _build_sections(
