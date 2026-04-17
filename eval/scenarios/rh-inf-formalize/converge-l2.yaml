@@ -23,6 +23,11 @@ workspace:
             timestamp: "2026-04-15T08:00:00Z"
           - event: extract_complete
             timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: diabetes-ccm-standards
+            file: topics/diabetes-ccm/structured/diabetes-ccm-standards.yaml
+          - name: diabetes-ccm-quality-measures
+            file: topics/diabetes-ccm/structured/diabetes-ccm-quality-measures.yaml
     sources:
       - id: ada-standards-2024
         normalized: true
@@ -32,30 +37,55 @@ workspace:
         path: sources/normalized/cms-diabetes-measures.md
 
   files:
-    - path: topics/diabetes-ccm/process/plans/extract-plan.md
+    - path: topics/diabetes-ccm/process/plans/extract-plan.yaml
       content: |
-        # Extract Plan — diabetes-ccm
-
-        **Status:** approved
-        **Approved by:** reviewer
-        **Approved at:** 2026-04-15T10:00:00Z
-
-        ## Artifact Candidates
-
-        | Artifact | Source(s) | Type |
-        |----------|-----------|------|
-        | diabetes-ccm-standards | ada-standards-2024 | clinical-summary |
-        | diabetes-ccm-quality-measures | cms-diabetes-measures | quality-measure-set |
+        topic: diabetes-ccm
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        review_summary: "Two distinct clinical domains extracted from separate sources."
+        artifacts:
+          - name: diabetes-ccm-standards
+            artifact_type: clinical-summary
+            source_files:
+              - sources/normalized/ada-standards-2024.md
+            clinical_question: "What are the recommended components of CCM for adults with T2D?"
+            required_sections:
+              - glycemic_targets
+              - blood_pressure
+              - ccm_components
+            conflicts: []
+            reviewer_decision: approved
+            approval_notes: ""
+          - name: diabetes-ccm-quality-measures
+            artifact_type: quality-measure-set
+            source_files:
+              - sources/normalized/cms-diabetes-measures.md
+            clinical_question: "What CMS quality measures apply to diabetes CCM?"
+            required_sections:
+              - measures
+            conflicts: []
+            reviewer_decision: approved
+            approval_notes: ""
 
     - path: topics/diabetes-ccm/structured/diabetes-ccm-standards.yaml
       content: |
-        artifact_id: diabetes-ccm-standards
-        artifact_type: clinical-summary
-        topic: diabetes-ccm
-        clinical_question: >
-          What are the recommended components of CCM for adults with T2D?
+        id: diabetes-ccm-standards
+        name: diabetes-ccm-standards
+        title: "Diabetes CCM: ADA Clinical Standards"
+        version: "1.0.0"
+        status: active
+        domain: diabetes
+        description: >
+          ADA-derived structured summary of recommended chronic care management
+          components for adults with type 2 diabetes, including glycemic targets,
+          blood pressure targets, and CCM monitoring cadence.
         derived_from:
           - ada-standards-2024
+        artifact_type: clinical-summary
+        clinical_question: >
+          What are the recommended components of CCM for adults with T2D?
         sections:
           glycemic_targets:
             summary: HbA1c < 7.0% for most adults; < 8.0% for limited life expectancy.
@@ -72,23 +102,29 @@ workspace:
                 source: ada-standards-2024
                 locator: "Section: Blood Pressure"
           ccm_components:
-            summary: "Annual foot exam, UACR, dilated eye exam every 1–2 years."
+            summary: "Annual foot exam, UACR, dilated eye exam every 1-2 years."
             evidence_traceability:
               - claim_id: ccm-foot
                 statement: "Comprehensive foot exam annually"
                 source: ada-standards-2024
                 locator: "Section: Chronic Care Management Components"
-        status: extract-approved
 
     - path: topics/diabetes-ccm/structured/diabetes-ccm-quality-measures.yaml
       content: |
-        artifact_id: diabetes-ccm-quality-measures
-        artifact_type: quality-measure-set
-        topic: diabetes-ccm
-        clinical_question: >
-          What CMS quality measures apply to diabetes CCM?
+        id: diabetes-ccm-quality-measures
+        name: diabetes-ccm-quality-measures
+        title: "Diabetes CCM: CMS Quality Measures"
+        version: "1.0.0"
+        status: active
+        domain: diabetes
+        description: >
+          CMS-derived quality measure set for diabetes chronic care management,
+          covering HbA1c poor control (CMS122) and foot exam process measures (CMS123).
         derived_from:
           - cms-diabetes-measures
+        artifact_type: quality-measure-set
+        clinical_question: >
+          What CMS quality measures apply to diabetes CCM?
         sections:
           measures:
             items:
@@ -106,7 +142,6 @@ workspace:
                 statement: "CMS122 HbA1c Poor Control measure"
                 source: cms-diabetes-measures
                 locator: "eCQM CMS122v12"
-        status: extract-approved
 
 prompt: |
   Use the rh-inf-formalize skill for the topic `diabetes-ccm`.
