@@ -146,12 +146,12 @@
 
 **Purpose**: Documentation, deprecation, and final validation
 
-- [ ] T043 [P] Update `docs/FORMALIZE_STRATEGIES.md` open questions section — resolve or document decisions for open items (CQL `context Patient` explicit, minimum validate checks, inline vs project-level shared libraries)
-- [ ] T044 [P] Add `rh-skills formalize` and `rh-skills package` to CLI help/documentation in relevant docs
-- [ ] T045 Run `rh-skills validate` suite to ensure existing topics still work with updated tracking schema (backward compatibility for single-file `computable` entries)
-- [ ] T046 Run all eval scenarios end-to-end to validate full pipeline
-- [ ] T047 Run quickstart.md validation per `specs/011-formalize-strategies/quickstart.md`
-- [ ] T048 Update or create worked examples under `skills/.curated/rh-inf-formalize/` demonstrating the new `rh-skills formalize` + `rh-skills package` workflow with FHIR JSON output — required by constitution Delivery Constraint ("curated skills MUST include worked examples")
+- [X] T043 [P] Update `docs/FORMALIZE_STRATEGIES.md` open questions section — resolve or document decisions for open items (CQL `context Patient` explicit, minimum validate checks, inline vs project-level shared libraries)
+- [X] T044 [P] Add `rh-skills formalize` and `rh-skills package` to CLI help/documentation in relevant docs
+- [X] T045 Run `rh-skills validate` suite to ensure existing topics still work with updated tracking schema (backward compatibility for single-file `computable` entries)
+- [X] T046 Run all eval scenarios end-to-end to validate full pipeline
+- [X] T047 Run quickstart.md validation per `specs/011-formalize-strategies/quickstart.md`
+- [X] T048 Update or create worked examples under `skills/.curated/rh-inf-formalize/` demonstrating the new `rh-skills formalize` + `rh-skills package` workflow with FHIR JSON output — required by constitution Delivery Constraint ("curated skills MUST include worked examples")
 
 ---
 

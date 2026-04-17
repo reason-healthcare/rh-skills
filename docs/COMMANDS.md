@@ -162,6 +162,9 @@ Creates `topics/<topic>/structured/<name>.yaml` with schema-valid YAML scaffold.
 
 ### `rh-skills promote combine <topic> <sources…> <target>`
 
+> **Deprecated** — Use `rh-skills formalize` for individual FHIR JSON generation
+> and `rh-skills package` for FHIR NPM packaging.
+
 Merge structured (L2) artifacts into a computable (L3) artifact.
 
 ```
@@ -180,10 +183,94 @@ rh-skills promote formalize-plan <topic> [--force]
 
 - writes `topics/<topic>/process/plans/formalize-plan.md`
 - selects only extract-approved structured artifacts that still pass validation
-- proposes one primary pathway-oriented computable package
+- creates per-type artifacts using the appropriate L2→L3 strategy
+- detects overlapping FHIR resource types across artifacts and flags for review
 - records `formalize_planned` on success
 - warns and exits without writing when no eligible structured inputs are available
 - refuses to overwrite an existing plan unless `--force` is passed
+
+---
+
+## `rh-skills formalize`
+
+Generate FHIR R4 JSON and CQL from an approved L2 structured artifact.
+
+```
+rh-skills formalize <topic> <artifact> [--strategy TYPE] [--dry-run]
+```
+
+**Arguments:**
+- `topic` — Topic name
+- `artifact` — Name of the structured artifact to formalize
+
+**Options:**
+- `--strategy` — Override the auto-detected L2 type strategy (one of: `evidence-summary`, `decision-table`, `care-pathway`, `terminology`, `measure`, `assessment`, `policy`)
+- `--dry-run` — Show what would be generated without writing files
+
+**Behavior:**
+- Reads the approved formalize-plan for the artifact's strategy and l3_targets
+- Applies the type-specific conversion strategy from SKILL.md/reference.md
+- Writes FHIR JSON resources to `topics/<topic>/computable/`
+- Writes CQL libraries as `.cql` files alongside the JSON
+- Records `computable_converged` event in tracking.yaml
+
+**Strategy → Output:**
+
+| L2 Type | Primary Output | Supporting Output |
+|---------|---------------|-------------------|
+| evidence-summary | Evidence.json | EvidenceVariable.json, Citation.json |
+| decision-table | PlanDefinition.json | Library.json, .cql |
+| care-pathway | PlanDefinition.json | ActivityDefinition.json |
+| terminology | ValueSet.json | ConceptMap.json |
+| measure | Measure.json | Library.json, .cql |
+| assessment | Questionnaire.json | Library.json (scoring) |
+| policy | PlanDefinition.json | Questionnaire.json (DTR) |
+
+**Example:**
+```bash
+rh-skills formalize diabetes-screening screening-criteria
+rh-skills formalize diabetes-screening lab-values --strategy terminology
+```
+
+---
+
+## `rh-skills package`
+
+Bundle computable resources into a FHIR NPM package.
+
+```
+rh-skills package <topic> [--version VERSION] [--dry-run]
+```
+
+**Arguments:**
+- `topic` — Topic name
+
+**Options:**
+- `--version` — Package version (default: from tracking.yaml or `0.1.0`)
+- `--dry-run` — Show what would be packaged without writing files
+
+**Behavior:**
+- Collects all FHIR JSON files from `topics/<topic>/computable/`
+- Generates `package.json` with FHIR NPM metadata
+- Creates an `ImplementationGuide` resource listing all contained resources
+- Writes the package to `topics/<topic>/package/`
+
+**Output Layout:**
+```
+topics/<topic>/package/
+├── package.json
+├── ImplementationGuide-<topic>.json
+├── PlanDefinition-<id>.json
+├── Library-<id>.json
+├── ValueSet-<id>.json
+└── ...
+```
+
+**Example:**
+```bash
+rh-skills package diabetes-screening
+rh-skills package diabetes-screening --version 1.0.0
+```
 
 ---
 

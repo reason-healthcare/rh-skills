@@ -89,17 +89,15 @@ sections:
   in populations, interventions, outcomes
 - `reasonhub-codesystem_lookup` — confirm canonical displays
 
-### Open Questions
+### Resolved Decisions
 
-- When the source uses a non-GRADE, non-Oxford scale (e.g., USPSTF A/B/C/D/I),
-  should we define a custom mapping to FHIR certainty ratings or default to
-  `no-concern` with a note?
-- Should each finding produce its own Evidence resource (1:1), or should
-  closely related findings (same population, same outcome) be grouped into one
-  Evidence with multiple `statistic[]` entries?
-- For multi-source evidence summaries (2+ guidelines on same topic), should
-  conflicting findings produce separate Evidence resources or a single Evidence
-  with a conflict note?
+- **Non-GRADE/Oxford scales**: Map USPSTF and other scales to FHIR certainty ratings
+  using the closest semantic match (e.g., USPSTF A → `high`, B → `moderate`,
+  C → `low`, D/I → `very-low`). Document the mapping in a `_review_note` extension.
+- **Finding-to-resource ratio**: 1:1 for v1 — each finding gets its own Evidence
+  resource. Group related findings under a common `EvidenceVariable` for PICO framing.
+- **Multi-source conflicts**: Separate Evidence resources, one per source. Flag
+  conflicts via `Evidence.note` with cross-references to the conflicting resource.
 
 ---
 
@@ -185,16 +183,17 @@ sections:
 - `reasonhub-search_snomed` — resolve clinical finding conditions
 - `reasonhub-search_rxnorm` — resolve medication actions
 
-### Open Questions
+### Resolved Decisions
 
-- At what nesting depth should we mandate flattening into Library CQL?
-  Current rule says 4 levels max — is this too conservative for complex
-  clinical decision trees (e.g., sepsis management)?
-- How should "override" rules (e.g., "physician discretion overrides all
-  criteria") be distinguished from standard exceptions? Should they use a
-  separate `action.type` or a priority flag?
-- When a decision table has >20 rules, should each rule be a separate
-  PlanDefinition or stay as actions within one PlanDefinition?
+- **Nesting depth / CQL flattening**: 4 levels is the hard limit. Complex trees
+  (e.g., sepsis management) should break nested logic into named Library CQL
+  `define` statements at depth 3, then reference from the PlanDefinition action.
+- **Override rules**: Use `action.priority = routine|urgent|asap|stat` plus
+  `action.condition` with `kind = stop` for overrides. Do not use a separate
+  `action.type` — keep overrides as high-priority conditions within the same tree.
+- **Large decision tables (>20 rules)**: Stay as actions within one PlanDefinition
+  for v1. Group related rules under `action.action` sub-groups. Splitting into
+  separate PlanDefinitions deferred to v2 when clinical consensus on grouping exists.
 
 ---
 
@@ -264,19 +263,18 @@ sections:
 - `reasonhub-search_snomed` — resolve procedure and assessment codes
 - `reasonhub-search_loinc` — resolve lab order codes in pathway steps
 
-### Open Questions
+### Resolved Decisions
 
-- How should parallel pathway branches (concurrent steps with no ordering
-  dependency) be represented? Option A: sibling actions with no
-  `relatedAction` ordering. Option B: group action with
-  `selectionBehavior: all`.
-- Should timed constraints prefer `timingTiming` on the action itself
-  (for recurring schedules) or `relatedAction.offsetDuration` (for
-  step-to-step delays)? Current rule uses offsetDuration for sequential
-  delays — what about recurring activities (e.g., "every 4 hours")?
-- When a pathway references an external protocol (e.g., "follow hospital
-  sepsis bundle"), should that become a `definitionCanonical` reference to
-  an external PlanDefinition or an inline placeholder action?
+- **Parallel branches**: Use `selectionBehavior: all` on a group action. This
+  is semantically clearer than sibling actions with no ordering and aligns with
+  CPG-on-FHIR patterns for concurrent interventions.
+- **Timed constraints**: Use `relatedAction.offsetDuration` for step-to-step
+  delays. For recurring activities (e.g., "every 4 hours"), use `timingTiming`
+  on the action with `repeat.period` / `repeat.periodUnit`.
+- **External protocol references**: Use `definitionCanonical` pointing to the
+  external PlanDefinition URL. If the URL is not yet published, create a
+  placeholder action with `description` and a `_review_note` flagging the
+  external dependency.
 
 ---
 
@@ -363,17 +361,17 @@ sections:
 - `reasonhub-valueset_expand` — expand hierarchical sets (e.g., SNOMED descendants)
 - `reasonhub-codesystem_verify_code` — validate every code in verify mode
 
-### Open Questions
+### Resolved Decisions
 
-- What is the minimum code count before a ValueSet is worth formalizing?
-  Suggestion: ≥2 codes from the same system; single-code "value sets" should
-  be inlined as direct code references in the consuming resource.
-- When MCP search returns multiple candidates for a concept and none has an
-  exact display-name match, should we pick the closest match automatically
-  or always surface for reviewer resolution?
-- For cross-system value sets (e.g., SNOMED + ICD-10 codes in one set),
-  should we create one ValueSet with multiple `compose.include[]` entries
-  or split into separate system-specific ValueSets?
+- **Minimum code count**: ≥2 codes from the same system. Single-code references
+  are inlined as direct `Coding` in the consuming resource (no standalone ValueSet).
+- **Ambiguous MCP matches**: Always surface for reviewer resolution when no exact
+  display-name match exists. Never auto-pick. Include top 3 candidates in a
+  `_review_note` for the reviewer to select from.
+- **Cross-system value sets**: One ValueSet with multiple `compose.include[]`
+  entries for v1 (simplest for consumers). Each `include` has its own `system`
+  and `version`. Splitting deferred unless a consuming resource requires
+  system-specific filtering.
 
 ---
 
@@ -460,19 +458,17 @@ sections:
   and observation criteria in population definitions
 - `reasonhub-search_icd10` — resolve billing/diagnosis codes for denominator criteria
 
-### Open Questions
+### Resolved Decisions
 
-- Should Library CQL for population criteria be generated as compilable CQL
-  or left as pseudocode stubs with `// TODO` markers? Current rule: generate
-  compilable CQL when the L2 definition is structured enough; stub when
-  natural-language-only.
-- How should composite measures with different scoring types across groups
-  (e.g., one proportion group + one continuous-variable group) be handled?
-  FHIR allows only one `Measure.scoring` — should we split into separate
-  Measure resources?
-- Should supplemental data elements (e.g., demographics for risk adjustment)
-  be represented as additional Library `define` statements or as Measure
-  `supplementalData[]` entries?
+- **CQL generation**: Generate compilable CQL when the L2 definition has
+  structured criteria (conditions with explicit values). Leave as pseudocode
+  stubs with `// TODO: refine` only when the L2 is purely narrative.
+- **Composite measures / mixed scoring**: Split into separate Measure resources.
+  FHIR `Measure.scoring` is singular; mixing scoring types in one resource
+  violates the spec. Link related Measures via `relatedArtifact`.
+- **Supplemental data**: Use `Measure.supplementalData[]` entries that reference
+  Library `define` statements. This keeps the Measure self-documenting while
+  the Library holds the actual retrieval logic.
 
 ---
 
@@ -565,19 +561,18 @@ sections:
 - `reasonhub-search_loinc` — resolve LOINC panel and question codes (e.g., PHQ-9)
 - `reasonhub-codesystem_lookup` — confirm item-level LOINC codes
 
-### Open Questions
+### Resolved Decisions
 
-- Should scoring ranges produce a calculated expression (Library CQL that
-  maps total score to an interpretation code) or stay as descriptive metadata
-  on the Questionnaire extension? Suggestion: descriptive for v1, with an
-  optional Library reference for validated instruments.
-- How should adaptive assessments (item banks with computerized adaptive
-  testing logic) be represented? Standard Questionnaire may not suffice —
-  consider flagging as "requires SDC Adaptive Questionnaire profile" and
-  deferring to a future strategy version.
-- For assessments with branching logic that produces different scoring paths
-  (e.g., skip patterns that change maximum possible score), should we
-  generate multiple scoring range interpretations or one with caveats?
+- **Scoring ranges**: Descriptive metadata on Questionnaire extensions for v1.
+  Use `ordinalValue` on answer options and a `_scoring_interpretation` extension
+  with min/max/label triples. Library CQL scoring deferred to v2 for validated
+  instruments (e.g., PHQ-9).
+- **Adaptive assessments**: Flag as "requires SDC Adaptive Questionnaire profile"
+  in the `_review_note`. Generate a standard Questionnaire with all items; adaptive
+  item-selection logic is out of scope for v1.
+- **Branching scoring paths**: Generate one scoring range interpretation covering
+  the maximum possible score. Add `_review_note` documenting skip-pattern impact
+  on scoring. Per-path scoring deferred to v2.
 
 ---
 
@@ -732,26 +727,24 @@ sections:
 - `reasonhub-search_loinc` — resolve required lab/test documentation and
   Questionnaire item codes for pre-population mappings
 
-### Open Questions
+### Resolved Decisions
 
-- Should prior-auth decision outcomes use a standard code system for
-  approve/deny/pend, or are free-text action descriptions sufficient for v1?
-  Suggestion: use X12 278 response codes where available; fall back to
-  descriptive text with a `_review_note`.
-- For multi-step prior auth (initial request → peer review → external review
-  → appeal), should the entire chain be one PlanDefinition or should the
-  appeal flow be a separate PlanDefinition linked via
-  `definitionCanonical`? Current rule: separate when the appeal has >3 steps.
-- How should time-limited authorizations (e.g., "approved for 90 days") be
-  represented? Option A: `action.timingDuration`. Option B: a related
-  "reauthorization" action triggered by the expiry date.
-- When the US CQL Common / US Core Elements libraries do not yet have a
-  pattern for a required documentation element, should we author a custom
-  CQL `define` from scratch or leave the `initialExpression` empty with a
-  `// TODO: pending US CQL Common pattern` comment?
-- Should documentation Questionnaires be versioned independently from the
-  parent PlanDefinition, or should they share the same version to simplify
-  bundle coherence?
+- **Prior-auth decision outcomes**: Use X12 278 response codes where available
+  (A1=certified, A2=modified, A3=not certified, A4=pended, A6=cancelled). Fall
+  back to descriptive text with a `_review_note` for non-standard workflows.
+- **Multi-step prior auth**: Separate PlanDefinitions when the appeal flow has
+  ≥3 steps. Link via `relatedArtifact` with `type = depends-on`. Single-step
+  appeals stay inline as a final action.
+- **Time-limited authorizations**: Use `action.timingDuration` for the authorized
+  period. Add a reauthorization action triggered by `relatedAction` with
+  `relationship = after` and `offsetDuration` matching the authorization period.
+- **Missing US CQL Common patterns**: Author a custom CQL `define` in the
+  project-level shared library with a `// CANDIDATE: propose to <IG>` comment.
+  Leave `initialExpression` empty with a `// TODO` only when the concept itself
+  is undefined (not just the pattern).
+- **Documentation Questionnaire versioning**: Version independently from the
+  parent PlanDefinition. Use `relatedArtifact` with `type = composed-of` and
+  explicit version references to maintain bundle coherence.
 
 ---
 
@@ -1196,17 +1189,15 @@ patterns:
 | §5 measure | Population criteria (initial population, denominator, numerator, exclusions) | One `define` per population segment; scoring-driven — never share a `define` across two population types |
 | §7 policy (DTR) | Pre-population of Questionnaire items via `initialExpression` | One `define` per pre-populated item; compose from UCE patterns; non-pre-populatable items have no CQL |
 
-### Open Questions
+### Resolved Decisions
 
-- When a topic library needs a domain function that does not yet exist in
-  FHIRCommon or US Core Elements, should the agent author it inline with a
-  `// CANDIDATE: propose to <IG>` comment, or place it in a project-level
-  shared library? Suggestion: project-level shared library for v1, with
-  candidate annotations.
-- Should generated CQL libraries include `context Patient` explicitly?
-  The Using CQL IG does not require it when the model default is Patient,
-  but being explicit aids readability.
-- What is the minimum CQL that the `rh-skills validate` command should
-  check? Options: (a) syntactic well-formedness only, (b) valid includes
-  resolve, (c) all terminology references resolve. Suggestion: (a) for v1,
-  (b) + (c) in verify mode.
+- **Missing domain functions**: Place in a project-level shared library with
+  `// CANDIDATE: propose to <IG>` annotations. Do not inline domain-level
+  helpers in topic-specific libraries.
+- **`context Patient` explicit**: Yes, always include `context Patient` in
+  generated CQL. Explicit context aids readability and avoids ambiguity when
+  mixing patient-context and unfiltered retrieves.
+- **Minimum CQL validation in `rh-skills validate`**: Syntactic well-formedness
+  only for v1 (valid CQL parse tree). In verify mode: also check that all
+  `include` references resolve and terminology references match ValueSets in
+  the topic's computable/ directory.
