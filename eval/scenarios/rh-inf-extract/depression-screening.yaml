@@ -1,0 +1,205 @@
+name: depression-screening
+skill: rh-inf-extract
+description: >
+  USPSTF depression screening guideline — source contains assessment instruments
+  (PHQ-2, PHQ-9), clinical question framing (PICOTS), and eligibility criteria.
+  Agent must recognize and extract clinical-frame, assessment, and
+  eligibility-criteria artifact types from the expanded 12-type catalog.
+
+topic: depression-screening
+
+workspace:
+  tracking_yaml: |
+    topics:
+      depression-screening:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources:
+      - name: uspstf-depression-2023
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/uspstf-depression-2023.md
+
+  files:
+    - path: topics/depression-screening/process/plans/discovery-plan.yaml
+      content: |
+        topic: depression-screening
+        clinical_question: >
+          What screening instruments, scoring thresholds, and clinical
+          workflows are recommended for depression screening in primary care?
+        sources:
+          - id: uspstf-depression-2023
+            title: "USPSTF Recommendation: Screening for Depression in Adults"
+            type: clinical-guideline
+            evidence_level: ia
+            open_access: true
+        status: approved
+
+    - path: sources/normalized/uspstf-depression-2023.md
+      content: |
+        # USPSTF Recommendation: Screening for Depression in Adults (2023)
+
+        ## Clinical Question and Scope
+
+        **Population**: Adults aged 18 years or older, including pregnant and
+        postpartum persons, presenting to primary care settings without a
+        recognized diagnosis of depression or current treatment.
+
+        **Intervention**: Screening with a validated depression screening
+        instrument followed by diagnostic assessment and treatment for those
+        who screen positive.
+
+        **Comparison**: No systematic screening (case-finding only when clinical
+        suspicion arises).
+
+        **Outcomes**: Reduction in depression prevalence, improved functional
+        status, reduced suicidality, potential harms of false-positive screening.
+
+        **Timing**: Screening at periodic intervals; evidence supports annual
+        screening or screening at each clinical encounter when systems support
+        adequate follow-up.
+
+        **Setting**: Primary care, including obstetric and postpartum settings.
+
+        The USPSTF recommends screening for depression in the general adult
+        population, including pregnant and postpartum persons (Grade B recommendation).
+
+        ## Screening Instruments
+
+        ### PHQ-2 (Patient Health Questionnaire-2)
+
+        Two-item questionnaire used as initial screening step.
+
+        1. Little interest or pleasure in doing things?
+        2. Feeling down, depressed, or hopeless?
+
+        Each item scored 0 (not at all) to 3 (nearly every day). Total score
+        range: 0–6. A score of ≥3 triggers full PHQ-9 assessment.
+
+        Sensitivity: 83%; Specificity: 92% at cutoff ≥3.
+
+        ### PHQ-9 (Patient Health Questionnaire-9)
+
+        Nine-item instrument for depression severity assessment. Items cover:
+        1. Little interest or pleasure in doing things
+        2. Feeling down, depressed, or hopeless
+        3. Trouble falling or staying asleep, or sleeping too much
+        4. Feeling tired or having little energy
+        5. Poor appetite or overeating
+        6. Feeling bad about yourself or that you are a failure
+        7. Trouble concentrating on things
+        8. Moving or speaking slowly, or being fidgety/restless
+        9. Thoughts that you would be better off dead or of hurting yourself
+
+        Each item scored 0–3. Total score range: 0–27.
+
+        **Scoring Interpretation**:
+        - 0–4: Minimal depression (no treatment)
+        - 5–9: Mild depression (watchful waiting)
+        - 10–14: Moderate depression (treatment planning)
+        - 15–19: Moderately severe depression (active treatment)
+        - 20–27: Severe depression (immediate intervention, consider referral)
+
+        A score ≥10 has 88% sensitivity and 88% specificity for major
+        depressive disorder.
+
+        ### GAD-7 (Generalized Anxiety Disorder-7)
+
+        Often administered alongside PHQ-9 for comorbid anxiety assessment.
+        Seven items scored 0–3, total range 0–21.
+
+        - 0–4: Minimal anxiety
+        - 5–9: Mild anxiety
+        - 10–14: Moderate anxiety
+        - 15–21: Severe anxiety
+
+        ## Eligibility Criteria
+
+        Screening is recommended for:
+        - Adults aged ≥18 years
+        - No current diagnosis of depression
+        - No current antidepressant treatment
+        - Presenting to a primary care setting
+        - Systems in place for adequate follow-up (diagnosis, treatment, monitoring)
+
+        Screening is NOT recommended when:
+        - Adequate follow-up systems are not available
+        - Patient has a documented current major depressive disorder diagnosis
+
+    - path: topics/depression-screening/process/concepts.yaml
+      content: |
+        topic: depression-screening
+        concepts:
+          - term: PHQ-9
+            aliases: [Patient Health Questionnaire-9]
+            category: assessment-instrument
+          - term: PHQ-2
+            aliases: [Patient Health Questionnaire-2]
+            category: assessment-instrument
+          - term: GAD-7
+            aliases: [Generalized Anxiety Disorder-7]
+            category: assessment-instrument
+          - term: major depressive disorder
+            aliases: [MDD, depression]
+            category: condition
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `depression-screening`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One source is fully ingested: `uspstf-depression-2023`. It contains:
+  - PICOTS framing of the clinical question (population, intervention,
+    comparison, outcomes, timing, setting)
+  - Validated assessment instruments (PHQ-2, PHQ-9, GAD-7) with scoring
+  - Eligibility criteria for screening
+
+  Run the full extract cycle:
+  1. **plan** — generate an extract plan identifying artifact candidates;
+     the plan SHOULD propose at least a `clinical-frame` artifact (PICOTS),
+     an `assessment` artifact (PHQ-9), and an `eligibility-criteria` artifact
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L2 structured artifacts via rh-skills promote derive
+  4. **verify** — validate each artifact with rh-skills validate
+
+expected_outputs:
+  - path: topics/depression-screening/process/plans/extract-plan.yaml
+    checks:
+      - exists
+      - contains: "clinical-frame"
+      - contains: "assessment"
+  - path: topics/depression-screening/structured
+    checks:
+      - exists
+      - contains_any_file_with: "artifact_type: clinical-frame"
+      - contains_any_file_with: "artifact_type: assessment"
+      - contains_any_file_with: "frames:"
+      - contains_any_file_with: "items:"
+      - contains_any_file_with: "scoring:"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: structured_derived
+
+efficiency_focus:
+  - "Does the agent recognize PHQ-9 content as an assessment artifact (not generic evidence-summary)?"
+  - "Does the agent recognize the PICOTS structure as a clinical-frame artifact?"
+  - "Does it use rh-skills promote derive with correct artifact_type for each?"
+  - "Does it avoid re-reading the source file more than once?"
+
+quality_focus:
+  - "Does the extract plan propose at least clinical-frame, assessment, and eligibility-criteria types?"
+  - "Does the clinical-frame artifact contain PICOTS fields (population, intervention, comparison, outcomes, timing, setting)?"
+  - "Does the assessment artifact contain instrument metadata, items with options, and scoring ranges?"
+  - "Are the PHQ-9 scoring thresholds accurately captured (0-4 minimal, 5-9 mild, 10-14 moderate, 15-19 moderately severe, 20-27 severe)?"
+  - "Does the eligibility-criteria artifact capture both inclusion and exclusion conditions?"
+  - "Is evidence_traceability present linking claims to uspstf-depression-2023?"
+  - "Does rh-skills validate report zero errors on each artifact?"

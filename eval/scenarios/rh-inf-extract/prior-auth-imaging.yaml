@@ -1,0 +1,196 @@
+name: prior-auth-imaging
+skill: rh-inf-extract
+description: >
+  Payer prior-authorization guideline for advanced imaging — source contains
+  explicit authorization policy criteria, a decision table for approval logic,
+  and a care pathway workflow. Agent must recognize and extract policy,
+  decision-table, and workflow-steps artifact types from the expanded 12-type
+  catalog.
+
+topic: imaging-prior-auth
+
+workspace:
+  tracking_yaml: |
+    topics:
+      imaging-prior-auth:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources:
+      - name: payer-mri-auth-policy-2024
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/payer-mri-auth-policy-2024.md
+
+  files:
+    - path: topics/imaging-prior-auth/process/plans/discovery-plan.yaml
+      content: |
+        topic: imaging-prior-auth
+        clinical_question: >
+          What are the prior authorization criteria and approval decision
+          rules for outpatient MRI of the lumbar spine?
+        sources:
+          - id: payer-mri-auth-policy-2024
+            title: "National Health Plan: Advanced Imaging Prior Auth Policy 2024"
+            type: payer-policy
+            evidence_level: n-a
+            open_access: false
+        status: approved
+
+    - path: sources/normalized/payer-mri-auth-policy-2024.md
+      content: |
+        # National Health Plan: Advanced Imaging Prior Authorization Policy
+
+        Effective Date: January 1, 2024
+        Policy Number: IMG-2024-001
+        Applies To: Commercial and Medicare Advantage plans
+
+        ## Applicability
+
+        This policy applies to outpatient advanced imaging procedures including:
+        - MRI (CPT 72148, 72149, 72158 — lumbar spine)
+        - CT (CPT 72131, 72132, 72133 — lumbar spine)
+        - PET/CT (CPT 78815, 78816)
+
+        Service category: outpatient diagnostic imaging.
+
+        Prior authorization is REQUIRED for all outpatient advanced imaging
+        procedures listed above.
+
+        ## Documentation Requirements
+
+        The requesting provider must submit:
+        1. Clinical indication and ICD-10 diagnosis code
+        2. Duration of symptoms (must be ≥6 weeks for non-emergent)
+        3. Conservative treatment history (physical therapy, medications)
+        4. Results of prior imaging, if any
+        5. Relevant physical examination findings
+
+        ## Authorization Decision Table
+
+        The following conditions determine the authorization decision:
+
+        | Condition | Possible Values |
+        |-----------|----------------|
+        | Clinical indication documented | Yes / No |
+        | Symptoms ≥ 6 weeks | Yes / No |
+        | Conservative treatment attempted | Yes / No / N/A (red flags) |
+        | Red flags present | Yes / No |
+
+        ### Decision Rules
+
+        Rule 1: If red flags present = Yes → APPROVE (regardless of other conditions)
+          Red flags include: progressive neurological deficit, cauda equina syndrome,
+          suspected malignancy, fracture, infection.
+
+        Rule 2: If clinical indication = No → DENY
+          Reason: Insufficient clinical documentation.
+
+        Rule 3: If clinical indication = Yes AND symptoms ≥ 6 weeks = Yes
+          AND conservative treatment attempted = Yes → APPROVE
+
+        Rule 4: If clinical indication = Yes AND symptoms ≥ 6 weeks = Yes
+          AND conservative treatment attempted = No → PEND
+          Request: Documentation of why conservative treatment was not attempted.
+
+        Rule 5: If clinical indication = Yes AND symptoms ≥ 6 weeks = No
+          AND red flags = No → DENY
+          Reason: Symptoms duration does not meet minimum threshold.
+
+        ### Actions
+
+        - **APPROVE**: Issue authorization number; valid for 60 days.
+        - **DENY**: Issue denial with appeal rights per state and federal regulations.
+          Member and provider receive written notification within 2 business days.
+        - **PEND**: Request additional documentation. Provider has 14 calendar days
+          to submit. If not received, auto-deny applies.
+
+        ## Authorization Workflow
+
+        1. Provider submits prior auth request via portal or fax
+        2. Intake specialist verifies member eligibility and plan coverage
+        3. Clinical reviewer applies decision table criteria
+        4. If APPROVE: generate auth number, notify provider
+        5. If DENY: generate denial letter with clinical rationale and appeal instructions
+        6. If PEND: send documentation request to provider; set 14-day timer
+        7. After additional documentation received: re-apply decision table
+        8. Quality audit: 10% random sample reviewed monthly
+
+    - path: topics/imaging-prior-auth/process/concepts.yaml
+      content: |
+        topic: imaging-prior-auth
+        concepts:
+          - term: prior authorization
+            aliases: [prior auth, pre-authorization, precertification]
+            category: payer-process
+          - term: MRI lumbar spine
+            aliases: [lumbar MRI]
+            category: procedure
+          - term: red flags
+            aliases: [clinical red flags, emergency indicators]
+            category: clinical-criteria
+          - term: conservative treatment
+            aliases: [conservative therapy, initial treatment]
+            category: treatment
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `imaging-prior-auth`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One source is fully ingested: `payer-mri-auth-policy-2024`. It contains:
+  - Prior authorization policy with applicability, criteria, and actions
+  - An explicit decision table with conditions, rules, and outcomes
+  - A workflow describing the authorization process steps
+
+  Run the full extract cycle:
+  1. **plan** — generate an extract plan identifying artifact candidates;
+     the plan SHOULD propose at least a `policy` artifact, a `decision-table`
+     artifact, and a `workflow-steps` artifact
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L2 structured artifacts via rh-skills promote derive
+  4. **verify** — validate each artifact with rh-skills validate
+
+expected_outputs:
+  - path: topics/imaging-prior-auth/process/plans/extract-plan.yaml
+    checks:
+      - exists
+      - contains: "policy"
+      - contains: "decision-table"
+  - path: topics/imaging-prior-auth/structured
+    checks:
+      - exists
+      - contains_any_file_with: "artifact_type: policy"
+      - contains_any_file_with: "artifact_type: decision-table"
+      - contains_any_file_with: "conditions:"
+      - contains_any_file_with: "rules:"
+      - contains_any_file_with: "criteria:"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: structured_derived
+
+efficiency_focus:
+  - "Does the agent recognize the decision table format as a decision-table artifact (not generic decision-points)?"
+  - "Does the agent recognize the prior auth criteria as a policy artifact?"
+  - "Does the agent recognize the step-by-step authorization process as workflow-steps?"
+  - "Does it use rh-skills promote derive with correct artifact_type for each?"
+  - "Does it avoid re-reading the source file more than once?"
+
+quality_focus:
+  - "Does the extract plan propose at least policy, decision-table, and workflow-steps types?"
+  - "Does the policy artifact contain applicability (payer_types, service_category, codes), criteria, and actions (approve/deny/pend)?"
+  - "Does the decision-table artifact have correctly structured conditions with values, and rules with when/then mappings?"
+  - "Are the 5 decision rules from the source accurately captured in the decision-table rules?"
+  - "Does the decision-table use dash notation for irrelevant conditions (e.g., Rule 1 red flags=Yes, other conditions='-')?"
+  - "Does the workflow-steps artifact capture the 8-step authorization workflow?"
+  - "Is evidence_traceability present linking claims to payer-mri-auth-policy-2024?"
+  - "Does rh-skills validate report zero errors on each artifact?"
+  - "Would running rh-skills render on the decision-table produce a meaningful completeness report?"

@@ -1,0 +1,223 @@
+name: cardiovascular-risk-management
+skill: rh-inf-extract
+description: >
+  Cardiovascular disease risk management guideline — source contains risk
+  factor stratification, treatment exclusion criteria, clinical decision
+  points, and graded evidence summaries. Exercises the remaining original
+  artifact types: risk-factors, exclusions, decision-points, evidence-summary.
+
+topic: cvd-risk-management
+
+workspace:
+  tracking_yaml: |
+    topics:
+      cvd-risk-management:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: discovery_planned
+            timestamp: "2026-04-12T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-14T00:00:00Z"
+    sources:
+      - name: acc-aha-lipid-2023
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/acc-aha-lipid-2023.md
+
+  files:
+    - path: topics/cvd-risk-management/process/plans/discovery-plan.yaml
+      content: |
+        topic: cvd-risk-management
+        clinical_question: >
+          What risk factors, treatment thresholds, and exclusion criteria
+          guide statin therapy initiation for primary prevention of
+          atherosclerotic cardiovascular disease?
+        sources:
+          - id: acc-aha-lipid-2023
+            title: "ACC/AHA Guideline on Blood Cholesterol Management"
+            type: clinical-guideline
+            evidence_level: ia
+            open_access: true
+        status: approved
+
+    - path: sources/normalized/acc-aha-lipid-2023.md
+      content: |
+        # ACC/AHA Guideline on Blood Cholesterol Management (2023 Update)
+
+        ## Risk Factors for Atherosclerotic Cardiovascular Disease
+
+        ### Major Risk Factors
+
+        The following are established risk factors for ASCVD that should be
+        assessed in all adults aged 40–75:
+
+        - **Age**: Men ≥45 years; Women ≥55 years
+        - **LDL-C level**: ≥160 mg/dL (elevated), ≥190 mg/dL (severely elevated)
+        - **HDL-C level**: <40 mg/dL (men), <50 mg/dL (women)
+        - **Hypertension**: Systolic BP ≥140 mmHg or on antihypertensive treatment
+        - **Diabetes mellitus**: Type 1 or Type 2
+        - **Cigarette smoking**: Current smoker
+        - **Family history**: Premature ASCVD in first-degree relative
+          (men <55 years, women <65 years)
+
+        ### Risk-Enhancing Factors
+
+        If decision is uncertain after 10-year ASCVD risk calculation, consider:
+        - Metabolic syndrome
+        - Chronic kidney disease (eGFR <60 mL/min)
+        - Chronic inflammatory conditions (RA, psoriasis, HIV)
+        - South Asian ancestry
+        - Elevated Lp(a) ≥50 mg/dL
+        - Elevated hsCRP ≥2.0 mg/L
+        - Ankle-brachial index <0.9
+
+        ## Exclusion Criteria for Statin Therapy
+
+        Statin therapy should NOT be initiated in the following populations:
+
+        - **Absolute contraindications**:
+          - Active liver disease or unexplained persistent ALT elevation >3x ULN
+          - Pregnancy or planned pregnancy
+          - Breastfeeding
+          - Known hypersensitivity to statin or any component
+
+        - **Relative contraindications** (requires risk-benefit discussion):
+          - Age >75 years without established ASCVD (limited trial evidence)
+          - Concurrent use of strong CYP3A4 inhibitors (for specific statins)
+          - History of statin-associated muscle symptoms (SAMS)
+          - eGFR <30 mL/min (dose adjustment required)
+
+        ## Treatment Decision Points
+
+        ### Primary Prevention Decision Algorithm
+
+        **Decision Point 1: Age and LDL-C Assessment**
+        - If age 40–75 AND LDL-C ≥190 mg/dL → Initiate high-intensity statin
+          (atorvastatin 40–80 mg or rosuvastatin 20–40 mg). No risk calculation needed.
+        - If age 40–75 AND LDL-C 70–189 mg/dL → Proceed to Decision Point 2.
+        - If age <40 or >75 → Individual clinical assessment.
+
+        **Decision Point 2: Diabetes Status**
+        - If diabetes present AND age 40–75 → Initiate moderate-intensity statin
+          at minimum. If 10-year ASCVD risk ≥20% or multiple risk factors,
+          consider high-intensity statin.
+        - If no diabetes → Proceed to Decision Point 3.
+
+        **Decision Point 3: 10-Year ASCVD Risk**
+        - Calculate using Pooled Cohort Equations (PCE).
+        - If 10-year risk ≥20% → High-intensity statin therapy (strong recommendation).
+        - If 10-year risk 7.5%–19.9% → Moderate-intensity statin (conditional).
+          Discuss risk-enhancing factors. Consider CAC scoring if decision uncertain.
+        - If 10-year risk 5.0%–7.4% → May consider moderate-intensity statin
+          if risk-enhancing factors present. Shared decision-making.
+        - If 10-year risk <5.0% → Lifestyle modifications; reassess in 4–6 years.
+
+        ## Evidence Summary
+
+        ### Statin Efficacy Meta-Analysis (CTT 2019)
+
+        Source: Cholesterol Treatment Trialists' Collaboration
+        Design: Individual participant data meta-analysis of 26 RCTs (n = 170,000)
+        GRADE: High quality
+
+        Key findings:
+        - LDL-C reduction of 1 mmol/L (39 mg/dL) with statin therapy reduces:
+          - Major vascular events by 22% (RR 0.78, 95% CI 0.76–0.80)
+          - Coronary events by 24%
+          - Stroke by 15%
+          - Vascular mortality by 12%
+        - Benefit proportional to absolute LDL-C reduction regardless of baseline
+        - No increase in cancer incidence or non-vascular mortality
+
+        ### Statin Safety (NICE 2023 Review)
+
+        Source: National Institute for Health and Care Excellence
+        Design: Systematic review of 135 RCTs on statin adverse effects
+        GRADE: Moderate quality
+
+        Key findings:
+        - Myalgia incidence: ~5% above placebo (most mild, resolves on switching)
+        - New-onset diabetes: RR 1.09 (NNH ~250 over 4 years)
+        - Hepatotoxicity (ALT >3x ULN): rare (<1%), generally reversible
+        - Rhabdomyolysis: extremely rare (1 per 100,000 patient-years)
+        - Cognitive effects: no confirmed association in systematic review
+
+    - path: topics/cvd-risk-management/process/concepts.yaml
+      content: |
+        topic: cvd-risk-management
+        concepts:
+          - term: ASCVD
+            aliases: [atherosclerotic cardiovascular disease, cardiovascular disease]
+            category: condition
+          - term: statin therapy
+            aliases: [statins, HMG-CoA reductase inhibitor]
+            category: treatment
+          - term: LDL-C
+            aliases: [LDL cholesterol, low-density lipoprotein cholesterol]
+            category: lab-value
+          - term: 10-year ASCVD risk
+            aliases: [PCE risk score, cardiovascular risk score]
+            category: risk-assessment
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `cvd-risk-management`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One source is fully ingested: `acc-aha-lipid-2023`. It contains:
+  - Major and risk-enhancing factor lists for ASCVD
+  - Statin exclusion criteria (absolute and relative contraindications)
+  - A three-stage treatment decision algorithm with thresholds
+  - Graded evidence summaries from two meta-analyses
+
+  Run the full extract cycle:
+  1. **plan** — generate an extract plan identifying artifact candidates;
+     the plan SHOULD propose at least a `risk-factors` artifact, an
+     `exclusions` artifact, a `decision-points` artifact, and an
+     `evidence-summary` artifact
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce the L2 structured artifacts via rh-skills promote derive
+  4. **verify** — validate each artifact with rh-skills validate
+
+expected_outputs:
+  - path: topics/cvd-risk-management/process/plans/extract-plan.yaml
+    checks:
+      - exists
+      - contains: "risk-factors"
+      - contains: "decision-points"
+  - path: topics/cvd-risk-management/structured
+    checks:
+      - exists
+      - contains_any_file_with: "artifact_type: risk-factors"
+      - contains_any_file_with: "artifact_type: exclusions"
+      - contains_any_file_with: "artifact_type: decision-points"
+      - contains_any_file_with: "artifact_type: evidence-summary"
+      - contains_any_file_with: "factors:"
+      - contains_any_file_with: "exclusions:"
+      - contains_any_file_with: "decision_points:"
+      - contains_any_file_with: "evidence:"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: structured_derived
+
+efficiency_focus:
+  - "Does the agent distinguish risk-factors from eligibility-criteria (risk factors inform risk calculation, not eligibility)?"
+  - "Does the agent recognize absolute/relative contraindications as an exclusions artifact?"
+  - "Does the agent map the three decision points as a decision-points artifact (not a decision-table)?"
+  - "Does the agent recognize GRADE-rated evidence with effect sizes as evidence-summary?"
+  - "Does it use rh-skills promote derive with correct artifact_type for each?"
+
+quality_focus:
+  - "Does the extract plan propose at least risk-factors, exclusions, decision-points, and evidence-summary types?"
+  - "Does the risk-factors artifact separate major risk factors from risk-enhancing factors?"
+  - "Does the exclusions artifact distinguish absolute from relative contraindications?"
+  - "Does the decision-points artifact capture all three decision points with their thresholds and branching logic?"
+  - "Does the evidence-summary artifact include source, design, GRADE rating, and quantitative findings (RR, CI, NNH)?"
+  - "Are the specific numeric thresholds from the guideline accurately captured (LDL ≥190, risk ≥20%, etc.)?"
+  - "Is evidence_traceability present linking claims to acc-aha-lipid-2023?"
+  - "Does rh-skills validate report zero errors on each artifact?"
