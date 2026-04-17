@@ -1,0 +1,38 @@
+# Care Pathway — {{ data.title or data.name or 'Untitled' }}
+
+{% if data.clinical_question %}**Clinical Question**: {{ data.clinical_question }}
+{% endif %}
+
+{% set sections = data.sections or {} %}
+{% set triggers = sections.triggers or [] %}
+{% if triggers %}
+## Triggers
+
+{% for t in triggers -%}
+- **{{ t.id or loop.index }}**: {{ t.description or '' }}
+{% endfor %}
+{% endif %}
+
+{% set steps = sections.steps or [] %}
+{% if steps %}
+## Steps
+
+| Step | Description | Actor | Next |
+|------|-------------|-------|------|
+{% for s in steps -%}
+| {{ s.step or loop.index }} | {{ s.description or '' }} | {{ s.actor or '' }} | {{ s.next or '' }} |
+{% endfor %}
+
+## Pathway Diagram
+
+```mermaid
+flowchart TD
+{% for s in steps -%}
+    step{{ s.step or loop.index }}["{{ s.step or loop.index }}. {{ s.description or 'Step' }}"]
+{% endfor %}
+{% for s in steps -%}
+{% if s.next %}    step{{ s.step or loop.index }} --> step{{ s.next }}
+{% endif %}
+{%- endfor %}
+```
+{% endif %}

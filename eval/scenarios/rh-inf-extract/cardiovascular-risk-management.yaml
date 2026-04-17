@@ -3,8 +3,9 @@ skill: rh-inf-extract
 description: >
   Cardiovascular disease risk management guideline — source contains risk
   factor stratification, treatment exclusion criteria, clinical decision
-  points, and graded evidence summaries. Exercises the remaining original
-  artifact types: risk-factors, exclusions, decision-points, evidence-summary.
+  points, and graded evidence summaries. Exercises evidence-summary (with
+  risk factors), decision-table (with eligibility/exclusion conditions),
+  and evidence-summary artifact types.
 
 topic: cvd-risk-management
 
@@ -176,9 +177,9 @@ prompt: |
 
   Run the full extract cycle:
   1. **plan** — generate an extract plan identifying artifact candidates;
-     the plan SHOULD propose at least a `risk-factors` artifact, an
-     `exclusions` artifact, a `decision-points` artifact, and an
-     `evidence-summary` artifact
+     the plan SHOULD propose at least an `evidence-summary` artifact (with
+     risk_factors section) and a `decision-table` artifact (with eligibility
+     and exclusion conditions)
   2. Wait for reviewer approval (simulate approval by responding "approved")
   3. **implement** — produce the L2 structured artifacts via rh-skills promote derive
   4. **verify** — validate each artifact with rh-skills validate
@@ -187,18 +188,15 @@ expected_outputs:
   - path: topics/cvd-risk-management/process/plans/extract-plan.yaml
     checks:
       - exists
-      - contains: "risk-factors"
-      - contains: "decision-points"
+      - contains: "evidence-summary"
+      - contains: "decision-table"
   - path: topics/cvd-risk-management/structured
     checks:
       - exists
-      - contains_any_file_with: "artifact_type: risk-factors"
-      - contains_any_file_with: "artifact_type: exclusions"
-      - contains_any_file_with: "artifact_type: decision-points"
       - contains_any_file_with: "artifact_type: evidence-summary"
-      - contains_any_file_with: "factors:"
-      - contains_any_file_with: "exclusions:"
-      - contains_any_file_with: "decision_points:"
+      - contains_any_file_with: "artifact_type: decision-table"
+      - contains_any_file_with: "risk_factors:"
+      - contains_any_file_with: "conditions:"
       - contains_any_file_with: "evidence:"
   - path: tracking.yaml
     checks:
@@ -206,17 +204,16 @@ expected_outputs:
       - event: structured_derived
 
 efficiency_focus:
-  - "Does the agent distinguish risk-factors from eligibility-criteria (risk factors inform risk calculation, not eligibility)?"
-  - "Does the agent recognize absolute/relative contraindications as an exclusions artifact?"
-  - "Does the agent map the three decision points as a decision-points artifact (not a decision-table)?"
+  - "Does the agent recognize risk factors as a section within evidence-summary (not a standalone artifact)?"
+  - "Does the agent fold eligibility and exclusion criteria into decision-table conditions?"
   - "Does the agent recognize GRADE-rated evidence with effect sizes as evidence-summary?"
   - "Does it use rh-skills promote derive with correct artifact_type for each?"
 
 quality_focus:
-  - "Does the extract plan propose at least risk-factors, exclusions, decision-points, and evidence-summary types?"
-  - "Does the risk-factors artifact separate major risk factors from risk-enhancing factors?"
-  - "Does the exclusions artifact distinguish absolute from relative contraindications?"
-  - "Does the decision-points artifact capture all three decision points with their thresholds and branching logic?"
+  - "Does the extract plan propose at least evidence-summary and decision-table types?"
+  - "Does the evidence-summary artifact include a risk_factors section separating major from risk-enhancing factors?"
+  - "Does the decision-table conditions include eligibility and exclusion logic?"
+  - "Does the decision-table capture clinical thresholds and branching logic?"
   - "Does the evidence-summary artifact include source, design, GRADE rating, and quantitative findings (RR, CI, NNH)?"
   - "Are the specific numeric thresholds from the guideline accurately captured (LDL ≥190, risk ≥20%, etc.)?"
   - "Is evidence_traceability present linking claims to acc-aha-lipid-2023?"

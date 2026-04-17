@@ -39,7 +39,7 @@ def test_render_generic_summary(tmp_repo):
         "status": "draft",
         "domain": "testing",
         "description": "A test artifact.",
-        "artifact_type": "evidence-summary",
+        "artifact_type": "custom-type",
         "sections": {"summary": "This is a summary."},
     })
     runner = CliRunner()
@@ -77,15 +77,22 @@ def test_render_missing_required_sections_exits_1(tmp_repo):
     assert result.exit_code == 1
 
 
-# ── Clinical-frame ──────────────────────────────────────────────────────────────
+# ── Evidence-summary ────────────────────────────────────────────────────────────
 
 
-def test_render_clinical_frame(tmp_repo):
+def test_render_evidence_summary(tmp_repo):
     _write_artifact(tmp_repo, "my-skill", "scope-frame", {
         "id": "scope-frame",
-        "title": "Screening Scope",
-        "artifact_type": "clinical-frame",
+        "title": "Evidence Synthesis",
+        "artifact_type": "evidence-summary",
         "sections": {
+            "summary_points": [
+                {"finding_id": "f-1", "statement": "HbA1c screening is effective", "grade": "grade-a"},
+            ],
+            "risk_factors": [
+                {"id": "rf-1", "factor": "Age over 45", "direction": "increases",
+                 "magnitude": "2x", "evidence_quality": "grade-b"},
+            ],
             "frames": [
                 {
                     "id": "frame-1",
@@ -103,10 +110,12 @@ def test_render_clinical_frame(tmp_repo):
     result = runner.invoke(render, ["my-skill", "scope-frame"])
     assert result.exit_code == 0
     views = tmp_repo / "topics" / "my-skill" / "structured" / "scope-frame" / "views"
-    assert (views / "picots-summary.md").exists()
-    content = (views / "picots-summary.md").read_text()
+    assert (views / "evidence-report.md").exists()
+    content = (views / "evidence-report.md").read_text()
     assert "Adults 45+" in content
     assert "HbA1c screening" in content
+    assert "Age over 45" in content
+    assert "grade-a" in content
 
 
 # ── Assessment ──────────────────────────────────────────────────────────────────
@@ -265,7 +274,7 @@ def test_render_decision_table_incomplete(tmp_repo):
 def test_render_is_idempotent(tmp_repo):
     _write_artifact(tmp_repo, "my-skill", "evidence-item", {
         "id": "evidence-item",
-        "artifact_type": "evidence-summary",
+        "artifact_type": "custom-type",
         "sections": {"summary": "Original."},
     })
     runner = CliRunner()

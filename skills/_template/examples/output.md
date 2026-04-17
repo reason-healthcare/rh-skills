@@ -56,7 +56,7 @@ screening_interval:
 
 notes: >
   High-risk groups (PCOS, HIV, sleep apnea, certain medications) may warrant
-  earlier or more frequent screening. See risk-factors artifact for full
+  earlier or more frequent screening. See evidence-summary artifact for full
   enumeration.
 ```
 
@@ -74,8 +74,8 @@ level: l3
 version: "1.0"
 created_at: "2026-04-04T16:00:00Z"
 converged_from:
-  - screening-criteria
-  - risk-factors
+  - screening-decisions
+  - diabetes-evidence
   - diagnostic-thresholds
 
 # ── FHIR-Compatible Structure ──────────────────────────────────────────────
@@ -90,10 +90,10 @@ pathways:
     steps:
       - step: 1
         label: "Assess eligibility"
-        logic_ref: screening-criteria.eligibility
+        logic_ref: screening-decisions.eligibility
       - step: 2
         label: "Identify risk factors"
-        logic_ref: risk-factors.risk_factors
+        logic_ref: diabetes-evidence.risk_factors
       - step: 3
         label: "Order diagnostic test"
         options:
@@ -148,7 +148,7 @@ topics:
     computable:
       - name: diabetes-pathway
         file: topics/diabetes-screening/computable/diabetes-pathway.yaml
-        converged_from: [screening-criteria, risk-factors, diagnostic-thresholds]
+        converged_from: [screening-decisions, diabetes-evidence, diagnostic-thresholds]
         created_at: "2026-04-04T16:00:00Z"
     events:
       - event: structured_derived

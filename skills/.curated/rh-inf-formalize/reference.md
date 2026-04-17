@@ -59,10 +59,10 @@ justify them:
 
 | Section | Typical upstream trigger |
 |---------|--------------------------|
-| `pathways` | workflow steps, decision points, exclusions, eligibility criteria |
-| `actions` | actionable steps, risk factors, branching logic |
-| `value_sets` | terminology / value set artifacts |
-| `measures` | measure logic artifacts |
+| `pathways` | care-pathway steps, decision-table logic |
+| `actions` | actionable steps, branching logic |
+| `value_sets` | terminology artifacts |
+| `measures` | measure artifacts |
 | `assessments` | structured assessment instruments |
 | `libraries` | reusable logic blocks or downstream computable expressions |
 
@@ -119,7 +119,7 @@ rather than manually listing codes.
 ### Carry-forward from extract
 
 If the approved extract plan includes `candidate_codes[]` for a
-`terminology-value-sets` artifact that maps to this value set, use those codes
+`terminology` artifact that maps to this value set, use those codes
 as the authoritative starting set. Only invoke MCP search to fill gaps.
 
 ### Terminology verification (Verify Mode)

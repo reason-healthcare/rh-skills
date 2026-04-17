@@ -1,0 +1,46 @@
+# Terminology — {{ data.title or data.name or 'Untitled' }}
+
+{% if data.clinical_question %}**Clinical Question**: {{ data.clinical_question }}
+{% endif %}
+
+{% set sections = data.sections or {} %}
+{% set value_sets = sections.value_sets or [] %}
+{% if value_sets %}
+## Value Sets
+
+{% for vs in value_sets %}
+### {{ vs.name or vs.id or 'Value Set' }}
+
+- **ID**: {{ vs.id or '' }}
+- **System**: {{ vs.system or '' }}
+{% if vs.purpose %}- **Purpose**: {{ vs.purpose }}
+{% endif %}
+
+{% if vs.codes %}
+| Code | Display |
+|------|---------|
+{% for code in vs.codes -%}
+{% if code is mapping -%}
+| {{ code.code or '' }} | {{ code.display or '' }} |
+{% else -%}
+| {{ code }} | |
+{% endif -%}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% set concept_maps = sections.concept_maps or [] %}
+{% if concept_maps %}
+## Concept Maps
+
+{% for cm in concept_maps %}
+### {{ cm.id or 'Concept Map' }}: {{ cm.source_system or '?' }} → {{ cm.target_system or '?' }}
+
+| Source Code | Target Code | Equivalence |
+|------------|-------------|-------------|
+{% for m in (cm.mappings or []) -%}
+| {{ m.source_code or '' }} | {{ m.target_code or '' }} | {{ m.equivalence or '' }} |
+{% endfor %}
+{% endfor %}
+{% endif %}

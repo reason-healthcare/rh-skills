@@ -3,8 +3,8 @@ skill: rh-inf-extract
 description: >
   USPSTF depression screening guideline — source contains assessment instruments
   (PHQ-2, PHQ-9), clinical question framing (PICOTS), and eligibility criteria.
-  Agent must recognize and extract clinical-frame, assessment, and
-  eligibility-criteria artifact types from the expanded 12-type catalog.
+  Agent must recognize and extract evidence-summary (with PICOTS frames),
+  assessment, and decision-table artifact types.
 
 topic: depression-screening
 
@@ -164,8 +164,9 @@ prompt: |
 
   Run the full extract cycle:
   1. **plan** — generate an extract plan identifying artifact candidates;
-     the plan SHOULD propose at least a `clinical-frame` artifact (PICOTS),
-     an `assessment` artifact (PHQ-9), and an `eligibility-criteria` artifact
+     the plan SHOULD propose at least an `evidence-summary` artifact (with
+     PICOTS frames section), an `assessment` artifact (PHQ-9), and a
+     `decision-table` artifact (screening eligibility/exclusion conditions)
   2. Wait for reviewer approval (simulate approval by responding "approved")
   3. **implement** — produce the L2 structured artifacts via rh-skills promote derive
   4. **verify** — validate each artifact with rh-skills validate
@@ -174,12 +175,12 @@ expected_outputs:
   - path: topics/depression-screening/process/plans/extract-plan.yaml
     checks:
       - exists
-      - contains: "clinical-frame"
+      - contains: "evidence-summary"
       - contains: "assessment"
   - path: topics/depression-screening/structured
     checks:
       - exists
-      - contains_any_file_with: "artifact_type: clinical-frame"
+      - contains_any_file_with: "artifact_type: evidence-summary"
       - contains_any_file_with: "artifact_type: assessment"
       - contains_any_file_with: "frames:"
       - contains_any_file_with: "items:"
@@ -191,15 +192,15 @@ expected_outputs:
 
 efficiency_focus:
   - "Does the agent recognize PHQ-9 content as an assessment artifact (not generic evidence-summary)?"
-  - "Does the agent recognize the PICOTS structure as a clinical-frame artifact?"
+  - "Does the agent include PICOTS framing as a frames section within evidence-summary?"
   - "Does it use rh-skills promote derive with correct artifact_type for each?"
   - "Does it avoid re-reading the source file more than once?"
 
 quality_focus:
-  - "Does the extract plan propose at least clinical-frame, assessment, and eligibility-criteria types?"
-  - "Does the clinical-frame artifact contain PICOTS fields (population, intervention, comparison, outcomes, timing, setting)?"
+  - "Does the extract plan propose at least evidence-summary, assessment, and decision-table types?"
+  - "Does the evidence-summary artifact contain PICOTS frames (population, intervention, comparison, outcomes, timing, setting)?"
   - "Does the assessment artifact contain instrument metadata, items with options, and scoring ranges?"
   - "Are the PHQ-9 scoring thresholds accurately captured (0-4 minimal, 5-9 mild, 10-14 moderate, 15-19 moderately severe, 20-27 severe)?"
-  - "Does the eligibility-criteria artifact capture both inclusion and exclusion conditions?"
+  - "Does the decision-table artifact capture eligibility conditions (inclusion and exclusion)?"
   - "Is evidence_traceability present linking claims to uspstf-depression-2023?"
   - "Does rh-skills validate report zero errors on each artifact?"

@@ -140,17 +140,12 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    Only proceed to read `sources/normalized/*.md` after this boundary statement
    has been emitted.
 4. Group sources by clinical question and propose L2 artifacts using the hybrid
-   catalog:
-   - eligibility / criteria
-   - exclusions
-   - risk factors
-   - decision points
-   - workflow steps
-   - terminology / value sets
-   - measure logic
-   - evidence summary
-   - clinical frame (PICOTS scope)
-   - decision table (condition/action/rule)
+   catalog (7 standard types):
+   - evidence summary (findings, risk factors, PICOTS framing)
+   - decision table (conditions, actions, rules — includes eligibility/exclusions)
+   - care pathway (ordered workflow steps)
+   - terminology (value sets, concept maps)
+   - measure (quality measures, populations, scoring)
    - assessment (screening instruments / scoring)
    - policy (coverage / prior-auth criteria)
    - custom artifact types when clearly justified
@@ -196,7 +191,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    misleading (e.g., a required section cannot be populated from the proposed
    source set).
 
-5. For each proposed `terminology-value-sets` artifact, **if reasonhub MCP tools
+5. For each proposed `terminology` artifact, **if reasonhub MCP tools
    are available**, resolve candidate codes before writing the plan:
    a. If the target code system is not yet clear, call
       `reasonhub-search_all_codesystems` with each key clinical concept as the

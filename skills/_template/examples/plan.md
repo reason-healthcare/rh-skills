@@ -29,13 +29,13 @@ created: "2026-04-04T14:00:00Z"
 # ── Skill-specific fields (replace with actual schema) ────────────────────
 # Example: for rh-inf-extract, this would be the artifacts_to_derive[] array
 items:
-  - name: screening-criteria
+  - name: screening-decisions
     source_file: ada-guidelines-2024
-    description: "Discrete criteria for identifying adults who should be screened for type 2 diabetes"
+    description: "Discrete decision logic for identifying adults who should be screened for type 2 diabetes"
 
-  - name: risk-factors
+  - name: diabetes-evidence
     source_file: ada-guidelines-2024
-    description: "Enumerated risk factor definitions with clinical thresholds (BMI ≥ 25, age ≥ 35, etc.)"
+    description: "Evidence findings and risk factors with clinical thresholds (BMI ≥ 25, age ≥ 35, etc.)"
 
   - name: diagnostic-thresholds
     source_file: ada-guidelines-2024
@@ -51,7 +51,7 @@ Type 2 diabetes affects approximately 37 million Americans, with an estimated
 one-third undiagnosed. The ADA Standards of Medical Care in Diabetes (2024)
 provides the primary evidence base for discrete, computable screening criteria.
 Three structured artifacts are needed to capture the full clinical picture:
-screening eligibility criteria, modifiable and non-modifiable risk factors, and
+screening decision logic, evidence findings with risk factors, and
 laboratory diagnostic thresholds.
 
 ### Evidence Summary
@@ -63,11 +63,11 @@ laboratory diagnostic thresholds.
 
 ### Proposed Artifacts
 
-**screening-criteria** — Computable eligibility criteria for identifying
-adults who should be offered diabetes screening. Will encode the age,
-BMI, and risk-factor thresholds from ADA Section 2.2.
+**screening-decisions** — Decision table with eligibility conditions for
+identifying adults who should be offered diabetes screening. Will encode the
+age, BMI, and risk-factor thresholds from ADA Section 2.2 as conditions and actions.
 
-**risk-factors** — Enumerated risk factors with clinical definitions and
+**diabetes-evidence** — Evidence findings and risk factors with clinical definitions and
 thresholds. Will include both modifiable (BMI, physical activity, diet) and
 non-modifiable factors (family history, race/ethnicity, gestational diabetes
 history).

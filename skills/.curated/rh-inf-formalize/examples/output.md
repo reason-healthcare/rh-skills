@@ -6,10 +6,10 @@ Loaded approved structured inputs from extract-plan.md
 Wrote topics/diabetes-ccm/process/plans/formalize-plan.md
 
 $ rh-inf-formalize implement diabetes-ccm
-Validated structured input: screening-criteria
-Validated structured input: workflow-steps
-Validated structured input: terminology-value-sets
-Running: rh-skills promote combine diabetes-ccm screening-criteria workflow-steps terminology-value-sets diabetes-ccm-pathway
+Validated structured input: screening-decisions
+Validated structured input: care-pathway
+Validated structured input: terminology
+Running: rh-skills promote combine diabetes-ccm screening-decisions care-pathway terminology diabetes-ccm-pathway
 Running: rh-skills validate diabetes-ccm diabetes-ccm-pathway
 ✓ diabetes-ccm-pathway
 

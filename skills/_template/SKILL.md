@@ -238,8 +238,8 @@ file or tracking.yaml entry. Safe to run at any time.
 
 4. **Report per artifact:**
    ```
-   ✓ screening-criteria       — all required fields present
-   ✗ risk-factors             — missing required field: 'value_set_url'
+   ✓ screening-decisions       — all required fields present
+   ✗ diabetes-evidence         — missing required field: 'value_set_url'
    ⚠ diagnostic-thresholds   — optional field 'evidence_grade' not set
    ```
 

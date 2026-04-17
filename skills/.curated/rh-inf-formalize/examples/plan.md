@@ -11,9 +11,9 @@ artifacts:
   - name: diabetes-ccm-pathway
     artifact_type: pathway-package
     input_artifacts:
-      - screening-criteria
-      - workflow-steps
-      - terminology-value-sets
+      - screening-decisions
+      - care-pathway
+      - terminology
     rationale: Combines approved structured inputs into a single care pathway package.
     required_sections:
       - pathways
@@ -36,7 +36,7 @@ artifacts:
 ## diabetes-ccm-pathway
 
 - Type: `pathway-package`
-- Eligible structured inputs: screening-criteria, workflow-steps, terminology-value-sets
+- Eligible structured inputs: screening-decisions, care-pathway, terminology
 - Rationale: Combines approved L2 artifacts into one pathway-oriented package for downstream use.
 - Required computable sections: pathways, actions, value_sets
 - Implementation target: `yes`

@@ -4,8 +4,7 @@ description: >
   Payer prior-authorization guideline for advanced imaging — source contains
   explicit authorization policy criteria, a decision table for approval logic,
   and a care pathway workflow. Agent must recognize and extract policy,
-  decision-table, and workflow-steps artifact types from the expanded 12-type
-  catalog.
+  decision-table, and care-pathway artifact types.
 
 topic: imaging-prior-auth
 
@@ -153,7 +152,7 @@ prompt: |
   Run the full extract cycle:
   1. **plan** — generate an extract plan identifying artifact candidates;
      the plan SHOULD propose at least a `policy` artifact, a `decision-table`
-     artifact, and a `workflow-steps` artifact
+     artifact, and a `care-pathway` artifact
   2. Wait for reviewer approval (simulate approval by responding "approved")
   3. **implement** — produce the L2 structured artifacts via rh-skills promote derive
   4. **verify** — validate each artifact with rh-skills validate
@@ -180,17 +179,17 @@ expected_outputs:
 efficiency_focus:
   - "Does the agent recognize the decision table format as a decision-table artifact (not generic decision-points)?"
   - "Does the agent recognize the prior auth criteria as a policy artifact?"
-  - "Does the agent recognize the step-by-step authorization process as workflow-steps?"
+  - "Does the agent recognize the step-by-step authorization process as a care-pathway?"
   - "Does it use rh-skills promote derive with correct artifact_type for each?"
   - "Does it avoid re-reading the source file more than once?"
 
 quality_focus:
-  - "Does the extract plan propose at least policy, decision-table, and workflow-steps types?"
+  - "Does the extract plan propose at least policy, decision-table, and care-pathway types?"
   - "Does the policy artifact contain applicability (payer_types, service_category, codes), criteria, and actions (approve/deny/pend)?"
   - "Does the decision-table artifact have correctly structured conditions with values, and rules with when/then mappings?"
   - "Are the 5 decision rules from the source accurately captured in the decision-table rules?"
   - "Does the decision-table use dash notation for irrelevant conditions (e.g., Rule 1 red flags=Yes, other conditions='-')?"
-  - "Does the workflow-steps artifact capture the 8-step authorization workflow?"
+  - "Does the care-pathway artifact capture the 8-step authorization workflow?"
   - "Is evidence_traceability present linking claims to payer-mri-auth-policy-2024?"
   - "Does rh-skills validate report zero errors on each artifact?"
   - "Would running rh-skills render on the decision-table produce a meaningful completeness report?"

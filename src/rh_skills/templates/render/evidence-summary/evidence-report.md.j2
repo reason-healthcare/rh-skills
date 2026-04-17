@@ -1,0 +1,51 @@
+# Evidence Summary — {{ data.title or data.name or 'Untitled' }}
+
+{% if data.clinical_question %}**Clinical Question**: {{ data.clinical_question }}
+{% endif %}
+{% if data.domain %}**Domain**: {{ data.domain }}
+{% endif %}
+
+{% set sections = data.sections or {} %}
+{% set findings = sections.summary_points or sections.findings or [] %}
+{% if findings %}
+## Key Findings
+
+| # | Finding | Grade |
+|---|---------|-------|
+{% for f in findings -%}
+| {{ f.finding_id or f.id or loop.index }} | {{ f.statement or f.description or '' }} | {{ f.grade or 'N/A' }} |
+{% endfor %}
+{% endif %}
+
+{% set risk_factors = sections.risk_factors or [] %}
+{% if risk_factors %}
+## Risk Factors
+
+| Factor | Direction | Magnitude | Evidence Quality |
+|--------|-----------|-----------|-----------------|
+{% for rf in risk_factors -%}
+| {{ rf.factor or rf.name or rf.id or '' }} | {{ rf.direction or '' }} | {{ rf.magnitude or '' }} | {{ rf.evidence_quality or '' }} |
+{% endfor %}
+{% endif %}
+
+{% set frames = sections.frames or [] %}
+{% if frames %}
+## Clinical Framing (PICOTS)
+
+| ID | Population | Intervention | Comparison | Outcomes | Timing | Setting |
+|---|---|---|---|---|---|---|
+{% for frame in frames -%}
+| {{ frame.id or '' }} | {{ frame.population or '' }} | {{ frame.intervention or '' }} | {{ frame.comparison or '' }} | {{ (frame.outcomes or []) | join('; ') }} | {{ frame.timing or '' }} | {{ frame.setting or '' }} |
+{% endfor %}
+{% endif %}
+
+{% set traceability = sections.evidence_traceability or [] %}
+{% if traceability %}
+## Evidence Traceability
+
+{% for entry in traceability -%}
+- **{{ entry.claim_id or '?' }}**: {{ entry.statement or '' }}
+{% for ev in (entry.evidence or []) %}  - Source: {{ ev.source or '?' }}, Locator: {{ ev.locator or '?' }}
+{% endfor %}
+{% endfor %}
+{% endif %}

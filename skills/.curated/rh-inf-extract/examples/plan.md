@@ -5,15 +5,16 @@ status: pending-review
 reviewer: ""
 reviewed_at: null
 artifacts:
-  - name: screening-criteria
-    artifact_type: eligibility-criteria
+  - name: screening-decisions
+    artifact_type: decision-table
     source_files:
       - sources/normalized/ada-2024-guideline.md
       - sources/normalized/uspstf-screening.md
-    rationale: "Combines guideline and preventive screening evidence into one criteria artifact."
+    rationale: "Combines guideline and preventive screening evidence into decision logic with eligibility conditions."
     key_questions:
       - Who should be screened?
       - At what interval?
+      - What are the exclusion criteria?
     required_sections:
       - summary
       - evidence_traceability
@@ -23,16 +24,18 @@ artifacts:
         resolution: ""
     reviewer_decision: pending-review
     approval_notes: ""
-  - name: risk-factors
-    artifact_type: risk-factors
+  - name: diabetes-evidence
+    artifact_type: evidence-summary
     source_files:
       - sources/normalized/ada-2024-guideline.md
       - sources/normalized/cdc-surveillance.md
-    rationale: "Captures evidence-backed patient and population risk factors."
+    rationale: "Captures evidence findings and risk factors for downstream reasoning."
     key_questions:
+      - What does the evidence say about diabetes risk?
       - Which factors materially elevate diabetes risk?
     required_sections:
-      - summary
+      - summary_points
+      - risk_factors
       - evidence_traceability
     conflicts: []
     reviewer_decision: pending-review
@@ -42,21 +45,20 @@ artifacts:
 # Review Summary
 
 Two extract artifacts are proposed from the current ingested corpus. The first
-captures screening criteria synthesized from guideline and preventive-service
-evidence. The second isolates risk factors useful for downstream reasoning and
-formalization.
+captures screening decision logic (eligibility, exclusions, thresholds) as a
+decision-table. The second synthesizes evidence findings and risk factors.
 
 # Proposed Artifacts
 
-## screening-criteria
+## screening-decisions
 
-- **Type**: eligibility-criteria
+- **Type**: decision-table
 - **Sources**: ADA guideline, USPSTF screening statement
 - **Open issue**: interval language differs between sources
 
-## risk-factors
+## diabetes-evidence
 
-- **Type**: risk-factors
+- **Type**: evidence-summary
 - **Sources**: ADA guideline, CDC surveillance summary
 - **Open issue**: none blocking
 
@@ -68,4 +70,4 @@ formalization.
 # Implementation Readiness
 
 - Reviewer approval required before any derive step
-- `screening-criteria` likely needs explicit conflict disposition before approval
+- `screening-decisions` likely needs explicit conflict disposition before approval

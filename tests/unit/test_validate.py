@@ -41,7 +41,7 @@ def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, 
         "cross_artifact_issues": [],
         "artifacts": [{
             "name": artifact,
-            "artifact_type": "eligibility-criteria",
+            "artifact_type": "decision-table",
             "source_files": ["sources/normalized/source-l1.md"],
             "rationale": "Primary criteria artifact",
             "key_questions": ["Who qualifies?"],
@@ -72,7 +72,7 @@ description: |
   A test artifact for validation testing.
 derived_from:
   - source-l1
-artifact_type: eligibility-criteria
+artifact_type: decision-table
 clinical_question: "Who should be screened?"
 sections:
   summary: "Adults at risk should be screened."
@@ -306,7 +306,7 @@ domain: diabetes
 description: "Incomplete extract artifact"
 derived_from:
   - source-l1
-artifact_type: eligibility-criteria
+artifact_type: decision-table
 clinical_question: "Who should be screened?"
 sections:
   summary: "Adults at risk should be screened."
@@ -344,7 +344,7 @@ def test_validate_formalize_artifact_checks_approved_plan_requirements(tmp_repo)
 
 
 def test_validate_formalize_artifact_fails_when_converged_inputs_mismatch(tmp_repo):
-    write_formalize_plan(tmp_repo, input_artifacts=["screening-criteria", "workflow-steps"])
+    write_formalize_plan(tmp_repo, input_artifacts=["screening-criteria", "care-steps"])
     make_valid_formalize_l3(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
@@ -402,7 +402,7 @@ domain: diabetes
 description: "Artifact with stub values"
 derived_from:
   - source-l1
-artifact_type: eligibility-criteria
+artifact_type: decision-table
 clinical_question: "Who should be screened?"
 sections:
   summary: "Adults at risk should be screened."

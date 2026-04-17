@@ -1,7 +1,0 @@
-# PICOTS Summary — {{ data.title or data.name or '' }}
-
-| ID | Population | Intervention | Comparison | Outcomes | Timing | Setting |
-|---|---|---|---|---|---|---|
-{% for frame in data.sections.frames -%}
-| {{ frame.id or '' }} | {{ frame.population or '' }} | {{ frame.intervention or '' }} | {{ frame.comparison or '' }} | {{ frame.outcomes | join('; ') }} | {{ frame.timing or '' }} | {{ frame.setting or '' }} |
-{% endfor %}

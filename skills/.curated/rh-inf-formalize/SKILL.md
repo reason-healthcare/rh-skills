@@ -162,7 +162,7 @@ all deterministic writes must go through `rh-skills promote combine` and
       with a filter to inline-expand the hierarchy rather than listing codes
       manually.
    d. If `candidate_codes[]` entries were approved in the extract plan for the
-      corresponding `terminology-value-sets` artifact, use those as the
+      corresponding `terminology` artifact, use those as the
       authoritative starting set, augmented by MCP search only where the plan
       set is incomplete.
 5. Run:

@@ -160,9 +160,9 @@ def write_extract_plan(tmp_repo, topic_name="my-skill", status="approved", artif
 
 def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", artifact_specs=None):
     artifact_specs = artifact_specs or [
-        {"name": "screening-criteria", "artifact_type": "eligibility-criteria"},
-        {"name": "workflow-steps", "artifact_type": "workflow-steps"},
-        {"name": "terminology-value-sets", "artifact_type": "terminology-value-sets"},
+        {"name": "screening-criteria", "artifact_type": "decision-table"},
+        {"name": "care-steps", "artifact_type": "care-pathway"},
+        {"name": "code-sets", "artifact_type": "terminology"},
     ]
     setup_topic_with_source(tmp_repo, topic_name)
 
@@ -186,12 +186,12 @@ def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", ar
                 "evidence": [{"source": "ada-guidelines", "locator": "Section 1"}],
             }],
         }
-        if artifact_type == "workflow-steps":
-            sections["workflow"] = [{"step": "Assess patient"}]
-        elif artifact_type == "terminology-value-sets":
-            sections["terminology"] = [{"system": "SNOMED"}]
+        if artifact_type == "care-pathway":
+            sections["steps"] = [{"step": "Assess patient"}]
+        elif artifact_type == "terminology":
+            sections["value_sets"] = [{"system": "SNOMED"}]
         else:
-            sections["criteria"] = ["Adults at risk"]
+            sections["conditions"] = [{"id": "c1", "label": "Test", "values": ["Yes", "No"]}]
 
         buf = io.StringIO()
         y.dump({
@@ -341,7 +341,7 @@ def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
     result = runner.invoke(promote, [
         "derive", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
-        "--artifact-type", "eligibility-criteria",
+        "--artifact-type", "decision-table",
         "--clinical-question", "Who should be screened?",
         "--required-section", "summary",
         "--required-section", "evidence_traceability",
@@ -350,7 +350,7 @@ def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
     ])
     assert result.exit_code == 0, result.output
     data = load_yaml(tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml")
-    assert data["artifact_type"] == "eligibility-criteria"
+    assert data["artifact_type"] == "decision-table"
     assert data["clinical_question"] == "Who should be screened?"
     assert "evidence_traceability" in data["sections"]
     assert data["sections"]["evidence_traceability"][0]["claim_id"] == "crit-001"
@@ -455,7 +455,7 @@ def test_approved_extract_artifacts_selects_only_approved_entries_when_not_stric
         tmp_repo,
         artifacts=[
             {"name": "screening-criteria", "reviewer_decision": "approved"},
-            {"name": "risk-factors", "reviewer_decision": "needs-revision"},
+            {"name": "evidence-review", "reviewer_decision": "needs-revision"},
         ],
     )
     approved = _approved_extract_artifacts("my-skill", strict=False)
@@ -468,7 +468,7 @@ def test_approved_extract_artifacts_blocks_unapproved_entries_in_strict_mode(tmp
         tmp_repo,
         artifacts=[
             {"name": "screening-criteria", "reviewer_decision": "approved"},
-            {"name": "risk-factors", "reviewer_decision": "pending-review"},
+            {"name": "evidence-review", "reviewer_decision": "pending-review"},
         ],
     )
     with pytest.raises(click.UsageError, match="Artifacts not approved"):
@@ -495,7 +495,7 @@ def test_formalize_plan_writes_review_packet_and_records_event(tmp_repo):
     artifact = plan["artifacts"][0]
     assert artifact["name"] == "my-skill-pathway"
     assert artifact["implementation_target"] is True
-    assert artifact["input_artifacts"] == ["screening-criteria", "workflow-steps", "terminology-value-sets"]
+    assert artifact["input_artifacts"] == ["screening-criteria", "care-steps", "code-sets"]
     assert "pathways" in artifact["required_sections"]
     assert "value_sets" in artifact["required_sections"]
 
@@ -536,7 +536,7 @@ def test_approved_formalize_target_requires_approved_target_and_valid_inputs(tmp
         artifacts=[{
             "name": "my-skill-pathway",
             "artifact_type": "pathway-package",
-            "input_artifacts": ["screening-criteria", "workflow-steps"],
+            "input_artifacts": ["screening-criteria", "care-steps"],
             "rationale": "Primary package",
             "required_sections": ["pathways", "actions"],
             "implementation_target": True,
@@ -547,12 +547,12 @@ def test_approved_formalize_target_requires_approved_target_and_valid_inputs(tmp
 
     target = _approved_formalize_target("my-skill")
     assert target["name"] == "my-skill-pathway"
-    assert target["input_artifacts"] == ["screening-criteria", "workflow-steps"]
+    assert target["input_artifacts"] == ["screening-criteria", "care-steps"]
 
 
 def test_approved_formalize_target_blocks_invalid_inputs(tmp_repo):
     setup_topic_with_valid_extract_artifacts(tmp_repo)
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "workflow-steps" / "workflow-steps.yaml"
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "care-steps" / "care-steps.yaml"
     data = load_yaml(artifact_path)
     data["sections"].pop("evidence_traceability")
     y = YAML()
@@ -565,7 +565,7 @@ def test_approved_formalize_target_blocks_invalid_inputs(tmp_repo):
         artifacts=[{
             "name": "my-skill-pathway",
             "artifact_type": "pathway-package",
-            "input_artifacts": ["workflow-steps"],
+            "input_artifacts": ["care-steps"],
             "rationale": "Primary package",
             "required_sections": ["pathways", "actions"],
             "implementation_target": True,
@@ -844,9 +844,9 @@ class TestFormalizeSectionMapping:
         assert "assessments" in result
         assert "pathways" in result
 
-    def test_clinical_frame_no_extra_sections(self):
+    def test_evidence_summary_no_extra_sections(self):
         from rh_skills.commands.promote import _formalize_required_sections
-        result = _formalize_required_sections([{"artifact_type": "clinical-frame"}])
+        result = _formalize_required_sections([{"artifact_type": "evidence-summary"}])
         assert result == ["pathways"]
 
     def test_mixed_types_union(self):
@@ -854,7 +854,7 @@ class TestFormalizeSectionMapping:
         result = _formalize_required_sections([
             {"artifact_type": "decision-table"},
             {"artifact_type": "assessment"},
-            {"artifact_type": "terminology-value-sets"},
+            {"artifact_type": "terminology"},
         ])
         assert "pathways" in result
         assert "actions" in result
@@ -867,16 +867,16 @@ class TestInferArtifactProfiles:
         from rh_skills.commands.promote import _infer_artifact_profiles
         profiles = _infer_artifact_profiles("ada-guidelines", "risk factors and thresholds for patients")
         types = [p["artifact_type"] for p in profiles]
-        assert "risk-factors" in types
+        assert "evidence-summary" in types
 
     def test_multi_keyword_source_returns_multiple_profiles(self):
         from rh_skills.commands.promote import _infer_artifact_profiles
-        content = "screening criteria for eligibility, workflow algorithm steps, and risk factor scoring"
+        content = "screening criteria for eligibility, care pathway steps, and risk factor scoring"
         profiles = _infer_artifact_profiles("guideline", content)
         types = {p["artifact_type"] for p in profiles}
-        assert "eligibility-criteria" in types
-        assert "workflow-steps" in types
-        assert "risk-factors" in types
+        assert "decision-table" in types
+        assert "care-pathway" in types
+        assert "evidence-summary" in types
 
     def test_no_match_returns_evidence_summary_fallback(self):
         from rh_skills.commands.promote import _infer_artifact_profiles
@@ -891,33 +891,33 @@ class TestGroupSourcesManyToMany:
         records = [
             {
                 "name": "acc-aha-lipid",
-                "content": "risk factors, exclusions, decision points, and evidence summary for lipid management",
+                "content": "risk factors, exclusion criteria, decision points, and evidence summary for lipid management",
                 "relative_path": "sources/normalized/acc-aha-lipid.md",
             }
         ]
         groups = _group_sources_for_extract_plan(records)
         types = {g["artifact_type"] for g in groups}
         assert len(types) > 1
-        assert "risk-factors" in types
-        assert "exclusions" in types
+        assert "evidence-summary" in types
+        assert "decision-table" in types
 
     def test_source_not_duplicated_within_group(self):
         from rh_skills.commands.promote import _group_sources_for_extract_plan
         record = {
             "name": "risk-and-risk-again",
-            "content": "risk risk risk factors for many risk conditions",
+            "content": "risk risk risk factors for many risk conditions with evidence synthesis",
             "relative_path": "sources/normalized/r.md",
         }
         groups = _group_sources_for_extract_plan([record])
-        risk_group = next(g for g in groups if g["artifact_type"] == "risk-factors")
-        assert len(risk_group["sources"]) == 1
+        ev_group = next(g for g in groups if g["artifact_type"] == "evidence-summary")
+        assert len(ev_group["sources"]) == 1
 
     def test_two_sources_same_type_grouped_together(self):
         from rh_skills.commands.promote import _group_sources_for_extract_plan
         records = [
-            {"name": "src-a", "content": "risk factors for cardiovascular events", "relative_path": "a.md"},
-            {"name": "src-b", "content": "additional risk factor analysis", "relative_path": "b.md"},
+            {"name": "src-a", "content": "risk factors for cardiovascular events with evidence", "relative_path": "a.md"},
+            {"name": "src-b", "content": "additional risk factor analysis and evidence synthesis", "relative_path": "b.md"},
         ]
         groups = _group_sources_for_extract_plan(records)
-        risk_group = next(g for g in groups if g["artifact_type"] == "risk-factors")
-        assert len(risk_group["sources"]) == 2
+        ev_group = next(g for g in groups if g["artifact_type"] == "evidence-summary")
+        assert len(ev_group["sources"]) == 2

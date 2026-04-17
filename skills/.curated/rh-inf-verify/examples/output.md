@@ -33,7 +33,7 @@ Stage Results
   - summary: structured artifacts are valid but one approved conflict note still needs review
   - blocking findings: none
   - advisory findings:
-    - workflow-steps still carries an unresolved reviewer note
+    - care-pathway still carries an unresolved reviewer note
   - next action: review the extract warning before formalize planning
 - formalize
   - skill: rh-inf-formalize

@@ -13,8 +13,11 @@ from rh_skills.common import topic_dir
 
 # Type → required section keys (validated at render time)
 REQUIRED_SECTIONS: dict[str, list[str]] = {
-    "clinical-frame": ["frames"],
+    "evidence-summary": ["summary_points"],
     "decision-table": ["conditions", "actions", "rules"],
+    "care-pathway": ["steps"],
+    "terminology": ["value_sets"],
+    "measure": ["populations"],
     "assessment": ["instrument", "items", "scoring"],
     "policy": ["applicability", "criteria", "actions"],
 }

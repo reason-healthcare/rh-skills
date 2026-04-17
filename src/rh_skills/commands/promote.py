@@ -25,52 +25,36 @@ from rh_skills.commands.validate import validate_artifact_file
 
 EXTRACT_ARTIFACT_PROFILES = (
     {
-        "artifact_type": "eligibility-criteria",
-        "keywords": ("criteria", "eligibility", "screen"),
-        "section": "criteria",
-        "key_question": "Which patients qualify for the recommended intervention or workflow?",
-    },
-    {
-        "artifact_type": "exclusions",
-        "keywords": ("exclusion", "contraind", "avoid"),
-        "section": "exclusions",
-        "key_question": "Which patients or situations should be excluded?",
-    },
-    {
-        "artifact_type": "risk-factors",
-        "keywords": ("risk", "factor"),
-        "section": "factors",
-        "key_question": "Which risk factors materially change clinical decisions?",
+        "artifact_type": "evidence-summary",
+        "keywords": ("evidence", "risk", "factor", "picot", "pico", "clinical question", "scope", "framing", "finding", "synthesis"),
+        "section": "summary_points",
+        "key_question": "What does the evidence say, including risk factors and clinical framing?",
     },
     {
         "artifact_type": "decision-table",
-        "keywords": ("decision table", "decision", "condition", "action", "rule", "if-then", "threshold", "diagnostic"),
+        "keywords": ("decision table", "decision", "condition", "action", "rule", "if-then",
+                      "threshold", "diagnostic", "criteria", "eligibility", "screen",
+                      "exclusion", "contraind", "avoid"),
         "section": "decision_table",
-        "key_question": "What conditions and actions form the decision logic?",
+        "key_question": "What conditions, eligibility, exclusions, and actions form the decision logic?",
     },
     {
-        "artifact_type": "workflow-steps",
-        "keywords": ("workflow", "pathway", "step-by-step", "care pathway"),
-        "section": "workflow",
-        "key_question": "What workflow steps should the team follow?",
+        "artifact_type": "care-pathway",
+        "keywords": ("workflow", "pathway", "step-by-step", "care pathway", "protocol", "order set"),
+        "section": "steps",
+        "key_question": "In what order do things happen in the care process?",
     },
     {
-        "artifact_type": "terminology-value-sets",
-        "keywords": ("terminology", "value-set", "valueset", "code"),
-        "section": "terminology",
-        "key_question": "Which terminology or value sets must remain consistent downstream?",
+        "artifact_type": "terminology",
+        "keywords": ("terminology", "value-set", "valueset", "code", "concept map"),
+        "section": "value_sets",
+        "key_question": "What codes and terminology define the clinical concepts?",
     },
     {
-        "artifact_type": "measure-logic",
-        "keywords": ("measure", "numerator", "denominator", "quality"),
-        "section": "measure_logic",
-        "key_question": "What measure logic or reporting rules should be preserved?",
-    },
-    {
-        "artifact_type": "clinical-frame",
-        "keywords": ("picot", "pico", "clinical question", "scope", "framing"),
-        "section": "frames",
-        "key_question": "What are the clinical questions this topic must answer (PICOTS)?",
+        "artifact_type": "measure",
+        "keywords": ("measure", "numerator", "denominator", "quality", "performance"),
+        "section": "populations",
+        "key_question": "How do we know the intervention is working (quality measures)?",
     },
     {
         "artifact_type": "assessment",
@@ -216,17 +200,14 @@ def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
     artifact_types = {artifact.get("artifact_type") for artifact in artifacts}
 
     if artifact_types & {
-        "eligibility-criteria",
-        "exclusions",
-        "risk-factors",
-        "workflow-steps",
         "decision-table",
+        "care-pathway",
         "policy",
     }:
         required_sections.append("actions")
-    if "terminology-value-sets" in artifact_types:
+    if "terminology" in artifact_types:
         required_sections.append("value_sets")
-    if "measure-logic" in artifact_types:
+    if "measure" in artifact_types:
         required_sections.append("measures")
     if "assessment" in artifact_types:
         required_sections.append("assessments")
@@ -420,31 +401,34 @@ def _parse_conflicts(raw_conflicts: tuple[str, ...]) -> list[dict]:
 # Structurally valid stub shapes for known section names.
 # Renderers iterate these as lists/dicts, so they must have the right shape.
 _STUB_SECTION_SHAPES: dict[str, object] = {
-    # Generic L2 sections (used by generic summary renderer)
-    "factors": [{"factor": "<stub: factor name>", "threshold": "<stub: threshold>", "category": "<stub: category>"}],
-    "exclusions": [{"id": "excl-001", "description": "<stub: exclusion>", "type": "absolute", "reason": "<stub: reason>"}],
-    "criteria": [{"id": "cr-001", "description": "<stub: criterion>", "requirement_type": "clinical", "rule": "<stub: rule>"}],
-    "decision_points": [{"id": "dp-001", "description": "<stub: decision point>", "threshold": "<stub: threshold>", "if_met": "<stub: action>", "if_not_met": "<stub: action>"}],
-    "steps": [{"step": 1, "description": "<stub: step>", "actor": "<stub: actor>"}],
-    "value_sets": [{"id": "vs-001", "name": "<stub: value set>", "system": "<stub: system>", "codes": []}],
-    "measures": [{"id": "m-001", "name": "<stub: measure>", "logic": "<stub: logic>"}],
-    "findings": [{"finding_id": "f-001", "statement": "<stub: finding>", "grade": "<stub: grade>"}],
-    # clinical-frame
+    # evidence-summary sections
+    "summary_points": [{"finding_id": "f-001", "statement": "<stub: finding>", "grade": "<stub: grade>"}],
+    "risk_factors": [{"id": "rf-001", "factor": "<stub: factor>", "direction": "increases",
+                      "magnitude": "<stub: effect size>", "evidence_quality": "<stub: grade>"}],
     "frames": [{"id": "frame-001", "population": "<stub: population>", "intervention": "<stub: intervention>",
                 "comparison": "<stub: comparison>", "outcomes": ["<stub: outcome>"], "timing": "<stub: timing>", "setting": "<stub: setting>"}],
-    # decision-table (actions handled separately — differs from policy actions)
+    # decision-table sections (includes absorbed eligibility/exclusion as conditions)
     "conditions": [{"id": "cond-001", "label": "<stub: condition>", "values": ["Yes", "No"]}],
     "rules": [{"id": "rule-001", "when": {"cond-001": "Yes"}, "then": ["approve"]},
               {"id": "rule-002", "when": {"cond-001": "No"}, "then": ["deny"]}],
-    # assessment
+    # care-pathway sections
+    "steps": [{"step": 1, "description": "<stub: step>", "actor": "<stub: actor>", "next": 2}],
+    "triggers": [{"id": "trigger-001", "description": "<stub: trigger event>"}],
+    # terminology sections
+    "value_sets": [{"id": "vs-001", "name": "<stub: value set>", "system": "<stub: system>", "codes": []}],
+    "concept_maps": [{"id": "cm-001", "source_system": "<stub: source>", "target_system": "<stub: target>",
+                      "mappings": [{"source_code": "<stub>", "target_code": "<stub>", "equivalence": "equivalent"}]}],
+    # measure sections
+    "populations": [{"id": "pop-001", "type": "initial-population", "description": "<stub: population>"}],
+    "scoring": {"method": "proportion", "unit": "percentage"},
+    "improvement_notation": "increase",
+    # assessment sections
     "instrument": {"name": "<stub: instrument name>", "purpose": "<stub: purpose>", "population": "<stub: population>"},
     "items": [{"id": "item-001", "text": "<stub: item text>", "type": "likert",
                "options": [{"value": 0, "label": "Not at all"}, {"value": 3, "label": "Nearly every day"}]}],
-    "scoring": {"method": "sum", "range": {"min": 0, "max": 0},
-                "ranges": [{"range": "0-9", "interpretation": "<stub: interpretation>"},
-                            {"range": "10+", "interpretation": "<stub: interpretation>"}]},
-    # policy (applicability dict; criteria list same shape as eligibility-criteria)
+    # policy sections
     "applicability": {"populations": ["<stub: population>"], "service_category": "<stub: service>"},
+    "criteria": [{"id": "cr-001", "description": "<stub: criterion>", "requirement_type": "clinical", "rule": "<stub: rule>"}],
 }
 
 
@@ -452,14 +436,23 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
     """Return a structurally valid stub placeholder for a section.
 
     The ``actions`` section has different shapes for decision-table (list of
-    action dicts) vs policy (dict of approve/deny/pend dicts), so it is
-    dispatched by artifact_type.  All other sections use _STUB_SECTION_SHAPES.
+    action dicts) vs policy (dict of approve/deny/pend dicts).  The ``scoring``
+    section differs between assessment (ranges) and measure (method/unit).
     """
     if section_name == "actions":
         if artifact_type == "decision-table":
             return [{"id": "approve", "label": "Approve"}, {"id": "deny", "label": "Deny"}]
+        if artifact_type == "care-pathway":
+            return [{"id": "act-001", "label": "<stub: activity>", "type": "clinical"}]
         # policy (and any other type)
         return {"approve": {"conditions": "<stub: approval conditions>"}, "deny": {"conditions": "<stub: denial conditions>"}}
+    if section_name == "scoring":
+        if artifact_type == "assessment":
+            return {"method": "sum", "range": {"min": 0, "max": 0},
+                    "ranges": [{"range": "0-9", "interpretation": "<stub: interpretation>"},
+                                {"range": "10+", "interpretation": "<stub: interpretation>"}]}
+        # measure
+        return _STUB_SECTION_SHAPES.get(section_name, "<stub: scoring>")
     return _STUB_SECTION_SHAPES.get(section_name, f"<stub: populate {section_name} content>")
 
 

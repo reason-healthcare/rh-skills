@@ -48,7 +48,7 @@ artifacts:
     conflicts:
       - conflict: <conflict description>
         resolution: <resolution or empty>
-    candidate_codes:               # populated by reasonhub MCP during plan; only present for terminology-value-sets artifacts
+    candidate_codes:               # populated by reasonhub MCP during plan; only present for terminology artifacts
       - code: <code>
         system: <system-url>
         display: <canonical display name>
@@ -61,7 +61,7 @@ artifacts:
 
 ## Terminology Resolution (Plan Mode)
 
-When proposing a `terminology-value-sets` artifact, use reasonhub MCP tools to
+When proposing a `terminology` artifact, use reasonhub MCP tools to
 surface candidate codes before the plan is written.
 
 ### Tool selection
@@ -80,7 +80,7 @@ canonical display name. For quantitative LOINC codes, the response includes an
 
 ### candidate_codes[] in the review packet
 
-Each `terminology-value-sets` artifact entry in the plan SHOULD include a
+Each `terminology` artifact entry in the plan SHOULD include a
 `candidate_codes[]` list. The reviewer inspects, prunes, or augments this list
 before approving. Approved codes carry forward into the L3 `value_sets[]`
 section during formalize.
@@ -89,21 +89,17 @@ section during formalize.
 
 ## Hybrid Artifact Catalog
 
-Use these standard types unless the topic clearly requires a custom type:
+Use these 7 standard types. Each maps to a clear SME question and FHIR L3 target:
 
-| Type | Use |
-|------|-----|
-| `eligibility-criteria` | inclusion or screening criteria |
-| `exclusions` | explicit exclusions or contraindications |
-| `risk-factors` | patient/contextual risk factors |
-| `workflow-steps` | ordered workflow or care pathway steps |
-| `terminology-value-sets` | code systems, value sets, terminology notes |
-| `measure-logic` | quality measure or scoring logic |
-| `evidence-summary` | narrative evidence synthesis |
-| `clinical-frame` | PICOTS scope framing for clinical questions |
-| `decision-table` | branching clinical decisions, conditions/actions/rules (Shiffman model) |
-| `assessment` | screening instruments and scoring tools |
-| `policy` | coverage, prior-auth criteria, documentation requirements |
+| Type | SME Question | L3 Target |
+|------|-------------|-----------|
+| `evidence-summary` | What does the evidence say? | Evidence, EvidenceVariable |
+| `decision-table` | What decisions must be made? | PlanDefinition (ECA rules) |
+| `care-pathway` | In what order do things happen? | PlanDefinition (protocol) |
+| `terminology` | What codes define the concepts? | ValueSet, ConceptMap |
+| `measure` | How do we know it's working? | Measure |
+| `assessment` | What do we ask the patient? | Questionnaire |
+| `policy` | What's required for coverage? | PlanDefinition (payer) |
 
 Custom types are allowed when a standard type would obscure the clinical purpose.
 
@@ -145,14 +141,24 @@ conflicts:
 
 ### Type-Specific Section Shapes
 
-Each new artifact type uses a specific section structure. The `sections:` key
+Each artifact type uses a specific section structure. The `sections:` key
 in the L2 YAML must contain the type-appropriate keys.
 
-#### clinical-frame
+#### evidence-summary
 
 ```yaml
 sections:
-  frames:
+  summary_points:
+    - finding_id: f-1
+      statement: <clinical finding>
+      grade: <evidence grade>
+  risk_factors:           # optional
+    - id: rf-1
+      factor: <risk factor name>
+      direction: <increases|decreases>
+      magnitude: <effect size>
+      evidence_quality: <grade>
+  frames:                 # optional — PICOTS clinical framing
     - id: frame-1
       population: <target population>
       intervention: <intervention or exposure>
@@ -164,6 +170,8 @@ sections:
 ```
 
 #### decision-table
+
+Includes eligibility conditions and exclusion conditions alongside clinical decision logic.
 
 ```yaml
 sections:
@@ -181,6 +189,55 @@ sections:
         c1: <value or "-" for irrelevant>
       then:
         - a1
+```
+
+#### care-pathway
+
+```yaml
+sections:
+  triggers:
+    - id: trigger-1
+      description: <what starts the pathway>
+  steps:
+    - step: 1
+      description: <step description>
+      actor: <who performs it>
+      next: 2
+```
+
+#### terminology
+
+```yaml
+sections:
+  value_sets:
+    - id: vs-1
+      name: <value set name>
+      system: <code system URI>
+      codes:
+        - code: <code>
+          display: <display text>
+  concept_maps:           # optional
+    - id: cm-1
+      source_system: <source code system>
+      target_system: <target code system>
+      mappings:
+        - source_code: <code>
+          target_code: <code>
+          equivalence: <equivalent|wider|narrower|inexact>
+```
+
+#### measure
+
+```yaml
+sections:
+  populations:
+    - id: pop-1
+      type: <initial-population|numerator|denominator|exclusion>
+      description: <population definition>
+  scoring:
+    method: <proportion|ratio|continuous-variable>
+    unit: <unit of measure>
+  improvement_notation: <increase|decrease>
 ```
 
 #### assessment

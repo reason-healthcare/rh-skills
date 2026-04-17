@@ -16,8 +16,8 @@ Running `rh-skills status show diabetes-ccm`...
 Reading normalized sources and `topics/diabetes-ccm/process/concepts.yaml`...
 
 Proposed artifacts:
-1. `screening-criteria` — eligibility-criteria
-2. `risk-factors` — risk-factors
+1. `screening-decisions` — decision-table
+2. `diabetes-evidence` — evidence-summary
 
 Writing:
 `topics/diabetes-ccm/process/plans/extract-plan.yaml`
@@ -40,15 +40,15 @@ rh-inf-extract implement diabetes-ccm
 Reading `topics/diabetes-ccm/process/plans/extract-plan.yaml`...
 
 Approved artifacts:
-- `screening-criteria`
+- `screening-decisions`
 
 Running:
 
 ```sh
-rh-skills promote derive diabetes-ccm screening-criteria \
+rh-skills promote derive diabetes-ccm screening-decisions \
   --source ada-2024-guideline \
   --source uspstf-screening \
-  --artifact-type eligibility-criteria \
+  --artifact-type decision-table \
   --clinical-question "Who should be screened?" \
   --required-section summary \
   --required-section evidence_traceability \
@@ -60,27 +60,28 @@ rh-skills promote derive diabetes-ccm screening-criteria \
 Then validating:
 
 ```sh
-rh-skills validate diabetes-ccm screening-criteria
+rh-skills validate diabetes-ccm screening-decisions
 ```
 
 Expected report:
 
 ```text
-✓ Created: topics/diabetes-ccm/structured/screening-criteria/screening-criteria.yaml
-VALID — topics/diabetes-ccm/structured/screening-criteria/screening-criteria.yaml
+✓ Created: topics/diabetes-ccm/structured/screening-decisions/screening-decisions.yaml
+VALID — topics/diabetes-ccm/structured/screening-decisions/screening-decisions.yaml
 ```
 
 Then rendering the human-readable view for SME review:
 
 ```sh
-rh-skills render diabetes-ccm screening-criteria
+rh-skills render diabetes-ccm screening-decisions
 ```
 
 Expected report:
 
 ```text
-Rendered 1 view(s) for 'screening-criteria' (eligibility-criteria):
-  topics/diabetes-ccm/structured/screening-criteria/views/summary.md
+Rendered 2 view(s) for 'screening-decisions' (decision-table):
+  topics/diabetes-ccm/structured/screening-decisions/views/rules-table.md
+  topics/diabetes-ccm/structured/screening-decisions/views/completeness-report.md
 ```
 
 The view files are written to `views/` inside the artifact directory. They should
@@ -97,16 +98,17 @@ not be edited manually — re-run `rh-skills render` to regenerate them.
 Running:
 
 ```sh
-rh-skills validate diabetes-ccm screening-criteria
-rh-skills render diabetes-ccm screening-criteria
+rh-skills validate diabetes-ccm screening-decisions
+rh-skills render diabetes-ccm screening-decisions
 ```
 
 Example result:
 
 ```text
-✓ screening-criteria  — all required fields, traceability entries, and conflict records present
-Rendered 1 view(s) for 'screening-criteria' (eligibility-criteria):
-  topics/diabetes-ccm/structured/screening-criteria/views/summary.md
+✓ screening-decisions  — all required fields, traceability entries, and conflict records present
+Rendered 2 view(s) for 'screening-decisions' (decision-table):
+  topics/diabetes-ccm/structured/screening-decisions/views/rules-table.md
+  topics/diabetes-ccm/structured/screening-decisions/views/completeness-report.md
 ```
 
 Verify is non-destructive: it does not create, modify, or delete files and does

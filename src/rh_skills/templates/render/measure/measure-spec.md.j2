@@ -1,0 +1,34 @@
+# Quality Measure — {{ data.title or data.name or 'Untitled' }}
+
+{% if data.clinical_question %}**Clinical Question**: {{ data.clinical_question }}
+{% endif %}
+
+{% set sections = data.sections or {} %}
+{% set scoring = sections.scoring %}
+{% if scoring is mapping %}
+**Scoring Method**: {{ scoring.method or 'N/A' }}
+{% if scoring.unit %}**Unit**: {{ scoring.unit }}{% endif %}
+
+{% endif %}
+{% if sections.improvement_notation %}**Improvement Notation**: {{ sections.improvement_notation }}
+{% endif %}
+
+{% set populations = sections.populations or [] %}
+{% if populations %}
+## Populations
+
+| ID | Type | Description |
+|----|------|-------------|
+{% for pop in populations -%}
+| {{ pop.id or '' }} | {{ pop.type or '' }} | {{ pop.description or '' }} |
+{% endfor %}
+{% endif %}
+
+{% set stratifiers = sections.stratifiers or [] %}
+{% if stratifiers %}
+## Stratifiers
+
+{% for s in stratifiers -%}
+- **{{ s.id or loop.index }}**: {{ s.description or s.name or '' }}
+{% endfor %}
+{% endif %}
