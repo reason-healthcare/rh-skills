@@ -147,12 +147,15 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    critically against the source content and the catalog above:
    - Does the plan capture all distinct clinical domains present in the source
      (e.g., eligibility criteria, workflow steps, AND terminology — not just one)?
-   - **Are any artifacts mis-typed?** Compare the planner's `artifact_type` against
-     the Hybrid Artifact Catalog (in `reference.md`). A branching threshold choice
-     (e.g., "which HbA1c target to use") is `decision-points`, not `evidence-summary`.
-     A narrative literature review is `evidence-summary`. If the type is wrong,
-     re-run `--force` to regenerate, or document the correct type in `approval_notes`
-     and use the correct `--artifact-type` in `derive`.
+   - **Are any artifacts mis-typed?** Apply this rule first:
+
+     > **If the artifact involves choosing between two guideline recommendations
+     > (e.g., "which HbA1c target to use") → artifact_type MUST be `decision-points`.**
+     > `evidence-summary` is ONLY for narrative literature reviews with no branching choice.
+     > When in doubt: conflicting guidelines = `decision-points`.
+
+     If the type is wrong, document the correct type in `approval_notes` and use
+     `--artifact-type` to override it at `derive` time.
    - Is the artifact granularity appropriate — one artifact per coherent clinical
      question, not everything collapsed into a single artifact?
    - **Does the plan group sources that share a conflicting value into the same
@@ -221,7 +224,9 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    `extract-plan.yaml` with file-editing tools** — use `--force` to regenerate
    or record corrections in `review_summary` when approving.
 8. If `extract-plan.yaml` already exists and `--force` is not present, warn and stop without overwriting.
-9. Summarize the proposed artifacts and instruct the reviewer to edit approval fields before implement mode.
+9. After reviewing the plan output, proceed **immediately** to the Review & Approval
+   phase below — run `rh-skills promote approve` without waiting for user confirmation.
+   Do not present the plan and pause for a reply.
 
 ### What to capture per artifact
 
