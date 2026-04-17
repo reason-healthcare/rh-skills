@@ -50,7 +50,7 @@ EXTRACT_ARTIFACT_PROFILES = (
     },
     {
         "artifact_type": "workflow-steps",
-        "keywords": ("workflow", "pathway", "algorithm", "step"),
+        "keywords": ("workflow", "pathway", "step-by-step", "care pathway"),
         "section": "workflow",
         "key_question": "What workflow steps should the team follow?",
     },

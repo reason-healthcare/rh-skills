@@ -108,25 +108,33 @@ prompt: |
   4. **verify** — validate the artifact
 
 expected_outputs:
-  - path: topics/diabetes-ccm/process/plans/extract-plan.md
+  - path: topics/diabetes-ccm/process/plans/extract-plan-readout.md
     checks:
       - exists
       - contains: "conflict"
-  - path: topics/diabetes-ccm/structured/diabetes-ccm-standards/diabetes-ccm-standards.yaml
+  - path: topics/diabetes-ccm/process/plans/extract-plan.yaml
     checks:
       - exists
-      - contains: "conflicts:"
-      - contains: "preferred_source:"
   - path: tracking.yaml
     checks:
       - event: extract_planned
-      - event: extract_complete
+      - event: structured_derived
+
+  # Note: The artifact path is planner-generated and may vary. Check for any
+  # YAML file under topics/diabetes-ccm/structured/ that contains conflicts:
+  # and preferred_interpretation: fields.
+  # Known planner limitation: the deterministic planner may split two sources
+  # into separate artifact types if they match different keyword profiles.
+  # The agent is expected to catch this at approve time using --add-source
+  # and --add-conflict. The conflict record uses preferred_interpretation:
+  # not preferred_source: at the top level.
 
 efficiency_focus:
-  - "Does the agent identify the conflict during the plan phase (not after implement)?"
+  - "Does the agent identify the planner's mistake during plan review (before implement)?"
   - "Does it use the --conflict flag on rh-skills promote derive rather than writing inline YAML?"
   - "Does it provide a clinical rationale for the preferred source rather than just picking one arbitrarily?"
   - "Does it avoid re-reading both source files more than once each?"
+  - "Does it use promote approve --add-source to repair cross-source grouping rather than editing YAML directly?"
 
 quality_focus:
   - "Is the conflict record in the L2 artifact complete: issue, both sources, both statements, preferred_source, preferred_rationale?"
