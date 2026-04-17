@@ -18,8 +18,9 @@ artifacts:
       - summary
       - evidence_traceability
       - conflicts
-    unresolved_conflicts:
-      - "ADA interval language is more explicit than USPSTF interval framing."
+    conflicts:
+      - conflict: "ADA interval language is more explicit than USPSTF interval framing."
+        resolution: ""
     reviewer_decision: pending-review
     approval_notes: ""
   - name: risk-factors
@@ -33,7 +34,7 @@ artifacts:
     required_sections:
       - summary
       - evidence_traceability
-    unresolved_conflicts: []
+    conflicts: []
     reviewer_decision: pending-review
     approval_notes: ""
 ---

@@ -500,22 +500,24 @@ def _build_plan_artifact_entry(group: dict) -> dict:
     source_count = len(source_files)
     artifact_name = group["artifact_type"]
 
-    unresolved_conflicts: list[str] = []
+    plan_conflicts: list[dict] = []
     if source_count > 1:
-        unresolved_conflicts.append(
-            "Multiple normalized sources contribute to this artifact; confirm that thresholds, timing, and terminology align before derive."
-        )
+        plan_conflicts.append({
+            "conflict": "Multiple normalized sources contribute to this artifact; confirm that thresholds, timing, and terminology align before derive.",
+            "resolution": "",
+        })
     if any(
         keyword in record["content"].lower()
         for record in group["sources"]
         for keyword in ("however", "conflict", "differ", "disagree", "uncertain", "versus", "vs.")
     ):
-        unresolved_conflicts.append(
-            "At least one contributing source contains potentially conflicting or qualified guidance that requires reviewer confirmation."
-        )
+        plan_conflicts.append({
+            "conflict": "At least one contributing source contains potentially conflicting or qualified guidance that requires reviewer confirmation.",
+            "resolution": "",
+        })
 
     required_sections = ["summary", group["section"], "evidence_traceability"]
-    if unresolved_conflicts:
+    if plan_conflicts:
         required_sections.append("conflicts")
 
     rationale = (
@@ -528,7 +530,7 @@ def _build_plan_artifact_entry(group: dict) -> dict:
         "rationale": rationale,
         "key_questions": [group["key_question"]],
         "required_sections": required_sections,
-        "unresolved_conflicts": unresolved_conflicts,
+        "conflicts": plan_conflicts,
         "reviewer_decision": "pending-review",
         "approval_notes": "",
     }
@@ -606,12 +608,17 @@ def _render_extract_readout(plan: dict) -> str:
             f"- Key questions: {', '.join(artifact.get('key_questions', []))}",
             f"- Required sections: {', '.join(artifact.get('required_sections', []))}",
         ])
-        conflicts = artifact.get("unresolved_conflicts") or []
+        conflicts = artifact.get("conflicts") or []
         if conflicts:
-            lines.append("- Unresolved conflicts:")
-            lines.extend([f"  - {item}" for item in conflicts])
+            lines.append("- Conflicts:")
+            for item in conflicts:
+                c = item.get("conflict", item) if isinstance(item, dict) else item
+                r = item.get("resolution", "") if isinstance(item, dict) else ""
+                lines.append(f"  - {c}")
+                if r:
+                    lines.append(f"    Resolution: {r}")
         else:
-            lines.append("- Unresolved conflicts: none identified during deterministic planning")
+            lines.append("- Conflicts: none identified during deterministic planning")
         lines.append(f"- **Reviewer decision: `{decision}`**")
         lines.append(f"- Approval notes: {notes if notes else '_pending reviewer input_'}")
         lines.append("")
@@ -662,8 +669,15 @@ def _apply_artifact_decision(
             if notes:
                 artifact["approval_notes"] = notes
             if add_conflicts:
-                existing = artifact.get("unresolved_conflicts") or []
-                artifact["unresolved_conflicts"] = existing + list(add_conflicts)
+                existing = artifact.get("conflicts") or []
+                new_entries = []
+                for raw in add_conflicts:
+                    parts = raw.split("|", 1)
+                    new_entries.append({
+                        "conflict": parts[0].strip(),
+                        "resolution": parts[1].strip() if len(parts) > 1 else "",
+                    })
+                artifact["conflicts"] = existing + new_entries
             return
     raise click.UsageError(
         f"Artifact '{artifact_name}' not found in extract-plan.yaml. "
@@ -688,14 +702,15 @@ def _interactive_approve(
             art_type = artifact.get("artifact_type", "")
             sources = ", ".join(artifact.get("source_files", []))
             key_q = ", ".join(artifact.get("key_questions", []))
-            conflicts = artifact.get("unresolved_conflicts") or []
-
+            conflicts = artifact.get("conflicts") or []
             click.echo(f"  Artifact : {name}")
             click.echo(f"  Type     : {art_type}")
             click.echo(f"  Sources  : {sources}")
             click.echo(f"  Question : {key_q}")
             if conflicts:
-                click.echo(f"  Conflicts: {'; '.join(conflicts)}")
+                for item in conflicts:
+                    c = item.get("conflict", item) if isinstance(item, dict) else item
+                    click.echo(f"  Conflict : {c}")
 
             choice = click.prompt(
                 "  Decision",
@@ -797,7 +812,7 @@ def plan(topic, force):
 @click.option("--notes", default="", help="Approval notes (used with --artifact).")
 @click.option(
     "--add-conflict", "add_conflicts", multiple=True, metavar="TEXT",
-    help="Append a conflict description to the artifact's unresolved_conflicts list (repeatable).",
+    help="Append a conflict to the artifact's conflicts list. Use 'conflict text' or 'conflict|resolution' format (repeatable).",
 )
 @click.option("--reviewer", default=None, help="Reviewer name written to plan header.")
 @click.option(

@@ -245,11 +245,17 @@ rh-skills promote approve <topic> \
   --review-summary "Cross-source HbA1c conflict added during review; planner split sources into separate artifacts." \
   --finalize --reviewer "<reviewer-name>"
 
+# Optionally include a resolution in 'conflict|resolution' pipe format:
+rh-skills promote approve <topic> \
+  --artifact <name> --decision approved \
+  --add-conflict "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%|Prefer AACE threshold when safely achievable" \
+  --finalize
+
 # --add-conflict is repeatable for multiple conflicts on one artifact:
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
   --add-conflict "Conflict A description" \
-  --add-conflict "Conflict B description" \
+  --add-conflict "Conflict B|Resolution B" \
   --finalize
 
 # If multiple artifacts need decisions, run one --artifact call per artifact
@@ -273,7 +279,7 @@ rh-skills promote approve <topic> --artifact <name> --decision rejected
 `needs-revision` artifacts are skipped without error.
 
 **`review_summary` is required (non-empty) when any of the following apply:**
-- Any artifact has entries in `unresolved_conflicts[]`
+- Any artifact has entries in `conflicts[]`
 - The plan was regenerated with `--force` after the initial run
 - The plan scope is narrower than the source's clinical content
 - Any artifact type was changed from the planner's original proposal

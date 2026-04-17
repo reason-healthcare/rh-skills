@@ -232,7 +232,7 @@ def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", ar
                 "rationale": f"Approved input for {spec['name']}",
                 "key_questions": [f"What does {spec['name']} contribute?"],
                 "required_sections": ["summary", "evidence_traceability"],
-                "unresolved_conflicts": [],
+                "conflicts": [],
                 "reviewer_decision": "approved",
                 "approval_notes": "Use in formalize",
             }
@@ -766,14 +766,14 @@ def test_approve_review_summary_written_to_plan(tmp_repo):
     assert plan["status"] == "approved"
 
 
-def test_approve_add_conflict_appends_to_unresolved_conflicts(tmp_repo):
-    """--add-conflict appends to artifact's unresolved_conflicts list."""
+def test_approve_add_conflict_appends_to_conflicts(tmp_repo):
+    """--add-conflict appends to artifact's conflicts list with conflict/resolution keys."""
     setup_topic_with_source(tmp_repo)
     write_extract_plan(
         tmp_repo,
         status="pending-review",
         artifacts=[{"name": "hba1c-target", "reviewer_decision": "pending-review",
-                    "approval_notes": "", "unresolved_conflicts": []}],
+                    "approval_notes": "", "conflicts": []}],
     )
     runner = CliRunner()
     result = runner.invoke(promote, [
@@ -781,12 +781,14 @@ def test_approve_add_conflict_appends_to_unresolved_conflicts(tmp_repo):
         "--artifact", "hba1c-target",
         "--decision", "approved",
         "--add-conflict", "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%",
-        "--add-conflict", "Monitoring frequency differs",
+        "--add-conflict", "Monitoring frequency|ADA annual preferred",
         "--finalize", "--reviewer", "Test",
     ])
     assert result.exit_code == 0, result.output
     plan = _read_plan(tmp_repo)
-    conflicts = plan["artifacts"][0]["unresolved_conflicts"]
-    assert "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%" in conflicts
-    assert "Monitoring frequency differs" in conflicts
+    conflicts = plan["artifacts"][0]["conflicts"]
     assert len(conflicts) == 2
+    assert conflicts[0]["conflict"] == "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%"
+    assert conflicts[0]["resolution"] == ""
+    assert conflicts[1]["conflict"] == "Monitoring frequency"
+    assert conflicts[1]["resolution"] == "ADA annual preferred"

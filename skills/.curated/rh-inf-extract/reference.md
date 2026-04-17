@@ -45,8 +45,9 @@ artifacts:
     required_sections:
       - summary
       - evidence_traceability
-    unresolved_conflicts:
-      - <conflict summary>
+    conflicts:
+      - conflict: <conflict description>
+        resolution: <resolution or empty>
     candidate_codes:               # populated by reasonhub MCP during plan; only present for terminology-value-sets artifacts
       - code: <code>
         system: <system-url>

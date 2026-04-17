@@ -180,10 +180,10 @@ def _validate_extract_artifact(
                             )
                             errors += 1
 
-    unresolved_conflicts = plan_entry.get("unresolved_conflicts", []) or []
+    plan_conflicts = plan_entry.get("conflicts", []) or []
     conflicts = artifact_data.get("conflicts") or []
-    if unresolved_conflicts and not conflicts:
-        _report_error("  MISSING conflicts[] despite unresolved conflicts in approved plan", emit=emit)
+    if plan_conflicts and not conflicts:
+        _report_error("  MISSING conflicts[] despite conflicts listed in approved plan", emit=emit)
         errors += 1
     elif conflicts and not isinstance(conflicts, list):
         _report_error("  conflicts must be a list", emit=emit)
