@@ -984,3 +984,45 @@ def test_sanitize_yaml_quotes_bare_dash_mapping_value():
     y = YAML()
     data = y.load(result)
     assert data["when"]["c-diabetes"] == "-"
+
+
+# ── File-lock approve (race condition) ──────────────────────────────────────
+
+
+def test_concurrent_approve_preserves_all_decisions(tmp_repo):
+    """Parallel approve calls should not clobber each other's artifact decisions."""
+    import subprocess
+
+    setup_topic_with_normalized_sources(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
+    plan = load_yaml(plan_path)
+    names = [a["name"] for a in plan["artifacts"]]
+    assert len(names) >= 2, f"Need at least 2 artifacts for concurrency test, got {names}"
+
+    # Run all approve calls concurrently via subprocesses (avoids CliRunner thread-safety issues)
+    env = dict(os.environ)
+    procs = []
+    for name in names:
+        p = subprocess.Popen(
+            ["rh-skills", "promote", "approve", "my-skill", "--artifact", name, "--decision", "approved"],
+            env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        procs.append((name, p))
+
+    errors = []
+    for name, p in procs:
+        out, err = p.communicate(timeout=10)
+        if p.returncode != 0:
+            errors.append(f"{name}: rc={p.returncode} {err.decode()}")
+
+    assert not errors, f"Approve errors: {errors}"
+
+    plan = load_yaml(plan_path)
+    approved = [a["name"] for a in plan["artifacts"] if a.get("reviewer_decision") == "approved"]
+    assert sorted(approved) == sorted(names), (
+        f"Expected all {len(names)} artifacts approved, got {len(approved)}: {approved}"
+    )

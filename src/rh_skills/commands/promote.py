@@ -1,7 +1,9 @@
 """rh-skills promote — Promote artifacts between lifecycle levels."""
 
+import fcntl
 import io
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import click
@@ -733,6 +735,19 @@ def _write_plan_and_readout(plan_path: Path, readout_path: Path, plan: dict) -> 
     readout_path.write_text(_render_extract_readout(plan))
 
 
+@contextmanager
+def _lock_plan(plan_path: Path):
+    """Serialize concurrent approve calls via an exclusive file lock."""
+    lock_path = plan_path.with_suffix(".lock")
+    lock_fd = lock_path.open("w")
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        lock_fd.close()
+
+
 def _apply_artifact_decision(
     plan: dict, artifact_name: str, decision: str, notes: str = "",
     add_conflicts: tuple[str, ...] = (),
@@ -1004,46 +1019,48 @@ def approve(topic, artifact_name, decision, notes, add_conflicts, add_sources, r
             f"No extract plan found. Run 'rh-skills promote plan {topic}' first."
         )
 
+    # Non-interactive path: serialize concurrent approve calls with a file lock
+    # so parallel agent invocations don't clobber each other's artifact decisions.
+    if artifact_name or finalize:
+        with _lock_plan(plan_path):
+            plan = _yaml_safe().load(plan_path.read_text())
+            if not plan or not isinstance(plan, dict):
+                raise click.UsageError(f"Plan is empty or invalid: {plan_path}")
+
+            if artifact_name:
+                if not decision:
+                    raise click.UsageError("--decision is required when --artifact is specified.")
+                _apply_artifact_decision(plan, artifact_name, decision, notes, add_conflicts, add_sources)
+                if review_summary is not None:
+                    plan["review_summary"] = review_summary
+                _write_plan_and_readout(plan_path, readout_path, plan)
+                log_info(f"Artifact '{artifact_name}' → {_DECISION_ICON.get(decision, '')} {decision}")
+
+            if finalize:
+                if not artifact_name:
+                    # Re-read so we see writes from prior locked invocations.
+                    plan = _yaml_safe().load(plan_path.read_text())
+                rev = reviewer or plan.get("reviewer") or ""
+                plan["status"] = "approved"
+                plan["reviewer"] = rev
+                plan["reviewed_at"] = now_iso()
+                if review_summary is not None:
+                    plan["review_summary"] = review_summary
+                _write_plan_and_readout(plan_path, readout_path, plan)
+                approved = sum(1 for a in plan.get("artifacts", []) if a.get("reviewer_decision") == "approved")
+                total = len(plan.get("artifacts", []))
+                log_info(f"Plan finalized: status=approved, {approved}/{total} artifact(s) approved")
+        return
+
+    if not sys.stdin.isatty():
+        raise click.UsageError(
+            "stdin is not a TTY — use --artifact NAME --decision DECISION for non-interactive approval, "
+            "or --finalize to set plan status."
+        )
     plan = _yaml_safe().load(plan_path.read_text())
     if not plan or not isinstance(plan, dict):
         raise click.UsageError(f"Plan is empty or invalid: {plan_path}")
-
-    if artifact_name:
-        if not decision:
-            raise click.UsageError("--decision is required when --artifact is specified.")
-        _apply_artifact_decision(plan, artifact_name, decision, notes, add_conflicts, add_sources)
-        if review_summary is not None:
-            plan["review_summary"] = review_summary
-        _write_plan_and_readout(plan_path, readout_path, plan)
-        log_info(f"Artifact '{artifact_name}' → {_DECISION_ICON.get(decision, '')} {decision}")
-
-    if finalize:
-        # Re-read from disk so any --artifact changes written by a prior or concurrent
-        # invocation are reflected before we write the finalized plan.
-        if artifact_name:
-            # We just wrote above — plan in memory is already up-to-date.
-            pass
-        else:
-            plan = _yaml_safe().load(plan_path.read_text())
-        rev = reviewer or plan.get("reviewer") or ""
-        plan["status"] = "approved"
-        plan["reviewer"] = rev
-        plan["reviewed_at"] = now_iso()
-        if review_summary is not None:
-            plan["review_summary"] = review_summary
-        _write_plan_and_readout(plan_path, readout_path, plan)
-        approved = sum(1 for a in plan.get("artifacts", []) if a.get("reviewer_decision") == "approved")
-        total = len(plan.get("artifacts", []))
-        log_info(f"Plan finalized: status=approved, {approved}/{total} artifact(s) approved")
-        return
-
-    if not artifact_name and not finalize:
-        if not sys.stdin.isatty():
-            raise click.UsageError(
-                "stdin is not a TTY — use --artifact NAME --decision DECISION for non-interactive approval, "
-                "or --finalize to set plan status."
-            )
-        _interactive_approve(plan, plan_path, readout_path, reviewer)
+    _interactive_approve(plan, plan_path, readout_path, reviewer)
 
 
 @promote.command("formalize-plan")
