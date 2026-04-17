@@ -1184,6 +1184,14 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
 
         click.echo(f"Deriving L2 artifact: {artifact_name} (from {', '.join(source)})...")
 
+        # Warn when artifact-type overrides the plan name — agents should use
+        # matching names (e.g. --artifact-type care-pathway → name care-pathway).
+        if artifact_type and artifact_name != artifact_type:
+            log_warn(
+                f"Artifact name '{artifact_name}' does not match --artifact-type '{artifact_type}'. "
+                f"Consider using '{artifact_type}' as the artifact name for consistency."
+            )
+
         llm_output = _invoke_llm(system_prompt, user_prompt)
 
         l2_file = td / "structured" / artifact_name / f"{artifact_name}.yaml"

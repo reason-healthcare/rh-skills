@@ -163,7 +163,10 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
      > When in doubt: conflicting guidelines with conditions/actions = `decision-table`.
 
      If the type is wrong, document the correct type in `approval_notes` and use
-     `--artifact-type` to override it at `derive` time.
+     `--artifact-type` to override it at `derive` time. **When overriding the type,
+     also use the correct type as the artifact name** so that the directory and
+     filename match (e.g., `rh-skills promote derive TOPIC care-pathway --source ...
+     --artifact-type care-pathway`). Mismatched names produce a CLI warning.
    - Is the artifact granularity appropriate — one artifact per coherent clinical
      question, not everything collapsed into a single artifact?
    - **Does the plan group sources that share a conflicting value into the same
@@ -385,9 +388,10 @@ all deterministic writes must go through `rh-skills promote derive` and
    > threshold text is intact before proceeding to derive.
 
    > **LLM provider note**: `rh-skills promote derive` requires an LLM backend.
-   > Set `LLM_PROVIDER=stub` for testing/evaluation (produces a scaffold artifact
-   > with placeholder content that passes schema validation). Provide
-   > `RH_STUB_RESPONSE="<full yaml>"` to inject a complete stub artifact.
+   > Set `LLM_PROVIDER=stub` for testing/evaluation. **Without `RH_STUB_RESPONSE`**,
+   > the CLI produces a scaffold with `<stub: ...>` placeholders that will **fail**
+   > validation (UNRESOLVED stub errors). You **must** provide a complete YAML body
+   > via `RH_STUB_RESPONSE="<full yaml>"` to produce a valid artifact in stub mode.
    > In production, configure `LLM_PROVIDER` to a supported backend before running.
    >
    > **YAML quoting note**: In `RH_STUB_RESPONSE` YAML, values starting with `>`
