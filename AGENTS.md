@@ -5,6 +5,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-17
 ## Active Technologies
 - Python 3.13+ (click 8.3, ruamel.yaml 0.19) + click, ruamel.yaml, pathlib (stdlib) (010-l2-artifact-catalog)
 - YAML files on filesystem under `topics/<topic>/structured/` (010-l2-artifact-catalog)
+- Python 3.13+ + Click 8.0+, ruamel.yaml 0.18+, json (stdlib, for FHIR JSON output) (011-formalize-strategies)
+- File-based — FHIR JSON to `topics/<topic>/computable/`, FHIR packages to `topics/<topic>/package/` (011-formalize-strategies)
 
 - Bash 3.2+ (portable macOS/Linux) + `yq`, `jq`, `curl`; same stack used for curated skill authoring and distribution tooling (002-rh-agent-skills)
 - Python 3.13+ + `click >= 8.0`, `ruamel.yaml >= 0.18`, `httpx`, `requests`, `lxml` or `xmltodict` for discovery/search flows (003-rh-inf-discovery)
@@ -28,10 +30,10 @@ tests/
 Bash 3.2+ (portable macOS/Linux): Follow standard conventions
 
 ## Recent Changes
+- 011-formalize-strategies: Added Python 3.13+ + Click 8.0+, ruamel.yaml 0.18+, json (stdlib, for FHIR JSON output)
 - 010-l2-artifact-catalog: Added Python 3.13+ (click 8.3, ruamel.yaml 0.19) + click, ruamel.yaml, pathlib (stdlib)
 
 - 009-skill-build-system: Added deterministic curated-skill bundle generation, declarative platform profiles, and CI validation for generated distributions
-- 008-rh-inf-status: Added deterministic status UX with consistent next-step guidance
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
