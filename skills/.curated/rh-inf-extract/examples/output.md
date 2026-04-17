@@ -79,11 +79,12 @@ rh-skills render diabetes-ccm screening-criteria
 Expected report:
 
 ```text
-✓ Rendered: topics/diabetes-ccm/structured/screening-criteria/screening-criteria.md
+Rendered 1 view(s) for 'screening-criteria' (eligibility-criteria):
+  topics/diabetes-ccm/structured/screening-criteria/views/summary.md
 ```
 
-The `.md` file is a generated Markdown summary alongside the control YAML. It should
-not be edited manually — re-run `rh-skills render` to regenerate it.
+The view files are written to `views/` inside the artifact directory. They should
+not be edited manually — re-run `rh-skills render` to regenerate them.
 
 ---
 
@@ -104,7 +105,8 @@ Example result:
 
 ```text
 ✓ screening-criteria  — all required fields, traceability entries, and conflict records present
-✓ Rendered: topics/diabetes-ccm/structured/screening-criteria/screening-criteria.md
+Rendered 1 view(s) for 'screening-criteria' (eligibility-criteria):
+  topics/diabetes-ccm/structured/screening-criteria/views/summary.md
 ```
 
 Verify is non-destructive: it does not create, modify, or delete files and does

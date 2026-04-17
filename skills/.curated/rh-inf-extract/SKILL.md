@@ -406,11 +406,12 @@ all deterministic writes must go through `rh-skills promote derive` and
    rh-skills render <topic> <artifact-name>
    ```
 
-   `render` writes a Markdown file alongside the control YAML at
-   `topics/<topic>/structured/<artifact-name>/<artifact-name>.md`.
-   This is the generated human-readable representation for SME review — do
-   not edit it manually. For `decision-table` artifacts, the render output
-   also includes a completeness report.
+   `render` writes one or more view files into
+   `topics/<topic>/structured/<artifact-name>/views/`. The filenames depend
+   on the artifact type (e.g. `summary.md` for generic types;
+   `rules-table.md`, `decision-tree.mmd`, `completeness-report.md` for
+   `decision-table`). These are the generated human-readable representations
+   for SME review — do not edit them manually.
 
 6. Report `✓` or `✗` per artifact. Stop on blocking CLI failures; do not silently continue past a failed derive/validate command.
 
@@ -442,7 +443,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 
 4. Confirm:
    - each approved artifact YAML exists in `topics/<topic>/structured/<artifact-name>/`
-   - each approved artifact has a companion `.md` render file in the same directory
+   - each approved artifact has one or more rendered view files in `topics/<topic>/structured/<artifact-name>/views/`
    - required traceability sections are present
    - conflict records are present when the approved plan listed unresolved conflicts
 5. Report pass/fail per artifact and exit non-zero only when required checks fail.
