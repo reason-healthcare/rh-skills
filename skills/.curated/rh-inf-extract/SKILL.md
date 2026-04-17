@@ -153,6 +153,12 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    but the **agent is responsible for judging whether the proposed scope matches
    the source's clinical richness**.
 
+   **Decision rule for scope gaps**: A narrower-than-ideal plan is acceptable
+   — approve it with documented gaps in `review_summary` and proceed. Only
+   halt or re-plan if a scope gap would make the derived artifact clinically
+   misleading (e.g., a required section cannot be populated from the proposed
+   source set).
+
 5. For each proposed `terminology-value-sets` artifact, **if reasonhub MCP tools
    are available**, resolve candidate codes before writing the plan:
    a. If the target code system is not yet clear, call
@@ -173,7 +179,8 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       each entry so the reviewer can evaluate and approve or remove codes before
       implement.
 
-   **If MCP tools are unavailable or return errors**, do not retry more than once.
+   **If any MCP tool call fails or returns `user cancelled`**, stop immediately
+   — do not retry the same tool and do not try alternative tools as a fallback.
    Omit `candidate_codes[]`, note in the Review Summary that terminology
    resolution was deferred, and proceed. The plan is valid without populated
    codes; resolution can be done in formalize mode.
