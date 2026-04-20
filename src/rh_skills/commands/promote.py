@@ -1,6 +1,5 @@
 """rh-skills promote — Promote artifacts between lifecycle levels."""
 
-import fcntl
 import io
 import sys
 from contextlib import contextmanager
