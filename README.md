@@ -65,6 +65,19 @@ The RH Skills framework guides clinical knowledge through three artifact levels:
 
 Raw files are ingested and normalized to Markdown (L1) before extraction. The relationships are many-to-many: one L1 source can yield several L2 artifacts; multiple L2 artifacts can converge into a single L3.
 
+## Documentation
+
+- [Introduction](docs/INTRODUCTION.md): high-level orientation to RH Skills and its intended use cases
+- [Getting Started](docs/GETTING_STARTED.md): prerequisites, installation, and first hands-on walkthrough
+- [Workflow](docs/WORKFLOW.md): lifecycle model, artifact flow, and repository structure
+  - [Discovery](docs/DISCOVERY.md): L1 evidence search and source registry
+  - [Ingest](docs/INGEST.md): L1 source acquisition and normalization
+  - [Extract](docs/EXTRACT.md): L2 structured artifact derivation
+  - [Formalize](docs/FORMALIZE.md): L3 FHIR R4 computable conversion
+- [Usage Modes](docs/USAGE_MODES.md): CLI-first vs agent-native usage and configuration guidance
+- [Commands](docs/COMMANDS.md): full CLI reference with commands, subcommands, and options
+- [Example Project](example-project/): sample repository showing the expected project layout and artifacts
+
 ## Prerequisites
 
 - Python 3.13+
@@ -181,19 +194,6 @@ Supported platforms and their install locations:
 
 A `.rh-skills-lock.yaml` file is written to your project root to track which
 skills and versions are installed. Commit this file alongside your agent config.
-
-## End-user documentation
-
-- [Introduction](docs/INTRODUCTION.md): high-level orientation to RH Skills and its intended use cases
-- [Getting Started](docs/GETTING_STARTED.md): prerequisites, installation, and first hands-on walkthrough
-- [Workflow](docs/WORKFLOW.md): lifecycle model, artifact flow, and repository structure
-  - [Discovery](docs/DISCOVERY.md): L1 evidence search and source registry
-  - [Ingest](docs/INGEST.md): L1 source acquisition and normalization
-  - [Extract](docs/EXTRACT.md): L2 structured artifact derivation
-  - [Formalize](docs/FORMALIZE.md): L3 FHIR R4 computable conversion
-- [Usage Modes](docs/USAGE_MODES.md): CLI-first vs agent-native usage and configuration guidance
-- [Commands](docs/COMMANDS.md): full CLI reference with commands, subcommands, and options
-- [Example Project](example-project/): sample repository showing the expected project layout and artifacts
 
 ## Contributors
 
