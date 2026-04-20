@@ -20,6 +20,8 @@ optional_fields:
   - references         # list of reference strings (PMIDs, URLs, guidelines)
   - tags               # list of free-text tags
   - author             # author name or team
+  - codings            # list of {code, system, display} — canonical codes for this artifact
+                       # (e.g. LOINC panel codes for assessment instruments)
 
 status_values:
   - draft

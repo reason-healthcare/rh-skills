@@ -1,0 +1,153 @@
+name: assessment-loinc-codes
+skill: rh-inf-extract
+description: >
+  Source describes the PHQ-9 screening instrument. Agent must propose an
+  assessment artifact, call reasonhub-search_loinc to discover the PHQ-9
+  panel code (44249-1) and total-score code (44261-6), and write approved
+  codes into the L2 artifact as a top-level codings[] list.
+
+topic: phq9-loinc
+
+workspace:
+  tracking_yaml: |
+    topics:
+      phq9-loinc:
+        state: ingest_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-20T00:00:00Z"
+          - event: ingest_complete
+            timestamp: "2026-04-20T01:00:00Z"
+    sources:
+      - name: kroenke-phq9-2001
+        normalized: true
+        classified: true
+        annotated: true
+        path: sources/normalized/kroenke-phq9-2001.md
+
+  files:
+    - path: sources/normalized/kroenke-phq9-2001.md
+      content: |
+        # PHQ-9: A New Depression Diagnostic and Severity Measure (Kroenke & Spitzer, 2002)
+
+        ## Overview
+
+        The Patient Health Questionnaire-9 (PHQ-9) is a validated, self-administered
+        depression screening instrument derived from the Primary Care Evaluation of
+        Mental Disorders (PRIME-MD). It contains nine items corresponding directly to
+        the nine DSM-IV diagnostic criteria for major depressive disorder.
+
+        LOINC recognizes the PHQ-9 as a standardized survey instrument. The panel
+        code is 44249-1 ("PHQ-9 quick depression assessment panel [Reported.PHQ]")
+        and the total score observation is 44261-6 ("Patient Health Questionnaire
+        9 item (PHQ-9) total score [Reported]").
+
+        ## Instrument Items
+
+        Each item is scored 0 (Not at all) to 3 (Nearly every day):
+
+        1. Little interest or pleasure in doing things
+        2. Feeling down, depressed, or hopeless
+        3. Trouble falling or staying asleep, or sleeping too much
+        4. Feeling tired or having little energy
+        5. Poor appetite or overeating
+        6. Feeling bad about yourself or that you are a failure or have let
+           yourself or your family down
+        7. Trouble concentrating on things, such as reading the newspaper or
+           watching television
+        8. Moving or speaking so slowly that other people could have noticed;
+           or being so fidgety or restless that you have been moving around
+           a lot more than usual
+        9. Thoughts that you would be better off dead or of hurting yourself
+           in some way
+
+        ## Scoring
+
+        Total score = sum of all nine item scores (range 0–27).
+
+        | Score range | Severity interpretation         |
+        |-------------|----------------------------------|
+        | 0–4         | Minimal or no depression         |
+        | 5–9         | Mild depression                  |
+        | 10–14       | Moderate depression              |
+        | 15–19       | Moderately severe depression     |
+        | 20–27       | Severe depression                |
+
+        A score ≥ 10 has 88% sensitivity and 88% specificity for major depressive
+        disorder diagnosis.
+
+        ## Functional Impairment Item
+
+        Item 10 (not part of the scored nine): "How difficult have these problems
+        made it for you to do your work, take care of things at home, or get along
+        with other people?" (Not difficult at all / Somewhat difficult / Very
+        difficult / Extremely difficult). This item is used to assess functional
+        impairment but does not contribute to the total PHQ-9 score.
+
+        ## Administration
+
+        Self-administered; takes approximately 3 minutes. Validated for primary
+        care settings. Widely used in clinical research and EHR integration.
+        Available in more than 30 languages.
+
+        ## Reference
+
+        Kroenke K, Spitzer RL, Williams JB. The PHQ-9: validity of a brief
+        depression severity measure. J Gen Intern Med. 2001;16(9):606-613.
+        PMID: 11556941.
+
+prompt: |
+  Use the rh-inf-extract skill for the topic `phq9-loinc`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  One source is fully ingested: `kroenke-phq9-2001`. It describes the PHQ-9
+  depression screening instrument with its nine scored items, scoring method,
+  and severity interpretation ranges.
+
+  Run the full extract cycle:
+  1. **plan** — generate an extract plan proposing an `assessment` artifact for
+     the PHQ-9 instrument. Before writing the plan, call `reasonhub-search_loinc`
+     to find the LOINC panel and total-score codes for PHQ-9, then verify each
+     with `reasonhub-codesystem_lookup`. Record the codes in `candidate_codes[]`.
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — derive the L2 assessment artifact via `rh-skills promote derive`
+     and write the approved LOINC codes into the artifact as a top-level `codings[]`
+     list (code, system, display).
+  4. **verify** — validate the artifact with `rh-skills validate`
+
+expected_outputs:
+  - path: topics/phq9-loinc/process/plans/extract-plan.yaml
+    checks:
+      - exists
+      - contains: "assessment"
+      - contains: "candidate_codes"
+      - contains: "44249-1"
+  - path: topics/phq9-loinc/structured
+    checks:
+      - exists
+      - contains_any_file_with: "artifact_type: assessment"
+      - contains_any_file_with: "codings:"
+      - contains_any_file_with: "44249-1"
+      - contains_any_file_with: "http://loinc.org"
+      - contains_any_file_with: "items:"
+      - contains_any_file_with: "scoring:"
+  - path: tracking.yaml
+    checks:
+      - event: extract_planned
+      - event: structured_derived
+
+efficiency_focus:
+  - "Does the agent call reasonhub-search_loinc exactly once for PHQ-9, not once per item?"
+  - "Does the agent call reasonhub-codesystem_lookup to confirm each candidate code before recording?"
+  - "Does the agent avoid re-reading the source after the injection boundary?"
+
+quality_focus:
+  - "Does the extract plan include candidate_codes[] with at least the PHQ-9 panel code (44249-1)?"
+  - "Does the L2 artifact contain a top-level codings[] list?"
+  - "Are codings[] entries well-formed: code, system (http://loinc.org), display?"
+  - "Does the codings[] list include both the panel (44249-1) and the total-score (44261-6) code?"
+  - "Does the assessment artifact capture all nine PHQ-9 items with linkId and answer options?"
+  - "Are the five severity interpretation ranges (0-4 minimal through 20-27 severe) present in scoring?"
+  - "Does rh-skills validate report zero errors on the artifact?"

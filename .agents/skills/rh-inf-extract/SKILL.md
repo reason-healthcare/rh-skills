@@ -138,6 +138,27 @@ appropriate `rh-skills` CLI boundary used by the workflow.
       review packet. Include `code`, `system`, `display`, and `search_query` for
       each entry so the reviewer can evaluate and approve or remove codes before
       implement.
+
+   For each proposed `assessment` artifact, **if reasonhub MCP tools are
+   available**, additionally resolve LOINC panel codes for the screening
+   instrument(s) named in the source:
+   a. Call `reasonhub-search_loinc` using the full instrument name as the query
+      (e.g., "PHQ-9 Patient Health Questionnaire depression screening panel").
+   b. For the top result and any clinically relevant alternates (e.g., total score
+      code alongside the panel code), call `reasonhub-codesystem_lookup` to
+      confirm the canonical display name.
+   c. Record candidate codes in the artifact's `candidate_codes[]` field in the
+      review packet, tagged with `use: panel` or `use: total-score` to distinguish
+      their role.
+   d. After `derive`, write approved codes into the L2 artifact as a top-level
+      `codings[]` list with `code`, `system` (`http://loinc.org`), and `display`
+      fields. This enables downstream formalize mode to populate
+      `Questionnaire.code` and `Questionnaire.item[].code` in the FHIR resource.
+
+   **If any MCP tool call fails or returns `user cancelled`**, stop immediately
+   — do not retry the same tool and do not try alternative tools as a fallback.
+   Omit `candidate_codes[]`, note in the Review Summary that terminology
+   resolution was deferred, and proceed.
 6. Write `topics/<topic>/process/plans/extract-plan.md` with:
    - plan frontmatter (`topic`, `plan_type`, `status`, `reviewer`, `reviewed_at`, `artifacts[]`)
    - `Review Summary`
