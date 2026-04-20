@@ -21,9 +21,10 @@ Before running the parity workflow, confirm:
 2. Python 3.13+ is available (`py --version` or `python --version`).
 3. `pipx` is installed and on PATH (`pipx --version`).
 4. Git is installed and on PATH (`git --version`).
-5. You are in the repo root (or your mounted repo path exists) and it contains
-	`pyproject.toml`.
+5. You are in the repo root (or your mounted repo path exists) and it contains `pyproject.toml`.
 6. Network access to GitHub is available for `git+https` install tests.
+
+See [Windows Python Installation](./WINDOWS_PYTHON_INSTALLATION.md) for installation on Windows.
 
 Helpful pre-checks:
 

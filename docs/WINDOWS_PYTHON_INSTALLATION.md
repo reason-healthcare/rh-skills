@@ -1,7 +1,5 @@
 # Windows Setup Guide for Python CLI Tools
 
-The simplest Windows setup for Python CLI tools:
-
 1. Install Python from the official Windows installer
 2. Install pipx
 3. Install Git

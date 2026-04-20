@@ -51,10 +51,6 @@ rather than editing the core script. See
 [docs/SKILL_DISTRIBUTION.md](docs/SKILL_DISTRIBUTION.md) for profile fields,
 validation rules, and CI reproduction steps.
 
-## Windows VM Parity Testing
-
-See [Windows VM Contributing Guide](/docs/WINDOWS_VM_CONTRIBUTING.md) for details on end user parity testing for a Windows VM.
-
 ## Repository Layout
 
 ```
@@ -424,6 +420,10 @@ marks the artifact as the implementation target, validation also checks:
 - Feature branches: `00N-<spec-name>` (e.g., `003-rh-inf-discovery`)
 - Commit trailer: `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`
 - All tests must pass before merging; skill tests must have zero FAIL-level findings
+
+## Windows VM Parity Testing
+
+See [Windows VM Contributing Guide](docs/WINDOWS_VM_CONTRIBUTING.md) for details on end user parity testing for a Windows VM.
 
 ## Further Reading
 
