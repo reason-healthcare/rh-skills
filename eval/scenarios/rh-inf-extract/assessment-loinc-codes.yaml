@@ -1,10 +1,12 @@
 name: assessment-loinc-codes
 skill: rh-inf-extract
 description: >
-  Source describes the PHQ-9 screening instrument. Agent must propose an
-  assessment artifact, call reasonhub-search_loinc to discover the PHQ-9
-  panel code (44249-1) and total-score code (44261-6), and write approved
-  codes into the L2 artifact as a top-level codings[] list.
+  Source describes the PHQ-9 screening instrument without pre-stating any LOINC
+  codes. Agent must propose an assessment artifact, call reasonhub-search_loinc
+  to discover the PHQ-9 panel code (44249-1) and total-score code (44261-6),
+  verify each with reasonhub-codesystem_lookup, then repeat for each of the
+  nine scored items to resolve per-item LOINC codes. All codes must come from
+  MCP — never from the source text.
 
 topic: phq9-loinc
 
@@ -36,11 +38,6 @@ workspace:
         depression screening instrument derived from the Primary Care Evaluation of
         Mental Disorders (PRIME-MD). It contains nine items corresponding directly to
         the nine DSM-IV diagnostic criteria for major depressive disorder.
-
-        LOINC recognizes the PHQ-9 as a standardized survey instrument. The panel
-        code is 44249-1 ("PHQ-9 quick depression assessment panel [Reported.PHQ]")
-        and the total score observation is 44261-6 ("Patient Health Questionnaire
-        9 item (PHQ-9) total score [Reported]").
 
         ## Instrument Items
 
@@ -108,13 +105,18 @@ prompt: |
 
   Run the full extract cycle:
   1. **plan** — generate an extract plan proposing an `assessment` artifact for
-     the PHQ-9 instrument. Before writing the plan, call `reasonhub-search_loinc`
-     to find the LOINC panel and total-score codes for PHQ-9, then verify each
-     with `reasonhub-codesystem_lookup`. Record the codes in `candidate_codes[]`.
+     the PHQ-9 instrument. Use `reasonhub-search_loinc` and
+     `reasonhub-codesystem_lookup` to resolve:
+     - The PHQ-9 panel code and total-score code (panel-level)
+     - A `loinc_code` for each of the nine scored items (per-item)
+     All codes must come from MCP lookups — do not use any codes from the
+     source text without MCP confirmation. Record all resolved codes in
+     `candidate_codes[]`.
   2. Wait for reviewer approval (simulate approval by responding "approved")
-  3. **implement** — derive the L2 assessment artifact via `rh-skills promote derive`
-     and write the approved LOINC codes into the artifact as a top-level `codings[]`
-     list (code, system, display).
+  3. **implement** — derive the L2 assessment artifact via `rh-skills promote derive`.
+     Write the approved panel and total-score codes as a top-level `codings[]`
+     list (code, system, display). Write each item's resolved code as a
+     `loinc_code` field on that item.
   4. **verify** — validate the artifact with `rh-skills validate`
 
 expected_outputs:
@@ -131,6 +133,8 @@ expected_outputs:
       - contains_any_file_with: "codings:"
       - contains_any_file_with: "44249-1"
       - contains_any_file_with: "http://loinc.org"
+      - contains_any_file_with: "loinc_code:"
+      - contains_any_file_with: "44250-9"
       - contains_any_file_with: "items:"
       - contains_any_file_with: "scoring:"
   - path: tracking.yaml
@@ -139,15 +143,19 @@ expected_outputs:
       - event: structured_derived
 
 efficiency_focus:
-  - "Does the agent call reasonhub-search_loinc exactly once for PHQ-9, not once per item?"
+  - "Does the agent call reasonhub-search_loinc once for the panel, then once per scored item (10 searches total), rather than once for the whole instrument only?"
   - "Does the agent call reasonhub-codesystem_lookup to confirm each candidate code before recording?"
+  - "Does the agent avoid per-option searches (searching each answer label is wasteful)?"
   - "Does the agent avoid re-reading the source after the injection boundary?"
 
 quality_focus:
-  - "Does the extract plan include candidate_codes[] with at least the PHQ-9 panel code (44249-1)?"
-  - "Does the L2 artifact contain a top-level codings[] list?"
+  - "Does the extract plan include candidate_codes[] with use: panel, use: total-score, and use: item-<n> entries?"
+  - "Are all codes sourced from MCP lookups, not copied from the source text?"
+  - "Does the L2 artifact contain a top-level codings[] list with panel (44249-1) and total-score (44261-6)?"
+  - "Does each of the nine scored items have a loinc_code field populated from LOINC lookup?"
+  - "Are per-item loinc_code values children of panel 44249-1 (confirmed via panel-parent property)?"
   - "Are codings[] entries well-formed: code, system (http://loinc.org), display?"
-  - "Does the codings[] list include both the panel (44249-1) and the total-score (44261-6) code?"
-  - "Does the assessment artifact capture all nine PHQ-9 items with linkId and answer options?"
+  - "Does the assessment artifact capture all nine PHQ-9 items with id, text, type, and options?"
   - "Are the five severity interpretation ranges (0-4 minimal through 20-27 severe) present in scoring?"
   - "Does rh-skills validate report zero errors on the artifact?"
+  - "If MCP failed, are codings[] and loinc_code absent (not filled from source text)?"

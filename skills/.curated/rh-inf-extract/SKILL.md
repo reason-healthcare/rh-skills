@@ -218,9 +218,11 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       each entry so the reviewer can evaluate and approve or remove codes before
       implement.
 
-   For each proposed `assessment` artifact, **if reasonhub MCP tools are
-   available**, additionally resolve LOINC panel codes for the screening
-   instrument(s) named in the source:
+   For each proposed `assessment` artifact, resolve LOINC codes using the
+   reasonhub MCP tools. **This is required, not optional.** If the source
+   text names LOINC codes, treat them as unverified hints only — they must
+   be confirmed via MCP before being written to any artifact. **Never copy
+   codes from the source text into `candidate_codes[]` or the derived artifact.**
    a. Call `reasonhub-search_loinc` using the full instrument name as the query
       (e.g., "PHQ-9 Patient Health Questionnaire depression screening panel").
    b. For the top result and any clinically relevant alternates (e.g., total score
@@ -241,18 +243,22 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       - Per-item: add a `loinc_code` field alongside `id`, `text`, and `type`
         for each item in `sections.assessment.items[]`. This enables downstream
         formalize mode to populate `Questionnaire.item[].code` in the FHIR resource.
-      - **If no code is found** for the panel, total-score, or any individual item,
-        omit the field for that element **and** add a `notes` entry in the Review
-        Summary (and in the artifact's `review_notes[]` if present) explicitly
-        stating which code could not be resolved and why (e.g., no confident
-        match in LOINC, instrument is not in LOINC, search returned no
-        `panel-parent` match). Do not silently leave the field absent.
+      - **If no code is found** for the panel, total-score, or any individual item
+        (MCP returned results but no confident match), omit the field for that
+        element **and** add a `notes` entry in the Review Summary (and in the
+        artifact's `review_notes[]` if present) explicitly stating which code could
+        not be resolved and why (e.g., no confident match in LOINC, instrument is
+        not in LOINC, search returned no `panel-parent` match). Do not silently
+        leave the field absent.
 
    **If any MCP tool call fails or returns `user cancelled`**, stop immediately
    — do not retry the same tool and do not try alternative tools as a fallback.
-   Omit `candidate_codes[]`, note in the Review Summary that terminology
-   resolution was deferred, and proceed. The plan is valid without populated
-   codes; resolution can be done in formalize mode.
+   For `terminology` artifacts, omit `candidate_codes[]`, note the deferral in
+   the Review Summary, and proceed (resolution can be done in formalize mode).
+   For `assessment` artifacts, **also omit `codings[]` and all per-item
+   `loinc_code` fields from the derived artifact** — do not substitute codes
+   from the source text. Note in the Review Summary that LOINC codes are absent
+   because MCP was unavailable; they must be resolved before formalize.
 6. Run `rh-skills promote plan <topic>` to generate
    `topics/<topic>/process/plans/extract-plan.yaml`. This command also appends
    `extract_planned` to `tracking.yaml`.
