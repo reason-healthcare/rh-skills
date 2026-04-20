@@ -187,6 +187,10 @@ skills and versions are installed. Commit this file alongside your agent config.
 - Introduction: high-level orientation to RH Skills and its intended use cases
 - [Getting Started](docs/GETTING_STARTED.md): prerequisites, installation, and first hands-on walkthrough
 - [Workflow](docs/WORKFLOW.md): lifecycle model, artifact flow, and repository structure
+  - [Discovery](docs/DISCOVERY.md): L1 evidence search and source registry
+  - [Ingest](docs/INGEST.md): L1 source acquisition and normalization
+  - [Extract](docs/EXTRACT.md): L2 structured artifact derivation
+  - [Formalize](docs/FORMALIZE.md): L3 FHIR R4 computable conversion
 - [Usage Modes](docs/USAGE_MODES.md): CLI-first vs agent-native usage and configuration guidance
 - [Commands](docs/COMMANDS.md): full CLI reference with commands, subcommands, and options
 - [Example Project](example-project/): sample repository showing the expected project layout and artifacts
