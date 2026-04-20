@@ -184,7 +184,7 @@ skills and versions are installed. Commit this file alongside your agent config.
 
 ## End-user documentation
 
-- Introduction: high-level orientation to RH Skills and its intended use cases
+- [Introduction](docs/INTRODUCTION.md): high-level orientation to RH Skills and its intended use cases
 - [Getting Started](docs/GETTING_STARTED.md): prerequisites, installation, and first hands-on walkthrough
 - [Workflow](docs/WORKFLOW.md): lifecycle model, artifact flow, and repository structure
   - [Discovery](docs/DISCOVERY.md): L1 evidence search and source registry
