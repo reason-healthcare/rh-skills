@@ -226,13 +226,27 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    b. For the top result and any clinically relevant alternates (e.g., total score
       code alongside the panel code), call `reasonhub-codesystem_lookup` to
       confirm the canonical display name.
-   c. Record candidate codes in the artifact's `candidate_codes[]` field in the
-      review packet, tagged with `use: panel` or `use: total-score` to distinguish
-      their role.
-   d. After `derive`, write approved codes into the L2 artifact as a top-level
-      `codings[]` list with `code`, `system` (`http://loinc.org`), and `display`
-      fields. This enables downstream formalize mode to populate
-      `Questionnaire.code` and `Questionnaire.item[].code` in the FHIR resource.
+   c. For **each scored item** in the instrument, call `reasonhub-search_loinc`
+      using the item text as the query (e.g., "PHQ-9 little interest or pleasure
+      doing things depression item"). Confirm the top result with
+      `reasonhub-codesystem_lookup`. Prefer codes whose `panel-parent` property
+      matches the panel code found in step (a). Record a `loinc_code` for each
+      item.
+   d. Record all candidate codes in the artifact's `candidate_codes[]` field in the
+      review packet, tagged with `use: panel`, `use: total-score`, or
+      `use: item-<n>` to distinguish their role.
+   e. After `derive`, write approved codes into the L2 artifact:
+      - Top-level `codings[]` list: panel code and total-score code, each with
+        `code`, `system` (`http://loinc.org`), and `display`.
+      - Per-item: add a `loinc_code` field alongside `id`, `text`, and `type`
+        for each item in `sections.assessment.items[]`. This enables downstream
+        formalize mode to populate `Questionnaire.item[].code` in the FHIR resource.
+      - **If no code is found** for the panel, total-score, or any individual item,
+        omit the field for that element **and** add a `notes` entry in the Review
+        Summary (and in the artifact's `review_notes[]` if present) explicitly
+        stating which code could not be resolved and why (e.g., no confident
+        match in LOINC, instrument is not in LOINC, search returned no
+        `panel-parent` match). Do not silently leave the field absent.
 
    **If any MCP tool call fails or returns `user cancelled`**, stop immediately
    — do not retry the same tool and do not try alternative tools as a fallback.
