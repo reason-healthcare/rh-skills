@@ -98,87 +98,25 @@ description: "Incomplete artifact"
 def make_valid_l3(tmp_repo, skill="my-skill", artifact="test-l3"):
     td = tmp_repo / "topics" / skill / "computable"
     td.mkdir(parents=True, exist_ok=True)
-    (td / f"{artifact}.yaml").write_text(f"""\
-artifact_schema_version: "1.0"
-metadata:
-  id: {artifact}
-  name: TestL3
-  title: "Test L3 Artifact"
-  version: "1.0.0"
-  status: draft
-  domain: diabetes
-  created_date: "2026-04-03"
-  description: |
-    A valid L3 artifact for testing.
-converged_from:
-  - test-l2-artifact
-""")
-
-
-def write_formalize_plan(tmp_repo, topic="my-skill", artifact="test-l3", *, required_sections=None, input_artifacts=None):
-    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "formalize-plan.md"
-    plan_path.parent.mkdir(parents=True, exist_ok=True)
-    y = YAML()
-    y.default_flow_style = False
-    frontmatter = {
-        "topic": topic,
-        "plan_type": "formalize",
-        "status": "approved",
-        "reviewer": "Tester",
-        "reviewed_at": "2026-04-14T00:00:00Z",
-        "artifacts": [{
-            "name": artifact,
-            "artifact_type": "pathway-package",
-            "input_artifacts": input_artifacts or ["test-l2-artifact"],
-            "rationale": "Primary computable package",
-            "required_sections": required_sections or ["pathways", "value_sets"],
-            "implementation_target": True,
-            "reviewer_decision": "approved",
-            "approval_notes": "Proceed",
-        }],
-    }
-    from io import StringIO
-    buf = StringIO()
-    y.dump(frontmatter, buf)
-    plan_path.write_text(
-        f"---\n{buf.getvalue()}---\n\n# Review Summary\n\n# Proposed Artifacts\n\n# Cross-Artifact Issues\n\n# Implementation Readiness\n"
-    )
-    return plan_path
+    import json
+    (td / f"Questionnaire-{artifact}.json").write_text(json.dumps({
+        "resourceType": "Questionnaire",
+        "id": artifact,
+        "status": "draft",
+        "item": [{"linkId": "q1", "text": "Test question", "type": "string"}],
+    }))
 
 
 def make_valid_formalize_l3(tmp_repo, skill="my-skill", artifact="test-l3"):
     td = tmp_repo / "topics" / skill / "computable"
     td.mkdir(parents=True, exist_ok=True)
-    (td / f"{artifact}.yaml").write_text(f"""\
-artifact_schema_version: "1.0"
-metadata:
-  id: {artifact}
-  name: {artifact}
-  title: "Test L3 Artifact"
-  version: "1.0.0"
-  status: draft
-  domain: diabetes
-  created_date: "2026-04-03"
-  description: |
-    A valid L3 artifact for formalize validation testing.
-converged_from:
-  - test-l2-artifact
-pathways:
-  - id: pathway-1
-    title: "Screening pathway"
-    description: "Screening workflow"
-    steps:
-      - id: step-1
-        title: "Screen patient"
-value_sets:
-  - id: value-set-1
-    title: "Conditions"
-    description: "Condition codes"
-    system: http://snomed.info/sct
-    codes:
-      - code: "44054006"
-        display: "Diabetes mellitus type 2"
-""")
+    import json
+    (td / f"Questionnaire-{artifact}.json").write_text(json.dumps({
+        "resourceType": "Questionnaire",
+        "id": artifact,
+        "status": "draft",
+        "item": [{"linkId": "q1", "text": "Test question", "type": "string"}],
+    }))
 
 
 # ── L2 validation tests ────────────────────────────────────────────────────────
@@ -241,19 +179,13 @@ def test_validate_valid_l3_exits_0(tmp_repo):
 def test_validate_l3_missing_schema_version_exits_1(tmp_repo):
     td = tmp_repo / "topics" / "my-skill" / "computable"
     td.mkdir(parents=True, exist_ok=True)
-    (td / "bad-l3.yaml").write_text("""\
-metadata:
-  id: bad-l3
-  name: BadL3
-  title: "Bad L3"
-  version: "1.0.0"
-  status: draft
-  domain: testing
-  created_date: "2026-04-03"
-  description: "Missing artifact_schema_version"
-converged_from:
-  - some-l2
-""")
+    import json
+    # Missing resourceType — FHIR validation must fail
+    (td / "Questionnaire-bad-l3.json").write_text(json.dumps({
+        "id": "bad-l3",
+        "status": "draft",
+        "item": [{"linkId": "q1", "text": "Test", "type": "string"}],
+    }))
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l3", "bad-l3"])
     assert result.exit_code == 1
@@ -335,7 +267,7 @@ def test_validate_extract_artifact_fails_missing_conflicts_when_plan_requires_th
 
 
 def test_validate_formalize_artifact_checks_approved_plan_requirements(tmp_repo):
-    write_formalize_plan(tmp_repo)
+    """Valid Questionnaire FHIR JSON passes l3 validation (plan check no longer applies)."""
     make_valid_formalize_l3(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
@@ -344,48 +276,36 @@ def test_validate_formalize_artifact_checks_approved_plan_requirements(tmp_repo)
 
 
 def test_validate_formalize_artifact_fails_when_converged_inputs_mismatch(tmp_repo):
-    write_formalize_plan(tmp_repo, input_artifacts=["screening-criteria", "care-steps"])
-    make_valid_formalize_l3(tmp_repo)
+    """Questionnaire missing linkId fails FHIR validation (replaces old converged_from check)."""
+    td = tmp_repo / "topics" / "my-skill" / "computable"
+    td.mkdir(parents=True, exist_ok=True)
+    import json
+    (td / "Questionnaire-test-l3.json").write_text(json.dumps({
+        "resourceType": "Questionnaire",
+        "id": "test-l3",
+        "status": "draft",
+        "item": [{"text": "Missing linkId", "type": "string"}],
+    }))
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
     assert result.exit_code == 1
-    assert "converged_from does not match approved formalize plan inputs" in result.output
+    assert "linkId" in result.output
 
 
 def test_validate_formalize_artifact_fails_when_required_section_incomplete(tmp_repo):
-    write_formalize_plan(tmp_repo, required_sections=["pathways", "measures"])
+    """Measure missing scoring fails FHIR validation (replaces old required-sections check)."""
     td = tmp_repo / "topics" / "my-skill" / "computable"
     td.mkdir(parents=True, exist_ok=True)
-    (td / "test-l3.yaml").write_text("""\
-artifact_schema_version: "1.0"
-metadata:
-  id: test-l3
-  name: test-l3
-  title: "Test L3 Artifact"
-  version: "1.0.0"
-  status: draft
-  domain: diabetes
-  created_date: "2026-04-03"
-  description: "Incomplete formalize artifact"
-converged_from:
-  - test-l2-artifact
-pathways:
-  - id: pathway-1
-    title: "Screening pathway"
-    description: "Screening workflow"
-    steps:
-      - id: step-1
-        title: "Screen patient"
-measures:
-  - id: measure-1
-    title: "Screening measure"
-    description: "Missing denominator"
-    numerator: "Numerator expression"
-""")
+    import json
+    (td / "Measure-test-l3.json").write_text(json.dumps({
+        "resourceType": "Measure",
+        "id": "test-l3",
+        "status": "draft",
+    }))
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
     assert result.exit_code == 1
-    assert "measures require numerator and denominator" in result.output
+    assert "scoring" in result.output
 
 
 def test_validate_extract_artifact_fails_unresolved_stub_values(tmp_repo):

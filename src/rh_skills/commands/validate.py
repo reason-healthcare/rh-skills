@@ -442,6 +442,67 @@ def _validate_fhir_json_files(
     return errors, warnings
 
 
+def _validate_l3_fhir_json(
+    topic: str,
+    artifact: str,
+    *,
+    emit: bool = True,
+) -> tuple[int, int]:
+    """Validate FHIR JSON files in computable/ that match the artifact name.
+
+    Searches computable/ for *.json files whose stem contains the artifact
+    name (e.g. ``Questionnaire-phq9-instrument.json`` matches
+    ``phq9-instrument``). Falls back to all *.json files if none match.
+    Runs validate_resource() on each found file.
+    """
+    import json as _json
+    from rh_skills.fhir.validate import validate_resource
+
+    td = topic_dir(topic)
+    if not td.exists():
+        raise click.UsageError(f"Topic '{topic}' not found")
+
+    computable_dir = td / "computable"
+    if not computable_dir.exists():
+        raise click.UsageError(
+            f"No computable/ directory found for topic '{topic}'. "
+            "Run 'rh-skills formalize' to generate FHIR resources first."
+        )
+
+    all_json = sorted(computable_dir.glob("*.json"))
+    if not all_json:
+        raise click.UsageError(
+            f"No FHIR JSON files found in {computable_dir}. "
+            "Run 'rh-skills formalize' to generate FHIR resources first."
+        )
+
+    # Filter to files whose stem contains the artifact name.
+    matching = [f for f in all_json if artifact.lower() in f.stem.lower()]
+    if not matching:
+        _report_warn(
+            f"  No JSON files matching '{artifact}' in computable/ — validating all {len(all_json)} file(s)",
+            emit=emit,
+        )
+        matching = all_json
+
+    errors = 0
+    warnings = 0
+    for json_file in matching:
+        try:
+            resource = _json.loads(json_file.read_text())
+        except (ValueError, OSError) as exc:
+            _report_error(f"  Cannot parse FHIR JSON {json_file.name}: {exc}", emit=emit)
+            errors += 1
+            continue
+
+        resource_errors = validate_resource(resource)
+        for err in resource_errors:
+            _report_error(f"  {json_file.name}: {err}", emit=emit)
+            errors += 1
+
+    return errors, warnings
+
+
 def validate_artifact_file(
     topic: str,
     level: str,
@@ -450,91 +511,70 @@ def validate_artifact_file(
     emit: bool = True,
 ) -> tuple[int, int]:
     if level in ("l2", "structured"):
-        artifact_subdir = "structured"
-        schema_name = "l2-schema.yaml"
-        normalized_level = "l2"
+        td = topic_dir(topic)
+        if not td.exists():
+            raise click.UsageError(f"Topic '{topic}' not found")
+
+        artifact_file = td / "structured" / artifact / f"{artifact}.yaml"
+        if not artifact_file.exists():
+            raise click.UsageError(f"Artifact not found: {artifact_file}")
+
+        schema_path = schemas_dir() / "l2-schema.yaml"
+        if not schema_path.exists():
+            raise click.UsageError(f"Schema not found: {schema_path}")
+
+        schema = load_schema("l2-schema.yaml")
+
+        y = YAML()
+        try:
+            with open(artifact_file) as f:
+                artifact_data = y.load(f)
+        except YAMLError as exc:
+            _report_error(
+                f"  YAML parse error in {artifact_file.name}: {exc}\n"
+                "  Hint: values starting with '>' or '<' must be quoted. "
+                "Example: threshold: \">=190 mg/dL\" (not: threshold: >=190 mg/dL)",
+                emit=emit,
+            )
+            return 1, 0
+
+        if artifact_data is None:
+            artifact_data = {}
+
+        required_fields = schema.get("required_fields", [])
+        optional_fields = schema.get("optional_fields", [])
+
+        errors = 0
+        for field in required_fields:
+            val = _get_nested(artifact_data, field)
+            if val is None or val == "" or (isinstance(val, list) and len(val) == 0):
+                _report_error(f"  MISSING required field: {field}", emit=emit)
+                errors += 1
+
+        warnings = 0
+        for field in optional_fields:
+            val = _get_nested(artifact_data, field)
+            if val is None or val == "":
+                _report_warn(f"  optional field not set: {field}", emit=emit)
+                warnings += 1
+
+        if errors > 0:
+            return errors, warnings
+
+        extract_errors, extract_warnings = _validate_extract_artifact(
+            topic, artifact, artifact_data, emit=emit,
+        )
+        errors += extract_errors
+        warnings += extract_warnings
+        return errors, warnings
+
     elif level in ("l3", "computable"):
-        artifact_subdir = "computable"
-        schema_name = "l3-schema.yaml"
-        normalized_level = "l3"
+        return _validate_l3_fhir_json(topic, artifact, emit=emit)
+
     else:
         raise click.UsageError(
             f"Level must be l2/structured or l3/computable (got: {level})"
         )
-
-    td = topic_dir(topic)
-    if not td.exists():
-        raise click.UsageError(f"Topic '{topic}' not found")
-
-    if normalized_level == "l2":
-        artifact_file = td / artifact_subdir / artifact / f"{artifact}.yaml"
-    else:
-        artifact_file = td / artifact_subdir / f"{artifact}.yaml"
-    if not artifact_file.exists():
-        raise click.UsageError(f"Artifact not found: {artifact_file}")
-
-    schema_path = schemas_dir() / schema_name
-    if not schema_path.exists():
-        raise click.UsageError(f"Schema not found: {schema_path}")
-
-    schema = load_schema(schema_name)
-
-    y = YAML()
-    try:
-        with open(artifact_file) as f:
-            artifact_data = y.load(f)
-    except YAMLError as exc:
-        _report_error(
-            f"  YAML parse error in {artifact_file.name}: {exc}\n"
-            "  Hint: values starting with '>' or '<' must be quoted. "
-            "Example: threshold: \">=190 mg/dL\" (not: threshold: >=190 mg/dL)",
-            emit=emit,
-        )
-        return 1, 0
-
-    if artifact_data is None:
-        artifact_data = {}
-
-    required_fields = schema.get("required_fields", [])
-    optional_fields = schema.get("optional_fields", [])
-
-    errors = 0
-    for field in required_fields:
-        val = _get_nested(artifact_data, field)
-        if val is None or val == "" or (isinstance(val, list) and len(val) == 0):
-            _report_error(f"  MISSING required field: {field}", emit=emit)
-            errors += 1
-
-    warnings = 0
-    for field in optional_fields:
-        val = _get_nested(artifact_data, field)
-        if val is None or val == "":
-            _report_warn(f"  optional field not set: {field}", emit=emit)
-            warnings += 1
-
-    if errors > 0:
-        return errors, warnings
-
-    if normalized_level == "l2":
-        extract_errors, extract_warnings = _validate_extract_artifact(
-            topic,
-            artifact,
-            artifact_data,
-            emit=emit,
-        )
-        errors += extract_errors
-        warnings += extract_warnings
-    else:
-        formalize_errors, formalize_warnings = _validate_formalize_artifact(
-            topic,
-            artifact,
-            artifact_data,
-            emit=emit,
-        )
-        errors += formalize_errors
-        warnings += formalize_warnings
-
-    return errors, warnings
 
 
 @click.command()
@@ -571,18 +611,17 @@ def validate(topic, level, artifact, plan_path, check_urls):
         )
     click.echo(f"Validating {topic}/{level}/{artifact}...")
     errors, warnings = validate_artifact_file(topic, level, artifact, emit=True)
-    artifact_dir = "structured" if level in ("l2", "structured") else "computable"
     if level in ("l2", "structured"):
-        artifact_file = topic_dir(topic) / artifact_dir / artifact / f"{artifact}.yaml"
+        artifact_display = topic_dir(topic) / "structured" / artifact / f"{artifact}.yaml"
     else:
-        artifact_file = topic_dir(topic) / artifact_dir / f"{artifact}.yaml"
+        artifact_display = topic_dir(topic) / "computable" / f"*{artifact}*.json"
     if errors > 0:
         click.echo(f"INVALID — {errors} required field(s) missing")
         raise SystemExit(1)
     if warnings > 0:
-        click.echo(f"VALID (with {warnings} optional field warning(s)) — {artifact_file}")
+        click.echo(f"VALID (with {warnings} optional field warning(s)) — {artifact_display}")
     else:
-        click.echo(f"VALID — {artifact_file}")
+        click.echo(f"VALID — {artifact_display}")
 
 
 def _validate_discovery_plan(plan_path: str, *, check_urls: bool = False) -> None:

@@ -206,8 +206,8 @@ def test_ingest_implement_url_already_exists_exit_2(httpx_mock, tmp_repo):
 
 # ── URL download: network error ───────────────────────────────────────────────
 
-def test_ingest_implement_url_network_error(httpx_mock, tmp_repo):
-    """Exit 1 on network error."""
+def test_ingest_implement_url_sandbox_blocked_exit_4_connect_error(httpx_mock, tmp_repo):
+    """Exit 4 when outbound network is blocked (ConnectError — sandbox restriction)."""
     httpx_mock.add_exception(httpx.ConnectError("Connection refused"))
 
     runner = CliRunner()
@@ -215,6 +215,35 @@ def test_ingest_implement_url_network_error(httpx_mock, tmp_repo):
         "implement",
         "--url", "https://unreachable.example.com/doc.pdf",
         "--name", "unreachable",
+    ])
+
+    assert result.exit_code == 4
+    assert "Network access blocked" in result.output or "sandbox" in result.output.lower()
+
+
+def test_ingest_implement_url_sandbox_blocked_exit_4_connect_timeout(httpx_mock, tmp_repo):
+    """Exit 4 when outbound network is blocked (ConnectTimeout — sandbox restriction)."""
+    httpx_mock.add_exception(httpx.ConnectTimeout("Timed out connecting"))
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, [
+        "implement",
+        "--url", "https://slow.example.com/doc.pdf",
+        "--name", "slow-source",
+    ])
+
+    assert result.exit_code == 4
+
+
+def test_ingest_implement_url_generic_network_error_exit_1(httpx_mock, tmp_repo):
+    """Non-connection HTTP errors (e.g. ReadTimeout) still exit 1."""
+    httpx_mock.add_exception(httpx.ReadTimeout("Read timed out"))
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, [
+        "implement",
+        "--url", "https://example.com/doc.pdf",
+        "--name", "timeout-source",
     ])
 
     assert result.exit_code == 1

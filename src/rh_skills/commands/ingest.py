@@ -561,7 +561,14 @@ def _implement_url(
     source_type: str = "document",
     topic: str | None = None,
 ) -> None:
-    """Download a URL to sources/ and register it. Exit 3 on auth redirect."""
+    """Download a URL to sources/ and register it.
+
+    Exit codes:
+      0  success
+      2  file already exists (idempotent skip)
+      3  authentication redirect
+      4  network access blocked (sandbox restriction)
+    """
     if not source_name:
         raise click.UsageError("--name is required when using --url")
 
@@ -574,6 +581,19 @@ def _implement_url(
         response.raise_for_status()
     except httpx.HTTPStatusError as e:
         raise click.ClickException(f"HTTP {e.response.status_code}: {url}") from e
+    except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+        click.echo(
+            f"⛔ Network access blocked (sandbox restriction): {url}",
+            err=True,
+        )
+        click.echo(
+            "  The download stage requires outbound network access.\n"
+            "  Run this command in an environment with network access, or ask\n"
+            "  the user to download the file manually and pass it to:\n"
+            "    rh-skills ingest implement <downloaded-file> --topic <topic>",
+            err=True,
+        )
+        raise SystemExit(4)
     except httpx.HTTPError as e:
         raise click.ClickException(f"Network error: {e}") from e
 

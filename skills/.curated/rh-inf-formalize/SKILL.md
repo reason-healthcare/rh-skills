@@ -192,11 +192,19 @@ FHIR files directly.
       corresponding `terminology` artifact, use those as the
       authoritative starting set, augmented by MCP search only where the plan
       set is incomplete.
-5. Run the formalize command for each approved L2 artifact:
+5. Run the formalize command for each approved L2 artifact. The `<artifact-name>`
+   argument **must be the L2 artifact's `name` field** (the kebab-case identifier
+   in the YAML, e.g. `phq9-instrument`) — not the formalize-plan target display
+   name and not the FHIR resource type:
 
    ```sh
-   rh-skills formalize <topic> <artifact-name>
+   rh-skills formalize <topic> <l2-artifact-name>
    ```
+
+   > **Naming rule**: the formalize-plan may label a target `phq9-screening-assessment`
+   > for readability, but if the input L2 artifact's `name:` field is `phq9-instrument`,
+   > pass `phq9-instrument` to `rh-skills formalize`. The display name is not a
+   > valid CLI argument.
 
    This produces individual FHIR JSON files (`<ResourceType>-<id>.json`) and
    CQL files in `topics/<topic>/computable/`.
@@ -207,10 +215,10 @@ FHIR files directly.
    rh-skills package <topic>
    ```
 
-7. Validate each generated resource:
+7. Validate each generated FHIR JSON artifact:
 
    ```sh
-   rh-skills validate <topic> <artifact-name>
+   rh-skills validate <topic> l3 <l2-artifact-name>
    ```
 
 8. Report `✓` or `✗` for each artifact. Stop on blocking CLI failures; do not
@@ -232,11 +240,14 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 ### Steps
 
 1. Read `topics/<topic>/process/plans/formalize-plan.md` and identify the approved implementation target.
-2. Validate each expected FHIR resource with:
+2. Validate each expected FHIR JSON artifact with:
 
    ```sh
-   rh-skills validate <topic> <artifact-name>
+   rh-skills validate <topic> l3 <l2-artifact-name>
    ```
+
+   Use the L2 artifact's `name` field (e.g. `phq9-instrument`) — the same name
+   passed to `rh-skills formalize`.
 
 3. Confirm:
    - the approved target's FHIR JSON files exist in `topics/<topic>/computable/`

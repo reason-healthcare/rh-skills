@@ -182,11 +182,22 @@ Downloads complete:
   ✓ cms-ecqm-cms122           sources/cms-ecqm-cms122.html
   ⊘ cochrane-review           exit 3 — auth redirect (see auth_note)
   ⊘ nice-hypertension         exit 2 — already present, skipped
+  ⛔ nice-guidelines           exit 4 — network blocked (sandbox)
 ```
 
 - Exit 3 → authentication redirect — print the `auth_note` advisory and skip
 - Exit 2 → file already exists and checksum matches — skip (idempotent)
 - Exit 1 → network error — report and continue; do not halt the pipeline
+- Exit 4 → **sandbox network restriction** — outbound network is blocked in this
+  environment. **Stop retrying downloads.** Inform the user:
+  > "The download stage requires outbound network access, which is blocked in
+  > this sandbox. Please run the following commands in a shell with network
+  > access, or download each file manually and pass it to
+  > `rh-skills ingest implement <file> --topic <topic>`:"
+  >
+  > Then list every blocked `rh-skills ingest implement --url …` command so the
+  > user can run them outside the sandbox. Do not proceed to normalize until
+  > the sources are present.
 
 For `access: authenticated` or `access: manual` sources: print the `auth_note`
 advisory. If the file is already present in `sources/`, proceed to normalize.
@@ -320,6 +331,7 @@ You can also ask for `rh-inf-status` at any time.
 |-----------|--------|
 | `discovery-plan.yaml` missing | Continue in manual-source mode; explain that open-access auto-download/classification shortcuts are unavailable |
 | Download exit 3 (auth redirect) | Print advisory; continue to next source |
+| Download exit 4 (network blocked) | **Stop all downloads.** List every blocked command; ask user to run them with network access or supply files manually |
 | `pdftotext` / `pandoc` absent | Warn; `text_extracted: false`; continue |
 | `classify` invalid type/level | Fix discovery-plan.yaml; re-run |
 | `normalized.md` missing for annotate | Run normalize step first |

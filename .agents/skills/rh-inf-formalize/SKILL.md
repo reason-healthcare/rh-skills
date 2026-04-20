@@ -165,19 +165,29 @@ all deterministic writes must go through `rh-skills promote combine` and
       corresponding `terminology-value-sets` artifact, use those as the
       authoritative starting set, augmented by MCP search only where the plan
       set is incomplete.
-5. Run:
+5. Run `rh-skills formalize` for the approved implementation target. The
+   `<artifact>` argument **must be the L2 artifact's `name` field** (the
+   kebab-case identifier in the YAML, e.g. `phq9-instrument`) — not the
+   formalize-plan entry name and not the FHIR resource type. One call per L2
+   artifact; the command selects the correct FHIR strategy automatically from
+   `artifact_type`.
 
    ```sh
-   rh-skills promote combine <topic> <l2-input-1> <l2-input-2> <target-name>
+   rh-skills formalize <topic> <l2-artifact-name>
    ```
 
-6. Immediately validate the computable artifact with:
+   > **Naming rule**: if the formalize-plan lists an input artifact as
+   > `phq9-instrument`, pass `phq9-instrument` to `rh-skills formalize`.
+   > The plan's target display name (e.g. `phq9-screening-assessment`) is for
+   > documentation only and is **not** a valid argument to this command.
+
+6. Immediately validate the generated FHIR JSON with:
 
    ```sh
-   rh-skills validate <topic> <target-name>
+   rh-skills validate <topic> l3 <l2-artifact-name>
    ```
 
-7. Report `✓` or `✗` for the single implementation target. Stop on blocking CLI failures; do not silently continue past a failed combine or validate command.
+7. Report `✓` or `✗` for the single implementation target. Stop on blocking CLI failures; do not silently continue past a failed formalize or validate command.
 
 ### Events
 
@@ -194,11 +204,15 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 ### Steps
 
 1. Read `topics/<topic>/process/plans/formalize-plan.md` and identify the approved implementation target.
-2. Validate the expected computable artifact with:
+2. Validate the expected computable FHIR JSON with:
 
    ```sh
-   rh-skills validate <topic> <artifact-name>
+   rh-skills validate <topic> l3 <l2-artifact-name>
    ```
+
+   > **Naming rule**: `<l2-artifact-name>` is the L2 artifact's `name` field
+   > (e.g. `phq9-instrument`), matching the argument passed to
+   > `rh-skills formalize`.
 
 3. Confirm:
    - the approved target file exists in `topics/<topic>/computable/`

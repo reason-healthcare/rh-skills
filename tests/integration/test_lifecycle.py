@@ -155,21 +155,24 @@ derived_from:
 def test_lifecycle_validate_accepts_well_formed_l3(tmp_repo):
     runner = CliRunner()
     runner.invoke(init, ["test-workflow-skill"])
-    l3_file = tmp_repo / "topics" / "test-workflow-skill" / "computable" / "computable.yaml"
+    computable_dir = tmp_repo / "topics" / "test-workflow-skill" / "computable"
+    computable_dir.mkdir(parents=True, exist_ok=True)
+    l3_file = computable_dir / "Questionnaire-computable.json"
     l3_file.write_text("""\
-artifact_schema_version: "1.0"
-metadata:
-  id: computable
-  name: Computable
-  title: "Test Computable Artifact"
-  version: "1.0.0"
-  status: draft
-  domain: testing
-  created_date: "2026-04-03"
-  description: |
-    A test L3 artifact for lifecycle validation.
-converged_from:
-  - criteria
+{
+  "resourceType": "Questionnaire",
+  "id": "computable",
+  "url": "http://example.org/fhir/Questionnaire/computable",
+  "status": "draft",
+  "title": "Test Computable Artifact",
+  "item": [
+    {
+      "linkId": "q1",
+      "text": "Test question",
+      "type": "string"
+    }
+  ]
+}
 """)
     result = runner.invoke(validate, ["test-workflow-skill", "l3", "computable"])
     assert result.exit_code == 0

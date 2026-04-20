@@ -311,6 +311,12 @@ Topic: $TOPIC
 Please begin the $SKILL workflow now."
 fi
 
+# ── environment ──────────────────────────────────────────────────────────────
+# Default to stub LLM so evals never attempt an unavailable ollama server.
+# Override by setting LLM_PROVIDER before calling this script.
+export LLM_PROVIDER="${LLM_PROVIDER:-stub}"
+echo "==> LLM_PROVIDER: $LLM_PROVIDER"
+
 # ── agent dispatch ────────────────────────────────────────────────────────────
 echo "==> Running agent (output is tee'd to transcript)…"
 echo
