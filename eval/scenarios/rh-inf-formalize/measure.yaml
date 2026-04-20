@@ -54,6 +54,7 @@ workspace:
         version: "1.0.0"
         status: active
         domain: diabetes
+        description: "CMS122 diabetes HbA1c poor control quality measure for MIPS reporting."
         artifact_type: measure
         derived_from:
           - cms-diabetes-measures

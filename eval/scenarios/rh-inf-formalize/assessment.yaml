@@ -54,6 +54,7 @@ workspace:
         version: "1.0.0"
         status: active
         domain: behavioral-health
+        description: "Structured PHQ-9 depression screening questionnaire items, scoring method, and interpretation ranges."
         artifact_type: assessment
         derived_from:
           - kroenke-phq9-2001

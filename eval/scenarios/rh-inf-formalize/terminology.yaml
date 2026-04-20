@@ -60,6 +60,7 @@ workspace:
         version: "1.0.0"
         status: active
         domain: diabetes
+        description: "Diabetes CCM clinical terminology value sets for condition identification and laboratory codes."
         artifact_type: terminology
         derived_from:
           - ada-standards-2024

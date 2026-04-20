@@ -55,6 +55,7 @@ workspace:
         version: "1.0.0"
         status: active
         domain: critical-care
+        description: "Early sepsis screening decision rules based on qSOFA, SIRS criteria, and serum lactate thresholds."
         artifact_type: decision-table
         derived_from:
           - surviving-sepsis-2021

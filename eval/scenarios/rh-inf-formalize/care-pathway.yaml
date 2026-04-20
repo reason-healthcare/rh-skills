@@ -55,6 +55,7 @@ workspace:
         version: "1.0.0"
         status: active
         domain: cardiology
+        description: "HFrEF discharge care pathway including medication optimization, patient education, and follow-up scheduling."
         artifact_type: care-pathway
         derived_from:
           - acc-aha-hf-guideline-2022

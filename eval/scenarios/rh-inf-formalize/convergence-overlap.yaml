@@ -65,6 +65,8 @@ workspace:
         title: "Sepsis Screening Decision Table"
         version: "1.0.0"
         status: active
+        domain: critical-care
+        description: "Sepsis screening decision rules using SIRS criteria, qSOFA, and lactate thresholds."
         artifact_type: decision-table
         sections:
           decision_table:
@@ -85,6 +87,8 @@ workspace:
         title: "Sepsis Treatment Pathway"
         version: "1.0.0"
         status: active
+        domain: critical-care
+        description: "Sepsis treatment pathway for initial resuscitation, blood cultures, antibiotics, and perfusion reassessment."
         artifact_type: care-pathway
         sections:
           steps:

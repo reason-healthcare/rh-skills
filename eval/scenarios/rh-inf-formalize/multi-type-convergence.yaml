@@ -77,6 +77,8 @@ workspace:
         title: "Diabetes Screening Decision Table"
         version: "1.0.0"
         status: active
+        domain: diabetes
+        description: "Diabetes screening decision rules based on age, BMI, and gestational diabetes history."
         artifact_type: decision-table
         sections:
           decision_table:
@@ -97,6 +99,8 @@ workspace:
         title: "Diabetes Screening Terminology"
         version: "1.0.0"
         status: active
+        domain: diabetes
+        description: "Diabetes screening terminology value sets for HbA1c and fasting glucose laboratory tests."
         artifact_type: terminology
         sections:
           value_sets:
@@ -115,6 +119,8 @@ workspace:
         title: "Diabetes Screening Quality Measure"
         version: "1.0.0"
         status: active
+        domain: diabetes
+        description: "Quality measure for diabetes screening rates in adults aged 35-70."
         artifact_type: measure
         sections:
           populations:

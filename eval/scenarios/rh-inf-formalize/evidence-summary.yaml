@@ -57,6 +57,7 @@ workspace:
         version: "1.0.0"
         status: active
         domain: pulmonology
+        description: "Evidence summary for systemic corticosteroids in COPD exacerbations including treatment duration and outcomes."
         artifact_type: evidence-summary
         derived_from:
           - gold-report-2024

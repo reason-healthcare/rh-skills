@@ -18,11 +18,11 @@ from rh_skills.common import (
 
 def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     """Invoke LLM or return stub response."""
-    provider = config_value("LLM_PROVIDER", "ollama")
+    provider = config_value("LLM_PROVIDER", "stub")
     if provider == "stub":
         return config_value("RH_STUB_RESPONSE", "Stub response")
     raise click.ClickException(
-        f"LLM provider '{provider}' not available — use LLM_PROVIDER=stub for testing"
+        f"LLM provider '{provider}' not available — set LLM_PROVIDER to a supported provider"
     )
 
 
@@ -144,7 +144,7 @@ def test(topic, fixture, mode):
     result_data = {
         "topic": topic,
         "timestamp": timestamp,
-        "provider": config_value("LLM_PROVIDER", "ollama"),
+        "provider": config_value("LLM_PROVIDER", "stub"),
         "summary": {
             "passed": passed,
             "failed": failed,

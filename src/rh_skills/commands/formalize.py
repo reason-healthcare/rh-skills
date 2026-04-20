@@ -88,12 +88,12 @@ def _get_strategy(artifact_type: str) -> tuple[dict, bool]:
 
 def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     """Invoke LLM or return stub response."""
-    provider = config_value("LLM_PROVIDER", "ollama")
+    provider = config_value("LLM_PROVIDER", "stub")
     if provider == "stub":
         stub = config_value("RH_STUB_RESPONSE", "Stub response")
         return stub
     raise click.ClickException(
-        f"LLM provider '{provider}' not available — use LLM_PROVIDER=stub for testing"
+        f"LLM provider '{provider}' not available — set LLM_PROVIDER to a supported provider"
     )
 
 

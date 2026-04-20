@@ -55,6 +55,7 @@ workspace:
         version: "1.0.0"
         status: active
         domain: orthopedics
+        description: "Prior authorization criteria, documentation requirements, and decision logic for total knee arthroplasty."
         artifact_type: policy
         derived_from:
           - payer-policy-tka-2024
