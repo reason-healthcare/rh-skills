@@ -5,11 +5,11 @@
 The RH Skills pipeline progresses clinical knowledge through three artifact levels:
 
 ```
-L1 Discovery & Ingest        L2 Extract                   L3 Formalize
-─────────────────────        ──────────                   ────────────
-Find + acquire sources  ──→  Structure into typed    ──→  Convert to FHIR R4
-(PDFs, guidelines,           artifacts (YAML,             computable resources
- web articles)               human-editable)              (JSON + CQL)
+L1 Discovery & Ingest           L2 Extract                      L3 Formalize
+─────────────────────           ──────────                      ────────────
+Find + acquire sources   ──→    Structure into typed       ──→  Convert to FHIR R4
+(PDFs, guidelines,              artifacts (YAML,                computable resources
+ web articles)                  human-editable)                 (JSON + CQL)
 ```
 
 ```
@@ -35,8 +35,8 @@ Every lifecycle transition follows this mandatory three-step pattern:
 
 ```
  ┌─────────────────────────────────────────────────────────────────┐
- │  PLAN                                                            │
- │  Agent reasons about the topic and proposes artifact names,      │
+ │  PLAN                                                           │
+ │  Agent reasons about the topic and proposes artifact names,     │
  │  source lists, or convergence strategy. Output is written to    │
  │  topics/<name>/process/plans/<skill>-plan.md (YAML front matter │
  │  + human-readable prose). No files are created or modified.     │
@@ -46,16 +46,16 @@ Every lifecycle transition follows this mandatory three-step pattern:
                    edits the plan file
                          │
  ┌───────────────────────▼─────────────────────────────────────────┐
- │  IMPLEMENT                                                       │
- │  Agent reads the YAML front matter from the plan file and        │
- │  executes it by invoking rh-skills CLI commands. Fails immediately if   │
- │  no plan exists. Human review gate is enforced.                  │
+ │  IMPLEMENT                                                      │
+ │  Agent reads the YAML front matter from the plan file and       │
+ │  executes it by invoking rh-skills CLI commands. Fails          │
+ │  immediately if no plan exists. Human review gate is enforced.  │
  └───────────────────────┬─────────────────────────────────────────┘
                          │
  ┌───────────────────────▼─────────────────────────────────────────┐
- │  VERIFY                                                          │
- │  Non-destructive validation. Runs schema checks and reports      │
- │  required-field errors (blocking) vs warnings (advisory).        │
+ │  VERIFY                                                         │
+ │  Non-destructive validation. Runs schema checks and reports     │
+ │  required-field errors (blocking) vs warnings (advisory).       │
  └─────────────────────────────────────────────────────────────────┘
 ```
 
