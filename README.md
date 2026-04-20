@@ -30,41 +30,6 @@ understanding time lags in translational research." *J R Soc Med.* 2011;104(12):
 
 ---
 
-## What it does
-
-The RH Skills framework guides clinical knowledge through three artifact levels:
-
-```
-  PDF, DOCX, HTML, XLSX, ...          (L1 raw — any format)
-           │
-           │  ingest + normalize
-           ▼
-       Markdown                        (L1 normalized)
-           │
-           │  extract  ┌─────────────────────────┐
-           ├──────────▶│  Structured artifact    │  (L2)
-           ├──────────▶│  Structured artifact    │  (L2)
-           └──────────▶│  Structured artifact    │  (L2)
-                       └───────┬───────────┬─────┘
-                               │           │
-                               │ formalize │
-                               ▼           ▼
-                        ┌────────────────────────┐
-                        │  Computable artifact   │  (L3)
-                        │  (FHIR-aligned)        │
-                        └────────────────────────┘
-```
-
-
-| Level | Format | Description |
-|-------|--------|-------------|
-| **L1 (raw)** | Any | Original source files as-obtained — PDFs, Word docs, web pages, spreadsheets |
-| **L1 (normalized)** | Markdown | Source content converted to plain Markdown for consistent downstream processing |
-| **L2** | YAML | Structured — discrete clinical criteria, coded concepts |
-| **L3** | YAML | Computable — pathways, measures, value sets (FHIR-compatible) |
-
-Raw files are ingested and normalized to Markdown (L1) before extraction. The relationships are many-to-many: one L1 source can yield several L2 artifacts; multiple L2 artifacts can converge into a single L3.
-
 ## Documentation
 
 - [Introduction](docs/INTRODUCTION.md): high-level orientation to RH Skills and its intended use cases

@@ -17,11 +17,35 @@ It bridges the well-documented gap between narrative clinical knowledge and impl
 
 ### Three Artifact Levels
 
+```
+  PDF, DOCX, HTML, XLSX, ...          (L1 raw — any format)
+           │
+           │  ingest + normalize
+           ▼
+       Markdown                        (L1 normalized)
+           │
+           │  extract  ┌─────────────────────────┐
+           ├──────────▶│  Structured artifact    │  (L2)
+           ├──────────▶│  Structured artifact    │  (L2)
+           └──────────▶│  Structured artifact    │  (L2)
+                       └───────┬───────────┬─────┘
+                               │           │
+                               │ formalize │
+                               ▼           ▼
+                        ┌────────────────────────┐
+                        │  Computable artifact   │  (L3)
+                        │  (FHIR R4 JSON + CQL)  │
+                        └────────────────────────┘
+```
+
 | Level | Format | What it represents |
 |-------|--------|--------------------|
-| **L1** | Raw sources → Normalized Markdown | Original evidence (PDFs, guidelines, web pages) acquired and standardized |
+| **L1 (raw)** | Any | Original source files as-obtained — PDFs, Word docs, web pages, spreadsheets |
+| **L1 (normalized)** | Markdown | Source content converted to plain Markdown for consistent downstream processing |
 | **L2** | Structured YAML | Discrete clinical criteria, coded concepts, decision logic — human-editable |
 | **L3** | FHIR R4 JSON + CQL | Computable resources ready for EHR integration (PlanDefinition, Measure, ValueSet, etc.) |
+
+Raw files are ingested and normalized to Markdown (L1) before extraction. The relationships are many-to-many: one L1 source can yield several L2 artifacts; multiple L2 artifacts can converge into a single L3.
 
 ### Four Pipeline Stages
 
