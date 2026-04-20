@@ -144,6 +144,10 @@ def bundled_skills_dir() -> Path:
     bundled = Path(__file__).parent / "skills"
     if bundled.exists():
         return bundled
+    # dev fallback: src/rh_skills/common.py -> src/ -> repo root -> skills/.curated
+    dev_curated = Path(__file__).parent.parent.parent / "skills" / ".curated"
+    if dev_curated.exists():
+        return dev_curated
     return repo_root() / "skills" / ".curated"
 
 

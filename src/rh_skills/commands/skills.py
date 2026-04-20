@@ -33,7 +33,10 @@ def _profiles_dir() -> Path:
     bundled = Path(__file__).parent.parent / "skills_profiles"
     if bundled.exists():
         return bundled
-    # dev fallback: repo checkout
+    # dev fallback: commands/skills.py -> commands/ -> rh_skills/ -> src/ -> repo root
+    dev_profiles = Path(__file__).parent.parent.parent.parent / "skills" / "_profiles" / "support"
+    if dev_profiles.exists():
+        return dev_profiles
     from rh_skills.common import repo_root
     return repo_root() / "skills" / "_profiles" / "support"
 
