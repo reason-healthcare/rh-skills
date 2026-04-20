@@ -42,6 +42,7 @@ understanding time lags in translational research." *J R Soc Med.* 2011;104(12):
 - [Usage Modes](docs/USAGE_MODES.md): CLI-first vs agent-native usage and configuration guidance
 - [Commands](docs/COMMANDS.md): full CLI reference with commands, subcommands, and options
 - [Example Project](example-project/): sample repository showing the expected project layout and artifacts
+- [Windows Installation](docs/WINDOWS_PYTHON_INSTALLATION.md): end user workflow for Python and RH Skills installation
 
 ## Prerequisites
 
@@ -70,7 +71,7 @@ artifacts will contain placeholder text rather than validated codes.
 {
   "mcpServers": {
     "reasonhub": {
-      "url": "https://mcp.reasonhub.app/mcp",
+      "url": "https://reasonhub.app/mcp",
       "headers": {
         "Authorization": "Bearer <your-api-key>"
       }

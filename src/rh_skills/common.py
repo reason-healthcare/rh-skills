@@ -1,9 +1,9 @@
 """Shared utilities for the rh-skills CLI."""
 
 import contextlib
-import fcntl
 import hashlib
 import os
+import sys
 import tempfile
 import tomllib
 from datetime import datetime, timezone
@@ -12,6 +12,24 @@ from pathlib import Path
 from ruamel.yaml import YAML
 
 import click
+
+
+if sys.platform == "win32":
+    import msvcrt
+
+    def lock_file(f) -> None:
+        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+
+    def unlock_file(f) -> None:
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+else:
+    import fcntl
+
+    def lock_file(f) -> None:
+        fcntl.flock(f, fcntl.LOCK_EX)
+
+    def unlock_file(f) -> None:
+        fcntl.flock(f, fcntl.LOCK_UN)
 
 
 _CONFIG_KEYS = {
@@ -227,11 +245,11 @@ def _tracking_lock():
     lock_path = tracking_file().with_suffix(".lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with open(lock_path, "w") as lf:
-        fcntl.flock(lf, fcntl.LOCK_EX)
+        lock_file(lf)
         try:
             yield
         finally:
-            fcntl.flock(lf, fcntl.LOCK_UN)
+            unlock_file(lf)
 
 
 def locked_update_tracking(fn) -> None:
