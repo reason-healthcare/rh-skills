@@ -99,6 +99,15 @@ must be a kebab-case topic name using only `a-z`, `0-9`, and `-`.
 
 If `$ARGUMENTS` is empty or malformed, print the table above and exit.
 
+**Mode defaulting**: If `mode` is omitted, default to `plan`.
+
+**Topic inference**: If `<topic>` is also missing, run `rh-skills list` and:
+- If exactly one topic exists → use it (announce the inferred topic before proceeding).
+- If multiple topics exist → list them and ask the user to confirm which to use.
+- If no topics exist → exit with: `Error: No topics found. Run \`rh-skills init <topic>\` first.`
+
+If the mode is unrecognized, print the table above and exit.
+
 ---
 
 ## Pre-Execution Checks
@@ -157,6 +166,25 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
 - unresolved overlap or modeling notes
 - whether the artifact is the single implementation target
 - reviewer decision placeholder
+
+### After plan mode — output to user
+
+Emit this status block as the **last thing** in your response (no text after):
+
+```
+▸ rh-inf-formalize  <topic>
+  Stage:    plan — complete
+  Artifacts: <N> proposed
+  Next:     Review the plan, then approve and implement
+```
+
+**What would you like to do next?**
+
+A) Review the formalize plan: `cat topics/<topic>/process/plans/formalize-plan.md`
+B) Approve and proceed to implement: `rh-inf-formalize implement <topic>`
+C) Re-plan with changes: `rh-inf-formalize plan <topic> --force`
+
+You can also ask for `rh-skills status show <topic>` at any time.
 
 ---
 
@@ -230,6 +258,25 @@ FHIR files directly.
 - `computable_converged` — appended by `rh-skills formalize` for each artifact
 - `package_created` — appended by `rh-skills package`
 
+### After implement mode — output to user
+
+Emit this status block as the **last thing** in your response (no text after):
+
+```
+▸ rh-inf-formalize  <topic>
+  Stage:    implement — complete
+  Artifacts: <N> formalized · <N> packaged
+  Next:     Verify computable artifacts or review the package
+```
+
+**What would you like to do next?**
+
+A) Verify computable artifacts: `rh-inf-formalize verify <topic>`
+B) Inspect the FHIR package: `ls topics/<topic>/computable/`
+C) Check overall topic status: `rh-skills status show <topic>`
+
+You can also ask for `rh-skills status show <topic>` at any time.
+
 ---
 
 ## Mode: `verify`
@@ -285,6 +332,25 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 7. Report pass/fail per artifact and exit non-zero only when required checks fail.
 
 Verify is read-only and safe to re-run at any time.
+
+### After verify mode — output to user
+
+Emit this status block as the **last thing** in your response (no text after):
+
+```
+▸ rh-inf-formalize  <topic>
+  Stage:    verify — <PASS|FAIL>
+  Artifacts: <N> checked · <N> passed · <N> failed
+  Next:     <proceed or fix issues>
+```
+
+**What would you like to do next?**
+
+A) Inspect the FHIR package: `ls topics/<topic>/computable/`
+B) Re-run formalization on a failed artifact: `rh-inf-formalize implement <topic>`
+C) Check overall topic status: `rh-skills status show <topic>`
+
+You can also ask for `rh-skills status show <topic>` at any time.
 
 ---
 

@@ -88,7 +88,14 @@ which must be a kebab-case topic name using only `a-z`, `0-9`, and `-`.
 | `implement` | `<topic>` | `implement diabetes-ccm` |
 | `verify` | `<topic>` | `verify diabetes-ccm` |
 
-If `$ARGUMENTS` is empty or malformed, print the table above and exit.
+**Mode defaulting**: If `mode` is omitted, default to `plan`.
+
+**Topic inference**: If `<topic>` is also missing, run `rh-skills list` and:
+- If exactly one topic exists → use it (announce the inferred topic before proceeding).
+- If multiple topics exist → list them and ask the user to confirm which to use.
+- If no topics exist → exit with: `Error: No topics found. Run \`rh-skills init <topic>\` first.`
+
+If the mode is unrecognized, print the table above and exit.
 
 ---
 
@@ -291,6 +298,25 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 - unresolved conflicts
 - reviewer decision placeholder
 
+### After plan mode — output to user
+
+Emit this status block as the **last thing** in your response (no text after):
+
+```
+▸ rh-inf-extract  <topic>
+  Stage:    plan — complete
+  Artifacts: <N> proposed · <N approved> approved · <N pending> pending review
+  Next:     Review the readout, then approve and implement
+```
+
+**What would you like to do next?**
+
+A) Review the plan readout: `cat topics/<topic>/process/plans/extract-plan-readout.md`
+B) Approve all artifacts and proceed: `rh-inf-extract implement <topic>`
+C) Re-plan with changes: `rh-inf-extract plan <topic> --force`
+
+You can also ask for `rh-skills status show <topic>` at any time.
+
 ---
 
 ## Review & Approval
@@ -469,6 +495,25 @@ all deterministic writes must go through `rh-skills promote derive` and
 
 - `structured_derived` — appended by `rh-skills promote derive` for each derived artifact
 
+### After implement mode — output to user
+
+Emit this status block as the **last thing** in your response (no text after):
+
+```
+▸ rh-inf-extract  <topic>
+  Stage:    implement — complete
+  Artifacts: <N> derived · <N> validated · <N> rendered
+  Next:     Verify all artifacts or advance to formalize
+```
+
+**What would you like to do next?**
+
+A) Verify derived artifacts: `rh-inf-extract verify <topic>`
+B) Plan formalization (L3): `rh-inf-formalize plan <topic>`
+C) Review a rendered artifact: `cat topics/<topic>/structured/<artifact-name>/<artifact-name>-report.md`
+
+You can also ask for `rh-skills status show <topic>` at any time.
+
 ---
 
 ## Mode: `verify`
@@ -499,6 +544,25 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 5. Report pass/fail per artifact and exit non-zero only when required checks fail.
 
 Verify is read-only and safe to re-run at any time.
+
+### After verify mode — output to user
+
+Emit this status block as the **last thing** in your response (no text after):
+
+```
+▸ rh-inf-extract  <topic>
+  Stage:    verify — <PASS|FAIL>
+  Artifacts: <N> checked · <N> passed · <N> failed
+  Next:     <proceed to formalize, or fix issues and re-verify>
+```
+
+**What would you like to do next?**
+
+A) Plan formalization (next stage): `rh-inf-formalize plan <topic>`
+B) Re-run extraction on a failed artifact: `rh-inf-extract implement <topic>`
+C) Check overall topic status: `rh-skills status show <topic>`
+
+You can also ask for `rh-skills status show <topic>` at any time.
 
 ---
 

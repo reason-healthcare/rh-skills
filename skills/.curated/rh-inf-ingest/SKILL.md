@@ -105,6 +105,15 @@ Inspect `$ARGUMENTS` before proceeding. The first word is the **mode**
 
 If `$ARGUMENTS` is empty or the mode is unrecognized, print this table and exit.
 
+**Mode defaulting**: If `mode` is omitted, default to `plan`.
+
+**Topic inference**: If `<topic>` is also missing, run `rh-skills list` and:
+- If exactly one topic exists → use it (announce the inferred topic before proceeding).
+- If multiple topics exist → list them and ask the user to confirm which to use.
+- If no topics exist → exit with: `Error: No topics found. Run \`rh-skills init <topic>\` first.`
+
+If the mode is unrecognized, print the table above and exit.
+
 ---
 
 ## Pre-Execution Checks
