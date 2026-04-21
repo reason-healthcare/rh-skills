@@ -155,6 +155,7 @@ AGENT="claude"
 MODEL=""
 TOPIC_OVERRIDE=""
 KEEP_WORKDIR=false
+ALLOW_NET=false
 
 usage() {
   sed -n '2,22p' "$0" | sed 's/^# \?//'
@@ -166,6 +167,7 @@ usage() {
   echo "  --model <name>       Model override passed to agent"
   echo "  --topic <name>       Override the topic from the scenario file"
   echo "  --keep-workdir       Do not delete temp workspace after the run"
+  echo "  --allow-net          Allow outbound network in codex sandbox (enables MCP tool calls)"
   echo "  --help               Show this help"
   exit 0
 }
@@ -179,6 +181,7 @@ while [[ $# -gt 0 ]]; do
     --model)         MODEL="$2";           shift 2 ;;
     --topic)         TOPIC_OVERRIDE="$2";  shift 2 ;;
     --keep-workdir)  KEEP_WORKDIR=true;    shift   ;;
+    --allow-net)     ALLOW_NET=true;       shift   ;;
     --help|-h)       usage ;;
     *) die "Unknown option: $1" ;;
   esac
@@ -230,6 +233,7 @@ echo "==> Skill     : $SKILL"
 echo "==> Scenario  : $SCENARIO"
 echo "==> Topic     : $TOPIC"
 echo "==> Agent     : $AGENT"
+echo "==> Allow net : $ALLOW_NET"
 echo "==> Transcript: $TRANSCRIPT_FILE"
 echo
 
@@ -331,7 +335,9 @@ case "$AGENT" in
   codex)
     MODEL_FLAG=""
     [[ -n "$MODEL" ]] && MODEL_FLAG="-c model=$MODEL"
-    AGENT_CMD="codex exec -s workspace-write -C $WORKDIR $MODEL_FLAG"
+    SANDBOX="workspace-write"
+    [[ "$ALLOW_NET" == "true" ]] && SANDBOX="danger-full-access"
+    AGENT_CMD="codex exec -s $SANDBOX -C $WORKDIR $MODEL_FLAG"
     ;;
   ollama)
     MODEL="${MODEL:-llama3}"
