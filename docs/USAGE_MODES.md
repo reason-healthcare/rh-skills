@@ -129,7 +129,13 @@ Because both modes produce identical outputs via the same `rh-skills` CLI, artif
 
 ---
 
-## LLM Provider Configuration (CLI-First)
+## LLM Provider Configuration
+
+`LLM_PROVIDER` is **only required in CLI-first mode**. In agent-native mode, the
+agent is the reasoning layer — it constructs artifact content and passes it to the
+CLI via `RH_STUB_RESPONSE`. Never set `LLM_PROVIDER` in agent-native workflows.
+
+### CLI-First: configuring a provider
 
 In CLI-first mode, the `rh-skills` CLI invokes your configured LLM provider for
 reasoning steps. Configure via `.rh-skills.toml` or environment variables:
@@ -160,4 +166,21 @@ export OLLAMA_ENDPOINT=http://localhost:11434
 export OLLAMA_MODEL=mistral
 ```
 
-Any OpenAI-compatible endpoint works — local models via Ollama, LM Studio, vLLM, or hosted providers. The `rh-skills` CLI is model-agnostic; all reasoning is in the SKILL.md prompts, not hardcoded to any model.
+Any OpenAI-compatible endpoint works — local models via Ollama, LM Studio, vLLM,
+or hosted providers. The `rh-skills` CLI is model-agnostic; all reasoning is in
+the SKILL.md prompts, not hardcoded to any model.
+
+### Agent-native: no provider needed
+
+In agent-native mode, `LLM_PROVIDER` is not set. The agent generates the artifact
+YAML and passes it to `rh-skills promote derive` via `RH_STUB_RESPONSE`:
+
+```bash
+# Agent constructs the YAML; CLI handles file I/O, validation, tracking
+RH_STUB_RESPONSE="<full yaml body>" rh-skills promote derive <topic> <artifact-name> \
+  --source <source-name> --artifact-type <type> ...
+```
+
+If `LLM_PROVIDER` is unset, the CLI defaults to stub mode and reads `RH_STUB_RESPONSE`.
+If `RH_STUB_RESPONSE` is also unset, the CLI writes placeholder scaffolding that
+**will fail validation** — always provide a complete YAML body.
