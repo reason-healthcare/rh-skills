@@ -164,6 +164,30 @@ scripts/eval-skill.sh \
   --agent generic
 ```
 
+#### Enabling MCP tool calls (codex agent only)
+
+By default the codex sandbox runs in `workspace-write` mode, which blocks all
+outbound network — MCP tool calls will silently fail with `user cancelled`.
+
+To allow MCP (required for scenarios that do terminology lookup via reasonhub):
+
+```bash
+REASONHUB_TOKEN=<your-token> \
+  scripts/eval-skill.sh \
+  --allow-net \
+  --skill rh-inf-extract \
+  --scenario assessment-loinc-codes \
+  --agent codex
+```
+
+`--allow-net` switches the sandbox to `danger-full-access` so the agent can
+reach `https://reasonhub.app/mcp`. The reasonhub MCP server is registered in
+`~/.codex/config.toml`; set `REASONHUB_TOKEN` in the environment before
+running — the server reads it via `bearer_token_env_var`.
+
+> **Note:** `--allow-net` is only supported with `--agent codex`. It has no
+> effect on other agents.
+
 The script:
 
 1. Creates a temp directory (`mktemp -d`) and bootstraps a minimal `rh-skills`
