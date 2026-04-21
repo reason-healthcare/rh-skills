@@ -965,14 +965,118 @@ def _interactive_approve(
 
 
 def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
-    """Invoke LLM or return stub response."""
+    """Invoke configured LLM provider, or return stub response."""
     provider = config_value("LLM_PROVIDER", "stub")
+
     if provider == "stub":
         stub = config_value("RH_STUB_RESPONSE", "Stub response")
         return stub
+
+    if provider == "ollama":
+        return _invoke_ollama(system_prompt, user_prompt)
+
+    if provider == "anthropic":
+        return _invoke_anthropic(system_prompt, user_prompt)
+
+    if provider in ("openai", "openai-compatible"):
+        return _invoke_openai(system_prompt, user_prompt)
+
     raise click.ClickException(
-        f"LLM provider '{provider}' not available — set LLM_PROVIDER to a supported provider"
+        f"LLM provider '{provider}' is not supported. "
+        "Set LLM_PROVIDER to one of: ollama, anthropic, openai"
     )
+
+
+def _invoke_ollama(system_prompt: str, user_prompt: str) -> str:
+    """Call a local Ollama instance."""
+    import httpx
+
+    endpoint = config_value("OLLAMA_ENDPOINT", "http://localhost:11434")
+    model = config_value("OLLAMA_MODEL", "mistral")
+    url = endpoint.rstrip("/") + "/api/chat"
+
+    payload = {
+        "model": model,
+        "stream": False,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    }
+    try:
+        response = httpx.post(url, json=payload, timeout=120)
+        response.raise_for_status()
+        return response.json()["message"]["content"]
+    except httpx.HTTPError as exc:
+        raise click.ClickException(f"Ollama request failed: {exc}") from exc
+    except (KeyError, ValueError) as exc:
+        raise click.ClickException(f"Unexpected Ollama response format: {exc}") from exc
+
+
+def _invoke_anthropic(system_prompt: str, user_prompt: str) -> str:
+    """Call the Anthropic Messages API."""
+    import httpx
+
+    api_key = config_value("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise click.ClickException(
+            "ANTHROPIC_API_KEY is not set. Configure it in .rh-skills.toml or as an environment variable."
+        )
+    model = config_value("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
+
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "max_tokens": 8096,
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": user_prompt}],
+    }
+    try:
+        response = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers=headers,
+            json=payload,
+            timeout=120,
+        )
+        response.raise_for_status()
+        return response.json()["content"][0]["text"]
+    except httpx.HTTPError as exc:
+        raise click.ClickException(f"Anthropic request failed: {exc}") from exc
+    except (KeyError, IndexError, ValueError) as exc:
+        raise click.ClickException(f"Unexpected Anthropic response format: {exc}") from exc
+
+
+def _invoke_openai(system_prompt: str, user_prompt: str) -> str:
+    """Call an OpenAI-compatible chat completions endpoint."""
+    import httpx
+
+    api_key = config_value("OPENAI_API_KEY", "")
+    endpoint = config_value("OPENAI_ENDPOINT", "https://api.openai.com/v1/chat/completions")
+    model = config_value("OPENAI_MODEL", "gpt-4o-mini")
+
+    headers = {"content-type": "application/json"}
+    if api_key:
+        headers["authorization"] = f"Bearer {api_key}"
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    }
+    try:
+        response = httpx.post(endpoint, headers=headers, json=payload, timeout=120)
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except httpx.HTTPError as exc:
+        raise click.ClickException(f"OpenAI request failed: {exc}") from exc
+    except (KeyError, IndexError, ValueError) as exc:
+        raise click.ClickException(f"Unexpected OpenAI response format: {exc}") from exc
 
 
 def _sanitize_yaml(raw_text: str) -> str:

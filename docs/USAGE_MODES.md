@@ -131,32 +131,66 @@ Because both modes produce identical outputs via the same `rh-skills` CLI, artif
 
 ## LLM Provider Configuration
 
-`LLM_PROVIDER` is **only required in CLI-first mode**. In agent-native mode, the
-agent is the reasoning layer — it constructs artifact content and passes it to the
-CLI via `RH_STUB_RESPONSE`. Never set `LLM_PROVIDER` in agent-native workflows.
+Three modes of operation are supported, based on whether `LLM_PROVIDER` is set:
+
+| Mode | `LLM_PROVIDER` | Who reasons | Use case |
+|------|---------------|-------------|----------|
+| Agent-native | unset | The agent | Agent handles everything |
+| Hybrid | set | Separate LLM | Agent orchestrates; LLM generates content |
+| CLI-first | set | Configured LLM | No agent; CLI calls LLM directly |
+
+### Agent-native: no provider needed
+
+`LLM_PROVIDER` is not set. The agent generates artifact YAML and passes it to the
+CLI via `RH_STUB_RESPONSE`. The CLI handles file I/O, validation, and tracking:
+
+```bash
+RH_STUB_RESPONSE="<full yaml body>" rh-skills promote derive <topic> <artifact-name> \
+  --source <source-name> --artifact-type <type> ...
+```
+
+If `RH_STUB_RESPONSE` is also unset, the CLI writes placeholder scaffolding that
+**will fail validation** — always provide a complete YAML body.
+
+### Hybrid: agent orchestrates, LLM generates
+
+Set `LLM_PROVIDER` even while using an agent. The agent handles orchestration
+(sequencing, MCP calls, validation) while the CLI calls the configured LLM for
+heavy artifact generation. This lets you use a smaller/faster model for the agent
+and a more capable model for content generation.
+
+```toml
+# .rh-skills.toml
+[llm.anthropic]
+api_key = "sk-ant-..."
+model = "claude-3-5-sonnet-20241022"
+
+[llm]
+provider = "anthropic"
+```
 
 ### CLI-First: configuring a provider
 
 In CLI-first mode, the `rh-skills` CLI invokes your configured LLM provider for
-reasoning steps. Configure via `.rh-skills.toml` or environment variables:
+all reasoning steps. Configure via `.rh-skills.toml` or environment variables:
 
 ```toml
 # .rh-skills.toml (local) or ~/.rh-skills.toml (global)
 [llm]
 provider = "ollama"            # ollama | anthropic | openai
 
-# Ollama (local, no API key required)
-# endpoint = "http://localhost:11434"
-# model = "mistral"
+[llm.ollama]
+endpoint = "http://localhost:11434"
+model = "mistral"
 
-# Anthropic
-# api_key = "sk-ant-..."
-# model = "claude-3-5-sonnet-20241022"
+[llm.anthropic]
+api_key = "sk-ant-..."
+model = "claude-3-5-sonnet-20241022"
 
-# OpenAI-compatible
-# api_key = "sk-..."
-# endpoint = "https://api.openai.com/v1/chat/completions"
-# model = "gpt-4o-mini"
+[llm.openai]
+api_key = "sk-..."
+endpoint = "https://api.openai.com/v1/chat/completions"
+model = "gpt-4o-mini"
 ```
 
 ```bash
@@ -169,18 +203,3 @@ export OLLAMA_MODEL=mistral
 Any OpenAI-compatible endpoint works — local models via Ollama, LM Studio, vLLM,
 or hosted providers. The `rh-skills` CLI is model-agnostic; all reasoning is in
 the SKILL.md prompts, not hardcoded to any model.
-
-### Agent-native: no provider needed
-
-In agent-native mode, `LLM_PROVIDER` is not set. The agent generates the artifact
-YAML and passes it to `rh-skills promote derive` via `RH_STUB_RESPONSE`:
-
-```bash
-# Agent constructs the YAML; CLI handles file I/O, validation, tracking
-RH_STUB_RESPONSE="<full yaml body>" rh-skills promote derive <topic> <artifact-name> \
-  --source <source-name> --artifact-type <type> ...
-```
-
-If `LLM_PROVIDER` is unset, the CLI defaults to stub mode and reads `RH_STUB_RESPONSE`.
-If `RH_STUB_RESPONSE` is also unset, the CLI writes placeholder scaffolding that
-**will fail validation** — always provide a complete YAML body.

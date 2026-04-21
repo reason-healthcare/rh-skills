@@ -34,6 +34,13 @@ else:
 
 _CONFIG_KEYS = {
     "LLM_PROVIDER",
+    "OLLAMA_ENDPOINT",
+    "OLLAMA_MODEL",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_MODEL",
+    "OPENAI_API_KEY",
+    "OPENAI_ENDPOINT",
+    "OPENAI_MODEL",
     "RH_REPO_ROOT",
     "RH_SOURCES_ROOT",
     "RH_STUB_RESPONSE",
@@ -87,11 +94,39 @@ def _load_config_file(path: Path) -> dict[str, str]:
         mapping = {
             "provider": "LLM_PROVIDER",
             "stub_response": "RH_STUB_RESPONSE",
+            "endpoint": "OLLAMA_ENDPOINT",
+            "model": "OLLAMA_MODEL",
+            "api_key": "ANTHROPIC_API_KEY",
         }
         for key, env_key in mapping.items():
             value = llm.get(key)
             if value is not None:
                 data[env_key] = str(value)
+
+        ollama = llm.get("ollama", {})
+        if isinstance(ollama, dict):
+            for key, env_key in [("endpoint", "OLLAMA_ENDPOINT"), ("model", "OLLAMA_MODEL")]:
+                value = ollama.get(key)
+                if value is not None:
+                    data[env_key] = str(value)
+
+        anthropic = llm.get("anthropic", {})
+        if isinstance(anthropic, dict):
+            for key, env_key in [("api_key", "ANTHROPIC_API_KEY"), ("model", "ANTHROPIC_MODEL")]:
+                value = anthropic.get(key)
+                if value is not None:
+                    data[env_key] = str(value)
+
+        openai = llm.get("openai", {})
+        if isinstance(openai, dict):
+            for key, env_key in [
+                ("api_key", "OPENAI_API_KEY"),
+                ("endpoint", "OPENAI_ENDPOINT"),
+                ("model", "OPENAI_MODEL"),
+            ]:
+                value = openai.get(key)
+                if value is not None:
+                    data[env_key] = str(value)
 
     return data
 
