@@ -80,12 +80,35 @@ MIME_TO_EXT = {
     "text/xml": ".xml",
 }
 
-VALID_EVIDENCE_LEVELS = {"ia", "ib", "iia", "iib", "iii", "iv", "v", "expert-consensus"}
+VALID_EVIDENCE_LEVELS = {
+    # Oxford / traditional hierarchy
+    "ia", "ib", "iia", "iib", "iii", "iv", "v", "expert-consensus",
+    # GRADE certainty
+    "grade-a", "grade-b", "grade-c", "grade-d",
+    # USPSTF grades
+    "uspstf-a", "uspstf-b", "uspstf-c", "uspstf-d", "uspstf-i",
+    # Reference and non-study sources
+    "reference-standard", "n/a",
+}
 VALID_SOURCE_TYPES = {
-    "clinical-guideline", "systematic-review", "rct", "cohort-study",
-    "case-control", "cross-sectional", "case-report", "expert-opinion",
-    "textbook", "government-program", "quality-measure", "terminology",
-    "fhir-ig", "sdoh-assessment", "health-economics", "document",
+    # Guidelines
+    "guideline", "clinical-guideline",          # clinical-guideline is alias for guideline
+    # Study designs
+    "systematic-review", "rct", "cohort-study", "case-control",
+    "cross-sectional", "case-report", "expert-opinion",
+    # Terminology and value sets
+    "terminology", "value-set",
+    # Measures and libraries
+    "measure-library", "quality-measure",        # quality-measure is alias for measure-library
+    "cds-library",
+    # FHIR and implementation
+    "fhir-ig",
+    # Programmatic / real-world data
+    "sdoh-assessment", "health-economics", "government-program", "registry",
+    # Literature
+    "pubmed-article", "textbook",
+    # Catch-all
+    "document", "other",
 }
 
 
