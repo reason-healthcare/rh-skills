@@ -153,7 +153,12 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
    - `Cross-Artifact Issues`
    - `Implementation Readiness`
 6. If `formalize-plan.md` already exists and `--force` is not present, warn and stop without overwriting.
-7. Summarize the proposed computable artifact(s), strategy per type, L3 FHIR targets, excluded inputs, and reviewer actions before implement mode.
+7. After writing the plan, check for cross-artifact issues before proceeding:
+
+   **⚠ HUMAN-IN-THE-LOOP: Cross-artifact conflicts require explicit human confirmation.**
+
+   - If the plan contains **any entries in `Cross-Artifact Issues`** (overlapping FHIR resource types, modeling ambiguities, or unresolved convergence choices), **STOP**. Present each issue clearly and ask the human how to resolve it before proceeding to implement mode.
+   - If **no cross-artifact issues exist**, summarize the proposed computable artifact(s), strategy per type, L3 FHIR targets, and excluded inputs, then present the output contract below.
 
 ### What to capture per artifact
 

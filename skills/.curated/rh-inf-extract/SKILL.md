@@ -285,9 +285,12 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    `extract-plan.yaml` with file-editing tools** — use `--force` to regenerate
    or record corrections in `review_summary` when approving.
 8. If `extract-plan.yaml` already exists and `--force` is not present, warn and stop without overwriting.
-9. After reviewing the plan output, proceed **immediately** to the Review & Approval
-   phase below — run `rh-skills promote approve` without waiting for user confirmation.
-   Do not present the plan and pause for a reply.
+9. After reviewing the plan output, check for conflicts before proceeding:
+
+   **⚠ HUMAN-IN-THE-LOOP: Conflicts require explicit human confirmation.**
+
+   - If **any artifact has entries in `conflicts[]`** or the plan contains unresolved clinical disagreements, **STOP**. Present each conflict clearly (source A position vs. source B position) and ask the human how to proceed before running `rh-skills promote approve`. Do not auto-resolve or assume a preferred position.
+   - If **no conflicts exist**, proceed immediately to the Review & Approval phase below and run `rh-skills promote approve` without waiting for user confirmation.
 
 ### What to capture per artifact
 
@@ -324,6 +327,11 @@ You can also ask for `rh-skills status show <topic>` at any time.
 After plan mode completes, the plan is in `status: pending-review` and each
 artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
+
+> **⚠ HUMAN-IN-THE-LOOP RULE**: If any artifact has entries in `conflicts[]`,
+> you **MUST** stop and present those conflicts to the human before running any
+> `rh-skills promote approve` command. Never auto-resolve a conflict or choose
+> a preferred position without explicit human direction.
 
 Use `rh-skills promote approve` to record decisions without editing YAML directly:
 
