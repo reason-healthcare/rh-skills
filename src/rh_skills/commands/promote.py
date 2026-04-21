@@ -1079,6 +1079,10 @@ def plan(topic, force):
     save_tracking(tracking)
     log_info(f"Created: {plan_path}")
     log_info(f"Created: {_extract_readout_path(topic)}")
+    click.echo("\nNext steps:")
+    click.echo(f"  1. Review the readout : cat topics/{topic}/process/plans/extract-plan-readout.md")
+    click.echo(f"  2. Approve artifacts  : rh-inf-extract approve {topic}")
+    click.echo(f"  3. Run extraction     : rh-inf-extract implement {topic}")
 
 
 @promote.command("approve")
@@ -1230,6 +1234,10 @@ def formalize_plan(topic, force):
     )
     save_tracking(tracking)
     log_info(f"Created: {plan_path}")
+    click.echo("\nNext steps:")
+    click.echo(f"  1. Review the plan    : cat topics/{topic}/process/plans/formalize-plan.md")
+    click.echo(f"  2. Approve the target : rh-inf-formalize approve {topic}")
+    click.echo(f"  3. Run formalization  : rh-inf-formalize implement {topic}")
 
 
 @promote.command()
