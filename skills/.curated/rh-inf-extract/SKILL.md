@@ -303,20 +303,31 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 
 ### After plan mode — output to user
 
-Emit this status block as the **last thing** in your response (no text after):
+Emit this status block as the **last thing** in your response (no text after).
+Populate each count from the actual plan state. List rejected/needs-revision artifact names explicitly.
 
 ```
 ▸ rh-inf-extract  <topic>
   Stage:    plan — complete
-  Artifacts: <N> proposed · <N approved> approved · <N pending> pending review
-  Next:     Review the readout, then approve and implement
+  Artifacts: <N> proposed · <N> approved · <N> rejected · <N> needs-revision · <N> pending review
+  Next:     <context-sensitive one-liner — see rules below>
 ```
+
+**Next line rules** (pick the first that applies):
+- Any artifact is `pending-review` → `"Approve or reject pending artifacts, then implement: rh-inf-extract implement <topic>"`
+- Any artifact is `rejected` → `"Implement <N> approved artifact(s); re-plan rejected: <name1>, <name2>"`
+- Any artifact is `needs-revision` → `"Address revisions on <name(s)>, re-approve, then implement"`
+- All approved, no issues → `"Run extraction: rh-inf-extract implement <topic>"`
 
 **What would you like to do next?**
 
-A) Review the plan readout: `cat topics/<topic>/process/plans/extract-plan-readout.md`
-B) Approve all artifacts and proceed: `rh-inf-extract implement <topic>`
-C) Re-plan with changes: `rh-inf-extract plan <topic> --force`
+Always include options A and B. Add C only if any artifact is rejected or needs-revision. Add D only if conflicts exist.
+
+A) Implement approved artifacts now: `rh-inf-extract implement <topic>`
+B) Review the full plan readout: `cat topics/<topic>/process/plans/extract-plan-readout.md`
+C) [If rejected/needs-revision] Approve a specific artifact: `rh-skills promote approve <topic> --artifact <name> --decision approved`
+C) [If rejected/needs-revision] Re-plan a rejected artifact: `rh-skills promote plan <topic> --force`
+D) [If conflicts] Present conflicts for human review before approving
 
 You can also ask for `rh-skills status show <topic>` at any time.
 
