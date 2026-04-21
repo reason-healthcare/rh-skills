@@ -22,7 +22,8 @@ def test_init_creates_directory_structure(tmp_repo):
     topics = tmp_repo / "topics"
     assert (topics / "test-skill").is_dir()
     assert (topics / "test-skill" / "structured").is_dir()
-    assert (topics / "test-skill" / "computable").is_dir()
+    assert not (topics / "test-skill" / "computable").exists(), \
+        "computable/ should not exist until formalize runs"
     assert (topics / "test-skill" / "process" / "fixtures").is_dir()
     assert (tmp_repo / "sources").is_dir()
 

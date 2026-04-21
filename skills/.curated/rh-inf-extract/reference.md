@@ -274,6 +274,10 @@ sections:
 #### assessment
 
 ```yaml
+codings:                          # top-level; populated from MCP LOINC lookup
+  - code: <LOINC code>
+    system: http://loinc.org
+    display: <canonical display>
 sections:
   instrument:
     name: <instrument name>
@@ -281,6 +285,7 @@ sections:
     population: <target population>
   items:
     - id: q1
+      loinc_code: "<LOINC item code>"   # resolved per-item via MCP; omit if unresolved
       text: <question text>
       type: <ordinal|boolean|choice|numeric|text>
       options:

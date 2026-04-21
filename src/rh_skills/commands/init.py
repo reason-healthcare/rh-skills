@@ -66,7 +66,7 @@ def init(topic, title, description, author):
 
     # Create directory structure
     for subdir in [
-        "structured", "computable",
+        "structured",
         "process/fixtures/results", "process/plans", "process/contracts", "process/checklists",
     ]:
         (td / subdir).mkdir(parents=True, exist_ok=True)
@@ -194,7 +194,7 @@ metadata:
     click.echo("    sources/   (shared raw sources — repo root)")
     click.echo(f"    {topic}/")
     click.echo("      structured/  (semi-structured artifacts)")
-    click.echo("      computable/  (computable artifacts)")
+    click.echo("      computable/  (created by formalize — not present yet)")
     click.echo("      process/")
     click.echo("        contracts/   (YAML assertions for validation)")
     click.echo("        checklists/  (clinical review checklists)")
