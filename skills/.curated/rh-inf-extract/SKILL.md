@@ -225,15 +225,18 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    codes from the source text into `candidate_codes[]` or the derived artifact.**
    a. Call `reasonhub-search_loinc` using the full instrument name as the query
       (e.g., "PHQ-9 Patient Health Questionnaire depression screening panel").
-   b. For the top result and any clinically relevant alternates (e.g., total score
-      code alongside the panel code), call `reasonhub-codesystem_lookup` to
-      confirm the canonical display name.
-   c. For **each scored item** in the instrument, call `reasonhub-search_loinc`
-      using the item text as the query (e.g., "PHQ-9 little interest or pleasure
-      doing things depression item"). Confirm the top result with
-      `reasonhub-codesystem_lookup`. Prefer codes whose `panel-parent` property
-      matches the panel code found in step (a). Record a `loinc_code` for each
-      item.
+      Use `top_k=50` so that panel, total-score, and individual item codes for
+      the same instrument often appear in a single response — check whether all
+      scored items are already present before making per-item searches.
+   b. For the top panel result and the total-score code, call
+      `reasonhub-codesystem_lookup` to confirm the canonical display name and
+      verify the `panel-parent` property links items back to the panel.
+   c. For any **scored item not already found** in step (a), call
+      `reasonhub-search_loinc` using the item text as the query. Confirm the top
+      result with `reasonhub-codesystem_lookup`. Prefer codes whose `panel-parent`
+      property matches the panel code found in step (a). Record a `loinc_code`
+      for each item. Minimise calls — if a broad step (a) search already returned
+      all items, skip individual per-item searches entirely.
    d. Record all candidate codes in the artifact's `candidate_codes[]` field in the
       review packet, tagged with `use: panel`, `use: total-score`, or
       `use: item-<n>` to distinguish their role.
@@ -241,7 +244,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       - Top-level `codings[]` list: panel code and total-score code, each with
         `code`, `system` (`http://loinc.org`), and `display`.
       - Per-item: add a `loinc_code` field alongside `id`, `text`, and `type`
-        for each item in `sections.assessment.items[]`. This enables downstream
+        for each item in `sections.items[]`. This enables downstream
         formalize mode to populate `Questionnaire.item[].code` in the FHIR resource.
       - **If no code is found** for the panel, total-score, or any individual item
         (MCP returned results but no confident match), omit the field for that

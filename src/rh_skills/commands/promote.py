@@ -62,7 +62,7 @@ EXTRACT_ARTIFACT_PROFILES = (
     {
         "artifact_type": "assessment",
         "keywords": ("assessment", "screening", "questionnaire", "instrument", "phq", "gad", "score"),
-        "section": "assessment",
+        "section": ["instrument", "items", "scoring"],
         "key_question": "What assessment instruments or scoring tools are specified?",
     },
     {
@@ -717,7 +717,9 @@ def _build_plan_artifact_entry(group: dict) -> dict:
             "resolution": "",
         })
 
-    required_sections = ["summary", group["section"], "evidence_traceability"]
+    section_val = group["section"]
+    middle_sections = section_val if isinstance(section_val, list) else [section_val]
+    required_sections = ["summary"] + middle_sections + ["evidence_traceability"]
     if plan_conflicts:
         required_sections.append("conflicts")
 
