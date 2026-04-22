@@ -2,9 +2,10 @@
 name: "rh-cql"
 description: "First-class CQL (Clinical Quality Language) authoring, review, debugging, and test-plan skill for the rh-skills informatics workflow."
 compatibility: "Requires rh-skills project with topics/<topic>/computable/ structure and `rh` CLI on PATH"
+applyTo: "**/*.cql, **/*.xml, **/Library-*.json, **/Measure-*.json, **/PlanDefinition-*.json, **/ActivityDefinition-*.json, **/tests/cql/**/*.json, **/tests/cql/**/*.yaml, **/skills/.curated/rh-cql/**"
 metadata:
   author: "rh-skills"
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 ## User Input
@@ -46,6 +47,269 @@ If any check fails, report the missing resource and halt. Do NOT proceed with a 
 - **Ownership boundary**: `rh-cql` owns `.cql` source files. `rh-inf-formalize` owns FHIR Library JSON wrappers. These boundaries are never crossed.
 - **Human confirmation for conflicts**: any ambiguity, inconsistency, or multi-option decision MUST be surfaced to the human before the agent proceeds. Silent resolution is not permitted.
 - **FHIRHelpers-agnostic runtime**: `rh cql compile` does not inject FHIRHelpers wrapper calls. Type coercion between FHIR and CQL system types is the runtime's responsibility, not the author's. Authors should still `include FHIRHelpers` for explicit conversions where needed.
+
+---
+
+## Purpose
+
+This skill turns the agent into a disciplined reviewer and test-oriented author
+for CQL artifacts. Use it for:
+
+- writing or revising CQL libraries from structured clinical artifacts
+- reviewing CQL for correctness and maintainability
+- debugging translation or runtime failures
+- generating test scenarios and minimal fixture bundles
+- validating behavior using the `rh` CLI evaluator
+- checking alignment with FHIR Clinical Reasoning packaging conventions
+
+The skill should prefer deterministic reasoning over stylistic improvisation.
+For detailed conventions, see:
+- `skills/.curated/rh-cql/docs/authoring-guidelines.md`
+- `skills/.curated/rh-cql/docs/review-checklist.md`
+- `skills/.curated/rh-cql/docs/testing-strategy.md`
+- `skills/.curated/rh-cql/docs/terminology-policy.md`
+- `skills/.curated/rh-cql/docs/runtime-assumptions.md`
+
+---
+
+## What the Agent Should Optimize For
+
+- **Semantic correctness** — logic that evaluates correctly across the full case space
+- **Reproducible execution** — pinned versions, explicit options, no silent defaults
+- **Clarity of intent** — names match behavior; structure makes logic reviewable
+- **Explicit assumptions** — model, terminology, runtime all stated
+- **Compact but sufficient tests** — four minimum cases per define (positive, negative, null, boundary)
+- **Minimal safe changes** — prefer the smallest edit that solves the problem
+- **Consistency with local conventions** — follow `docs/authoring-guidelines.md`
+
+Do **not** optimize for: cleverness, compressing logic into dense one-liners, or
+vague positive review language such as "looks good."
+
+---
+
+## Required Context to Gather First
+
+Before making any recommendation, gather as much of the following as available.
+State clearly which items are missing and the likely impact of each gap.
+
+- Target CQL version (default: 1.5.3)
+- Target FHIR version (default: 4.0.1)
+- Model declaration and model version
+- Included libraries and their versions
+- Translator options (see `context/runtime/translator-options/README.md`)
+- Terminology dependencies and version pins
+- Runtime engine and evaluator details (see `context/runtime/engine-notes/README.md`)
+- Expected input data shape (patient bundle structure)
+- Expected output expressions or artifact behavior
+- Packaging context: Library, Measure, PlanDefinition, or ActivityDefinition
+
+---
+
+## Standard Operating Sequence
+
+For any non-trivial request, follow this order. Do **not** skip to code edits
+unless the user explicitly asks for a narrow syntax-only change.
+
+1. **Identify the effective execution environment** — model, FHIR version, translator options, runtime engine.
+2. **Summarize library intent** — purpose, key defines, major dependencies.
+3. **Inspect dependencies, terminology, and model assumptions** — flag missing or unpinned items.
+4. **Review semantics and maintainability** — apply the authoring rubric and review checklist.
+5. **Inspect translation behavior or ELM if relevant** — run `rh-skills cql validate` and `rh-skills cql translate`.
+6. **Run or reason about test scenarios** — run `rh-skills cql test` against existing fixtures; identify gaps.
+7. **Propose minimal changes** — prefer one-line fixes over restructuring.
+8. **Define regression tests** — specify the new or updated cases required.
+
+---
+
+## Primary Tasks
+
+### Task 1 — Summarize a Library
+
+For a given CQL library:
+
+- identify the purpose of the library
+- list important expressions and their dependencies
+- summarize retrieves, terminology, and helper usage
+- identify runtime assumptions (model, engine, translator options)
+- explain expected outputs and result types
+- call out unclear or risky assumptions
+
+Output format: use the structured template from `prompts/summarize-library.md`.
+
+---
+
+### Task 2 — Review a Library
+
+When reviewing CQL, check all items in the Review Checklist below. For each
+deficiency, produce a finding classified as `BLOCKING`, `ADVISORY`, or `INFO`
+with:
+- the specific area from the checklist or high-risk pattern catalog
+- a quoted CQL excerpt as evidence
+- a concrete recommended fix
+
+Output format: use the report template from `prompts/review-library.md`.
+
+---
+
+### Task 3 — Debug Failures
+
+When a translation or runtime error occurs:
+
+- isolate whether the issue is syntax, translation, model mismatch, terminology,
+  fixture shape, packaging, or engine behavior (use the Failure Categories section)
+- reduce to the smallest failing expression or data condition
+- explain the probable root cause in plain language
+- propose the smallest safe fix
+- recommend a regression test to add
+- note whether the failure is deterministic or environment-dependent
+
+Output format: use the template from `prompts/explain-failure.md` and then
+`prompts/propose-minimal-fix.md`.
+
+---
+
+### Task 4 — Generate Tests
+
+For each important definition, generate at minimum:
+
+| Case type | What it proves |
+|-----------|----------------|
+| Positive | Nominal true / expected-result path |
+| Negative | Nominal false / contrasting result |
+| Null / missing-data | Absent resource, missing date, incomplete evidence |
+| Boundary | Just below / exactly at / just above a threshold |
+| Conflicting evidence | Multiple facts that might cause ambiguity |
+| Terminology | In-valueset / out-of-valueset / version-drift behavior |
+| Multi-event | Earliest, latest, first, or any-match semantics |
+
+Prefer compact fixture sets that isolate one semantic point at a time.
+Output format: use `prompts/generate-test-scenarios.md`.
+
+---
+
+### Task 5 — Review Packaging and Surrounding Artifacts
+
+When CQL is embedded or referenced from FHIR artifacts:
+
+- confirm the intended expression context (Library, Measure, PlanDefinition, etc.)
+- identify whether the content is computable, executable, publishable, or shareable
+- verify references to Library resources and their version declarations
+- verify parameter and data expectations
+- confirm terminology and model assumptions are compatible with the surrounding artifact
+- flag any packaging that obscures executable dependencies
+
+---
+
+## Review Checklist
+
+Apply every time unless the user asks for something narrower. See
+`docs/review-checklist.md` for the full structured rubric.
+
+### Environment and Packaging
+- [ ] Is the target CQL version clear?
+- [ ] Is the target model and FHIR version declared and pinned?
+- [ ] Are included libraries versioned?
+- [ ] Are translator options declared or otherwise reproducible?
+- [ ] Is packaging context clear (Library, Measure, PlanDefinition, etc.)?
+
+### Semantics
+- [ ] Do definition names match behavior?
+- [ ] Are date and interval boundaries intentional and explicit?
+- [ ] Is null behavior explicit? (not left to propagation defaults)
+- [ ] Are types consistent across operator usage?
+- [ ] Are quantity comparisons safe? (explicit unit on both sides)
+- [ ] Are helper definitions used where they increase clarity?
+
+### Retrieves and Terminology
+- [ ] Are retrieves scoped appropriately? (valueset or code filter at the retrieve)
+- [ ] Are value sets and codes declared explicitly?
+- [ ] Are terminology versions pinned where reproducibility matters?
+- [ ] Is value set membership assumed too loosely anywhere?
+
+### Testing
+- [ ] Is there at least one positive case?
+- [ ] Is there at least one negative case?
+- [ ] Is there at least one null/missing-data case?
+- [ ] Is there at least one threshold/boundary case?
+- [ ] Is a regression test added for any bug fix?
+
+### Runtime Fit
+- [ ] Would the intended engine and CLI evaluate this correctly?
+- [ ] Are engine-specific assumptions documented?
+- [ ] Is the fixture shape compatible with the model and context?
+
+---
+
+## Testing Workflow
+
+When the `rh` CLI is available, use this loop:
+
+1. Translate the CQL to ELM: `rh-skills cql translate <topic> <library>`
+2. Capture translator warnings and errors.
+3. Run evaluator against focused fixture bundles: `rh-skills cql test <topic> <library>`
+4. Record outputs for key expressions, not only final population results.
+5. Compare actual vs expected outputs (the test command does this automatically).
+6. Classify failures using the Failure Categories below.
+7. Recommend the minimal code or fixture change.
+8. Add or update regression test cases at `tests/cql/<LibraryName>/`.
+
+If per-expression output is needed for debugging, run the evaluator directly:
+```bash
+rh cql eval --expr "<DefineName>" --data tests/cql/<LibraryName>/<case>/input/bundle.json \
+  topics/<topic>/computable/<LibraryName>.cql
+```
+
+See `context/runtime/cli/usage.md` for full CLI reference.
+
+---
+
+## Failure Categories
+
+Use these categories when classifying issues in reviews or debug reports:
+
+| Category | Description | Fix domain |
+|----------|-------------|------------|
+| `syntax` | Parse error, invalid token, grammar violation | Authoring |
+| `translation` | ELM generation failure, type inference error | Authoring |
+| `type-mismatch` | Operator applied to incompatible types | Authoring |
+| `null-propagation` | Unexpected null from missing optional element | Authoring |
+| `interval-boundary` | Inclusive/exclusive boundary produces wrong result | Authoring |
+| `temporal-precision` | Date/time comparison with mismatched precision | Authoring |
+| `terminology-resolution` | Code not in valueset, wrong system URL | Authoring |
+| `retrieve-scope` | Retrieve too broad; filtered too late downstream | Authoring |
+| `unit-conversion` | Quantity comparison without unit normalization | Authoring |
+| `version-drift` | Library, model, or valueset version changed | Authoring |
+| `fixture-or-data-shape` | Input bundle does not match model expectations | Fixture |
+| `packaging` | Library resource references, compiler options mismatch | Packaging |
+| `model-mismatch` | Wrong FHIR version, QI-Core vs base FHIR | Environment |
+| `engine-behavior` | Evaluator-specific handling of edge cases | Environment |
+| `missing-binary` | `rh` not on PATH or `RH_CLI_PATH` unset | Environment |
+
+---
+
+## Output Format
+
+For all non-trivial responses, prefer this structure:
+
+### Context
+State the effective environment and assumptions (model, FHIR version, translator
+options, runtime, terminology versions). Be explicit about what is missing.
+
+### Findings
+List the most important correctness or maintainability findings first. Classify
+each as `BLOCKING`, `ADVISORY`, or `INFO`.
+
+### Proposed Changes
+Suggest the smallest changes that address each finding. Show before/after for
+any CQL edit. Explain the **semantic** impact, not just textual change.
+
+### Test Scenarios
+List the new or updated test cases required. Include case name, case type,
+expected outcome, and what semantic point the case isolates.
+
+### Remaining Uncertainty
+State explicitly what cannot be confirmed from current context — missing runtime
+details, unknown terminology expansions, unverified fixture assumptions.
 
 ---
 
@@ -347,6 +611,45 @@ tests/cql/<LibraryName>/
 - Fixture directories at `tests/cql/<LibraryName>/case-NNN-<description>/`
 - Every fixture has structurally valid JSON (not empty files)
 - All `notes.md` files explain placeholder values
+
+---
+
+## Anti-Patterns to Flag
+
+The following patterns indicate high risk regardless of mode. Flag them with the
+category and classification shown. See `docs/authoring-guidelines.md` for
+guidance on preferred alternatives.
+
+| Pattern | Category | Classification |
+|---------|----------|----------------|
+| Unpinned valueset or code system version | `terminology-resolution` | BLOCKING |
+| Hidden timezone or precision assumption (`Today()`, `Now()` without explicit context) | `temporal-precision` | ADVISORY |
+| Quantity comparison without unit normalization on both sides | `unit-conversion` | BLOCKING |
+| Retrieve too broad — filtered ad hoc downstream instead of at the retrieve | `retrieve-scope` | ADVISORY |
+| Duplicate logic instead of a named helper definition | Style | ADVISORY |
+| Ambiguous null handling — assuming null is false without explicit `is null` check | `null-propagation` | ADVISORY |
+| Dependence on implicit engine behavior not documented in `context/runtime/` | `engine-behavior` | ADVISORY |
+| Mixed FHIR version assumptions in included libraries | `model-mismatch` | BLOCKING |
+| Library version not declared or declared as `0.0.0` | `version-drift` | ADVISORY |
+| ELM not re-generated after CQL change | `packaging` | ADVISORY |
+
+---
+
+## Working Style
+
+- Always state your assumptions explicitly before producing any output.
+- When multiple approaches are viable, present the top two with their tradeoffs
+  and ask the user to choose. Never silently pick one.
+- When a finding is ambiguous, classify it conservatively (BLOCKING if unsure).
+- Prefer table and structured formats over paragraphs for findings.
+- For proposed code changes, show the minimal edit as a before/after diff.
+- Do not rewrite libraries wholesale unless explicitly asked. Prefer targeted edits.
+- When the `rh` CLI is available, run it before claiming a library is correct.
+- Do not claim "this looks good" without completing the full Review Checklist.
+- If the required context is missing (model, runtime, terminology), state that
+  explicitly before proceeding, rather than assuming defaults.
+- Always propose a regression test for any bug fix. Do not close a debug session
+  without identifying the minimum fixture that reproduces the issue.
 
 ---
 

@@ -15,6 +15,7 @@ TEMPLATE_DIR = REPO_ROOT / "skills" / "_template"
 # Extends the base Agent Skills standard with HI-specific fields.
 REQUIRED_FRONTMATTER_KEYS = {"name", "description", "compatibility"}
 OPTIONAL_FRONTMATTER_KEYS = {
+    "applyTo",
     "context_files",
     "metadata",
     "license",

@@ -1,0 +1,10 @@
+dependencies:
+  # Core runtime dependencies expected to be present for all CQL evaluation.
+  libraries:
+    - FHIRHelpers|4.0.1
+  modelInfo:
+    - FHIR-ModelInfo|4.0.1
+  external:
+    - rh-cli        # the `rh` binary; install with: cargo install rh
+  optional:
+    - terminology-service  # for online value set expansion (not required for offline evaluation)

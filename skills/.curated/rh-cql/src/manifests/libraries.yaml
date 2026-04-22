@@ -1,0 +1,20 @@
+libraries:
+  # One entry per CQL library tracked in this project.
+  # Add a real entry when a library is promoted to computable status.
+  #
+  # Example:
+  # - id: HyperlipidemiaMonitoring
+  #   version: 1.0.0
+  #   cqlVersion: "1.5.3"
+  #   model: FHIR
+  #   modelVersion: "4.0.1"
+  #   includes:
+  #     - id: FHIRHelpers
+  #       version: "4.0.1"
+  #   terminology:
+  #     - url: http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1011
+  #       version: "20230101"
+  #   translatorOptions:
+  #     - EnableAnnotations
+  #     - EnableLocators
+  #   notes: Lipid monitoring logic for primary prevention.

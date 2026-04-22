@@ -1,0 +1,18 @@
+terminology:
+  # Declare value sets and code systems used across CQL libraries.
+  # Add an entry here when a library references a terminology artifact.
+  # For pinning rules see: docs/terminology-policy.md
+  valueSets: []
+    # Example:
+    # - name: Hypertension
+    #   url: http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1011
+    #   version: "20230101"
+    #   usedIn:
+    #     - HyperlipidemiaMonitoring
+  codeSystems: []
+    # Example:
+    # - name: SNOMED-CT
+    #   url: http://snomed.info/sct
+    #   version: http://snomed.info/sct/731000124108/version/20240301
+  expansions: []
+    # Pre-expanded value sets bundled for offline evaluation.

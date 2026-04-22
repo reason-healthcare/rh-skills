@@ -1,0 +1,18 @@
+terminology:
+  # Resolved runtime versions of value sets and code systems.
+  # Update this file when terminology is expanded or version-pinned for execution.
+  # See also: src/manifests/terminology.yaml for authoring-time declarations.
+  valueSets: []
+    # Example:
+    # - name: Hypertension
+    #   url: http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1011
+    #   expandedVersion: "20230101"
+    #   expansionDate: "2024-01-15"
+    #   source: VSAC
+  codeSystems: []
+    # Example:
+    # - name: SNOMED-CT
+    #   url: http://snomed.info/sct
+    #   version: http://snomed.info/sct/731000124108/version/20240301
+  expansions: []
+    # Paths to pre-expanded value set JSON files used in offline evaluation.
