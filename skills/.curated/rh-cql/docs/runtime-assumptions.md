@@ -18,7 +18,7 @@ The `rh` CQL evaluator does **not** inject `FHIRHelpers.ToConcept` wrapper
 calls automatically. This means:
 
 - FHIR → CQL type coercions are not automatic
-- Authors must `include FHIRHelpers` explicitly for explicit conversions
+- Authors must `include fhir.cqf.common.FHIRHelpers` explicitly for explicit conversions
 - Unexpected `null` results for coded values often indicate a missing
   FHIRHelpers include or an unsupported coercion path
 

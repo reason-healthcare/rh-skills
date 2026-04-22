@@ -17,7 +17,7 @@ evaluate to `null` or error when FHIRHelpers is not explicitly included.
 date types should include:
 
 ```cql
-include FHIRHelpers version '4.0.1' called FHIRHelpers
+include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
 ```
 
 ### Terminology Resolution

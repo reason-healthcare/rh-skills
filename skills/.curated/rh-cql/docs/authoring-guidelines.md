@@ -68,7 +68,7 @@ Avoid helpers that merely hide simple logic without adding clarity.
 
 The `rh` CLI evaluator is FHIRHelpers-agnostic — it does **not** inject
 `FHIRHelpers.ToConcept` calls automatically. Include
-`include FHIRHelpers version '4.0.1' called FHIRHelpers` explicitly when
+`include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers` explicitly when
 type coercions between FHIR and CQL system types are needed.
 
 ## Documentation expectations

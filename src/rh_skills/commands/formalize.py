@@ -174,6 +174,25 @@ For terminology: If MCP tools are unavailable, use "TODO:MCP-UNREACHABLE" as pla
 Output ONLY the JSON array. No markdown fences, no explanation."""
 
 
+def _patch_measure_library_references(resources: list[dict]) -> None:
+    """Ensure every Measure in the list references its companion Library by canonical URL.
+
+    Called after both stub-build and LLM-parse paths so the field is always populated.
+    """
+    library_urls = [
+        r["url"]
+        for r in resources
+        if r.get("resourceType") == "Library" and r.get("url")
+    ]
+    for resource in resources:
+        if resource.get("resourceType") != "Measure":
+            continue
+        existing = resource.get("library") or []
+        # Treat null / empty list as missing
+        if not existing and library_urls:
+            resource["library"] = library_urls
+
+
 def _parse_llm_response(raw: str) -> list[dict]:
     """Parse LLM response into list of FHIR resource dicts.
 
@@ -241,6 +260,10 @@ def _build_stub_resources(
                 {"code": {"coding": [{"code": "denominator"}]}, "criteria": {"language": "text/cql", "expression": "Denominator"}},
             ],
         }]
+        # Populate Measure.library with the canonical URL of the companion Library
+        if "Library" in supporting:
+            lib_id = f"{resource_id}-{to_kebab_case('Library')}"
+            primary_resource["library"] = [f"http://example.org/fhir/Library/{lib_id}"]
     elif primary == "Questionnaire":
         primary_resource["item"] = [{"linkId": "q1", "text": "Stub question", "type": "choice"}]
     elif primary == "ValueSet":
@@ -355,6 +378,9 @@ def formalize(topic, artifact, dry_run, force):
         if not resources:
             click.echo("Error: Failed to parse LLM response as FHIR JSON", err=True)
             sys.exit(2)
+
+    # Ensure Measure.library references companion Library resources
+    _patch_measure_library_references(resources)
 
     # Normalize + validate
     computable_dir = td / "computable"

@@ -129,7 +129,11 @@ prompt: |
      medications, or no allergy records must evaluate cleanly — not error)
   5. Apply the CQL authoring rubric from the skill before declaring the library complete
   6. Validate using `rh-skills cql validate statin-eligibility StatinEligibility`
-  7. Hand off to `rh-inf-formalize` for the FHIR Library JSON wrapper (do not
+  7. Create at least three fixture test cases under `tests/cql/StatinEligibility/`:
+     - case-001-positive: patient in denominator with active statin prescription (numerator = true)
+     - case-002-exclusion: patient with documented statin allergy (denominator exclusion = true)
+     - case-003-null-no-conditions: patient with no conditions on record (initial population = false, no errors)
+  8. Hand off to `rh-inf-formalize` for the FHIR Library JSON wrapper (do not
      produce the Library JSON directly — that is outside rh-cql's boundary)
 
 expected_outputs:
@@ -138,23 +142,34 @@ expected_outputs:
       - exists
       - contains: "library StatinEligibility"
       - contains: "using FHIR version '4.0.1'"
-      - contains: "include FHIRHelpers"
+      - contains: "include fhir.cqf.common.FHIRHelpers"
       - contains: "Atherosclerotic Cardiovascular Disease"
       - contains: "Moderate or High Intensity Statin Therapy"
       - contains: "define \"Initial Population\""
       - contains: "define \"Denominator\""
       - contains: "define \"Denominator Exclusions\""
       - contains: "define \"Numerator\""
+  - path: tests/cql/StatinEligibility/case-001-positive/
+    checks:
+      - exists
+  - path: tests/cql/StatinEligibility/case-002-exclusion/
+    checks:
+      - exists
+  - path: tests/cql/StatinEligibility/case-003-null-no-conditions/
+    checks:
+      - exists
 
 efficiency_focus:
   - "Does the agent read the structured artifact once and produce the library in one pass?"
   - "Does it avoid calling rh-skills cql validate more than twice (once to catch errors, once to confirm)?"
+  - "If validate fails twice, does it use translate as a proxy and report to the user rather than iterating further?"
   - "Does it stop at the CQL boundary and not attempt to write Library FHIR JSON?"
   - "Does it apply the authoring rubric check before running validate (not after)?"
+  - "Does it create fixtures without excessive placeholder iteration?"
 
 quality_focus:
   - "Are all four value set declarations present with their OIDs and pinned versions?"
-  - "Is `include FHIRHelpers version '4.0.1' called FHIRHelpers` present? (rh evaluator is FHIRHelpers-agnostic)"
+  - "Is `include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers` present?"
   - "Are value set OIDs correct (not invented) — do they match the structured artifact exactly?"
   - "Is the 90-day lookback window for Numerator medications correctly implemented as an interval?"
   - "Does the library handle patients with no ASCVD condition records (exists/empty list) without null errors?"
@@ -165,3 +180,5 @@ quality_focus:
   - "Is there a header doc comment with library name, version, description, and date?"
   - "Does the library pass `rh-skills cql validate` with zero errors?"
   - "Does the agent explicitly hand off to rh-inf-formalize for Library JSON (respects boundary)?"
+  - "Are all three fixture cases present with patient bundles and expected output files?"
+  - "Does the null/no-conditions fixture verify no runtime error (not just false population)?"

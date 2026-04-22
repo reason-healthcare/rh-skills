@@ -47,7 +47,7 @@ If any check fails, report the missing resource and halt. Do NOT proceed with a 
 - **Deterministic work via CLI**: validation (`rh-skills cql validate`), compilation (`rh-skills cql translate`), and test execution (`rh-skills cql test`) are always delegated to the `rh-skills` CLI. The agent reasons about CQL but does not replace the CLI for deterministic operations.
 - **Ownership boundary**: `rh-cql` owns `.cql` source files. `rh-inf-formalize` owns FHIR Library JSON wrappers. These boundaries are never crossed.
 - **Human confirmation for conflicts**: any ambiguity, inconsistency, or multi-option decision MUST be surfaced to the human before the agent proceeds. Silent resolution is not permitted.
-- **FHIRHelpers-agnostic runtime**: `rh cql compile` does not inject FHIRHelpers wrapper calls. Type coercion between FHIR and CQL system types is the runtime's responsibility, not the author's. Authors should still `include FHIRHelpers` for explicit conversions where needed.
+- **FHIRHelpers-agnostic runtime**: `rh cql compile` does not inject FHIRHelpers wrapper calls. Type coercion between FHIR and CQL system types is the runtime's responsibility, not the author's. Authors should still `include fhir.cqf.common.FHIRHelpers` for explicit conversions where needed.
 
 ---
 
@@ -350,7 +350,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
 
    using FHIR version '4.0.1'
 
-   include FHIRHelpers version '4.0.1' called FHIRHelpers
+   include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
 
    codesystem "<SystemName>": '<system-url>'
 
@@ -380,6 +380,28 @@ details, unknown terminology expansions, unverified fixture assumptions.
    ```
    Do not declare the library complete until `rh-skills cql validate` exits 0.
    If it exits non-zero, read the error output and fix issues before retrying.
+
+   **Validate failure protocol:**
+   - **Attempt 1 fails** — read errors, apply a targeted fix, retry.
+   - **Attempt 2 fails** — use `rh-skills cql translate` as a proxy to confirm
+     the CQL is structurally sound (translate succeeds ⇒ logic is likely correct,
+     validate error may be a tool bug). Record the discrepancy and proceed with
+     the translate result. Do **not** make further speculative edits.
+   - **After 2 failed attempts** — report the error verbatim to the user and ask
+     for guidance. Do **not** iterate further without explicit direction.
+   - **Do not use web search** to diagnose CQL errors. Consult the local context
+     corpus (`skills/.curated/rh-cql/context/`) or ReasonHub MCP spec tools
+     (`reasonhub-search_spec_content` with `source_id: "cql"`).
+
+   **FHIRHelpers for local testing:**
+   If `rh cql validate` reports unresolved FHIR type identifiers and the project
+   does **not** have FHIRHelpers available, install the `fhir.cqf.common` package:
+   ```
+   rh package install fhir.cqf.common@4.0.1
+   ```
+   This is an **external dependency** — do not commit FHIRHelpers `.cql` files
+   into the topic's computable directory. FHIRHelpers is required only for
+   local validation; the runtime resolves it independently.
 
 6. **Produce the FHIR Library wrapper** by calling:
    ```
@@ -793,8 +815,11 @@ FHIR Clinical Reasoning rules.
   resolve ambiguity in clinical logic.
 - If two valuesets could satisfy a concept, present both and ask the user to choose.
 - If the rubric reveals a BLOCKING issue, halt and report — do not auto-fix.
-- If `rh-skills cql validate` fails after two correction attempts, report the
-  error and ask the user for guidance.
+- If `rh-skills cql validate` fails after two correction attempts, use
+  `rh-skills cql translate` as a proxy (see Validate failure protocol above),
+  then report the discrepancy and ask the user for guidance. Do **not** attempt
+  further speculative fixes, web searches, or workarounds (e.g., symlinking
+  FHIRHelpers from local paths).
 - Before writing more than one fixture case with placeholder data, confirm the
   fixture schema is acceptable.
 
