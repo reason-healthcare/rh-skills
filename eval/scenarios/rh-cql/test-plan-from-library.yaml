@@ -1,0 +1,161 @@
+name: test-plan-from-library
+skill: rh-cql
+description: >
+  Test-plan mode — given a complete, valid CQL library for statin eligibility
+  (matching the author-from-measure scenario output), generate a comprehensive
+  test plan covering all population criteria, boundary conditions, null/missing
+  data cases, and a terminology case. The agent must produce fixture skeletons
+  with structurally valid bundle.json and expression-results.json files.
+
+topic: statin-eligibility
+
+workspace:
+  tracking_yaml: |
+    topics:
+      statin-eligibility:
+        state: computable
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-18T09:00:00Z"
+          - event: computable_authored
+            timestamp: "2026-04-21T14:00:00Z"
+        structured:
+          - name: statin-eligibility-measure
+            artifact_type: measure
+            status: approved
+        computable:
+          - name: StatinEligibility
+            file: topics/statin-eligibility/computable/StatinEligibility.cql
+            status: authored
+
+  files:
+    - path: topics/statin-eligibility/computable/StatinEligibility.cql
+      content: |
+        /**
+         * Library: StatinEligibility
+         * Version: 1.0.0
+         * Description: Statin therapy eligibility for patients with established ASCVD.
+         * Author: rh-cql
+         * Date: 2026-04-21
+         */
+        library StatinEligibility version '1.0.0'
+
+        using FHIR version '4.0.1'
+
+        include FHIRHelpers version '4.0.1' called FHIRHelpers
+
+        valueset "Atherosclerotic Cardiovascular Disease":
+          'urn:oid:2.16.840.1.113883.3.526.3.1171' version '20230101'
+        valueset "Statin Allergy":
+          'urn:oid:2.16.840.1.113883.3.526.3.1174' version '20230101'
+        valueset "Palliative or Hospice Care":
+          'urn:oid:2.16.840.1.113883.3.526.3.1342' version '20230101'
+        valueset "Moderate or High Intensity Statin Therapy":
+          'urn:oid:2.16.840.1.113883.3.526.3.1494' version '20230101'
+
+        parameter "Measurement Period" Interval<DateTime>
+          default Interval[@2024-01-01, @2024-12-31]
+
+        context Patient
+
+        define "In Age Range":
+          AgeInYearsAt(start of "Measurement Period") >= 21
+            and AgeInYearsAt(start of "Measurement Period") <= 75
+
+        define "Has ASCVD Diagnosis":
+          exists (
+            [Condition: "Atherosclerotic Cardiovascular Disease"] C
+              where C.clinicalStatus ~ 'active'
+                or C.clinicalStatus ~ 'inactive'
+                or C.clinicalStatus ~ 'resolved'
+          )
+
+        define "Initial Population":
+          "In Age Range" and "Has ASCVD Diagnosis"
+
+        define "Denominator":
+          "Initial Population"
+
+        define "Has Statin Allergy":
+          exists ([AllergyIntolerance: "Statin Allergy"])
+
+        define "Receiving Palliative Care":
+          exists (
+            [Encounter: "Palliative or Hospice Care"] E
+              where E.period overlaps "Measurement Period"
+          )
+
+        define "Denominator Exclusions":
+          "Has Statin Allergy" or "Receiving Palliative Care"
+
+        define "Statin Lookup Period":
+          Interval[start of "Measurement Period" - 90 days, end of "Measurement Period"]
+
+        define "Has Active Statin Order":
+          exists (
+            [MedicationRequest: "Moderate or High Intensity Statin Therapy"] M
+              where M.status in {'active', 'completed'}
+                and M.authoredOn during "Statin Lookup Period"
+          )
+
+        define "Numerator":
+          "Has Active Statin Order"
+
+prompt: |
+  Use the rh-cql skill in **test-plan** mode for the topic `statin-eligibility`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  The CQL library `StatinEligibility` is at:
+    `topics/statin-eligibility/computable/StatinEligibility.cql`
+
+  Generate a comprehensive test plan for this library. The plan must:
+
+  1. Produce a test plan document at
+     `topics/statin-eligibility/process/test-plans/StatinEligibility-test-plan.md`
+  2. Create fixture skeletons for at least 6 cases in
+     `tests/cql/StatinEligibility/`, covering:
+     - A patient who qualifies for both Initial Population and Numerator (positive)
+     - A patient in the Initial Population but not on a statin (negative numerator)
+     - A patient in the Denominator Exclusions (statin allergy)
+     - A patient with no ASCVD condition record at all (null/missing data)
+     - A patient whose statin was ordered 91 days before the period starts (boundary)
+     - A patient with an out-of-valueset code on their Condition resource (terminology)
+  3. Each fixture must have a structurally valid `input/bundle.json` (FHIR Bundle
+     with at minimum a Patient resource) and `expected/expression-results.json`
+     with at minimum the `Initial Population` and `Numerator` expected values
+  4. Each case must have a `notes.md` explaining the semantic point being tested
+
+expected_outputs:
+  - path: topics/statin-eligibility/process/test-plans/StatinEligibility-test-plan.md
+    checks:
+      - exists
+      - contains: "Initial Population"
+      - contains: "Numerator"
+      - contains: "boundary"
+  - path: tests/cql/StatinEligibility
+    checks:
+      - exists
+      - contains_any_file_with: "resourceType"
+      - contains_any_file_with: "Initial Population"
+
+efficiency_focus:
+  - "Does the agent produce the test plan and fixtures in a single coherent pass?"
+  - "Does it read the CQL library once and derive case design from the library structure?"
+  - "Does it avoid creating fixture bundles with unnecessary or fabricated clinical resources?"
+  - "Does it correctly derive the 90-day lookback boundary from the CQL rather than guessing?"
+
+quality_focus:
+  - "Is the 91-day boundary case correctly designed — statin ordered on 2023-10-02 for period starting 2024-01-01?"
+  - "Does the positive case include both a valid ASCVD Condition and a MedicationRequest in the lookup window?"
+  - "Does the negative numerator case have ASCVD but no statin order (or a statin ordered outside the window)?"
+  - "Does the exclusion case include an AllergyIntolerance resource (not just a Condition or note)?"
+  - "Does the null/missing data case produce Initial Population = false (not null/error)?"
+  - "Does the terminology case use a real-looking code that is plausibly out-of-valueset?"
+  - "Are Patient resources in each bundle complete enough to drive AgeInYearsAt (has birthDate)?"
+  - "Does expression-results.json use the exact define names from the CQL (case-sensitive)?"
+  - "Does each notes.md identify the case type and the semantic point being isolated?"
+  - "Does the test plan document summarize all cases in a table with case type and expected outcome?"

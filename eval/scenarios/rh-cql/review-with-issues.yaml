@@ -1,0 +1,143 @@
+name: review-with-issues
+skill: rh-cql
+description: >
+  Review mode — a CQL library for PHQ-9 depression screening is provided with
+  five planted defects (unpinned terminology, overly broad retrieve, missing
+  FHIRHelpers include, implicit null-as-false, and a missing measurement period
+  window on the numerator). The agent must classify all defects, produce a
+  structured review report, and identify at least one missing test scenario for each.
+
+topic: phq9-screening
+
+workspace:
+  tracking_yaml: |
+    topics:
+      phq9-screening:
+        state: computable
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T10:00:00Z"
+          - event: computable_authored
+            timestamp: "2026-04-20T08:00:00Z"
+        structured:
+          - name: phq9-instrument
+            artifact_type: assessment
+            status: approved
+        computable:
+          - name: PHQ9DepressionScreening
+            file: topics/phq9-screening/computable/PHQ9DepressionScreening.cql
+            status: needs_review
+
+  files:
+    - path: topics/phq9-screening/computable/PHQ9DepressionScreening.cql
+      content: |
+        /**
+         * Library: PHQ9DepressionScreening
+         * Version: 1.0.0
+         * Description: Depression screening using PHQ-9 for adult patients.
+         */
+        library PHQ9DepressionScreening version '1.0.0'
+
+        using FHIR version '4.0.1'
+
+        // DEFECT 1: FHIRHelpers not included — rh evaluator is FHIRHelpers-agnostic
+        // and will not inject it automatically. Coded values will resolve to null.
+
+        codesystem "LOINC": 'http://loinc.org'
+
+        // DEFECT 2: Value set not pinned to a version — reproducibility risk
+        valueset "PHQ-9 Assessment": 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1240'
+
+        // DEFECT 3: Value set for severe depression score not pinned either
+        valueset "Severe Depression": 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1491'
+
+        parameter "Measurement Period" Interval<DateTime>
+          default Interval[@2024-01-01, @2024-12-31]
+
+        context Patient
+
+        // DEFECT 4: Retrieve is too broad — fetches ALL Observations for the patient
+        // then filters ad hoc downstream, rather than scoping the retrieve to the
+        // PHQ-9 Assessment value set at the retrieve level
+        define "PHQ-9 Assessments":
+          [Observation] O
+            where O.status in {'final', 'amended'}
+
+        define "PHQ-9 Completed":
+          exists (
+            "PHQ-9 Assessments" O
+              where O.code in "PHQ-9 Assessment"
+          )
+
+        // DEFECT 5: No measurement period window on numerator — counts any PHQ-9
+        // ever in the record, not just those during the measurement period.
+        // A patient assessed five years ago would incorrectly be counted as numerator.
+        define "Initial Population":
+          AgeInYearsAt(start of "Measurement Period") >= 18
+
+        define "Denominator":
+          "Initial Population"
+
+        define "Numerator":
+          "PHQ-9 Completed"
+
+        // DEFECT 6 (bonus): No null guard — if O.value is null (observation recorded
+        // with no result), the expression silently filters it out without any
+        // explicit handling that would be visible in tests
+        define "Severe Depression Identified":
+          exists (
+            "PHQ-9 Assessments" O
+              where O.code in "PHQ-9 Assessment"
+                and O.value in "Severe Depression"
+          )
+
+prompt: |
+  Use the rh-cql skill in **review** mode for the topic `phq9-screening`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  The CQL library `PHQ9DepressionScreening` is at:
+    `topics/phq9-screening/computable/PHQ9DepressionScreening.cql`
+
+  Perform a full review using the Review Checklist from the skill. The library
+  has been intentionally written with several defects. Your review must:
+
+  1. Apply the complete Review Checklist (all five areas)
+  2. Classify each finding as BLOCKING, ADVISORY, or INFO
+  3. Provide a quoted CQL excerpt as evidence for each finding
+  4. Recommend the smallest safe fix for each finding
+  5. Identify at least one missing test scenario for each BLOCKING finding
+  6. Produce output using the structured format: Context / Findings /
+     Proposed Changes / Test Scenarios / Remaining Uncertainty
+
+expected_outputs:
+  - path: topics/phq9-screening/process/reviews/PHQ9DepressionScreening-review.md
+    checks:
+      - exists
+      - contains: "BLOCKING"
+      - contains: "ADVISORY"
+      - contains: "FHIRHelpers"
+      - contains: "Measurement Period"
+      - contains: "retrieve"
+
+efficiency_focus:
+  - "Does the agent read the CQL file once and produce the full review in one pass?"
+  - "Does it avoid re-reading the file multiple times for separate checklist areas?"
+  - "Does it write the review report to the expected path without being told the path?"
+  - "Does it use the structured output format (Context/Findings/Proposed/Test/Uncertainty)?"
+
+quality_focus:
+  - "Does the review identify the missing FHIRHelpers include as BLOCKING? (rh evaluator is FHIRHelpers-agnostic)"
+  - "Does it flag the unpinned value set versions as BLOCKING?"
+  - "Does it flag the overly broad retrieve (all Observations) as ADVISORY or BLOCKING?"
+  - "Does it identify the missing Measurement Period window on Numerator as BLOCKING?"
+  - "Does it flag the null-handling issue on O.value (Severe Depression) as ADVISORY?"
+  - "Does each finding include a quoted CQL excerpt?"
+  - "Does each BLOCKING finding include a concrete proposed fix (before/after CQL)?"
+  - "Are at least four test scenarios proposed, one per BLOCKING finding?"
+  - "Does the 'Remaining Uncertainty' section note what cannot be confirmed without running the evaluator?"
+  - "Does the review correctly categorize: FHIRHelpers=missing-binary category vs coding issue category?"
+  - "Does the review propose using `rh-skills cql validate` to confirm the proposed fixes?"

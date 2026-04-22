@@ -1,0 +1,167 @@
+name: author-from-measure
+skill: rh-cql
+description: >
+  Author mode — given an approved L2 measure artifact for statin eligibility
+  in patients with cardiovascular disease, produce a valid CQL library with
+  correct population criteria, pinned terminology, explicit null handling, and
+  a FHIR Library wrapper handoff to rh-inf-formalize.
+
+topic: statin-eligibility
+
+workspace:
+  tracking_yaml: |
+    topics:
+      statin-eligibility:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-18T09:00:00Z"
+        structured:
+          - name: statin-eligibility-measure
+            file: topics/statin-eligibility/structured/statin-eligibility-measure/statin-eligibility-measure.yaml
+            artifact_type: measure
+            status: approved
+
+  files:
+    - path: topics/statin-eligibility/structured/statin-eligibility-measure/statin-eligibility-measure.yaml
+      content: |
+        id: statin-eligibility-measure
+        name: statin-eligibility-measure
+        title: "Statin Therapy Eligibility for Patients with Cardiovascular Disease"
+        version: "1.0.0"
+        status: active
+        domain: cardiology
+        description: >
+          Quality measure assessing whether patients aged 21–75 with established
+          atherosclerotic cardiovascular disease (ASCVD) are prescribed moderate-
+          or high-intensity statin therapy within the measurement period.
+        artifact_type: measure
+        derived_from:
+          - acc-aha-cholesterol-2019
+        clinical_question: >
+          Among patients aged 21–75 with established ASCVD, what proportion are
+          prescribed moderate- or high-intensity statin therapy?
+        sections:
+          measure_type: proportion
+          improvement_notation: higher-is-better
+          measurement_period:
+            start: "2024-01-01"
+            end: "2024-12-31"
+          populations:
+            initial_population:
+              description: >
+                Patients aged 21–75 years at the start of the measurement period
+                with at least one active or resolved ASCVD diagnosis on record.
+              criteria:
+                - age_range:
+                    min: 21
+                    max: 75
+                    at: measurement_period_start
+                - condition:
+                    valueset: "Atherosclerotic Cardiovascular Disease"
+                    valueset_oid: "urn:oid:2.16.840.1.113883.3.526.3.1171"
+                    status: "[active, inactive, resolved]"
+            denominator:
+              description: "Same as Initial Population."
+              criteria:
+                - same_as: initial_population
+            denominator_exclusions:
+              description: >
+                Patients with a documented allergy or intolerance to statin therapy,
+                or patients receiving hospice or palliative care during the period.
+              criteria:
+                - allergy_intolerance:
+                    valueset: "Statin Allergy"
+                    valueset_oid: "urn:oid:2.16.840.1.113883.3.526.3.1174"
+                - encounter:
+                    valueset: "Palliative or Hospice Care"
+                    valueset_oid: "urn:oid:2.16.840.1.113883.3.526.3.1342"
+            numerator:
+              description: >
+                Patients in the denominator with at least one active MedicationRequest
+                for moderate- or high-intensity statin therapy during the measurement
+                period or the 90 days prior.
+              criteria:
+                - medication_request:
+                    valueset: "Moderate or High Intensity Statin Therapy"
+                    valueset_oid: "urn:oid:2.16.840.1.113883.3.526.3.1494"
+                    status: "[active, completed]"
+                    window:
+                      start: 90 days before measurement_period_start
+                      end: measurement_period_end
+          terminology:
+            - name: "Atherosclerotic Cardiovascular Disease"
+              oid: "urn:oid:2.16.840.1.113883.3.526.3.1171"
+              version: "20230101"
+            - name: "Statin Allergy"
+              oid: "urn:oid:2.16.840.1.113883.3.526.3.1174"
+              version: "20230101"
+            - name: "Palliative or Hospice Care"
+              oid: "urn:oid:2.16.840.1.113883.3.526.3.1342"
+              version: "20230101"
+            - name: "Moderate or High Intensity Statin Therapy"
+              oid: "urn:oid:2.16.840.1.113883.3.526.3.1494"
+              version: "20230101"
+          evidence:
+            - source: acc-aha-cholesterol-2019
+              section: "4.3 ASCVD Risk Reduction — Statin Therapy"
+              recommendation_class: I
+              level_of_evidence: A
+
+prompt: |
+  Use the rh-cql skill in **author** mode for the topic `statin-eligibility`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  A structured measure artifact has been approved at:
+    `topics/statin-eligibility/structured/statin-eligibility-measure/statin-eligibility-measure.yaml`
+
+  Produce a complete, valid CQL library named `StatinEligibility` for this measure.
+  The library must:
+  1. Use FHIR R4 (4.0.1) as the model
+  2. Declare all four value sets with pinned versions from the artifact
+  3. Define Initial Population, Denominator, Denominator Exclusions, and Numerator
+     as separate CQL `define` statements
+  4. Handle null/missing data explicitly (patients with no ASCVD diagnosis, no
+     medications, or no allergy records must evaluate cleanly — not error)
+  5. Apply the CQL authoring rubric from the skill before declaring the library complete
+  6. Validate using `rh-skills cql validate statin-eligibility StatinEligibility`
+  7. Hand off to `rh-inf-formalize` for the FHIR Library JSON wrapper (do not
+     produce the Library JSON directly — that is outside rh-cql's boundary)
+
+expected_outputs:
+  - path: topics/statin-eligibility/computable/StatinEligibility.cql
+    checks:
+      - exists
+      - contains: "library StatinEligibility"
+      - contains: "using FHIR version '4.0.1'"
+      - contains: "include FHIRHelpers"
+      - contains: "Atherosclerotic Cardiovascular Disease"
+      - contains: "Moderate or High Intensity Statin Therapy"
+      - contains: "define \"Initial Population\""
+      - contains: "define \"Denominator\""
+      - contains: "define \"Denominator Exclusions\""
+      - contains: "define \"Numerator\""
+
+efficiency_focus:
+  - "Does the agent read the structured artifact once and produce the library in one pass?"
+  - "Does it avoid calling rh-skills cql validate more than twice (once to catch errors, once to confirm)?"
+  - "Does it stop at the CQL boundary and not attempt to write Library FHIR JSON?"
+  - "Does it apply the authoring rubric check before running validate (not after)?"
+
+quality_focus:
+  - "Are all four value set declarations present with their OIDs and pinned versions?"
+  - "Is `include FHIRHelpers version '4.0.1' called FHIRHelpers` present? (rh evaluator is FHIRHelpers-agnostic)"
+  - "Are value set OIDs correct (not invented) — do they match the structured artifact exactly?"
+  - "Is the 90-day lookback window for Numerator medications correctly implemented as an interval?"
+  - "Does the library handle patients with no ASCVD condition records (exists/empty list) without null errors?"
+  - "Does the library handle patients with no MedicationRequest records without null errors?"
+  - "Is the denominator exclusion correctly implemented as a union of statin allergy + palliative care?"
+  - "Are Denominator Exclusions named consistently with CQL population criteria naming convention?"
+  - "Does the measurement period parameter have an appropriate default value?"
+  - "Is there a header doc comment with library name, version, description, and date?"
+  - "Does the library pass `rh-skills cql validate` with zero errors?"
+  - "Does the agent explicitly hand off to rh-inf-formalize for Library JSON (respects boundary)?"
