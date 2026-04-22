@@ -36,6 +36,7 @@ Before producing any output:
 2. Confirm the topic directory `topics/<topic>/` exists. If it does not, halt and prompt the user to run `rh-skills init <topic>` or correct the topic name.
 3. For **author** mode: confirm the structured artifact YAML exists at `topics/<topic>/structured/<artifact>.yaml`.
 4. For **review**/**debug**/**test-plan** modes: confirm the `.cql` source file exists at `topics/<topic>/computable/<LibraryName>.cql`.
+5. For any CQL expression involving **intervals, date/time, null semantics, or operators whose behavior is uncertain**: call `reasonhub-search_spec_content` (source: `cql`) to confirm semantics before writing the expression.
 
 If any check fails, report the missing resource and halt. Do NOT proceed with a partial context.
 
@@ -113,11 +114,12 @@ unless the user explicitly asks for a narrow syntax-only change.
 1. **Identify the effective execution environment** — model, FHIR version, translator options, runtime engine.
 2. **Summarize library intent** — purpose, key defines, major dependencies.
 3. **Inspect dependencies, terminology, and model assumptions** — flag missing or unpinned items.
-4. **Review semantics and maintainability** — apply the authoring rubric and review checklist.
-5. **Inspect translation behavior or ELM if relevant** — run `rh-skills cql validate` and `rh-skills cql translate`.
-6. **Run or reason about test scenarios** — run `rh-skills cql test` against existing fixtures; identify gaps.
-7. **Propose minimal changes** — prefer one-line fixes over restructuring.
-8. **Define regression tests** — specify the new or updated cases required.
+4. **Consult CQL specification when syntax or semantics are uncertain** — use `reasonhub-search_spec_content` (source: `cql`) before writing any expression whose behavior is ambiguous. Prefer spec evidence over recall.
+5. **Review semantics and maintainability** — apply the authoring rubric and review checklist.
+6. **Inspect translation behavior or ELM if relevant** — run `rh-skills cql validate` and `rh-skills cql translate`.
+7. **Run or reason about test scenarios** — run `rh-skills cql test` against existing fixtures; identify gaps.
+8. **Propose minimal changes** — prefer one-line fixes over restructuring.
+9. **Define regression tests** — specify the new or updated cases required.
 
 ---
 
@@ -749,14 +751,39 @@ must call these — do not write files directly.
 
 ## MCP Tools
 
+### Terminology lookup
+
 | Tool | When to use |
 |------|------------|
 | `reasonhub-search_loinc` | Look up LOINC codes for observation concepts in the library |
 | `reasonhub-search_snomed` | Look up SNOMED codes for condition/procedure concepts |
 | `reasonhub-search_rxnorm` | Look up RxNorm codes for medication concepts |
-| `reasonhub-codesystem_lookup` | Get UCUM units for a LOINC code |
+| `reasonhub-codesystem_lookup` | Get UCUM units for a LOINC code; verify code display name |
 | `reasonhub-search_valuesets` | Find existing ValueSets to reference |
-| `reasonhub-search_spec_content` | Look up CQL specification sections for syntax/semantic questions |
+
+### CQL and FHIR specification lookup
+
+Use these tools **before** writing any expression whose syntax, semantics, or
+operator behavior is uncertain. Do not rely on recall alone for CQL grammar or
+FHIR Clinical Reasoning rules.
+
+| Tool | When to use |
+|------|------------|
+| `reasonhub-search_spec_content` with `source_id: "cql"` | Interval semantics, null propagation, operator precedence, date/time arithmetic, retrieve syntax, query clauses (`where`, `let`, `return`, `sort`), type coercion rules |
+| `reasonhub-search_spec_content` with `source_id: "fhir-r4"` | FHIR resource field definitions, data type semantics, search parameter behavior |
+| `reasonhub-search_spec_content` with `source_id: "fhirpath"` | FHIRPath expression semantics when used in Library criteria |
+| `reasonhub-list_spec_sources` | Discover available spec source IDs and versions |
+| `reasonhub-get_spec_context` | Retrieve a specific section by heading (e.g., `source_id: "cql"`, `heading: "Interval"`) |
+
+**Trigger conditions — always call `reasonhub-search_spec_content` when:**
+- Writing or reviewing an interval expression (`overlaps`, `during`, `before`, `after`, closed/open boundaries)
+- Writing date/time arithmetic (`+ N days`, `start of`, `end of`, precision qualifiers)
+- Reasoning about null propagation through boolean expressions
+- Unsure whether an operator accepts List vs singleton operands
+- Verifying the semantics of `exists`, `in`, `contains`, `~`, `!~`, or `is`
+- Reviewing a `where` clause on a retrieve — especially multi-property conditions
+- Writing a `define` that uses `if`/`then`/`else` with possible null branches
+- Any question about CQL 1.5.x vs 2.0 differences
 
 ---
 
