@@ -45,6 +45,84 @@ def _check_plan_definition(r: dict) -> list[str]:
         errors.append(e)
     if e := _has_field(r, "action", "PlanDefinition.action[]"):
         errors.append(e)
+        return errors
+
+    plan_type_code = ""
+    plan_type = r.get("type")
+    type_codings: list[Any] = []
+    if plan_type is not None:
+        if not isinstance(plan_type, dict):
+            errors.append("PlanDefinition.type must be an object")
+        else:
+            coding = plan_type.get("coding", [])
+            if coding is None:
+                type_codings = []
+            elif not isinstance(coding, list):
+                errors.append("PlanDefinition.type.coding must be an array")
+            else:
+                type_codings = coding
+    if type_codings and isinstance(type_codings[0], dict):
+        plan_type_code = str(type_codings[0].get("code", ""))
+
+    if plan_type_code != "eca-rule":
+        return errors
+
+    actions = r.get("action", [])
+    if not isinstance(actions, list):
+        errors.append("PlanDefinition.action must be an array")
+        return errors
+    has_cql_expression = False
+
+    for i, action in enumerate(actions):
+        if not isinstance(action, dict):
+            errors.append(f"PlanDefinition.action[{i}] must be an object")
+            continue
+
+        conditions = action.get("condition", [])
+        if not conditions:
+            errors.append(
+                f"PlanDefinition.action[{i}] missing condition[] for eca-rule"
+            )
+            continue
+
+        for j, condition in enumerate(conditions):
+            if not isinstance(condition, dict):
+                errors.append(
+                    f"PlanDefinition.action[{i}].condition[{j}] must be an object"
+                )
+                continue
+
+            kind = condition.get("kind")
+            if kind not in {"applicability", "start", "stop"}:
+                errors.append(
+                    f"PlanDefinition.action[{i}].condition[{j}] has invalid or missing kind"
+                )
+
+            expression = condition.get("expression")
+            if not isinstance(expression, dict):
+                errors.append(
+                    f"PlanDefinition.action[{i}].condition[{j}] missing expression"
+                )
+                continue
+
+            language = expression.get("language")
+            expr = expression.get("expression")
+            if not language:
+                errors.append(
+                    f"PlanDefinition.action[{i}].condition[{j}].expression missing language"
+                )
+            if not expr:
+                errors.append(
+                    f"PlanDefinition.action[{i}].condition[{j}].expression missing expression"
+                )
+
+            if isinstance(language, str) and "cql" in language.lower():
+                has_cql_expression = True
+
+    if has_cql_expression and not r.get("library"):
+        errors.append(
+            "PlanDefinition.library[] is required for eca-rule resources using CQL expressions"
+        )
     return errors
 
 

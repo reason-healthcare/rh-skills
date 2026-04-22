@@ -17,6 +17,7 @@ from rh_skills.common import (
     log_info,
     log_warn,
     now_iso,
+    repo_root,
     require_topic,
     require_tracking,
     save_tracking,
@@ -151,7 +152,7 @@ def _build_system_prompt(artifact_type: str, strategy: dict, cfg: dict) -> str:
     version = cfg["version"]
     status = cfg["status"]
 
-    return f"""\
+    prompt = f"""\
 You are a healthcare informatics specialist. Your task is to convert a \
 semi-structured L2 YAML artifact of type '{artifact_type}' into FHIR R4 JSON resources.
 
@@ -177,6 +178,90 @@ For terminology: If MCP tools are unavailable, use "TODO:MCP-UNREACHABLE" as pla
 
 Output ONLY the JSON array. No markdown fences, no explanation."""
 
+    if artifact_type in ("decision-table"):
+        prompt += """
+
+For decision-table artifacts, the PlanDefinition MUST model an eca-rule:
+- "type.coding[0].system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+- "type.coding[0].code": "eca-rule"
+- "library[]": canonical(s) to companion Library resource(s)
+- "action[]": include action entries with condition data
+- "action[].condition[].kind": one of "applicability", "start", or "stop"
+- "action[].condition[].expression.language": "text/cql-expression"
+- "action[].condition[].expression.expression": resolve to supporting Library expression
+- "action[].trigger[]": include a clinical event TriggerDefinition when applicable
+- "action[].input[]": include DataRequirement entries for pertinent patient data when identifiable
+"""
+
+    return prompt
+
+
+def _to_cql_expression_name(label: str) -> str:
+    """Derive a CamelCase CQL expression name from a condition label (max 5 words)."""
+    words = re.sub(r"[^a-zA-Z0-9\s]", " ", label).split()
+    return "".join(w.capitalize() for w in words[:5] if w)
+
+
+def _build_eca_actions_from_l2(l2_content: dict) -> list[dict] | None:
+    """Build PlanDefinition.action[] from structured L2 decision-table rules.
+
+    Returns None if the L2 does not contain parseable rules (falls back to stub).
+    """
+    sections = l2_content.get("sections", {})
+    dt_section = sections.get("decision_table", {})
+
+    # Rules and lookup tables may live under sections.decision_table or sections directly
+    rules = dt_section.get("rules") or sections.get("rules")
+    conditions_list = dt_section.get("conditions") or sections.get("conditions", [])
+    actions_list = dt_section.get("actions") or sections.get("actions", [])
+
+    if not rules:
+        return None
+
+    cond_map = {c["id"]: c["label"] for c in conditions_list if "id" in c and "label" in c}
+    action_map = {a["id"]: a["label"] for a in actions_list if "id" in a and "label" in a}
+
+    fhir_actions: list[dict] = []
+    for rule in rules:
+        rule_id = rule.get("id", "r?")
+        when = rule.get("when", {})
+        then_ids = rule.get("then", [])
+
+        then_labels = [action_map.get(aid, aid) for aid in then_ids]
+        description = "; ".join(then_labels) if then_labels else rule_id
+
+        conditions: list[dict] = []
+        for cid, val in when.items():
+            if val == "N/A":
+                continue
+            label = cond_map.get(cid, cid)
+            base_name = _to_cql_expression_name(label)
+            if val == "yes":
+                expr = base_name
+            elif val == "no":
+                expr = f"Not{base_name}"
+            else:
+                expr = f"{base_name}_{val.replace('-', '_').upper()}"
+            conditions.append({
+                "kind": "applicability",
+                "expression": {
+                    "language": "text/cql-expression",
+                    "expression": expr,
+                },
+            })
+
+        action: dict = {
+            "id": rule_id,
+            "title": f"Rule {rule_id}",
+            "description": description,
+            "trigger": [{"type": "named-event", "name": "patient-encounter"}],
+        }
+        if conditions:
+            action["condition"] = conditions
+
+        fhir_actions.append(action)
+
+    return fhir_actions if fhir_actions else None
 
 def _patch_measure_library_references(resources: list[dict]) -> None:
     """Ensure every Measure in the list references its companion Library by canonical URL.
@@ -231,6 +316,7 @@ def _build_stub_resources(
     strategy: dict,
     topic: str,
     cfg: dict,
+    l2_content: dict | None = None
 ) -> list[dict]:
     """Build stub FHIR resources when LLM_PROVIDER=stub."""
     primary = strategy["primary"]
@@ -258,8 +344,42 @@ def _build_stub_resources(
     # Add type-specific required fields for stubs
     if primary == "PlanDefinition":
         plan_type = "eca-rule" if artifact_type in ("decision-table", "policy") else "clinical-protocol"
-        primary_resource["type"] = {"coding": [{"code": plan_type}]}
-        primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
+        primary_resource["type"] = {
+            "coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+                "code": plan_type,
+            }],
+        }
+        if plan_type == "eca-rule":
+            primary_resource["library"] = [
+                f"http://example.org/fhir/Library/{resource_id}-library",
+            ]
+            eca_actions = (
+                _build_eca_actions_from_l2(l2_content)
+                if isinstance(l2_content, dict)
+                else None
+            )
+            if eca_actions:
+                primary_resource["action"] = eca_actions
+            else:
+                primary_resource["action"] = [{
+                    "title": "Initial action",
+                    "description": "Stub action",
+                    "trigger": [{"type": "named-event", "name": "patient-encounter"}],
+                    "condition": [{
+                        "kind": "applicability",
+                        "expression": {
+                            "language": "text/cql-expression",
+                            "expression": "InitialEligibility",
+                        },
+                    }],
+                    "input": [{
+                        "type": "Observation",
+                        "profile": ["http://hl7.org/fhir/StructureDefinition/Observation"],
+                    }],
+                }]
+        else:
+            primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
     elif primary == "Measure":
         primary_resource["scoring"] = {"coding": [{"code": "proportion"}]}
         primary_resource["group"] = [{
@@ -369,10 +489,34 @@ def formalize(topic, artifact, dry_run, force):
         sys.exit(2)
 
     # Load L2 YAML content
-    l2_file = td / "structured" / f"{artifact}.yaml"
-    l2_content = ""
+    td = topic_dir(topic)
+    tracked_file = artifact_entry.get("file")
+    if not isinstance(tracked_file, str) or not tracked_file.strip():
+        raise click.UsageError(
+            f"L2 artifact '{artifact}' has no 'file' path in tracking entry"
+        )
+
+    l2_file = Path(tracked_file)
+    if not l2_file.is_absolute():
+        l2_file = repo_root() / l2_file
+
+    l2_content: dict | None = None
+    l2_error: str | None = None
     if l2_file.exists():
-        l2_content = l2_file.read_text()
+        try:
+            l2_text = l2_file.read_text()
+            _yaml = YAML()
+            l2_content = _yaml.load(l2_text)
+            if l2_content is None:
+                l2_error = "YAML loaded as empty/null document"
+        except Exception as exc:
+            l2_content = None
+            l2_error = f"YAML parse/read error: {exc}"
+    else:
+        l2_error = f"L2 file path does not exist: {l2_file}"
+
+    if l2_error:
+        log_warn(l2_error)
 
     # Build prompts and invoke LLM
     system_prompt = _build_system_prompt(artifact_type, strategy, cfg)
@@ -390,7 +534,13 @@ def formalize(topic, artifact, dry_run, force):
 
     # Parse response
     if llm_output == "Stub response":
-        resources = _build_stub_resources(artifact, artifact_type, strategy, topic, cfg)
+        resources = _build_stub_resources(
+            artifact,
+            artifact_type,
+            strategy,
+            topic,
+            l2_content,
+        )
     else:
         resources = _parse_llm_response(llm_output)
         if not resources:

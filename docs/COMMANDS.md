@@ -158,7 +158,7 @@ Create a structured (L2) artifact scaffold.
 rh-skills promote derive <topic> <name>
 ```
 
-Creates `topics/<topic>/structured/<name>.yaml` with schema-valid YAML scaffold.
+Creates `topics/<topic>/structured/<name>/<name>.yaml` with schema-valid YAML scaffold.
 
 ### `rh-skills promote combine <topic> <sources…> <target>`
 

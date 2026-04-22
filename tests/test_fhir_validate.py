@@ -16,7 +16,7 @@ class TestValidateResourceBasics:
         errors = validate_resource({
             "resourceType": "PlanDefinition",
             "id": "test",
-            "type": {"coding": [{"code": "eca-rule"}]},
+            "type": {"coding": [{"code": "clinical-protocol"}]},
             "action": [{"title": "Step 1"}],
         })
         assert errors == []
@@ -38,6 +38,63 @@ class TestPlanDefinitionValidation:
             "type": {"coding": [{"code": "eca-rule"}]},
         })
         assert any("PlanDefinition.action[]" in e for e in errors)
+
+    def test_action_not_a_list_emits_clear_error(self):
+        errors = validate_resource({
+            "resourceType": "PlanDefinition",
+            "id": "test",
+            "type": {"coding": [{"code": "eca-rule"}]},
+            "action": {"title": "not-a-list"},
+        })
+        assert any("PlanDefinition.action must be an array" in e for e in errors)
+        # Should not produce confusing key-iteration errors
+        assert not any("must be an object" in e for e in errors)
+
+    def test_eca_rule_requires_condition_kind_and_expression(self):
+        errors = validate_resource({
+            "resourceType": "PlanDefinition",
+            "id": "test",
+            "type": {"coding": [{"code": "eca-rule"}]},
+            "action": [{"title": "Step 1"}],
+        })
+        assert any("missing condition" in e.lower() for e in errors)
+
+    def test_eca_rule_requires_library_for_cql_conditions(self):
+        errors = validate_resource({
+            "resourceType": "PlanDefinition",
+            "id": "test",
+            "type": {"coding": [{"code": "eca-rule"}]},
+            "action": [{
+                "title": "Step 1",
+                "condition": [{
+                    "kind": "applicability",
+                    "expression": {
+                        "language": "text/cql",
+                        "expression": "InitialEligibility",
+                    },
+                }],
+            }],
+        })
+        assert any("PlanDefinition.library[]" in e for e in errors)
+
+    def test_valid_eca_rule_with_cql_library(self):
+        errors = validate_resource({
+            "resourceType": "PlanDefinition",
+            "id": "test",
+            "type": {"coding": [{"code": "eca-rule"}]},
+            "library": ["http://example.org/fhir/Library/test-library"],
+            "action": [{
+                "title": "Step 1",
+                "condition": [{
+                    "kind": "applicability",
+                    "expression": {
+                        "language": "text/cql",
+                        "expression": "InitialEligibility",
+                    },
+                }],
+            }],
+        })
+        assert errors == []
 
 
 class TestMeasureValidation:
@@ -173,7 +230,7 @@ class TestValidateResources:
     def test_multiple_resources(self):
         results = validate_resources([
             {"resourceType": "PlanDefinition", "id": "ok",
-             "type": {"coding": [{"code": "eca-rule"}]},
+             "type": {"coding": [{"code": "clinical-protocol"}]},
              "action": [{"title": "x"}]},
             {"resourceType": "Measure", "id": "bad"},
         ])
