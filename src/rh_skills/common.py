@@ -41,6 +41,7 @@ _CONFIG_KEYS = {
     "OPENAI_API_KEY",
     "OPENAI_ENDPOINT",
     "OPENAI_MODEL",
+    "RH_CLI_PATH",
     "RH_REPO_ROOT",
     "RH_SOURCES_ROOT",
     "RH_STUB_RESPONSE",
@@ -127,6 +128,12 @@ def _load_config_file(path: Path) -> dict[str, str]:
                 value = openai.get(key)
                 if value is not None:
                     data[env_key] = str(value)
+
+    cql = raw.get("cql")
+    if isinstance(cql, dict):
+        value = cql.get("rh_cli_path")
+        if value is not None:
+            data["RH_CLI_PATH"] = str(value)
 
     return data
 

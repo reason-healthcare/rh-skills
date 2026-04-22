@@ -239,8 +239,12 @@ FHIR files directly.
    > pass `phq9-instrument` to `rh-skills formalize`. The display name is not a
    > valid CLI argument.
 
-   This produces individual FHIR JSON files (`<ResourceType>-<id>.json`) and
-   CQL files in `topics/<topic>/computable/`.
+   This produces individual FHIR JSON files (`<ResourceType>-<id>.json`) in
+   `topics/<topic>/computable/`. **CQL authoring is out of scope here** — the
+   `rh-inf-formalize` skill owns the FHIR Library JSON wrapper only.  If the
+   artifact strategy includes a Library resource, `rh-skills formalize` will
+   emit a guidance note directing you to `rh-cql` (author mode) to write the
+   `.cql` source.  Do not attempt to generate CQL content from this skill.
 
 6. Bundle all formalized resources into a FHIR NPM package:
 

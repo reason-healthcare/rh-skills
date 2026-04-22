@@ -1,0 +1,14 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "test-patient-adult",
+        "birthDate": "1975-06-15",
+        "gender": "male"
+      }
+    }
+  ]
+}

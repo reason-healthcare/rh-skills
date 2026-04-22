@@ -352,28 +352,18 @@ def formalize(topic, artifact, dry_run, force):
         except OSError as exc:
             failures.append(f"  ✗ {fname}: {exc}")
 
-    # Generate CQL stub if strategy involves Library
+    # CQL authoring is delegated to the rh-cql skill.
+    # When a Library resource is in scope, emit a guidance note only — do NOT
+    # generate a CQL stub here.  The rh-cql skill owns all .cql content.
     if "Library" in strategy.get("supporting", []) or strategy["primary"] == "Library":
         cql_name = "".join(w.capitalize() for w in to_kebab_case(artifact).split("-")) + "Logic"
         cql_fname = f"{cql_name}.cql"
         cql_path = computable_dir / cql_fname
-
-        if not cql_path.exists() or force:
-            cql_content = (
-                f'library {cql_name} version \'1.0.0\'\n'
-                f'\n'
-                f'using FHIR version \'4.0.1\'\n'
-                f'include FHIRHelpers version \'4.0.1\'\n'
-                f'\n'
-                f'context Patient\n'
-                f'\n'
-                f'// TODO: Add expressions for {artifact}\n'
+        if not cql_path.exists():
+            click.echo(
+                f"  ℹ  {cql_fname} not found — use `rh-cql` (author mode) to author the CQL library",
+                err=True,
             )
-            cql_path.write_text(cql_content)
-            rel_path = f"topics/{topic}/computable/{cql_fname}"
-            written_files.append(rel_path)
-            checksums[rel_path] = sha256_file(cql_path)
-            click.echo(f"  ✓ {cql_fname}")
 
     # Report warnings
     for w in warnings:

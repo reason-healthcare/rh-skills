@@ -47,6 +47,11 @@ MODE_SECTIONS = [
     "### `plan`",
     "### `implement`",
     "### `verify`",
+    # rh-cql style modes
+    "## Mode: author",
+    "## Mode: review",
+    "## Mode: debug",
+    "## Mode: test-plan",
 ]
 
 

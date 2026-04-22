@@ -1,5 +1,6 @@
 import click
 from rh_skills.commands import (
+    cql as cql_cmd,
     formalize,
     ingest,
     init,
@@ -39,3 +40,4 @@ main.add_command(tasks.tasks)
 main.add_command(test_cmd.test)
 main.add_command(search.search)
 main.add_command(skills.skills)
+main.add_command(cql_cmd.cql)
