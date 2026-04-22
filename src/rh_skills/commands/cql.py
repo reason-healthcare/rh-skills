@@ -68,15 +68,14 @@ def translate(topic: str, library: str) -> None:
     if not cql_file.exists():
         raise click.ClickException(f"CQL file not found: {cql_file}")
 
-    output_dir = cql_file.parent
+    elm_file = cql_file.parent / f"{library}.json"
     result = subprocess.run(
-        [rh, "cql", "compile", str(cql_file), "--output", str(output_dir)],
+        [rh, "cql", "compile", str(cql_file), "--output", str(elm_file)],
         capture_output=False,
     )
-    if result.returncode == 0:
-        elm_file = output_dir / f"{library}.json"
-        click.echo(str(elm_file))
-    raise SystemExit(result.returncode)
+    if result.returncode != 0:
+        raise SystemExit(result.returncode)
+    click.echo(str(elm_file))
 
 
 @cql.command("test")
