@@ -265,7 +265,8 @@ class TestRhInfFormalizeSkillContract:
         if not skill.exists():
             pytest.skip("rh-inf-formalize skill not implemented")
         body = skill_body(skill)
-        assert "process/plans/formalize-plan.md" in body
+        assert "process/plans/formalize-plan.yaml" in body
+        assert "process/plans/formalize-plan-readout.md" in body
         assert "rh-skills promote formalize-plan" in body
 
     def test_formalize_skill_implement_mode_mentions_single_target_combine(self):

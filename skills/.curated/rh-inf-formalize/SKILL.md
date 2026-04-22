@@ -18,7 +18,8 @@ metadata:
   reads_from:
     - tracking.yaml
     - topics/<topic>/process/plans/extract-plan.yaml
-    - topics/<topic>/process/plans/formalize-plan.md
+    - topics/<topic>/process/plans/formalize-plan.yaml         # control file (source of truth)
+    - topics/<topic>/process/plans/formalize-plan-readout.md   # human-friendly readout (derived, do not edit)
     - topics/<topic>/structured/
   writes_via_cli:
     - "rh-skills promote formalize-plan"
@@ -116,11 +117,11 @@ If the mode is unrecognized, print the table above and exit.
 2. Validate the topic name: reject any topic containing whitespace, slashes, or shell-special characters.
 3. For `plan` mode, confirm `topics/<topic>/process/plans/extract-plan.yaml` exists and is approved.
 4. For `plan` and `implement`, confirm all selected structured artifacts exist in `topics/<topic>/structured/` and currently pass `rh-skills validate <topic> <artifact>`.
-5. For `implement` mode, confirm `topics/<topic>/process/plans/formalize-plan.md` exists.
+5. For `implement` mode, confirm `topics/<topic>/process/plans/formalize-plan.yaml` exists.
    Framework compatibility note: this skill also documents the conventional
-   `topics/<topic>/process/plans/rh-inf-formalize-plan.md` naming pattern, but
-   the canonical 006 plan artifact is `formalize-plan.md`.
-6. For `implement` mode, parse plan frontmatter and fail if plan `status` is not
+   `topics/<topic>/process/plans/rh-inf-formalize-plan.yaml` naming pattern, but
+   the canonical 006 plan artifact is `formalize-plan.yaml` (control) + `formalize-plan-readout.md` (readout).
+6. For `implement` mode, read `formalize-plan.yaml` and fail if plan `status` is not
    `approved`, if zero or multiple artifacts are marked
    `implementation_target: true`, or if the target artifact has
    `reviewer_decision` other than `approved`.
@@ -131,7 +132,7 @@ If any check fails, exit immediately with a clear error. Do not do partial work.
 
 ## Mode: `plan`
 
-**Goal**: Produce `topics/<topic>/process/plans/formalize-plan.md` as a durable
+**Goal**: Produce `topics/<topic>/process/plans/formalize-plan.yaml` as a durable
 review packet. Plan mode appends `formalize_planned` to tracking.yaml via
 `rh-skills promote formalize-plan`.
 
@@ -145,14 +146,11 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
    to the strategy table above. If multiple artifacts share the same type, group
    them under one strategy. If the topic has multiple different types, propose
    separate artifacts per strategy (one per unique L2 type).
-5. Use `rh-skills promote formalize-plan <topic> [--force]` to write `topics/<topic>/process/plans/formalize-plan.md` with:
-   - plan frontmatter (`topic`, `plan_type`, `status`, `reviewer`, `reviewed_at`, `artifacts[]`)
+5. Use `rh-skills promote formalize-plan <topic> [--force]` to write:
+   - `topics/<topic>/process/plans/formalize-plan.yaml` — control file with (`topic`, `plan_type`, `status`, `reviewer`, `reviewed_at`, `artifacts[]`)
+   - `topics/<topic>/process/plans/formalize-plan-readout.md` — human-friendly readout (derived, do not edit directly)
    - Each artifact entry must include `strategy`, `l3_targets`, and actual `artifact_type` (not generic `pathway-package`)
-   - `Review Summary`
-   - `Proposed Artifacts`
-   - `Cross-Artifact Issues`
-   - `Implementation Readiness`
-6. If `formalize-plan.md` already exists and `--force` is not present, warn and stop without overwriting.
+6. If `formalize-plan.yaml` already exists and `--force` is not present, warn and stop without overwriting.
 7. After writing the plan, check for cross-artifact issues before proceeding:
 
    **⚠ HUMAN-IN-THE-LOOP: Cross-artifact conflicts require explicit human confirmation.**
@@ -185,7 +183,7 @@ Emit this status block as the **last thing** in your response (no text after):
 
 **What would you like to do next?**
 
-A) Review the formalize plan: `cat topics/<topic>/process/plans/formalize-plan.md`
+A) Review the formalize plan: `cat topics/<topic>/process/plans/formalize-plan.yaml`
 B) Approve and proceed to implement: `rh-inf-formalize implement <topic>`
 C) Re-plan with changes: `rh-inf-formalize plan <topic> --force`
 
@@ -201,7 +199,7 @@ FHIR files directly.
 
 ### Steps
 
-1. Read and validate `topics/<topic>/process/plans/formalize-plan.md`.
+1. Read and validate `topics/<topic>/process/plans/formalize-plan.yaml`.
 2. Fail if the plan is missing, if plan status is not `approved`, or if the
    implementation target remains `pending-review`, `needs-revision`, or `rejected`.
 3. Re-check every `input_artifacts[]` entry with `rh-skills validate <topic> <artifact>`
@@ -295,7 +293,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 
 ### Steps
 
-1. Read `topics/<topic>/process/plans/formalize-plan.md` and identify the approved implementation target.
+1. Read `topics/<topic>/process/plans/formalize-plan.yaml` and identify the approved implementation target.
 2. Validate each expected FHIR JSON artifact with:
 
    ```sh
@@ -405,7 +403,7 @@ When multiple strategies produce resources that reference each other:
 | Unknown topic | `Error: Topic '<topic>' not found. Run \`rh-skills list\` to see available topics.` |
 | No approved structured inputs | `Error: No approved structured artifacts are ready for formalization. Approve extract outputs and ensure they pass validation first.` |
 | No plan | `Error: No plan found. Run \`rh-inf-formalize plan <topic>\` first.` |
-| Unapproved plan | `Error: formalize-plan.md is not approved. Review and update the plan before implement.` |
+| Unapproved plan | `Error: formalize-plan.yaml is not approved. Review and update the plan before implement.` |
 | Invalid target | `Error: Artifact '<name>' is not approved for implementation.` |
 
 ---

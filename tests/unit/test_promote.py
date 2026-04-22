@@ -246,11 +246,11 @@ def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", ar
 
 
 def write_formalize_plan(tmp_repo, topic_name="my-skill", status="approved", artifacts=None):
-    plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "formalize-plan.md"
+    plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "formalize-plan.yaml"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     y = YAML()
     y.default_flow_style = False
-    frontmatter = {
+    plan = {
         "topic": topic_name,
         "plan_type": "formalize",
         "status": status,
@@ -258,11 +258,8 @@ def write_formalize_plan(tmp_repo, topic_name="my-skill", status="approved", art
         "reviewed_at": "2026-04-14T12:00:00Z" if status == "approved" else None,
         "artifacts": artifacts or [],
     }
-    buf = io.StringIO()
-    y.dump(frontmatter, buf)
-    plan_path.write_text(
-        f"---\n{buf.getvalue()}---\n\n# Review Summary\n\n# Proposed Artifacts\n\n# Cross-Artifact Issues\n\n# Implementation Readiness\n"
-    )
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
     return plan_path
 
 
@@ -481,13 +478,12 @@ def test_formalize_plan_writes_review_packet_and_records_event(tmp_repo):
     result = runner.invoke(promote, ["formalize-plan", "my-skill"])
     assert result.exit_code == 0, result.output
 
-    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.md"
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.yaml"
+    readout_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan-readout.md"
     assert plan_path.exists()
-    raw = plan_path.read_text()
-    assert raw.index("# Review Summary") < raw.index("# Proposed Artifacts") < raw.index("# Cross-Artifact Issues") < raw.index("# Implementation Readiness")
+    assert readout_path.exists()
 
-    parts = raw.split("---\n", 2)
-    plan = YAML(typ="safe").load(parts[1])
+    plan = YAML(typ="safe").load(plan_path.read_text())
     assert plan["topic"] == "my-skill"
     assert plan["plan_type"] == "formalize"
     assert plan["status"] == "pending-review"
@@ -500,6 +496,13 @@ def test_formalize_plan_writes_review_packet_and_records_event(tmp_repo):
     # Overlap between decision-table and care-pathway (both produce PlanDefinition)
     rationales = " ".join(a["rationale"] for a in plan["artifacts"])
     assert "Overlaps" in rationales or "overlap" in rationales.lower()
+
+    readout = readout_path.read_text()
+    assert "# Review Summary" in readout
+    assert "# Proposed Artifacts" in readout
+    assert "# Cross-Artifact Issues" in readout
+    assert "# Implementation Readiness" in readout
+    assert "formalize-plan.yaml" in readout
 
     tracking = load_yaml(tmp_repo / "tracking.yaml")
     topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
@@ -516,19 +519,19 @@ def test_formalize_plan_warns_and_does_not_write_without_eligible_inputs(tmp_rep
         or "extract-plan.yaml is not approved" in result.output
         or "No plan found" in result.output
     )
-    assert not (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.md").exists()
+    assert not (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.yaml").exists()
 
 
 def test_formalize_plan_force_overwrites_existing_packet(tmp_repo):
     setup_topic_with_valid_extract_artifacts(tmp_repo)
-    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.md"
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "formalize-plan.yaml"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
-    plan_path.write_text("old plan")
+    plan_path.write_text("old: plan")
 
     runner = CliRunner()
     result = runner.invoke(promote, ["formalize-plan", "my-skill", "--force"])
     assert result.exit_code == 0, result.output
-    assert "old plan" not in plan_path.read_text()
+    assert "old: plan" not in plan_path.read_text()
 
 
 def test_approved_formalize_target_requires_approved_target_and_valid_inputs(tmp_repo):
