@@ -185,3 +185,103 @@ class TestStrategyRegistry:
             assert "primary" in strategy, f"{atype} missing primary"
             assert "supporting" in strategy, f"{atype} missing supporting"
             assert "description" in strategy, f"{atype} missing description"
+
+
+class TestCqlEmbedding:
+    """CQL source is embedded as base64 content in Library JSON when present."""
+
+    def _make_measure_topic(self, tmp_repo):
+        topic_dir = tmp_repo / "topics" / "test-measure"
+        structured_dir = topic_dir / "structured"
+        computable_dir = topic_dir / "computable"
+        structured_dir.mkdir(parents=True)
+        computable_dir.mkdir(parents=True)
+
+        y = YAML()
+        y.default_flow_style = False
+        with open(structured_dir / "test-measure.yaml", "w") as f:
+            y.dump({
+                "metadata": {"id": "test-measure", "title": "Test Measure"},
+                "populations": [{"id": "ip", "type": "initial-population"}],
+            }, f)
+
+        make_tracking(tmp_repo, topics=[{
+            "name": "test-measure",
+            "structured": [{
+                "name": "test-measure",
+                "artifact_type": "measure",
+                "status": "approved",
+                "file": "topics/test-measure/structured/test-measure.yaml",
+            }],
+            "computable": [],
+            "events": [],
+        }])
+        return computable_dir
+
+    def test_cql_embedded_when_file_present(self, tmp_repo):
+        """Library JSON gets content[].data (base64 CQL) when .cql exists in computable/."""
+        import base64
+
+        computable_dir = self._make_measure_topic(tmp_repo)
+        cql_source = b"library TestMeasureLogic version '1.0.0'\nusing FHIR version '4.0.1'\n"
+        (computable_dir / "TestMeasureLogic.cql").write_bytes(cql_source)
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, ["test-measure", "test-measure"])
+            assert result.exit_code == 0, result.output
+            assert "Embedded CQL source" in result.output
+
+            lib_files = list(computable_dir.glob("Library-*.json"))
+            assert len(lib_files) == 1, "Expected exactly one Library JSON"
+            library = json.loads(lib_files[0].read_text())
+            content = library.get("content", [])
+            cql_items = [c for c in content if c.get("contentType") == "text/cql"]
+            assert len(cql_items) == 1, "Expected one text/cql content item"
+            decoded = base64.b64decode(cql_items[0]["data"])
+            assert decoded == cql_source
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_guidance_note_when_no_cql(self, tmp_repo):
+        """Guidance note emitted when no .cql file is present."""
+        self._make_measure_topic(tmp_repo)
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, ["test-measure", "test-measure"])
+            assert result.exit_code == 0, result.output
+            assert "rh-cql" in result.output
+            assert "author mode" in result.output
+
+            # Library JSON written but no content[].data for CQL
+            lib_files = list((tmp_repo / "topics" / "test-measure" / "computable").glob("Library-*.json"))
+            assert len(lib_files) == 1
+            library = json.loads(lib_files[0].read_text())
+            cql_items = [c for c in library.get("content", []) if c.get("contentType") == "text/cql"]
+            assert len(cql_items) == 0
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_cql_not_duplicated_on_rerun(self, tmp_repo):
+        """Re-running formalize --force replaces, not appends, the CQL content item."""
+        import base64
+
+        computable_dir = self._make_measure_topic(tmp_repo)
+        cql_source = b"library TestMeasureLogic version '1.0.0'\n"
+        (computable_dir / "TestMeasureLogic.cql").write_bytes(cql_source)
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            runner.invoke(formalize, ["test-measure", "test-measure"])
+            runner.invoke(formalize, ["test-measure", "test-measure", "--force"])
+
+            lib_files = list(computable_dir.glob("Library-*.json"))
+            library = json.loads(lib_files[0].read_text())
+            cql_items = [c for c in library.get("content", []) if c.get("contentType") == "text/cql"]
+            assert len(cql_items) == 1, "Must not duplicate text/cql content item on re-run"
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)

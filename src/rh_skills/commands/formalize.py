@@ -1,5 +1,6 @@
 """rh-skills formalize — Convert L2 structured artifacts to FHIR R4 JSON."""
 
+import base64
 import hashlib
 import json
 import re
@@ -28,6 +29,49 @@ from rh_skills.fhir.normalize import (
     to_kebab_case,
 )
 from rh_skills.fhir.validate import validate_resource
+
+
+# ── CQL Content Embedding ─────────────────────────────────────────────────────
+
+def _find_best_cql(cql_files: list[Path], lib_name: str) -> Path | None:
+    """Return the CQL file that best matches a Library resource name."""
+    if not cql_files:
+        return None
+    if len(cql_files) == 1:
+        return cql_files[0]
+    for f in cql_files:
+        if f.stem == lib_name:
+            return f
+    lib_lower = lib_name.lower()
+    for f in cql_files:
+        if f.stem.lower() == lib_lower:
+            return f
+    return cql_files[0]
+
+
+def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
+    """Embed the best-matching CQL file as a base64 content item in a Library JSON.
+
+    Returns True if a CQL file was found and embedded, False otherwise.
+    """
+    cql_files = sorted(computable_dir.glob("*.cql"))
+    if not cql_files:
+        return False
+
+    resource = json.loads(library_path.read_text())
+    if resource.get("resourceType") != "Library":
+        return False
+
+    cql_file = _find_best_cql(cql_files, resource.get("name", ""))
+    if cql_file is None:
+        return False
+
+    b64 = base64.b64encode(cql_file.read_bytes()).decode("ascii")
+    content = [c for c in resource.get("content", []) if c.get("contentType") != "text/cql"]
+    content.append({"contentType": "text/cql", "data": b64})
+    resource["content"] = content
+    library_path.write_text(json.dumps(resource, indent=2) + "\n")
+    return True
 
 
 # ── Strategy Registry ──────────────────────────────────────────────────────────
@@ -352,16 +396,25 @@ def formalize(topic, artifact, dry_run, force):
         except OSError as exc:
             failures.append(f"  ✗ {fname}: {exc}")
 
-    # CQL authoring is delegated to the rh-cql skill.
-    # When a Library resource is in scope, emit a guidance note only — do NOT
-    # generate a CQL stub here.  The rh-cql skill owns all .cql content.
+    # Embed CQL source as base64 content in any Library JSON that was written,
+    # then emit a guidance note if no CQL file was found.
     if "Library" in strategy.get("supporting", []) or strategy["primary"] == "Library":
-        cql_name = "".join(w.capitalize() for w in to_kebab_case(artifact).split("-")) + "Logic"
-        cql_fname = f"{cql_name}.cql"
-        cql_path = computable_dir / cql_fname
-        if not cql_path.exists():
+        library_files = [
+            computable_dir / Path(f).name
+            for f in written_files
+            if Path(f).name.startswith("Library-")
+        ]
+        embedded_any = False
+        for lib_path in library_files:
+            if lib_path.exists() and _embed_cql_in_library(lib_path, computable_dir):
+                cql_used = _find_best_cql(sorted(computable_dir.glob("*.cql")), "")
+                click.echo(f"  ✓ Embedded CQL source in {lib_path.name}")
+                embedded_any = True
+        if not embedded_any:
+            cql_name = "".join(w.capitalize() for w in to_kebab_case(artifact).split("-")) + "Logic"
             click.echo(
-                f"  ℹ  {cql_fname} not found — use `rh-cql` (author mode) to author the CQL library",
+                f"  ℹ  No .cql file found in computable/ — use `rh-cql` (author mode) to author"
+                f" the CQL library, then re-run `rh-skills formalize` to embed it in the Library JSON",
                 err=True,
             )
 
