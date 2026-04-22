@@ -52,6 +52,9 @@ MODE_SECTIONS = [
     "## Mode: review",
     "## Mode: debug",
     "## Mode: test-plan",
+    # rh-inf-resolve
+    "## Mode: `resolve`",
+    "## Mode: resolve",
 ]
 
 

@@ -155,8 +155,18 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
 
    **⚠ HUMAN-IN-THE-LOOP: Cross-artifact conflicts require explicit human confirmation.**
 
-   - If the plan contains **any entries in `Cross-Artifact Issues`** (overlapping FHIR resource types, modeling ambiguities, or unresolved convergence choices), **STOP**. Present each issue clearly and ask the human how to resolve it before proceeding to implement mode.
-   - If **no cross-artifact issues exist**, summarize the proposed computable artifact(s), strategy per type, L3 FHIR targets, and excluded inputs, then present the output contract below.
+   Always check for open conflicts using the CLI before proceeding:
+
+   ```sh
+   rh-skills promote conflicts <topic>
+   ```
+
+   - If **any open conflicts are listed** (including cross-artifact modeling issues),
+     **STOP** and invoke the `rh-inf-resolve` skill to iterate through each conflict
+     with the reviewer before proceeding to implement mode. Do not auto-resolve.
+   - If output is `"No open conflicts for topic '<topic>'."`, summarize the proposed
+     computable artifact(s), strategy per type, L3 FHIR targets, and excluded
+     inputs, then present the output contract below.
 
 ### What to capture per artifact
 

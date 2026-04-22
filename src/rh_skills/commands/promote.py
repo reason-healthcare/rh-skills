@@ -173,6 +173,71 @@ def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict
     return approved
 
 
+def _conflict_text(item: object) -> str:
+    """Return the human-readable conflict description from a conflict entry."""
+    if isinstance(item, dict):
+        return item.get("conflict") or item.get("issue") or str(item)
+    return str(item)
+
+
+def _collect_open_conflicts(topic: str) -> list[dict]:
+    """Return all unresolved conflict entries across extract and formalize plans.
+
+    Each entry is a dict with keys:
+      plan_type, artifact, index, conflict, resolution
+    """
+    results: list[dict] = []
+    candidates = [
+        ("extract", _extract_plan_path(topic)),
+        ("formalize", _formalize_plan_path(topic)),
+    ]
+    for plan_type, path in candidates:
+        if not path.exists():
+            continue
+        try:
+            plan = _yaml_safe().load(path.read_text())
+        except Exception:
+            continue
+        if not plan or not isinstance(plan, dict):
+            continue
+        for artifact in plan.get("artifacts") or []:
+            name = artifact.get("name", "")
+            for idx, item in enumerate(artifact.get("conflicts") or []):
+                resolution = (item.get("resolution", "") if isinstance(item, dict) else "")
+                if not resolution:
+                    results.append({
+                        "plan_type": plan_type,
+                        "artifact": name,
+                        "index": idx,
+                        "conflict": _conflict_text(item),
+                        "resolution": resolution,
+                    })
+    return results
+
+
+def _set_conflict_resolution(plan: dict, artifact_name: str, index: int, resolution: str) -> None:
+    """Mutate plan in-place: set resolution on conflict[index] for the named artifact."""
+    for artifact in plan.get("artifacts") or []:
+        if artifact.get("name") == artifact_name:
+            conflicts = artifact.get("conflicts") or []
+            if index < 0 or index >= len(conflicts):
+                raise click.UsageError(
+                    f"Conflict index {index} out of range for artifact '{artifact_name}' "
+                    f"({len(conflicts)} conflict(s) present, indices 0–{len(conflicts) - 1})."
+                )
+            item = conflicts[index]
+            if isinstance(item, dict):
+                item["resolution"] = resolution
+            else:
+                conflicts[index] = {"conflict": str(item), "resolution": resolution}
+            artifact["conflicts"] = conflicts
+            return
+    raise click.UsageError(
+        f"Artifact '{artifact_name}' not found in plan. "
+        f"Available: {[a.get('name') for a in plan.get('artifacts', [])]}"
+    )
+
+
 def _eligible_formalize_inputs(topic: str) -> tuple[list[dict], list[str]]:
     tracking = require_tracking()
     topic_entry = require_topic(tracking, topic)
@@ -1604,3 +1669,108 @@ converged_from:
     save_tracking(tracking)
 
     log_info(f"Created: {l3_file}")
+
+
+@promote.command("conflicts")
+@click.argument("topic")
+def conflicts(topic):
+    """List open (unresolved) conflicts across extract and formalize plans.
+
+    Scans both extract-plan.yaml and formalize-plan.yaml (whichever exist) and
+    reports every conflict entry whose resolution field is empty or absent.
+    Exit code 0 in all cases; use the output to decide whether to proceed.
+
+    Example (agent workflow):
+      rh-skills promote conflicts diabetes-ccm
+
+    Each conflict line includes: plan type, artifact name, index, conflict text.
+    Use 'resolve-conflict' to record a resolution.
+    """
+    open_conflicts = _collect_open_conflicts(topic)
+    if not open_conflicts:
+        click.echo(f"No open conflicts for topic '{topic}'.")
+        return
+
+    click.echo(f"Open conflicts for topic '{topic}':\n")
+    for c in open_conflicts:
+        click.echo(
+            f"  plan={c['plan_type']}  artifact={c['artifact']}  index={c['index']}"
+        )
+        click.echo(f"    Conflict  : {c['conflict']}")
+        click.echo(f"    Resolution: {c['resolution'] or '_pending_'}")
+        click.echo()
+
+    click.echo(
+        f"Total: {len(open_conflicts)} open conflict(s). "
+        "Use 'rh-skills promote resolve-conflict' to record resolutions."
+    )
+
+
+@promote.command("resolve-conflict")
+@click.argument("topic")
+@click.option(
+    "--artifact", "artifact_name", required=True, metavar="NAME",
+    help="Name of the artifact containing the conflict.",
+)
+@click.option(
+    "--index", "conflict_index", required=True, type=int, metavar="N",
+    help="0-based index of the conflict entry within the artifact's conflicts list.",
+)
+@click.option(
+    "--resolution", required=True, metavar="TEXT",
+    help="Resolution text to record for this conflict.",
+)
+@click.option(
+    "--plan", "plan_type", required=True,
+    type=click.Choice(["extract", "formalize"]),
+    help="Which plan file to update (extract-plan.yaml or formalize-plan.yaml).",
+)
+def resolve_conflict(topic, artifact_name, conflict_index, resolution, plan_type):
+    """Record the resolution for a specific conflict entry.
+
+    Use 'rh-skills promote conflicts <topic>' first to list open conflicts and
+    their indices, then call this command for each one.
+
+    Example:
+      # List open conflicts first:
+      rh-skills promote conflicts diabetes-ccm
+
+      # Then resolve each by plan/artifact/index:
+      rh-skills promote resolve-conflict diabetes-ccm \\
+        --plan extract --artifact screening-decisions --index 0 \\
+        --resolution "ADA 2024 is the primary guideline; USPSTF framing is supplementary."
+    """
+    if plan_type == "extract":
+        plan_path = _extract_plan_path(topic)
+        readout_path = _extract_readout_path(topic)
+        load_fn = _load_extract_plan
+    else:
+        plan_path = _formalize_plan_path(topic)
+        readout_path = _formalize_readout_path(topic)
+        load_fn = _load_formalize_plan
+
+    plan = load_fn(topic)
+    _set_conflict_resolution(plan, artifact_name, conflict_index, resolution)
+
+    if plan_type == "extract":
+        _write_plan_and_readout(plan_path, readout_path, plan)
+    else:
+        blocked_inputs: list[str] = []
+        try:
+            _, blocked_inputs = _eligible_formalize_inputs(topic)
+        except Exception:
+            pass
+        _write_formalize_plan_and_readout(topic, plan, blocked_inputs)
+
+    remaining = _collect_open_conflicts(topic)
+    remaining_this_plan = [c for c in remaining if c["plan_type"] == plan_type]
+    click.echo(
+        f"Resolved conflict {conflict_index} on '{artifact_name}' "
+        f"in {plan_type}-plan.yaml."
+    )
+    if remaining_this_plan:
+        click.echo(
+            f"{len(remaining_this_plan)} open conflict(s) remain in {plan_type}-plan.yaml."
+        )
+    else:
+        click.echo(f"No open conflicts remain in {plan_type}-plan.yaml.")

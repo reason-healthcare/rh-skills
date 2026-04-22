@@ -1123,3 +1123,150 @@ def test_concurrent_approve_preserves_all_decisions(tmp_repo):
     assert sorted(approved) == sorted(names), (
         f"Expected all {len(names)} artifacts approved, got {len(approved)}: {approved}"
     )
+
+
+# ── conflicts / resolve-conflict commands ────────────────────────────────────
+
+
+def test_conflicts_reports_no_open_when_all_resolved(tmp_repo):
+    write_extract_plan(tmp_repo, artifacts=[{
+        "name": "art-a",
+        "artifact_type": "decision-table",
+        "source_files": [],
+        "required_sections": [],
+        "key_questions": [],
+        "conflicts": [{"conflict": "ADA vs AACE", "resolution": "ADA preferred."}],
+        "reviewer_decision": "approved",
+        "approval_notes": "",
+    }])
+    runner = CliRunner()
+    result = runner.invoke(promote, ["conflicts", "my-skill"])
+    assert result.exit_code == 0, result.output
+    assert "No open conflicts" in result.output
+
+
+def test_conflicts_lists_open_extract_conflicts(tmp_repo):
+    write_extract_plan(tmp_repo, artifacts=[{
+        "name": "art-a",
+        "artifact_type": "decision-table",
+        "source_files": [],
+        "required_sections": [],
+        "key_questions": [],
+        "conflicts": [
+            {"conflict": "HbA1c threshold disagreement", "resolution": ""},
+            {"conflict": "Screening interval", "resolution": "Every 3 years per ADA."},
+        ],
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }])
+    runner = CliRunner()
+    result = runner.invoke(promote, ["conflicts", "my-skill"])
+    assert result.exit_code == 0, result.output
+    assert "HbA1c threshold disagreement" in result.output
+    assert "Screening interval" not in result.output  # resolved, should not appear
+    assert "1 open conflict" in result.output
+
+
+def test_conflicts_reports_no_open_when_no_plans_exist(tmp_repo):
+    runner = CliRunner()
+    result = runner.invoke(promote, ["conflicts", "my-skill"])
+    assert result.exit_code == 0, result.output
+    assert "No open conflicts" in result.output
+
+
+def test_resolve_conflict_updates_extract_plan(tmp_repo):
+    write_extract_plan(tmp_repo, artifacts=[{
+        "name": "art-a",
+        "artifact_type": "decision-table",
+        "source_files": [],
+        "required_sections": [],
+        "key_questions": [],
+        "conflicts": [{"conflict": "ADA vs AACE", "resolution": ""}],
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }])
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "resolve-conflict", "my-skill",
+        "--plan", "extract",
+        "--artifact", "art-a",
+        "--index", "0",
+        "--resolution", "ADA 2024 preferred.",
+    ])
+    assert result.exit_code == 0, result.output
+    assert "Resolved conflict 0" in result.output
+
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
+    plan = load_yaml(plan_path)
+    art = next(a for a in plan["artifacts"] if a["name"] == "art-a")
+    assert art["conflicts"][0]["resolution"] == "ADA 2024 preferred."
+
+
+def test_resolve_conflict_index_out_of_range(tmp_repo):
+    write_extract_plan(tmp_repo, artifacts=[{
+        "name": "art-a",
+        "artifact_type": "decision-table",
+        "source_files": [],
+        "required_sections": [],
+        "key_questions": [],
+        "conflicts": [{"conflict": "Single conflict", "resolution": ""}],
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }])
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "resolve-conflict", "my-skill",
+        "--plan", "extract",
+        "--artifact", "art-a",
+        "--index", "5",
+        "--resolution", "Some resolution.",
+    ])
+    assert result.exit_code != 0
+
+
+def test_resolve_conflict_unknown_artifact(tmp_repo):
+    write_extract_plan(tmp_repo, artifacts=[{
+        "name": "art-a",
+        "artifact_type": "decision-table",
+        "source_files": [],
+        "required_sections": [],
+        "key_questions": [],
+        "conflicts": [],
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }])
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "resolve-conflict", "my-skill",
+        "--plan", "extract",
+        "--artifact", "no-such-artifact",
+        "--index", "0",
+        "--resolution", "Some resolution.",
+    ])
+    assert result.exit_code != 0
+
+
+def test_conflicts_scans_both_plans_when_both_exist(tmp_repo):
+    """Conflicts from both extract and formalize plans appear in a single listing."""
+    write_extract_plan(tmp_repo, artifacts=[{
+        "name": "art-a",
+        "artifact_type": "decision-table",
+        "source_files": [],
+        "required_sections": [],
+        "key_questions": [],
+        "conflicts": [{"conflict": "Extract conflict", "resolution": ""}],
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }])
+    write_formalize_plan(tmp_repo, artifacts=[{
+        "name": "form-art",
+        "artifact_type": "measure",
+        "reviewer_decision": "pending-review",
+        "conflicts": [{"conflict": "Formalize conflict", "resolution": ""}],
+    }])
+    runner = CliRunner()
+    result = runner.invoke(promote, ["conflicts", "my-skill"])
+    assert result.exit_code == 0, result.output
+    assert "Extract conflict" in result.output
+    assert "Formalize conflict" in result.output
+    assert "2 open conflict" in result.output

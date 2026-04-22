@@ -289,8 +289,19 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 
    **⚠ HUMAN-IN-THE-LOOP: Conflicts require explicit human confirmation.**
 
-   - If **any artifact has entries in `conflicts[]`** or the plan contains unresolved clinical disagreements, **STOP**. Present each conflict clearly (source A position vs. source B position) and ask the human how to proceed before running `rh-skills promote approve`. Do not auto-resolve or assume a preferred position.
-   - If **no conflicts exist**, proceed immediately to the Review & Approval phase below and run `rh-skills promote approve` without waiting for user confirmation.
+   Always check for open conflicts using the CLI before proceeding:
+
+   ```sh
+   rh-skills promote conflicts <topic>
+   ```
+
+   - If **any open conflicts are listed**, **STOP** and invoke the `rh-inf-resolve`
+     skill to iterate through each conflict with the reviewer before running
+     `rh-skills promote approve`. Do not auto-resolve or assume a preferred
+     position.
+   - If output is `"No open conflicts for topic '<topic>'."`, proceed immediately
+     to the Review & Approval phase below and run `rh-skills promote approve`
+     without waiting for user confirmation.
 
 ### What to capture per artifact
 
