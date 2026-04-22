@@ -397,7 +397,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
    If `rh cql validate` reports unresolved FHIR type identifiers and the project
    does **not** have FHIRHelpers available, install the `fhir.cqf.common` package:
    ```
-   rh package install fhir.cqf.common@4.0.1
+   rh download package fhir.cqf.common 4.0.1
    ```
    This is an **external dependency** — do not commit FHIRHelpers `.cql` files
    into the topic's computable directory. FHIRHelpers is required only for
