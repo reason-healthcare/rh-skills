@@ -272,24 +272,32 @@ FHIR files directly.
    (`decision-table`, `measure`, `policy`), `rh-skills formalize` writes a
    compilable CQL scaffold alongside the JSON wrappers.
 
-   **If the strategy includes CQL, continue directly to step 6 (CQL authoring)
-   before packaging.** Do not stop and emit a guidance note — CQL authoring is
-   part of the implement flow for these strategies.
+   **If the strategy includes CQL, you MUST stop here and load the `rh-inf-cql`
+   skill (step 6) before packaging.** Do not author CQL inline and do not
+   advance to packaging without `rh-inf-cql` author mode completing cleanly.
 
-6. **For CQL strategies only** — invoke `rh-inf-cql` in author mode to complete
-   the CQL library from the scaffold:
+6. **For CQL strategies only** — you **MUST** invoke the `rh-inf-cql` skill to
+   author the CQL library. Do NOT write CQL directly in this skill. Load
+   `rh-inf-cql` and follow its author mode workflow:
+
+   > **⚠ BLOCKING**: CQL authoring is delegated entirely to `rh-inf-cql`.
+   > Inline CQL written without going through `rh-inf-cql` author mode violates
+   > the authoring contract (anti-patterns, compile checks, FHIRHelpers handling,
+   > terminology policy). The library **must** compile before proceeding to
+   > packaging.
+
+   The sequence when entering `rh-inf-cql` author mode from here:
 
    ```sh
    rh-skills cql validate <topic> <LibraryName>   # confirm scaffold compiles
-   # author the full CQL logic using the rh-inf-cql skill
+   # ↑ then: load rh-inf-cql and run author mode against this library
    rh-skills cql validate <topic> <LibraryName>   # confirm authored library compiles
    rh-skills cql translate <topic> <LibraryName>  # compile to ELM JSON
    rh-skills cql test <topic> <LibraryName>        # list fixture cases (eval pending)
    ```
 
-   Follow the `rh-inf-cql` authoring guidelines (anti-patterns, runtime
-   assumptions, terminology policy) when writing CQL. The CQL library must
-   compile cleanly before proceeding to packaging.
+   Return here (step 7 — packaging) only after `rh-inf-cql` author mode completes
+   and the library validates cleanly.
 
    Skip this step for strategies that do not produce CQL
    (`evidence-summary`, `care-pathway`, `terminology`, `assessment`).
