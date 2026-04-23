@@ -225,12 +225,19 @@ def _parse_llm_response(raw: str) -> list[dict]:
     return []
 
 
+def _condition_label_to_cql_name(label: str) -> str:
+    """Convert a condition label to a CQL define name (PascalCase, no spaces)."""
+    words = re.split(r"[\s\-_/]+", label)
+    return "".join(w.capitalize() for w in words if w)
+
+
 def _build_stub_resources(
     artifact_name: str,
     artifact_type: str,
     strategy: dict,
     topic: str,
     cfg: dict,
+    l2_data: dict | None = None,
 ) -> list[dict]:
     """Build stub FHIR resources when LLM_PROVIDER=stub."""
     primary = strategy["primary"]
@@ -259,7 +266,26 @@ def _build_stub_resources(
     if primary == "PlanDefinition":
         plan_type = "eca-rule" if artifact_type in ("decision-table", "policy") else "clinical-protocol"
         primary_resource["type"] = {"coding": [{"code": plan_type}]}
-        primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
+        if artifact_type == "decision-table" and l2_data:
+            conditions = (l2_data.get("sections") or {}).get("conditions") or []
+            if conditions:
+                actions = []
+                for cond in conditions:
+                    cql_name = _condition_label_to_cql_name(
+                        cond.get("label") or cond.get("id") or "Condition"
+                    )
+                    actions.append({
+                        "title": cond.get("label") or cond.get("id"),
+                        "condition": [{
+                            "kind": "applicability",
+                            "expression": {"language": "text/cql", "expression": cql_name},
+                        }],
+                    })
+                primary_resource["action"] = actions
+            else:
+                primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
+        else:
+            primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
     elif primary == "Measure":
         primary_resource["scoring"] = {"coding": [{"code": "proportion"}]}
         primary_resource["group"] = [{
@@ -371,8 +397,14 @@ def formalize(topic, artifact, dry_run, force):
     # Load L2 YAML content
     l2_file = td / "structured" / f"{artifact}.yaml"
     l2_content = ""
+    l2_data: dict = {}
     if l2_file.exists():
         l2_content = l2_file.read_text()
+        _yaml = YAML()
+        try:
+            l2_data = _yaml.load(l2_content) or {}
+        except Exception:
+            l2_data = {}
 
     # Build prompts and invoke LLM
     system_prompt = _build_system_prompt(artifact_type, strategy, cfg)
@@ -390,7 +422,7 @@ def formalize(topic, artifact, dry_run, force):
 
     # Parse response
     if llm_output == "Stub response":
-        resources = _build_stub_resources(artifact, artifact_type, strategy, topic, cfg)
+        resources = _build_stub_resources(artifact, artifact_type, strategy, topic, cfg, l2_data)
     else:
         resources = _parse_llm_response(llm_output)
         if not resources:
