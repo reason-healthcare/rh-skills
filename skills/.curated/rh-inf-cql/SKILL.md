@@ -91,6 +91,7 @@ Allowed alternatives:
 | `C.clinicalStatus = 'active'` | `C.clinicalStatus.value in { 'active' }` | FHIR CodeableConcept — compare `.value` string |
 | `define function "F"(p Interval<DateTime>): ... p ...` | `define "F": Interval[ToDate(start of ...), ToDate(end of ...)]` | Typed function parameters with complex types (`Interval<>`, `FHIR.*`) fail to resolve in the `rh` translator; use named `define` expressions instead |
 | `[Condition] C where C.recordedDate is not null` | `[Condition: "BellsPalsyValueSet"] C` | Retrieve without a code or valueset filter returns ALL records of that resource type — always scope at the retrieve |
+| `[Condition] C where exists(C.code.coding Coding where Coding.system = 'http://hl7.org/fhir/sid/icd-10-cm' and Coding.code = 'G51.0')` | `[Condition: "BellsPalsyValueSet"] C` | Inline code-system matching is brittle, misses synonymous codes across systems, and bypasses the terminology pipeline — pre-coordinate a multi-system valueset and use retrieve-level scoping |
 
 **Do not read secondary docs files** (`authoring-guidelines.md`, `engine-notes/README.md`, `translator-options/README.md`, `cli/usage.md`, etc.) before writing CQL. The information above and the anti-pattern catalog (search for `Anti-pattern catalog` in this file) covers the critical cases. Read those files only if a specific gap arises.
 
@@ -386,13 +387,22 @@ details, unknown terminology expansions, unverified fixture assumptions.
    this — each one formalizes into a `ValueSet-<id>.json` via
    `rh-skills formalize <topic> <terminology-artifact>`.
 
+   **Valuesets must be built before the CQL phase.** The required concepts are
+   known at extract time from the terminology L2 artifacts — do not wait until
+   CQL authoring to discover missing valuesets.
+
    Before authoring CQL:
    1. List the topic's terminology L2 artifacts: check `structured/` for any
       `artifact_type: terminology` files.
    2. Confirm each required valueset has already been formalized into
       `computable/ValueSet-<id>.json`. If not, run
       `rh-skills formalize <topic> <terminology-artifact>` first.
-   3. If a concept needed in CQL has no corresponding terminology L2 artifact,
+   3. When building a valueset, **always use ReasonHub MCP tools**
+      (`reasonhub-search_snomed`, `reasonhub-search_icd10`, `reasonhub-search_rxnorm`,
+      `reasonhub-search_loinc`) to find semantically similar codes across systems.
+      Real-world data uses multiple coding systems and synonymous codes — a
+      valueset with only one code will produce false negatives in production.
+   4. If a concept needed in CQL has no corresponding terminology L2 artifact,
       that is a gap at the extract stage — raise it rather than inventing a
       ValueSet resource directly.
 
@@ -858,6 +868,7 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 - ❌ `M.authoredOn during Interval<DateTime>` — silently returns `false` for FHIR dateTime strings; use `ToDate(M.authoredOn)` with `Interval<Date>` instead
 - ❌ `date from M.authoredOn` — runtime error when authoredOn is a FHIR string; use `ToDate(M.authoredOn)`
 - ❌ Manual ValueSet expansion matching (`V.expansion.contains E where E.system = ... and E.code = ...`) — use `code in "ValueSetName"` instead
+- ❌ Inline code-system matching in a `where` clause (`where Coding.system = 'http://...' and Coding.code = 'X'`) — pre-coordinate a valueset using ReasonHub MCP and use `[Condition: "MyValueSet"]` retrieve-level scoping instead; inline matching misses synonymous codes across systems and bypasses the terminology pipeline
 - ❌ `define function "F"(p Interval<DateTime>): ...` — typed function parameters with `Interval<>` or `FHIR.*` types fail to compile; use a named `define` expression with inline logic instead
 
 ---
