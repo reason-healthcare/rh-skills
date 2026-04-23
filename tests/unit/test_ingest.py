@@ -167,7 +167,7 @@ def test_implement_registers_source_in_tracking(tmp_repo):
     assert result.exit_code == 0, result.output
     tracking = load_tracking(tmp_repo)
     names = [s["name"] for s in tracking["sources"]]
-    assert "test-source" in names
+    assert "test-source_md" in names
 
 
 def test_implement_stores_checksum(tmp_repo):
@@ -178,7 +178,7 @@ def test_implement_stores_checksum(tmp_repo):
     runner = CliRunner()
     runner.invoke(ingest, ["implement", str(src)])
     tracking = load_tracking(tmp_repo)
-    entry = next(s for s in tracking["sources"] if s["name"] == "guideline")
+    entry = next(s for s in tracking["sources"] if s["name"] == "guideline_md")
     expected = hashlib.sha256(content.encode()).hexdigest()
     assert entry["checksum"] == expected
 
@@ -189,7 +189,7 @@ def test_implement_stores_ingested_at_timestamp(tmp_repo):
     runner = CliRunner()
     runner.invoke(ingest, ["implement", str(src)])
     tracking = load_tracking(tmp_repo)
-    entry = next(s for s in tracking["sources"] if s["name"] == "report")
+    entry = next(s for s in tracking["sources"] if s["name"] == "report_md")
     assert "ingested_at" in entry
     assert entry["ingested_at"]  # non-empty
 
@@ -219,7 +219,7 @@ def test_implement_reregisters_changed_source(tmp_repo):
     result = runner.invoke(ingest, ["implement", str(src)])
     assert result.exit_code == 0, result.output
     tracking = load_tracking(tmp_repo)
-    entries = [s for s in tracking["sources"] if s["name"] == "updated"]
+    entries = [s for s in tracking["sources"] if s["name"] == "updated_md"]
     assert len(entries) == 1  # still one entry, not duplicated
 
 

@@ -234,7 +234,7 @@ ADA 2024 diabetes screening guidance:
             "diabetes-screening",
             "screening-criteria",
             "--source",
-            "ada-guidelines-2024",
+            "ada-guidelines-2024_md",
         ],
     )
     assert derive_result.exit_code == 0, derive_result.output
@@ -248,6 +248,6 @@ ADA 2024 diabetes screening guidance:
     with open(tmp_repo / "tracking.yaml") as f:
         tracking = y.load(f)
 
-    assert tracking["sources"][0]["name"] == "ada-guidelines-2024"
+    assert tracking["sources"][0]["name"] == "ada-guidelines-2024_md"
     topic = next(t for t in tracking["topics"] if t["name"] == "diabetes-screening")
     assert topic["structured"][0]["name"] == "screening-criteria"

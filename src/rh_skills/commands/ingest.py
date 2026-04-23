@@ -68,6 +68,19 @@ _META_NAME_MAP = {
 }
 
 
+def _source_name_from_path(path: Path) -> str:
+    """Derive a collision-free source name by encoding the file extension.
+
+    Examples:
+        2025_AAO13.pdf  → 2025_AAO13_pdf
+        2025_AAO13.docx → 2025_AAO13_docx
+        notes.txt       → notes_txt
+        README.md       → README_md
+    """
+    suffix = path.suffix.lstrip(".")
+    return f"{path.stem}_{suffix}" if suffix else path.stem
+
+
 class _HTMLMetaParser(HTMLParser):
     """Extracts <title>, <meta>, and <script type="application/ld+json"> from HTML."""
 
@@ -233,7 +246,7 @@ def _untracked_source_files(tracking: dict, topic: str, discovery_names: set[str
         rel_path = f"sources/{path.name}"
         if rel_path in tracked_files:
             continue
-        if path.stem in tracked_names:
+        if _source_name_from_path(path) in tracked_names:
             continue
         manual_files.append(path)
     return manual_files
@@ -515,7 +528,7 @@ def _implement_file(src_path: Path, source_type: str = "document", topic: str | 
     src_root = sources_root()
     src_root.mkdir(parents=True, exist_ok=True)
 
-    source_name = src_path.stem
+    source_name = _source_name_from_path(src_path)
 
     dest_file = src_root / src_path.name
     if src_path.resolve() != dest_file.resolve():
@@ -688,7 +701,7 @@ def normalize(file, topic, source_name):
     import subprocess
 
     src_path = Path(file)
-    name = source_name or src_path.stem
+    name = source_name or _source_name_from_path(src_path)
     out_dir = sources_root() / "normalized"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / f"{name}.md"
