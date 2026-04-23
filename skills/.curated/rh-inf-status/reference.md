@@ -60,8 +60,7 @@ The portfolio and sub-commands apply this logic per topic:
 | Structured present, no computable | `rh-inf-formalize plan <topic>` |
 | All levels present | `rh-inf-verify verify <topic>` plus an explicit “no immediate action required” note |
 
-A discovery plan is detected by the presence of
-`topics/<topic>/process/plans/discovery-plan.yaml`.
+A discovery plan is detected by the presence of `./discovery-plan.yaml` at the repo root.
 
 ## Source Change Detection
 
@@ -116,4 +115,4 @@ Not applicable — `rh-inf-status` is read-only and produces no output artifact.
 | Checksum drift | A source file on disk differs from its recorded SHA-256 checksum |
 | Stale artifact | An L2 or L3 artifact whose upstream source has changed |
 | tracking.yaml | Single authoritative lifecycle ledger at the repo root |
-| Discovery plan | `topics/<name>/process/plans/discovery-plan.yaml` — output of rh-inf-discovery |
+| Discovery plan | `./discovery-plan.yaml` — output of rh-inf-discovery (repo root) |

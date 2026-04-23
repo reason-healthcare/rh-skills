@@ -79,7 +79,7 @@ stage-specific verify workflows, and reports later stages explicitly as
 
 Each stage has a detailed workflow document covering CLI commands, data flow, key files, and design decisions:
 
-- **[Discovery](DISCOVERY.md)** — Topic-free interactive research session: search PubMed/PMC/ClinicalTrials.gov, build curated source registry with domain advice, enforce source constraints (5–25 sources, ≥1 terminology). Outputs `discovery-plan.yaml` and `discovery-readout.md` at the repo root. **No `rh-skills init` required.**
+- **[Discovery](DISCOVERY.md)** — Topic-free interactive research session: search PubMed/PMC/ClinicalTrials.gov, build curated source registry with domain advice, enforce source constraints (5–25 sources, ≥1 terminology). Outputs `discovery-plan.yaml` and `discovery-readout.md` at the repo root.
 - **[Ingest](INGEST.md)** — Five-stage pipeline: download → normalize (PDF/DOCX/HTML→Markdown) → infer topic + `rh-skills init` → classify (evidence level) → annotate (clinical concepts). Serial annotation constraint prevents concepts.yaml corruption
 - **[Extract](EXTRACT.md)** — Plan-gated derivation: propose L2 artifacts from 7-type catalog, reviewer approves per-artifact, LLM generates structured YAML, validate + render reports with Mermaid diagrams
 - **[Formalize](FORMALIZE.md)** — Type-aware L3 conversion: 7 strategies map L2 types to specific FHIR R4 resources. For CQL strategies (`decision-table`, `measure`, `policy`), `rh-inf-formalize` generates the FHIR JSON wrappers + CQL scaffold, then hands off directly to `rh-inf-cql` within the same implement step to author, validate, and compile the full CQL library.
@@ -87,6 +87,11 @@ Each stage has a detailed workflow document covering CLI commands, data flow, ke
 ## Directory Structure
 
 ```
+discovery-plan.yaml              ← L1 discovery output (repo root)
+discovery-readout.md             ← L1 domain narrative (repo root)
+sources/                         ← L1 raw source files (repo-wide)
+tracking.yaml                    ← lifecycle state for all topics
+
 topics/<name>/
 ├── structured/                  ← L2 artifacts (prominent, at root)
 │   ├── screening-criteria.yaml
@@ -96,7 +101,6 @@ topics/<name>/
 │   └── diabetes-pathway.yaml
 └── process/                     ← workflow support files
     ├── plans/
-    │   ├── discovery-plan.md    ← YAML front matter + prose
     │   ├── ingest-plan.md
     │   ├── extract-plan.md
     │   ├── formalize-plan.md
@@ -106,9 +110,6 @@ topics/<name>/
     ├── fixtures/                ← LLM test fixtures
     │   └── results/             ← test run results
     └── notes.md                 ← open questions, decisions, source conflicts, notes (human-maintained)
-
-sources/                         ← L1 raw source files (repo-wide)
-tracking.yaml                    ← lifecycle state for all topics
 ```
 
 ## Guiding Principle

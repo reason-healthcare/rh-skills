@@ -230,22 +230,20 @@ User: rh-inf-discovery session diabetes-ccm
 
 > Saving discovery plan...
 >
-> ✓ Written: `topics/diabetes-ccm/process/plans/discovery-plan.yaml`
+> ✓ Written: `./discovery-plan.yaml`
 >   (10 sources: 8 open, 2 authenticated)
 >
-> ✓ Written: `topics/diabetes-ccm/process/plans/discovery-readout.md`
+> ✓ Written: `./discovery-readout.md`
 >   (domain advice + 5 expansion suggestions)
 >
 > ✓ Updated: `RESEARCH.md` (row for diabetes-ccm: sources=10, updated=2026-04-15)
->
-> ✓ Confirmed: `topics/diabetes-ccm/process/notes.md` (human-maintained notes stub)
 >
 >
 > ```
 > ▸ rh-inf-discovery  diabetes-ccm
 >   Step:  11 — Save Checkpoint · Complete
->   Plan:  saved · 10 sources
->   Next:  rh-inf-discovery verify diabetes-ccm
+>   Plan:  saved · 10 sources → discovery-plan.yaml
+>   Next:  rh-inf-discovery verify
 > ```
 
 **User:** yes, verify.
@@ -255,11 +253,11 @@ User: rh-inf-discovery session diabetes-ccm
 ## Verify Mode Output
 
 ```
-rh-skills validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
+rh-skills validate --plan ./discovery-plan.yaml
 ```
 
 
-Validating discovery plan: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+Validating discovery plan: ./discovery-plan.yaml
 
 ✓ Parses as valid YAML
 ✓ Source count: 10 (within 5–25 range)
@@ -275,7 +273,7 @@ VALID — all checks passed
 > ▸ rh-inf-discovery  diabetes-ccm
 >   Mode:    verify
 >   Result:  PASS (1 warning)
->   Next:    rh-inf-ingest session diabetes-ccm
+>   Next:    rh-inf-ingest implement
 > ```
 >
 > **What would you like to do next?**

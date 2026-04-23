@@ -14,7 +14,7 @@ in `examples/plan.yaml`).
 
 **Agent:**
 
-Reading `topics/young-adult-hypertension/process/plans/discovery-plan.yaml`…
+Reading `./discovery-plan.yaml`…
 
 **Pre-flight summary for `young-adult-hypertension`**
 

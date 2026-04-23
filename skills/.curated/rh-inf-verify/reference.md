@@ -45,8 +45,8 @@ verify subagent.
 
 | Stage | Applicability signals | Not-yet-ready signals |
 |-------|-----------------------|-----------------------|
-| `discovery` | topic exists and `topics/<topic>/process/plans/discovery-plan.yaml` exists | topic exists but no discovery plan has been created yet |
-| `ingest` | discovery plan exists, sources are registered, or ingest outputs exist under `sources/normalized/` | discovery planning is incomplete and no ingest evidence exists yet |
+| `discovery` | `./discovery-plan.yaml` exists at repo root | no discovery plan found at repo root |
+| `ingest` | `./discovery-plan.yaml` exists, sources are registered, or ingest outputs exist under `sources/normalized/` | discovery planning is incomplete and no ingest evidence exists yet |
 | `extract` | `topics/<topic>/process/plans/extract-plan.md` exists or structured artifacts exist under `topics/<topic>/structured/` | ingest evidence exists but no extract plan or structured artifacts exist yet |
 | `formalize` | `topics/<topic>/process/plans/formalize-plan.md` exists or computable artifacts exist under `topics/<topic>/computable/` | extract outputs exist but no formalize plan or computable artifacts exist yet |
 
