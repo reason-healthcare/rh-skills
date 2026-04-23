@@ -379,17 +379,27 @@ details, unknown terminology expansions, unverified fixture assumptions.
    - Population criteria (if measure) → Initial Population, Denominator, Numerator
    - Condition rows (if decision-table) → one `define` per condition (PascalCase, no spaces)
 
-   **Valueset sourcing rule**: For every valueset referenced in the CQL library,
-   a corresponding `ValueSet` FHIR resource MUST exist in
-   `topics/<topic>/computable/ValueSet-<id>.json`. Build it locally using
-   `rh-skills formalize <topic> <terminology-artifact>` (or author the JSON
-   directly if no L2 terminology artifact exists yet). Do NOT reference external
-   canonical URLs as a substitute for a local resource.
+   **Valueset sourcing rule**: Every valueset referenced in the CQL library must
+   be backed by a `ValueSet` FHIR resource in `topics/<topic>/computable/`.
+   The terminology L2 artifacts (`topics/<topic>/structured/*.yaml` with
+   `artifact_type: terminology`) are the authoritative control files that drive
+   this — each one formalizes into a `ValueSet-<id>.json` via
+   `rh-skills formalize <topic> <terminology-artifact>`.
+
+   Before authoring CQL:
+   1. List the topic's terminology L2 artifacts: check `structured/` for any
+      `artifact_type: terminology` files.
+   2. Confirm each required valueset has already been formalized into
+      `computable/ValueSet-<id>.json`. If not, run
+      `rh-skills formalize <topic> <terminology-artifact>` first.
+   3. If a concept needed in CQL has no corresponding terminology L2 artifact,
+      that is a gap at the extract stage — raise it rather than inventing a
+      ValueSet resource directly.
 
    > 🔖 **Future**: Revisit reusability — well-known public valuesets (e.g., from
    > VSAC, HL7, or FHIR community IGs) should eventually be referenced by their
-   > canonical URL rather than duplicated locally. For now, local-first is the
-   > safe default.
+   > canonical URL rather than duplicated locally. For now, local-first via the
+   > terminology L2 pipeline is the required path.
 
 2. **Apply the CQL style guide** (see Style Guide section below) and the
    **authoring rubric** (see Authoring Rubric section below) before writing any code.
