@@ -209,6 +209,39 @@ def test_normalize_unknown_source_no_crash(tmp_repo):
     assert norm.exists()
 
 
+def test_normalize_no_topic_no_tracking(tmp_path):
+    """Normalize without --topic and without any tracking.yaml; should succeed.
+
+    This is the topic-inference path: sources are normalized before a topic
+    is initialized, so neither --topic nor tracking.yaml is required.
+    """
+    src = tmp_path / "sources" / "clinical-doc.pdf"
+    src.parent.mkdir(parents=True)
+    src.write_bytes(b"%PDF-1.4 fake")
+
+    mock_result = mock.MagicMock()
+    mock_result.returncode = 0
+    mock_result.stdout = "Extracted clinical text"
+
+    import os
+    orig_dir = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        with mock.patch("shutil.which", return_value="/usr/bin/pdftotext"), \
+             mock.patch("subprocess.run", return_value=mock_result):
+            runner = CliRunner()
+            result = runner.invoke(ingest, ["normalize", str(src)])
+    finally:
+        os.chdir(orig_dir)
+
+    assert result.exit_code == 0, result.output
+    norm = tmp_path / "sources" / "normalized" / "clinical-doc_pdf.md"
+    assert norm.exists()
+    fm = _parse_frontmatter(norm.read_text())
+    assert "topic" not in fm
+    assert fm["source"] == "clinical-doc_pdf"
+
+
 def test_normalize_html_extracts_meta(tmp_repo):
     """HTML normalization extracts title, meta tags, and JSON-LD into html_meta frontmatter."""
     src = tmp_repo / "guideline.html"

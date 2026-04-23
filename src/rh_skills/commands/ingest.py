@@ -694,7 +694,7 @@ def _ensure_tracking() -> None:
 
 @ingest.command()
 @click.argument("file", type=click.Path(exists=True))
-@click.option("--topic", required=True, help="Topic slug")
+@click.option("--topic", default=None, help="Topic slug (optional; assigned during topic inference)")
 @click.option("--name", "source_name", default=None, help="Source name override (default: file stem)")
 def normalize(file, topic, source_name):
     """Convert a source file to normalized Markdown at sources/normalized/<name>.md."""
@@ -763,11 +763,12 @@ def normalize(file, topic, source_name):
     _y.default_flow_style = False
     frontmatter_data: dict = {
         "source": name,
-        "topic": topic,
         "normalized": now_iso(),
         "original": f"sources/{src_path.name}",
         "text_extracted": text_extracted,
     }
+    if topic:
+        frontmatter_data["topic"] = topic
     if html_meta:
         frontmatter_data["html_meta"] = html_meta
     buf = io.StringIO()
@@ -790,7 +791,8 @@ def normalize(file, topic, source_name):
                 if s.get("name") == name:
                     s["normalized"] = f"sources/normalized/{name}.md"
                     s["text_extracted"] = text_extracted
-                    s["topic"] = topic
+                    if topic:
+                        s["topic"] = topic
             append_root_event(tracking, "source_normalized", f"Normalized: {name}")
         locked_update_tracking(_update)
     else:
