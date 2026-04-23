@@ -178,7 +178,7 @@ For terminology: If MCP tools are unavailable, use "TODO:MCP-UNREACHABLE" as pla
 
 Output ONLY the JSON array. No markdown fences, no explanation."""
 
-    if artifact_type in ("decision-table"):
+    if artifact_type in ("decision-table", "policy"):
         prompt += """
 
 For decision-table artifacts, the PlanDefinition MUST model an eca-rule:
