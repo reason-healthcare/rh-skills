@@ -34,6 +34,11 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 ## Workflow
 
 ```
+0. CONFIG: rh-skills formalize-config <topic>
+   ├─ Prompts for name, id, canonical, status, version
+   ├─ Writes topics/<topic>/process/formalize-config.yaml
+   └─ Required before running formalize or package
+
 1. PLAN: rh-skills promote formalize-plan <topic>
    ├─ Reads approved L2 artifacts from extract-plan.yaml
    ├─ Maps each artifact_type → strategy via _L3_TARGET_MAP
@@ -44,6 +49,7 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 2. APPROVE: Reviewer sets status: approved + reviewer_decision: approved
 
 3. IMPLEMENT: rh-skills formalize <topic> <artifact> (per artifact)
+   ├─ Loads formalize-config.yaml (exits 2 if missing)
    ├─ Looks up strategy in STRATEGY_REGISTRY
    ├─ Builds type-specific LLM system prompt
    ├─ Invokes LLM → raw FHIR JSON
@@ -62,9 +68,10 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
    └─ Non-destructive, safe to rerun
 
 5. PACKAGE: rh-skills package <topic>
+   ├─ Loads formalize-config.yaml (warns + uses defaults if missing)
    ├─ Collects all *.json + *.cql from computable/
-   ├─ Generates package.json (FHIR NPM, @reason/<topic>)
-   ├─ Generates ImplementationGuide-<topic>.json
+   ├─ Generates package.json (FHIR NPM, @reason/<id>)
+   ├─ Generates ImplementationGuide-<id>.json
    └─ Event: package_created
 ```
 

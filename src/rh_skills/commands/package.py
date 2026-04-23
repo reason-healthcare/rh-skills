@@ -4,6 +4,7 @@ import sys
 
 import click
 
+from rh_skills.commands.formalize_config import load_formalize_config
 from rh_skills.common import (
     append_topic_event,
     log_info,
@@ -43,14 +44,28 @@ def package(topic, dry_run, output_dir):
         click.echo(f"Error: Computable directory not found: {computable_dir}", err=True)
         sys.exit(2)
 
+    # Load formalize config — warn and use defaults if missing
+    cfg = load_formalize_config(td)
+    if cfg is None:
+        click.echo(
+            f"Warning: formalize-config.yaml not found for topic '{topic}'. "
+            "Using defaults (canonical=http://example.org/fhir, version=0.1.0, status=draft).\n"
+            f"Run 'rh-skills formalize-config {topic}' to configure.",
+            err=True,
+        )
+        cfg = {
+            "name": "".join(w.capitalize() for w in topic.split("-")),
+            "id": topic,
+            "canonical": "http://example.org/fhir",
+            "status": "draft",
+            "version": "0.1.0",
+        }
+
     # Determine output directory
     if output_dir:
         pkg_dir = type(td)(output_dir)
     else:
         pkg_dir = td / "package"
-
-    # Determine version from topic metadata or default
-    version = "1.0.0"
 
     if dry_run:
         from rh_skills.fhir.packaging import (
@@ -58,7 +73,12 @@ def package(topic, dry_run, output_dir):
             generate_package_json,
         )
         json_files, cql_files = collect_computable_files(computable_dir)
-        pkg = generate_package_json(topic, has_cql=bool(cql_files))
+        pkg = generate_package_json(
+            topic,
+            version=cfg["version"],
+            has_cql=bool(cql_files),
+            package_id=f"@reason/{cfg['id']}",
+        )
         click.echo(f"--- DRY RUN: package '{topic}' ---")
         click.echo(f"  Package: {pkg['name']} v{pkg['version']}")
         click.echo(f"  Resources: {len(json_files)} FHIR JSON + {len(cql_files)} CQL")
@@ -68,7 +88,17 @@ def package(topic, dry_run, output_dir):
 
     click.echo(f"Packaging '{topic}' as FHIR package...")
 
-    result = build_package(computable_dir, pkg_dir, topic, version=version)
+    result = build_package(
+        computable_dir,
+        pkg_dir,
+        topic,
+        version=cfg["version"],
+        name=cfg["name"],
+        ig_id=cfg["id"],
+        canonical=cfg["canonical"],
+        status=cfg["status"],
+        package_id=f"@reason/{cfg['id']}",
+    )
 
     if "error" in result:
         click.echo(f"Error: {result['error']}", err=True)

@@ -234,20 +234,76 @@ rh-skills formalize diabetes-screening lab-values --strategy terminology
 
 ---
 
-## `rh-skills package`
+## `rh-skills formalize-config`
 
-Bundle computable resources into a FHIR NPM package.
+Configure FHIR/CQL artifact metadata for a topic.
 
 ```
-rh-skills package <topic> [--version VERSION] [--dry-run]
+rh-skills formalize-config <topic> [OPTIONS]
 ```
 
 **Arguments:**
 - `topic` — Topic name
 
 **Options:**
-- `--version` — Package version (default: from tracking.yaml or `0.1.0`)
+- `--non-interactive` — Accept all suggested defaults without prompting
+- `--name NAME` — PascalCase IG name override (default: derived from topic slug)
+- `--id ID` — Kebab-case ID override (default: topic slug)
+- `--canonical URL` — Base canonical URL (default: `http://example.org/fhir`)
+- `--status STATUS` — FHIR publication status: `draft`, `active`, `retired`, `unknown` (default: `draft`)
+- `--version VERSION` — SemVer version (default: `0.1.0`)
+- `--force` — Overwrite existing config without prompting
+
+**Behavior:**
+- Creates (or updates) `topics/<topic>/process/formalize-config.yaml`
+- Values drive all FHIR and CQL artifact generation:
+  - `resource.url` = `{canonical}/{ResourceType}/{id}`
+  - `resource.version` = `version`
+  - `resource.status` = `status`
+  - ImplementationGuide: `name`, `id`, `packageId`, `url`, `status`, `version`
+  - CQL library header: `library <Name> version "{version}"`
+- `rh-skills formalize` and `rh-skills package` require this file to exist
+
+**File location:**
+```
+topics/<topic>/process/formalize-config.yaml
+```
+
+**Example config:**
+```yaml
+name: DiabetesScreening
+id: diabetes-screening
+canonical: https://example.org/fhir
+status: draft
+version: 0.1.0
+```
+
+**Examples:**
+```bash
+rh-skills formalize-config diabetes-screening
+rh-skills formalize-config diabetes-screening --non-interactive
+rh-skills formalize-config diabetes-screening --canonical https://my-org.example.com/fhir
+rh-skills formalize-config diabetes-screening --force --version 1.0.0
+```
+
+---
+
+## `rh-skills package`
+
+Bundle computable resources into a FHIR NPM package.
+
+```
+rh-skills package <topic> [--dry-run]
+```
+
+**Arguments:**
+- `topic` — Topic name
+
+**Options:**
 - `--dry-run` — Show what would be packaged without writing files
+
+**Prerequisites:**
+- `formalize-config.yaml` must exist (run `rh-skills formalize-config <topic>` first); if missing, defaults are used with a warning.
 
 **Behavior:**
 - Collects all FHIR JSON files from `topics/<topic>/computable/`
@@ -259,7 +315,7 @@ rh-skills package <topic> [--version VERSION] [--dry-run]
 ```
 topics/<topic>/package/
 ├── package.json
-├── ImplementationGuide-<topic>.json
+├── ImplementationGuide-<id>.json
 ├── PlanDefinition-<id>.json
 ├── Library-<id>.json
 ├── ValueSet-<id>.json
@@ -269,7 +325,7 @@ topics/<topic>/package/
 **Example:**
 ```bash
 rh-skills package diabetes-screening
-rh-skills package diabetes-screening --version 1.0.0
+rh-skills package diabetes-screening --dry-run
 ```
 
 ---

@@ -14,9 +14,10 @@ from pathlib import Path
 
 def generate_package_json(
     topic_slug: str,
-    version: str = "1.0.0",
+    version: str = "0.1.0",
     has_cql: bool = False,
     extra_dependencies: dict[str, str] | None = None,
+    package_id: str | None = None,
 ) -> dict:
     """Build a FHIR NPM package.json dict.
 
@@ -25,7 +26,9 @@ def generate_package_json(
         version: SemVer package version.
         has_cql: Whether CQL files are present (adds cql dependency).
         extra_dependencies: Additional IG dependencies to include.
+        package_id: Override the NPM package name (default: @reason/<topic_slug>).
     """
+    pkg_name = package_id or f"@reason/{topic_slug}"
     deps: dict[str, str] = {
         "hl7.fhir.r4.core": "4.0.1",
         "hl7.fhir.us.core": "6.1.0",
@@ -37,7 +40,7 @@ def generate_package_json(
         deps.update(extra_dependencies)
 
     return {
-        "name": f"@reason/{topic_slug}",
+        "name": pkg_name,
         "version": version,
         "type": "fhir.ig",
         "fhirVersions": ["4.0.1"],
@@ -48,16 +51,25 @@ def generate_package_json(
 def generate_implementation_guide(
     topic_slug: str,
     resource_files: list[str],
-    version: str = "1.0.0",
+    version: str = "0.1.0",
+    name: str | None = None,
+    ig_id: str | None = None,
+    canonical: str = "http://example.org/fhir",
+    status: str = "draft",
+    package_id: str | None = None,
 ) -> dict:
     """Build a FHIR ImplementationGuide resource dict.
 
     Args:
-        topic_slug: Topic identifier (kebab-case).
+        topic_slug: Topic identifier (kebab-case) — used as fallback for id/name.
         resource_files: Filenames of FHIR JSON resources (e.g.,
             ``["PlanDefinition-sepsis.json", "Library-sepsis.json"]``).
         version: Package version string.
     """
+    resolved_id = ig_id or topic_slug
+    resolved_name = name or "".join(word.capitalize() for word in topic_slug.split("-"))
+    resolved_pkg_id = package_id or f"@reason/{resolved_id}"
+
     resources = []
     for fname in resource_files:
         # Derive reference from filename: PlanDefinition-sepsis.json → PlanDefinition/sepsis
@@ -74,13 +86,13 @@ def generate_implementation_guide(
 
     return {
         "resourceType": "ImplementationGuide",
-        "id": topic_slug,
-        "url": f"http://example.org/fhir/ImplementationGuide/{topic_slug}",
+        "id": resolved_id,
+        "url": f"{canonical}/ImplementationGuide/{resolved_id}",
         "version": version,
-        "name": "".join(word.capitalize() for word in topic_slug.split("-")),
+        "name": resolved_name,
         "title": topic_slug.replace("-", " ").title(),
-        "status": "draft",
-        "packageId": f"@reason/{topic_slug}",
+        "status": status,
+        "packageId": resolved_pkg_id,
         "fhirVersion": ["4.0.1"],
         "definition": {
             "resource": resources,
@@ -103,7 +115,12 @@ def build_package(
     computable_dir: Path,
     output_dir: Path,
     topic_slug: str,
-    version: str = "1.0.0",
+    version: str = "0.1.0",
+    name: str | None = None,
+    ig_id: str | None = None,
+    canonical: str = "http://example.org/fhir",
+    status: str = "draft",
+    package_id: str | None = None,
 ) -> dict:
     """Build a FHIR package from computable directory contents.
 
@@ -115,6 +132,11 @@ def build_package(
         output_dir: Target package directory.
         topic_slug: Topic identifier (kebab-case).
         version: Package version string.
+        name: PascalCase IG name (default: derived from topic_slug).
+        ig_id: IG resource id (default: topic_slug).
+        canonical: Base canonical URL.
+        status: FHIR publication status.
+        package_id: NPM package name override.
 
     Returns:
         Summary dict with counts and package metadata.
@@ -135,13 +157,24 @@ def build_package(
         topic_slug,
         version=version,
         has_cql=bool(cql_files),
+        package_id=package_id,
     )
     (output_dir / "package.json").write_text(json.dumps(pkg, indent=2) + "\n")
 
     # Generate ImplementationGuide
     resource_fnames = [f.name for f in json_files]
-    ig = generate_implementation_guide(topic_slug, resource_fnames, version=version)
-    ig_fname = f"ImplementationGuide-{topic_slug}.json"
+    ig = generate_implementation_guide(
+        topic_slug,
+        resource_fnames,
+        version=version,
+        name=name,
+        ig_id=ig_id,
+        canonical=canonical,
+        status=status,
+        package_id=package_id,
+    )
+    resolved_id = ig_id or topic_slug
+    ig_fname = f"ImplementationGuide-{resolved_id}.json"
     (output_dir / ig_fname).write_text(json.dumps(ig, indent=2) + "\n")
 
     return {

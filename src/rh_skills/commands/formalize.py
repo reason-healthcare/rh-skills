@@ -10,6 +10,7 @@ from pathlib import Path
 import click
 from ruamel.yaml import YAML
 
+from rh_skills.commands.formalize_config import load_formalize_config
 from rh_skills.common import (
     append_topic_event,
     config_value,
@@ -141,11 +142,14 @@ def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
     )
 
 
-def _build_system_prompt(artifact_type: str, strategy: dict) -> str:
+def _build_system_prompt(artifact_type: str, strategy: dict, cfg: dict) -> str:
     """Build a type-specific system prompt for FHIR JSON generation."""
     primary = strategy["primary"]
     supporting = strategy.get("supporting", [])
     all_types = [primary] + supporting
+    canonical = cfg["canonical"]
+    version = cfg["version"]
+    status = cfg["status"]
 
     return f"""\
 You are a healthcare informatics specialist. Your task is to convert a \
@@ -157,15 +161,15 @@ is {primary}. Supporting resource types: {', '.join(supporting) or 'none'}.
 Each resource in the array MUST have:
 - "resourceType": one of {all_types}
 - "id": kebab-case identifier
-- "url": canonical URL (http://example.org/fhir/<ResourceType>/<id>)
-- "version": "1.0.0"
-- "status": "draft"
+- "url": canonical URL ({canonical}/<ResourceType>/<id>)
+- "version": "{version}"
+- "status": "{status}"
 - "date": today's date (YYYY-MM-DD)
 - "name": PascalCase machine name
 - "title": human-readable title
 
 For CQL: If the artifact contains structured logic (decision rules, measure populations), \
-generate a companion CQL library with compilable expressions. Use 'library <Name> version "1.0.0"', \
+generate a companion CQL library with compilable expressions. Use 'library <Name> version "{version}"', \
 'using FHIR version "4.0.1"', 'include FHIRHelpers version "4.0.1"', 'context Patient'. \
 If logic is too ambiguous, use '// TODO: <reason>' stubs.
 
@@ -226,12 +230,16 @@ def _build_stub_resources(
     artifact_type: str,
     strategy: dict,
     topic: str,
+    cfg: dict,
 ) -> list[dict]:
     """Build stub FHIR resources when LLM_PROVIDER=stub."""
     primary = strategy["primary"]
     supporting = strategy.get("supporting", [])
     resource_id = to_kebab_case(artifact_name)
     today = today_date()
+    canonical = cfg["canonical"]
+    version = cfg["version"]
+    status = cfg["status"]
 
     resources = []
 
@@ -239,9 +247,9 @@ def _build_stub_resources(
     primary_resource: dict = {
         "resourceType": primary,
         "id": resource_id,
-        "url": f"http://example.org/fhir/{primary}/{resource_id}",
-        "version": "1.0.0",
-        "status": "draft",
+        "url": f"{canonical}/{primary}/{resource_id}",
+        "version": version,
+        "status": status,
         "date": today,
         "name": "".join(w.capitalize() for w in resource_id.split("-")),
         "title": artifact_name.replace("-", " ").title(),
@@ -263,7 +271,7 @@ def _build_stub_resources(
         # Populate Measure.library with the canonical URL of the companion Library
         if "Library" in supporting:
             lib_id = f"{resource_id}-{to_kebab_case('Library')}"
-            primary_resource["library"] = [f"http://example.org/fhir/Library/{lib_id}"]
+            primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
     elif primary == "Questionnaire":
         primary_resource["item"] = [{"linkId": "q1", "text": "Stub question", "type": "choice"}]
     elif primary == "ValueSet":
@@ -279,9 +287,9 @@ def _build_stub_resources(
         sup_resource: dict = {
             "resourceType": sup_type,
             "id": sup_id,
-            "url": f"http://example.org/fhir/{sup_type}/{sup_id}",
-            "version": "1.0.0",
-            "status": "draft",
+            "url": f"{canonical}/{sup_type}/{sup_id}",
+            "version": version,
+            "status": status,
             "date": today,
             "name": "".join(w.capitalize() for w in sup_id.split("-")),
             "title": f"{artifact_name} {sup_type}".replace("-", " ").title(),
@@ -349,15 +357,25 @@ def formalize(topic, artifact, dry_run, force):
             click.echo(f"Supporting: {', '.join(strategy['supporting'])}")
         return
 
-    # Load L2 YAML content
+    # Load formalize config — required before generating artifacts
     td = topic_dir(topic)
+    cfg = load_formalize_config(td)
+    if cfg is None:
+        click.echo(
+            f"Error: formalize-config.yaml not found for topic '{topic}'.\n"
+            f"Run:  rh-skills formalize-config {topic}",
+            err=True,
+        )
+        sys.exit(2)
+
+    # Load L2 YAML content
     l2_file = td / "structured" / f"{artifact}.yaml"
     l2_content = ""
     if l2_file.exists():
         l2_content = l2_file.read_text()
 
     # Build prompts and invoke LLM
-    system_prompt = _build_system_prompt(artifact_type, strategy)
+    system_prompt = _build_system_prompt(artifact_type, strategy, cfg)
     user_prompt = (
         f"Artifact name: {artifact}\n"
         f"Artifact type: {artifact_type}\n"
@@ -372,7 +390,7 @@ def formalize(topic, artifact, dry_run, force):
 
     # Parse response
     if llm_output == "Stub response":
-        resources = _build_stub_resources(artifact, artifact_type, strategy, topic)
+        resources = _build_stub_resources(artifact, artifact_type, strategy, topic, cfg)
     else:
         resources = _parse_llm_response(llm_output)
         if not resources:

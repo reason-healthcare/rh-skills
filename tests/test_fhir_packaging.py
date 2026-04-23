@@ -14,7 +14,7 @@ class TestGeneratePackageJson:
     def test_basic(self):
         pkg = generate_package_json("sepsis-bundle")
         assert pkg["name"] == "@reason/sepsis-bundle"
-        assert pkg["version"] == "1.0.0"
+        assert pkg["version"] == "0.1.0"
         assert pkg["type"] == "fhir.ig"
         assert "4.0.1" in pkg["fhirVersions"]
         assert "hl7.fhir.us.core" in pkg["dependencies"]
