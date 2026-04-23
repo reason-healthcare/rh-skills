@@ -65,7 +65,7 @@ workspace:
             clinical_question: "When should antihypertensive therapy be initiated or escalated?"
             required_sections:
               - applicability
-              - conditions
+              - decision_table
               - actions
             reviewer_decision: approved
 
