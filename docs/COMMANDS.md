@@ -27,7 +27,7 @@ topics/<name>/
   process/
     plans/tasks.md
     notes.md
-    contracts/  checklists/  fixtures/fixtures/results/
+    fixtures/  fixtures/results/
 ```
 
 Updates `tracking.yaml` with the new topic entry.

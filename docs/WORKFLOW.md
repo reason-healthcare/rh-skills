@@ -105,8 +105,6 @@ topics/<name>/
     │   ├── extract-plan.md
     │   ├── formalize-plan.md
     │   └── tasks.md             ← rh-skills tasks tracking
-    ├── contracts/               ← YAML validation contracts
-    ├── checklists/              ← clinical review checklists
     ├── fixtures/                ← LLM test fixtures
     │   └── results/             ← test run results
     └── notes.md                 ← open questions, decisions, source conflicts, notes (human-maintained)

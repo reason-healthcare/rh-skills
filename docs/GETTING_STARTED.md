@@ -45,8 +45,6 @@ topics/diabetes-screening/
   computable/        ← L3 artifacts live here (prominent)
   process/
     plans/           ← discovery, ingest, extract, formalize plans
-    contracts/       ← YAML validation contracts
-    checklists/      ← clinical review checklists
     fixtures/        ← test fixtures for skill testing
     notes.md         ← open questions, decisions, source conflicts, notes (human-maintained)
 ```

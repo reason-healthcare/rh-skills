@@ -67,7 +67,7 @@ def init(topic, title, description, author):
     # Create directory structure
     for subdir in [
         "structured",
-        "process/fixtures/results", "process/plans", "process/contracts", "process/checklists",
+        "process/fixtures/results", "process/plans",
     ]:
         (td / subdir).mkdir(parents=True, exist_ok=True)
 
@@ -196,8 +196,6 @@ metadata:
     click.echo("      structured/  (semi-structured artifacts)")
     click.echo("      computable/  (created by formalize — not present yet)")
     click.echo("      process/")
-    click.echo("        contracts/   (YAML assertions for validation)")
-    click.echo("        checklists/  (clinical review checklists)")
     click.echo("        plans/       (tasks and plan artifacts)")
     click.echo("        fixtures/    (LLM test fixtures)")
     click.echo("        notes.md     (open questions, decisions, conflicts, notes)")
