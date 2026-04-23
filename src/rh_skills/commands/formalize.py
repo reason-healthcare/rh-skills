@@ -181,7 +181,7 @@ Output ONLY the JSON array. No markdown fences, no explanation."""
     if artifact_type in ("decision-table", "policy"):
         prompt += """
 
-For decision-table artifacts, the PlanDefinition MUST model an eca-rule:
+For decision-table and policy artifacts, the PlanDefinition MUST model an eca-rule:
 - "type.coding[0].system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
 - "type.coding[0].code": "eca-rule"
 - "library[]": canonical(s) to companion Library resource(s)
