@@ -269,35 +269,41 @@ FHIR files directly.
 
    This produces individual FHIR JSON files (`<ResourceType>-<id>.json`) in
    `topics/<topic>/computable/`. For strategies that include a CQL Library
-   (`decision-table`, `measure`, `policy`), `rh-skills formalize` writes a
-   compilable CQL scaffold alongside the JSON wrappers.
+   (`decision-table`, `measure`, `policy`), `rh-skills formalize` writes stub
+   FHIR JSON with CQL expression references — CQL source is authored separately
+   in step 6 and embedded via `rh-skills formalize --force`.
 
    **If the strategy includes CQL, you MUST stop here and load the `rh-inf-cql`
    skill (step 6) before packaging.** Do not author CQL inline and do not
    advance to packaging without `rh-inf-cql` author mode completing cleanly.
 
-6. **For CQL strategies only** — you **MUST** invoke the `rh-inf-cql` skill to
-   author the CQL library. Do NOT write CQL directly in this skill. Load
-   `rh-inf-cql` and follow its author mode workflow:
+6. **For CQL strategies only** — delegate CQL authoring to an agent loaded with
+   the `rh-inf-cql` skill. Do NOT write CQL directly in this skill.
 
-   > **⚠ BLOCKING**: CQL authoring is delegated entirely to `rh-inf-cql`.
-   > Inline CQL written without going through `rh-inf-cql` author mode violates
-   > the authoring contract (anti-patterns, compile checks, FHIRHelpers handling,
-   > terminology policy). The library **must** compile before proceeding to
-   > packaging.
+   > **⚠ BLOCKING**: You MUST spawn a sub-agent with `rh-inf-cql` and pass it
+   > the L2 structured artifact as its primary input. Inline CQL written without
+   > delegating to `rh-inf-cql` violates the authoring contract (anti-patterns,
+   > compile checks, FHIRHelpers handling, terminology policy). The library
+   > **must** compile before proceeding to packaging.
 
-   The sequence when entering `rh-inf-cql` author mode from here:
+   Delegation instructions for the sub-agent:
+
+   - **Skill**: load `rh-inf-cql`
+   - **Mode**: author
+   - **Input**: `topics/<topic>/structured/<artifact>.yaml` — the L2 artifact is
+     the authoritative source for logic, populations, conditions, and valuesets
+   - **Output**: `topics/<topic>/computable/<LibraryName>.cql`
+
+   After the sub-agent completes, confirm the library compiles and embed it:
 
    ```sh
-   rh-skills cql validate <topic> <LibraryName>   # confirm scaffold compiles
-   # ↑ then: load rh-inf-cql and run author mode against this library
-   rh-skills cql validate <topic> <LibraryName>   # confirm authored library compiles
+   rh-skills cql validate <topic> <LibraryName>   # must exit 0
    rh-skills cql translate <topic> <LibraryName>  # compile to ELM JSON
-   rh-skills cql test <topic> <LibraryName>        # list fixture cases (eval pending)
+   rh-skills formalize <topic> <artifact> --force  # re-run to embed CQL in Library JSON
    ```
 
-   Return here (step 7 — packaging) only after `rh-inf-cql` author mode completes
-   and the library validates cleanly.
+   Return here (step 7 — packaging) only after the library validates cleanly
+   and `rh-skills formalize --force` has embedded the CQL.
 
    Skip this step for strategies that do not produce CQL
    (`evidence-summary`, `care-pathway`, `terminology`, `assessment`).
