@@ -73,6 +73,25 @@ Allowed alternatives:
 
 ---
 
+## Critical Authoring Patterns (read before writing any CQL)
+
+**Runtime defaults** (assume these unless the user specifies otherwise):
+- CQL version: `1.5.3` | FHIR model: `4.0.1` | Translator: standard defaults (signatureLevel none, enableAnnotations false)
+- Engine: `rh` — does NOT auto-inject FHIRHelpers; does NOT evaluate test expressions (eval pending)
+
+**Anti-patterns that cause silent failures or runtime errors:**
+
+| ❌ Wrong | ✓ Correct | Why |
+|----------|-----------|-----|
+| `M.authoredOn during Interval<DateTime>` | `ToDate(M.authoredOn) in Interval<Date>` | FHIR dateTime strings silently return `false` in DateTime intervals |
+| `date from M.authoredOn` | `ToDate(M.authoredOn)` | `date from` runtime-errors on FHIR strings |
+| `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Manual expansion is unnecessary; engine resolves by name |
+| `C.clinicalStatus = 'active'` | `C.clinicalStatus.value in { 'active' }` | FHIR CodeableConcept — compare `.value` string |
+
+**Do not read secondary docs files** (`authoring-guidelines.md`, `engine-notes/README.md`, `translator-options/README.md`, `cli/usage.md`, etc.) before writing CQL. The information above and the anti-pattern catalog (search for `Anti-pattern catalog` in this file) covers the critical cases. Read those files only if a specific gap arises.
+
+---
+
 ## Purpose
 
 This skill turns the agent into a disciplined reviewer and test-oriented author
@@ -119,9 +138,9 @@ State clearly which items are missing and the likely impact of each gap.
 - Target FHIR version (default: 4.0.1)
 - Model declaration and model version
 - Included libraries and their versions
-- Translator options (see `context/runtime/translator-options/README.md`)
+- Translator options (defaults: signatureLevel none, enableAnnotations false — see `context/runtime/translator-options/README.md` only if non-default options are in use)
 - Terminology dependencies and version pins
-- Runtime engine and evaluator details (see `context/runtime/engine-notes/README.md`)
+- Runtime engine and evaluator details (default: `rh` engine — see `context/runtime/engine-notes/README.md` only if a non-default engine is in use)
 - Expected input data shape (patient bundle structure)
 - Expected output expressions or artifact behavior
 - Packaging context: Library, Measure, PlanDefinition, or ActivityDefinition
