@@ -772,6 +772,9 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 - ❌ `if X is not null then X else default` — prefer `Coalesce(X, default)`
 - ❌ `First([Condition])` without an ordering expression
 - ❌ Comparing dates with `=` instead of `same day as` or interval operators
+- ❌ `M.authoredOn during Interval<DateTime>` — silently returns `false` for FHIR dateTime strings; use `ToDate(M.authoredOn)` with `Interval<Date>` instead
+- ❌ `date from M.authoredOn` — runtime error when authoredOn is a FHIR string; use `ToDate(M.authoredOn)`
+- ❌ Manual ValueSet expansion matching (`V.expansion.contains E where E.system = ... and E.code = ...`) — use `code in "ValueSetName"` instead
 
 ---
 
@@ -787,8 +790,24 @@ must call these — do not write files directly.
 | Run fixture-based test cases | `rh-skills cql test <topic> <library>` |
 | Write FHIR Library JSON wrapper | `rh-skills formalize <topic> <artifact>` |
 
-`rh-skills cql validate` wraps `rh cql validate` (Rust-native CQL compiler).
-For interactive debugging, `rh cql repl` and `rh cql explain` are available directly.
+> **`rh-skills cql validate`, `translate`, and `test` are currently deferred
+> (backend pending).** They confirm files exist and list cases, but do not
+> execute. Use `rh cql` directly for validation and evaluation:
+>
+> ```sh
+> # Validate
+> rh cql validate topics/<topic>/computable/<Library>.cql
+>
+> # Evaluate a single expression against a fixture bundle
+> rh cql eval topics/<topic>/computable/<Library>.cql "<ExprName>" \
+>   --data tests/cql/<Library>/case-001-positive/input/bundle.json
+> ```
+>
+> Write the `.cql` file **first**, then validate and eval against it. Do not
+> probe runtime behavior with repeated inline stdin snippets (`rh cql eval - "X" <<'EOF'`).
+> If an expression returns an unexpected result, read `runtime-assumptions.md`
+> before iterating — the cause is almost always a FHIR type coercion issue
+> (see the dateTime section).
 
 ---
 
