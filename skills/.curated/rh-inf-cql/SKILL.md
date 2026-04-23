@@ -379,6 +379,18 @@ details, unknown terminology expansions, unverified fixture assumptions.
    - Population criteria (if measure) → Initial Population, Denominator, Numerator
    - Condition rows (if decision-table) → one `define` per condition (PascalCase, no spaces)
 
+   **Valueset sourcing rule**: For every valueset referenced in the CQL library,
+   a corresponding `ValueSet` FHIR resource MUST exist in
+   `topics/<topic>/computable/ValueSet-<id>.json`. Build it locally using
+   `rh-skills formalize <topic> <terminology-artifact>` (or author the JSON
+   directly if no L2 terminology artifact exists yet). Do NOT reference external
+   canonical URLs as a substitute for a local resource.
+
+   > 🔖 **Future**: Revisit reusability — well-known public valuesets (e.g., from
+   > VSAC, HL7, or FHIR community IGs) should eventually be referenced by their
+   > canonical URL rather than duplicated locally. For now, local-first is the
+   > safe default.
+
 2. **Apply the CQL style guide** (see Style Guide section below) and the
    **authoring rubric** (see Authoring Rubric section below) before writing any code.
 
@@ -804,6 +816,9 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 - Always pin valueset versions in production libraries
 - Prefer canonical VSAC/FHIR URLs over raw OIDs for new libraries
 - One `codesystem` declaration per system; reuse across the library
+- Every valueset declared in the library **must have a local `ValueSet` resource**
+  in `topics/<topic>/computable/ValueSet-<id>.json` — verify it exists before
+  finalizing the library. See the valueset sourcing rule in the author workflow.
 
 ### Retrieve patterns
 - One `define` per resource type retrieve; name it `"<Resource> by <filter>"`
