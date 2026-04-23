@@ -90,6 +90,7 @@ Allowed alternatives:
 | `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Manual expansion is unnecessary; engine resolves by name |
 | `C.clinicalStatus = 'active'` | `C.clinicalStatus.value in { 'active' }` | FHIR CodeableConcept — compare `.value` string |
 | `define function "F"(p Interval<DateTime>): ... p ...` | `define "F": Interval[ToDate(start of ...), ToDate(end of ...)]` | Typed function parameters with complex types (`Interval<>`, `FHIR.*`) fail to resolve in the `rh` translator; use named `define` expressions instead |
+| `[Condition] C where C.recordedDate is not null` | `[Condition: "BellsPalsyValueSet"] C` | Retrieve without a code or valueset filter returns ALL records of that resource type — always scope at the retrieve |
 
 **Do not read secondary docs files** (`authoring-guidelines.md`, `engine-notes/README.md`, `translator-options/README.md`, `cli/usage.md`, etc.) before writing CQL. The information above and the anti-pattern catalog (search for `Anti-pattern catalog` in this file) covers the critical cases. Read those files only if a specific gap arises.
 
@@ -727,7 +728,8 @@ guidance on preferred alternatives.
 | Unpinned valueset or code system version | `terminology-resolution` | BLOCKING |
 | Hidden timezone or precision assumption (`Today()`, `Now()` without explicit context) | `temporal-precision` | ADVISORY |
 | Quantity comparison without unit normalization on both sides | `unit-conversion` | BLOCKING |
-| Retrieve too broad — filtered ad hoc downstream instead of at the retrieve | `retrieve-scope` | ADVISORY |
+| Retrieve without code or valueset filter — returns ALL records of that resource type | `retrieve-scope` | BLOCKING |
+| Retrieve too broad — correct code/valueset filter present but `where` clause applied downstream instead of at the retrieve | `retrieve-scope` | ADVISORY |
 | Duplicate logic instead of a named helper definition | Style | ADVISORY |
 | Ambiguous null handling — assuming null is false without explicit `is null` check | `null-propagation` | ADVISORY |
 | Dependence on implicit engine behavior not documented in `context/runtime/` | `engine-behavior` | ADVISORY |
@@ -784,7 +786,7 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 | 1 | Unpinned terminology | BLOCKING | `valueset "X": 'urn:oid:...'` without version pinning where reproducibility matters |
 | 2 | Hidden timezone/precision assumptions | ADVISORY | `Today()` or `Now()` without explicit context clock; date arithmetic without `ToDate()` |
 | 3 | Quantity comparison without unit normalization | BLOCKING | `obs.value > 5 'mg'` where source unit may differ |
-| 4 | Overly broad retrieves filtered ad hoc | ADVISORY | `[Observation]` without a `where` status filter; large retrieves narrowed by downstream defines |
+| 4 | Retrieve without code/valueset filter | BLOCKING | `[Condition]`, `[Observation]`, `[MedicationRequest]` etc. with no code or valueset at the retrieve — returns ALL records of that type regardless of clinical meaning |
 | 5 | Duplicate logic instead of helper definitions | ADVISORY | Same expression repeated in 3+ defines without extraction |
 | 6 | Ambiguous null handling | BLOCKING | `if X then Y` without `else null` where null branch matters; comparing null to a value without `~` |
 | 7 | Dependence on implicit engine behavior | ADVISORY | Logic that relies on FHIRHelpers auto-injection, implicit conversions, or unspecified operator overloads |
