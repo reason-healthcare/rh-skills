@@ -1,0 +1,254 @@
+name: care-pathway-eca-leaf
+skill: rh-inf-formalize
+description: >
+  Care pathway with a leaf action that references an ECA decision-table artifact.
+  Tests that the agent produces: PlanDefinition (clinical-protocol) whose leaf action
+  references a PlanDefinition (eca-rule), the eca-rule carrying CQL applicability
+  logic backed by a Library, and an ActivityDefinition for the ECA action.
+
+topic: hypertension-pathway
+
+workspace:
+  tracking_yaml: |
+    topics:
+      hypertension-pathway:
+        state: extract_complete
+        events:
+          - event: topic_initialized
+            timestamp: "2026-04-10T00:00:00Z"
+          - event: extract_complete
+            timestamp: "2026-04-15T12:00:00Z"
+        structured:
+          - name: hypertension-management-pathway
+            file: topics/hypertension-pathway/structured/hypertension-management-pathway/hypertension-management-pathway.yaml
+            artifact_type: care-pathway
+            status: approved
+          - name: antihypertensive-initiation-eca
+            file: topics/hypertension-pathway/structured/antihypertensive-initiation-eca/antihypertensive-initiation-eca.yaml
+            artifact_type: decision-table
+            status: approved
+    sources:
+      - id: jnc-8-hypertension-guidelines
+        normalized: true
+        path: sources/normalized/jnc-8-hypertension-guidelines.md
+
+  files:
+    - path: topics/hypertension-pathway/process/formalize-config.yaml
+      content: |
+        name: HypertensionPathway
+        id: hypertension-pathway
+        canonical: http://example.org/fhir/hypertension-pathway
+        status: draft
+        version: 0.1.0
+
+    - path: topics/hypertension-pathway/process/plans/extract-plan.yaml
+      content: |
+        topic: hypertension-pathway
+        plan_type: extract
+        status: approved
+        reviewer: reviewer
+        reviewed_at: "2026-04-15T10:00:00Z"
+        artifacts:
+          - name: hypertension-management-pathway
+            artifact_type: care-pathway
+            source_files:
+              - sources/normalized/jnc-8-hypertension-guidelines.md
+            clinical_question: "What is the stepped care pathway for managing stage 1/2 hypertension?"
+            required_sections:
+              - steps
+              - transitions
+            reviewer_decision: approved
+          - name: antihypertensive-initiation-eca
+            artifact_type: decision-table
+            source_files:
+              - sources/normalized/jnc-8-hypertension-guidelines.md
+            clinical_question: "When should antihypertensive therapy be initiated or escalated?"
+            required_sections:
+              - applicability
+              - conditions
+              - actions
+            reviewer_decision: approved
+
+    - path: topics/hypertension-pathway/structured/hypertension-management-pathway/hypertension-management-pathway.yaml
+      content: |
+        id: hypertension-management-pathway
+        name: hypertension-management-pathway
+        title: "Hypertension Stepped Care Pathway"
+        version: "1.0.0"
+        status: active
+        domain: cardiology
+        description: >
+          Stepped care pathway for managing adults with Stage 1 or Stage 2
+          hypertension, from diagnosis confirmation through risk stratification
+          to pharmacological treatment decision.
+        artifact_type: care-pathway
+        derived_from:
+          - jnc-8-hypertension-guidelines
+        clinical_question: "What is the stepped care pathway for managing stage 1/2 hypertension?"
+        sections:
+          steps:
+            - id: step-1
+              name: "Confirm hypertension diagnosis"
+              description: >
+                Confirm elevated BP on at least two separate visits
+                (SBP ≥ 130 mmHg or DBP ≥ 80 mmHg). Rule out white-coat
+                hypertension using home or ambulatory BP monitoring if indicated.
+            - id: step-2
+              name: "Cardiovascular risk stratification"
+              description: >
+                Calculate 10-year ASCVD risk using pooled cohort equations.
+                Assess for target-organ damage (LVH, CKD, retinopathy).
+                Document comorbidities: diabetes, CKD stage, prior CVD events.
+            - id: step-3
+              name: "Initiate or adjust antihypertensive therapy"
+              description: >
+                Leaf step — apply the antihypertensive initiation ECA rule to
+                determine whether pharmacological therapy is indicated and which
+                first-line agent to prescribe.
+              sub_pathway_reference: antihypertensive-initiation-eca
+              is_leaf: true
+          transitions:
+            - from: step-1
+              to: step-2
+              condition: "Hypertension diagnosis confirmed on second visit"
+            - from: step-2
+              to: step-3
+              condition: "Risk stratification documented"
+
+    - path: topics/hypertension-pathway/structured/antihypertensive-initiation-eca/antihypertensive-initiation-eca.yaml
+      content: |
+        id: antihypertensive-initiation-eca
+        name: antihypertensive-initiation-eca
+        title: "Antihypertensive Initiation ECA Rule"
+        version: "1.0.0"
+        status: active
+        domain: cardiology
+        description: >
+          Event-Condition-Action rule to initiate or intensify antihypertensive
+          therapy in patients with confirmed hypertension who have not yet
+          achieved BP target.
+        artifact_type: decision-table
+        derived_from:
+          - jnc-8-hypertension-guidelines
+        clinical_question: "When should antihypertensive therapy be initiated or escalated?"
+        sections:
+          applicability:
+            description: >
+              Patient is an adult (≥18 years) with confirmed hypertension
+              AND most recent systolic BP ≥ 130 mmHg or diastolic BP ≥ 80 mmHg
+              AND is not currently receiving adequate antihypertensive therapy.
+            cql_expressible: true
+            expressions:
+              - "AgeInYearsAt(start of \"Measurement Period\") >= 18"
+              - "exists [Condition: \"Hypertension\"] C where C.clinicalStatus.value in { 'active' }"
+              - "Last([Observation: \"Systolic Blood Pressure\"] O sort by issued).value >= 130 'mm[Hg]'"
+          decision_table:
+            - condition: "No prior antihypertensive therapy AND SBP 130–139 or DBP 80–89 AND 10-year ASCVD risk ≥ 10%"
+              action: "Prescribe first-line antihypertensive (thiazide, ACEi, ARB, or CCB)"
+              priority: high
+            - condition: "No prior antihypertensive therapy AND SBP ≥ 140 or DBP ≥ 90"
+              action: "Prescribe first-line antihypertensive (thiazide, ACEi, ARB, or CCB)"
+              priority: high
+            - condition: "On single antihypertensive therapy AND BP not at goal after 4 weeks"
+              action: "Intensify therapy: increase dose or add second agent"
+              priority: medium
+          actions:
+            - id: prescribe-antihypertensive
+              type: medication-request
+              description: "Prescribe first-line antihypertensive agent per patient profile"
+              intent: proposal
+              priority: routine
+              medication_concepts:
+                - "Thiazide diuretic (e.g., hydrochlorothiazide 12.5–25 mg daily)"
+                - "ACE inhibitor (e.g., lisinopril 5–40 mg daily)"
+                - "ARB (e.g., losartan 25–100 mg daily)"
+                - "Calcium channel blocker (e.g., amlodipine 2.5–10 mg daily)"
+
+prompt: |
+  Use the rh-inf-formalize skill for the topic `hypertension-pathway`.
+
+  Working directory: {workdir}
+  Topic: {topic}
+
+  Two approved L2 artifacts are ready:
+  - `hypertension-management-pathway` (care-pathway) — a stepped care pathway
+    whose leaf step references the ECA rule below
+  - `antihypertensive-initiation-eca` (decision-table) — an ECA rule with
+    CQL-expressible applicability logic and a medication-request action
+
+  The care pathway's leaf step (`step-3`) carries a `sub_pathway_reference`
+  to `antihypertensive-initiation-eca`. The formalized PlanDefinition
+  (clinical-protocol) must link to the ECA PlanDefinition (eca-rule) at
+  that leaf action.
+
+  Run the full formalize cycle:
+  1. **plan** — generate a formalize plan proposing the full L3 FHIR package:
+     - PlanDefinition (type: clinical-protocol) for the care pathway
+     - PlanDefinition (type: eca-rule) for the ECA rule, with a CQL applicability
+       condition backed by a Library
+     - Library containing the CQL applicability expressions
+     - ActivityDefinition for the antihypertensive prescribing action
+  2. Wait for reviewer approval (simulate approval by responding "approved")
+  3. **implement** — produce all four L3 FHIR JSON resources via rh-skills formalize
+  4. **verify** — validate structural correctness of all generated resources
+
+expected_outputs:
+  - path: topics/hypertension-pathway/process/plans/formalize-plan.md
+    checks:
+      - exists
+      - contains: "hypertension-management-pathway"
+      - contains: "antihypertensive-initiation-eca"
+      - contains: "care-pathway"
+      - contains: "decision-table"
+      - contains: "PlanDefinition"
+      - contains: "clinical-protocol"
+      - contains: "eca-rule"
+      - contains: "Library"
+      - contains: "ActivityDefinition"
+
+  - path: topics/hypertension-pathway/computable/PlanDefinition-hypertension-management-pathway.json
+    checks:
+      - exists
+      - contains: '"resourceType": "PlanDefinition"'
+      - contains: '"clinical-protocol"'
+      - contains: '"action"'
+      - contains: 'antihypertensive-initiation-eca'
+
+  - path: topics/hypertension-pathway/computable/PlanDefinition-antihypertensive-initiation-eca.json
+    checks:
+      - exists
+      - contains: '"resourceType": "PlanDefinition"'
+      - contains: '"eca-rule"'
+      - contains: '"condition"'
+      - contains: '"applicability"'
+      - contains: '"text/cql"'
+
+  - path: topics/hypertension-pathway/computable/Library-antihypertensive-initiation-eca.json
+    checks:
+      - exists
+      - contains: '"resourceType": "Library"'
+      - contains: '"text/cql"'
+
+  - path: topics/hypertension-pathway/computable/ActivityDefinition-prescribe-antihypertensive.json
+    checks:
+      - exists
+      - contains: '"resourceType": "ActivityDefinition"'
+      - contains: '"MedicationRequest"'
+
+  - path: tracking.yaml
+    checks:
+      - event: formalize_planned
+      - event: computable_converged
+
+quality_focus:
+  - "Does the care pathway PlanDefinition's leaf action reference the ECA PlanDefinition by canonical URL?"
+  - "Is the ECA PlanDefinition type set to 'eca-rule' (not 'clinical-protocol')?"
+  - "Does the ECA PlanDefinition condition use kind: applicability and language: text/cql?"
+  - "Does the Library resource contain the CQL applicability expressions from the structured artifact?"
+  - "Does the ActivityDefinition kind equal MedicationRequest?"
+  - "Are canonical URLs consistent across resources (using formalize-config canonical base)?"
+
+efficiency_focus:
+  - "Does the agent plan all 4 FHIR resources in one plan step rather than discovering them incrementally?"
+  - "Does the agent recognize the sub_pathway_reference field without extra investigation loops?"
+  - "Are the CQL applicability expressions transcribed directly from the structured artifact without spec lookup?"
