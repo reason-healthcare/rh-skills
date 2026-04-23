@@ -154,7 +154,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    catalog (7 standard types):
    - evidence summary (findings, risk factors, PICOTS framing)
    - decision table (conditions, actions, rules — includes eligibility/exclusions)
-   - care pathway (ordered workflow steps)
+   - care pathway (ordered clinical steps: patient journey, clinician actions, and decision points from the source material — NOT extraction process steps)
    - terminology (value sets, concept maps)
    - measure (quality measures, populations, scoring)
    - assessment (screening instruments / scoring)

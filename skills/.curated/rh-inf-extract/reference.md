@@ -95,7 +95,7 @@ Use these 7 standard types. Each maps to a clear SME question and FHIR L3 target
 |------|-------------|-----------|
 | `evidence-summary` | What does the evidence say? | Evidence, EvidenceVariable |
 | `decision-table` | What decisions must be made? | PlanDefinition (ECA rules) |
-| `care-pathway` | In what order do things happen? | PlanDefinition (protocol) |
+| `care-pathway` | In what clinical sequence do things happen for the patient? | PlanDefinition (protocol) |
 | `terminology` | What codes define the concepts? | ValueSet, ConceptMap |
 | `measure` | How do we know it's working? | Measure |
 | `assessment` | What do we ask the patient? | Questionnaire |
@@ -224,16 +224,24 @@ sections:
 
 #### care-pathway
 
+Steps are **clinical steps from the source material** — patient-facing or clinician-facing
+actions in the order they occur in the described care pathway. They are NOT extraction
+process steps (normalize, classify, etc.) and NOT rh-skills workflow steps.
+
 ```yaml
 sections:
   triggers:
     - id: trigger-1
-      description: <what starts the pathway>
+      description: <clinical event that initiates the pathway, e.g. "new diagnosis of Bell's palsy">
   steps:
     - step: 1
-      description: <step description>
-      actor: <who performs it>
+      description: <clinical action, e.g. "Assess severity using House-Brackmann scale">
+      actor: <clinician role or patient, e.g. "neurologist" or "patient">
       next: 2
+    - step: 2
+      description: <next clinical action, e.g. "Initiate corticosteroid therapy within 72 hours of onset">
+      actor: <clinician role>
+      next: 3
 ```
 
 #### terminology
