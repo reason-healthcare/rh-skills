@@ -36,7 +36,9 @@ Before producing any output:
 2. Confirm the topic directory `topics/<topic>/` exists. If it does not, halt and prompt the user to run `rh-skills init <topic>` or correct the topic name.
 3. For **author** mode: confirm the structured artifact YAML exists at `topics/<topic>/structured/<artifact>.yaml`.
 4. For **review**/**debug**/**test-plan** modes: confirm the `.cql` source file exists at `topics/<topic>/computable/<LibraryName>.cql`.
-5. For any CQL expression involving **intervals, date/time, null semantics, or operators whose behavior is uncertain**: call `reasonhub-search_spec_content` (source: `cql`) to confirm semantics before writing the expression.
+5. For any CQL expression involving **intervals, date/time, null semantics, or operators whose behavior is uncertain**: **first check the Critical Authoring Patterns table** (search this file for `## Critical Authoring Patterns`). Only call `reasonhub-search_spec_content` (source: `cql`) if the specific pattern is not already covered there.
+
+**Author mode — prohibited diagnostic commands**: Do **not** run `ls`, `git status`, `git diff`, or `rg --files` as part of the authoring workflow. The directory structure is confirmed by steps 1–4 above. Any exec call not in the author workflow steps below is wasted work.
 
 If any check fails, report the missing resource and halt. Do NOT proceed with a partial context.
 
@@ -87,6 +89,7 @@ Allowed alternatives:
 | `date from M.authoredOn` | `ToDate(M.authoredOn)` | `date from` runtime-errors on FHIR strings |
 | `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Manual expansion is unnecessary; engine resolves by name |
 | `C.clinicalStatus = 'active'` | `C.clinicalStatus.value in { 'active' }` | FHIR CodeableConcept — compare `.value` string |
+| `define function "F"(p Interval<DateTime>): ... p ...` | `define "F": Interval[ToDate(start of ...), ToDate(end of ...)]` | Typed function parameters with complex types (`Interval<>`, `FHIR.*`) fail to resolve in the `rh` translator; use named `define` expressions instead |
 
 **Do not read secondary docs files** (`authoring-guidelines.md`, `engine-notes/README.md`, `translator-options/README.md`, `cli/usage.md`, etc.) before writing CQL. The information above and the anti-pattern catalog (search for `Anti-pattern catalog` in this file) covers the critical cases. Read those files only if a specific gap arises.
 
@@ -790,6 +793,7 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 - ❌ `M.authoredOn during Interval<DateTime>` — silently returns `false` for FHIR dateTime strings; use `ToDate(M.authoredOn)` with `Interval<Date>` instead
 - ❌ `date from M.authoredOn` — runtime error when authoredOn is a FHIR string; use `ToDate(M.authoredOn)`
 - ❌ Manual ValueSet expansion matching (`V.expansion.contains E where E.system = ... and E.code = ...`) — use `code in "ValueSetName"` instead
+- ❌ `define function "F"(p Interval<DateTime>): ...` — typed function parameters with `Interval<>` or `FHIR.*` types fail to compile; use a named `define` expression with inline logic instead
 
 ---
 
@@ -836,7 +840,7 @@ FHIR Clinical Reasoning rules.
 | `reasonhub-list_spec_sources` | Discover available spec source IDs and versions |
 | `reasonhub-get_spec_context` | Retrieve a specific section by heading (e.g., `source_id: "cql"`, `heading: "Interval"`) |
 
-**Trigger conditions — always call `reasonhub-search_spec_content` when:**
+**Trigger conditions — call `reasonhub-search_spec_content` when the pattern is NOT already covered in the Critical Authoring Patterns table above, and when:**
 - Writing or reviewing an interval expression (`overlaps`, `during`, `before`, `after`, closed/open boundaries)
 - Writing date/time arithmetic (`+ N days`, `start of`, `end of`, precision qualifiers)
 - Reasoning about null propagation through boolean expressions
