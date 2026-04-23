@@ -49,7 +49,9 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
    ├─ Invokes LLM → raw FHIR JSON
    ├─ normalize_resource() → fix ids, urls, dates
    ├─ validate_resource() → per-type required fields
-   ├─ Writes ResourceType-id.json + .cql to computable/
+   ├─ Writes ResourceType-id.json + .cql scaffold to computable/
+   ├─ If strategy includes CQL (decision-table, measure, policy):
+   │    └─ rh-inf-cql authors full CQL from scaffold → validate + translate
    └─ Event: computable_converged
 
 4. VERIFY: rh-inf-formalize verify (invokes rh-skills validate)

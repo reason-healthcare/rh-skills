@@ -66,8 +66,7 @@ Every lifecycle transition follows this mandatory three-step pattern:
 | **Discovery** | `rh-inf-discovery` | plan · implement | `discovery-plan.yaml` | Source registry + domain narrative | [→ DISCOVERY.md](DISCOVERY.md) |
 | **Ingest** | `rh-inf-ingest` | plan · implement · verify | `ingest-plan.md` | Normalized L1 sources + concepts | [→ INGEST.md](INGEST.md) |
 | **Extract** | `rh-inf-extract` | plan · implement · verify | `extract-plan.yaml` | L2 artifacts in `structured/` | [→ EXTRACT.md](EXTRACT.md) |
-| **Formalize** | `rh-inf-formalize` | plan · implement · verify | `formalize-plan.md` | L3 FHIR resources in `computable/` | [→ FORMALIZE.md](FORMALIZE.md) |
-| **CQL Authoring** | `rh-inf-cql` | author · review · test | — | Validated `.cql` libraries in `computable/` | [→ SKILLS.md](SKILLS.md) |
+| **Formalize** | `rh-inf-formalize` + `rh-inf-cql` | plan · implement · verify | `formalize-plan.md` | L3 FHIR resources + authored CQL in `computable/` | [→ FORMALIZE.md](FORMALIZE.md) |
 | **Verify** | `rh-inf-verify` | *(standalone)* | — | Consolidated topic verification report | |
 | **Status** | `rh-inf-status` | progress · next-steps · check-changes | — | Lifecycle summary + deterministic next steps | |
 
@@ -83,8 +82,7 @@ Each stage has a detailed workflow document covering CLI commands, data flow, ke
 - **[Discovery](DISCOVERY.md)** — Interactive research session: search PubMed/PMC/ClinicalTrials.gov, build curated source registry with domain advice, enforce source constraints (5–25 sources, ≥1 terminology)
 - **[Ingest](INGEST.md)** — Four-stage pipeline: download → normalize (PDF/DOCX/HTML→Markdown) → classify (evidence level) → annotate (clinical concepts). Serial annotation constraint prevents concepts.yaml corruption
 - **[Extract](EXTRACT.md)** — Plan-gated derivation: propose L2 artifacts from 7-type catalog, reviewer approves per-artifact, LLM generates structured YAML, validate + render reports with Mermaid diagrams
-- **[Formalize](FORMALIZE.md)** — Type-aware L3 conversion: 7 strategies map L2 types to specific FHIR R4 resources (Evidence, PlanDefinition, ValueSet, Questionnaire, Measure), multi-type overlap detection, FHIR NPM packaging
-- **CQL Authoring** (`rh-inf-cql`) — Used after formalize when the strategy produces CQL (strategies: `decision-table`, `measure`). Authors and validates `.cql` libraries via `rh-skills cql validate` and `rh-skills cql translate`; designs fixture cases for expression coverage. See [SKILLS.md](SKILLS.md).
+- **[Formalize](FORMALIZE.md)** — Type-aware L3 conversion: 7 strategies map L2 types to specific FHIR R4 resources. For CQL strategies (`decision-table`, `measure`, `policy`), `rh-inf-formalize` generates the FHIR JSON wrappers + CQL scaffold, then hands off directly to `rh-inf-cql` within the same implement step to author, validate, and compile the full CQL library.
 
 ## Directory Structure
 

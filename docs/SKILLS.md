@@ -23,11 +23,11 @@ those deterministic operations.
 
 ## When to use `rh-inf-cql`
 
-`rh-inf-cql` is the CQL authoring and quality skill. Use it when:
+`rh-inf-cql` is the CQL authoring and quality skill. It is invoked:
 
-- **After formalize** — `rh-skills formalize` generates a `.cql` stub for `decision-table` or `measure` strategies. `rh-inf-cql` authors, reviews, and validates the full CQL library from that stub.
+- **During formalize implement** — automatically, when the formalize strategy produces CQL (`decision-table`, `measure`, `policy`). `rh-inf-formalize` generates the FHIR JSON wrappers + CQL scaffold and then hands off directly to `rh-inf-cql` to author, validate, and compile the full CQL library. CQL authoring is part of the formalize implement flow for these strategies, not a separate step.
 - **Standalone CQL work** — Authoring or reviewing a CQL library independently of the formalize flow.
-- **CQL review or debugging** — Reviewing existing `.cql` files for correctness, safety, or performance. Running `rh-skills cql validate` and `rh-skills cql translate` to confirm the library compiles.
+- **CQL review or debugging** — Reviewing existing `.cql` files for correctness, safety, or performance.
 - **Test fixture authoring** — Designing fixture cases (`tests/cql/<Library>/`) for expression-level coverage.
 
 `rh-inf-cql` owns `.cql` source files under `topics/<topic>/computable/`. It does **not** own the FHIR JSON wrappers (Library, Measure JSON) — those are `rh-inf-formalize`'s responsibility.
