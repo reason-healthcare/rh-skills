@@ -223,13 +223,13 @@ expected_outputs:
       - contains: '"applicability"'
       - contains: '"text/cql"'
 
-  - path: topics/hypertension-pathway/computable/Library-antihypertensive-initiation-eca.json
+  - path: topics/hypertension-pathway/computable/Library-antihypertensive-initiation-eca-library.json
     checks:
       - exists
       - contains: '"resourceType": "Library"'
       - contains: '"text/cql"'
 
-  - path: topics/hypertension-pathway/computable/ActivityDefinition-prescribe-antihypertensive.json
+  - path: topics/hypertension-pathway/computable/ActivityDefinition-hypertension-management-pathway-activitydefinition.json
     checks:
       - exists
       - contains: '"resourceType": "ActivityDefinition"'
