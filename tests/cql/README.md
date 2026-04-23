@@ -135,7 +135,7 @@ For each case it:
 1. Resolves `topics/<topic>/computable/<LibraryName>.cql`
 2. For each `<define>` in `expected/expression-results.json`, runs:
    ```bash
-   rh cql eval --expr "<define>" --data input/bundle.json <LibraryName>.cql
+   rh cql eval <LibraryName>.cql "<define>" --data input/bundle.json
    ```
 3. Compares stdout to the expected value (JSON then string fallback)
 4. Reports `PASS` or `FAIL` per expression per case

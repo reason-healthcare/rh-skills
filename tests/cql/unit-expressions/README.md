@@ -39,9 +39,9 @@ unit-expressions/
 
 ```bash
 rh cql eval \
-  --expr "DefineName" \
-  --data tests/cql/unit-expressions/<LibraryName>/<DefineName>/<case>/input/bundle.json \
-  topics/<topic>/computable/<LibraryName>.cql
+  topics/<topic>/computable/<LibraryName>.cql \
+  "DefineName" \
+  --data tests/cql/unit-expressions/<LibraryName>/<DefineName>/<case>/input/bundle.json
 ```
 
 ## Notes

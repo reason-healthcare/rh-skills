@@ -54,9 +54,9 @@ Run the evaluator per expression to isolate failures:
 
 ```bash
 rh cql eval \
-  --expr "ExpressionName" \
-  --data tests/cql/<LibraryName>/<case>/input/bundle.json \
-  topics/<topic>/computable/<LibraryName>.cql
+  topics/<topic>/computable/<LibraryName>.cql \
+  "ExpressionName" \
+  --data tests/cql/<LibraryName>/<case>/input/bundle.json
 ```
 
 Or use `rh-skills cql test <topic> <LibraryName>` to run all cases at once.

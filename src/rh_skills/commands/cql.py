@@ -98,43 +98,40 @@ def test(topic: str, library: str) -> None:
 
     any_fail = False
     for case_dir in cases:
-        expected_file = case_dir / "expected" / "expression-results.json"
-        bundle_file = case_dir / "input" / "bundle.json"
-        if not expected_file.exists() or not bundle_file.exists():
-            click.echo(f"  SKIP {case_dir.name}: missing input/bundle.json or expected/expression-results.json")
-            continue
+            expected_file = case_dir / "expected" / "expression-results.json"
+            bundle_file = case_dir / "input" / "bundle.json"
+            if not expected_file.exists() or not bundle_file.exists():
+                click.echo(f"  SKIP {case_dir.name}: missing input/bundle.json or expected/expression-results.json")
+                continue
 
-        expected = json.loads(expected_file.read_text())
-        case_pass = True
-        for expr_name, expected_value in expected.items():
-            result = subprocess.run(
-                [rh, "cql", "eval", str(cql_file), "--expr", expr_name, "--data", str(bundle_file)],
-                capture_output=True,
-                text=True,
-            )
-            actual_raw = result.stdout.strip()
-            if result.returncode != 0:
-                click.echo(f"  FAIL {case_dir.name} [{expr_name}]: rh cql eval exited {result.returncode}")
-                if result.stderr:
-                    click.echo(f"       {result.stderr.strip()}")
-                case_pass = False
-                any_fail = True
-            else:
-                # Compare as JSON values when possible, else as strings
-                try:
-                    actual = json.loads(actual_raw)
-                except (json.JSONDecodeError, ValueError):
-                    actual = actual_raw
-                if actual != expected_value:
-                    click.echo(
-                        f"  FAIL {case_dir.name} [{expr_name}]:"
-                        f" expected={json.dumps(expected_value)} actual={json.dumps(actual)}"
-                    )
+            expected = json.loads(expected_file.read_text())
+            case_pass = True
+            for expr_name, expected_value in expected.items():
+                cmd = [rh, "cql", "eval", str(cql_file), expr_name, "--data", str(bundle_file)]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                actual_raw = result.stdout.strip()
+                if result.returncode != 0:
+                    click.echo(f"  FAIL {case_dir.name} [{expr_name}]: rh cql eval exited {result.returncode}")
+                    if result.stderr:
+                        click.echo(f"       {result.stderr.strip()}")
                     case_pass = False
                     any_fail = True
+                else:
+                    # Compare as JSON values when possible, else as strings
+                    try:
+                        actual = json.loads(actual_raw)
+                    except (json.JSONDecodeError, ValueError):
+                        actual = actual_raw
+                    if actual != expected_value:
+                        click.echo(
+                            f"  FAIL {case_dir.name} [{expr_name}]:"
+                            f" expected={json.dumps(expected_value)} actual={json.dumps(actual)}"
+                        )
+                        case_pass = False
+                        any_fail = True
 
-        if case_pass:
-            click.echo(f"  PASS {case_dir.name}")
+            if case_pass:
+                click.echo(f"  PASS {case_dir.name}")
 
     if any_fail:
         raise SystemExit(1)

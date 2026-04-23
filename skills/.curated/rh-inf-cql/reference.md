@@ -72,7 +72,7 @@ toolchain for this project.
 ```bash
 rh cql validate <file.cql>                      # Validate; non-zero exit on errors
 rh cql compile  <file.cql> --output <dir>       # Produce ELM JSON
-rh cql eval     <file.cql> --expr <name> \
+rh cql eval     <file.cql> <name> \
                             --data <bundle.json> # Evaluate one expression
 rh cql eval     ... --trace                     # With step-by-step trace
 rh cql explain  parse   <file.cql>              # Parse tree

@@ -6,18 +6,18 @@ Flags supported by the `rh cql` subcommand for translation and evaluation.
 
 ```
 rh cql compile <file.cql>
-  --elm-output <path>     Write ELM JSON to the specified path
-  --model <FHIR|QI-Core>  Override the default model (default: FHIR)
-  --fhir-version <ver>    FHIR version string (default: 4.0.1)
+  -o, --output <path>     Write ELM JSON to the specified path (defaults to stdout)
+  --debug                 Enable debug mode (annotations, locators, result types)
+  --strict                Enable strict mode (disable implicit conversions)
 ```
 
 ## Evaluation
 
 ```
-rh cql eval <file.cql>
-  --expr <name>           Evaluate a single named expression (can repeat)
+rh cql eval <file.cql> <name>
   --data <bundle.json>    FHIR Bundle to use as patient data
-  --context <Patient>     Evaluation context (default: Patient)
+  --lib-path <dir>        Additional directory to search for included CQL libraries (repeatable)
+  --trace                 Output a step-by-step evaluation trace
 ```
 
 ## rh-skills Wrappers

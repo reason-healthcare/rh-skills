@@ -257,8 +257,8 @@ When the `rh` CLI is available, use this loop:
 
 If per-expression output is needed for debugging, run the evaluator directly:
 ```bash
-rh cql eval --expr "<DefineName>" --data tests/cql/<LibraryName>/<case>/input/bundle.json \
-  topics/<topic>/computable/<LibraryName>.cql
+rh cql eval topics/<topic>/computable/<LibraryName>.cql "<DefineName>" \
+  --data tests/cql/<LibraryName>/<case>/input/bundle.json
 ```
 
 See `context/runtime/cli/usage.md` for full CLI reference.

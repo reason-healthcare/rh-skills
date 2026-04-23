@@ -39,9 +39,9 @@ To evaluate a single expression manually:
 
 ```bash
 rh cql eval \
-  --expr "Initial Population" \
-  --data tests/cql/HyperlipidemiaMonitoring/case-001-basic-positive/input/bundle.json \
-  topics/hyperlipidemia-treatment-monitoring/computable/HyperlipidemiaMonitoring.cql
+  topics/hyperlipidemia-treatment-monitoring/computable/HyperlipidemiaMonitoring.cql \
+  "Initial Population" \
+  --data tests/cql/HyperlipidemiaMonitoring/case-001-basic-positive/input/bundle.json
 ```
 
 ## Where Outputs Are Written
