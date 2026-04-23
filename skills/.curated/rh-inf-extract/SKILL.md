@@ -295,10 +295,11 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    rh-skills promote conflicts <topic>
    ```
 
-   - If **any open conflicts are listed**, **STOP** and invoke the `rh-inf-resolve`
-     skill to iterate through each conflict with the reviewer before running
-     `rh-skills promote approve`. Do not auto-resolve or assume a preferred
-     position.
+   - If **any open conflicts are listed**: do **not** show the plan-complete output
+     contract. Instead, immediately begin the `rh-inf-resolve` interactive flow
+     inline — present each conflict one-by-one, wait for the reviewer's resolution,
+     record it with `rh-skills promote resolve-conflict`, and only after all
+     conflicts are cleared proceed to the plan-complete output below.
    - If output is `"No open conflicts for topic '<topic>'."`, proceed immediately
      to the Review & Approval phase below and run `rh-skills promote approve`
      without waiting for user confirmation.
@@ -319,7 +320,7 @@ Populate each count from the actual plan state. List rejected/needs-revision art
 
 ```
 ▸ rh-inf-extract  <topic>
-  Stage:    plan — complete
+  Stage:    plan — complete · <N> conflicts resolved
   Artifacts: <N> proposed · <N> approved · <N> rejected · <N> needs-revision · <N> pending review
   Next:     <context-sensitive one-liner — see rules below>
 ```
@@ -332,13 +333,12 @@ Populate each count from the actual plan state. List rejected/needs-revision art
 
 **What would you like to do next?**
 
-Always include options A and B. Add C only if any artifact is rejected or needs-revision. Add D only if conflicts exist.
+Always include options A and B. Add C only if any artifact is rejected or needs-revision.
 
 A) Implement approved artifacts now: `rh-inf-extract implement <topic>`
 B) Review the full plan readout: `cat topics/<topic>/process/plans/extract-plan-readout.md`
 C) [If rejected/needs-revision] Approve a specific artifact: `rh-skills promote approve <topic> --artifact <name> --decision approved`
 C) [If rejected/needs-revision] Re-plan a rejected artifact: `rh-skills promote plan <topic> --force`
-D) [If conflicts] Present conflicts for human review before approving
 
 You can also ask for `rh-skills status show <topic>` at any time.
 
@@ -350,10 +350,10 @@ After plan mode completes, the plan is in `status: pending-review` and each
 artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
 
-> **⚠ HUMAN-IN-THE-LOOP RULE**: If any artifact has entries in `conflicts[]`,
-> you **MUST** stop and present those conflicts to the human before running any
-> `rh-skills promote approve` command. Never auto-resolve a conflict or choose
-> a preferred position without explicit human direction.
+> **⚠ HUMAN-IN-THE-LOOP RULE**: Conflicts are resolved inline during plan mode
+> before this phase is reached. If `rh-skills promote conflicts <topic>` still
+> shows open conflicts at this point, re-run plan mode — do not run
+> `rh-skills promote approve` while conflicts remain open.
 
 Use `rh-skills promote approve` to record decisions without editing YAML directly:
 

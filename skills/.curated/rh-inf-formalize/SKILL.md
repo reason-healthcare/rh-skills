@@ -172,12 +172,13 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
    rh-skills promote conflicts <topic>
    ```
 
-   - If **any open conflicts are listed** (including cross-artifact modeling issues),
-     **STOP** and invoke the `rh-inf-resolve` skill to iterate through each conflict
-     with the reviewer before proceeding to implement mode. Do not auto-resolve.
-   - If output is `"No open conflicts for topic '<topic>'."`, summarize the proposed
-     computable artifact(s), strategy per type, L3 FHIR targets, and excluded
-     inputs, then present the output contract below.
+   - If **any open conflicts are listed**: do **not** show the plan-complete output
+     contract. Instead, immediately begin the `rh-inf-resolve` interactive flow
+     inline — present each conflict one-by-one, wait for the reviewer's resolution,
+     record it with `rh-skills promote resolve-conflict`, and only after all
+     conflicts are cleared proceed to the plan-complete output below.
+   - If output is `"No open conflicts for topic '<topic>'."`: proceed directly to
+     the plan-complete output below.
 
 ### What to capture per artifact
 
@@ -198,7 +199,7 @@ Emit this status block as the **last thing** in your response (no text after):
 ```
 ▸ rh-inf-formalize  <topic>
   Stage:    plan — complete
-  Artifacts: <N> proposed
+  Artifacts: <N> proposed · <M> conflicts resolved
   Next:     Review the plan, then approve and implement
 ```
 
