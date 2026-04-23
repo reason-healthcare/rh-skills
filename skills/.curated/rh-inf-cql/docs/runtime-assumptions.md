@@ -5,7 +5,7 @@ explicitly before reasoning about CQL correctness or test failures.
 
 ## Environment to Capture
 
-- evaluator: `rh` CLI (configured via `RH_CLI_PATH`, `.rh-skills.toml [cql] rh_cli_path`, or `rh` on PATH)
+- evaluator: `rh` CLI — `validate` and `compile` are active; `eval` is pending
 - translator: built into the `rh` binary
 - model info: FHIR 4.0.1 (default)
 - terminology service: local expansion or none (offline by default)

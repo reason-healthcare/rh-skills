@@ -783,31 +783,16 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 These are the **only** commands that perform file writes or validation. The agent
 must call these — do not write files directly.
 
-| Action | Command |
-|--------|---------|
-| Validate CQL syntax and semantics | `rh-skills cql validate <topic> <library>` |
-| Compile CQL to ELM JSON | `rh-skills cql translate <topic> <library>` |
-| Run fixture-based test cases | `rh-skills cql test <topic> <library>` |
-| Write FHIR Library JSON wrapper | `rh-skills formalize <topic> <artifact>` |
+| Action | Command | Status |
+|--------|---------|--------|
+| Validate CQL syntax and semantics | `rh-skills cql validate <topic> <library>` | ✓ active (`rh cql validate`) |
+| Compile CQL to ELM JSON | `rh-skills cql translate <topic> <library>` | ✓ active (`rh cql compile`) |
+| Run fixture-based test cases | `rh-skills cql test <topic> <library>` | ⏳ eval pending — lists cases only |
+| Write FHIR Library JSON wrapper | `rh-skills formalize <topic> <artifact>` | ✓ active |
 
-> **`rh-skills cql validate`, `translate`, and `test` are currently deferred
-> (backend pending).** They confirm files exist and list cases, but do not
-> execute. Use `rh cql` directly for validation and evaluation:
->
-> ```sh
-> # Validate
-> rh cql validate topics/<topic>/computable/<Library>.cql
->
-> # Evaluate a single expression against a fixture bundle
-> rh cql eval topics/<topic>/computable/<Library>.cql "<ExprName>" \
->   --data tests/cql/<Library>/case-001-positive/input/bundle.json
-> ```
->
-> Write the `.cql` file **first**, then validate and eval against it. Do not
-> probe runtime behavior with repeated inline stdin snippets (`rh cql eval - "X" <<'EOF'`).
-> If an expression returns an unexpected result, read `runtime-assumptions.md`
-> before iterating — the cause is almost always a FHIR type coercion issue
-> (see the dateTime section).
+`rh-skills cql test` lists fixture cases and confirms they are structurally
+complete, but does **not** execute expressions. Evaluation is pending. Do not
+attempt to replicate test execution by calling `rh cql eval` directly.
 
 ---
 
