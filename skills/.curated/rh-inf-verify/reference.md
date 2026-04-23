@@ -60,7 +60,7 @@ cannot be launched in the current environment.
 - Launch one subagent per **applicable** stage verify workflow.
 - Applicable stages may run in parallel.
 - Delegate only to the stage-specific verify workflow for that stage:
-  - `rh-inf-discovery verify <topic>`
+  - `rh-inf-discovery verify`
   - `rh-inf-ingest verify <topic>`
   - `rh-inf-extract verify <topic>`
   - `rh-inf-formalize verify <topic>`

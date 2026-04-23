@@ -79,8 +79,8 @@ stage-specific verify workflows, and reports later stages explicitly as
 
 Each stage has a detailed workflow document covering CLI commands, data flow, key files, and design decisions:
 
-- **[Discovery](DISCOVERY.md)** — Interactive research session: search PubMed/PMC/ClinicalTrials.gov, build curated source registry with domain advice, enforce source constraints (5–25 sources, ≥1 terminology)
-- **[Ingest](INGEST.md)** — Four-stage pipeline: download → normalize (PDF/DOCX/HTML→Markdown) → classify (evidence level) → annotate (clinical concepts). Serial annotation constraint prevents concepts.yaml corruption
+- **[Discovery](DISCOVERY.md)** — Topic-free interactive research session: search PubMed/PMC/ClinicalTrials.gov, build curated source registry with domain advice, enforce source constraints (5–25 sources, ≥1 terminology). Outputs `discovery-plan.yaml` and `discovery-readout.md` at the repo root. **No `rh-skills init` required.**
+- **[Ingest](INGEST.md)** — Five-stage pipeline: download → normalize (PDF/DOCX/HTML→Markdown) → infer topic + `rh-skills init` → classify (evidence level) → annotate (clinical concepts). Serial annotation constraint prevents concepts.yaml corruption
 - **[Extract](EXTRACT.md)** — Plan-gated derivation: propose L2 artifacts from 7-type catalog, reviewer approves per-artifact, LLM generates structured YAML, validate + render reports with Mermaid diagrams
 - **[Formalize](FORMALIZE.md)** — Type-aware L3 conversion: 7 strategies map L2 types to specific FHIR R4 resources. For CQL strategies (`decision-table`, `measure`, `policy`), `rh-inf-formalize` generates the FHIR JSON wrappers + CQL scaffold, then hands off directly to `rh-inf-cql` within the same implement step to author, validate, and compile the full CQL library.
 

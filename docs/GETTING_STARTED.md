@@ -29,6 +29,10 @@ switch between them at any point in a workflow.
 
 A "topic" is a clinical knowledge domain (e.g., "diabetes-screening", "sepsis-detection").
 
+**`rh-inf-ingest` will propose and create the topic** after normalizing your sources.
+
+If you prefer to initialize manually (e.g., you already know the topic name):
+
 ```bash
 rh-skills init diabetes-screening --title "Diabetes Screening" --author "Jane Smith"
 ```
@@ -77,37 +81,53 @@ rh-skills skills update
 Then work through the lifecycle by invoking skills in your agent. The agent
 reads the skill instructions and calls `rh-skills` commands on your behalf.
 
+### Path A: Discover → Ingest → Extract → Formalize
+
+Use this path when starting from scratch or guided research.
+
 ### 1. Discover sources
 
 Invoke the discovery skill in your agent:
 
 ```
 # Claude Code
-/rh-inf-discovery plan diabetes-screening
+/rh-inf-discovery session --domain diabetes-ccm
 
 # GitHub Copilot — natural language
-run rh-inf-discovery plan diabetes-screening
+run rh-inf-discovery session --domain diabetes-ccm
 ```
 
-The agent generates `topics/diabetes-screening/process/plans/discovery-plan.md` — a list of suggested source types (guidelines, terminology systems, research papers). Review and edit the plan, then implement:
+The agent runs an interactive research session and saves `discovery-plan.yaml` and `discovery-readout.md` to the repo root. Verify and hand off:
 
 ```
-/rh-inf-discovery implement diabetes-screening
+/rh-inf-discovery verify
 ```
 
 ### 2. Ingest and normalize
 
 ```
-/rh-inf-ingest plan diabetes-screening
+/rh-inf-ingest implement
 ```
 
-Review the ingest plan, then implement:
+The agent downloads open-access sources, normalizes everything to Markdown,
+then **proposes a topic name** based on the source content, asks for confirmation,
+and calls `rh-skills init <topic>` — no separate init step required.
 
-```
-/rh-inf-ingest implement diabetes-screening
-```
+---
 
-Registers each source file with its SHA-256 checksum in `tracking.yaml`.
+### Path B: Bring Your Own Sources
+
+Use this path when you already have files you want to process (no discovery needed).
+
+1. Place your files in `sources/`
+2. Invoke ingest directly — no topic init required:
+   ```
+   /rh-inf-ingest implement
+   ```
+   The agent normalizes your sources, proposes a topic name, asks for confirmation,
+   and initializes the topic before proceeding with classify and annotate.
+
+---
 
 ### 3. Extract structured artifacts (L2)
 
@@ -171,13 +191,17 @@ See [Usage Modes](USAGE_MODES.md) for all provider options.
 ### 1. Discover and ingest source materials
 
 ```bash
-# Discovery — identify and plan sources
-rh-skills discovery plan diabetes-screening
-rh-skills discovery implement diabetes-screening
+# Option A: Discovery-guided
+# Discovery — identify and plan sources (no topic needed)
+rh-skills discovery session --domain diabetes-ccm
+rh-skills discovery verify
 
-# Ingest — download, normalize, classify, annotate
-rh-skills ingest plan diabetes-screening
-rh-skills ingest implement diabetes-screening
+# Ingest — download, normalize, infer topic, classify, annotate
+rh-skills ingest implement
+
+# Option B: Bring your own sources
+# Place files in sources/, then:
+rh-skills ingest implement
 ```
 
 ### 2. Derive structured artifacts (L2)

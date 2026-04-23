@@ -118,7 +118,7 @@ If any check fails, exit immediately with a clear error. Do not do partial work.
    Delegate only to the stage-specific verify entry points:
 
    ```sh
-   rh-inf-discovery verify <topic>
+   rh-inf-discovery verify
    rh-inf-ingest verify <topic>
    rh-inf-extract verify <topic>
    rh-inf-formalize verify <topic>

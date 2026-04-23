@@ -2,14 +2,16 @@
 
 ## Overview
 
-The **rh-inf-discovery** skill is the **Level 1 (L1) evidence discovery** stage of the healthcare informatics lifecycle. It guides clinical informaticists through finding, evaluating, and documenting evidence-based source material for healthcare informatics topics. The output is a `discovery-plan.yaml` (structured source registry) and `discovery-readout.md` (domain narrative) that downstream skills use to advance artifacts through L2 (structured) and L3 (computable) stages.
+The **rh-inf-discovery** skill is the **Level 1 (L1) evidence discovery** stage of the healthcare informatics lifecycle. It guides clinical informaticists through finding, evaluating, and documenting evidence-based source material for a clinical research area. The output is a `discovery-plan.yaml` (structured source registry) and `discovery-readout.md` (domain narrative) written to the **repo root** — no topic initialization required.
 
 The skill acts as an **interactive research assistant** through a session-based workflow. After each research pass, the agent prompts the user with expansion suggestions and awaits direction. The discovery plan is a living document written to disk only when the user approves it.
+
+**Discovery is topic-free.** `rh-skills init` is called later, during `rh-inf-ingest`, after sources are normalized and a topic name can be inferred. There is no `<topic>` argument to `rh-inf-discovery`.
 
 **Key Principles:**
 - Discovery is pure research — all searches delegated to CLI commands
 - No file-system side effects during discovery (no downloads)
-- Single source of truth: `discovery-plan.yaml`
+- Single source of truth: `./discovery-plan.yaml` (repo root)
 - Always close the loop with status blocks and clear next-step options
 
 ---
@@ -19,15 +21,11 @@ The skill acts as an **interactive research assistant** through a session-based 
 | Command | Purpose | Writes To |
 |---------|---------|-----------|
 | `rh-skills search pubmed --query "<terms>" [--max N] [--json] [--offline]` | Search PubMed peer-reviewed literature via NCBI E-utilities | None (stdout) |
-| `rh-skills search pubmed --query "<terms>" --append-to-plan TOPIC` | Append results as stub entries to discovery-plan.yaml | `discovery-plan.yaml` |
 | `rh-skills search pmc --query "<terms>" [--json] [--offline]` | Search PubMed Central (open-access full-text) | None (stdout) |
-| `rh-skills search pmc --query "<terms>" --append-to-plan TOPIC` | Append PMC results to discovery-plan.yaml | `discovery-plan.yaml` |
 | `rh-skills search clinicaltrials --query "<terms>" [--max N] [--status S] [--json]` | Search ClinicalTrials.gov registry via REST API v2 | None (stdout) |
-| `rh-skills search clinicaltrials --query "<terms>" --append-to-plan TOPIC` | Append trial results to discovery-plan.yaml | `discovery-plan.yaml` |
 | `rh-skills source scan` | Scan for manually placed files in `sources/` | None (stdout) |
 | `rh-skills source add --type TYPE --url URL [--name SLUG]` | Add a manual source entry to plan | `discovery-plan.yaml` |
 | `rh-skills validate --plan <file>` | Validate discovery-plan.yaml structure | None (read-only) |
-| `rh-skills init <topic>` | Initialize new topic with directory structure | `topics/<topic>/` |
 
 ---
 
@@ -100,9 +98,8 @@ The skill acts as an **interactive research assistant** through a session-based 
    └─ Option to explore any (loops back to Step 3)
 
 8. SAVE CHECKPOINT
-   ├─ Write topics/<topic>/process/plans/discovery-plan.yaml
-   ├─ Write topics/<topic>/process/plans/discovery-readout.md
-   ├─ Create process/notes.md stub
+   ├─ Write ./discovery-plan.yaml (repo root)
+   ├─ Write ./discovery-readout.md (repo root)
    ├─ Update RESEARCH.md portfolio row
    └─ Event: discovery_planned → tracking.yaml
 
@@ -120,8 +117,8 @@ The skill acts as an **interactive research assistant** through a session-based 
 | `skills/.curated/rh-inf-discovery/reference.md` | Domain advice checklists, source taxonomies, US gov URLs |
 | `skills/.curated/rh-inf-discovery/examples/plan.yaml` | Worked example: discovery-plan.yaml for diabetes-ccm |
 | `skills/.curated/rh-inf-discovery/examples/readout.md` | Worked example: discovery-readout.md narrative |
-| `topics/<topic>/process/plans/discovery-plan.yaml` | **Output**: authoritative source registry |
-| `topics/<topic>/process/plans/discovery-readout.md` | **Output**: domain narrative for reviewer |
+| `./discovery-plan.yaml` | **Output**: authoritative source registry (repo root) |
+| `./discovery-readout.md` | **Output**: domain narrative for reviewer (repo root) |
 | `RESEARCH.md` | Portfolio tracking (topic, question, scope, status) |
 | `tracking.yaml` | Records `discovery_planned` event |
 

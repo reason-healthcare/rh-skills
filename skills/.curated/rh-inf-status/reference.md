@@ -54,7 +54,7 @@ The portfolio and sub-commands apply this logic per topic:
 
 | State | Primary recommendation |
 |-------|----------------------|
-| No sources, no discovery plan | `rh-inf-discovery session <topic>` |
+| No sources, no discovery plan | `rh-inf-discovery session` or place files in `sources/` and run `rh-inf-ingest implement` |
 | No sources, discovery plan present | `rh-inf-ingest plan <topic>` |
 | Sources present, no structured | `rh-inf-extract plan <topic>` |
 | Structured present, no computable | `rh-inf-formalize plan <topic>` |
