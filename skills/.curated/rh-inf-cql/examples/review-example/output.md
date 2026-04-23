@@ -9,7 +9,7 @@
 # CQL Review Report: LipidManagementLogicDraft
 **Reviewed**: 2026-04-22
 **File**: `topics/lipid-management/computable/LipidManagementLogicDraft.cql`
-**Reviewer**: rh-cql (automated review)
+**Reviewer**: rh-inf-cql (automated review)
 
 ## Summary
 - BLOCKING: 2

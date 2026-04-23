@@ -1,5 +1,5 @@
 name: author-from-measure
-skill: rh-cql
+skill: rh-inf-cql
 description: >
   Author mode — given an approved L2 measure artifact for statin eligibility
   in patients with cardiovascular disease, produce a valid CQL library with
@@ -111,7 +111,7 @@ workspace:
               level_of_evidence: A
 
 prompt: |
-  Use the rh-cql skill in **author** mode for the topic `statin-eligibility`.
+  Use the rh-inf-cql skill in **author** mode for the topic `statin-eligibility`.
 
   Working directory: {workdir}
   Topic: {topic}
@@ -134,7 +134,7 @@ prompt: |
      - case-002-exclusion: patient with documented statin allergy (denominator exclusion = true)
      - case-003-null-no-conditions: patient with no conditions on record (initial population = false, no errors)
   8. Hand off to `rh-inf-formalize` for the FHIR Library JSON wrapper (do not
-     produce the Library JSON directly — that is outside rh-cql's boundary)
+     produce the Library JSON directly — that is outside rh-inf-cql's boundary)
 
 expected_outputs:
   - path: topics/statin-eligibility/computable/StatinEligibility.cql

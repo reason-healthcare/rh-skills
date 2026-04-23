@@ -344,35 +344,35 @@ class TestRhInfStatusSkillContract:
 
 
 class TestRhCqlSkillContract:
-    """Focused contract checks for the rh-cql first-class skill."""
+    """Focused contract checks for the rh-inf-cql first-class skill."""
 
-    SKILL_PATH = Path("skills/.curated/rh-cql/SKILL.md")
-    REF_PATH = Path("skills/.curated/rh-cql/reference.md")
-    EXAMPLES_DIR = Path("skills/.curated/rh-cql/examples")
+    SKILL_PATH = Path("skills/.curated/rh-inf-cql/SKILL.md")
+    REF_PATH = Path("skills/.curated/rh-inf-cql/reference.md")
+    EXAMPLES_DIR = Path("skills/.curated/rh-inf-cql/examples")
 
     # ── SKILL.md — four mode headings ─────────────────────────────────────────
 
     def test_skill_md_has_author_mode(self):
         if not self.SKILL_PATH.exists():
-            pytest.skip("rh-cql skill not implemented")
+            pytest.skip("rh-inf-cql skill not implemented")
         body = skill_body(self.SKILL_PATH)
         assert "## Mode: author" in body, "SKILL.md must have '## Mode: author' heading"
 
     def test_skill_md_has_review_mode(self):
         if not self.SKILL_PATH.exists():
-            pytest.skip("rh-cql skill not implemented")
+            pytest.skip("rh-inf-cql skill not implemented")
         body = skill_body(self.SKILL_PATH)
         assert "## Mode: review" in body, "SKILL.md must have '## Mode: review' heading"
 
     def test_skill_md_has_debug_mode(self):
         if not self.SKILL_PATH.exists():
-            pytest.skip("rh-cql skill not implemented")
+            pytest.skip("rh-inf-cql skill not implemented")
         body = skill_body(self.SKILL_PATH)
         assert "## Mode: debug" in body, "SKILL.md must have '## Mode: debug' heading"
 
     def test_skill_md_has_test_plan_mode(self):
         if not self.SKILL_PATH.exists():
-            pytest.skip("rh-cql skill not implemented")
+            pytest.skip("rh-inf-cql skill not implemented")
         body = skill_body(self.SKILL_PATH)
         assert "## Mode: test-plan" in body, "SKILL.md must have '## Mode: test-plan' heading"
 
@@ -380,25 +380,25 @@ class TestRhCqlSkillContract:
 
     def test_reference_md_has_layer_1_core_cql(self):
         if not self.REF_PATH.exists():
-            pytest.skip("rh-cql reference.md not implemented")
+            pytest.skip("rh-inf-cql reference.md not implemented")
         content = self.REF_PATH.read_text()
         assert "Layer 1" in content, "reference.md must document Layer 1 — Core CQL Language"
 
     def test_reference_md_has_layer_2_fhir_facing(self):
         if not self.REF_PATH.exists():
-            pytest.skip("rh-cql reference.md not implemented")
+            pytest.skip("rh-inf-cql reference.md not implemented")
         content = self.REF_PATH.read_text()
         assert "Layer 2" in content, "reference.md must document Layer 2 — FHIR-Facing CQL"
 
     def test_reference_md_has_layer_3_packaging(self):
         if not self.REF_PATH.exists():
-            pytest.skip("rh-cql reference.md not implemented")
+            pytest.skip("rh-inf-cql reference.md not implemented")
         content = self.REF_PATH.read_text()
         assert "Layer 3" in content, "reference.md must document Layer 3 — Packaging and Lifecycle"
 
     def test_reference_md_has_layer_4_tooling(self):
         if not self.REF_PATH.exists():
-            pytest.skip("rh-cql reference.md not implemented")
+            pytest.skip("rh-inf-cql reference.md not implemented")
         content = self.REF_PATH.read_text()
         assert "Layer 4" in content, "reference.md must document Layer 4 — Tooling and Runtime"
 
@@ -406,58 +406,58 @@ class TestRhCqlSkillContract:
 
     def test_author_example_dir_exists(self):
         if not self.EXAMPLES_DIR.exists():
-            pytest.skip("rh-cql examples/ not implemented")
+            pytest.skip("rh-inf-cql examples/ not implemented")
         assert (self.EXAMPLES_DIR / "author-example").is_dir(), (
-            "rh-cql: examples/author-example/ directory must exist"
+            "rh-inf-cql: examples/author-example/ directory must exist"
         )
 
     def test_author_example_plan_md_exists(self):
         path = self.EXAMPLES_DIR / "author-example" / "plan.md"
         if not path.parent.exists():
-            pytest.skip("rh-cql examples/author-example/ not implemented")
-        assert path.exists(), "rh-cql: examples/author-example/plan.md must exist"
+            pytest.skip("rh-inf-cql examples/author-example/ not implemented")
+        assert path.exists(), "rh-inf-cql: examples/author-example/plan.md must exist"
 
     def test_author_example_output_md_exists(self):
         path = self.EXAMPLES_DIR / "author-example" / "output.md"
         if not path.parent.exists():
-            pytest.skip("rh-cql examples/author-example/ not implemented")
-        assert path.exists(), "rh-cql: examples/author-example/output.md must exist"
+            pytest.skip("rh-inf-cql examples/author-example/ not implemented")
+        assert path.exists(), "rh-inf-cql: examples/author-example/output.md must exist"
 
     def test_review_example_dir_exists(self):
         if not self.EXAMPLES_DIR.exists():
-            pytest.skip("rh-cql examples/ not implemented")
+            pytest.skip("rh-inf-cql examples/ not implemented")
         assert (self.EXAMPLES_DIR / "review-example").is_dir(), (
-            "rh-cql: examples/review-example/ directory must exist"
+            "rh-inf-cql: examples/review-example/ directory must exist"
         )
 
     def test_review_example_plan_md_exists(self):
         path = self.EXAMPLES_DIR / "review-example" / "plan.md"
         if not path.parent.exists():
-            pytest.skip("rh-cql examples/review-example/ not implemented")
-        assert path.exists(), "rh-cql: examples/review-example/plan.md must exist"
+            pytest.skip("rh-inf-cql examples/review-example/ not implemented")
+        assert path.exists(), "rh-inf-cql: examples/review-example/plan.md must exist"
 
     def test_review_example_output_md_exists(self):
         path = self.EXAMPLES_DIR / "review-example" / "output.md"
         if not path.parent.exists():
-            pytest.skip("rh-cql examples/review-example/ not implemented")
-        assert path.exists(), "rh-cql: examples/review-example/output.md must exist"
+            pytest.skip("rh-inf-cql examples/review-example/ not implemented")
+        assert path.exists(), "rh-inf-cql: examples/review-example/output.md must exist"
 
     # ── CLI boundary ──────────────────────────────────────────────────────────
 
     def test_skill_md_references_rh_cql_cli_commands(self):
-        """rh-cql skill must reference the rh CLI commands it wraps."""
+        """rh-inf-cql skill must reference the rh CLI commands it wraps."""
         if not self.SKILL_PATH.exists():
-            pytest.skip("rh-cql skill not implemented")
+            pytest.skip("rh-inf-cql skill not implemented")
         body = skill_body(self.SKILL_PATH)
         assert "rh-skills cql" in body, (
             "SKILL.md must reference `rh-skills cql` CLI commands (validate/translate/test)"
         )
 
     def test_skill_md_declares_fhirhelpers_agnostic_boundary(self):
-        """rh-cql skill must document the FHIRHelpers-agnostic boundary."""
+        """rh-inf-cql skill must document the FHIRHelpers-agnostic boundary."""
         if not self.SKILL_PATH.exists():
-            pytest.skip("rh-cql skill not implemented")
+            pytest.skip("rh-inf-cql skill not implemented")
         body = skill_body(self.SKILL_PATH)
         assert "FHIRHelpers" in body, (
-            "SKILL.md must document the FHIRHelpers-agnostic behavior of rh-cql"
+            "SKILL.md must document the FHIRHelpers-agnostic behavior of rh-inf-cql"
         )

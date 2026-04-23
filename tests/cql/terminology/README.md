@@ -41,4 +41,4 @@ Each `notes.md` should record:
 
 The `rh` evaluator resolves terminology offline by default. Pre-expand value
 sets and bundle them in the fixture, or configure a terminology service.
-See `skills/.curated/rh-cql/docs/terminology-policy.md`.
+See `skills/.curated/rh-inf-cql/docs/terminology-policy.md`.

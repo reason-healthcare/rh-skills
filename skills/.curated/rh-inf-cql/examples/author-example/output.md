@@ -16,7 +16,7 @@ File: `topics/lipid-management/computable/LipidManagementLogic.cql`
  * Version: 1.0.0
  * Description: Proportion of patients with hyperlipidemia who have a controlled
  *              LDL-C (<100 mg/dL) result in the measurement period.
- * Author: rh-cql (generated from structured artifact ldl-monitoring.yaml)
+ * Author: rh-inf-cql (generated from structured artifact ldl-monitoring.yaml)
  * Date: 2026-04-22
  */
 library LipidManagementLogic version '1.0.0'

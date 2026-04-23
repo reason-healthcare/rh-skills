@@ -251,7 +251,7 @@ FHIR files directly.
    `topics/<topic>/computable/`. **CQL authoring is out of scope here** — the
    `rh-inf-formalize` skill owns the FHIR Library JSON wrapper only.  If the
    artifact strategy includes a Library resource, `rh-skills formalize` will
-   emit a guidance note directing you to `rh-cql` (author mode) to write the
+   emit a guidance note directing you to `rh-inf-cql` (author mode) to write the
    `.cql` source.  Do not attempt to generate CQL content from this skill.
 
 6. Bundle all formalized resources into a FHIR NPM package:

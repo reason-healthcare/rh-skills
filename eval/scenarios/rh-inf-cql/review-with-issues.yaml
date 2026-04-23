@@ -1,5 +1,5 @@
 name: review-with-issues
-skill: rh-cql
+skill: rh-inf-cql
 description: >
   Review mode — a CQL library for PHQ-9 depression screening is provided with
   five planted defects (unpinned terminology, overly broad retrieve, missing
@@ -94,7 +94,7 @@ workspace:
           )
 
 prompt: |
-  Use the rh-cql skill in **review** mode for the topic `phq9-screening`.
+  Use the rh-inf-cql skill in **review** mode for the topic `phq9-screening`.
 
   Working directory: {workdir}
   Topic: {topic}

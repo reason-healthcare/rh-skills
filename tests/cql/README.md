@@ -1,7 +1,7 @@
 # tests/cql — Fixture Directory Schema
 
 This directory contains fixture-based integration tests for CQL libraries
-authored with the `rh-cql` skill. Each library gets its own subdirectory,
+authored with the `rh-inf-cql` skill. Each library gets its own subdirectory,
 which contains one or more test cases.
 
 ---

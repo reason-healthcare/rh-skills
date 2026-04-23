@@ -6,7 +6,7 @@
 
 ## Task
 
-Review the CQL library below using `rh-cql` in `review` mode. Apply the full
+Review the CQL library below using `rh-inf-cql` in `review` mode. Apply the full
 authoring rubric (10 areas), high-risk pattern catalog (7 categories), and
 packaging rubric. Produce a structured review report.
 

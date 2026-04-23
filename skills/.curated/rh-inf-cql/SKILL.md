@@ -1,8 +1,8 @@
 ---
-name: "rh-cql"
+name: "rh-inf-cql"
 description: "First-class CQL (Clinical Quality Language) authoring, review, debugging, and test-plan skill for the rh-skills informatics workflow."
 compatibility: "Requires rh-skills project with topics/<topic>/computable/ structure and `rh` CLI on PATH"
-applyTo: "**/*.cql, **/*.xml, **/Library-*.json, **/Measure-*.json, **/PlanDefinition-*.json, **/ActivityDefinition-*.json, **/tests/cql/**/*.json, **/tests/cql/**/*.yaml, **/skills/.curated/rh-cql/**"
+applyTo: "**/*.cql, **/*.xml, **/Library-*.json, **/Measure-*.json, **/PlanDefinition-*.json, **/ActivityDefinition-*.json, **/tests/cql/**/*.json, **/tests/cql/**/*.yaml, **/skills/.curated/rh-inf-cql/**"
 metadata:
   author: "rh-skills"
   version: "1.1.0"
@@ -45,7 +45,7 @@ If any check fails, report the missing resource and halt. Do NOT proceed with a 
 ## Guiding Principles
 
 - **Deterministic work via CLI**: validation (`rh-skills cql validate`), compilation (`rh-skills cql translate`), and test execution (`rh-skills cql test`) are always delegated to the `rh-skills` CLI. The agent reasons about CQL but does not replace the CLI for deterministic operations.
-- **Ownership boundary**: `rh-cql` owns `.cql` source files. `rh-inf-formalize` owns FHIR Library JSON wrappers. These boundaries are never crossed.
+- **Ownership boundary**: `rh-inf-cql` owns `.cql` source files. `rh-inf-formalize` owns FHIR Library JSON wrappers. These boundaries are never crossed.
 - **Human confirmation for conflicts**: any ambiguity, inconsistency, or multi-option decision MUST be surfaced to the human before the agent proceeds. Silent resolution is not permitted.
 - **FHIRHelpers-agnostic runtime**: `rh cql compile` does not inject FHIRHelpers wrapper calls. Type coercion between FHIR and CQL system types is the runtime's responsibility, not the author's. Authors should still `include fhir.cqf.common.FHIRHelpers` for explicit conversions where needed.
 
@@ -65,11 +65,11 @@ for CQL artifacts. Use it for:
 
 The skill should prefer deterministic reasoning over stylistic improvisation.
 For detailed conventions, see:
-- `skills/.curated/rh-cql/docs/authoring-guidelines.md`
-- `skills/.curated/rh-cql/docs/review-checklist.md`
-- `skills/.curated/rh-cql/docs/testing-strategy.md`
-- `skills/.curated/rh-cql/docs/terminology-policy.md`
-- `skills/.curated/rh-cql/docs/runtime-assumptions.md`
+- `skills/.curated/rh-inf-cql/docs/authoring-guidelines.md`
+- `skills/.curated/rh-inf-cql/docs/review-checklist.md`
+- `skills/.curated/rh-inf-cql/docs/testing-strategy.md`
+- `skills/.curated/rh-inf-cql/docs/terminology-policy.md`
+- `skills/.curated/rh-inf-cql/docs/runtime-assumptions.md`
 
 ---
 
@@ -343,7 +343,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
     * Library: <LibraryName>
     * Version: 1.0.0
     * Description: <one-line description from artifact>
-    * Author: rh-cql (generated from structured artifact)
+    * Author: rh-inf-cql (generated from structured artifact)
     * Date: <today>
     */
    library <LibraryName> version '1.0.0'
@@ -390,7 +390,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
    - **After 2 failed attempts** — report the error verbatim to the user and ask
      for guidance. Do **not** iterate further without explicit direction.
    - **Do not use web search** to diagnose CQL errors. Consult the local context
-     corpus (`skills/.curated/rh-cql/context/`) or ReasonHub MCP spec tools
+     corpus (`skills/.curated/rh-inf-cql/context/`) or ReasonHub MCP spec tools
      (`reasonhub-search_spec_content` with `source_id: "cql"`).
 
    **FHIRHelpers for local testing:**
@@ -407,7 +407,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
    ```
    rh-skills formalize <topic> <artifact>
    ```
-   This step is owned by `rh-inf-formalize`, not by `rh-cql`. Hand off after
+   This step is owned by `rh-inf-formalize`, not by `rh-inf-cql`. Hand off after
    the `.cql` file is validated.
 
 ### Output contract
@@ -441,7 +441,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
 # CQL Review Report: <LibraryName>
 **Reviewed**: <date>
 **File**: `topics/<topic>/computable/<LibraryName>.cql`
-**Reviewer**: rh-cql (automated review)
+**Reviewer**: rh-inf-cql (automated review)
 
 ## Summary
 - BLOCKING: N
@@ -766,7 +766,7 @@ must call these — do not write files directly.
 | Write FHIR Library JSON wrapper | `rh-skills formalize <topic> <artifact>` |
 
 `rh-skills cql validate` wraps `rh cql validate` (Rust-native CQL compiler in
-`rh/crates/rh-cql`). For interactive debugging, `rh cql repl` and
+`rh/crates/rh-inf-cql`). For interactive debugging, `rh cql repl` and
 `rh cql explain` are available directly.
 
 ---
@@ -841,12 +841,12 @@ FHIR Clinical Reasoning rules.
 
 ## Boundary with rh-inf-formalize
 
-- `rh-cql` owns **CQL content** — the `.cql` source text and its logical correctness.
+- `rh-inf-cql` owns **CQL content** — the `.cql` source text and its logical correctness.
 - `rh-inf-formalize` owns **FHIR Library JSON wrapper** — the `Library` resource that
   packages the CQL.
-- `rh-cql` must not write Library JSON directly.
+- `rh-inf-cql` must not write Library JSON directly.
 - `rh-inf-formalize` must not generate CQL content inline. For `measure`,
   `decision-table`, and `policy` artifact types, the `.cql` file must be authored by
-  `rh-cql author` mode before `rh-skills formalize` is called.
-- `rh-inf-formalize` does NOT invoke `rh-cql` for `terminology` and `assessment`
+  `rh-inf-cql author` mode before `rh-skills formalize` is called.
+- `rh-inf-formalize` does NOT invoke `rh-inf-cql` for `terminology` and `assessment`
   artifact types (these do not produce CQL Libraries).

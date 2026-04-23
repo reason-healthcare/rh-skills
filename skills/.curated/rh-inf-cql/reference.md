@@ -1,7 +1,7 @@
-# Reference: rh-cql Standards Corpus
+# Reference: rh-inf-cql Standards Corpus
 
 This document lists the four layers of the CQL standards corpus that ground
-`rh-cql` authoring, review, debugging, and test-plan decisions.
+`rh-inf-cql` authoring, review, debugging, and test-plan decisions.
 
 ---
 
@@ -34,7 +34,7 @@ interact with FHIR types and how translator options are expressed.
 | FHIR ModelInfo | https://build.fhir.org/ig/HL7/cql-ig/ | current | Understanding model declarations and type resolution |
 | CQL Translator Options | https://build.fhir.org/ig/HL7/cql-ig/using-elm.html | current | Declaring reproducible translator options in Library |
 
-> **rh-cql note**: Unlike the Java reference translator, `rh-cql` does not
+> **rh-inf-cql note**: Unlike the Java reference translator, `rh-inf-cql` does not
 > automatically inject FHIRHelpers conversion calls. FHIR↔CQL type coercion
 > is handled at the runtime level. When reviewing ELM output from `rh cql compile`,
 > the absence of `FHIRHelpers.ToConcept` wrapping is expected and correct.
@@ -62,9 +62,9 @@ toolchain for this project.
 
 | Source | URL / Path | When to use |
 |--------|-----------|-------------|
-| rh-cql Rust crate | `rh/crates/rh-cql/README.md` | Understanding compiler behavior, ELM output differences from Java reference |
+| rh-inf-cql Rust crate | `rh/crates/rh-inf-cql/README.md` | Understanding compiler behavior, ELM output differences from Java reference |
 | rh-cli CQL commands | `rh/apps/rh-cli/src/cql.rs` | `rh cql validate/compile/eval/explain/repl` flags and output format |
-| CQFramework clinical_quality_language | https://github.com/cqframework/clinical_quality_language | Java reference translator — compare behavior against rh-cql when debugging |
+| CQFramework clinical_quality_language | https://github.com/cqframework/clinical_quality_language | Java reference translator — compare behavior against rh-inf-cql when debugging |
 | AHRQ CQL Testing Framework | https://github.com/AHRQ-CDS/CQL-Testing-Framework | Test case patterns and fixture format reference |
 
 ### rh cql command quick reference

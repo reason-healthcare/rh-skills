@@ -7,7 +7,7 @@ been identified and fixed.
 
 - Ensure fixed bugs do not reoccur.
 - Provide a concrete defect taxonomy over time.
-- Serve as reference cases for the rh-cql skill when explaining failures.
+- Serve as reference cases for the rh-inf-cql skill when explaining failures.
 
 ## Adding a Regression Case
 
@@ -32,7 +32,7 @@ been identified and fixed.
 
 ## Defect Categories
 
-Refer to `skills/.curated/rh-cql/SKILL.md` for the full Failure Categories table.
+Refer to `skills/.curated/rh-inf-cql/SKILL.md` for the full Failure Categories table.
 Common regression categories:
 - `null-propagation`
 - `interval-boundary`

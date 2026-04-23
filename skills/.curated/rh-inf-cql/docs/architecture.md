@@ -49,11 +49,11 @@ as first-class artifacts, not side effects.
 ## Integration with rh-skills Workflow
 
 ```text
-rh-inf-extract  →  structured YAML  →  rh-cql (author mode)  →  .cql source
-                                         rh-cql (review mode)  →  review report
-                                         rh-cql (test-plan)    →  fixtures
+rh-inf-extract  →  structured YAML  →  rh-inf-cql (author mode)  →  .cql source
+                                         rh-inf-cql (review mode)  →  review report
+                                         rh-inf-cql (test-plan)    →  fixtures
                                          rh-inf-formalize      →  Library FHIR JSON
 ```
 
-The `rh-cql` skill owns `.cql` files. The `rh-inf-formalize` skill owns the
+The `rh-inf-cql` skill owns `.cql` files. The `rh-inf-formalize` skill owns the
 FHIR Library JSON wrapper and downstream packaging. These boundaries are enforced.

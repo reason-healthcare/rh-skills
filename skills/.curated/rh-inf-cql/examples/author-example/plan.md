@@ -13,7 +13,7 @@ on the structured artifact below. The library should identify:
 2. Patients who have had an LDL-C lab result in the measurement period
 3. Patients whose most recent LDL-C is controlled (< 100 mg/dL)
 
-Use `rh-cql` in `author` mode. After authoring, validate with
+Use `rh-inf-cql` in `author` mode. After authoring, validate with
 `rh-skills cql validate lipid-management LipidManagementLogic`.
 
 ## Structured Artifact (input)

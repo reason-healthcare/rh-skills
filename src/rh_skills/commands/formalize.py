@@ -439,7 +439,7 @@ def formalize(topic, artifact, dry_run, force):
         if not embedded_any:
             cql_name = "".join(w.capitalize() for w in to_kebab_case(artifact).split("-")) + "Logic"
             click.echo(
-                f"  ℹ  No .cql file found in computable/ — use `rh-cql` (author mode) to author"
+                f"  ℹ  No .cql file found in computable/ — use `rh-inf-cql` (author mode) to author"
                 f" the CQL library, then re-run `rh-skills formalize` to embed it in the Library JSON",
                 err=True,
             )
