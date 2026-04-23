@@ -539,6 +539,7 @@ def formalize(topic, artifact, dry_run, force):
             artifact_type,
             strategy,
             topic,
+            cfg,
             l2_content,
         )
     else:

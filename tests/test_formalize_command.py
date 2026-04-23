@@ -45,6 +45,13 @@ def formalize_topic(tmp_repo):
         "events": [],
     }])
 
+    # Write formalize config
+    process_dir = topic_dir / "process"
+    process_dir.mkdir(parents=True, exist_ok=True)
+    (process_dir / "formalize-config.yaml").write_text(
+        "name: TestTopic\nid: test-topic\ncanonical: http://example.org/fhir\nstatus: draft\nversion: 0.1.0\n"
+    )
+
     os.environ["LLM_PROVIDER"] = "stub"
     yield tmp_repo
     os.environ.pop("LLM_PROVIDER", None)
@@ -94,6 +101,13 @@ def formalize_topic_with_rules(tmp_repo):
         "computable": [],
         "events": [],
     }])
+
+    # Write formalize config
+    process_dir = topic_dir / "process"
+    process_dir.mkdir(parents=True, exist_ok=True)
+    (process_dir / "formalize-config.yaml").write_text(
+        "name: TestTopic\nid: test-topic\ncanonical: http://example.org/fhir\nstatus: draft\nversion: 0.1.0\n"
+    )
 
     os.environ["LLM_PROVIDER"] = "stub"
     yield tmp_repo
