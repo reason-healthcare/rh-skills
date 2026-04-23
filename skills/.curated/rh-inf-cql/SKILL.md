@@ -51,6 +51,28 @@ If any check fails, report the missing resource and halt. Do NOT proceed with a 
 
 ---
 
+## Tool Boundaries
+
+> **NEVER read the `rh` Rust source or the `rh-skills` Python source.**
+
+`rh` and `rh-skills` are black-box CLIs. The agent must not read, search, or
+inspect their implementation source files under any circumstances — not to
+understand behavior, not to debug errors, not to confirm flag syntax.
+
+Prohibited actions (hard stop — do not proceed):
+- Reading any file under `~/projects/rh/` (Rust crates, `apps/rh-cli/src/`, etc.)
+- Reading any file under the `rh-skills` install path (Python `.py` source)
+- Using `find`, `rg`, `grep`, or `cat` against `*.rs` files
+- Using `python -c "import rh_skills; ..."` to locate and then read the source
+
+Allowed alternatives:
+- `rh cql --help` / `rh cql eval --help` for flag reference
+- `rh-skills cql --help` for wrapper command reference  
+- Docs in `.agents/skills/rh-inf-cql/` for runtime behavior
+- If behavior is unclear after reading help and skill docs: **ask the user**
+
+---
+
 ## Purpose
 
 This skill turns the agent into a disciplined reviewer and test-oriented author
@@ -765,9 +787,8 @@ must call these — do not write files directly.
 | Run fixture-based test cases | `rh-skills cql test <topic> <library>` |
 | Write FHIR Library JSON wrapper | `rh-skills formalize <topic> <artifact>` |
 
-`rh-skills cql validate` wraps `rh cql validate` (Rust-native CQL compiler in
-`rh/crates/rh-inf-cql`). For interactive debugging, `rh cql repl` and
-`rh cql explain` are available directly.
+`rh-skills cql validate` wraps `rh cql validate` (Rust-native CQL compiler).
+For interactive debugging, `rh cql repl` and `rh cql explain` are available directly.
 
 ---
 
