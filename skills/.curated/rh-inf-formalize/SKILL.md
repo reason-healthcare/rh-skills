@@ -248,25 +248,45 @@ FHIR files directly.
    > valid CLI argument.
 
    This produces individual FHIR JSON files (`<ResourceType>-<id>.json`) in
-   `topics/<topic>/computable/`. **CQL authoring is out of scope here** — the
-   `rh-inf-formalize` skill owns the FHIR Library JSON wrapper only.  If the
-   artifact strategy includes a Library resource, `rh-skills formalize` will
-   emit a guidance note directing you to `rh-inf-cql` (author mode) to write the
-   `.cql` source.  Do not attempt to generate CQL content from this skill.
+   `topics/<topic>/computable/`. For strategies that include a CQL Library
+   (`decision-table`, `measure`, `policy`), `rh-skills formalize` writes a
+   compilable CQL scaffold alongside the JSON wrappers.
 
-6. Bundle all formalized resources into a FHIR NPM package:
+   **If the strategy includes CQL, continue directly to step 6 (CQL authoring)
+   before packaging.** Do not stop and emit a guidance note — CQL authoring is
+   part of the implement flow for these strategies.
+
+6. **For CQL strategies only** — invoke `rh-inf-cql` in author mode to complete
+   the CQL library from the scaffold:
+
+   ```sh
+   rh-skills cql validate <topic> <LibraryName>   # confirm scaffold compiles
+   # author the full CQL logic using the rh-inf-cql skill
+   rh-skills cql validate <topic> <LibraryName>   # confirm authored library compiles
+   rh-skills cql translate <topic> <LibraryName>  # compile to ELM JSON
+   rh-skills cql test <topic> <LibraryName>        # list fixture cases (eval pending)
+   ```
+
+   Follow the `rh-inf-cql` authoring guidelines (anti-patterns, runtime
+   assumptions, terminology policy) when writing CQL. The CQL library must
+   compile cleanly before proceeding to packaging.
+
+   Skip this step for strategies that do not produce CQL
+   (`evidence-summary`, `care-pathway`, `terminology`, `assessment`).
+
+7. Bundle all formalized resources into a FHIR NPM package:
 
    ```sh
    rh-skills package <topic>
    ```
 
-7. Validate each generated FHIR JSON artifact:
+8. Validate each generated FHIR JSON artifact:
 
    ```sh
    rh-skills validate <topic> l3 <l2-artifact-name>
    ```
 
-8. Report `✓` or `✗` for each artifact. Stop on blocking CLI failures; do not
+9. Report `✓` or `✗` for each artifact. Stop on blocking CLI failures; do not
    silently continue past a failed formalize or validate command.
 
 ### Events
@@ -283,6 +303,7 @@ Emit this status block as the **last thing** in your response (no text after):
 ▸ rh-inf-formalize  <topic>
   Stage:    implement — complete
   Artifacts: <N> formalized · <N> packaged
+  CQL:      <authored + validated | n/a (no CQL strategy)>
   Next:     Verify computable artifacts or review the package
 ```
 
