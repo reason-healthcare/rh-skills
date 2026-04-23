@@ -344,6 +344,104 @@ rh-skills schema show discovery-plan
 
 ---
 
+## `rh-skills cql`
+
+Author, validate, compile, and test CQL libraries for a topic.
+
+### `rh-skills cql validate <topic> <library>`
+
+Validate CQL syntax and semantics.
+
+```
+rh-skills cql validate <topic> <library>
+```
+
+**Arguments:**
+- `topic` — Topic identifier (e.g., `statin-eligibility`)
+- `library` — CQL library name without extension (e.g., `StatinEligibility`)
+
+**Behavior:** Runs `rh cql validate` against `topics/<topic>/computable/<library>.cql`. Reports syntax errors and semantic issues. Exit 0 on success.
+
+**Example:**
+```bash
+rh-skills cql validate statin-eligibility StatinEligibility
+```
+
+---
+
+### `rh-skills cql translate <topic> <library>`
+
+Compile CQL to ELM JSON.
+
+```
+rh-skills cql translate <topic> <library>
+```
+
+**Arguments:**
+- `topic` — Topic identifier
+- `library` — CQL library name without extension
+
+**Behavior:** Runs `rh cql compile` against the library. Writes ELM JSON output alongside the source `.cql` file. Exit 0 on success.
+
+**Example:**
+```bash
+rh-skills cql translate statin-eligibility StatinEligibility
+```
+
+---
+
+### `rh-skills cql test <topic> <library>`
+
+List fixture test cases for a CQL library.
+
+```
+rh-skills cql test <topic> <library>
+```
+
+**Arguments:**
+- `topic` — Topic identifier
+- `library` — CQL library name without extension
+
+**Behavior:** Lists fixture cases under `tests/cql/<library>/` (each case has `input/bundle.json` and `expected/expression-results.json`). **Expression evaluation is pending** — reports `[eval pending]` and exits 0 without executing expressions.
+
+**Fixture layout:**
+```
+tests/cql/<Library>/
+  case-001-<name>/
+    input/bundle.json           ← FHIR Bundle with Patient + clinical resources
+    expected/expression-results.json  ← { "ExprName": true/false/null, ... }
+  case-002-<name>/
+    ...
+```
+
+**Example:**
+```bash
+rh-skills cql test statin-eligibility StatinEligibility
+```
+
+---
+
+### CQL file path convention
+
+CQL libraries live at:
+```
+topics/<topic>/computable/<Library>.cql
+```
+
+The `rh-inf-cql` skill owns `.cql` source files. FHIR JSON wrappers (Library, Measure JSON) are generated and owned by `rh-inf-formalize`.
+
+---
+
+## `rh-skills cql` — Status summary
+
+| Command | Invokes | Status |
+|---------|---------|--------|
+| `rh-skills cql validate <topic> <lib>` | `rh cql validate` | ✓ active |
+| `rh-skills cql translate <topic> <lib>` | `rh cql compile` | ✓ active |
+| `rh-skills cql test <topic> <lib>` | — | ⏳ eval pending (lists cases only) |
+
+---
+
 ## Curated skill entry points
 
 These reviewer-facing skill invocations sit above the deterministic `rh-skills`

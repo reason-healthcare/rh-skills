@@ -84,6 +84,31 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 
 ---
 
+## CQL Libraries
+
+Two formalize strategies produce a `.cql` source file alongside the FHIR JSON:
+
+| Strategy | CQL Library | Supporting FHIR Resource |
+|----------|-------------|--------------------------|
+| `decision-table` | Library (CQL) | PlanDefinition (eca-rule) |
+| `measure` | Library (CQL) | Measure |
+
+`rh-skills formalize` writes a `.cql` scaffold to `topics/<topic>/computable/<Library>.cql`. The **`rh-inf-cql` skill** is responsible for authoring, reviewing, and validating the CQL content after the scaffold is generated. The FHIR JSON wrapper (Library.json, Measure.json) remains `rh-inf-formalize`'s responsibility.
+
+**CQL workflow after formalize:**
+
+```
+rh-skills cql validate <topic> <library>   # validate syntax + semantics
+rh-skills cql translate <topic> <library>  # compile to ELM JSON
+rh-skills cql test <topic> <library>       # list fixture cases (eval pending)
+```
+
+Fixture cases live at `tests/cql/<Library>/case-<N>-<name>/` with `input/bundle.json` and `expected/expression-results.json`.
+
+See [SKILLS.md](SKILLS.md) for when to invoke `rh-inf-cql` and [COMMANDS.md](COMMANDS.md) for the full `rh-skills cql` command reference.
+
+---
+
 ## Multi-Type Convergence
 
 When a topic has multiple L2 types:

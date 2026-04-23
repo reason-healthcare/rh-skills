@@ -17,8 +17,20 @@ those deterministic operations.
 | `rh-inf-ingest` | Bring source material into the repo and prepare L1 artifacts |
 | `rh-inf-extract` | Derive structured L2 artifacts from reviewed source material |
 | `rh-inf-formalize` | Convert approved structured artifacts into computable L3 outputs |
+| `rh-inf-cql` | Author, review, validate, and test CQL libraries for computable measures and decision logic |
 | `rh-inf-verify` | Run consolidated verification across lifecycle stages |
 | `rh-inf-status` | Surface deterministic status and next-step guidance |
+
+## When to use `rh-inf-cql`
+
+`rh-inf-cql` is the CQL authoring and quality skill. Use it when:
+
+- **After formalize** — `rh-skills formalize` generates a `.cql` stub for `decision-table` or `measure` strategies. `rh-inf-cql` authors, reviews, and validates the full CQL library from that stub.
+- **Standalone CQL work** — Authoring or reviewing a CQL library independently of the formalize flow.
+- **CQL review or debugging** — Reviewing existing `.cql` files for correctness, safety, or performance. Running `rh-skills cql validate` and `rh-skills cql translate` to confirm the library compiles.
+- **Test fixture authoring** — Designing fixture cases (`tests/cql/<Library>/`) for expression-level coverage.
+
+`rh-inf-cql` owns `.cql` source files under `topics/<topic>/computable/`. It does **not** own the FHIR JSON wrappers (Library, Measure JSON) — those are `rh-inf-formalize`'s responsibility.
 
 ## How they relate to the CLI
 
