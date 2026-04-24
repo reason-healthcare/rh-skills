@@ -34,13 +34,10 @@ metadata:
 
 # rh-inf-discovery
 
-<!-- ─────────────────────────────────────────────────────────────────────────
-  LEVEL 2 DISCLOSURE — full instructions, loaded when skill is triggered.
-  ───────────────────────────────────────────────────────────────────────── -->
 
 ## Overview
 
-`rh-inf-discovery` is the **L1 evidence discovery** stage of the HI lifecycle. It
+`rh-inf-discovery` is the **L1 evidence discovery** stage of the lifecycle. It
 guides a clinical informaticist through finding, evaluating, and documenting
 evidence-based source material for a clinical research area. The result is
 a `discovery-plan.yaml` (structured source list, the single source of truth) and

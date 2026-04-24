@@ -4,9 +4,58 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from rh_skills.commands.ingest import ingest
+from pathlib import Path
+
+from rh_skills.commands.ingest import _sanitize_source_stem, _source_name_from_path, ingest
 from rh_skills.common import sha256_file
 from tests.conftest import load_tracking
+
+
+# ── _sanitize_source_stem / _source_name_from_path ───────────────────────────────────
+
+
+def test_source_name_clean_stem():
+    assert _source_name_from_path(Path("2025_AAO13.pdf")) == "2025_AAO13_pdf"
+
+
+def test_source_name_spaces_replaced():
+    assert _source_name_from_path(Path("GLIA Summary Report-CPGSurgCRS-Final.pdf")) == (
+        "GLIA_Summary_Report-CPGSurgCRS-Final_pdf"
+    )
+
+
+def test_source_name_double_dash_removed():
+    # "--" in a stem is collapsed to a single "_"
+    result = _source_name_from_path(
+        Path("Otolaryngol --head neck surg - 2025 - Shin - CPG.pdf")
+    )
+    assert " " not in result
+    assert "--" not in result
+    assert result == "Otolaryngol_head_neck_surg_2025_Shin_CPG_pdf"
+
+
+def test_source_name_parens_and_dots():
+    assert _source_name_from_path(Path("my file (v2).docx")) == "my_file_v2_docx"
+
+
+def test_source_name_no_extension():
+    assert _source_name_from_path(Path("README")) == "README"
+
+
+def test_sanitize_stem_spaces():
+    assert _sanitize_source_stem("hello world") == "hello_world"
+
+
+def test_sanitize_stem_double_dash():
+    assert _sanitize_source_stem("foo --bar") == "foo_bar"
+
+
+def test_sanitize_stem_mixed():
+    assert _sanitize_source_stem("file (2025) - final!") == "file_2025_final"
+
+
+def test_sanitize_stem_leading_trailing():
+    assert _sanitize_source_stem("  leading spaces  ") == "leading_spaces"
 
 
 # ── rh-skills ingest plan ─────────────────────────────────────────────────────────────
