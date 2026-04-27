@@ -5,7 +5,7 @@
 
 ## Summary
 
-`rh-inf-ingest` is the operational ingest stage between discovery and extract. It consumes the approved `discovery-plan.yaml` from `rh-inf-discovery` and moves sources through four deterministic stages — download, normalize, classify, and annotate — while maintaining source provenance in `tracking.yaml`, writing normalized Markdown to `sources/normalized/`, and building a de-duped `topics/<topic>/process/concepts.yaml` vocabulary for downstream extraction. Unlike most workflow skills, its `plan` mode should remain a transient pre-flight summary rather than a durable plan artifact because `discovery-plan.yaml` is already the machine-readable work queue.
+`rh-inf-ingest` is the operational ingest stage between discovery and extract. It takes all files present in `sources/` (downloaded by `rh-inf-discovery` or placed manually) and moves them through three deterministic stages — normalize, classify, and annotate — while maintaining source provenance in `tracking.yaml`, writing normalized Markdown to `sources/normalized/`, and building a de-duped `topics/<topic>/process/concepts.yaml` vocabulary for downstream extraction. Its `plan` mode is a transient pre-flight summary; `discovery-plan.yaml` is used as optional enrichment for classification if present.
 
 ## Technical Context
 
