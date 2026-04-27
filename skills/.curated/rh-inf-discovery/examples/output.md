@@ -1,6 +1,6 @@
-# rh-inf-discovery Session Transcript: diabetes-ccm
+# rh-inf-discovery Plan Transcript: diabetes-ccm
 
-This is an abbreviated worked example of a `session` mode interaction for the
+This is an abbreviated worked example of a `plan` mode interaction for the
 topic `diabetes-ccm`. It illustrates the interactive research assistant loop,
 access advisories, and the save checkpoint.
 
@@ -9,7 +9,7 @@ access advisories, and the save checkpoint.
 ## Invocation
 
 ```
-User: rh-inf-discovery session diabetes-ccm
+User: rh-inf-discovery plan diabetes-ccm
 ```
 
 ---
@@ -18,7 +18,7 @@ User: rh-inf-discovery session diabetes-ccm
 
 **Agent:**
 
-> Starting discovery session for **diabetes-ccm**.
+> Starting discovery plan for **diabetes-ccm**.
 > 
 > Checking topic status...
 > ```
@@ -169,7 +169,7 @@ User: rh-inf-discovery session diabetes-ccm
 >    Search terms: "chronic care model diabetes effectiveness team-based"
 >
 > Once you have retrieved the authenticated sources, place them in `sources/`
-> and run `rh-inf-ingest session diabetes-ccm` — it will read this discovery plan
+> and run `rh-inf-ingest plan diabetes-ccm` — it will read this discovery plan
 > and register everything in one pass.
 
 ---

@@ -31,7 +31,7 @@ juvenile-diabetes-onset — Juvenile Diabetes Onset Screening
 hypertension-young-adults — Hypertension in Young Adults
   Stage:  Discovery
   Next steps:
-    - Start source discovery for this topic: rh-inf-discovery session hypertension-young-adults
+    - Start source discovery for this topic: rh-inf-discovery plan hypertension-young-adults
     - Ingest sources if you already have a discovery plan: rh-inf-ingest plan hypertension-young-adults
     - Full pipeline summary: rh-skills status progress hypertension-young-adults
 ```
