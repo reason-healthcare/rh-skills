@@ -7,7 +7,7 @@ description: >
   Interactive research assistant for healthcare informatics evidence discovery.
   Searches PubMed, PMC, ClinicalTrials.gov, and curated government/society
   sources to build an evidence-based discovery plan (L1 → L2 lifecycle stage).
-  Modes: session · verify.
+  Modes: plan · verify.
 compatibility: "rh-skills >= 0.1.0"
 context_files:
   - reference.md          # domain advice checklist, source taxonomies, US gov coverage
@@ -80,24 +80,24 @@ $ARGUMENTS
 ```
 
 Inspect `$ARGUMENTS` before proceeding. The first word is the **mode**
-(`session` or `verify`). The optional `--domain <label>` flag names the clinical
+(`plan` or `verify`). The optional `--domain <label>` flag names the clinical
 research area (freeform label used for status output and file naming — not a
 tracked topic identifier).
 
 | Mode | Arguments | Example |
 |------|-----------|---------|
-| `session` | `[--domain <label>] [--force]` | `session --domain diabetes-ccm` |
+| `plan` | `[--domain <label>] [--force]` | `plan --domain diabetes-ccm` |
 | `verify` | — | `verify` |
 
 - `--domain <label>`: freeform research area label (e.g. `diabetes-ccm`, `hypertension`). Used in status blocks. If omitted, inferred from the research session content.
-- `--force`: overwrite existing `discovery-plan.yaml` and `discovery-readout.md` (session mode only).
+- `--force`: overwrite existing `discovery-plan.yaml` and `discovery-readout.md` (plan mode only).
 - If `$ARGUMENTS` is empty or the mode is unrecognized, print this table and exit.
 
 ---
 
 ## Pre-Execution Checks
 
-For **session** mode only: check whether a plan already exists at the repo root:
+For **plan** mode only: check whether a plan already exists at the repo root:
 
 ```sh
 ls discovery-plan.yaml 2>/dev/null
@@ -118,7 +118,7 @@ ls discovery-plan.yaml 2>/dev/null
 
 ---
 
-## session Mode
+## Mode: `plan`
 
 The session is an **interactive research loop**. Complete all steps; prompt the
 user after each major pass before proceeding.
@@ -475,7 +475,7 @@ After saving, emit status block:
 > **What would you like to do next?**
 > 
 > A) Run `rh-inf-discovery verify` — validate the plan before handing off
-> B) Return to the session to revise sources
+> B) Return to the plan session to revise sources
 > 
 > You can also ask for `rh-inf-status` at any time.
 
@@ -512,7 +512,7 @@ On exit 0, before emitting the status block, emit:
 > **What would you like to do next?**
 > 
 > A) Run `rh-inf-ingest plan` — begin source acquisition
-> B) Return to the discovery session to revise sources
+> B) Return to the discovery plan to revise sources
 > 
 > You can also ask for status `rh-inf-status` at any time.
 
@@ -531,7 +531,7 @@ On exit 1, emit:
 > **What would you like to do next?**
 > 
 > A) Fix the listed issues and re-run `rh-inf-discovery verify`
-> B) Return to the session to modify sources
+> B) Return to the plan to modify sources
 > 
 > You can also ask for status `rh-inf-status` at any time.
 

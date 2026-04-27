@@ -1,13 +1,13 @@
 # rh-inf-discovery Reference
 
-Companion reference for `SKILL.md`. Loaded on demand during session mode.
+Companion reference for `SKILL.md`. Loaded on demand during plan mode.
 
 ---
 
 ## Domain Advice Checklist
 
 Apply the relevant sections below when generating domain advice in Step 1 of
-session mode. Address each applicable item in the **Domain Advice** section of
+plan mode. Address each applicable item in the **Domain Advice** section of
 `discovery-plan.md` (the narrative file).
 
 ### CMS Program Alignment

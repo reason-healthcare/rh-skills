@@ -1,6 +1,6 @@
 # Quickstart: `rh-inf-discovery` Skill
 
-**A minimal worked example of a discovery session.**
+**A minimal worked example of a discovery plan.**
 
 ---
 
@@ -19,7 +19,7 @@ rh-skills init diabetes-ccm
 
 ---
 
-## Step 1: Start a discovery session
+## Step 1: Start a discovery plan
 
 Tell your agent (Claude, Copilot, Gemini) to activate the rh-inf-discovery skill:
 
@@ -28,7 +28,7 @@ Use the rh-inf-discovery skill to help me research sources for chronic care mana
 Topic: diabetes-ccm
 ```
 
-The agent loads `skills/.curated/rh-inf-discovery/SKILL.md` and begins in `session` mode.
+The agent loads `skills/.curated/rh-inf-discovery/SKILL.md` and begins in `plan` mode.
 
 ---
 
