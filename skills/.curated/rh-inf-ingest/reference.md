@@ -74,6 +74,12 @@ If either tool is absent, `rh-skills ingest normalize` sets `text_extracted: fal
 the normalized.md frontmatter and continues (soft-fail). You can re-run
 normalize after installing the missing tool.
 
+Source naming note: `rh-skills ingest implement` and `rh-skills ingest normalize`
+auto-derive `<name>` from the filename by sanitizing the stem and appending the
+extension with an underscore suffix (`<stem>_<ext>`). Example:
+`CPG_SurgCRS_FAQ_V6.pdf` -> `CPG_SurgCRS_FAQ_V6_pdf`.
+Use this derived name for subsequent `classify` and `annotate` commands.
+
 ---
 
 ## Auth Note Advisory Format
