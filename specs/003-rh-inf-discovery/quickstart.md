@@ -107,7 +107,7 @@ Authenticated sources (advisory):
     URL: https://www.nejm.org/...
     Add to discovery-plan.yaml with auth_note when confirmed accessible.
 
-All selected sources are recorded in discovery-plan.yaml. rh-inf-ingest will handle acquisition.
+All selected sources are recorded in discovery-plan.yaml. Open-access sources will be downloaded after you save the plan (Step 12). Authenticated and manual sources are flagged for you to retrieve separately.
 ```
 
 ---

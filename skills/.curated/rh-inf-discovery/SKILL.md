@@ -30,6 +30,7 @@ metadata:
     - "rh-skills source add"
     - "rh-skills source scan"
     - "rh-skills validate --plan"
+    - "rh-skills ingest implement --url"
 ---
 
 # rh-inf-discovery
@@ -40,10 +41,10 @@ metadata:
 `rh-inf-discovery` is the **L1 evidence discovery** stage of the lifecycle. It
 guides a clinical informaticist through finding, evaluating, and documenting
 evidence-based source material for a clinical research area. The result is
-a `discovery-plan.yaml` (structured source list, the single source of truth) and
-`discovery-readout.md` (generated domain narrative) that `rh-inf-ingest` consumes
-to download sources and, once sources are normalized, infer and create the
-appropriate topic(s).
+a `discovery-plan.yaml` (structured source list, the single source of truth),
+`discovery-readout.md` (generated domain narrative), and downloaded open-access
+source files. `rh-inf-ingest` consumes these to normalize, classify, and annotate
+sources and infer the appropriate topic(s).
 
 The skill acts as an **interactive research assistant** — it does not stop at a
 single search pass. After each pass the agent explicitly prompts the user with
@@ -61,8 +62,8 @@ after sources are normalized.
 - **Discovery is pure research.** All searches are delegated to `rh-skills` CLI commands.
   All clinical reasoning, source evaluation, and research synthesis happen in
   this skill.
-- **No file-system side effects.** Discovery does not download or register any
-  source files — that is entirely `rh-inf-ingest`'s responsibility. The plan can be
+- **Download at the end, not during research.** Source files are only downloaded
+  after the user approves and saves the plan (Step 12). The plan can be freely
   re-run, revised, and reviewed before any acquisition occurs.
 - **Single source of truth.** `discovery-plan.yaml` is the authoritative source
   list. `discovery-readout.md` is a generated narrative derived from it and
@@ -469,22 +470,62 @@ After saving, emit status block:
 > ▸ rh-inf-discovery  <domain>
 >   Step:   11 — Save Checkpoint · Complete
 >   Plan:   saved · <N> sources → discovery-plan.yaml
->   Next:   rh-inf-discovery verify
+>   Next:   Step 12 — Download open-access sources
 > ```
 > 
 > **What would you like to do next?**
 > 
-> A) Run `rh-inf-discovery verify` — validate the plan before handing off
-> B) Return to the plan session to revise sources
+> A) Proceed to download open-access sources now
+> B) Return to the plan to revise sources
 > 
 > You can also ask for `rh-inf-status` at any time.
 
-### Step 12 — Verify Recommendation
+### Step 12 — Download Open-Access Sources
+
+After the plan is saved, download all `access: open` sources immediately.
+Launch one subagent per source **in parallel**:
+
+```sh
+rh-skills ingest implement --url <url> --name <name>
+```
+
+**NEVER use curl, wget, Python requests, or any other download method.**
+`rh-skills ingest implement --url` is the only permitted download mechanism.
+
+Once all subagents complete, display a summary:
+```
+Downloads complete:
+  ✓ ada-guidelines-2024       sources/ada-guidelines-2024.pdf
+  ✓ cms-ecqm-cms122           sources/cms-ecqm-cms122.html
+  ⊘ cochrane-review           exit 3 — auth redirect (see auth_note)
+  ⛔ nice-guidelines           exit 4 — network blocked (sandbox)
+```
+
+- Exit 3 → authentication redirect — print the `auth_note` advisory and skip
+- Exit 2 → file already exists and checksum matches — skip (idempotent)
+- Exit 1 → network error — report and continue
+- Exit 4 → **sandbox network restriction** — outbound network is blocked.
+  **Stop retrying downloads.** Inform the user:
+  > "Downloads require outbound network access, which is blocked in this
+  > sandbox. Please run the following commands in a shell with network access:"
+  >
+  > Then list every blocked `rh-skills ingest implement --url …` command.
+
+For `access: authenticated` or `access: manual` sources: print the `auth_note`
+advisory only. Do not attempt to download them.
+
+Emit status block:
+```
+  Step:   12 — Download · Complete
+  Downloaded: <N> open · <M> skipped (auth) · <P> skipped (manual)
+  Next:   Step 13 — Verify Recommendation
+```
+
+### Step 13 — Verify Recommendation
 
 Remind the user that `verify` mode runs non-destructive checks on the saved
-plan. Once it passes, the plan is ready to hand off to `rh-inf-ingest`, which
-handles all source acquisition (downloading open sources, registering manual
-files) in a single dedicated step.
+plan. Once it passes, the plan and downloaded sources are ready to hand off
+to `rh-inf-ingest` for normalization, classification, and annotation.
 
 ---
 

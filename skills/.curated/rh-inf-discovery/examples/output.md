@@ -136,8 +136,8 @@ User: rh-inf-discovery plan diabetes-ccm
 >
 >
 > All open-access sources have URLs recorded. Authenticated sources are flagged
-> with access advisories below. `rh-inf-ingest` will handle all downloads and
-> registration. 
+> with access advisories below. Open-access sources will be downloaded after
+> you approve and save the plan (Step 12).
 >
 > Do you approve this list? Any changes? 
 >
