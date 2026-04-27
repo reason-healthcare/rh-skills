@@ -19,6 +19,7 @@ metadata:
     - sources/
     - discovery-plan.yaml   # optional — used for classification enrichment if present
   writes_via_cli:
+    - "rh-skills ingest implement"
     - "rh-skills ingest normalize"
     - "rh-skills init"
     - "rh-skills ingest classify"
@@ -130,6 +131,25 @@ If the mode is unrecognized, print the table above and exit.
 2. If no `<topic>` was provided and no topics exist yet, note this — topic inference
    will happen in Step 2 of implement mode after sources are normalized.
 
+**Source registration** (always — discovery is optional):
+
+1. **Discover untracked files**:
+   ```sh
+   rh-skills ingest list-manual [<topic>]
+   ```
+   This lists every file in `sources/` not yet registered in `tracking.yaml`.
+   If the output is `✓ No untracked files in sources/`, skip to implement mode.
+
+2. **Register each file** using the commands printed verbatim by `list-manual`.
+   Do not modify the command or add `--name` — the CLI derives the canonical
+   tracking name automatically:
+   ```sh
+   rh-skills ingest implement sources/<file> --topic <topic>
+   ```
+   Wait for each to complete before running the next.
+
+3. **Proceed with implement mode** — normalize → infer topic → classify → annotate.
+
 ---
 
 ## Mode: `plan`
@@ -182,13 +202,15 @@ Drives the full three-stage pipeline. Each stage is idempotent.
 
 **Step 1 — Normalize**
 
-For each source file in `sources/`:
+For each source file in `sources/`, normalize using the filename directly —
+**do not pass `--name`** to avoid mismatches with the canonical tracking name
+assigned during registration:
 ```sh
-rh-skills ingest normalize <file> --topic <topic> --name <name>
+rh-skills ingest normalize sources/<file> --topic <topic>
 ```
-If no topic is known yet, omit `--topic` (normalize is topic-agnostic):
+If no topic is known yet, omit `--topic`:
 ```sh
-rh-skills ingest normalize <file> --name <name>
+rh-skills ingest normalize sources/<file>
 ```
 Report `✓` (text_extracted: true) or `⚠` (text_extracted: false) per source.
 If `text_extracted: false`, remind the user about the missing tool.
@@ -349,4 +371,5 @@ You can also ask for `rh-inf-status` at any time.
 | `pdftotext` / `pandoc` absent | Warn; `text_extracted: false`; continue |
 | `classify` invalid type/level | Re-run with corrected values |
 | `normalized.md` missing for annotate | Run normalize step first |
-| Source not in tracking.yaml | normalize/annotate soft-fail; print warning |
+| Source not in tracking.yaml | Run `rh-skills ingest implement sources/<file>` to register first; never pass a custom `--name` to normalize |
+| `list-manual` still shows untracked after `implement` | Check exit code; re-run `implement` serially before proceeding |
