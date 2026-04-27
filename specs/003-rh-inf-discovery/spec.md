@@ -49,7 +49,7 @@ A clinical informaticist starts a new topic "sepsis-early-detection" and has no 
 **Acceptance Scenarios**:
 
 1. **Given** an initialised topic, **When** `rh-inf-discovery` session starts, **Then** the agent advises on domain considerations and calls `rh-skills search pubmed` with topic-relevant terms.
-2. **Given** an `access: open` source is identified, **Then** the agent records it in the in-session plan with `url` populated; `rh-inf-ingest` will download it later when consuming `discovery-plan.yaml`.
+2. **Given** an `access: open` source is identified, **Then** the agent records it in the plan with `url` populated; it will be downloaded after the user saves the plan (Step 12).
 3. **Given** an `access: authenticated` source is identified, **Then** the agent prints an access advisory (name, relevance, URL, auth method, search terms) and includes the source in `discovery-plan.yaml` with `auth_note`; no download is attempted during discovery.
 4. **Given** `discovery-plan.yaml` already exists when the session starts, **Then** the agent warns and offers to load it for continuation or start fresh with `--force`.
 5. **Given** `--dry-run`, **When** the session runs, **Then** proposed sources and domain advice are shown; no files written and no events appended.
@@ -111,7 +111,7 @@ Before proceeding to ingest, the informaticist runs `rh-inf-discovery verify` to
 
 **plan mode**
 
-- **FR-004**: `rh-inf-discovery session` MUST produce two files on user approval or explicit save: (a) `process/plans/discovery-plan.yaml` — pure YAML (no frontmatter delimiters), the single machine-readable source of truth containing `topic`, `date`, `sources[]`, and related fields; (b) `process/plans/discovery-readout.md` — generated Markdown narrative containing the **Domain Advice** section and the **Research Expansion Suggestions** section, with a header note "This file is derived from discovery-plan.yaml. Do not edit directly." The plan is a **living document during the session** — the agent updates it as the conversation evolves and only writes to disk at a save checkpoint (user approval or explicit "save" instruction).
+- **FR-004**: `rh-inf-discovery plan` MUST produce two files on user approval or explicit save: (a) `process/plans/discovery-plan.yaml` — pure YAML (no frontmatter delimiters), the single machine-readable source of truth containing `topic`, `date`, `sources[]`, and related fields; (b) `process/plans/discovery-readout.md` — generated Markdown narrative containing the **Domain Advice** section and the **Research Expansion Suggestions** section, with a header note "This file is derived from discovery-plan.yaml. Do not edit directly." The plan is a **living document during the session** — the agent updates it as the conversation evolves and only writes to disk at a save checkpoint (user approval or explicit "save" instruction).
 - **FR-004a**: A discovery plan MUST contain a minimum of 5 and a maximum of 25 source entries. If fewer than 5 sources are identified, the agent MUST search additional databases or source categories before presenting the plan. If the agent identifies more than 25 high-quality sources, it MUST select the 25 most relevant and note the remainder as expansion candidates in the Research Expansion Suggestions section.
 - **FR-005**: Each source entry in `sources[]` MUST have: `name`, `type` (see FR-009), `rationale`, `search_terms[]`, `evidence_level` (see FR-010), `access` (`open | authenticated | manual`). `url` is optional but MUST be present when `access: open`. When `access: authenticated`, the entry MUST include `auth_note` — a plain-English description of how to obtain access (e.g., institutional login, free registration, society membership).
 - **FR-005a**: For `access: authenticated` sources, the agent MUST include a `recommended: true` flag when the source is considered authoritative or high-value for the topic domain, regardless of whether it can be downloaded automatically. The discovery plan is the authoritative recommendation — access difficulty does not reduce a source's priority.
@@ -119,17 +119,17 @@ Before proceeding to ingest, the informaticist runs `rh-inf-discovery verify` to
 - **FR-007**: `plan` MUST create `process/notes.md` stub (create-unless-exists) using the canonical format (Open Questions, Decisions, Source Conflicts, Notes sections). Existing `notes.md` MUST NOT be modified.
 - **FR-008**: If `discovery-plan.yaml` already exists, `plan` MUST warn and stop unless `--force` is passed. Successful `plan` (non-dry-run) MUST append `discovery_planned` to `tracking.yaml`. `--force` applies to both `discovery-plan.yaml` and `discovery-readout.md`.
 
-**session mode**
+**plan mode**
 
-- **FR-011 (REMOVED)**: Discovery does not download sources. All source acquisition is delegated to `rh-inf-ingest`. Approved open-access sources are recorded in `discovery-plan.yaml` with `access: open` and `url`; rh-inf-ingest reads this file and handles download.
-- **FR-011a**: For `access: authenticated` sources, the agent MUST print a formatted per-source access advisory during the session — naming the source, explaining why it is recommended for this topic, providing the specific URL, login mechanism, and what to search for once authenticated.
+- **FR-011**: After the user approves and saves the plan, discovery MUST download all `access: open` sources by calling `rh-skills ingest implement --url <url> --name <name>` in parallel (one subagent per source). `access: authenticated` and `access: manual` sources receive advisories only — no download is attempted.
+- **FR-011a**: For `access: authenticated` sources, the agent MUST print a formatted per-source access advisory during the plan — naming the source, explaining why it is recommended for this topic, providing the specific URL, login mechanism, and what to search for once authenticated.
 - **FR-011b**: The access advisory format MUST include: source name, why it is relevant, access URL, authentication method (institutional login / free registration / society membership / library proxy), and suggested search terms to use once inside.
-- **FR-012**: Sources with `access: manual` or `access: authenticated` MUST be included in `discovery-plan.yaml` with an `auth_note` field describing how to obtain access. `rh-inf-ingest` reads `discovery-plan.yaml` directly to determine which sources require manual retrieval. No `ingest-plan.md` is generated.
-- **FR-013**: Sources that cannot be accessed programmatically (non-2xx HTTP, auth redirect) MUST be recorded in `discovery-plan.yaml` with `access: manual` or `access: authenticated` and an `auth_note`; the agent reports the access barrier inline and continues. No download is attempted during discovery.
-- **FR-014**: When the user approves the session plan or issues a save checkpoint, the agent MUST write `process/plans/discovery-plan.yaml` and `process/plans/discovery-readout.md`, and update `RESEARCH.md` root portfolio (source count, updated date). `process/notes.md` is human-maintained and is NOT updated by the CLI.
-- **FR-015**: If `discovery-plan.yaml` already exists when the session starts, the agent MUST warn the user and offer to load it for continuation or start fresh with `--force`.
-- **FR-016**: If no sources are identified after exhausting all search strategies, the session MUST exit with a clear message listing what was searched and suggesting the user try alternate search terms.
-- **FR-017**: Successful session save MUST append `discovery_planned` event to `tracking.yaml` with payload: `{ sources: N, downloaded: D, manual_pending: M }`.
+- **FR-012**: Sources with `access: manual` or `access: authenticated` MUST be included in `discovery-plan.yaml` with an `auth_note` field describing how to obtain access. No `ingest-plan.md` is generated.
+- **FR-013**: Sources that cannot be accessed programmatically (non-2xx HTTP, auth redirect) MUST be recorded in `discovery-plan.yaml` with `access: manual` or `access: authenticated` and an `auth_note`; the agent reports the access barrier inline and continues.
+- **FR-014**: When the user approves the plan or issues a save checkpoint, the agent MUST write `discovery-plan.yaml` and `discovery-readout.md` at the repo root, and update `RESEARCH.md` root portfolio (source count, updated date).
+- **FR-015**: If `discovery-plan.yaml` already exists when the plan starts, the agent MUST warn the user and offer to load it for continuation or start fresh with `--force`.
+- **FR-016**: If no sources are identified after exhausting all search strategies, the plan MUST exit with a clear message listing what was searched and suggesting the user try alternate search terms.
+- **FR-017**: Successful plan save MUST append `discovery_planned` event to `tracking.yaml` with payload: `{ sources: N, open_downloaded: D, manual_pending: M }`.
 
 **verify mode**
 

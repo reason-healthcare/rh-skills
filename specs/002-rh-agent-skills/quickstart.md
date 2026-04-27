@@ -56,7 +56,7 @@ Then invoke **verify** mode to validate the plan before ingesting:
 
 ## Step 2: Ingest — register your raw sources
 
-You've downloaded `ada-care-2024.pdf`. `rh-inf-ingest` reads `discovery-plan.yaml` directly to determine which sources to acquire.
+You've downloaded `ada-care-2024.pdf` (either via `rh-inf-discovery` or manually). `rh-inf-ingest` processes all files present in `sources/` — it does not read `discovery-plan.yaml` to determine what to acquire.
 
 **Agent invokes**: `rh-skills ingest implement <file>`  
 **Reads**: file path argument  
