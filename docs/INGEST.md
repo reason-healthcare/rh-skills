@@ -13,7 +13,6 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
 | Command | Purpose | Writes To |
 |---------|---------|-----------|
 | `rh-skills ingest plan [<topic>]` | Print pre-flight summary or create ingest-plan.md template | `plans/ingest-plan.md` |
-| `rh-skills ingest list-manual [<topic>]` | List untracked files in `sources/` with registration commands | (stdout only) |
 | `rh-skills ingest implement <file>` | Register a local file into tracking.yaml | `sources/<file>`, `tracking.yaml` |
 | `rh-skills ingest normalize <file> --topic <topic> [--name <name>]` | Extract text from binary formats; write normalized Markdown | `sources/normalized/<name>.md`, `tracking.yaml` |
 | `rh-skills ingest classify <name> --topic <topic> --type <type> --evidence-level <level>` | Assign classification metadata | `tracking.yaml` |
@@ -64,11 +63,9 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
    └─ rh-skills init <topic>   (for each confirmed topic)
 
 4. CLASSIFY: rh-skills ingest classify <name> --topic <topic> --type <type> --evidence-level <level>
-   ├─ For discovery-backed sources:
-   │   └─ Read type + evidence_level from plan
-   ├─ For manual sources:
-   │   ├─ Agent proposes classification
-   │   └─ Await user confirmation
+   ├─ Agent proposes classification for each source
+   ├─ If discovery-plan.yaml present: use its type + evidence_level as starting proposal
+   ├─ Await user confirmation
    └─ Update tracking.yaml: type, evidence_level, domain_tags, classified_at
        Event: source_classified
 
