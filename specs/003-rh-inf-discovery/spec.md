@@ -23,13 +23,13 @@
 2. **Source identification & curation** — searches PubMed, PubMed Central, ClinicalTrials.gov, and known medical society URL patterns; produces a curated source list in memory, advising on access method for each source; updates the discovery plan as the conversation evolves
 3. **Research expansion** — after each pass, suggests adjacent areas (comorbidities, economics, equity, implementation gaps) and prompts the user to explore further
 
-**Guiding principle**: all deterministic work (search API calls) via `rh-skills` CLI; all reasoning (domain advice, relevance judgement, evidence prioritisation, expansion suggestions) by the agent. Note: rh-inf-discovery only performs search API calls — file registration, checksum, and download are rh-inf-ingest's responsibility.
+**Guiding principle**: all deterministic work (search API calls, downloads) via `rh-skills` CLI; all reasoning (domain advice, relevance judgement, evidence prioritisation, expansion suggestions) by the agent. Downloads of open-access sources happen at the end of the plan session (Step 12), after the user approves and saves the plan.
 
 The skill has two modes:
 
 | Mode | Agent role | `rh-skills` CLI called | Output |
 |------|-----------|----------------|--------|
-| `session` | Interactive research conversation — searches, advises, expands, iterates; writes plan to disk on user approval (no downloads — `rh-inf-ingest` owns acquisition) | `rh-skills search pubmed/pmc/clinicaltrials` | `process/plans/discovery-plan.yaml` + `process/plans/discovery-readout.md` (on save), `RESEARCH.md` updated |
+| `plan` | Interactive research conversation — searches, advises, expands, iterates; writes plan to disk on user approval; downloads open-access sources after save | `rh-skills search pubmed/pmc/clinicaltrials`, `rh-skills ingest implement --url` | `discovery-plan.yaml` + `discovery-readout.md` (on save), `RESEARCH.md` updated, source files in `sources/` |
 | `verify` | Validates a saved plan for structural completeness and coverage | (read-only) | Per-check report; no file writes |
 
 ---

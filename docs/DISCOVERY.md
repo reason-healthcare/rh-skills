@@ -4,13 +4,13 @@
 
 The **rh-inf-discovery** skill is the **Level 1 (L1) evidence discovery** stage of the healthcare informatics lifecycle. It guides clinical informaticists through finding, evaluating, and documenting evidence-based source material for a clinical research area. The output is a `discovery-plan.yaml` (structured source registry) and `discovery-readout.md` (domain narrative) written to the **repo root** — no topic initialization required.
 
-The skill acts as an **interactive research assistant** through a session-based workflow. After each research pass, the agent prompts the user with expansion suggestions and awaits direction. The discovery plan is a living document written to disk only when the user approves it.
+The skill acts as an **interactive research assistant** through a plan-based workflow. After each research pass, the agent prompts the user with expansion suggestions and awaits direction. The discovery plan is a living document written to disk only when the user approves it. After approving, the skill downloads all open-access sources.
 
 **Discovery is topic-free.** `rh-skills init` is called later, during `rh-inf-ingest`, after sources are normalized and a topic name can be inferred. There is no `<topic>` argument to `rh-inf-discovery`.
 
 **Key Principles:**
 - Discovery is pure research — all searches delegated to CLI commands
-- No file-system side effects during discovery (no downloads)
+- Downloads happen only after the user approves and saves the plan
 - Single source of truth: `./discovery-plan.yaml` (repo root)
 - Always close the loop with status blocks and clear next-step options
 
@@ -26,6 +26,7 @@ The skill acts as an **interactive research assistant** through a session-based 
 | `rh-skills source scan` | Scan for manually placed files in `sources/` | None (stdout) |
 | `rh-skills source add --type TYPE --url URL [--name SLUG]` | Add a manual source entry to plan | `discovery-plan.yaml` |
 | `rh-skills validate --plan <file>` | Validate discovery-plan.yaml structure | None (read-only) |
+| `rh-skills ingest implement --url <url> --name <name>` | Download an open-access source after plan save | `sources/<name>.<ext>` |
 
 ---
 
@@ -103,7 +104,12 @@ The skill acts as an **interactive research assistant** through a session-based 
    ├─ Update RESEARCH.md portfolio row
    └─ Event: discovery_planned → tracking.yaml
 
-9. HANDOFF → rh-inf-ingest
+9. DOWNLOAD OPEN-ACCESS SOURCES
+   ├─ rh-skills ingest implement --url <url> --name <name> (parallel, one per source)
+   ├─ Skip auth/manual sources (print advisories)
+   └─ Report download summary
+
+10. HANDOFF → rh-inf-ingest
 ```
 
 ---
