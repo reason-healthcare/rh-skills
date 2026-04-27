@@ -61,8 +61,22 @@ def init(topic, title, description, author):
         author = _default_author()
 
     td = topic_dir(topic)
-    if td.exists():
-        raise click.ClickException(f"Topic '{topic}' already exists at {td}")
+
+    # Check if the topic is already registered in tracking.yaml before
+    # inspecting the directory — a directory may exist as an empty scaffold
+    # without a tracking entry, in which case we complete initialization in-place.
+    tf = tracking_file()
+    if tf.exists():
+        y_check = YAML()
+        with open(tf) as f:
+            _existing = y_check.load(f)
+        _tracked_names = [t.get("name") for t in (_existing or {}).get("topics", [])]
+        if topic in _tracked_names:
+            raise click.ClickException(f"Topic '{topic}' already exists at {td}")
+    elif td.exists():
+        # No tracking.yaml at all but directory exists — treat as empty scaffold,
+        # fall through to full initialization below.
+        pass
 
     # Create directory structure
     for subdir in [
@@ -78,7 +92,6 @@ def init(topic, title, description, author):
     today = today_date()
 
     # Init tracking.yaml if missing
-    tf = tracking_file()
     if not tf.exists():
         y = YAML()
         y.default_flow_style = False

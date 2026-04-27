@@ -126,7 +126,10 @@ If the mode is unrecognized, print the table above and exit.
    ```sh
    rh-skills status show <topic>
    ```
-   If the command fails, print an error, suggest `rh-skills init <topic>`, and exit.
+   If the command fails with "Topic not found", suggest `rh-skills init <topic>` and exit.
+   If the command fails with "No tracking.yaml found" but the topic directory already exists
+   (empty scaffold), run `rh-skills init <topic>` anyway — it will complete initialization
+   in-place and preserve the existing scaffold directories.
 
 2. If no `<topic>` was provided and no topics exist yet, note this — topic inference
    will happen in Step 2 of implement mode after sources are normalized.
