@@ -211,16 +211,20 @@ Drives the full three-stage pipeline. Each stage is idempotent.
 
 **Step 1 — Normalize**
 
-For each source file in `sources/`, normalize using the filename directly —
-**do not pass `--name`** to avoid mismatches with the canonical tracking name
-assigned during registration:
+Normalize from `tracking.yaml` records, not from raw filename iteration.
+For each registered source row (`name`, `file`) for the active topic, run with
+an explicit `--name` that matches tracking:
 ```sh
-rh-skills ingest normalize sources/<file> --topic <topic>
+rh-skills ingest normalize <tracked-file> --topic <topic> --name <tracked-name>
 ```
-If no topic is known yet, omit `--topic`:
+If no topic is known yet, omit `--topic` but still pass `--name` for registered
+sources:
 ```sh
-rh-skills ingest normalize sources/<file>
+rh-skills ingest normalize <tracked-file> --name <tracked-name>
 ```
+If an untracked local file appears in `sources/`, register it first via
+`rh-skills ingest implement sources/<file> [--topic <topic>]`, then normalize
+using the tracked `name`/`file` pair.
 Report `✓` (text_extracted: true) or `⚠` (text_extracted: false) per source.
 If `text_extracted: false`, remind the user about the missing tool.
 
@@ -402,5 +406,5 @@ You can also ask for `rh-inf-status` at any time.
 | `classify` invalid type/level | Re-run with corrected values |
 | Classification decision not explicit (`proceed` or `edit`) | Do not run `classify`; ask the user to explicitly choose `proceed` or `edit`; no silent default |
 | `normalized.md` missing for annotate | Run normalize step first |
-| Source not in tracking.yaml | Run `rh-skills ingest implement sources/<file>` to register first; never pass a custom `--name` to normalize |
+| Source not in tracking.yaml | Run `rh-skills ingest implement sources/<file>` to register first; then normalize with `--name <tracked-name>` |
 | `list-manual` still shows untracked after `implement` | Check exit code; re-run `implement` serially before proceeding |
