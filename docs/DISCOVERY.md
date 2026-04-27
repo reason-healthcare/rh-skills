@@ -26,7 +26,7 @@ The skill acts as an **interactive research assistant** through a plan-based wor
 | `rh-skills source scan` | Scan for manually placed files in `sources/` | None (stdout) |
 | `rh-skills source add --type TYPE --url URL [--name SLUG]` | Add a manual source entry to plan | `discovery-plan.yaml` |
 | `rh-skills validate --plan <file>` | Validate discovery-plan.yaml structure | None (read-only) |
-| `rh-skills ingest implement --url <url> --name <name>` | Download an open-access source after plan save | `sources/<name>.<ext>` |
+| `rh-skills ingest implement --url <url> --name <name> [--topic <topic>]` | Download an open-access source after plan save | `sources/<name>.<ext>` |
 
 ---
 
@@ -105,7 +105,7 @@ The skill acts as an **interactive research assistant** through a plan-based wor
    └─ Event: discovery_planned → tracking.yaml
 
 9. DOWNLOAD OPEN-ACCESS SOURCES
-   ├─ rh-skills ingest implement --url <url> --name <name> (parallel, one per source)
+   ├─ rh-skills ingest implement --url <url> --name <name> [--topic <topic>] (parallel, one per source)
    ├─ Skip auth/manual sources (print advisories)
    └─ Report download summary
 

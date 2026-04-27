@@ -486,8 +486,10 @@ After the plan is saved, download all `access: open` sources immediately.
 Launch one subagent per source **in parallel**:
 
 ```sh
-rh-skills ingest implement --url <url> --name <name>
+rh-skills ingest implement --url <url> --name <name> [--topic <topic-slug>]
 ```
+
+**Topic passthrough**: If a topic slug is already established for this research domain — because it was provided in the session prompt, an existing topic was identified in `tracking.yaml`, or the user confirmed a slug during the session — pass `--topic <slug>` on every download call. This ensures sources are associated with the topic at registration time and are not left as orphaned root-level entries. If no topic slug is known, omit `--topic` and note in the status block that sources will need topic assignment during `rh-inf-ingest`.
 
 **NEVER use curl, wget, Python requests, or any other download method.**
 `rh-skills ingest implement --url` is the only permitted download mechanism.
@@ -509,7 +511,7 @@ Downloads complete:
   > "Downloads require outbound network access, which is blocked in this
   > sandbox. Please run the following commands in a shell with network access:"
   >
-  > Then list every blocked `rh-skills ingest implement --url …` command.
+  > Then list every blocked `rh-skills ingest implement --url …` command (include `--topic <slug>` on each if a topic slug is known).
 
 For `access: authenticated` or `access: manual` sources: print the `auth_note`
 advisory only. Do not attempt to download them.

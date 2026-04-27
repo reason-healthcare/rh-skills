@@ -227,7 +227,7 @@ Set `NCBI_API_KEY` environment variable to increase PubMed rate limits from
 ## rh-skills ingest implement --url Reference
 
 ```sh
-rh-skills ingest implement --url <url> --name <slug> [--type <mime>]
+rh-skills ingest implement --url <url> --name <slug> [--type <mime>] [--topic <topic>]
 ```
 
 Exit codes:
