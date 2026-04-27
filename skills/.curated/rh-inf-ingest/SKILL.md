@@ -20,7 +20,6 @@ metadata:
     - discovery-plan.yaml
     - sources/
   writes_via_cli:
-    - "rh-skills ingest implement --url"
     - "rh-skills ingest normalize"
     - "rh-skills init"
     - "rh-skills ingest classify"
@@ -202,51 +201,11 @@ You can also ask for `rh-inf-status` at any time.
 
 ## Mode: `implement`
 
-Drives the full four-stage pipeline. Each stage is idempotent.
+Drives the full three-stage pipeline. Each stage is idempotent.
 
 ### Implement Mode Steps
 
-**Step 1 — Download**
-
-Read all `access: open` sources from `discovery-plan.yaml`. Launch one subagent
-per source **in parallel** — do not wait for one download to complete before
-starting the next. Each subagent runs exactly one command:
-
-```sh
-rh-skills ingest implement --url <url> --name <name> --topic <topic>
-```
-
-**NEVER use curl, wget, Python requests, or any scripted download method.**
-`rh-skills ingest implement --url` is the only permitted download mechanism.
-
-Once all subagents complete, collect and display a summary:
-```
-Downloads complete:
-  ✓ ada-guidelines-2024       sources/ada-guidelines-2024.pdf
-  ✓ cms-ecqm-cms122           sources/cms-ecqm-cms122.html
-  ⊘ cochrane-review           exit 3 — auth redirect (see auth_note)
-  ⊘ nice-hypertension         exit 2 — already present, skipped
-  ⛔ nice-guidelines           exit 4 — network blocked (sandbox)
-```
-
-- Exit 3 → authentication redirect — print the `auth_note` advisory and skip
-- Exit 2 → file already exists and checksum matches — skip (idempotent)
-- Exit 1 → network error — report and continue; do not halt the pipeline
-- Exit 4 → **sandbox network restriction** — outbound network is blocked in this
-  environment. **Stop retrying downloads.** Inform the user:
-  > "The download stage requires outbound network access, which is blocked in
-  > this sandbox. Please run the following commands in a shell with network
-  > access, or download each file manually and pass it to
-  > `rh-skills ingest implement <file> --topic <topic>`:"
-  >
-  > Then list every blocked `rh-skills ingest implement --url …` command so the
-  > user can run them outside the sandbox. Do not proceed to normalize until
-  > the sources are present.
-
-For `access: authenticated` or `access: manual` sources: print the `auth_note`
-advisory. If the file is already present in `sources/`, proceed to normalize.
-
-**Step 2 — Normalize**
+**Step 1 — Normalize**
 
 For each source file in `sources/`:
 ```sh
@@ -259,7 +218,7 @@ rh-skills ingest normalize <file> --name <name>
 Report `✓` (text_extracted: true) or `⚠` (text_extracted: false) per source.
 If `text_extracted: false`, remind the user about the missing tool.
 
-**Step 3 — Topic Inference** *(only when no topic has been established yet)*
+**Step 2 — Topic Inference** *(only when no topic has been established yet)*
 
 After all sources are normalized, read each `sources/normalized/<name>.md`:
 
@@ -289,7 +248,7 @@ rh-skills init <topic>
 If the topic already exists (e.g. user provided it, or a prior run initialized it),
 skip this step entirely.
 
-**Step 4 — Classify**
+**Step 3 — Classify**
 
 For sources in `discovery-plan.yaml` (type and evidence_level are already declared):
 ```sh
@@ -303,7 +262,7 @@ For manually placed sources not in the discovery plan:
 - Wait for user confirmation
 - Then call `rh-skills ingest classify` with the confirmed values
 
-**Step 5 — Annotate**
+**Step 4 — Annotate**
 
 For each source with a `sources/normalized/<name>.md`:
 
@@ -340,7 +299,7 @@ After all sources complete, emit final status block.
 ```
 ▸ rh-inf-ingest  <topic>
   Stage:    implement — complete
-  Sources:  <N downloaded> downloaded · <M normalized> normalized · <P classified> classified · <Q annotated> annotated
+  Sources:  <N normalized> normalized · <M classified> classified · <P annotated> annotated
   Next:     rh-inf-ingest verify <topic>
 ```
 
@@ -397,7 +356,7 @@ After every response, emit a status block and friendly user prompt as the **last
 ```
 ▸ rh-inf-ingest  <topic>
   Stage:    <current stage> — <status>
-  Sources:  <N downloaded> downloaded · <M normalized> normalized · <P classified> classified · <Q annotated> annotated
+  Sources:  <N normalized> normalized · <M classified> classified · <P annotated> annotated
   Next:     <action>
 ```
 
@@ -413,9 +372,6 @@ You can also ask for `rh-inf-status` at any time.
 
 | Condition | Action |
 |-----------|--------|
-| `discovery-plan.yaml` missing | Continue in manual-source mode; explain that open-access auto-download/classification shortcuts are unavailable |
-| Download exit 3 (auth redirect) | Print advisory; continue to next source |
-| Download exit 4 (network blocked) | **Stop all downloads.** List every blocked command; ask user to run them with network access or supply files manually |
 | `pdftotext` / `pandoc` absent | Warn; `text_extracted: false`; continue |
 | `classify` invalid type/level | Fix discovery-plan.yaml; re-run |
 | `normalized.md` missing for annotate | Run normalize step first |
