@@ -296,6 +296,10 @@ Read `sources/normalized/<name>.md`. Identify key concepts:
 - Terminology codes (ICD-10, SNOMED, LOINC, RxNorm)
 - SDOH factors
 
+Before calling `annotate`, enforce concept quality:
+- Use canonical, clinically discriminative concept names and avoid generic/process-only labels.
+- Follow `reference.md` "Concept quality normalization guidance"; if uncertain, ask the user before annotating.
+
 Then call:
 ```sh
 rh-skills ingest annotate <name> --topic <topic> \
