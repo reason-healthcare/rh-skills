@@ -95,7 +95,7 @@ Invoke the discovery skill in your agent:
 run rh-inf-discovery plan --domain diabetes-ccm
 ```
 
-The agent runs an interactive research session and saves `discovery-plan.yaml` and `discovery-readout.md` to the repo root. The `--domain` label is required for discovery plan mode. Verify and hand off:
+The agent runs an interactive research session and saves `discovery-plan.yaml` and `discovery-readout.md` to the repo root. Use `--domain` when you want to specify the domain explicitly; otherwise, the skill may infer it during discovery plan mode. Verify and hand off:
 
 ```
 /rh-inf-discovery verify
