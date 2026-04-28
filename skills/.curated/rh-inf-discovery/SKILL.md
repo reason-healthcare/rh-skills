@@ -90,9 +90,10 @@ tracked topic identifier).
 | `plan` | `[--domain <label>] [--force]` | `plan --domain diabetes-ccm` |
 | `verify` | — | `verify` |
 
-- `--domain <label>`: freeform research area label (e.g. `diabetes-ccm`, `hypertension`). Used in status blocks. If omitted, inferred from the research session content.
+**Mode Defaulting**: If `$ARGUMENTS` is empty or contains only flags (no mode), default to `plan` mode.
+
 - `--force`: overwrite existing `discovery-plan.yaml` and `discovery-readout.md` (plan mode only).
-- If `$ARGUMENTS` is empty or the mode is unrecognized, print this table and exit.
+- If the mode is unrecognized (neither `plan` nor `verify`), or if `--domain` is omitted in plan mode, print this table and exit with an error.
 
 ---
 
