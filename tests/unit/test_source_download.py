@@ -109,8 +109,8 @@ def test_download_url_sets_downloaded_flag(tmp_repo, httpx_mock):
     assert entry.get("downloaded") is True
 
 
-def test_download_url_appends_source_ingested_event(tmp_repo, httpx_mock):
-    """A source_ingested event is appended to tracking.yaml after download."""
+def test_download_url_appends_source_added_event(tmp_repo, httpx_mock):
+    """A source_added event is appended to tracking.yaml after download."""
     httpx_mock.add_response(
         url="https://example.com/guide.pdf",
         content=PDF_BYTES,
@@ -124,7 +124,7 @@ def test_download_url_appends_source_ingested_event(tmp_repo, httpx_mock):
 
     tracking = load_tracking(tmp_repo)
     event_types = [e["type"] for e in tracking.get("events", [])]
-    assert "source_ingested" in event_types
+    assert "source_added" in event_types
 
 
 def test_download_url_with_topic_stamps_metadata(tmp_repo, httpx_mock):
