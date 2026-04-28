@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-import re
 import shutil
 import time
 from html.parser import HTMLParser
@@ -21,6 +20,8 @@ from rh_skills.common import (
     repo_root,
     require_tracking,
     sha256_file,
+    source_name_from_path,
+    sanitize_source_stem,
     sources_root,
 )
 
@@ -54,40 +55,8 @@ _META_NAME_MAP = {
 }
 
 
-def _sanitize_source_stem(stem: str) -> str:
-    """Replace spaces and unsafe characters in a filename stem with underscores.
-
-    Keeps alphanumeric characters, underscores, and single hyphens.
-    Consecutive runs of non-alphanumeric characters (spaces, double-dashes, dots,
-    shell metacharacters, etc.) are collapsed to a single underscore, preventing
-    dangerous characters from leaking into source names, YAML keys, and file paths.
-
-    Examples:
-        "GLIA Summary Report-CPGSurgCRS-Final"  → "GLIA_Summary_Report-CPGSurgCRS-Final"
-        "Otolaryngol --head neck surg - 2025"   → "Otolaryngol_head_neck_surg_2025"
-        "my file (v2)"                          → "my_file_v2"
-    """
-    # Replace any character that is not alphanumeric, underscore, or hyphen with _
-    sanitized = re.sub(r"[^\w-]", "_", stem)
-    # Collapse consecutive underscores/hyphens (e.g. "_--", "_ -", "--") into one _
-    sanitized = re.sub(r"[-_]{2,}", "_", sanitized)
-    return sanitized.strip("_-")
-
-
-def _source_name_from_path(path: Path) -> str:
-    """Derive a safe, collision-free source name by sanitizing the stem and encoding
-    the file extension.
-
-    Examples:
-        2025_AAO13.pdf                          → 2025_AAO13_pdf
-        GLIA Summary Report-CPGSurgCRS-Final.pdf → GLIA_Summary_Report-CPGSurgCRS-Final_pdf
-        Otolaryngol --head neck surg.pdf        → Otolaryngol_head_neck_surg_pdf
-        notes.txt                               → notes_txt
-        README.md                               → README_md
-    """
-    suffix = path.suffix.lstrip(".")
-    stem = _sanitize_source_stem(path.stem)
-    return f"{stem}_{suffix}" if suffix else stem
+_sanitize_source_stem = sanitize_source_stem
+_source_name_from_path = source_name_from_path
 
 
 class _HTMLMetaParser(HTMLParser):
