@@ -29,7 +29,7 @@ The skill has two modes:
 
 | Mode | Agent role | `rh-skills` CLI called | Output |
 |------|-----------|----------------|--------|
-| `plan` | Interactive research conversation — searches, advises, expands, iterates; writes plan to disk on user approval; downloads open-access sources after save | `rh-skills search pubmed/pmc/clinicaltrials`, `rh-skills ingest implement --url` | `discovery-plan.yaml` + `discovery-readout.md` (on save), `RESEARCH.md` updated, source files in `sources/` |
+| `plan` | Interactive research conversation — searches, advises, expands, iterates; writes plan to disk on user approval; downloads open-access sources after save | `rh-skills search pubmed/pmc/clinicaltrials`, `rh-skills source download --url` | `discovery-plan.yaml` + `discovery-readout.md` (on save), `RESEARCH.md` updated, source files in `sources/` |
 | `verify` | Validates a saved plan for structural completeness and coverage | (read-only) | Per-check report; no file writes |
 
 ---
@@ -121,7 +121,7 @@ Before proceeding to ingest, the informaticist runs `rh-inf-discovery verify` to
 
 **plan mode**
 
-- **FR-011**: After the user approves and saves the plan, discovery MUST download all `access: open` sources by calling `rh-skills ingest implement --url <url> --name <name>` in parallel (one subagent per source). `access: authenticated` and `access: manual` sources receive advisories only — no download is attempted.
+- **FR-011**: After the user approves and saves the plan, discovery MUST download all `access: open` sources by calling `rh-skills source download --url <url> --name <name>` in parallel (one subagent per source). `access: authenticated` and `access: manual` sources receive advisories only — no download is attempted.
 - **FR-011a**: For `access: authenticated` sources, the agent MUST print a formatted per-source access advisory during the plan — naming the source, explaining why it is recommended for this topic, providing the specific URL, login mechanism, and what to search for once authenticated.
 - **FR-011b**: The access advisory format MUST include: source name, why it is relevant, access URL, authentication method (institutional login / free registration / society membership / library proxy), and suggested search terms to use once inside.
 - **FR-012**: Sources with `access: manual` or `access: authenticated` MUST be included in `discovery-plan.yaml` with an `auth_note` field describing how to obtain access. No `ingest-plan.md` is generated.
@@ -200,7 +200,7 @@ Other: `expert-consensus`, `reference-standard`, `n/a`
 - PubMed Entrez and ClinicalTrials.gov v2 APIs are free and publicly accessible without authentication.
 - NICE, Cochrane, and most society portals require manual download; the skill marks these `access: manual` and does not attempt programmatic fetch.
 - The agent has sufficient domain knowledge to provide useful clinical advice without internet access; `rh-skills search` results augment rather than replace that knowledge.
-- See spec 004-rh-inf-ingest for download implementation details (`rh-skills ingest implement --url` redirect following, MIME type detection, and file extension inference).
+- See spec 003-rh-inf-discovery for download implementation details (`rh-skills source download --url` redirect following, MIME type detection, and file extension inference).
 - All downloaded sources are stored in `sources/` at repo root — the same directory used by manually ingested files.
 - The optional `NCBI_API_KEY` environment variable, if set, is used to increase PubMed rate limits; it is never written to any artifact.
 

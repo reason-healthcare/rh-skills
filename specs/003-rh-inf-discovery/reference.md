@@ -12,10 +12,10 @@ Access falls into three tiers:
 
 | Tier | What it means | `rh-skills` action |
 |------|--------------|-------------|
-| **Open access** | Full text freely available (PMC, BioMed Central, PLoS, many society journals) | `rh-skills ingest implement --url <pdf-url>` |
+| **Open access** | Full text freely available (PMC, BioMed Central, PLoS, many society journals) | `rh-skills source download --url <pdf-url>` |
 | **Authenticated** | Requires login but is freely accessible with registration or institutional access — the agent MUST recommend these with specific access instructions | Mark `access: authenticated` + `auth_note`; agent prints advisory |
 | **Subscription** | Requires institutional/paid subscription; abstract via PubMed only | Mark `access: authenticated`; advisory notes institutional proxy |
-| **Society portal** | PDF available from the society website (often free after free registration) | `rh-skills ingest implement --url <pdf-url>` if direct link; else `access: authenticated` |
+| **Society portal** | PDF available from the society website (often free after free registration) | `rh-skills source download --url <pdf-url>` if direct link; else `access: authenticated` |
 
 ---
 

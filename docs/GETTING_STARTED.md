@@ -194,12 +194,12 @@ See [Usage Modes](USAGE_MODES.md) for all provider options.
 rh-skills discovery session --domain diabetes-ccm
 rh-skills discovery verify
 
-# Ingest — download, normalize, infer topic, classify, annotate
-rh-skills ingest implement
+# Acquire/register sources, then run ingest lifecycle
+rh-skills download --url <url> --name <name> [--topic <topic>]
 
 # Option B: Bring your own sources
 # Place files in sources/, then:
-rh-skills ingest implement
+rh-skills download sources/<file> [--topic <topic>]
 ```
 
 ### 2. Derive structured artifacts (L2)

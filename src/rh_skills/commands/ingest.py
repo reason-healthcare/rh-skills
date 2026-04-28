@@ -9,35 +9,20 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import click
-import httpx
 from ruamel.yaml import YAML
 
 from rh_skills.common import (
     append_root_event,
+    ensure_tracking,
     locked_update_tracking,
     log_info,
     log_warn,
     now_iso,
     repo_root,
     require_tracking,
-    save_tracking,
     sha256_file,
     sources_root,
-    tracking_file,
 )
-
-AUTH_REDIRECT_MARKERS = ("login", "signin", "sign-in", "auth", "access-denied", "sso", "idp")
-
-MIME_TO_EXT = {
-    "application/pdf": ".pdf",
-    "text/html": ".html",
-    "application/msword": ".doc",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
-    "text/plain": ".txt",
-    "text/markdown": ".md",
-    "application/xml": ".xml",
-    "text/xml": ".xml",
-}
 
 # Meta name prefixes to include; values are normalized to these short keys
 _META_NAME_MAP = {
@@ -470,7 +455,7 @@ def plan(topic):
 ---
 sources:
 - name: source-1
-  path_or_url: "# TODO: local file path or URL to download"
+    path: "# TODO: local file path"
   type: document
 ---
 
@@ -481,7 +466,7 @@ Review and update the `sources` list above before running `rh-skills ingest impl
 ## Fields
 
 - **name**: Identifier used for the `sources/<name>.md` file (kebab-case)
-- **path_or_url**: Absolute local path to the source file, or a URL to download
+- **path**: Absolute local path to the source file
 - **type**: One of `pdf`, `word`, `excel`, `markdown`, `html`, `document`
 
 ## Next Step
@@ -527,21 +512,45 @@ def list_manual(topic):
 
 @ingest.command()
 @click.argument("file", required=False, type=click.Path(exists=False))
-@click.option("--url", "source_url", default=None, help="URL to download instead of a local file")
-@click.option("--name", "source_name", default=None, help="Stem name for saved file (required with --url)")
+@click.option("--all", "all_untracked", is_flag=True, default=False,
+              help="Register all untracked files currently in sources/.")
 @click.option("--type", "source_type", default="document", help="Source type (see Source Type Taxonomy)")
 @click.option("--topic", default=None, help="Topic slug for topic-aware reporting")
-def implement(file, source_url, source_name, source_type, topic):
-    """Copy FILE to sources/ and register in tracking.yaml.
+def implement(file, all_untracked, source_type, topic):
+    """Register FILE in tracking.yaml.
 
-    Alternatively, pass --url <url> --name <name> to download from a URL.
+    Pass --all to register every untracked file currently in sources/.
     """
-    if source_url:
-        _implement_url(source_url, source_name, source_type, topic=topic)
-    else:
-        if file is None:
-            raise click.UsageError("Provide FILE argument or --url flag")
+    if file is not None and all_untracked:
+        raise click.UsageError("FILE and --all are mutually exclusive.")
+
+    if file is None and not all_untracked:
+        raise click.UsageError(
+            "Provide a FILE path or pass --all to register all untracked files.\n"
+            "  rh-skills ingest implement sources/<file>\n"
+            "  rh-skills ingest implement --all"
+        )
+
+    if file is not None:
         _implement_file(Path(file), source_type, topic=topic)
+        return
+
+    # --all path
+    tracking = _tracking_or_empty()
+    discovery = _load_discovery_plan(topic) if topic else None
+    discovery_names: set[str] = set()
+    if discovery:
+        discovery_names = {s.get("id") or s.get("name", "") for s in discovery.get("sources", [])}
+
+    untracked = _untracked_source_files(tracking, topic or "", discovery_names)
+    if not untracked:
+        click.echo("✓ No untracked files in sources/")
+        return
+
+    for src in untracked:
+        _implement_file(src, source_type, topic=topic)
+
+    click.echo(f"✓ Registered {len(untracked)} untracked file(s)")
 
 
 def _implement_file(src_path: Path, source_type: str = "document", topic: str | None = None) -> None:
@@ -561,7 +570,7 @@ def _implement_file(src_path: Path, source_type: str = "document", topic: str | 
     checksum = sha256_file(dest_file)
     ingested_at = now_iso()
 
-    _ensure_tracking()
+    ensure_tracking()
 
     def _update(tracking):
         existing = {s["name"] for s in tracking.get("sources", [])}
@@ -590,130 +599,6 @@ def _implement_file(src_path: Path, source_type: str = "document", topic: str | 
 
     locked_update_tracking(_update)
     log_info(f"Registered: {source_name} (checksum: {checksum[:12]}...)")
-
-
-def _implement_url(
-    url: str,
-    source_name: str | None,
-    source_type: str = "document",
-    topic: str | None = None,
-) -> None:
-    """Download a URL to sources/ and register it.
-
-    Exit codes:
-      0  success
-      2  file already exists (idempotent skip)
-      3  authentication redirect
-      4  network access blocked (sandbox restriction)
-    """
-    if not source_name:
-        raise click.UsageError("--name is required when using --url")
-
-    src_root = sources_root()
-    src_root.mkdir(parents=True, exist_ok=True)
-
-    click.echo(f"Downloading: {url}")
-    try:
-        response = httpx.get(url, follow_redirects=True, timeout=30)
-        response.raise_for_status()
-    except httpx.HTTPStatusError as e:
-        raise click.ClickException(f"HTTP {e.response.status_code}: {url}") from e
-    except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-        click.echo(
-            f"⛔ Network access blocked (sandbox restriction): {url}",
-            err=True,
-        )
-        click.echo(
-            "  The download stage requires outbound network access.\n"
-            "  Run this command in an environment with network access, or ask\n"
-            "  the user to download the file manually and pass it to:\n"
-            "    rh-skills ingest implement <downloaded-file> --topic <topic>",
-            err=True,
-        )
-        raise SystemExit(4)
-    except httpx.HTTPError as e:
-        raise click.ClickException(f"Network error: {e}") from e
-
-    final_url = str(response.url)
-    final_url_lower = final_url.lower()
-    if any(marker in final_url_lower for marker in AUTH_REDIRECT_MARKERS):
-        click.echo(f"⚠ Authentication required for: {url}", err=True)
-        click.echo(f"  Final redirect URL: {final_url}", err=True)
-        click.echo("  Action: Retrieve manually and run: rh-skills ingest implement <downloaded-file>", err=True)
-        raise SystemExit(3)
-
-    # Detect file extension from Content-Type
-    content_type = response.headers.get("content-type", "").split(";")[0].strip()
-    ext = MIME_TO_EXT.get(content_type, "")
-    if not ext:
-        # Fall back to URL extension
-        from urllib.parse import urlparse
-        url_path = urlparse(url).path
-        ext = Path(url_path).suffix or ".bin"
-
-    dest_file = src_root / f"{source_name}{ext}"
-    if dest_file.exists():
-        log_warn(f"File already exists: {dest_file}")
-        raise SystemExit(2)
-
-    dest_file.write_bytes(response.content)
-
-    checksum = sha256_file(dest_file)
-    size_mb = len(response.content) / (1024 * 1024)
-    ingested_at = now_iso()
-
-    _ensure_tracking()
-
-    def _update(tracking):
-        existing = {s["name"] for s in tracking.get("sources", [])}
-        if source_name in existing:
-            log_warn(f"{source_name} already registered — updating checksum.")
-            for s in tracking["sources"]:
-                if s["name"] == source_name:
-                    s["checksum"] = checksum
-                    s["ingested_at"] = ingested_at
-                    s["url"] = url
-                    if topic:
-                        s["topic"] = topic
-            append_root_event(tracking, "source_changed", f"Re-downloaded source: {source_name}")
-        else:
-            record = {
-                "name": source_name,
-                "file": f"sources/{source_name}{ext}",
-                "type": source_type,
-                "url": url,
-                "checksum": checksum,
-                "ingested_at": ingested_at,
-                "text_extracted": False,
-                "downloaded": True,
-            }
-            if topic:
-                record["topic"] = topic
-            tracking["sources"].append(record)
-            append_root_event(tracking, "source_ingested", f"Downloaded source: {source_name}")
-
-    locked_update_tracking(_update)
-    click.echo(f"✓ Downloaded: sources/{source_name}{ext}")
-    click.echo(f"  SHA-256: {checksum}")
-    click.echo(f"  MIME: {content_type or 'unknown'}")
-    click.echo(f"  Size: {size_mb:.1f} MB")
-
-
-def _ensure_tracking() -> None:
-    """Create tracking.yaml skeleton if it doesn't exist (safe under concurrent calls)."""
-    tf = tracking_file()
-    if tf.exists():
-        return
-    from ruamel.yaml import YAML
-    y = YAML()
-    y.default_flow_style = False
-    skeleton = {"schema_version": "1.0", "sources": [], "topics": [], "events": []}
-    try:
-        # 'x' mode is an atomic exclusive create — only one concurrent caller wins
-        with open(tf, "x") as f:
-            y.dump(skeleton, f)
-    except FileExistsError:
-        pass  # another process beat us to it; that's fine
 
 
 @ingest.command()

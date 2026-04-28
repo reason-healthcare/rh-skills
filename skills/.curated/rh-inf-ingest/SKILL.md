@@ -31,7 +31,7 @@ metadata:
 ## Overview
 
 `rh-inf-ingest` is the **L1 source preparation** stage of the HI lifecycle. It
-takes all files present in `sources/` (downloaded by `rh-inf-discovery` or placed
+processes all files present in `sources/` (acquired by `rh-inf-discovery` or placed
 manually) and drives the full pipeline:
 
 1. **Normalize** — convert all source files (PDF, Word, HTML, text) to
@@ -55,11 +55,11 @@ reasoning (concept identification, classification proposals, topic name inferenc
 
 ## Guiding Principles
 
-- **All deterministic work via `rh-skills` CLI.** Downloads, normalizations,
-  classifications, annotation writes, and tracking writes are all performed by
-  running `rh-skills ingest` subcommands. **The agent MUST NOT write Python scripts,
-  shell scripts, or use curl/wget/requests to download sources directly.**
-  All downloads go through `rh-skills ingest implement --url` — no exceptions.
+- **All deterministic work via `rh-skills` CLI.** Registration, normalization,
+  classification, annotation writes, and tracking writes are all performed via
+  `rh-skills` subcommands. **The agent MUST NOT write Python scripts, shell scripts,
+  or use curl/wget/requests for source acquisition.** If acquisition is needed,
+  use `rh-skills source download --url` in discovery.
 - **The `rh-skills` CLI is immutable.** The agent MUST NOT import the `rh_skills`
   Python package, read CLI source code, or attempt to patch the installed package —
   even if the `.venv/` directory is writable. The CLI is a black box; all interaction
@@ -138,26 +138,7 @@ If the mode is unrecognized, print the table above and exit.
    in-place and preserve the existing scaffold directories.
 
 2. If no `<topic>` was provided and no topics exist yet, note this — topic inference
-   will happen in Step 2 of implement mode after sources are normalized.
-
-**Source registration** (always — discovery is optional):
-
-1. **Discover untracked files**:
-   ```sh
-   rh-skills ingest list-manual [<topic>]
-   ```
-   This lists every file in `sources/` not yet registered in `tracking.yaml`.
-   If the output is `✓ No untracked files in sources/`, skip to implement mode.
-
-2. **Register each file** using the commands printed verbatim by `list-manual`.
-   Do not modify the command or add `--name` — the CLI derives the canonical
-   tracking name automatically:
-   ```sh
-   rh-skills ingest implement sources/<file> --topic <topic>
-   ```
-   Wait for each to complete before running the next.
-
-3. **Proceed with implement mode** — normalize → infer topic → classify → annotate.
+  will happen in Step 3 of implement mode after sources are normalized.
 
 ---
 
@@ -205,11 +186,27 @@ You can also ask for `rh-inf-status` at any time.
 
 ## Mode: `implement`
 
-Drives the full three-stage pipeline. Each stage is idempotent.
+Drives the full ingest pipeline. Each stage is idempotent.
 
 ### Implement Mode Steps
 
-**Step 1 — Normalize**
+**Step 1 — Register**
+
+Registration is a write operation and must run in implement mode.
+
+Register all untracked files (recommended):
+```sh
+rh-skills ingest implement --all [--topic <topic>]
+```
+
+Or register a specific file:
+```sh
+rh-skills ingest implement sources/<file> [--topic <topic>]
+```
+
+If output is `✓ No untracked files in sources/`, continue to normalize.
+
+**Step 2 — Normalize**
 
 Normalize from `tracking.yaml` records, not from raw filename iteration.
 For each registered source row (`name`, `file`) for the active topic, run with
@@ -228,7 +225,7 @@ using the tracked `name`/`file` pair.
 Report `✓` (text_extracted: true) or `⚠` (text_extracted: false) per source.
 If `text_extracted: false`, remind the user about the missing tool.
 
-**Step 2 — Topic Inference** *(only when no topic has been established yet)*
+**Step 3 — Topic Inference** *(only when no topic has been established yet)*
 
 After all sources are normalized, read each `sources/normalized/<name>.md`:
 
@@ -258,7 +255,7 @@ rh-skills init <topic>
 If the topic already exists (e.g. user provided it, or a prior run initialized it),
 skip this step entirely.
 
-**Step 3 — Classify**
+**Step 4 — Classify**
 
 For each source, propose classification (type, evidence_level, domain_tags) based
 on the normalized content and filename. If `./discovery-plan.yaml` exists, check
@@ -288,7 +285,7 @@ explicitly says proceed (`proceed`, `yes`, `approved`, or equivalent), run
 classify as proposed. If the response is ambiguous or missing, ask again; do
 not assume proceed.
 
-**Step 4 — Annotate**
+**Step 5 — Annotate**
 
 For each source with a `sources/normalized/<name>.md`:
 
@@ -358,7 +355,7 @@ write any files or events; all tracking writes go via `rh-skills` CLI in impleme
    - Each entry must have `name`, `type`, `sources[]`
 4. Print per-source table:
 
-   | Source | Downloaded | Normalized | Classified | Annotated |
+  | Source | Registered | Normalized | Classified | Annotated |
    |--------|-----------|------------|------------|-----------|
    | `<name>` | ✓/✗ | ✓/✗ | ✓/✗ | ✓/✗ |
 
@@ -407,4 +404,4 @@ You can also ask for `rh-inf-status` at any time.
 | Classification decision not explicit (`proceed` or `edit`) | Do not run `classify`; ask the user to explicitly choose `proceed` or `edit`; no silent default |
 | `normalized.md` missing for annotate | Run normalize step first |
 | Source not in tracking.yaml | Run `rh-skills ingest implement sources/<file>` to register first; then normalize with `--name <tracked-name>` |
-| `list-manual` still shows untracked after `implement` | Check exit code; re-run `implement` serially before proceeding |
+| `ingest implement --all` leaves untracked files | Check exit code; re-run `implement --all` serially; if still untracked, run `rh-skills source scan` and register specific files with `ingest implement sources/<file>` |

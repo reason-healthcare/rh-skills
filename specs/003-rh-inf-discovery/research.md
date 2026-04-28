@@ -6,7 +6,7 @@
 
 ## Decision 1: HTTP client for PubMed + ClinicalTrials.gov
 
-**Decision**: `httpx` (sync mode) as the HTTP client for all `rh-skills search` API calls and URL downloads in `rh-skills ingest implement --url`.
+**Decision**: `httpx` (sync mode) as the HTTP client for all `rh-skills search` API calls and URL downloads in `rh-skills source download --url`.
 
 **Rationale**:
 - `httpx` is already a common dependency in modern Python CLIs; supports both sync and async
@@ -81,7 +81,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ---
 
-## Decision 5: URL download for `rh-skills ingest implement --url`
+## Decision 5: URL download for `rh-skills source download --url`
 
 **Decision**: Download URL to a temp file, detect MIME type from `Content-Type` header and/or file extension, then move to `sources/<name>.<ext>`. Compute SHA-256, register in `tracking.yaml`.
 

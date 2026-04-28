@@ -15,7 +15,7 @@
 **Testing**: `pytest` + `pytest-httpx` (for mocking PubMed/ClinicalTrials HTTP calls) — existing suite
 **Target Platform**: macOS/Linux CLI (same as existing `rh-skills`)
 **Project Type**: CLI extension + SKILL.md (agent skill)
-**Performance Goals**: `rh-skills search pubmed` returns structured results in ≤5 seconds (SC-004); downloads via `rh-skills ingest implement --url` (spec 004-rh-inf-ingest) subject to network speed
+**Performance Goals**: `rh-skills search pubmed` returns structured results in ≤5 seconds (SC-004); downloads via `rh-skills source download --url` subject to network speed
 **Constraints**: No API key required for PubMed (≤3 req/s without key; ≤10 req/s with `NCBI_API_KEY`); ClinicalTrials.gov v2 is free/public; no auth for PMC open-access
 **Scale/Scope**: Per-topic usage; plans hold 5–25 sources; single-user CLI session
 
