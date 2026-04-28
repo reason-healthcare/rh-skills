@@ -511,46 +511,19 @@ def list_manual(topic):
 
 
 @ingest.command()
-@click.argument("file", required=False, type=click.Path(exists=False))
-@click.option("--all", "all_untracked", is_flag=True, default=False,
-              help="Register all untracked files currently in sources/.")
+@click.argument("file", required=True, type=click.Path(exists=False))
 @click.option("--type", "source_type", default="document", help="Source type (see Source Type Taxonomy)")
 @click.option("--topic", default=None, help="Topic slug for topic-aware reporting")
-def implement(file, all_untracked, source_type, topic):
+def implement(file, source_type, topic):
     """Register FILE in tracking.yaml.
 
-    Pass --all to register every untracked file currently in sources/.
+    To identify which files need to be registered, first run:
+      rh-skills ingest list-manual [<topic>]
+
+    Then register each untracked file individually:
+      rh-skills ingest implement sources/<file> [--topic <topic>]
     """
-    if file is not None and all_untracked:
-        raise click.UsageError("FILE and --all are mutually exclusive.")
-
-    if file is None and not all_untracked:
-        raise click.UsageError(
-            "Provide a FILE path or pass --all to register all untracked files.\n"
-            "  rh-skills ingest implement sources/<file>\n"
-            "  rh-skills ingest implement --all"
-        )
-
-    if file is not None:
-        _implement_file(Path(file), source_type, topic=topic)
-        return
-
-    # --all path
-    tracking = _tracking_or_empty()
-    discovery = _load_discovery_plan(topic) if topic else None
-    discovery_names: set[str] = set()
-    if discovery:
-        discovery_names = {s.get("id") or s.get("name", "") for s in discovery.get("sources", [])}
-
-    untracked = _untracked_source_files(tracking, topic or "", discovery_names)
-    if not untracked:
-        click.echo("✓ No untracked files in sources/")
-        return
-
-    for src in untracked:
-        _implement_file(src, source_type, topic=topic)
-
-    click.echo(f"✓ Registered {len(untracked)} untracked file(s)")
+    _implement_file(Path(file), source_type, topic=topic)
 
 
 def _implement_file(src_path: Path, source_type: str = "document", topic: str | None = None) -> None:

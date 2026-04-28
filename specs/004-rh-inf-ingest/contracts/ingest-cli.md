@@ -33,6 +33,27 @@ Subcommands in scope for 004:
 
 ---
 
+## `rh-skills ingest list-manual [<topic>]`
+
+**Purpose**: List files in `sources/` that are not yet registered in `tracking.yaml`.
+
+```bash
+rh-skills ingest list-manual [<topic>]
+```
+
+**Behavior**:
+- Scans `sources/` directory
+- Compares against `tracking.yaml` registered sources
+- If `<topic>` is provided, filters to sources belonging to that topic
+- Emits per-file `rh-skills ingest implement sources/<file>` commands for each untracked file
+- If all sources are already registered, outputs: `✓ No untracked files in sources/`
+
+**Exit codes**:
+- `0` success (whether or not untracked files exist)
+- non-zero for invalid topic or tracking.yaml errors
+
+---
+
 ## `rh-skills ingest implement FILE`
 
 ```bash

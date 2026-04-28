@@ -148,19 +148,27 @@ If the mode is unrecognized, print the table above and exit.
 
 ### Plan Mode Steps
 
-1. **List source files** — scan `sources/` and report what is present and whether each file is already registered in `tracking.yaml`. Run:
+1. **Identify untracked files** — scan `sources/` to discover which files need registration:
    ```sh
-   rh-skills ingest verify <topic>
+   rh-skills ingest list-manual [<topic>]
    ```
-   If no topic is known yet, just note the files present in `sources/` and their extensions.
+   This emits per-file `rh-skills ingest implement sources/<file>` commands for all untracked files.
+   If output is `✓ No untracked files in sources/`, all sources are already registered — skip to normalize.
+
 2. **Check tool availability**:
    ```sh
    which pdftotext || echo "MISSING: pdftotext (brew install poppler)"
    which pandoc    || echo "MISSING: pandoc (brew install pandoc)"
    ```
    Warn if either tool is absent; normalized files will have `text_extracted: false`.
-3. **Print plan summary** listing source files present and any tool warnings.
+
+3. **Print plan summary** listing:
+   - Number of untracked files (from Step 1)
+   - Number of already-registered sources
+   - Any tool warnings
+
 4. Ask the user to confirm before proceeding to implement mode.
+
 5. Emit status block and **stop**. Do not proceed automatically.
 
 Compatibility note: framework tests still expect the conventional artifact name
@@ -194,17 +202,14 @@ Drives the full ingest pipeline. Each stage is idempotent.
 
 Registration is a write operation and must run in implement mode.
 
-Register all untracked files (recommended):
-```sh
-rh-skills ingest implement --all [--topic <topic>]
-```
-
-Or register a specific file:
+Register each untracked file individually (from the list identified in plan mode):
 ```sh
 rh-skills ingest implement sources/<file> [--topic <topic>]
 ```
 
-If output is `✓ No untracked files in sources/`, continue to normalize.
+Repeat the above command for each file reported by `ingest list-manual`. 
+
+If no files are untracked, skip registration and continue to normalize.
 
 **Step 2 — Normalize**
 
@@ -404,4 +409,4 @@ You can also ask for `rh-inf-status` at any time.
 | Classification decision not explicit (`proceed` or `edit`) | Do not run `classify`; ask the user to explicitly choose `proceed` or `edit`; no silent default |
 | `normalized.md` missing for annotate | Run normalize step first |
 | Source not in tracking.yaml | Run `rh-skills ingest implement sources/<file>` to register first; then normalize with `--name <tracked-name>` |
-| `ingest implement --all` leaves untracked files | Check exit code; re-run `implement --all` serially; if still untracked, run `rh-skills source scan` and register specific files with `ingest implement sources/<file>` |
+| Registration command fails for a file | Check the file path is correct; try registering again; if persistent, check file permissions and disk space |
