@@ -5,19 +5,11 @@ import hashlib
 import httpx
 import pytest
 from click.testing import CliRunner
-from ruamel.yaml import YAML
 
 from rh_skills.commands.source import source
 from tests.conftest import load_tracking
 
 PDF_BYTES = b"%PDF-1.4 fake pdf content"
-
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
-
-def _tracking(tmp_repo) -> dict:
-    return load_tracking(tmp_repo)
 
 
 # ── Happy-path tests ───────────────────────────────────────────────────────────
@@ -39,7 +31,7 @@ def test_download_url_pdf_registers_source(tmp_repo, httpx_mock):
     assert result.exit_code == 0, result.output
     assert "✓ Downloaded: sources/my-guide.pdf" in result.output
 
-    tracking = _tracking(tmp_repo)
+    tracking = load_tracking(tmp_repo)
     names = [s["name"] for s in tracking["sources"]]
     assert "my-guide" in names
 
@@ -76,7 +68,7 @@ def test_download_url_records_checksum(tmp_repo, httpx_mock):
     )
 
     expected = hashlib.sha256(PDF_BYTES).hexdigest()
-    tracking = _tracking(tmp_repo)
+    tracking = load_tracking(tmp_repo)
     entry = next(s for s in tracking["sources"] if s["name"] == "my-guide")
     assert entry["checksum"] == expected
 
@@ -94,7 +86,7 @@ def test_download_url_records_source_url(tmp_repo, httpx_mock):
         ["download", "--url", "https://example.com/guide.pdf", "--name", "my-guide"],
     )
 
-    tracking = _tracking(tmp_repo)
+    tracking = load_tracking(tmp_repo)
     entry = next(s for s in tracking["sources"] if s["name"] == "my-guide")
     assert entry["url"] == "https://example.com/guide.pdf"
 
@@ -112,7 +104,7 @@ def test_download_url_sets_downloaded_flag(tmp_repo, httpx_mock):
         ["download", "--url", "https://example.com/guide.pdf", "--name", "my-guide"],
     )
 
-    tracking = _tracking(tmp_repo)
+    tracking = load_tracking(tmp_repo)
     entry = next(s for s in tracking["sources"] if s["name"] == "my-guide")
     assert entry.get("downloaded") is True
 
@@ -130,7 +122,7 @@ def test_download_url_appends_source_ingested_event(tmp_repo, httpx_mock):
         ["download", "--url", "https://example.com/guide.pdf", "--name", "my-guide"],
     )
 
-    tracking = _tracking(tmp_repo)
+    tracking = load_tracking(tmp_repo)
     event_types = [e["type"] for e in tracking.get("events", [])]
     assert "source_ingested" in event_types
 
@@ -153,7 +145,7 @@ def test_download_url_with_topic_stamps_metadata(tmp_repo, httpx_mock):
         ],
     )
 
-    tracking = _tracking(tmp_repo)
+    tracking = load_tracking(tmp_repo)
     entry = next(s for s in tracking["sources"] if s["name"] == "my-guide")
     assert entry.get("topic") == "diabetes-ccm"
 
