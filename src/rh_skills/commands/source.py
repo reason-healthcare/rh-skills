@@ -18,6 +18,7 @@ from rh_skills.common import (
     log_warn,
     now_iso,
     require_tracking,
+    source_name_from_path,
     sha256_file,
     sources_root,
     topic_dir,
@@ -38,19 +39,6 @@ MIME_TO_EXT = {
 AUTH_REDIRECT_MARKERS = ("login", "signin", "sign-in", "auth", "access-denied", "sso", "idp")
 
 
-def _sanitize_source_stem(stem: str) -> str:
-    import re
-    sanitized = re.sub(r"[^\w-]", "_", stem)
-    sanitized = re.sub(r"[-_]{2,}", "_", sanitized)
-    return sanitized.strip("_-")
-
-
-def _source_name_from_path(path: Path) -> str:
-    suffix = path.suffix.lstrip(".")
-    stem = _sanitize_source_stem(path.stem)
-    return f"{stem}_{suffix}" if suffix else stem
-
-
 def _register_local_file(src_path: Path, source_type: str = "document", topic: str | None = None) -> None:
     """Copy a local file to sources/ and register it in tracking.yaml."""
     import shutil
@@ -60,7 +48,7 @@ def _register_local_file(src_path: Path, source_type: str = "document", topic: s
     src_root = sources_root()
     src_root.mkdir(parents=True, exist_ok=True)
 
-    source_name = _source_name_from_path(src_path)
+    source_name = source_name_from_path(src_path)
     dest_file = src_root / src_path.name
     if src_path.resolve() != dest_file.resolve():
         shutil.copy2(src_path, dest_file)

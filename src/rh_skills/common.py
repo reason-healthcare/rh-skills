@@ -3,6 +3,7 @@
 import contextlib
 import hashlib
 import os
+import re
 import sys
 import tempfile
 import tomllib
@@ -12,6 +13,24 @@ from pathlib import Path
 from ruamel.yaml import YAML
 
 import click
+
+
+def sanitize_source_stem(stem: str) -> str:
+    """Normalize a filename stem for safe source naming.
+
+    Keeps alphanumeric characters, underscores, and single hyphens while
+    collapsing runs of unsafe separators into a single underscore.
+    """
+    sanitized = re.sub(r"[^\w-]", "_", stem)
+    sanitized = re.sub(r"[-_]{2,}", "_", sanitized)
+    return sanitized.strip("_-")
+
+
+def source_name_from_path(path: Path) -> str:
+    """Build a stable source name from a path stem and extension."""
+    suffix = path.suffix.lstrip(".")
+    stem = sanitize_source_stem(path.stem)
+    return f"{stem}_{suffix}" if suffix else stem
 
 
 if sys.platform == "win32":
