@@ -42,14 +42,14 @@ Invoke the `rh-inf-discovery` skill in **plan** mode. The agent generates a rese
 
 **Agent invokes**: `rh-inf-discovery plan`  
 **Reads**: `tracking.yaml` (domain: `diabetes`)  
-**Writes**: `topics/diabetes-screening/process/plans/discovery-plan.yaml` (machine-readable source list) and `topics/diabetes-screening/process/plans/discovery-readout.md` (narrative)
+**Writes**: `discovery-plan.yaml` (machine-readable source list) and `discovery-readout.md` (narrative)
 
-**Human review**: Open `topics/diabetes-screening/process/plans/discovery-plan.yaml`. Edit the YAML to remove sources you don't need or add any you know of. Review `discovery-readout.md` for domain advice and expansion suggestions, then proceed.
+**Human review**: Open `discovery-plan.yaml`. Edit the YAML to remove sources you don't need or add any you know of. Review `discovery-readout.md` for domain advice and expansion suggestions, then proceed.
 
 Then invoke **verify** mode to validate the plan before ingesting:
 
-**Agent invokes**: `rh-skills validate --plan topics/diabetes-screening/process/plans/discovery-plan.yaml`  
-**Reads**: `topics/diabetes-screening/process/plans/discovery-plan.yaml`  
+**Agent invokes**: `rh-skills validate --plan discovery-plan.yaml`  
+**Reads**: `discovery-plan.yaml`  
 **Writes**: nothing (read-only)
 
 ---

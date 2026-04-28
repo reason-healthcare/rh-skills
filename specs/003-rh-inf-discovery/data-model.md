@@ -37,7 +37,7 @@ sources:
 
 ---
 
-## Entity 2: Discovery Plan (`topics/<name>/process/plans/discovery-plan.yaml`)
+## Entity 2: Discovery Plan (`discovery-plan.yaml`)
 
 Pure YAML file — no frontmatter delimiters (`---`). This is the machine-readable source of truth consumed by `rh-skills validate --plan` and `rh-inf-ingest`. Human-editable between sessions.
 
@@ -68,7 +68,7 @@ sources: []                  # Source entries (see Entity 1)
 
 ---
 
-## Entity 2b: Discovery Readout (`topics/<name>/process/plans/discovery-readout.md`)
+## Entity 2b: Discovery Readout (`discovery-readout.md`)
 
 Generated Markdown narrative derived from `discovery-plan.yaml`. **Do not edit directly** — regenerated on each save. For human/agent reading only; never machine-parsed.
 

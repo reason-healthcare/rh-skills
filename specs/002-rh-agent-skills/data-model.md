@@ -273,9 +273,9 @@ metadata:
 
 | Skill | Mode | Reads | Writes |
 |-------|------|-------|--------|
-| `rh-inf-discovery` | `plan` | tracking.yaml (domain) | `topics/<name>/process/plans/discovery-plan.yaml`, `topics/<name>/process/plans/discovery-readout.md` |
-| `rh-inf-discovery` | `verify` | `topics/<name>/process/plans/discovery-plan.yaml` | *(none — read-only)* |
-| `rh-inf-ingest` | `plan` | `topics/<name>/process/plans/discovery-plan.yaml` or user input | sources queue |
+| `rh-inf-discovery` | `plan` | tracking.yaml (domain) | `discovery-plan.yaml`, `discovery-readout.md` |
+| `rh-inf-discovery` | `verify` | `discovery-plan.yaml` | *(none — read-only)* |
+| `rh-inf-ingest` | `plan` | `discovery-plan.yaml` or user input | sources queue |
 | `rh-inf-ingest` | `implement` | `<file>` (path argument) | `sources/*`, tracking.yaml `sources[]` |
 | `rh-inf-ingest` | `verify` | tracking.yaml `sources[]` | *(none — read-only)* |
 | `rh-inf-extract` | `plan` | `sources/*`, tracking.yaml | `topics/<name>/process/plans/extract-plan.md` |

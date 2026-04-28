@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **rh-inf-ingest** skill is the **L1 source preparation** stage of the evidence processing pipeline. It orchestrates a four-stage workflow to normalize clinical source documents (PDFs, HTML, Word, etc.) to Markdown with structured metadata, **infer and initialize topics**, classify sources according to evidence hierarchy, and extract key clinical concepts for downstream artifact generation. Source downloads are handled by `rh-inf-discovery` before ingest begins.
+The **rh-inf-ingest** skill is the **L1 source preparation** stage of the evidence processing pipeline. It orchestrates a workflow that registers local sources, normalizes clinical source documents (PDFs, HTML, Word, etc.) to Markdown with structured metadata, **infers and initializes topics**, classifies sources according to evidence hierarchy, and extracts key clinical concepts for downstream artifact generation. Source downloads are handled by `rh-inf-discovery` before ingest begins.
 
 **Core Purpose:** Transform raw clinical sources into normalized, classified, and concept-annotated Markdown documents that feed into extraction (L2) and formalization (L3) stages.
 
@@ -13,11 +13,25 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
 | Command | Purpose | Writes To |
 |---------|---------|-----------|
 | `rh-skills ingest plan [<topic>]` | Print pre-flight summary or create ingest-plan.md template | `plans/ingest-plan.md` |
+| `rh-skills ingest list-manual [<topic>]` | List untracked files in `sources/` with registration commands | (stdout only) |
 | `rh-skills ingest implement <file>` | Register a local file into tracking.yaml | `sources/<file>`, `tracking.yaml` |
 | `rh-skills ingest normalize <file> --topic <topic> [--name <name>]` | Extract text from binary formats; write normalized Markdown | `sources/normalized/<name>.md`, `tracking.yaml` |
 | `rh-skills ingest classify <name> --topic <topic> --type <type> --evidence-level <level>` | Assign classification metadata | `tracking.yaml` |
 | `rh-skills ingest annotate <name> --topic <topic> --concept "name:type" [...]` | Extract clinical concepts from normalized source | `normalized/<name>.md`, `concepts.yaml`, `tracking.yaml` |
 | `rh-skills ingest verify [<topic>]` | Audit topic ingest readiness (checksums, completeness) | (read-only) |
+
+---
+
+## Registration Note (Branch Behavior)
+
+Registration is explicit and per-file on this branch.
+
+- Use `rh-skills ingest list-manual [<topic>]` to identify untracked files in `sources/`.
+- Register each untracked file with `rh-skills ingest implement sources/<file> [--topic <topic>]`.
+- There is no bulk registration path via `ingest implement --all`.
+- If no files are untracked, registration is a no-op and ingest proceeds to normalize.
+
+This keeps registration deterministic and visible in agent execution logs.
 
 ---
 
@@ -43,10 +57,15 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
 ```
 1. PLAN: rh-skills ingest plan [<topic>]
    ├─ Check tool availability (pdftotext, pandoc)
-   ├─ List source files present in sources/
+   ├─ Run ingest list-manual to identify untracked files
    └─ Print pre-flight summary → await user confirmation
 
-2. NORMALIZE: rh-skills ingest normalize <file> [--topic <topic>]
+2. REGISTER: rh-skills ingest implement sources/<file> [--topic <topic>]
+   ├─ Register each untracked file reported by list-manual
+   ├─ Update tracking.yaml with file path, checksum, and ingest timestamp
+   └─ If no files are untracked, continue directly to normalize
+
+3. NORMALIZE: rh-skills ingest normalize <file> [--topic <topic>]
    ├─ For each source file (sequential):
    │   ├─ Detect extension → select extraction tool
    │   ├─ Extract text (pdftotext | pandoc | markdownify | direct)
@@ -56,20 +75,20 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
    │   └─ Update tracking.yaml
    └─ Topic is optional at this stage — inference happens next
 
-3. TOPIC INFERENCE: (when no topic has been established yet)
+4. TOPIC INFERENCE: (when no topic has been established yet)
    ├─ Read normalized source frontmatter + first ~200 lines each
    ├─ Agent proposes kebab-case topic name(s) with rationale
    ├─ Await user confirmation
    └─ rh-skills init <topic>   (for each confirmed topic)
 
-4. CLASSIFY: rh-skills ingest classify <name> --topic <topic> --type <type> --evidence-level <level>
+5. CLASSIFY: rh-skills ingest classify <name> --topic <topic> --type <type> --evidence-level <level>
    ├─ Agent proposes classification for each source
    ├─ If discovery-plan.yaml present: use its type + evidence_level as starting proposal
    ├─ Await user confirmation
    └─ Update tracking.yaml: type, evidence_level, domain_tags, classified_at
        Event: source_classified
 
-5. ANNOTATE: rh-skills ingest annotate <name> --topic <topic> --concept "name:type"
+6. ANNOTATE: rh-skills ingest annotate <name> --topic <topic> --concept "name:type"
    ├─ For each source (STRICTLY SERIAL — no parallelism):
    │   ├─ Read normalized.md content
    │   ├─ Identify concepts:

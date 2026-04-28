@@ -128,9 +128,29 @@ rh-skills ingest implement <file>
 
 **Records:** file path, detected type, SHA-256 checksum, ISO 8601 timestamp.
 
-**Supported types:** PDF (`.pdf`), Word (`.docx`), Excel (`.xlsx`), plain text (`.txt`), Markdown (`.md`), URLs.
+**Supported types:** PDF (`.pdf`), Word (`.docx`), Excel (`.xlsx`), plain text (`.txt`), Markdown (`.md`), HTML/XML and other local file types.
 
-**Optional tools:** `pdftotext` (poppler) for PDF text extraction; `pandoc` for Word/Excel. If absent, metadata and checksum are registered but text extraction is skipped (warning emitted).
+Use `rh-skills ingest list-manual [<topic>]` to list untracked files and generate per-file registration commands.
+
+### `rh-skills ingest list-manual [<topic>]`
+
+List files in `sources/` that are not yet registered in `tracking.yaml`.
+
+```
+rh-skills ingest list-manual [<topic>]
+```
+
+Outputs each untracked file and a corresponding `rh-skills ingest implement sources/<file> [--topic <topic>]` command.
+
+### `rh-skills source download --url <url> --name <name>`
+
+Download a URL to `sources/` and register it in `tracking.yaml`.
+
+```
+rh-skills source download --url <url> --name <name>
+```
+
+Use this command (not `ingest implement`) for URL-based acquisition.
 
 ### `rh-skills ingest verify`
 

@@ -28,7 +28,7 @@ Output:
   plans/ingest-plan.md  (YAML front matter + Markdown prose)
 
 Reads:
-  topics/<name>/process/plans/discovery-plan.yaml  (if available, for context)
+  discovery-plan.yaml  (if available, for context)
 ```
 
 ### `rh-skills ingest implement <file> [--force]`
