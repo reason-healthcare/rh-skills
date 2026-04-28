@@ -151,8 +151,9 @@ User: rh-inf-discovery plan diabetes-ccm
 
 **Agent:**
 
-> All 8 open-access sources have URLs recorded in the plan and will be fetched
-> by `rh-inf-ingest`. Here are the access advisories for sources requiring
+> All 8 open-access sources have URLs recorded in the plan and should be fetched
+> during discovery via `rh-skills source download --url ... --name ...`.
+> Here are the access advisories for sources requiring
 > authentication or manual retrieval:
 >
 > ---
@@ -169,8 +170,8 @@ User: rh-inf-discovery plan diabetes-ccm
 >    Search terms: "chronic care model diabetes effectiveness team-based"
 >
 > Once you have retrieved the authenticated sources, place them in `sources/`
-> and run `rh-inf-ingest plan diabetes-ccm` — it will read this discovery plan
-> and register everything in one pass.
+> and run `rh-skills ingest list-manual [diabetes-ccm]`, then register each
+> untracked file with `rh-skills ingest implement sources/<file> [--topic diabetes-ccm]`.
 
 ---
 
