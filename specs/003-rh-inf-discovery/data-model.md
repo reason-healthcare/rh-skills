@@ -184,7 +184,7 @@ Human-maintained stub created by `rh-skills init` (create-unless-exists). The CL
 ```yaml
 events:
   - id: "uuid"
-    event: "discovery_planned"   # or: source_ingested, discovery_verified
+    event: "discovery_planned"   # or: source_added, discovery_verified
     topic: "<name>"
     timestamp: "ISO-8601"
     session_id: "<uuid>"

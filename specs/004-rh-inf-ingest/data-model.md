@@ -148,7 +148,7 @@ registered
 
 ```yaml
 events:
-  - type: source_ingested
+  - type: source_added
     description: "Downloaded source: ada-2024-guideline"
   - type: source_normalized
     description: "Normalized: ada-2024-guideline"

@@ -149,7 +149,7 @@ Download a URL to `sources/`, compute SHA-256, register in `tracking.yaml`. Exte
 3. Detect MIME type from `Content-Type` header; map to file extension
 4. Write to `sources/<name>.<ext>` (error if file already exists)
 5. Compute SHA-256 of saved file
-6. Append event to `tracking.yaml` (`source_ingested` event)
+6. Append event to `tracking.yaml` (`source_added` event)
 7. Print: `✓ Downloaded: sources/<name>.<ext> (SHA-256: <hash>)`
 
 **Exit codes**:
