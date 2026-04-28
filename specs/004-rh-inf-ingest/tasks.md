@@ -41,7 +41,7 @@ description: "Tasks for 004-rh-inf-ingest — rh-inf-ingest source acquisition a
 
 **Goal**: A user with a completed `discovery-plan.yaml` can review ingest readiness, download/register sources, and see status outputs that match the curated skill docs.
 
-**Independent Test**: With a fixture topic containing `process/plans/discovery-plan.yaml`, `rh-skills ingest plan <topic>` reports open/auth/manual counts and tool availability, `rh-skills ingest implement --url ... --topic <topic>` records topic-aware source metadata, and `rh-skills ingest verify <topic>` reports checksum/readiness status without writes.
+**Independent Test**: With a fixture topic containing `process/plans/discovery-plan.yaml`, `rh-skills ingest plan <topic>` reports source counts and tool availability, `rh-skills ingest implement sources/<file> --topic <topic>` records topic-aware source metadata, and `rh-skills ingest verify <topic>` reports checksum/readiness status without writes.
 
 - [X] T006 [US1] Add optional `--topic` handling to `rh-skills ingest implement` and persist topic-aware source metadata in `src/rh_skills/commands/ingest.py`
 - [X] T007 [P] [US1] Add unit coverage for topic-aware `implement --url` behavior in `tests/unit/test_ingest_url.py`

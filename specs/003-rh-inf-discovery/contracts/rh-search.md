@@ -127,10 +127,10 @@ Search ClinicalTrials.gov via REST API v2.
 
 ---
 
-## Command: `rh-skills ingest implement --url` (extension)
+## Command: `rh-skills source download --url` (extension)
 
 ```
-rh-skills ingest implement --url URL --name NAME [OPTIONS]
+rh-skills source download --url URL --name NAME [OPTIONS]
 ```
 
 Download a URL to `sources/`, compute SHA-256, register in `tracking.yaml`. Extends existing `rh-skills ingest implement FILE` command.

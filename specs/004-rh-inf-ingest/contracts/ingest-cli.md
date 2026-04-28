@@ -50,10 +50,10 @@ rh-skills ingest implement <file>
 
 ---
 
-## `rh-skills ingest implement --url URL --name NAME [--type TYPE]`
+## `rh-skills source download --url URL --name NAME [--type TYPE]`
 
 ```bash
-rh-skills ingest implement --url <url> --name <name> [--type <type>]
+rh-skills source download --url <url> --name <name> [--type <type>]
 ```
 
 **Behavior**:

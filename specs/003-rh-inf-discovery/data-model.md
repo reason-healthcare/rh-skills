@@ -21,9 +21,9 @@ sources:
     pmid: "string"           # optional; PubMed ID if source found via PubMed
     pmcid: "string"          # optional; PMC ID if full text available in PMC
     nct_id: "string"         # optional; ClinicalTrials.gov NCT ID if applicable
-    downloaded: false        # true when rh-skills ingest implement --url has run for this source
-    sha256: "string"         # populated by rh-skills ingest implement --url
-    local_file: "string"     # populated by rh-skills ingest implement --url; relative path in sources/
+    downloaded: false        # true when rh-skills source download --url has run for this source
+    sha256: "string"         # populated by rh-skills source download --url
+    local_file: "string"     # populated by rh-skills source download --url; relative path in sources/
 ```
 
 **Validation rules**:

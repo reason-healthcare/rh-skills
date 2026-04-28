@@ -183,7 +183,7 @@ This section defines the required content for each scenario file in enough detai
 - `tracking.yaml` — event `ingest_complete`
 
 **Efficiency focus** (3 items):
-- Agent uses `rh-skills ingest implement --url` for the source, not a manual curl/download loop
+- Agent uses `rh-skills source download --url` for the source, not a manual curl/download loop
 - Agent does not re-read the discovery plan more than once during the implement sub-command
 - Agent uses `rh-skills ingest classify` (not an inline classification table) for the source type
 

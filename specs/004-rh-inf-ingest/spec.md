@@ -135,7 +135,7 @@ concepts:
 
 ## Notes
 
-- `rh-skills ingest normalize`, `rh-skills ingest classify`, and `rh-skills ingest annotate` are new CLI subcommands to be implemented in this spec; `rh-skills ingest implement --url` is already implemented (T012/T013 from spec 003).
+- `rh-skills ingest normalize`, `rh-skills ingest classify`, and `rh-skills ingest annotate` are new CLI subcommands to be implemented in this spec; `rh-skills source download --url` is the URL acquisition command (owned by spec 003).
 - `concepts.yaml` feeds into `rh-inf-extract` (005) as the structured concept vocabulary for L2 artifact derivation.
 - Change detection (checksum drift) surfaced by `rh-inf-ingest verify` is also the precursor to `rh-inf-status check-changes` (008).
 - The injection boundary (NFR-003) is critical: normalized source content is user-supplied and may contain prompt injection attempts.

@@ -380,6 +380,23 @@ def log_error(msg: str) -> None:
     click.echo(f"[ERROR] {msg}", err=True)
 
 
+# ── Tracking skeleton ─────────────────────────────────────────────────────────
+
+def ensure_tracking() -> None:
+    """Create tracking.yaml skeleton if it doesn't exist (safe under concurrent calls)."""
+    tf = tracking_file()
+    if tf.exists():
+        return
+    y = YAML()
+    y.default_flow_style = False
+    skeleton = {"schema_version": "1.0", "sources": [], "topics": [], "events": []}
+    try:
+        with open(tf, "x") as f:
+            y.dump(skeleton, f)
+    except FileExistsError:
+        pass
+
+
 # ── Schema loading ─────────────────────────────────────────────────────────────
 
 def load_schema(schema_name: str) -> dict:
@@ -390,3 +407,4 @@ def load_schema(schema_name: str) -> dict:
     y = _yaml_safe()
     with open(path) as f:
         return y.load(f)
+
