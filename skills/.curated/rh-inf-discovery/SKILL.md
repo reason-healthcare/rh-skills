@@ -92,8 +92,9 @@ tracked topic identifier).
 
 **Mode Defaulting**: If `$ARGUMENTS` is empty or contains only flags (no mode), default to `plan` mode.
 
+- `--domain <label>`: optional freeform research area label used for status output and naming context. If omitted, infer from current research context.
 - `--force`: overwrite existing `discovery-plan.yaml` and `discovery-readout.md` (plan mode only).
-- If the mode is unrecognized (neither `plan` nor `verify`), or if `--domain` is omitted in plan mode, print this table and exit with an error.
+- If the mode is unrecognized (neither `plan` nor `verify`), print this table and exit with an error.
 
 ---
 

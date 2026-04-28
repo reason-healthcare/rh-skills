@@ -89,13 +89,13 @@ Invoke the discovery skill in your agent:
 
 ```
 # Claude Code
-/rh-inf-discovery session --domain diabetes-ccm
+/rh-inf-discovery plan --domain diabetes-ccm
 
 # GitHub Copilot — natural language
-run rh-inf-discovery session --domain diabetes-ccm
+run rh-inf-discovery plan --domain diabetes-ccm
 ```
 
-The agent runs an interactive research session and saves `discovery-plan.yaml` and `discovery-readout.md` to the repo root. Verify and hand off:
+The agent runs an interactive research session and saves `discovery-plan.yaml` and `discovery-readout.md` to the repo root. The `--domain` label is required for discovery plan mode. Verify and hand off:
 
 ```
 /rh-inf-discovery verify
@@ -104,10 +104,14 @@ The agent runs an interactive research session and saves `discovery-plan.yaml` a
 ### 2. Ingest and normalize
 
 ```
+/rh-inf-ingest plan
 /rh-inf-ingest implement
 ```
 
-The agent downloads open-access sources, normalizes everything to Markdown,
+Ingest plan mode checks tool availability and identifies unregistered files.
+Implement mode then registers each untracked file individually (via
+`rh-skills ingest list-manual` + per-file `rh-skills ingest implement sources/<file>`),
+normalizes everything to Markdown,
 then **proposes a topic name** based on the source content, asks for confirmation,
 and calls `rh-skills init <topic>` — no separate init step required.
 
@@ -118,10 +122,11 @@ and calls `rh-skills init <topic>` — no separate init step required.
 Use this path when you already have files you want to process (no discovery needed).
 
 1. Place your files in `sources/`
-2. Invoke ingest directly — no topic init required:
-   ```
-   /rh-inf-ingest implement
-   ```
+2. Run ingest plan first, then implement — no topic init required:
+  ```
+  /rh-inf-ingest plan
+  /rh-inf-ingest implement
+  ```
    The agent normalizes your sources, proposes a topic name, asks for confirmation,
    and initializes the topic before proceeding with classify and annotate.
 
@@ -190,16 +195,21 @@ See [Usage Modes](USAGE_MODES.md) for all provider options.
 
 ```bash
 # Option A: Discovery-guided
-# Discovery — identify and plan sources (no topic needed)
-rh-skills discovery session --domain diabetes-ccm
-rh-skills discovery verify
+# Discovery runs via agent skill (domain required):
+#   /rh-inf-discovery plan --domain diabetes-ccm
+#   /rh-inf-discovery verify
 
-# Acquire/register sources, then run ingest lifecycle
-rh-skills download --url <url> --name <name> [--topic <topic>]
+# Download open-access sources from discovery-plan entries
+rh-skills source download --url <url> --name <name>
+
+# Register manual sources detected in sources/
+rh-skills ingest list-manual [<topic>]
+rh-skills ingest implement sources/<file> [--topic <topic>]
 
 # Option B: Bring your own sources
 # Place files in sources/, then:
-rh-skills download sources/<file> [--topic <topic>]
+rh-skills ingest list-manual [<topic>]
+rh-skills ingest implement sources/<file> [--topic <topic>]
 ```
 
 ### 2. Derive structured artifacts (L2)

@@ -135,11 +135,11 @@ Based on your current sources, consider expanding into:
 
 User: `save`
 
-Agent writes `topics/diabetes-ccm/process/plans/discovery-plan.yaml` (machine-readable source list) and `topics/diabetes-ccm/process/plans/discovery-readout.md` (narrative), and updates research tracking:
+Agent writes `discovery-plan.yaml` (machine-readable source list) and `discovery-readout.md` (narrative), and updates research tracking:
 
 ```
-✓ Discovery plan saved: topics/diabetes-ccm/process/plans/discovery-plan.yaml
-✓ Discovery readout saved: topics/diabetes-ccm/process/plans/discovery-readout.md
+✓ Discovery plan saved: discovery-plan.yaml
+✓ Discovery readout saved: discovery-readout.md
   Sources: 6 (5 open-access, 1 government)
 
 Research tracking updated:
@@ -152,7 +152,7 @@ Research tracking updated:
 
 ```bash
 # (agent-run, or user-run directly)
-rh-skills validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
+rh-skills validate --plan discovery-plan.yaml
 ```
 
 Output:
@@ -171,11 +171,9 @@ Output:
 ## Files produced by this quickstart
 
 ```
-topics/diabetes-ccm/process/
-├── plans/
-│   ├── discovery-plan.yaml
-│   └── discovery-readout.md
-└── notes.md              (stub — human-maintained)
+discovery-plan.yaml
+discovery-readout.md
+topics/diabetes-ccm/process/notes.md    (stub — human-maintained)
 
 RESEARCH.md                  (updated by rh-skills)
 tracking.yaml                (updated by rh-skills)
