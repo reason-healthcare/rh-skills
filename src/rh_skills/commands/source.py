@@ -480,7 +480,7 @@ def _download_from_url(url: str, source_name: str | None, source_type: str = "do
             if topic:
                 record["topic"] = topic
             tracking["sources"].append(record)
-            append_root_event(tracking, "source_ingested", f"Downloaded source: {source_name}")
+            append_root_event(tracking, "source_added", f"Downloaded source: {source_name}")
 
     locked_update_tracking(_update)
     click.echo(f"✓ Downloaded: sources/{source_name}{ext}")
