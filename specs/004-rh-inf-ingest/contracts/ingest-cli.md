@@ -18,16 +18,15 @@ Subcommands in scope for 004:
 
 ---
 
-## `rh-skills ingest plan <topic>` (skill-level summary)
+## `rh-skills ingest plan [<topic>]` (skill-level summary)
 
-**Purpose**: Render a transient pre-flight summary for the topic ingest run.
+**Purpose**: Render a transient pre-flight summary for ingest readiness.
 
 **Behavior**:
-- Reads `topics/<topic>/process/plans/discovery-plan.yaml` if present
+- Scans `sources/` via `rh-skills ingest list-manual [<topic>]`
 - Reports:
-  - open-access sources ready for download
-  - authenticated/manual sources requiring user placement
-  - manually placed files already present in `sources/`
+  - untracked files requiring registration
+  - already-registered sources
   - tool availability (`pdftotext`, `pandoc`)
 - Makes no file or tracking writes
 
