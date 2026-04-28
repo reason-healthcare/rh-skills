@@ -489,7 +489,7 @@ def _download_from_url(url: str, source_name: str | None, source_type: str = "do
     click.echo(f"  Size: {size_mb:.1f} MB")
 
 @source.command("download")
-@click.argument("file", required=False, type=click.Path(exists=False))
+@click.argument("file", required=False, type=click.Path(exists=True))
 @click.option("--url", "source_url", default=None, help="URL to download instead of a local file")
 @click.option("--name", "source_name", default=None, help="Stem name for saved file (required with --url)")
 @click.option("--type", "source_type", default="document", help="Source type (see Source Type Taxonomy)")
