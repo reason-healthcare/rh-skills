@@ -807,27 +807,93 @@ _ARTIFACT_PURPOSES: dict[str, str] = {
 }
 
 
-def _build_plan_artifact_entry(group: dict) -> dict:
-    source_names = [record["name"] for record in group["sources"]]
+_CONCERN_ALIGNMENT_ASPECTS: dict[str, str] = {
+    "eligibility-criteria": "inclusion/exclusion thresholds, age bands, and population definitions",
+    "risk-factors": "risk factor definitions, magnitude estimates, and effect direction",
+    "evidence-summary": "evidence grades, recommendation strength, and outcome measures",
+    "decision-table": "condition thresholds, action triggers, and decision criteria",
+    "care-pathway": "step sequencing, timing windows, and actor responsibilities",
+    "terminology": "code coverage, concept boundaries, and preferred terms",
+    "measure": "population definitions, scoring logic, and measurement period",
+    "assessment": "item wording, response options, and scoring ranges",
+    "policy": "coverage criteria, authorization requirements, and payer definitions",
+}
+
+
+def _identify_group_concerns(group: dict) -> list[dict]:
+    """Call LLM to surface specific clinical concerns for this artifact group.
+
+    Returns [] in stub mode — reviewer adds concerns via --add-conflict at approve time.
+    """
+    if config_value("LLM_PROVIDER", "stub") == "stub":
+        return []
+
+    artifact_type = group["artifact_type"]
+    key_question = group.get("key_question", "")
+    sources = group["sources"]
+    aspect = _CONCERN_ALIGNMENT_ASPECTS.get(
+        artifact_type, "clinical values, thresholds, and recommendations"
+    )
+
+    source_blocks = "\n\n".join(
+        f"### Source: `{r['name']}`\n{r['content'][:3000]}"
+        for r in sources
+    )
+    scope_instruction = (
+        "Identify specific cross-source disagreements — values, thresholds, timing, "
+        "populations, or recommendations that differ between sources."
+        if len(sources) > 1 else
+        "Identify specific internal tensions — where the source qualifies, contradicts, "
+        "or hedges a clinical value or recommendation."
+    )
+
+    system_prompt = (
+        "You are a clinical knowledge analyst reviewing normalized source documents. "
+        "Identify specific, concrete clinical concerns for a proposed artifact. "
+        "Each concern must name exact values or positions that differ or are ambiguous "
+        "(e.g., 'Source `ada-2024` specifies HbA1c target <7.0%; source `aace-guidelines` specifies <=6.5%'). "
+        "Do NOT generate generic boilerplate. "
+        "Respond ONLY with a YAML list — no prose, no explanation:\n"
+        "- concern: \"<specific disagreement>\"\n"
+        "If no specific concerns exist, return exactly: []"
+    )
+    user_prompt = (
+        f"Artifact type: {artifact_type}\n"
+        f"Key clinical question: {key_question}\n"
+        f"Focus area: {aspect}\n\n"
+        f"{source_blocks}\n\n"
+        f"{scope_instruction}\n"
+        "Return ONLY a YAML list. Name exact values and the sources they come from."
+    )
+
+    try:
+        raw = _invoke_llm(system_prompt, user_prompt).strip()
+        for fence in ("```yaml", "```yml", "```"):
+            if raw.startswith(fence):
+                raw = raw[len(fence):].strip()
+                if raw.endswith("```"):
+                    raw = raw[:-3].strip()
+                break
+        y = YAML()
+        y.preserve_quotes = True
+        parsed = y.load(raw)
+        if not parsed or not isinstance(parsed, list):
+            return []
+        return [
+            {"concern": str(item["concern"]), "resolution": ""}
+            for item in parsed
+            if isinstance(item, dict) and item.get("concern")
+        ]
+    except Exception:
+        return []
+
+
+
+def _build_plan_artifact_entry(group: dict, concerns: list[dict] | None = None) -> dict:
     source_files = [record["relative_path"] for record in group["sources"]]
     source_count = len(source_files)
     artifact_name = group["artifact_type"]
-
-    plan_concerns: list[dict] = []
-    if source_count > 1:
-        plan_concerns.append({
-            "concern": "Multiple normalized sources contribute to this artifact; confirm that thresholds, timing, and terminology align before derive.",
-            "resolution": "",
-        })
-    if any(
-        keyword in record["content"].lower()
-        for record in group["sources"]
-        for keyword in ("however", "conflict", "differ", "disagree", "uncertain", "versus", "vs.")
-    ):
-        plan_concerns.append({
-            "concern": "At least one contributing source contains potentially conflicting or qualified guidance that requires reviewer confirmation.",
-            "resolution": "",
-        })
+    plan_concerns = concerns if concerns is not None else []
 
     section_val = group["section"]
     middle_sections = section_val if isinstance(section_val, list) else [section_val]
@@ -1287,7 +1353,10 @@ def plan(topic, force):
         return
 
     grouped = _group_sources_for_extract_plan(source_records)
-    artifacts = [_build_plan_artifact_entry(group) for group in grouped]
+    artifacts = []
+    for group in grouped:
+        concerns = _identify_group_concerns(group)
+        artifacts.append(_build_plan_artifact_entry(group, concerns=concerns))
     concepts_path = topic_dir(topic) / "process" / "concepts.yaml"
     has_concepts = concepts_path.exists()
 

@@ -181,10 +181,13 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    - Is the artifact granularity appropriate — one artifact per coherent clinical
      question, not everything collapsed into a single artifact?
    - **Does the plan group sources that share a conflicting value into the same
-     artifact?** The planner assigns sources by count/type — it does NOT detect
-     cross-source conflicts. If two sources disagree on the same clinical value
-     (e.g., HbA1c targets), they must end up in the same artifact so the conflict
-     can be recorded. If they are in separate artifacts, re-run with `--force`.
+     artifact?** The planner assigns sources by count/type and uses an LLM call
+     to surface specific cross-source concerns (e.g., "source A specifies HbA1c
+     <7.0%; source B specifies ≤6.5%"). In stub/offline mode the `concerns[]`
+     list starts empty — the agent adds specific concerns via `--add-conflict`.
+     If two sources disagree on the same clinical value, they must end up in the
+     same artifact so the concern can be recorded. If they are in separate
+     artifacts, re-run with `--force`.
 
    If the plan is too narrow or uses wrong artifact types, note the gaps in the
    `review_summary` field when approving, and consider re-running `plan --force`
@@ -285,21 +288,21 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    `extract-plan.yaml` with file-editing tools** — use `--force` to regenerate
    or record corrections in `review_summary` when approving.
 8. If `extract-plan.yaml` already exists and `--force` is not present, warn and stop without overwriting.
-9. After reviewing the plan output, check for conflicts before proceeding:
+9. After reviewing the plan output, check for open concerns before proceeding:
 
-   **⚠ HUMAN-IN-THE-LOOP: Conflicts require explicit human confirmation.**
+   **⚠ HUMAN-IN-THE-LOOP: Concerns require explicit human confirmation.**
 
-   Always check for open conflicts using the CLI before proceeding:
+   Always check for open concerns using the CLI before proceeding:
 
    ```sh
    rh-skills promote conflicts <topic>
    ```
 
-   - If **any open conflicts are listed**: do **not** show the plan-complete output
+   - If **any open concerns are listed**: do **not** show the plan-complete output
      contract. Instead, immediately begin the `rh-inf-resolve` interactive flow
-     inline — present each conflict one-by-one, wait for the reviewer's resolution,
+     inline — present each concern one-by-one, wait for the reviewer's resolution,
      record it with `rh-skills promote resolve-conflict`, and only after all
-     conflicts are cleared proceed to the plan-complete output below.
+     concerns are cleared proceed to the plan-complete output below.
    - If output is `"No open conflicts for topic '<topic>'."`, proceed immediately
      to the Review & Approval phase below and run `rh-skills promote approve`
      without waiting for user confirmation.
@@ -308,9 +311,10 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 
 - artifact name and type
 - source coverage (`source_files[]`)
+- purpose (what this artifact does downstream)
 - rationale and key clinical questions
 - required sections to derive
-- unresolved conflicts
+- open concerns
 - reviewer decision placeholder
 
 ### After plan mode — output to user
@@ -320,7 +324,7 @@ Populate each count from the actual plan state. List rejected/needs-revision art
 
 ```
 ▸ rh-inf-extract  <topic>
-  Stage:    plan — complete · <N> conflicts resolved
+  Stage:    plan — complete · <N> concerns resolved
   Artifacts: <N> proposed · <N> approved · <N> rejected · <N> needs-revision · <N> pending review
   Next:     <context-sensitive one-liner — see rules below>
 ```
@@ -350,10 +354,10 @@ After plan mode completes, the plan is in `status: pending-review` and each
 artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
 
-> **⚠ HUMAN-IN-THE-LOOP RULE**: Conflicts are resolved inline during plan mode
+> **⚠ HUMAN-IN-THE-LOOP RULE**: Concerns are resolved inline during plan mode
 > before this phase is reached. If `rh-skills promote conflicts <topic>` still
-> shows open conflicts at this point, re-run plan mode — do not run
-> `rh-skills promote approve` while conflicts remain open.
+> shows open concerns at this point, re-run plan mode — do not run
+> `rh-skills promote approve` while concerns remain open.
 
 Use `rh-skills promote approve` to record decisions without editing YAML directly:
 
@@ -363,24 +367,24 @@ rh-skills promote approve <topic> \
   --artifact <name> --decision approved --notes "Optional note" \
   --finalize --reviewer "<reviewer-name>"
 
-# When the planner missed a cross-source conflict, record it with --add-conflict:
+# When the planner missed a cross-source concern, record it with --add-conflict:
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
-  --add-conflict "HbA1c threshold: ADA 2024 <7.0% vs AACE 2022 ≤6.5%" \
-  --review-summary "Cross-source HbA1c conflict added during review; planner split sources into separate artifacts." \
+  --add-conflict "HbA1c threshold: ADA 2024 <7.0% vs AACE 2022 <=6.5%" \
+  --review-summary "Cross-source HbA1c concern added during review; planner split sources into separate artifacts." \
   --finalize --reviewer "<reviewer-name>"
 
-# Optionally include a resolution in 'conflict|resolution' pipe format:
+# Optionally include a resolution in 'concern|resolution' pipe format:
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
-  --add-conflict "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%|Prefer AACE threshold when safely achievable" \
+  --add-conflict "HbA1c threshold: ADA <7.0% vs AACE <=6.5%|Prefer AACE threshold when safely achievable" \
   --finalize
 
-# --add-conflict is repeatable for multiple conflicts on one artifact:
+# --add-conflict is repeatable for multiple concerns on one artifact:
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
-  --add-conflict "Conflict A description" \
-  --add-conflict "Conflict B|Resolution B" \
+  --add-conflict "Concern A description" \
+  --add-conflict "Concern B|Resolution B" \
   --finalize
 
 # When the planner split conflicting sources into separate artifacts, add the
@@ -389,8 +393,8 @@ rh-skills promote approve <topic> \
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
   --add-source aace-guidelines-2022 \
-  --add-conflict "HbA1c target: ADA <7.0% vs AACE ≤6.5%" \
-  --review-summary "Added AACE source; planner separated conflicting sources. Both positions captured in conflicts[]." \
+  --add-conflict "HbA1c target: ADA <7.0% vs AACE <=6.5%" \
+  --review-summary "Added AACE source; planner separated conflicting sources. Both positions captured in concerns[]." \
   --finalize --reviewer "<reviewer-name>"
 
 # If multiple artifacts need decisions, run one --artifact call per artifact
@@ -411,7 +415,7 @@ rh-skills promote approve <topic> --artifact <name> --decision rejected
 > one `--artifact` call at a time and `--finalize` only after the last one.
 
 > **After `--finalize`**, read `extract-plan.yaml` and confirm:
-> - `conflicts[]` text is intact (no Unicode corruption — see ASCII note in implement section)
+> - `concerns[]` text is intact (no Unicode corruption — see ASCII note in implement section)
 > - `source_files[]` entries added by `--add-source` are present (the CLI writes bare slugs;
 >   `derive` resolves them automatically, but note the format differs from the
 >   `sources/normalized/<slug>.md` path format used by the planner)
@@ -422,7 +426,7 @@ rh-skills promote approve <topic> --artifact <name> --decision rejected
 `needs-revision` artifacts are skipped without error.
 
 **`review_summary` is required (non-empty) when any of the following apply:**
-- Any artifact has entries in `conflicts[]`
+- Any artifact has entries in `concerns[]`
 - The plan was regenerated with `--force` after the initial run
 - The plan scope is narrower than the source's clinical content
 - Any artifact type was changed from the planner's original proposal
@@ -431,11 +435,11 @@ Use the `--notes` flag on the approve command for per-artifact notes; use
 `--review-summary` to set the plan-level summary in the same call:
 
 ```sh
-# When unresolved conflicts or scope gaps exist — add --review-summary:
+# When open concerns or scope gaps exist — add --review-summary:
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
-  --notes "Preferred ADA threshold; AACE variant documented in conflicts" \
-  --review-summary "ADA vs AACE HbA1c conflict documented. Plan approved with conflict preserved for formalize resolution." \
+  --notes "Preferred ADA threshold; AACE variant documented in concerns" \
+  --review-summary "ADA vs AACE HbA1c concern documented. Plan approved with concern preserved for formalize resolution." \
   --finalize --reviewer "<reviewer-name>"
 ```
 
@@ -485,7 +489,7 @@ all deterministic writes must go through `rh-skills promote derive` and
    > in all `--conflict`, `--add-conflict`, and `--evidence-ref` values:
    > `<=` not `≤`, `>=` not `≥`, `!=` not `≠`. Unicode characters in shell flag
    > strings may be silently dropped or corrupted. After running `approve`,
-   > inspect the resulting `conflicts[]` in `extract-plan.yaml` to confirm
+   > inspect the resulting `concerns[]` in `extract-plan.yaml` to confirm
    > threshold text is intact before proceeding to derive.
 
    > **Agent mode vs CLI-only mode**: `rh-skills promote derive` uses `RH_STUB_RESPONSE`
@@ -575,7 +579,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    - each approved artifact YAML exists in `topics/<topic>/structured/<artifact-name>/`
    - each approved artifact has one or more rendered report files (`<artifact>-*.md`) in the artifact directory
    - required traceability sections are present
-   - conflict records are present when the approved plan listed unresolved conflicts
+   - concern records are present when the approved plan listed open concerns
 5. Report pass/fail per artifact and exit non-zero only when required checks fail.
 
 Verify is read-only and safe to re-run at any time.
