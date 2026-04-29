@@ -29,6 +29,18 @@ def test_ingest_implement_rejects_url_option(tmp_repo):
     assert "No such option: --url" in result.output
 
 
+def test_ingest_implement_rejects_type_option(tmp_repo):
+    """Registration-time type hints are inferred for local files, not user-supplied."""
+    src = tmp_repo / "guide.pdf"
+    src.write_bytes(b"PDF content")
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, ["implement", str(src), "--type", "document"])
+
+    assert result.exit_code != 0
+    assert "No such option: --type" in result.output
+
+
 # ── FILE argument tests ────────────────────────────────────────────────────────
 
 def test_ingest_implement_file_registers_single_source(tmp_repo):
@@ -67,4 +79,3 @@ def test_ingest_implement_no_args_shows_usage_error(tmp_repo):
 
     assert result.exit_code != 0
     assert "FILE" in result.output or "Missing argument" in result.output
-

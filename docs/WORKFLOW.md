@@ -37,19 +37,22 @@ Every lifecycle transition follows this mandatory three-step pattern:
  ┌─────────────────────────────────────────────────────────────────┐
  │  PLAN                                                           │
  │  Agent reasons about the topic and proposes artifact names,     │
- │  source lists, or convergence strategy. Output is written to    │
- │  topics/<name>/process/plans/<skill>-plan.md (YAML front matter │
- │  + human-readable prose). No files are created or modified.     │
+ │  source lists, or convergence strategy. Depending on the stage, │
+ │  the plan step either writes a durable plan artifact or emits a │
+ │  transient read-only pre-flight summary to stdout.              │
  └───────────────────────┬─────────────────────────────────────────┘
                          │
-                   Human reviews and
-                   edits the plan file
+               Human reviews the plan
+               artifact or pre-flight
+                    summary output
                          │
  ┌───────────────────────▼─────────────────────────────────────────┐
  │  IMPLEMENT                                                      │
- │  Agent reads the YAML front matter from the plan file and       │
- │  executes it by invoking rh-skills CLI commands. Fails          │
- │  immediately if no plan exists. Human review gate is enforced.  │
+ │  Agent executes the approved plan by invoking rh-skills CLI     │
+ │  commands. When a durable plan artifact exists, implement reads │
+ │  it directly; when plan mode is transient, implement proceeds   │
+ │  from the confirmed pre-flight summary. Human review gate is    │
+ │  enforced in both cases.                                        │
  └───────────────────────┬─────────────────────────────────────────┘
                          │
  ┌───────────────────────▼─────────────────────────────────────────┐
@@ -64,7 +67,7 @@ Every lifecycle transition follows this mandatory three-step pattern:
 | Stage | Skill | Modes | Plan Artifact | Output | Details |
 |-------|-------|-------|---------------|--------|---------|
 | **Discovery** | `rh-inf-discovery` | plan · implement | `discovery-plan.yaml` | Source registry + domain narrative | [→ DISCOVERY.md](DISCOVERY.md) |
-| **Ingest** | `rh-inf-ingest` | plan · implement · verify | `ingest-plan.md` | Normalized L1 sources + concepts | [→ INGEST.md](INGEST.md) |
+| **Ingest** | `rh-inf-ingest` | plan · implement · verify | Transient stdout pre-flight summary (no durable plan file; optionally informed by `discovery-plan.yaml`) | Normalized L1 sources + concepts | [→ INGEST.md](INGEST.md) |
 | **Extract** | `rh-inf-extract` | plan · implement · verify | `extract-plan.yaml` | L2 artifacts in `structured/` | [→ EXTRACT.md](EXTRACT.md) |
 | **Formalize** | `rh-inf-formalize` + `rh-inf-cql` | plan · implement · verify | `formalize-plan.md` | L3 FHIR resources + authored CQL in `computable/` | [→ FORMALIZE.md](FORMALIZE.md) |
 | **Verify** | `rh-inf-verify` | *(standalone)* | — | Consolidated topic verification report | |
@@ -80,7 +83,7 @@ stage-specific verify workflows, and reports later stages explicitly as
 Each stage has a detailed workflow document covering CLI commands, data flow, key files, and design decisions:
 
 - **[Discovery](DISCOVERY.md)** — Topic-free interactive research session: search PubMed/PMC/ClinicalTrials.gov, build curated source registry with domain advice, enforce source constraints (5–25 sources, ≥1 terminology). Outputs `discovery-plan.yaml` and `discovery-readout.md` at the repo root.
-- **[Ingest](INGEST.md)** — Five-stage pipeline: download → normalize (PDF/DOCX/HTML→Markdown) → infer topic + `rh-skills init` → classify (evidence level) → annotate (clinical concepts). Serial annotation constraint prevents concepts.yaml corruption
+- **[Ingest](INGEST.md)** — Five-stage pipeline: register local sources → normalize (PDF/DOCX/HTML→Markdown) → infer topic + `rh-skills init` → classify (evidence level) → annotate (clinical concepts). Open-access downloads are handled in discovery before ingest begins, and `discovery-plan.yaml` may be used as optional enrichment during ingest. Serial annotation constraint prevents concepts.yaml corruption
 - **[Extract](EXTRACT.md)** — Plan-gated derivation: propose L2 artifacts from 7-type catalog, reviewer approves per-artifact, LLM generates structured YAML, validate + render reports with Mermaid diagrams
 - **[Formalize](FORMALIZE.md)** — Type-aware L3 conversion: 7 strategies map L2 types to specific FHIR R4 resources. For CQL strategies (`decision-table`, `measure`, `policy`), `rh-inf-formalize` generates the FHIR JSON wrappers + CQL scaffold, then hands off directly to `rh-inf-cql` within the same implement step to author, validate, and compile the full CQL library.
 
@@ -101,7 +104,6 @@ topics/<name>/
 │   └── diabetes-pathway.yaml
 └── process/                     ← workflow support files
     ├── plans/
-    │   ├── ingest-plan.md
     │   ├── extract-plan.md
     │   ├── formalize-plan.md
     │   └── tasks.md             ← rh-skills tasks tracking
@@ -109,6 +111,11 @@ topics/<name>/
     │   └── results/             ← test run results
     └── notes.md                 ← open questions, decisions, source conflicts, notes (human-maintained)
 ```
+
+`rh-inf-ingest` does not create a durable `ingest-plan.md`. Its `plan` mode is
+a transient pre-flight summary derived from the current state of `sources/`,
+`tracking.yaml`, and optionally `discovery-plan.yaml` when that discovery output
+is available.
 
 ## Guiding Principle
 

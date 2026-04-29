@@ -12,7 +12,7 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
 
 | Command | Purpose | Writes To |
 |---------|---------|-----------|
-| `rh-skills ingest plan [<topic>]` | Print pre-flight summary or create ingest-plan.md template | `plans/ingest-plan.md` |
+| `rh-skills ingest plan [<topic>]` | Print the canonical read-only pre-flight summary | (stdout only) |
 | `rh-skills ingest list-manual [<topic>]` | List untracked files in `sources/` with registration commands | (stdout only) |
 | `rh-skills ingest implement <file>` | Register a local file into tracking.yaml | `sources/<file>`, `tracking.yaml` |
 | `rh-skills ingest normalize <file> --topic <topic> [--name <name>]` | Extract text from binary formats; write normalized Markdown | `sources/normalized/<name>.md`, `tracking.yaml` |
@@ -27,7 +27,9 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
 Registration is explicit and per-file.
 
 - Use `rh-skills ingest list-manual [<topic>]` to identify untracked files in `sources/`.
+- `rh-skills ingest plan [<topic>]` is the primary pre-flight entrypoint; it wraps the same untracked-file discovery and surfaces the registration commands you will run next.
 - Register each untracked file with `rh-skills ingest implement sources/<file> [--topic <topic>]`.
+- `rh-skills ingest implement` infers an initial registration type from the file extension; it does not accept `--type`.
 - There is no bulk registration path via `ingest implement --all`.
 - If no files are untracked, registration is a no-op and ingest proceeds to normalize.
 - If a source already has a registration-time type hint (for example from discovery download),
@@ -60,8 +62,8 @@ This keeps registration deterministic and visible in agent execution logs.
 
 ```
 1. PLAN: rh-skills ingest plan [<topic>]
+   ├─ Inspect untracked local files and print per-file registration commands
    ├─ Check tool availability (pdftotext, pandoc)
-   ├─ Run ingest list-manual to identify untracked files
    └─ Print pre-flight summary → await user confirmation
 
 2. REGISTER: rh-skills ingest implement sources/<file> [--topic <topic>]

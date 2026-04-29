@@ -339,15 +339,26 @@ rh-skills search clinicaltrials --query "<terms>" --max 20 [--json]
 - Set `NCBI_API_KEY` env var for higher PubMed rate limits (10 req/s vs 3 req/s)
 - PubMed uses Entrez esearch→efetch two-step; ClinicalTrials uses REST API v2
 
-### rh-skills ingest implement --url
+### rh-skills source download --url
 
 Download a source file from a URL and register it in tracking.yaml.
 
 ```sh
-rh-skills ingest implement --url <url> --name <slug> [--type <mime>] [--topic <topic>]
+rh-skills source download --url <url> --name <slug> [--type <source-type>] [--topic <topic>]
 ```
 
-Exit codes: `0` success · `1` network/HTTP error · `2` file already exists · `3` auth redirect detected
+Exit codes: `0` success · `1` network/HTTP error · `2` file already exists · `3` auth redirect detected · `4` network blocked by sandbox
+
+### rh-skills ingest implement
+
+Register a local file already present on disk into tracking.yaml.
+
+```sh
+rh-skills ingest implement sources/<file> [--topic <topic>]
+```
+
+- local-file registration only; URL acquisition belongs to `rh-skills source download --url`
+- registration-time type is inferred from the file extension; final type/evidence metadata are set later by `rh-skills ingest classify`
 
 ### rh-skills ingest plan / verify
 
