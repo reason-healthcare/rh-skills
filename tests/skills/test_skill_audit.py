@@ -48,10 +48,6 @@ VERIFY_NONDESTRUCT_PATTERNS = [
 # Skills that intentionally have no verify mode
 NO_VERIFY_SKILLS = {"rh-inf-discovery", "rh-inf-status"}
 
-# Skills whose plan mode writes to the repo root (not topics/<name>/process/plans/)
-REPO_ROOT_PLAN_SKILLS = {"rh-inf-discovery"}
-
-
 # ---------------------------------------------------------------------------
 # Companion file completeness
 # ---------------------------------------------------------------------------
@@ -147,8 +143,14 @@ class TestFrameworkContracts:
         body = skill_body(curated_skill / "SKILL.md")
         if "## Mode: `plan`" not in body and "### `plan`" not in body:
             pytest.skip(f"{curated_skill.name} has no plan mode")
-        if curated_skill.name in REPO_ROOT_PLAN_SKILLS:
-            pytest.skip(f"{curated_skill.name} plan mode intentionally writes to repo root, not process/plans/")
+        if curated_skill.name == "rh-inf-discovery":
+            assert "topics/<topic>/process/plans/" in body, (
+                f"{curated_skill.name}: discovery plan mode must write to topics/<topic>/process/plans/ (FR-018)"
+            )
+            assert "discovery-plan.yaml" in body and "discovery-readout.md" in body, (
+                f"{curated_skill.name}: discovery plan mode must document discovery-plan.yaml and discovery-readout.md (FR-018)"
+            )
+            return
         assert "process/plans/" in body, (
             f"{curated_skill.name}: plan mode must write to topics/<name>/process/plans/ (FR-018)"
         )

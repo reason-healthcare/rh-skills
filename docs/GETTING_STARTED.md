@@ -29,9 +29,7 @@ switch between them at any point in a workflow.
 
 A "topic" is a clinical knowledge domain (e.g., "diabetes-screening", "sepsis-detection").
 
-**`rh-inf-ingest` will propose and create the topic** after normalizing your sources.
-
-If you prefer to initialize manually (e.g., you already know the topic name):
+Initialize the topic before discovery if you want to use the full guided workflow:
 
 ```bash
 rh-skills init diabetes-screening --title "Diabetes Screening" --author "Jane Smith"
@@ -89,23 +87,23 @@ Invoke the discovery skill in your agent:
 
 ```
 # Claude Code
-/rh-inf-discovery plan --domain diabetes-ccm
+/rh-inf-discovery plan diabetes-screening --domain diabetes
 
 # GitHub Copilot — natural language
-run rh-inf-discovery plan --domain diabetes-ccm
+run rh-inf-discovery plan diabetes-screening --domain diabetes
 ```
 
-The agent runs an interactive research session and saves `discovery-plan.yaml` and `discovery-readout.md` to the repo root. Use `--domain` when you want to specify the domain explicitly; otherwise, the skill may infer it during discovery plan mode. Verify and hand off:
+The agent runs an interactive discovery workflow and saves `topics/diabetes-screening/process/plans/discovery-plan.yaml` and `topics/diabetes-screening/process/plans/discovery-readout.md`. Use `--domain` when you want to add domain framing explicitly; otherwise, the skill may infer it from the topic and current context. Verify and hand off:
 
 ```
-/rh-inf-discovery verify
+/rh-inf-discovery verify diabetes-screening
 ```
 
 ### 2. Ingest and normalize
 
 ```
-/rh-inf-ingest plan
-/rh-inf-ingest implement
+/rh-inf-ingest plan diabetes-screening
+/rh-inf-ingest implement diabetes-screening
 ```
 
 Ingest plan mode checks tool availability and identifies unregistered files.
@@ -113,11 +111,9 @@ The underlying file inventory is the same logic exposed by
 `rh-skills ingest list-manual`, but `rh-skills ingest plan` is the canonical
 entrypoint for that pre-flight summary.
 Implement mode then registers each untracked file individually using the
-per-file `rh-skills ingest implement sources/<file>` commands surfaced by
-that pre-flight summary,
-normalizes everything to Markdown,
-then **proposes a topic name** based on the source content, asks for confirmation,
-and calls `rh-skills init <topic>` — no separate init step required.
+per-file `rh-skills ingest implement sources/<file> --topic diabetes-screening`
+commands surfaced by that pre-flight summary, then normalizes everything to
+Markdown and continues classification/annotation for the same topic.
 
 ---
 
@@ -125,14 +121,14 @@ and calls `rh-skills init <topic>` — no separate init step required.
 
 Use this path when you already have files you want to process (no discovery needed).
 
-1. Place your files in `sources/`
-2. Run ingest plan first, then implement — no topic init required:
+1. Initialize a topic with `rh-skills init <topic>`
+2. Place your files in `sources/`
+3. Run ingest plan first, then implement:
   ```
-  /rh-inf-ingest plan
-  /rh-inf-ingest implement
+  /rh-inf-ingest plan diabetes-screening
+  /rh-inf-ingest implement diabetes-screening
   ```
-   The agent normalizes your sources, proposes a topic name, asks for confirmation,
-   and initializes the topic before proceeding with classify and annotate.
+   The agent normalizes your sources and proceeds with classification and annotation for the topic you selected.
 
 ---
 
@@ -199,19 +195,19 @@ See [Usage Modes](USAGE_MODES.md) for all provider options.
 
 ```bash
 # Option A: Discovery-guided
-# Discovery runs via agent skill (domain required):
-#   /rh-inf-discovery plan --domain diabetes-ccm
-#   /rh-inf-discovery verify
+# Discovery runs via agent skill against a concrete topic:
+#   /rh-inf-discovery plan diabetes-screening --domain diabetes
+#   /rh-inf-discovery verify diabetes-screening
 
 # Download open-access sources from discovery-plan entries
-rh-skills source download --url <url> --name <name>
+rh-skills source download --url <url> --name <name> --topic diabetes-screening
 
 # Optional: append search results only when adding to an existing topic plan
 rh-skills search pubmed --query "<terms>" --append-to-plan <topic>
 
 # Register manual sources detected in sources/
 rh-skills ingest list-manual [<topic>]
-rh-skills ingest implement sources/<file> [--topic <topic>]
+rh-skills ingest implement sources/<file> --topic <topic>
 
 # Option B: Bring your own sources
 # Place files in sources/, then:

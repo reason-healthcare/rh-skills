@@ -91,7 +91,7 @@ Which sources do you want to include? [all / select numbers / none]
 
 User: `include all except 3`
 
-Agent records sources in the in-session plan and prints access advisories:
+Agent records sources in the in-memory plan and prints access advisories:
 ```
 Open-access sources:
   ✓ ada-standards-2024         access: open   url: https://pmc.ncbi.nlm.nih.gov/articles/PMC...
@@ -107,7 +107,7 @@ Authenticated sources (advisory):
     URL: https://www.nejm.org/...
     Add to discovery-plan.yaml with auth_note when confirmed accessible.
 
-All selected sources are recorded in discovery-plan.yaml. Open-access sources will be downloaded after you save the plan (Step 12). Authenticated and manual sources are flagged for you to retrieve separately.
+All selected sources are recorded in the topic-scoped discovery plan. Open-access sources will be downloaded after you save the plan (Step 12). Authenticated and manual sources are flagged for you to retrieve separately.
 ```
 
 ---
@@ -135,12 +135,13 @@ Based on your current sources, consider expanding into:
 
 User: `save`
 
-Agent writes `discovery-plan.yaml` (machine-readable source list) and `discovery-readout.md` (narrative), and updates research tracking:
+Agent writes `topics/diabetes-ccm/process/plans/discovery-plan.yaml` (machine-readable source list) and `topics/diabetes-ccm/process/plans/discovery-readout.md` (narrative), updates research tracking, and downloads open-access sources:
 
 ```
-✓ Discovery plan saved: discovery-plan.yaml
-✓ Discovery readout saved: discovery-readout.md
+✓ Discovery plan saved: topics/diabetes-ccm/process/plans/discovery-plan.yaml
+✓ Discovery readout saved: topics/diabetes-ccm/process/plans/discovery-readout.md
   Sources: 6 (5 open-access, 1 government)
+✓ Downloaded open-access sources to `sources/`
 
 Research tracking updated:
   RESEARCH.md: Active Topics row updated (6 sources, 2026-04-04)
@@ -152,7 +153,7 @@ Research tracking updated:
 
 ```bash
 # (agent-run, or user-run directly)
-rh-skills validate --plan discovery-plan.yaml
+rh-skills validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
 ```
 
 Output:
@@ -171,13 +172,14 @@ Output:
 ## Files produced by this quickstart
 
 ```
-discovery-plan.yaml
-discovery-readout.md
+topics/diabetes-ccm/process/plans/discovery-plan.yaml
+topics/diabetes-ccm/process/plans/discovery-readout.md
 topics/diabetes-ccm/process/notes.md    (stub — human-maintained)
+sources/                                (downloaded open-access source files)
 
 RESEARCH.md                  (updated by rh-skills)
 tracking.yaml                (updated by rh-skills)
 ```
 
-> Note: `sources/` files are produced by `rh-inf-ingest` (004), not by rh-inf-discovery.
+> Note: `rh-inf-discovery` now downloads approved open-access sources after save. Authenticated and manual sources are still retrieved separately and then processed by `rh-inf-ingest` (004).
 ```

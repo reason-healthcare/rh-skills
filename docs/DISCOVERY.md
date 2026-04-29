@@ -2,16 +2,16 @@
 
 ## Overview
 
-The **rh-inf-discovery** skill is the **Level 1 (L1) evidence discovery** stage of the healthcare informatics lifecycle. It guides clinical informaticists through finding, evaluating, and documenting evidence-based source material for a clinical research area. The output is a `discovery-plan.yaml` (structured source registry) and `discovery-readout.md` (domain narrative) written to the **repo root** — no topic initialization required.
+The **rh-inf-discovery** skill is the **Level 1 (L1) evidence discovery** stage of the healthcare informatics lifecycle. It guides clinical informaticists through finding, evaluating, and documenting evidence-based source material for a concrete topic. The output is a topic-scoped `discovery-plan.yaml` (structured source registry) and `discovery-readout.md` (domain narrative) written under `topics/<topic>/process/plans/`.
 
 The skill acts as an **interactive research assistant** through a plan-based workflow. After each research pass, the agent prompts the user with expansion suggestions and awaits direction. The discovery plan is a living document written to disk only when the user approves it. After approving, the skill downloads all open-access sources.
 
-**Discovery is topic-free.** `rh-skills init` is called later, during `rh-inf-ingest`, after sources are normalized and a topic name can be inferred. There is no `<topic>` argument to `rh-inf-discovery`.
+**Discovery is topic-centered.** `rh-inf-discovery` runs against an existing topic. `--domain <label>` remains available as optional research framing metadata, but topic identity determines where discovery artifacts are stored and what lifecycle row is updated.
 
 **Key Principles:**
 - Discovery is pure research — all searches delegated to CLI commands
 - Downloads happen only after the user approves and saves the plan
-- Single source of truth: `./discovery-plan.yaml` (repo root)
+- Single source of truth: `topics/<topic>/process/plans/discovery-plan.yaml`
 - Always close the loop with status blocks and clear next-step options
 
 ---
@@ -24,7 +24,7 @@ The skill acts as an **interactive research assistant** through a plan-based wor
 | `rh-skills search pmc --query "<terms>" [--json] [--offline]` | Search PubMed Central (open-access full-text) | None (stdout) |
 | `rh-skills search clinicaltrials --query "<terms>" [--max N] [--status S] [--json]` | Search ClinicalTrials.gov registry via REST API v2 | None (stdout) |
 | `rh-skills source scan` | Scan for manually placed files in `sources/` | None (stdout) |
-| `rh-skills source add --type TYPE --url URL [--name SLUG]` | Add a manual source entry to plan | `discovery-plan.yaml` |
+| `rh-skills source add --type TYPE --url URL [--name SLUG]` | Add a manual source entry to plan | `topics/<topic>/process/plans/discovery-plan.yaml` |
 | `rh-skills validate --plan <file>` | Validate discovery-plan.yaml structure | None (read-only) |
 | `rh-skills source download --url <url> --name <name> [--type <source-type>] [--topic <topic>]` | Download an open-access source after plan save | `sources/<name>.<ext>` |
 
@@ -103,8 +103,8 @@ discovery planning loop, keep entries in memory and save once at checkpoint.
    └─ Option to explore any (loops back to Step 3)
 
 8. SAVE CHECKPOINT
-   ├─ Write ./discovery-plan.yaml (repo root)
-   ├─ Write ./discovery-readout.md (repo root)
+   ├─ Write topics/<topic>/process/plans/discovery-plan.yaml
+   ├─ Write topics/<topic>/process/plans/discovery-readout.md
    ├─ Update RESEARCH.md portfolio row
    └─ Event: discovery_planned → tracking.yaml
 
@@ -127,8 +127,8 @@ discovery planning loop, keep entries in memory and save once at checkpoint.
 | `skills/.curated/rh-inf-discovery/reference.md` | Domain advice checklists, source taxonomies, US gov URLs |
 | `skills/.curated/rh-inf-discovery/examples/plan.yaml` | Worked example: discovery-plan.yaml for diabetes-ccm |
 | `skills/.curated/rh-inf-discovery/examples/readout.md` | Worked example: discovery-readout.md narrative |
-| `./discovery-plan.yaml` | **Output**: authoritative source registry (repo root) |
-| `./discovery-readout.md` | **Output**: domain narrative for reviewer (repo root) |
+| `topics/<topic>/process/plans/discovery-plan.yaml` | **Output**: authoritative source registry for the topic |
+| `topics/<topic>/process/plans/discovery-readout.md` | **Output**: domain narrative for the topic reviewer |
 | `RESEARCH.md` | Portfolio tracking (topic, question, scope, status) |
 | `tracking.yaml` | Records `discovery_planned` event |
 

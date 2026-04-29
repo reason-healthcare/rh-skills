@@ -38,25 +38,25 @@ Creates `topics/diabetes-screening/` with `TOPIC.md`, `structured/`, `computable
 
 ## Step 1: Discovery — find your sources
 
-Invoke the `rh-inf-discovery` skill in **plan** mode. The agent generates a research plan for the domain.
+Invoke the `rh-inf-discovery` skill in **plan** mode. The agent generates a research plan for the topic, using `--domain` only as optional research framing metadata.
 
-**Agent invokes**: `rh-inf-discovery plan`  
-**Reads**: `tracking.yaml` (domain: `diabetes`)  
-**Writes**: `discovery-plan.yaml` (machine-readable source list) and `discovery-readout.md` (narrative)
+**Agent invokes**: `rh-inf-discovery plan diabetes-screening --domain diabetes`  
+**Reads**: `tracking.yaml` (topic: `diabetes-screening`; domain framing: `diabetes`)  
+**Writes**: `topics/diabetes-screening/process/plans/discovery-plan.yaml` (machine-readable source list), `topics/diabetes-screening/process/plans/discovery-readout.md` (narrative), and open-access source files under `sources/`
 
-**Human review**: Open `discovery-plan.yaml`. Edit the YAML to remove sources you don't need or add any you know of. Review `discovery-readout.md` for domain advice and expansion suggestions, then proceed.
+**Human review**: Open `topics/diabetes-screening/process/plans/discovery-plan.yaml`. Edit the YAML to remove sources you don't need or add any you know of. Review `topics/diabetes-screening/process/plans/discovery-readout.md` for domain advice and expansion suggestions, then proceed.
 
 Then invoke **verify** mode to validate the plan before ingesting:
 
-**Agent invokes**: `rh-skills validate --plan discovery-plan.yaml`  
-**Reads**: `discovery-plan.yaml`  
+**Agent invokes**: `rh-skills validate --plan topics/diabetes-screening/process/plans/discovery-plan.yaml`  
+**Reads**: `topics/diabetes-screening/process/plans/discovery-plan.yaml`  
 **Writes**: nothing (read-only)
 
 ---
 
 ## Step 2: Ingest — register your raw sources
 
-You've downloaded `ada-care-2024.pdf` (either via `rh-inf-discovery` or manually). `rh-inf-ingest` processes all files present in `sources/` — it does not read `discovery-plan.yaml` to determine what to acquire.
+You've downloaded `ada-care-2024.pdf` (either via `rh-inf-discovery` or manually). `rh-inf-ingest` processes all files present in `sources/` and may use the discovery plan as enrichment, but discovery remains the authoritative place where recommended source acquisition is reviewed and saved.
 
 **Agent invokes**: `rh-skills ingest implement <file>`  
 **Reads**: file path argument  

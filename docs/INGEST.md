@@ -133,7 +133,7 @@ This keeps registration deterministic and visible in agent execution logs.
 | `sources/<name>.<ext>` | Raw source files (PDF, HTML, DOCX, etc.) |
 | `sources/normalized/<name>.md` | Normalized Markdown with YAML frontmatter |
 | `topics/<topic>/process/concepts.yaml` | De-duplicated concept registry (name, type, sources[]) |
-| `./discovery-plan.yaml` | Input: source list from discovery at repo root (read-only) |
+| `topics/<topic>/process/plans/discovery-plan.yaml` | Input: source list from discovery for the topic (read-only) |
 | `tracking.yaml` | Source registry with checksums, events, classification metadata |
 
 ---
