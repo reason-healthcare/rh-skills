@@ -36,9 +36,14 @@ sources/              # Raw source files (repo root, shared across topics)
 
 ### PlanArtifact
 
-A human-reviewable Markdown file with YAML front matter produced by a `plan` mode. Consumed by the corresponding `implement` mode.
+A plan artifact is the reviewable output produced by a `plan` mode.
 
-**File path**: `topics/<name>/process/plans/<skill>-plan.md`
+- `rh-inf-discovery plan` writes `discovery-plan.yaml` and `discovery-readout.md`
+- `rh-inf-ingest plan` prints a read-only pre-flight summary to stdout
+- `rh-inf-extract plan` and `rh-inf-formalize plan` write per-topic Markdown plan artifacts
+
+**File path**:
+- Extract/Formalize: `topics/<name>/process/plans/<skill>-plan.md`
 
 **Format**:
 ```markdown
@@ -222,14 +227,13 @@ Every state-changing `rh-skills` CLI command or skill mode appends a named event
 | Event name | Emitted by | Scope | Payload fields |
 |------------|-----------|-------|----------------|
 | `topic_created` | `rh-skills init` | topic | `name`, `title`, `author` |
-| `source_added` | `rh-skills ingest implement` | root | `name`, `file`, `type`, `checksum` |
-| `source_changed` | `rh-skills ingest implement` (re-registration) | root | `name`, `old_checksum`, `new_checksum` |
+| `source_added` | `rh-skills ingest implement`; `rh-skills source download` | root | `name`, `file`, `type`, `checksum` |
+| `source_changed` | `rh-skills ingest implement` (re-registration); `rh-skills source download` (re-download) | root | `name`, `old_checksum`, `new_checksum` |
 | `structured_derived` | `rh-skills promote derive` | topic | `name`, `file`, `derived_from[]` |
 | `computable_converged` | `rh-skills promote combine` | topic | `name`, `file`, `converged_from[]` |
 | `validated` | `rh-skills validate` (pass) | topic | `artifact`, `level` (`l2`\|`l3`) |
 | `task_completed` | `rh-skills tasks complete` | topic | `task_id`, `task_text` |
-| `discovery_planned` | `rh-inf-discovery plan` | topic | `plan_file` |
-| `discovery_implemented` | `rh-inf-discovery implement` | topic | `items_count` |
+| `discovery_planned` | `rh-inf-discovery plan` | root | `plan_file` |
 | `ingest_planned` | `rh-inf-ingest plan` | root | `plan_file` |
 | `extract_planned` | `rh-inf-extract plan` | topic | `plan_file`, `artifact_count` |
 | `extract_implemented` | `rh-inf-extract implement` | topic | `artifacts[]` |
@@ -313,7 +317,7 @@ The state machine below describes the full granular progression. The four **stag
     ▼ rh-inf-discovery plan
 [discovery-planned]
     │
-    ▼ rh-inf-discovery implement
+    ▼ rh-skills source download --url
 [ingest-tasks-ready]
     │
     ▼ rh-inf-ingest implement

@@ -9,7 +9,7 @@
 
 ### Session 2026-04-04
 
-- Q: Does `implement` download sources now or only populate `ingest-plan.md` for rh-inf-ingest to handle later? → A: Discovery is pure planning — no downloads occur during the session. `rh-inf-ingest` (004) owns all source acquisition. The discovery session produces `discovery-plan.yaml` (machine-readable work queue) and `discovery-readout.md` (narrative); `rh-inf-ingest` reads `discovery-plan.yaml` to execute downloads.
+- Q: Does discovery only save a plan, or does it also acquire sources? → A: Discovery writes `discovery-plan.yaml` and `discovery-readout.md`, then downloads all `access: open` sources after save via `rh-skills source download --url`. `rh-inf-ingest` (004) starts after acquisition and handles registration pre-checks, normalization, topic inference, classification, and annotation.
 - Q: What are the source count bounds for a discovery plan? → A: 5 minimum, 25 maximum sources per plan.
 - Q: Should `verify` check for a health-economics source? → A: Warning only — `verify` emits `⚠ No health-economics source found — recommended for chronic conditions` but does not exit 1.
 - Q: What should the default result count be for `rh-skills search pubmed`? → A: Default 20, configurable via `--max`. All `rh-skills search` subcommands share this default.

@@ -82,7 +82,7 @@ efficiency_focus:
   - "Does the agent correctly identify the authenticated source before attempting to download it?"
   - "Does it issue the advisory without requiring multiple back-and-forth turns?"
   - "Does it complete ingest for the 2 open-access sources without waiting for user action on the gated one?"
-  - "Does it use rh-skills ingest implement --url (not curl or wget inline)?"
+  - "Does it use rh-skills source download --url (not curl or wget inline)?"
 
 quality_focus:
   - "Is the advisory for UpToDate accurate (institutional access required, manual download instructions)?"

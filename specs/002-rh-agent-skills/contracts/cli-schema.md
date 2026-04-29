@@ -8,41 +8,42 @@
 
 Follows the existing click command group pattern. All exit codes match the existing contract.
 
-### `rh-skills ingest plan [--force]`
+### `rh-skills ingest plan [<topic>]`
 
-Generate an ingest plan template at `plans/ingest-plan.md` (root-level plans directory).
+Render a read-only ingest pre-flight summary.
 
 ```
-Usage: rh-skills ingest plan [--force]
+Usage: rh-skills ingest plan [<topic>]
+
+Arguments:
+  topic       Optional topic slug for topic-aware reporting
 
 Options:
-  --force     Overwrite existing ingest-plan.md
   -h, --help  Print usage
 
 Exit codes:
-  0  Plan written to plans/ingest-plan.md
-  0  Plan already exists (warns, suggests --force)
+  0  Summary printed successfully
   2  Usage error
 
 Output:
-  plans/ingest-plan.md  (YAML front matter + Markdown prose)
+  stdout only
 
 Reads:
-  discovery-plan.yaml  (if available, for context)
+  sources/ and tracking.yaml; optionally discovery-plan.yaml for context
 ```
 
-### `rh-skills ingest implement <file> [--force]`
+### `rh-skills ingest implement <file>`
 
-Copy FILE to `sources/` and register in tracking.yaml. FILE is a path to any local file.
+Register FILE in tracking.yaml. FILE is a path to any local file.
 
 ```
-Usage: rh-skills ingest implement <file> [--force]
+Usage: rh-skills ingest implement <file> [--topic <topic>]
 
 Arguments:
   file        Path to the local source file to ingest
 
 Options:
-  --force     Re-ingest source even if already registered
+  --topic     Optional topic slug for topic-aware reporting
   -h, --help  Print usage
 
 Exit codes:
