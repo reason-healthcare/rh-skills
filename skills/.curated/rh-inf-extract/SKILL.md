@@ -260,10 +260,15 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    ```
 
    - If **any open concerns are listed**: do **not** show the plan-complete output
-     contract. Instead, immediately begin the `rh-inf-resolve` interactive flow
-     inline — present each concern one-by-one, wait for the reviewer's resolution,
-     record it with `rh-skills promote resolve-conflict`, and only after all
-     concerns are cleared proceed to the plan-complete output below.
+     contract. Instead, for each open concern:
+     1. State the concern clearly — exact values or positions from your step 2 analysis
+     2. Present your proposed resolution, clearly labeled as a proposal:
+        > "Proposed resolution: [your reasoning]. Does this look correct, or would
+        > you like to provide a different resolution?"
+     3. **Wait for the user's explicit confirmation or alternative before proceeding.**
+     4. Record the confirmed resolution with `rh-skills promote resolve-conflict`
+
+     Only after all concerns are cleared proceed to the plan-complete output below.
    - If output is `"No open conflicts for topic '<topic>'."`, proceed immediately
      to the Review & Approval phase below and run `rh-skills promote approve`
      without waiting for user confirmation.
@@ -325,7 +330,9 @@ rh-skills promote approve <topic> \
   --review-summary "Cross-source HbA1c concern added during review; planner split sources into separate artifacts." \
   --finalize --reviewer "<reviewer-name>"
 
-# Optionally include a resolution in 'concern|resolution' pipe format:
+# Optionally include a resolution in 'concern|resolution' pipe format.
+# ⚠ ALWAYS present your proposed resolution to the user and wait for
+# confirmation before embedding it. Do not record a resolution autonomously.
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
   --add-conflict "HbA1c threshold: ADA <7.0% vs AACE <=6.5%|Prefer AACE threshold when safely achievable" \
@@ -449,7 +456,12 @@ all deterministic writes must go through `rh-skills promote derive` and
    per source position, using the **same issue text** for both. The CLI merges
    flags with the same issue into a single conflict entry with multiple
    `positions[]`. Add `preferred_source|preferred_rationale` only to the flag
-   for the preferred position:
+   for the preferred position.
+
+   **⚠ Before passing a preferred interpretation**: present your proposed
+   preferred source and rationale to the user and wait for confirmation:
+   > "For concern '[issue]', I propose preferring [source] because [rationale].
+   > Does this match your intent, or would you like a different preference?"
 
    ```sh
    # ADA position (non-preferred — no preferred_ fields):
