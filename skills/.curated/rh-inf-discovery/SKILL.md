@@ -461,7 +461,7 @@ Emit status block:
 > 
 > A) Explore expansion area — reply with the number (e.g. "explore 2")
 > B) Add, remove, or modify sources
-> C) Save the plan and move on to `rh-inf-ingest`
+> C) Save the plan
 > 
 > You can also ask for status `rh-inf-status` at any time.
 
