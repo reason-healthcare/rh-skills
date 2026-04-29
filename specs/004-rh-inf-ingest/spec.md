@@ -8,7 +8,7 @@
 
 ## Overview
 
-`rh-inf-ingest` is an agent skill that takes all files present in `sources/` (downloaded by `rh-inf-discovery` or placed manually) through three sequential stages: **Normalize → Classify → Annotate**. The result is a set of normalized Markdown files, classification metadata in `tracking.yaml`, inline concept annotations in each normalized file, and a de-duped `concepts.yaml` for the topic.
+`rh-inf-ingest` is an agent skill that takes all files present in `sources/` (downloaded by `rh-inf-discovery` or placed manually) through three sequential stages: **Normalize → Classify → Annotate**. The result is a set of normalized Markdown files, classification metadata in `tracking.yaml`, concept annotations in normalized frontmatter, and an accumulated `concepts.yaml` for the topic.
 
 It operates in three modes:
 
@@ -23,7 +23,7 @@ All three stages run in sequence during `implement`. Sources arrive in `sources/
 ## Pipeline Stages
 
 ### 1. Normalize
-Converts each source file to a clean Markdown file at `sources/<name>/normalized.md`:
+Converts each source file to a clean Markdown file at `sources/normalized/<name>.md`:
 - PDF → `pdftotext` (poppler); fallback: register with `text_extracted: false` warning
 - Word (`.docx`) / Excel (`.xlsx`) → `pandoc`
 - HTML → `pandoc` or Python `html2text`
@@ -37,21 +37,21 @@ Assigns `type`, `evidence_level`, and `domain_tags` to each source:
 - User confirms before writing; writes `source_classified` event to `tracking.yaml`
 
 ### 3. Annotate
-Reads each `normalized.md` and adds inline concept markers; produces de-duped `concepts.yaml`:
+Reads each `sources/normalized/<name>.md` and updates concept frontmatter; produces accumulated `concepts.yaml`:
 - Agent identifies key concepts (clinical terms, codes, guideline references, quality measures)
-- Annotates the normalized file with `<!-- concept: <name> -->` markers
-- Aggregates all concepts across sources into `topics/<topic>/process/concepts.yaml`, de-duped by name
+- Writes `concepts[]` entries in normalized frontmatter
+- Appends source-scoped concept entries into `topics/<topic>/process/concepts.yaml`
 - Writes `source_annotated` event to `tracking.yaml`
 
 ## User Stories
 
 ### US1 — Ingest After Discovery
-A clinical informaticist has completed `rh-inf-discovery` — open-access sources are already downloaded to `sources/`. They run `rh-inf-ingest plan young-adult-hypertension` — the agent lists files present and checks normalization tool availability. After confirming, `rh-inf-ingest implement` normalizes all sources, classifies each (using discovery-plan.yaml as enrichment if present), and annotates them — producing `concepts.yaml` with 47 de-duped terms.
+A clinical informaticist has completed `rh-inf-discovery` — open-access sources are already downloaded to `sources/`. They run `rh-inf-ingest plan young-adult-hypertension` — the agent lists files present and checks normalization tool availability. After confirming, `rh-inf-ingest implement` normalizes all sources, classifies each (using discovery-plan.yaml as enrichment if present), and annotates them — producing `concepts.yaml` with 47 concept entries.
 
 ### US2 — Manual Source Entry
 A researcher drops a society guideline PDF into `sources/` directly. They run `rh-inf-ingest implement <topic>` — the agent normalizes it, proposes classification based on content, waits for confirmation, annotates it, and adds its concepts to `concepts.yaml`.
 
-**Independent Test**: Place a fixture PDF in `sources/`, run `rh-inf-ingest implement` — confirm `normalized.md` exists, classification is written to `tracking.yaml`, and `concepts.yaml` contains at least one concept from the file.
+**Independent Test**: Place a fixture PDF in `sources/`, run `rh-inf-ingest implement` — confirm `sources/normalized/<name>.md` exists, classification is written to `tracking.yaml`, and `concepts.yaml` contains at least one concept from the file.
 
 ## Acceptance Scenarios
 
@@ -61,7 +61,7 @@ A researcher drops a society guideline PDF into `sources/` directly. They run `r
 4. **Given** `pdftotext` is not installed, **When** a PDF source is normalized, **Then** checksum and metadata are registered with `text_extracted: false`; the command does not halt.
 5. **Given** `rh-inf-ingest implement` has run, **When** `rh-inf-ingest verify` runs, **Then** every source shows normalized ✓/✗, classified ✓/✗, annotated ✓/✗; and `concepts.yaml` is reported valid or lists schema errors.
 6. **Given** `rh-inf-ingest implement` has already processed a source, **When** run again, **Then** each stage is skipped for that source (idempotent on tracking events).
-7. **Given** all sources are annotated, **Then** `concepts.yaml` contains de-duped entries with `name`, `type`, `sources[]` (list of source names that reference the concept).
+7. **Given** all sources are annotated, **Then** `concepts.yaml` contains entries with `name`, `type`, `sources[]` (list of source names that reference the concept).
 
 ## Requirements
 
@@ -75,12 +75,12 @@ A researcher drops a society guideline PDF into `sources/` directly. They run `r
 - **FR-004**: `rh-inf-ingest implement <topic>` MUST run all three stages in order: Normalize → Classify → Annotate. Each stage reports per-source results before the next begins.
 - **FR-007**: Normalize stage MUST call `rh-skills ingest normalize <file> --topic <topic>` for each source in `sources/`, producing `sources/normalized/<name>.md`. If a normalization tool is absent, register `text_extracted: false` in `tracking.yaml` and continue.
 - **FR-008**: Classify stage MUST propose classification for every source. If `discovery-plan.yaml` is present and contains a matching entry, use its `type` and `evidence_level` as the starting proposal. The agent MUST confirm with the user before calling `rh-skills ingest classify`.
-- **FR-009**: Annotate stage MUST call `rh-skills ingest annotate <file> --topic <topic>` for each normalized source, which adds `<!-- concept: <name> -->` markers to `normalized.md` and appends new concepts to `concepts.yaml`. Concepts MUST be de-duped by canonical name across all sources.
+- **FR-009**: Annotate stage MUST call `rh-skills ingest annotate <name> --topic <topic>` for each normalized source, which writes `concepts[]` in `sources/normalized/<name>.md` frontmatter and appends new concepts to `concepts.yaml`. Concepts are append-only unless `--overwrite` is used for a source.
 - **FR-010**: Successful normalize → `source_normalized` event in `tracking.yaml`. Successful classify → `source_classified`. Successful annotate → `source_annotated`.
 - **FR-011**: `rh-inf-ingest implement` with `--dry-run` MUST report what would happen per stage without writing any files or events.
 
 **Verify mode**
-- **FR-012**: `rh-inf-ingest verify <topic>` MUST check and report per source: file present in `sources/` ✓/✗, `normalized.md` exists ✓/✗, classified in `tracking.yaml` ✓/✗, annotated ✓/✗.
+- **FR-012**: `rh-inf-ingest verify <topic>` MUST check and report per source: file present in `sources/` ✓/✗, `sources/normalized/<name>.md` exists ✓/✗, classified in `tracking.yaml` ✓/✗, annotated ✓/✗.
 - **FR-013**: Verify mode MUST also validate `concepts.yaml` schema (each entry has `name`, `type`, `sources[]`) and report any errors.
 - **FR-014**: Verify mode MUST NOT write any files or append events to `tracking.yaml`.
 - **FR-015**: If a source's checksum in `tracking.yaml` differs from the file on disk, verify MUST flag it as `CHANGED` and recommend `rh-skills ingest implement --force`.
@@ -98,7 +98,7 @@ A researcher drops a society guideline PDF into `sources/` directly. They run `r
 
 | Artifact | Path | Format |
 |----------|------|--------|
-| Normalized source | `sources/<name>/normalized.md` | Markdown |
+| Normalized source | `sources/normalized/<name>.md` | Markdown |
 | Concept YAML | `topics/<topic>/process/concepts.yaml` | YAML |
 
 ### `concepts.yaml` schema
@@ -108,7 +108,7 @@ topic: <topic-name>
 generated: <ISO-8601>
 concepts:
   - name: Hypertension
-    type: condition          # condition | medication | procedure | measure | code | term
+    type: condition          # condition | finding | medication | procedure | measure | lab | code | term | guideline-ref | sdoh-factor
     sources:
       - ada-guidelines-2024
       - cms-ecqm-cms122
@@ -129,7 +129,7 @@ concepts:
 ## Edge Cases
 
 - **No discovery plan**: classify stage proposes classification from normalized content for all sources.
-- **Duplicate concept names across sources**: de-duped by canonical name; `sources[]` lists all referencing sources.
+- **Duplicate concept names across sources**: preserved as separate entries; each entry carries its own `sources[]` backlink.
 - **Partial run recovery**: each stage is idempotent — re-running skips sources that already have the corresponding `tracking.yaml` event.
 - **Source from discovery with plan enrichment**: if `discovery-plan.yaml` is present and has a matching entry, classify uses its `type`/`evidence_level` as the starting proposal — user still confirms.
 

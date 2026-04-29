@@ -130,8 +130,12 @@ rh-skills ingest annotate <name> --topic <topic> --concept <concept[:type]>...
 - Requires `sources/normalized/<name>.md` to exist
 - Writes `concepts[]` into normalized frontmatter
 - Creates or updates `topics/<topic>/process/concepts.yaml`
-- De-dupes concept entries by canonical name and appends source backlinks
+- Appends source-scoped concept entries (no deduplication)
+- `--overwrite` replaces concepts previously attributed to the current source
 - Adds `source_annotated` event and updates `concept_count`
+
+**Input safety**:
+- Concept arguments are parsed as `name:type`; concept names must not include unescaped colons.
 
 ---
 
