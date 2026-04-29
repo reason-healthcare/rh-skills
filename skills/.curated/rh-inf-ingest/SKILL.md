@@ -274,9 +274,10 @@ skip this step entirely.
 **Step 4 — Classify**
 
 For each source, propose classification (type, evidence_level, domain_tags) based
-on the normalized content and filename. If `./discovery-plan.yaml` exists, check
-it for a matching entry and use its declared `type` and `evidence_level` as the
-starting proposal — but still present it to the user for confirmation.
+on the normalized content and filename. If `topics/<topic>/process/plans/discovery-plan.yaml`
+exists, check it for a matching entry and use its declared `type` and
+`evidence_level` as the starting proposal — but still present it to the user for
+confirmation.
 
 Present proposals first, then stop and ask for explicit confirmation. Use this
 format:

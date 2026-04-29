@@ -2,7 +2,7 @@
 
 This is an abbreviated worked example of a `plan` mode interaction for the
 topic `diabetes-ccm`. It illustrates the interactive research assistant loop,
-access advisories, and the save checkpoint.
+access advisories, the save checkpoint, and post-save downloads.
 
 ---
 
@@ -231,20 +231,22 @@ User: rh-inf-discovery plan diabetes-ccm
 
 > Saving discovery plan...
 >
-> ✓ Written: `./discovery-plan.yaml`
+> ✓ Written: `topics/diabetes-ccm/process/plans/discovery-plan.yaml`
 >   (10 sources: 8 open, 2 authenticated)
 >
-> ✓ Written: `./discovery-readout.md`
+> ✓ Written: `topics/diabetes-ccm/process/plans/discovery-readout.md`
 >   (domain advice + 5 expansion suggestions)
 >
 > ✓ Updated: `RESEARCH.md` (row for diabetes-ccm: sources=10, updated=2026-04-15)
+>
+> ✓ Downloaded 8 open-access sources to `sources/`
 >
 >
 > ```
 > ▸ rh-inf-discovery  diabetes-ccm
 >   Step:  11 — Save Checkpoint · Complete
->   Plan:  saved · 10 sources → discovery-plan.yaml
->   Next:  rh-inf-discovery verify
+>   Plan:  saved · 10 sources → topics/diabetes-ccm/process/plans/discovery-plan.yaml
+>   Next:  rh-inf-discovery verify diabetes-ccm
 > ```
 
 **User:** yes, verify.
@@ -254,11 +256,11 @@ User: rh-inf-discovery plan diabetes-ccm
 ## Verify Mode Output
 
 ```
-rh-skills validate --plan ./discovery-plan.yaml
+rh-skills validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml
 ```
 
 
-Validating discovery plan: ./discovery-plan.yaml
+Validating discovery plan: topics/diabetes-ccm/process/plans/discovery-plan.yaml
 
 ✓ Parses as valid YAML
 ✓ Source count: 10 (within 5–25 range)
@@ -274,12 +276,12 @@ VALID — all checks passed
 > ▸ rh-inf-discovery  diabetes-ccm
 >   Mode:    verify
 >   Result:  PASS (1 warning)
->   Next:    rh-inf-ingest implement
+>   Next:    rh-inf-ingest plan diabetes-ccm
 > ```
 >
 > **What would you like to do next?**
 >
-> A) Address issues and re-run `rh-skills validate --plan ...`
-> B) Move on to `rh-inf-ingest`
+> A) Address issues and re-run `rh-skills validate --plan topics/diabetes-ccm/process/plans/discovery-plan.yaml`
+> B) Move on to `rh-inf-ingest plan diabetes-ccm`
 >
 >

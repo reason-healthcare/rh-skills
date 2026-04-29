@@ -52,12 +52,12 @@ def _next_step_options(sources: int, structured: int, computable: int, topic: st
         has_plan = _has_discovery_plan(topic)
         if has_plan:
             return [
-                (f"Update your discovery plan", f"rh-inf-discovery session {topic}"),
+                (f"Update your discovery plan", f"rh-inf-discovery plan {topic}"),
                 (f"Ingest sources using your existing discovery plan", f"rh-inf-ingest plan {topic}"),
                 (f"Full pipeline summary", f"rh-skills status progress {topic}"),
             ]
         return [
-            ("Start source discovery for this topic", f"rh-inf-discovery session {topic}"),
+            ("Start source discovery for this topic", f"rh-inf-discovery plan {topic}"),
             ("Ingest sources if you already have a discovery plan", f"rh-inf-ingest plan {topic}"),
             ("Full pipeline summary", f"rh-skills status progress {topic}"),
         ]
@@ -298,7 +298,7 @@ def status_check_changes(topic):
         click.echo("No L1 sources registered.")
         click.echo("")
         _render_next_steps([
-            ("Start source discovery for this topic", f"rh-inf-discovery session {topic}"),
+            ("Start source discovery for this topic", f"rh-inf-discovery plan {topic}"),
             ("Review topic status", f"rh-skills status show {topic}"),
         ])
         return

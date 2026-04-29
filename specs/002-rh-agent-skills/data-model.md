@@ -38,12 +38,12 @@ sources/              # Raw source files (repo root, shared across topics)
 
 A plan artifact is the reviewable output produced by a `plan` mode.
 
-- `rh-inf-discovery plan` writes `discovery-plan.yaml` and `discovery-readout.md`
+- `rh-inf-discovery plan` writes `topics/<name>/process/plans/discovery-plan.yaml` and `topics/<name>/process/plans/discovery-readout.md`
 - `rh-inf-ingest plan` prints a read-only pre-flight summary to stdout
 - `rh-inf-extract plan` and `rh-inf-formalize plan` write per-topic Markdown plan artifacts
 
 **File path**:
-- Extract/Formalize: `topics/<name>/process/plans/<skill>-plan.md`
+- Discovery/Extract/Formalize: `topics/<name>/process/plans/<skill>-plan.*`
 
 **Format**:
 ```markdown
@@ -233,7 +233,7 @@ Every state-changing `rh-skills` CLI command or skill mode appends a named event
 | `computable_converged` | `rh-skills promote combine` | topic | `name`, `file`, `converged_from[]` |
 | `validated` | `rh-skills validate` (pass) | topic | `artifact`, `level` (`l2`\|`l3`) |
 | `task_completed` | `rh-skills tasks complete` | topic | `task_id`, `task_text` |
-| `discovery_planned` | `rh-inf-discovery plan` | root | `plan_file` |
+| `discovery_planned` | `rh-inf-discovery plan` | topic | `plan_file` |
 | `ingest_planned` | `rh-inf-ingest plan` | root | `plan_file` |
 | `extract_planned` | `rh-inf-extract plan` | topic | `plan_file`, `artifact_count` |
 | `extract_implemented` | `rh-inf-extract implement` | topic | `artifacts[]` |

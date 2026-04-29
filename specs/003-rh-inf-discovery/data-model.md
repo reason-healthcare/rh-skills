@@ -4,7 +4,7 @@
 
 ---
 
-## Entity 1: Source Entry (`discovery-plan.yaml` — sources[])
+## Entity 1: Source Entry (`topics/<topic>/process/plans/discovery-plan.yaml` — sources[])
 
 ```yaml
 sources:
@@ -37,17 +37,18 @@ sources:
 
 ---
 
-## Entity 2: Discovery Plan (`discovery-plan.yaml`)
+## Entity 2: Discovery Plan (`topics/<topic>/process/plans/discovery-plan.yaml`)
 
-Pure YAML file — no frontmatter delimiters (`---`). This is the machine-readable source of truth consumed by `rh-skills validate --plan` and `rh-inf-ingest`. Human-editable between sessions.
+Pure YAML file — no frontmatter delimiters (`---`). This is the machine-readable source of truth consumed by `rh-skills validate --plan` and `rh-inf-ingest`. Human-editable between runs.
 
 ```yaml
 topic: "string"              # Matches topics/<name> directory
+domain: "string"             # Optional research framing label from --domain or inferred context
 version: "string"            # Semantic version; starts at "1.0"
 created: "ISO-8601 date"     # When plan was first saved
-last_updated: "ISO-8601 date" # When plan was last modified in this session
+last_updated: "ISO-8601 date" # When plan was last modified in this run
 status: "string"             # draft | approved | superseded
-session_id: "string"         # Unique identifier for the discovery session
+session_id: "string"         # Unique identifier for the interactive discovery run
 domain_advice:
   cms_program_alignment: []  # Key CMS/QPP/eCQM considerations for the topic
   sdoh_relevance: []         # Gravity Project or broader SDOH considerations
@@ -64,11 +65,11 @@ sources: []                  # Source entries (see Entity 1)
 
 **State transitions**:
 - `draft` → `approved`: user explicitly approves save
-- `approved` → `superseded`: new session replaces existing plan (old file archived with date suffix)
+- `approved` → `superseded`: a new plan run replaces the existing plan (old file archived with date suffix)
 
 ---
 
-## Entity 2b: Discovery Readout (`discovery-readout.md`)
+## Entity 2b: Discovery Readout (`topics/<topic>/process/plans/discovery-readout.md`)
 
 Generated Markdown narrative derived from `discovery-plan.yaml`. **Do not edit directly** — regenerated on each save. For human/agent reading only; never machine-parsed.
 
@@ -147,7 +148,7 @@ Generated Markdown narrative derived from `discovery-plan.yaml`. **Do not edit d
 
 **CLI write events**:
 - `rh-skills init <topic>` → append row to Active Topics (stage: `initialized`)
-- Session save → update Updated date and Sources count in Active Topics row
+- Discovery plan save → update Updated date and Sources count in Active Topics row
 - `rh-skills promote` → may move row from Active to Completed (stage update)
 
 ---

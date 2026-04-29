@@ -13,7 +13,7 @@ context_files:
   - reference.md          # domain advice checklist, source taxonomies, US gov coverage
   - examples/plan.yaml    # worked example: diabetes-ccm discovery-plan.yaml (structured sources)
   - examples/readout.md   # worked example: diabetes-ccm discovery-readout.md (domain narrative)
-  - examples/output.md    # worked example: session transcript excerpt
+  - examples/output.md    # worked example: plan transcript excerpt
 metadata:
   author: "RH Skills"
   version: "1.0.0"
@@ -41,20 +41,21 @@ metadata:
 
 `rh-inf-discovery` is the **L1 evidence discovery** stage of the lifecycle. It
 guides a clinical informaticist through finding, evaluating, and documenting
-evidence-based source material for a clinical research area. The result is
-a `discovery-plan.yaml` (structured source list, the single source of truth),
-`discovery-readout.md` (generated domain narrative), and downloaded open-access
-source files. `rh-inf-ingest` consumes these to normalize, classify, and annotate
-sources and infer the appropriate topic(s).
+evidence-based source material for a clinical research area. The result is a
+topic-scoped `discovery-plan.yaml` (structured source list, the single source
+of truth), `discovery-readout.md` (generated domain narrative), and downloaded
+open-access source files. `rh-inf-ingest` consumes these to normalize,
+classify, and annotate sources for the same topic.
 
 The skill acts as an **interactive research assistant** — it does not stop at a
 single search pass. After each pass the agent explicitly prompts the user with
 expansion suggestions and awaits direction. The plan is a **living document**
 written to disk only when the user approves it.
 
-**Discovery is topic-free.** No `rh-skills init` call is required before or
-during discovery. Topic naming and initialization happen later in `rh-inf-ingest`
-after sources are normalized.
+**Discovery is topic-centered.** Discovery runs against a concrete topic and
+writes its artifacts under that topic's `process/plans/` directory. The
+optional `--domain <label>` flag is descriptive metadata used to frame domain
+advice and search strategy; it does not replace the topic identity.
 
 ---
 
@@ -82,18 +83,20 @@ $ARGUMENTS
 ```
 
 Inspect `$ARGUMENTS` before proceeding. The first word is the **mode**
-(`plan` or `verify`). The optional `--domain <label>` flag names the clinical
-research area (freeform label used for status output and file naming — not a
-tracked topic identifier).
+(`plan` or `verify`). Discovery runs against a required `<topic>` positional
+argument. The optional `--domain <label>` flag names the clinical research area
+used to frame domain advice and search strategy.
 
 | Mode | Arguments | Example |
 |------|-----------|---------|
-| `plan` | `[--domain <label>] [--force]` | `plan --domain diabetes-ccm` |
-| `verify` | — | `verify` |
+| `plan` | `<topic> [--domain <label>] [--force]` | `plan diabetes-ccm --domain diabetes` |
+| `verify` | `<topic>` | `verify diabetes-ccm` |
 
-**Mode Defaulting**: If `$ARGUMENTS` is empty or contains only flags (no mode), default to `plan` mode.
+**Mode Defaulting**: If the first token is not `plan` or `verify`, treat the
+input as `plan <topic> ...`.
 
-- `--domain <label>`: optional freeform research area label used for status output and naming context. If omitted, infer from current research context.
+- `<topic>`: required kebab-case lifecycle identifier for artifact location and tracking context.
+- `--domain <label>`: optional freeform research area label used for domain advice, search framing, and plan/readout metadata. If omitted, infer from the topic/context.
 - `--force`: overwrite existing `discovery-plan.yaml` and `discovery-readout.md` (plan mode only).
 - If the mode is unrecognized (neither `plan` nor `verify`), print this table and exit with an error.
 
@@ -101,10 +104,10 @@ tracked topic identifier).
 
 ## Pre-Execution Checks
 
-For **plan** mode only: check whether a plan already exists at the repo root:
+For **plan** mode only: check whether a plan already exists for the topic:
 
 ```sh
-ls discovery-plan.yaml 2>/dev/null
+ls topics/<topic>/process/plans/discovery-plan.yaml 2>/dev/null
 ```
 
 - If it exists **and** `--force` was not passed: warn the user, offer to load it
@@ -124,7 +127,7 @@ ls discovery-plan.yaml 2>/dev/null
 
 ## Mode: `plan`
 
-The session is an **interactive research loop**. Complete all steps; prompt the
+The plan is an **interactive research loop**. Complete all steps; prompt the
 user after each major pass before proceeding.
 
 ### Step 0 — Scan for Manually Placed Files
@@ -193,8 +196,9 @@ rh-skills search pmc   --query "<terms>" --max 20 --json
 ```
 
 Choose search terms based on the topic name, clinical synonyms, and domain
-advice from Step 1. Run at least one PubMed search AND one PMC search per
-session.
+advice from Step 1. If `--domain <label>` was provided, use it to refine the
+search framing and readout metadata. Run at least one PubMed search AND one PMC
+search per plan.
 
 Parse the JSON results. For each result evaluate:
 
@@ -300,7 +304,7 @@ Emit status block:
 
 ### Step 6 — Build the Living Plan
 
-Maintain a `sources[]` list in memory throughout the session. After Steps 2–5,
+Maintain a `sources[]` list in memory throughout the plan. After Steps 2–5,
 compile the list applying these rules:
 
 - **Minimum 5 sources**: if fewer than 5, search additional databases or
@@ -348,7 +352,7 @@ Incorporate feedback and loop back if needed.
 Emit status block:
 
 > ```
-> ▸ rh-inf-discovery  <domain>
+> ▸ rh-inf-discovery  <topic>
 >   Step:   7 — Source Review
 >   Plan:   <N> sources in memory
 >   Next:   approve list / modify / add sources
@@ -447,7 +451,7 @@ area and merge the findings into the living plan.
 Emit status block:
 
 > ```
-> ▸ rh-inf-discovery  <domain>
+> ▸ rh-inf-discovery  <topic>
 >   Step:   10 — Awaiting Direction
 >   Plan:   <N> sources in memory
 >   Next:   explore expansion / modify / save plan
@@ -465,19 +469,19 @@ Emit status block:
 
 When the user approves saving:
 
-1. Write `discovery-plan.yaml` at the repo root — the structured source list
-   (see Level 3 below for the required format)
-2. Write `discovery-readout.md` at the repo root — the generated domain
-   narrative (Domain Advice + Research Expansion Suggestions prose);
+1. Write `topics/<topic>/process/plans/discovery-plan.yaml` — the structured
+   source list (see Level 3 below for the required format)
+2. Write `topics/<topic>/process/plans/discovery-readout.md` — the generated
+   domain narrative (Domain Advice + Research Expansion Suggestions prose);
    add a note at the top that it is derived from `discovery-plan.yaml`
-3. Update `RESEARCH.md` root portfolio row for the domain area (source count, date)
+3. Update `RESEARCH.md` root portfolio row for the topic (source count, date)
 
 After saving, emit status block:
 
 > ```
-> ▸ rh-inf-discovery  <domain>
+> ▸ rh-inf-discovery  <topic>
 >   Step:   11 — Save Checkpoint · Complete
->   Plan:   saved · <N> sources → discovery-plan.yaml
+>   Plan:   saved · <N> sources → topics/<topic>/process/plans/discovery-plan.yaml
 >   Next:   Step 12 — Download open-access sources
 > ```
 > 
@@ -494,7 +498,7 @@ After the plan is saved, download all `access: open` sources immediately.
 Launch one subagent per source **in parallel**:
 
 ```sh
-rh-skills source download --url <url> --name <name> --type <source-type> [--topic <topic-slug>]
+rh-skills source download --url <url> --name <name> --type <source-type> --topic <topic>
 ```
 
 **Type passthrough policy**: For each open-access source, pass the source
@@ -502,7 +506,9 @@ rh-skills source download --url <url> --name <name> --type <source-type> [--topi
 an initial classification hint at registration time. `rh-skills ingest classify`
 remains authoritative and may refine or replace this value later.
 
-**Topic passthrough**: If a topic slug is already established for this research domain — because it was provided in the session prompt, an existing topic was identified in `tracking.yaml`, or the user confirmed a slug during the session — pass `--topic <slug>` on every download call. This ensures sources are associated with the topic at registration time and are not left as orphaned root-level entries. If no topic slug is known, omit `--topic` and note in the status block that sources will need topic assignment during `rh-inf-ingest`.
+**Topic passthrough**: Always pass `--topic <topic>` on every download call.
+Discovery is topic-scoped, so downloaded sources should be associated with the
+same topic at registration time.
 
 **NEVER use curl, wget, Python requests, or any other download method.**
 `rh-skills source download --url` is the only permitted download mechanism.
@@ -523,7 +529,7 @@ Downloads complete:
   **Stop retrying downloads.** Inform the user:
   > "Downloads require outbound network access, which is blocked in this
   > sandbox. Please run the following commands in a shell with network access:"
-   > Then list every blocked `rh-skills source download --url …` command (include `--topic <slug>` on each if a topic slug is known).
+   > Then list every blocked `rh-skills source download --url … --topic <topic>` command.
 
 For `access: authenticated` or `access: manual` sources: print the `auth_note`
 advisory only. Do not attempt to download them.
@@ -552,7 +558,7 @@ to `rh-inf-ingest` for normalization, classification, and annotation.
 **Read-only** — no file writes, no `tracking.yaml` modifications.
 
 ```sh
-rh-skills validate --plan ./discovery-plan.yaml
+rh-skills validate --plan topics/<topic>/process/plans/discovery-plan.yaml
 ```
 
 Report the output verbatim. Exit with the same code as `rh-skills validate --plan`.
@@ -562,15 +568,15 @@ On exit 0, before emitting the status block, emit:
 > Verification passed! Your discovery plan is well-formed and ready for `rh-inf-ingest`.
 > 
 > ```
-> ▸ rh-inf-discovery  <domain>
+> ▸ rh-inf-discovery  <topic>
 >   Mode:    verify
 >   Result:  PASS
->   Next:    rh-inf-ingest plan
+>   Next:    rh-inf-ingest plan <topic>
 > ```
 > 
 > **What would you like to do next?**
 > 
-> A) Run `rh-inf-ingest plan` — begin source acquisition
+> A) Run `rh-inf-ingest plan <topic>` — begin source acquisition
 > B) Return to the discovery plan to revise sources
 > 
 > You can also ask for status `rh-inf-status` at any time.
@@ -578,10 +584,10 @@ On exit 0, before emitting the status block, emit:
 
 On exit 1, emit:
 
-> Verification failed. Please address the following issues in `discovery-plan.yaml`:
+> Verification failed. Please address the following issues in `topics/<topic>/process/plans/discovery-plan.yaml`:
 > 
 > ```
-> ▸ rh-inf-discovery  <domain>
+> ▸ rh-inf-discovery  <topic>
 >   Mode:    verify
 >   Result:  FAIL — <N> check(s) failed
 >   Next:    fix: <specific issue(s) listed above>, then re-run verify
@@ -600,13 +606,15 @@ On exit 1, emit:
 
 <!-- LEVEL 3 DISCLOSURE — detailed schemas, loaded on-demand -->
 
-The discovery plan is **two files** written to the same directory:
+The discovery plan is **two files** written to the same directory under
+`topics/<topic>/process/plans/`:
 
 ### `discovery-plan.yaml` — Structured Source List
 
 Pure YAML. This is what `rh-skills validate --plan` and `rh-inf-ingest` operate on.
 
 ```yaml
+topic: "<topic>"                    # required; matches topics/<topic> directory
 date: "YYYY-MM-DD"
 domain: "<freeform research area label>"   # optional, from --domain flag or inferred
 sources:
@@ -677,5 +685,5 @@ See `examples/readout.md` for a complete worked example.
 | `rh-skills source add --type <type> --title "..." --rationale "..."` | Add a single source entry |
 | `rh-skills source add --dry-run ...` | Preview source entry without writing |
 | `rh-skills schema show discovery-plan` | Show plan schema and allowed taxonomies |
-| `rh-skills validate --plan <file>` | Validate a saved discovery plan |
+| `rh-skills validate --plan topics/<topic>/process/plans/discovery-plan.yaml` | Validate a saved discovery plan |
 | `rh-skills validate --plan -` | Validate via stdin (pipe or heredoc) |
