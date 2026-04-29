@@ -136,8 +136,8 @@ User: rh-inf-discovery plan diabetes-ccm
 >
 >
 > All open-access sources have URLs recorded. Authenticated sources are flagged
-> with access advisories below. Open-access sources will be downloaded after
-> you approve and save the plan (Step 12).
+> with access advisories below. Open-access sources will be downloaded in
+> discovery Step 12 after you approve and save the plan.
 >
 > Do you approve this list? Any changes? 
 >
@@ -152,7 +152,7 @@ User: rh-inf-discovery plan diabetes-ccm
 **Agent:**
 
 > All 8 open-access sources have URLs recorded in the plan and should be fetched
-> during discovery via `rh-skills source download --url ... --name ...`.
+> during discovery via `rh-skills source download --url ... --name ... --type ...`.
 > Here are the access advisories for sources requiring
 > authentication or manual retrieval:
 >

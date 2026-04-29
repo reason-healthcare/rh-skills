@@ -22,14 +22,15 @@ metadata:
   reads_from:
     - RESEARCH.md
     - sources/
-  writes_via_cli:
+  reads_via_cli:
     - "rh-skills search pubmed"
     - "rh-skills search pubmed --offline"
     - "rh-skills search pmc"
     - "rh-skills search clinicaltrials"
-    - "rh-skills source add"
     - "rh-skills source scan"
     - "rh-skills validate --plan"
+  writes_via_cli:
+    - "rh-skills source add"
     - "rh-skills source download --url"
 ---
 
@@ -337,8 +338,9 @@ Present a formatted summary table of proposed sources:
 
 For `access: open` sources, confirm a URL is recorded. For `access: authenticated`
 sources, note the auth method. For `access: manual` sources, note what the user
-must retrieve. None of these are downloaded here — all acquisition happens in
-`rh-inf-ingest`.
+must retrieve. Open-access sources are downloaded in Step 12 of this discovery
+workflow via `rh-skills source download --url ...`; authenticated/manual sources
+remain advisory and are gathered by the user.
 
 Ask the user to approve, modify, or add/remove sources.
 Incorporate feedback and loop back if needed.
@@ -375,6 +377,10 @@ an access advisory so the user knows what to gather before running `rh-inf-inges
 
 For `access: manual` sources without a URL, describe where to find the artifact
 and what filename convention to use when placing it in `sources/`.
+
+Command usage boundary:
+- Use `rh-skills source scan` during discovery for inventory and drift detection (`UNTRACKED`, `TRACKED`, `SHA-CHANGED`).
+- Use `rh-skills ingest list-manual [<topic>]` during ingest plan as a registration pre-check to list untracked files and print per-file `rh-skills ingest implement ...` commands.
 
 Emit status block:
 ```
@@ -488,8 +494,13 @@ After the plan is saved, download all `access: open` sources immediately.
 Launch one subagent per source **in parallel**:
 
 ```sh
-rh-skills source download --url <url> --name <name> [--topic <topic-slug>]
+rh-skills source download --url <url> --name <name> --type <source-type> [--topic <topic-slug>]
 ```
+
+**Type passthrough policy**: For each open-access source, pass the source
+`type` from `discovery-plan.yaml` into `source download --type` so tracking has
+an initial classification hint at registration time. `rh-skills ingest classify`
+remains authoritative and may refine or replace this value later.
 
 **Topic passthrough**: If a topic slug is already established for this research domain — because it was provided in the session prompt, an existing topic was identified in `tracking.yaml`, or the user confirmed a slug during the session — pass `--topic <slug>` on every download call. This ensures sources are associated with the topic at registration time and are not left as orphaned root-level entries. If no topic slug is known, omit `--topic` and note in the status block that sources will need topic assignment during `rh-inf-ingest`.
 
