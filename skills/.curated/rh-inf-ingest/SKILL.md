@@ -4,7 +4,7 @@ description: >
   Source preparation skill for the HI evidence pipeline. Normalizes all files
   in sources/ to Markdown, infers and initializes topics, classifies each source
   (using discovery-plan.yaml as optional enrichment when present), and annotates
-  with concept metadata. Produces concepts.yaml as a de-duped vocabulary for
+  with concept metadata. Produces concepts.yaml as an accumulated concept registry for
   downstream extraction. Modes: plan · implement · verify.
 compatibility: "rh-skills >= 0.1.0"
 context_files:
@@ -47,7 +47,7 @@ manually) and drives the full pipeline:
    `normalized.md` frontmatter and `topics/<topic>/process/concepts.yaml` via
    `rh-skills ingest annotate`
 
-The result is a de-duped `concepts.yaml` that downstream skills
+The result is a `concepts.yaml` that downstream skills
 (`rh-inf-extract`, `rh-inf-formalize`) consume to advance artifacts toward L2 and L3.
 
 All file I/O is delegated exclusively to the `rh-skills` CLI. The agent performs
@@ -324,6 +324,9 @@ rh-skills ingest annotate <name> --topic <topic> \
   --concept "<name>:<type>" \
   --concept "<name>:<type>" ...
 ```
+
+By default, `annotate` **appends** new concepts to any already recorded for this source.
+Pass `--overwrite` to replace all existing concepts for the source.
 
 **⚠️ CRITICAL — annotate commands MUST be run serially (one at a time).** All
 `annotate` calls write to the same `topics/<topic>/process/concepts.yaml` file.

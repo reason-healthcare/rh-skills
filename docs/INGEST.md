@@ -17,7 +17,7 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
 | `rh-skills ingest implement <file>` | Register a local file into tracking.yaml | `sources/<file>`, `tracking.yaml` |
 | `rh-skills ingest normalize <file> --topic <topic> [--name <name>]` | Extract text from binary formats; write normalized Markdown | `sources/normalized/<name>.md`, `tracking.yaml` |
 | `rh-skills ingest classify <name> --topic <topic> --type <type> --evidence-level <level>` | Assign classification metadata | `tracking.yaml` |
-| `rh-skills ingest annotate <name> --topic <topic> --concept "name:type" [...]` | Extract clinical concepts from normalized source | `normalized/<name>.md`, `concepts.yaml`, `tracking.yaml` |
+| `rh-skills ingest annotate <name> --topic <topic> --concept "name:type" [...] [--overwrite]` | Extract clinical concepts from normalized source | `normalized/<name>.md`, `concepts.yaml`, `tracking.yaml` |
 | `rh-skills ingest verify [<topic>]` | Audit topic ingest readiness (checksums, completeness) | (read-only) |
 
 ---
@@ -105,7 +105,7 @@ This keeps registration deterministic and visible in agent execution logs.
    │   │   ├─ Guideline references, SDOH factors
    │   │   └─ Quality measures
    │   ├─ Update normalized/<name>.md frontmatter: add concepts[]
-   │   ├─ Update topics/<topic>/process/concepts.yaml (de-duped registry)
+   │   ├─ Update topics/<topic>/process/concepts.yaml (accumulated concept registry)
    │   └─ Update tracking.yaml: annotated_at, concept_count
    └─ Event: source_annotated
 
@@ -132,7 +132,7 @@ This keeps registration deterministic and visible in agent execution logs.
 | `skills/.curated/rh-inf-ingest/reference.md` | Normalization rules, classification taxonomy, annotation guidelines |
 | `sources/<name>.<ext>` | Raw source files (PDF, HTML, DOCX, etc.) |
 | `sources/normalized/<name>.md` | Normalized Markdown with YAML frontmatter |
-| `topics/<topic>/process/concepts.yaml` | De-duplicated concept registry (name, type, sources[]) |
+| `topics/<topic>/process/concepts.yaml` | Accumulated concept registry (name, type, sources[]) |
 | `topics/<topic>/process/plans/discovery-plan.yaml` | Input: source list from discovery for the topic (read-only) |
 | `tracking.yaml` | Source registry with checksums, events, classification metadata |
 
@@ -148,12 +148,18 @@ concepts:
     type: "condition"
     sources:
       - acc-aha-2017
+  - name: "Hypertension"
+    type: "condition"
+    sources:
       - jnc8-guidelines
   - name: "ACE Inhibitor"
     type: "medication"
     sources:
       - jnc8-guidelines
 ```
+
+Each `annotate` call appends new entries; concepts from different sources appear as
+separate entries. Pass `--overwrite` to replace all entries for a given source.
 
 ---
 

@@ -117,8 +117,8 @@ def test_annotate_creates_concepts_yaml(tmp_repo):
         assert "src-b" in c["sources"]
 
 
-def test_annotate_dedup_across_calls(tmp_repo):
-    """Annotate same source twice with overlapping concepts; no duplicates in concepts.yaml."""
+def test_annotate_append_across_calls(tmp_repo):
+    """Annotate same source twice; concepts accumulate in concepts.yaml (no dedup)."""
     _register_source(tmp_repo, "src-c")
     _create_normalized_md(tmp_repo, "src-c")
 
@@ -136,13 +136,63 @@ def test_annotate_dedup_across_calls(tmp_repo):
     ])
 
     data = _load_concepts_yaml(tmp_repo, "test-topic")
+    # Without dedup, the second call appends — both Hypertension entries and Metoprolol are present
     ht_entries = [c for c in data["concepts"] if c["name"].lower() == "hypertension"]
-    assert len(ht_entries) == 1
-    assert ht_entries[0]["sources"].count("src-c") == 1
+    assert len(ht_entries) == 2
+    names = [c["name"] for c in data["concepts"]]
+    assert "Metoprolol" in names
 
 
-def test_annotate_merges_across_sources(tmp_repo):
-    """Annotate two sources with shared concept; concepts.yaml entry has both source names."""
+def test_annotate_overwrite_replaces_source_concepts(tmp_repo):
+    """--overwrite removes prior concepts for this source and adds new ones."""
+    _register_source(tmp_repo, "src-c2")
+    _create_normalized_md(tmp_repo, "src-c2")
+
+    runner = CliRunner()
+    runner.invoke(ingest, [
+        "annotate", "src-c2",
+        "--topic", "test-topic",
+        "--concept", "Hypertension:condition",
+    ])
+    runner.invoke(ingest, [
+        "annotate", "src-c2",
+        "--topic", "test-topic",
+        "--overwrite",
+        "--concept", "Metoprolol:medication",
+    ])
+
+    data = _load_concepts_yaml(tmp_repo, "test-topic")
+    names = [c["name"] for c in data["concepts"]]
+    assert "Metoprolol" in names
+    assert "Hypertension" not in names
+
+
+def test_annotate_append_to_normalized_frontmatter(tmp_repo):
+    """Default append mode adds to existing concepts in normalized.md frontmatter."""
+    _register_source(tmp_repo, "src-c3")
+    _create_normalized_md(tmp_repo, "src-c3")
+
+    runner = CliRunner()
+    runner.invoke(ingest, [
+        "annotate", "src-c3",
+        "--topic", "test-topic",
+        "--concept", "Hypertension:condition",
+    ])
+    runner.invoke(ingest, [
+        "annotate", "src-c3",
+        "--topic", "test-topic",
+        "--concept", "Metoprolol:medication",
+    ])
+
+    norm = tmp_repo / "sources" / "normalized" / "src-c3.md"
+    fm = _parse_frontmatter(norm.read_text())
+    names = [c["name"] for c in fm["concepts"]]
+    assert "Hypertension" in names
+    assert "Metoprolol" in names
+
+
+def test_annotate_two_sources_each_has_own_entry(tmp_repo):
+    """Annotate two sources with shared concept name; each source gets its own entry (no dedup)."""
     _register_source(tmp_repo, "src-d")
     _register_source(tmp_repo, "src-e")
     _create_normalized_md(tmp_repo, "src-d")
@@ -161,9 +211,11 @@ def test_annotate_merges_across_sources(tmp_repo):
     ])
 
     data = _load_concepts_yaml(tmp_repo, "test-topic")
-    ht = next(c for c in data["concepts"] if c["name"].lower() == "hypertension")
-    assert "src-d" in ht["sources"]
-    assert "src-e" in ht["sources"]
+    ht_entries = [c for c in data["concepts"] if c["name"].lower() == "hypertension"]
+    assert len(ht_entries) == 2
+    sources_seen = {ht["sources"][0] for ht in ht_entries}
+    assert "src-d" in sources_seen
+    assert "src-e" in sources_seen
 
 
 def test_annotate_event_appended(tmp_repo):

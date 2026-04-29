@@ -112,17 +112,13 @@ concepts:
   - name: "<canonical concept name>"
     type: "<concept type>"        # see Concept Type Vocabulary above
     sources:
-      - "<source-name-1>"
-      - "<source-name-2>"
+      - "<source-name>"
 ```
 
-**De-duplication rules:**
-- Concepts are de-duped by lowercase canonical name across all sources for a topic
-- If the same concept appears in multiple sources, both source names appear in `sources[]`
-- If the same source is annotated twice with the same concept, the source name
-  is not duplicated in `sources[]`
-- Concept type is set from the first annotation; subsequent annotations with the
-  same name do not change the type
+Each call to `rh-skills ingest annotate` **appends** new concept entries to this file (one
+entry per concept per source). Pass `--overwrite` to replace entries previously written for
+that source. Downstream skills (`rh-inf-extract`, `rh-inf-formalize`) consume this file as
+an accumulated vocabulary; any deduplication of concept names is their responsibility.
 
 **Concept quality normalization guidance:**
 - De-duplication is lowercase exact-match only, so canonical naming matters; prefer canonical singular concept names (`Clinical Practice Guideline`, not `Clinical Practice Guidelines`).

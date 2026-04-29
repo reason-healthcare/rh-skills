@@ -254,7 +254,7 @@ concepts.yaml: VALID
 
 **Per-source status:** all three sources are present, checksum-stable, normalized, classified, and annotated.
 
-**concepts.yaml validation:** ✓ valid schema, de-duped entries, and source backlinks present
+**concepts.yaml validation:** ✓ valid schema and source backlinks present
 
 ```
 ▸ rh-inf-ingest  young-adult-hypertension
