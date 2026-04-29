@@ -10,6 +10,7 @@
 
 Subcommands in scope for 004:
 - `plan`
+- `list-manual`
 - `implement`
 - `normalize`
 - `classify`
@@ -70,23 +71,14 @@ rh-skills ingest implement <file>
 
 ---
 
-## `rh-skills source download --url URL --name NAME [--type TYPE]`
+## Registration Step Requirement
 
-```bash
-rh-skills source download --url <url> --name <name> [--type <type>]
-```
+Registration is explicit and must happen before normalization.
 
-**Behavior**:
-- Downloads a remote source to `sources/<name>.<ext>`
-- Follows redirects
-- Detects auth redirects and exits without writing a file
-- Registers the source in `tracking.yaml`
-
-**Exit codes**:
-- `0` success
-- `1` network/HTTP error
-- `2` destination file already exists
-- `3` authentication redirect detected
+Recommended sequence:
+1. Run `rh-skills ingest list-manual [<topic>]` to identify untracked files.
+2. Run `rh-skills ingest implement sources/<file> [--topic <topic>]` for each file reported.
+3. Proceed to `rh-skills ingest normalize ...` only after required files are registered.
 
 ---
 
