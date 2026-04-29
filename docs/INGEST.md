@@ -22,9 +22,9 @@ The **rh-inf-ingest** skill is the **L1 source preparation** stage of the eviden
 
 ---
 
-## Registration Note (Branch Behavior)
+## Registration
 
-Registration is explicit and per-file on this branch.
+Registration is explicit and per-file.
 
 - Use `rh-skills ingest list-manual [<topic>]` to identify untracked files in `sources/`.
 - Register each untracked file with `rh-skills ingest implement sources/<file> [--topic <topic>]`.
