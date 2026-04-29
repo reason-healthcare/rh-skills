@@ -1,8 +1,7 @@
 # rh-inf-ingest Example Session — young-adult-hypertension
 
 This transcript shows a complete `rh-inf-ingest` session for the topic
-`young-adult-hypertension` (3 open-access + 1 authenticated source, as defined
-in `examples/plan.yaml`).
+`young-adult-hypertension` (3 open-access + 1 authenticated source).
 
 ---
 
