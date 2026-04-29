@@ -438,9 +438,11 @@ all deterministic writes must go through `rh-skills promote derive` and
    > inspect the resulting `concerns[]` in `extract-plan.yaml` to confirm
    > threshold text is intact before proceeding to derive.
 
-   > **Set `RH_STUB_RESPONSE` to the complete artifact YAML** before calling `derive`.
-   > Without it, the CLI produces a scaffold with `<stub: ...>` placeholders that
-   > will **fail** validation (UNRESOLVED stub errors). Always provide a complete YAML body.
+   > **Construct the artifact YAML** by reasoning over the normalized source files
+   > and the schema for the artifact type (see `reference.md`). You are the
+   > reasoning layer — the CLI only writes what you provide. Set `RH_STUB_RESPONSE`
+   > to the complete YAML before calling `derive`. Without it, the CLI produces a
+   > scaffold with `<stub: ...>` placeholders that will **fail** validation.
    >
    > **YAML quoting note**: In `RH_STUB_RESPONSE` YAML, values starting with `>`
    > or `<` **must be quoted** or they will cause a parse error at validate/render time.
