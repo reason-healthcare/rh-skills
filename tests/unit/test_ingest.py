@@ -140,28 +140,29 @@ def _write_concepts_yaml(tmp_repo, topic, concepts):
     y.dump({"topic": topic, "generated": "2025-01-01T00:00:00Z", "concepts": concepts}, path)
     return path
 
-def test_plan_creates_ingest_plan_md(tmp_repo):
+def test_plan_without_topic_summarizes_untracked_files_and_register_commands(tmp_repo):
+    (tmp_repo / "sources" / "manual.pdf").write_text("manual file")
+
     runner = CliRunner()
     result = runner.invoke(ingest, ["plan"])
+
     assert result.exit_code == 0, result.output
-    plan_file = tmp_repo / "plans" / "ingest-plan.md"
-    assert plan_file.exists()
+    assert "Pre-flight summary" in result.output
+    assert "Manually placed untracked files: 1" in result.output
+    assert "Register each with:" in result.output
+    assert "rh-skills ingest implement sources/manual.pdf" in result.output
+    assert "Tool availability:" in result.output
+    assert not (tmp_repo / "plans" / "ingest-plan.md").exists()
 
 
-def test_plan_has_yaml_front_matter(tmp_repo):
+def test_plan_without_topic_is_read_only(tmp_repo):
     runner = CliRunner()
-    runner.invoke(ingest, ["plan"])
-    content = (tmp_repo / "plans" / "ingest-plan.md").read_text()
-    assert content.startswith("---")
-    assert "sources:" in content
-
-
-def test_plan_rerun_guard(tmp_repo):
-    runner = CliRunner()
-    runner.invoke(ingest, ["plan"])
     result = runner.invoke(ingest, ["plan"])
-    assert result.exit_code == 0
-    assert "already exists" in result.output
+
+    assert result.exit_code == 0, result.output
+    assert "Manually placed untracked files: 0" in result.output
+    assert "Already registered sources: 0" in result.output
+    assert not (tmp_repo / "plans" / "ingest-plan.md").exists()
 
 
 def test_plan_topic_summarizes_discovery_plan_and_manual_files(tmp_repo):
@@ -217,6 +218,19 @@ def test_implement_registers_source_in_tracking(tmp_repo):
     tracking = load_tracking(tmp_repo)
     names = [s["name"] for s in tracking["sources"]]
     assert "test-source_md" in names
+
+
+def test_implement_infers_dataset_type_from_extension(tmp_repo):
+    src = tmp_repo / "cohort.csv"
+    src.write_text("id,value\n1,2\n")
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, ["implement", str(src)])
+
+    assert result.exit_code == 0, result.output
+    tracking = load_tracking(tmp_repo)
+    entry = next(s for s in tracking["sources"] if s["name"] == "cohort_csv")
+    assert entry["type"] == "dataset"
 
 
 def test_implement_stores_checksum(tmp_repo):

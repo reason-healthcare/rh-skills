@@ -109,8 +109,12 @@ The agent runs an interactive research session and saves `discovery-plan.yaml` a
 ```
 
 Ingest plan mode checks tool availability and identifies unregistered files.
-Implement mode then registers each untracked file individually (via
-`rh-skills ingest list-manual` + per-file `rh-skills ingest implement sources/<file>`),
+The underlying file inventory is the same logic exposed by
+`rh-skills ingest list-manual`, but `rh-skills ingest plan` is the canonical
+entrypoint for that pre-flight summary.
+Implement mode then registers each untracked file individually using the
+per-file `rh-skills ingest implement sources/<file>` commands surfaced by
+that pre-flight summary,
 normalizes everything to Markdown,
 then **proposes a topic name** based on the source content, asks for confirmation,
 and calls `rh-skills init <topic>` — no separate init step required.

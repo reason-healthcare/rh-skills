@@ -187,6 +187,25 @@ def _tool_availability() -> dict[str, bool]:
     }
 
 
+def _registration_type_for_path(path: Path) -> str:
+    ext = path.suffix.lower()
+    return {
+        ".pdf": "document",
+        ".md": "document",
+        ".txt": "document",
+        ".doc": "document",
+        ".docx": "document",
+        ".html": "document",
+        ".htm": "document",
+        ".csv": "dataset",
+        ".tsv": "dataset",
+        ".xlsx": "dataset",
+        ".xls": "dataset",
+        ".json": "data",
+        ".xml": "data",
+    }.get(ext, "document")
+
+
 def _source_files() -> list[Path]:
     src_root = sources_root()
     if not src_root.exists():
@@ -284,9 +303,10 @@ def _validate_concepts_file(topic: str) -> tuple[bool, list[str]]:
     return not errors, errors
 
 
-def _print_topic_plan(topic: str) -> None:
+def _print_preflight_summary(topic: str | None = None) -> None:
     tracking = _tracking_or_empty()
-    discovery = _load_discovery_plan(topic) or {}
+    discovery = _load_discovery_plan(topic) if topic else None
+    discovery = discovery or {}
     sources = discovery.get("sources", []) if isinstance(discovery.get("sources", []), list) else []
     open_sources = [source for source in sources if source.get("access") == "open"]
     auth_sources = [
@@ -298,10 +318,15 @@ def _print_topic_plan(topic: str) -> None:
         for source in sources
         if source.get("name")
     }
-    manual_files = _untracked_source_files(tracking, topic, discovery_names)
+    manual_files = _untracked_source_files(tracking, topic or "", discovery_names)
     tools = _tool_availability()
+    tracked_sources = _topic_tracked_sources(tracking, topic or "", discovery_names) if topic else tracking.get("sources", [])
 
-    click.echo(f"Pre-flight summary for '{topic}'")
+    if topic:
+        click.echo(f"Pre-flight summary for '{topic}'")
+    else:
+        click.echo("Pre-flight summary")
+
     if sources:
         click.echo(f"Open-access sources ready to download: {len(open_sources)}")
         for source in open_sources:
@@ -311,12 +336,20 @@ def _print_topic_plan(topic: str) -> None:
             click.echo(f"  - {source.get('name')} [{source.get('access')}]")
             if source.get("auth_note"):
                 click.echo(f"    auth_note: {source.get('auth_note')}")
-    else:
+    elif topic:
         click.echo("No discovery-plan.yaml found for this topic.")
 
     click.echo(f"Manually placed untracked files: {len(manual_files)}")
     for path in manual_files:
         click.echo(f"  - {path.name}")
+    if manual_files:
+        click.echo()
+        click.echo("Register each with:")
+        for path in manual_files:
+            topic_flag = f" --topic {topic}" if topic else ""
+            click.echo(f"  rh-skills ingest implement {path.relative_to(repo_root())}{topic_flag}")
+
+    click.echo(f"Already registered sources: {len(tracked_sources)}")
 
     click.echo("Tool availability:")
     click.echo(f"  - pdftotext: {'available' if tools['pdftotext'] else 'missing'}")
@@ -407,46 +440,8 @@ def ingest():
 @ingest.command()
 @click.argument("topic", required=False)
 def plan(topic):
-    """Generate an ingest plan template, or render a topic pre-flight summary."""
-    if topic:
-        _print_topic_plan(topic)
-        return
-
-    root = repo_root()
-    plan_file = root / "plans" / "ingest-plan.md"
-
-    if plan_file.exists():
-        log_warn("ingest-plan.md already exists. Delete it first to regenerate.")
-        return
-
-    plan_file.parent.mkdir(parents=True, exist_ok=True)
-    plan_file.write_text("""\
----
-sources:
-- name: source-1
-    path: "# TODO: local file path"
-  type: document
----
-
-# Ingest Plan
-
-Review and update the `sources` list above before running `rh-skills ingest implement <file>`.
-
-## Fields
-
-- **name**: Identifier used for the `sources/<name>.md` file (kebab-case)
-- **path**: Absolute local path to the source file
-- **type**: One of `pdf`, `word`, `excel`, `markdown`, `html`, `document`
-
-## Next Step
-
-After editing this file, run for each source:
-
-```
-rh-skills ingest implement <path-to-file>
-```
-""")
-    log_info(f"Created: {plan_file}")
+    """Render a read-only ingest pre-flight summary."""
+    _print_preflight_summary(topic)
 
 
 @ingest.command("list-manual")
@@ -480,30 +475,30 @@ def list_manual(topic):
 
 
 @ingest.command()
-@click.argument("file", required=True, type=click.Path(exists=False))
-@click.option("--type", "source_type", default="document", help="Source type (see Source Type Taxonomy)")
+@click.argument("file", required=True, type=click.Path(exists=True))
 @click.option("--topic", default=None, help="Topic slug for topic-aware reporting")
-def implement(file, source_type, topic):
+def implement(file, topic):
     """Register FILE in tracking.yaml.
 
-    To identify which files need to be registered, first run:
+    To see the canonical pre-flight summary first, run:
+      rh-skills ingest plan [<topic>]
+
+    To inspect only the raw untracked-file inventory, run:
       rh-skills ingest list-manual [<topic>]
 
     Then register each untracked file individually:
       rh-skills ingest implement sources/<file> [--topic <topic>]
     """
-    _implement_file(Path(file), source_type, topic=topic)
+    _implement_file(Path(file), topic=topic)
 
 
-def _implement_file(src_path: Path, source_type: str = "document", topic: str | None = None) -> None:
+def _implement_file(src_path: Path, topic: str | None = None) -> None:
     """Copy a local file to sources/ and register it."""
-    if not src_path.exists():
-        raise click.ClickException(f"File not found: {src_path}")
-
     src_root = sources_root()
     src_root.mkdir(parents=True, exist_ok=True)
 
     source_name = _source_name_from_path(src_path)
+    source_type = _registration_type_for_path(src_path)
 
     dest_file = src_root / src_path.name
     if src_path.resolve() != dest_file.resolve():

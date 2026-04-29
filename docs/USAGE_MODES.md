@@ -44,11 +44,11 @@ User → rh-skills commands → artifacts + tracking.yaml
 # Initialize a topic
 rh-skills init diabetes-screening --title "Diabetes Screening"
 
-# Run the plan step (calls your LLM via rh-skills)
+# Run the read-only ingest pre-flight
 rh-skills ingest plan diabetes-screening
 
-# Review and approve the plan, then implement
-rh-skills ingest implement diabetes-screening --source ada-2024-guidelines.pdf
+# Register each untracked file surfaced by the pre-flight
+rh-skills ingest implement sources/ada-2024-guidelines.pdf --topic diabetes-screening
 
 # Check status at any point
 rh-skills status show diabetes-screening

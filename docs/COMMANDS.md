@@ -110,13 +110,14 @@ Register and track raw L1 source artifacts.
 
 ### `rh-skills ingest plan`
 
-Generate an ingest plan template at `plans/ingest-plan.md`.
+Print the canonical read-only ingest pre-flight summary.
 
 ```
-rh-skills ingest plan
+rh-skills ingest plan [<topic>]
 ```
 
-Creates `plans/ingest-plan.md` with YAML front matter listing sources to register. Edit the file before running `implement`.
+Reports untracked files in `sources/`, prints the exact `rh-skills ingest implement ...`
+commands needed to register them, and checks normalization tool availability.
 
 ### `rh-skills ingest implement <file>`
 
@@ -126,11 +127,17 @@ Copy a file to `sources/` and register it in `tracking.yaml`.
 rh-skills ingest implement <file>
 ```
 
-**Records:** file path, detected type, SHA-256 checksum, ISO 8601 timestamp.
+**Records:** file path, inferred registration type, SHA-256 checksum, ISO 8601 timestamp.
 
 **Supported types:** PDF (`.pdf`), Word (`.docx`), Excel (`.xlsx`), plain text (`.txt`), Markdown (`.md`), HTML/XML and other local file types.
 
-Use `rh-skills ingest list-manual [<topic>]` to list untracked files and generate per-file registration commands.
+`rh-skills ingest implement` does not accept `--type`. Local-file registration
+infers an initial type hint from the file extension; `rh-skills ingest classify`
+remains the authoritative place to set final source type and evidence metadata.
+
+Use `rh-skills ingest plan [<topic>]` as the primary pre-flight summary.
+Use `rh-skills ingest list-manual [<topic>]` when you want only the raw
+untracked-file inventory and registration commands.
 
 ### `rh-skills ingest list-manual [<topic>]`
 
