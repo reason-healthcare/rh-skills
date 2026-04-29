@@ -370,6 +370,11 @@ rh-skills promote approve <topic> --artifact <name> --decision rejected
 > - `source_files[]` entries added by `--add-source` are present (the CLI writes bare slugs;
 >   `derive` resolves them automatically, but note the format differs from the
 >   `sources/normalized/<slug>.md` path format used by the planner)
+>
+> **YAML quoting note**: In artifact body files (`--body-file`), values starting with `>`
+> or `<` **must be quoted** or they will cause a parse error at validate/render time.
+> Example: `threshold: ">=190 mg/dL"` (not `threshold: >=190 mg/dL`).
+> This applies to any value in any field: thresholds, ranges, comparators.
 
 `--finalize` sets `status: approved`, records `reviewed_at`, and regenerates
 `extract-plan-readout.md` with the final decisions. Only artifacts with
@@ -411,17 +416,34 @@ all deterministic writes must go through `rh-skills promote derive` and
 1. Read and validate `topics/<topic>/process/plans/extract-plan.yaml`.
 2. Fail if the plan is missing, if plan status is not `approved`, or if any
    target artifact remains `pending-review`, `needs-revision`, or `rejected`.
-3. For each approved artifact, map the review packet into CLI arguments and run:
+3. For each approved artifact, construct the artifact YAML by reasoning over the
+   normalized source files and the schema for the artifact type (see `reference.md`).
+   You are the reasoning layer — the CLI only writes what you provide.
+
+   Write the constructed YAML to a temp file, then pass it with `--body-file`:
 
    ```sh
+   # Write your reasoned artifact YAML to a temp file first:
+   cat > /tmp/rh-<artifact-name>.yaml << 'EOF'
+   artifact_type: decision-table
+   clinical_question: "..."
+   sections:
+     summary: "..."
+   EOF
+
+   # Then derive, passing the file:
    rh-skills promote derive <topic> <artifact-name> \
      --source <source-name> \
      --artifact-type <artifact-type> \
      --clinical-question "<clinical question>" \
      --required-section <section> \
      --evidence-ref "<claim_id|statement|source|locator>" \
-     --conflict "<issue|source|statement|preferred_source|preferred_rationale>"
+     --conflict "<issue|source|statement|preferred_source|preferred_rationale>" \
+     --body-file /tmp/rh-<artifact-name>.yaml
    ```
+
+   Without `--body-file`, the CLI produces a scaffold with `<stub: ...>`
+   placeholders that will **fail** validation.
 
    **Recording conflicts with multiple positions**: Pass one `--conflict` flag
    per source position, using the **same issue text** for both. The CLI merges
@@ -442,17 +464,6 @@ all deterministic writes must go through `rh-skills promote derive` and
    > strings may be silently dropped or corrupted. After running `approve`,
    > inspect the resulting `concerns[]` in `extract-plan.yaml` to confirm
    > threshold text is intact before proceeding to derive.
-
-   > **Construct the artifact YAML** by reasoning over the normalized source files
-   > and the schema for the artifact type (see `reference.md`). You are the
-   > reasoning layer — the CLI only writes what you provide. Set `RH_STUB_RESPONSE`
-   > to the complete YAML before calling `derive`. Without it, the CLI produces a
-   > scaffold with `<stub: ...>` placeholders that will **fail** validation.
-   >
-   > **YAML quoting note**: In `RH_STUB_RESPONSE` YAML, values starting with `>`
-   > or `<` **must be quoted** or they will cause a parse error at validate/render time.
-   > Example: `threshold: ">=190 mg/dL"` (not `threshold: >=190 mg/dL`).
-   > This applies to any value in any field: thresholds, ranges, comparators.
 
 4. Immediately validate each derived artifact with:
 

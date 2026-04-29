@@ -1565,6 +1565,8 @@ def formalize_plan(topic, force):
               help="Claim evidence in 'claim_id|statement|source|locator' format (repeatable)")
 @click.option("--conflict", "conflicts", multiple=True,
               help="Conflict in 'issue|source|statement[|preferred_source|preferred_rationale]' format")
+@click.option("--body-file", default=None, type=click.Path(exists=True, readable=True),
+              help="Path to a YAML file containing the pre-reasoned artifact body (agent use)")
 @click.option("--dry-run", is_flag=True, help="Print what would be created without doing it")
 def derive(
     topic,
@@ -1576,6 +1578,7 @@ def derive(
     required_sections,
     evidence_refs,
     conflicts,
+    body_file,
     dry_run,
 ):
     """Promote L1 source(s) to L2 structured artifact(s)."""
@@ -1637,13 +1640,14 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
                 f"Consider using '{artifact_type}' as the artifact name for consistency."
             )
 
-        llm_output = _invoke_llm(system_prompt, user_prompt)
-
         l2_file = td / "structured" / artifact_name / f"{artifact_name}.yaml"
         l2_file.parent.mkdir(parents=True, exist_ok=True)
 
-        if _is_offline_mode():
-            # No LLM and no agent-injected content — write a scaffold with placeholders
+        if body_file:
+            # Agent-provided artifact body — read file directly, skip LLM and scaffold.
+            l2_file.write_text(_sanitize_yaml(Path(body_file).read_text() + "\n"))
+        elif _is_offline_mode():
+            # No LLM and no agent-provided body — write a scaffold with placeholders.
             l2_file.write_text(
                 _build_stub_l2_artifact(
                     artifact_name,
@@ -1656,6 +1660,7 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
                 )
             )
         else:
+            llm_output = _invoke_llm(system_prompt, user_prompt)
             l2_file.write_text(_sanitize_yaml(llm_output + "\n"))
 
         timestamp = now_iso()

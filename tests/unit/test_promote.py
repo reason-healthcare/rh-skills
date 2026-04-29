@@ -476,12 +476,12 @@ def test_plan_agent_mode_parses_injected_concerns(tmp_repo, monkeypatch):
 
 
 def test_derive_agent_mode_writes_injected_content(tmp_repo, monkeypatch):
-    """Agent mode: RH_STUB_RESPONSE content is written as L2 artifact (not scaffold)."""
+    """Agent mode: --body-file content is written as L2 artifact (not scaffold)."""
     monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.setenv(
-        "RH_STUB_RESPONSE",
-        "artifact_type: decision-table\nclinical_question: Who should be screened?\nsections:\n  summary: Agent-generated content.\n",
-    )
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_content = "artifact_type: decision-table\nclinical_question: Who should be screened?\nsections:\n  summary: Agent-generated content.\n"
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text(body_content)
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
@@ -491,6 +491,7 @@ def test_derive_agent_mode_writes_injected_content(tmp_repo, monkeypatch):
         "--clinical-question", "Who should be screened?",
         "--required-section", "summary",
         "--required-section", "evidence_traceability",
+        "--body-file", str(body_file),
     ])
     assert result.exit_code == 0, result.output
     artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
