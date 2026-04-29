@@ -202,6 +202,9 @@ See [Usage Modes](USAGE_MODES.md) for all provider options.
 # Download open-access sources from discovery-plan entries
 rh-skills source download --url <url> --name <name>
 
+# Optional: append search results only when adding to an existing topic plan
+rh-skills search pubmed --query "<terms>" --append-to-plan <topic>
+
 # Register manual sources detected in sources/
 rh-skills ingest list-manual [<topic>]
 rh-skills ingest implement sources/<file> [--topic <topic>]

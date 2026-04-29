@@ -30,6 +30,8 @@ Registration is explicit and per-file.
 - Register each untracked file with `rh-skills ingest implement sources/<file> [--topic <topic>]`.
 - There is no bulk registration path via `ingest implement --all`.
 - If no files are untracked, registration is a no-op and ingest proceeds to normalize.
+- If a source already has a registration-time type hint (for example from discovery download),
+  `rh-skills ingest classify` remains the authoritative stage for final type and evidence metadata.
 
 This keeps registration deterministic and visible in agent execution logs.
 
@@ -46,9 +48,11 @@ This keeps registration deterministic and visible in agent execution logs.
 | Plain Text | `.txt` | direct read | — |
 | Markdown | `.md` | direct read | — |
 | XML | `.xml` | direct read | — |
-| URL | HTTP/HTTPS | Content-Type dependent | MIME auto-detection; auth-redirect detection (exit 3) |
 
 **Soft-fail behavior:** If `pdftotext` or `pandoc` is missing, normalize succeeds but sets `text_extracted: false` in frontmatter.
+
+**Download ownership:** URL acquisition happens before ingest via
+`rh-skills source download --url` in discovery.
 
 ---
 
