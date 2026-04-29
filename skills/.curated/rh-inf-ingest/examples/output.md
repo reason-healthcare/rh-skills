@@ -25,24 +25,29 @@ rh-skills status show young-adult-hypertension
   Stage: ingest-ready
 ```
 
-Identifying untracked files in `sources/`...
+Running pre-flight summary...
 
 ```sh
-rh-skills ingest list-manual young-adult-hypertension
+rh-skills ingest plan young-adult-hypertension
 ```
 
 ```text
-• sources/acc-aha-2017-hypertension.pdf
-  -> rh-skills ingest implement sources/acc-aha-2017-hypertension.pdf --topic young-adult-hypertension
-• sources/uspstf-hypertension-screening.html
-  -> rh-skills ingest implement sources/uspstf-hypertension-screening.html --topic young-adult-hypertension
-• sources/jnc8-hypertension-management.html
-  -> rh-skills ingest implement sources/jnc8-hypertension-management.html --topic young-adult-hypertension
-```
+rh-inf-ingest pre-flight summary — young-adult-hypertension
 
-**Tool availability:**
-- `pdftotext` (poppler): ✓ available
-- `pandoc`: ✓ available
+Untracked files in sources/:
+  • sources/acc-aha-2017-hypertension.pdf
+  • sources/uspstf-hypertension-screening.html
+  • sources/jnc8-hypertension-management.html
+
+Register each with:
+  rh-skills ingest implement sources/acc-aha-2017-hypertension.pdf --topic young-adult-hypertension
+  rh-skills ingest implement sources/uspstf-hypertension-screening.html --topic young-adult-hypertension
+  rh-skills ingest implement sources/jnc8-hypertension-management.html --topic young-adult-hypertension
+
+Tools:
+  pdftotext (poppler): ✓
+  pandoc: ✓
+```
 
 **Ready to proceed with registration + normalization.**
 Shall I proceed to implement mode?
