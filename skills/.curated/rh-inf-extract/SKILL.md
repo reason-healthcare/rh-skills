@@ -438,17 +438,9 @@ all deterministic writes must go through `rh-skills promote derive` and
    > inspect the resulting `concerns[]` in `extract-plan.yaml` to confirm
    > threshold text is intact before proceeding to derive.
 
-   > **Agent mode vs CLI-only mode**: `rh-skills promote derive` uses `RH_STUB_RESPONSE`
-   > to write the artifact content you provide. **In agent mode, `LLM_PROVIDER` is not
-   > required** — you are the reasoning layer; construct the full YAML and pass it via
-   > `RH_STUB_RESPONSE`. If `LLM_PROVIDER` IS set, the CLI will call that provider
-   > instead of using `RH_STUB_RESPONSE` — useful when a separate model handles heavy
-   > generation while the agent handles orchestration. In CLI-only mode (no agent),
-   > `LLM_PROVIDER` must be configured so the CLI can call an LLM on your behalf.
-   >
-   > **Without `RH_STUB_RESPONSE`** (and no `LLM_PROVIDER`), the CLI produces a
-   > scaffold with `<stub: ...>` placeholders that will **fail** validation
-   > (UNRESOLVED stub errors). Always provide a complete YAML body.
+   > **Set `RH_STUB_RESPONSE` to the complete artifact YAML** before calling `derive`.
+   > Without it, the CLI produces a scaffold with `<stub: ...>` placeholders that
+   > will **fail** validation (UNRESOLVED stub errors). Always provide a complete YAML body.
    >
    > **YAML quoting note**: In `RH_STUB_RESPONSE` YAML, values starting with `>`
    > or `<` **must be quoted** or they will cause a parse error at validate/render time.
