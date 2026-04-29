@@ -528,6 +528,10 @@ Downloads complete:
 For `access: authenticated` or `access: manual` sources: print the `auth_note`
 advisory only. Do not attempt to download them.
 
+`--append-to-plan` boundary: use `rh-skills search ... --append-to-plan <topic>`
+only when appending to an existing topic plan file. During the initial
+discovery planning loop, keep entries in memory and write once in Step 11.
+
 Emit status block:
 ```
   Step:   12 — Download · Complete
@@ -663,9 +667,12 @@ See `examples/readout.md` for a complete worked example.
 | Command | Purpose |
 |---------|---------|
 | `rh-skills search pubmed --query "..." --json` | Search PubMed (live) |
+| `rh-skills search pubmed --query "..." --append-to-plan <topic>` | Append PubMed results to an existing topic plan |
 | `rh-skills search pubmed --offline --query "..."` | Record query; get reference links (no network) |
 | `rh-skills search pmc --query "..." --json` | Search PMC open-access (live) |
+| `rh-skills search pmc --query "..." --append-to-plan <topic>` | Append PMC results to an existing topic plan |
 | `rh-skills search clinicaltrials --query "..." --json` | Search ClinicalTrials.gov (live) |
+| `rh-skills search clinicaltrials --query "..." --append-to-plan <topic>` | Append ClinicalTrials results to an existing topic plan |
 | `rh-skills source scan` | List untracked/SHA-changed files in sources/ |
 | `rh-skills source add --type <type> --title "..." --rationale "..."` | Add a single source entry |
 | `rh-skills source add --dry-run ...` | Preview source entry without writing |

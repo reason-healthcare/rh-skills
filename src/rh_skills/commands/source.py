@@ -409,8 +409,8 @@ def _download_from_url(url: str, source_name: str | None, source_type: str = "do
         click.echo(
             "  The download stage requires outbound network access.\n"
             "  Run this command in an environment with network access, or ask\n"
-            "  the user to download the file manually and pass it to:\n"
-            "    rh-skills source download <downloaded-file> --topic <topic>",
+            "  the user to download the file manually and register it with:\n"
+            "    rh-skills ingest implement sources/<downloaded-file> [--topic <topic>]",
             err=True,
         )
         raise SystemExit(4)
@@ -422,7 +422,7 @@ def _download_from_url(url: str, source_name: str | None, source_type: str = "do
     if any(marker in final_url_lower for marker in AUTH_REDIRECT_MARKERS):
         click.echo(f"⚠ Authentication required for: {url}", err=True)
         click.echo(f"  Final redirect URL: {final_url}", err=True)
-        click.echo("  Action: Retrieve manually and run: rh-skills source download <downloaded-file>", err=True)
+        click.echo("  Action: Retrieve manually and run: rh-skills ingest implement sources/<downloaded-file>", err=True)
         raise SystemExit(3)
 
     content_type = response.headers.get("content-type", "").split(";")[0].strip()
@@ -477,27 +477,17 @@ def _download_from_url(url: str, source_name: str | None, source_type: str = "do
     click.echo(f"  Size: {size_mb:.1f} MB")
 
 @source.command("download")
-@click.argument("file", required=False, type=click.Path(exists=True))
-@click.option("--url", "source_url", default=None, help="URL to download instead of a local file")
+@click.option("--url", "source_url", required=True, help="URL to download")
 @click.option("--name", "source_name", default=None, help="Stem name for saved file (required with --url)")
 @click.option("--type", "source_type", default="document", help="Source type (see Source Type Taxonomy)")
 @click.option("--topic", default=None, help="Topic slug for topic-aware reporting")
-def download(file, source_url, source_name, source_type, topic):
-    """Download a source file from URL or register a local file in sources/.
+def download(source_url, source_name, source_type, topic):
+    """Download a source file from URL and register it in tracking.yaml.
 
     \b
     Download from URL:
       rh-skills source download --url https://example.com/guide.pdf --name my-guide
 
-    \b
-    Register local file:
-      rh-skills source download /path/to/local-file.pdf --topic diabetes-ccm
-
-    When a file is downloaded or registered, it is added to tracking.yaml for the ingest pipeline.
+    When a file is downloaded, it is added to tracking.yaml for the ingest pipeline.
     """
-    if source_url:
-        _download_from_url(source_url, source_name, source_type, topic=topic)
-    else:
-        if file is None:
-            raise click.UsageError("Provide FILE argument or --url flag")
-        _register_local_file(Path(file), source_type, topic=topic)
+    _download_from_url(source_url, source_name, source_type, topic=topic)

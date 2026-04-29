@@ -44,7 +44,7 @@ description: "Tasks for 004-rh-inf-ingest — rh-inf-ingest source acquisition a
 **Independent Test**: With a fixture topic containing `process/plans/discovery-plan.yaml`, `rh-skills ingest plan <topic>` reports source counts and tool availability, `rh-skills ingest implement sources/<file> --topic <topic>` records topic-aware source metadata, and `rh-skills ingest verify <topic>` reports checksum/readiness status without writes.
 
 - [X] T006 [US1] Add optional `--topic` handling to `rh-skills ingest implement` and persist topic-aware source metadata in `src/rh_skills/commands/ingest.py`
-- [X] T007 [P] [US1] Add unit coverage for topic-aware `implement --url` behavior in `tests/unit/test_ingest_url.py`
+- [X] T007 [P] [US1] Add unit coverage for topic-aware `source download --url` behavior in `tests/unit/test_source_download.py`
 - [X] T008 [US1] Update `skills/.curated/rh-inf-ingest/SKILL.md` to use the transient pre-flight plan flow, current CLI flags, injection boundary, and topic-aware verify guidance
 - [X] T009 [P] [US1] Update `skills/.curated/rh-inf-ingest/reference.md` with the finalized path conventions, verify expectations, and topic-aware command examples
 - [X] T010 [P] [US1] Update `skills/.curated/rh-inf-ingest/examples/output.md` and `skills/.curated/rh-inf-ingest/examples/plan.yaml` to match the implemented discovery-plan ingest flow
@@ -106,7 +106,7 @@ description: "Tasks for 004-rh-inf-ingest — rh-inf-ingest source acquisition a
 
 ```bash
 # After T006 and T008 define the topic-aware command/docs surface:
-Task: "Add unit coverage for topic-aware implement --url behavior in tests/unit/test_ingest_url.py"
+Task: "Add unit coverage for topic-aware source download --url behavior in tests/unit/test_source_download.py"
 Task: "Update skills/.curated/rh-inf-ingest/reference.md with finalized command examples"
 Task: "Update skills/.curated/rh-inf-ingest/examples/output.md and examples/plan.yaml"
 Task: "Update specs/004-rh-inf-ingest/quickstart.md and DEVELOPER.md"

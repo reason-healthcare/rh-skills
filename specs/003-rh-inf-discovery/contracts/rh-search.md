@@ -133,13 +133,13 @@ Search ClinicalTrials.gov via REST API v2.
 rh-skills source download --url URL --name NAME [OPTIONS]
 ```
 
-Download a URL to `sources/`, compute SHA-256, register in `tracking.yaml`. Extends existing `rh-skills ingest implement FILE` command.
+Download a URL to `sources/`, compute SHA-256, and register in `tracking.yaml`.
 
 **Options** (new flags only):
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `--url TEXT` | string | — | URL to download (mutually exclusive with FILE positional arg) |
+| `--url TEXT` | string | — | URL to download |
 | `--name TEXT` | string | required with --url | Stem name for the saved file (kebab-case) |
 | `--type TEXT` | string | `document` | Source type (see Source Type Taxonomy) |
 
@@ -170,7 +170,7 @@ Download a URL to `sources/`, compute SHA-256, register in `tracking.yaml`. Exte
 ```
 ⚠ Authentication required for: https://example.com/article/123
   Final redirect URL: https://example.com/login?return=...
-  Action: Retrieve manually and run: rh-skills ingest implement <downloaded-file>
+  Action: Retrieve manually and run: rh-skills ingest implement sources/<downloaded-file>
 ```
 
 ---
