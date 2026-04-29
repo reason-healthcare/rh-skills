@@ -280,7 +280,6 @@ def _validate_concepts_file(topic: str) -> tuple[bool, list[str]]:
         errors.append("concepts.yaml concepts must be a list")
         return False, errors
 
-    seen: set[str] = set()
     for index, concept in enumerate(concepts, start=1):
         if not isinstance(concept, dict):
             errors.append(f"concept #{index} is not a mapping")
@@ -291,10 +290,6 @@ def _validate_concepts_file(topic: str) -> tuple[bool, list[str]]:
         if not name:
             errors.append(f"concept #{index} missing name")
             continue
-        key = str(name).strip().lower()
-        if key in seen:
-            errors.append(f"duplicate concept entry: {name}")
-        seen.add(key)
         if not ctype:
             errors.append(f"concept '{name}' missing type")
         if not isinstance(sources, list) or not sources:
@@ -702,8 +697,14 @@ def classify(name, topic, source_type, evidence_level, tags):
 @click.option("--topic", required=True, help="Topic slug")
 @click.option("--concept", "concepts", multiple=True,
               help="Concept in 'canonical-name:type' format. Repeatable.")
-def annotate(name, topic, concepts):
-    """Add concept annotations to normalized.md and update concepts.yaml."""
+@click.option("--overwrite", is_flag=True, default=False,
+              help="Replace existing concepts instead of appending (default: append).")
+def annotate(name, topic, concepts, overwrite):
+    """Add concept annotations to normalized.md and update concepts.yaml.
+
+    By default, new concepts are appended to any already present. Pass
+    --overwrite to replace all existing concepts for this source.
+    """
     from ruamel.yaml import YAML as _YAML
     import io
 
@@ -739,7 +740,12 @@ def annotate(name, topic, concepts):
     fm_data = _y.load(fm_text) if fm_text.strip() else {}
     if fm_data is None:
         fm_data = {}
-    fm_data["concepts"] = [{"name": c["name"], "type": c["type"]} for c in parsed_concepts]
+    new_fm_concepts = [{"name": c["name"], "type": c["type"]} for c in parsed_concepts]
+    if overwrite:
+        fm_data["concepts"] = new_fm_concepts
+    else:
+        existing_fm = fm_data.get("concepts") or []
+        fm_data["concepts"] = list(existing_fm) + new_fm_concepts
     buf = io.StringIO()
     _y.dump(dict(fm_data), buf)
     new_fm = buf.getvalue()
@@ -756,25 +762,21 @@ def annotate(name, topic, concepts):
             existing = {"topic": topic, "generated": now_iso(), "concepts": []}
     else:
         existing = {"topic": topic, "generated": now_iso(), "concepts": []}
-    existing_concepts = existing.get("concepts", [])
+    existing_concepts = existing.get("concepts") or []
+
+    if overwrite:
+        # Remove all entries previously attributed solely to this source, then add new ones.
+        existing_concepts = [
+            ec for ec in existing_concepts
+            if ec.get("sources") != [name]
+        ]
 
     for pc in parsed_concepts:
-        pc_name_lower = pc["name"].lower()
-        match = next(
-            (ec for ec in existing_concepts if ec.get("name", "").lower() == pc_name_lower),
-            None,
-        )
-        if match is not None:
-            sources_list = match.get("sources", [])
-            if name not in sources_list:
-                sources_list.append(name)
-            match["sources"] = sources_list
-        else:
-            existing_concepts.append({
-                "name": pc["name"],
-                "type": pc["type"],
-                "sources": [name],
-            })
+        existing_concepts.append({
+            "name": pc["name"],
+            "type": pc["type"],
+            "sources": [name],
+        })
     existing["concepts"] = existing_concepts
     buf2 = io.StringIO()
     _yc.dump(dict(existing), buf2)

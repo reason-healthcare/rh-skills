@@ -112,24 +112,13 @@ concepts:
   - name: "<canonical concept name>"
     type: "<concept type>"        # see Concept Type Vocabulary above
     sources:
-      - "<source-name-1>"
-      - "<source-name-2>"
+      - "<source-name>"
 ```
 
-**De-duplication rules:**
-- Concepts are de-duped by lowercase canonical name across all sources for a topic
-- If the same concept appears in multiple sources, both source names appear in `sources[]`
-- If the same source is annotated twice with the same concept, the source name
-  is not duplicated in `sources[]`
-- Concept type is set from the first annotation; subsequent annotations with the
-  same name do not change the type
-
-**Concept quality normalization guidance:**
-- De-duplication is lowercase exact-match only, so canonical naming matters; prefer canonical singular concept names (`Clinical Practice Guideline`, not `Clinical Practice Guidelines`).
-- Avoid broad methodology-only labels in `term` unless clinically specific (`Systematic Review` by itself is too generic for most topics).
-- Exclude framework/process dimensions that are not clinical domain concepts (for example GLIA dimensions like `Computability` / `Measurability`) unless the user explicitly wants those dimensions captured.
-- Exclude low-information generic labels (for example `Key Action Statement`) unless paired with a discriminating clinical qualifier.
-- If uncertain, ask the user whether to keep or drop the candidate concept before running `annotate`.
+Each call to `rh-skills ingest annotate` **appends** new concept entries to this file (one
+entry per concept per source). Pass `--overwrite` to replace entries previously written for
+that source. Downstream skills (`rh-inf-extract`, `rh-inf-formalize`) consume this file as
+an accumulated vocabulary; any deduplication of concept names is their responsibility.
 
 ---
 
