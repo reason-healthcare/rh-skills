@@ -195,7 +195,7 @@ def _validate_extract_artifact(
                             )
                             errors += 1
 
-    plan_conflicts = plan_entry.get("conflicts", []) or []
+    plan_conflicts = plan_entry.get("concerns") or plan_entry.get("conflicts", []) or []
     conflicts = artifact_data.get("conflicts") or []
     if plan_conflicts and not conflicts:
         _report_error("  MISSING conflicts[] despite conflicts listed in approved plan", emit=emit)

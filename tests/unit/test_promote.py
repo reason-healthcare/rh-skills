@@ -236,7 +236,7 @@ def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", ar
                 "rationale": f"Approved input for {spec['name']}",
                 "key_questions": [f"What does {spec['name']} contribute?"],
                 "required_sections": ["summary", "evidence_traceability"],
-                "conflicts": [],
+                "concerns": [],
                 "reviewer_decision": "approved",
                 "approval_notes": "Use in formalize",
             }
@@ -799,13 +799,13 @@ def test_approve_review_summary_written_to_plan(tmp_repo):
 
 
 def test_approve_add_conflict_appends_to_conflicts(tmp_repo):
-    """--add-conflict appends to artifact's conflicts list with conflict/resolution keys."""
+    """--add-conflict appends to artifact's concerns list with concern/resolution keys."""
     setup_topic_with_source(tmp_repo)
     write_extract_plan(
         tmp_repo,
         status="pending-review",
         artifacts=[{"name": "hba1c-target", "reviewer_decision": "pending-review",
-                    "approval_notes": "", "conflicts": []}],
+                    "approval_notes": "", "concerns": []}],
     )
     runner = CliRunner()
     result = runner.invoke(promote, [
@@ -818,12 +818,12 @@ def test_approve_add_conflict_appends_to_conflicts(tmp_repo):
     ])
     assert result.exit_code == 0, result.output
     plan = _read_plan(tmp_repo)
-    conflicts = plan["artifacts"][0]["conflicts"]
-    assert len(conflicts) == 2
-    assert conflicts[0]["conflict"] == "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%"
-    assert conflicts[0]["resolution"] == ""
-    assert conflicts[1]["conflict"] == "Monitoring frequency"
-    assert conflicts[1]["resolution"] == "ADA annual preferred"
+    concerns = plan["artifacts"][0]["concerns"]
+    assert len(concerns) == 2
+    assert concerns[0]["concern"] == "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%"
+    assert concerns[0]["resolution"] == ""
+    assert concerns[1]["concern"] == "Monitoring frequency"
+    assert concerns[1]["resolution"] == "ADA annual preferred"
 
 
 # ── Formalize section mapping tests (T031) ───────────────────────────────────
@@ -1135,7 +1135,7 @@ def test_conflicts_reports_no_open_when_all_resolved(tmp_repo):
         "source_files": [],
         "required_sections": [],
         "key_questions": [],
-        "conflicts": [{"conflict": "ADA vs AACE", "resolution": "ADA preferred."}],
+        "concerns": [{"concern": "ADA vs AACE", "resolution": "ADA preferred."}],
         "reviewer_decision": "approved",
         "approval_notes": "",
     }])
@@ -1152,9 +1152,9 @@ def test_conflicts_lists_open_extract_conflicts(tmp_repo):
         "source_files": [],
         "required_sections": [],
         "key_questions": [],
-        "conflicts": [
-            {"conflict": "HbA1c threshold disagreement", "resolution": ""},
-            {"conflict": "Screening interval", "resolution": "Every 3 years per ADA."},
+        "concerns": [
+            {"concern": "HbA1c threshold disagreement", "resolution": ""},
+            {"concern": "Screening interval", "resolution": "Every 3 years per ADA."},
         ],
         "reviewer_decision": "pending-review",
         "approval_notes": "",
@@ -1181,7 +1181,7 @@ def test_resolve_conflict_updates_extract_plan(tmp_repo):
         "source_files": [],
         "required_sections": [],
         "key_questions": [],
-        "conflicts": [{"conflict": "ADA vs AACE", "resolution": ""}],
+        "concerns": [{"concern": "ADA vs AACE", "resolution": ""}],
         "reviewer_decision": "pending-review",
         "approval_notes": "",
     }])
@@ -1199,7 +1199,7 @@ def test_resolve_conflict_updates_extract_plan(tmp_repo):
     plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
     plan = load_yaml(plan_path)
     art = next(a for a in plan["artifacts"] if a["name"] == "art-a")
-    assert art["conflicts"][0]["resolution"] == "ADA 2024 preferred."
+    assert art["concerns"][0]["resolution"] == "ADA 2024 preferred."
 
 
 def test_resolve_conflict_index_out_of_range(tmp_repo):
@@ -1209,7 +1209,7 @@ def test_resolve_conflict_index_out_of_range(tmp_repo):
         "source_files": [],
         "required_sections": [],
         "key_questions": [],
-        "conflicts": [{"conflict": "Single conflict", "resolution": ""}],
+        "concerns": [{"concern": "Single conflict", "resolution": ""}],
         "reviewer_decision": "pending-review",
         "approval_notes": "",
     }])
@@ -1254,7 +1254,7 @@ def test_conflicts_scans_both_plans_when_both_exist(tmp_repo):
         "source_files": [],
         "required_sections": [],
         "key_questions": [],
-        "conflicts": [{"conflict": "Extract conflict", "resolution": ""}],
+        "concerns": [{"concern": "Extract conflict", "resolution": ""}],
         "reviewer_decision": "pending-review",
         "approval_notes": "",
     }])

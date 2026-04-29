@@ -1,0 +1,284 @@
+# Extract Plan Schema
+# Process control file: topics/<topic>/process/plans/extract-plan.yaml
+# Written by: rh-skills promote plan <topic>
+# Reviewed via: rh-skills promote approve <topic>
+# Read by: rh-skills promote implement <topic>
+
+schema_version: "1.0"
+
+description: >
+  Governs the extract phase for a clinical topic. Each artifact entry defines
+  a proposed structured (L2) artifact to derive from normalized sources,
+  including the clinical questions it must answer and the reviewer gate that
+  must be passed before implementation proceeds.
+
+# ── Top-level plan fields ─────────────────────────────────────────────────────
+
+top_level_fields:
+  topic:
+    type: string
+    required: true
+    description: >
+      Topic slug (kebab-case). Must match the directory name under topics/.
+    guidance: >
+      Set automatically by rh-skills promote plan. Do not change after creation.
+    example: "diabetes-ccm"
+
+  plan_type:
+    type: string
+    required: true
+    allowed_values: [extract]
+    description: >
+      Always 'extract'. Distinguishes this plan from formalize-plan.yaml and
+      other process control files in the same directory.
+
+  status:
+    type: string
+    required: true
+    allowed_values: [pending-review, approved, rejected]
+    description: >
+      Plan-level approval gate. Implement is blocked until this is 'approved'.
+    guidance: >
+      Set by the reviewer via 'rh-skills promote approve --finalize'. Do not
+      set manually unless reviewing outside the CLI. 'rejected' means the
+      plan must be regenerated; 'needs-revision' is expressed per-artifact.
+
+  reviewer:
+    type: string
+    required: false
+    description: >
+      Name or identifier of the person or agent who reviewed the plan.
+    guidance: >
+      Populated when the plan is finalized. Blank until reviewer commits.
+
+  reviewed_at:
+    type: string          # ISO 8601 timestamp or null
+    required: false
+    description: >
+      Timestamp of the last review action. Null until the plan is finalized.
+
+  review_summary:
+    type: string
+    required: false
+    description: >
+      Narrative summary of the review outcome written by the reviewer.
+    guidance: >
+      Required when any artifact has unresolved concerns or the plan-level
+      status is being set. Should summarize the scope of approval, any
+      cross-artifact constraints, and the rationale for any rejection or
+      revision requests.
+
+  cross_artifact_issues:
+    type: list            # list of strings
+    required: false
+    description: >
+      Issues that span multiple artifacts — e.g. overlapping source coverage,
+      inconsistent terminology, shared population definitions.
+    guidance: >
+      Add an entry here when the same problem appears across two or more
+      artifacts and cannot be fully resolved within a single artifact's
+      concerns list. Leave as empty list when none are identified.
+
+  artifacts:
+    type: list            # list of artifact entries; see artifact_fields below
+    required: true
+    description: >
+      One entry per proposed structured artifact. Each entry is a full
+      specification of what to derive, from which sources, and under what
+      constraints.
+
+# ── Per-artifact fields ───────────────────────────────────────────────────────
+
+artifact_fields:
+
+  name:
+    type: string
+    required: true
+    description: >
+      Unique kebab-case identifier for the artifact within this plan.
+    guidance: >
+      Use a short, descriptive slug that reflects the artifact's clinical role.
+      Must be unique across all artifacts in the plan. The derived L2 file will
+      be written to topics/<topic>/structured/<name>/<name>.yaml.
+    example: "screening-criteria"
+
+  artifact_type:
+    type: string
+    required: true
+    description: >
+      Artifact type from the standard catalog. Determines the downstream
+      formalization strategy and the FHIR resource targets for the L3 artifact.
+    guidance: >
+      Choose the closest match from the catalog. If no catalog type fits,
+      set to 'custom' and populate custom_artifact_type. Avoid 'custom' when
+      a catalog type is a reasonable approximation.
+    allowed_values:
+      - eligibility-criteria   # FHIR: PlanDefinition applicability condition
+      - risk-factors            # FHIR: RiskAssessment / ClinicalImpression
+      - evidence-summary        # FHIR: Evidence / EvidenceVariable
+      - decision-table          # FHIR: PlanDefinition with decision rules
+      - care-pathway            # FHIR: PlanDefinition with workflow steps
+      - terminology             # FHIR: ValueSet / ConceptMap
+      - measure                 # FHIR: Measure
+      - assessment              # FHIR: Questionnaire
+      - policy                  # FHIR: PlanDefinition with coverage logic
+
+  custom_artifact_type:
+    type: string          # or null
+    required: false
+    description: >
+      Free-text label for non-catalog artifact types. Only populated when
+      artifact_type is 'custom'.
+    guidance: >
+      Describe the artifact type in plain clinical language. Be specific enough
+      to guide the formalization step. Leave null when artifact_type is from
+      the standard catalog.
+    example: "medication-dosing-guide"
+
+  source_files:
+    type: list            # list of repo-relative paths
+    required: true
+    description: >
+      Normalized source files that contribute evidence to this artifact.
+    guidance: >
+      List repo-relative paths under sources/normalized/. Do not reference
+      raw sources directly. Include every source that materially contributes
+      evidence. The set here must match the derived_from list in the resulting
+      L2 artifact — the validator checks this alignment.
+    example:
+      - sources/normalized/ada-2024-guideline.md
+      - sources/normalized/uspstf-screening.md
+
+  purpose:
+    type: string
+    required: true
+    description: >
+      What this artifact accomplishes and its intended downstream use.
+    guidance: >
+      State the artifact's clinical role and how it will be consumed in the
+      formalization step. Purpose is forward-looking — focus on what the
+      artifact will do in the system, not on the evidence behind it.
+      Distinct from rationale: rationale explains the evidence choice;
+      purpose explains the artifact's role in the clinical workflow.
+    example: >
+      Provides the population eligibility logic used as the applicability
+      condition in the CDS PlanDefinition for diabetes annual screening.
+
+  rationale:
+    type: string
+    required: true
+    description: >
+      Why these specific sources are combined to produce this artifact.
+    guidance: >
+      Explain the evidence basis and source-selection logic. Note whether
+      sources are complementary (each covers different aspects) or
+      corroborating (multiple sources support the same claim). Flag if sources
+      differ meaningfully in scope, population, or evidence level — those
+      differences should also appear in concerns.
+
+  key_questions:
+    type: list            # list of strings
+    required: true
+    description: >
+      Clinical questions this artifact must answer.
+    guidance: >
+      List the specific clinical questions the extraction must address. These
+      drive the required content and sections of the derived L2 artifact.
+      Be specific enough to distinguish this artifact from others in the plan.
+      Each question should map to at least one required_section.
+    example:
+      - "Who qualifies for annual diabetes screening based on risk factors?"
+      - "At what interval should screening recur for borderline-risk patients?"
+
+  required_sections:
+    type: list            # list of section name strings
+    required: true
+    description: >
+      Sections that must appear in the derived L2 structured artifact.
+      The validator enforces their presence after derivation.
+    guidance: >
+      Always include 'summary' and 'evidence_traceability'. Add
+      domain-specific sections based on artifact_type. Add 'conflicts' when
+      any concerns are cross-source disagreements that require resolution
+      within the artifact itself.
+    common_values:
+      - summary               # always include
+      - evidence_traceability # always include
+      - criteria              # eligibility-criteria, policy
+      - factors               # risk-factors
+      - actions               # decision-table, care-pathway, policy
+      - conflicts             # include when source disagreements must be documented
+      - recommendations       # evidence-summary
+
+  concerns:
+    type: list            # list of concern entries; see concern_entry_fields
+    required: false
+    description: >
+      Issues, conflicts, or risks that the reviewer must assess before
+      approving the artifact.
+    guidance: >
+      Each entry has a 'concern' key (description of the issue) and a
+      'resolution' key (how it should be addressed, empty string when
+      pending reviewer input). Include: cross-source disagreements on
+      thresholds or terminology, population scope ambiguities, guideline
+      currency issues, or evidence gaps. Leave as empty list when none
+      are identified during automated planning.
+
+  reviewer_decision:
+    type: string
+    required: true
+    allowed_values: [pending-review, approved, needs-revision, rejected]
+    description: >
+      Per-artifact approval gate set by the reviewer.
+    guidance: >
+      Set by the reviewer via 'rh-skills promote approve'. An artifact must
+      have 'approved' here before implement will derive it. 'needs-revision'
+      requires non-empty approval_notes explaining what must change. Do not
+      set manually unless reviewing outside the CLI workflow.
+
+  approval_notes:
+    type: string
+    required: false
+    description: >
+      Reviewer notes explaining the decision or conditions for revision.
+    guidance: >
+      Required when reviewer_decision is 'needs-revision' — describe exactly
+      what must change before re-approval. Optional but encouraged for
+      'approved' decisions that carry caveats or scope constraints. Leave
+      as empty string when no notes are needed.
+
+# ── Concern entry fields ──────────────────────────────────────────────────────
+
+concern_entry_fields:
+  concern:
+    type: string
+    description: >
+      Description of the issue, conflict, or risk. State the specific
+      clinical or technical disagreement in concrete terms (e.g. cite the
+      differing thresholds or interval recommendations by source).
+    example: >
+      ADA 2024 recommends annual screening for high-risk adults; USPSTF
+      recommends screening every 3 years for average-risk adults — interval
+      framing differs by risk stratum.
+
+  resolution:
+    type: string
+    description: >
+      How the concern was or should be resolved. Empty string means the
+      resolution is pending reviewer input. Use 'resolve-conflict' command
+      to record resolutions without editing YAML directly.
+    example: >
+      ADA framing adopted as primary for this chronic-disease-management
+      workflow; USPSTF interval noted as supplementary for lower-risk strata.
+
+# ── Reviewer_decision state machine ──────────────────────────────────────────
+#
+#   pending-review → approved (reviewer approves)
+#   pending-review → needs-revision (reviewer requests changes)
+#   pending-review → rejected (reviewer rejects)
+#   needs-revision → pending-review (plan re-submitted after changes)
+#
+# Plan-level status follows artifact decisions:
+#   All artifacts decided → reviewer may finalize plan to 'approved'
+#   Any artifact rejected → plan may be finalized as 'rejected'
+#   Any artifact needs-revision → plan remains pending-review until revised

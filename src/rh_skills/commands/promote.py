@@ -174,9 +174,9 @@ def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict
 
 
 def _conflict_text(item: object) -> str:
-    """Return the human-readable conflict description from a conflict entry."""
+    """Return the human-readable concern/conflict description from an entry."""
     if isinstance(item, dict):
-        return item.get("conflict") or item.get("issue") or str(item)
+        return item.get("concern") or item.get("conflict") or item.get("issue") or str(item)
     return str(item)
 
 
@@ -202,7 +202,9 @@ def _collect_open_conflicts(topic: str) -> list[dict]:
             continue
         for artifact in plan.get("artifacts") or []:
             name = artifact.get("name", "")
-            for idx, item in enumerate(artifact.get("conflicts") or []):
+            # extract plans use 'concerns'; formalize plans use 'conflicts'
+            items = artifact.get("concerns") or artifact.get("conflicts") or []
+            for idx, item in enumerate(items):
                 resolution = (item.get("resolution", "") if isinstance(item, dict) else "")
                 if not resolution:
                     results.append({
@@ -216,21 +218,24 @@ def _collect_open_conflicts(topic: str) -> list[dict]:
 
 
 def _set_conflict_resolution(plan: dict, artifact_name: str, index: int, resolution: str) -> None:
-    """Mutate plan in-place: set resolution on conflict[index] for the named artifact."""
+    """Mutate plan in-place: set resolution on concerns[index] or conflicts[index]."""
     for artifact in plan.get("artifacts") or []:
         if artifact.get("name") == artifact_name:
-            conflicts = artifact.get("conflicts") or []
-            if index < 0 or index >= len(conflicts):
+            # extract plans use 'concerns'; formalize plans use 'conflicts'
+            field = "concerns" if "concerns" in artifact else "conflicts"
+            items = artifact.get(field) or []
+            if index < 0 or index >= len(items):
                 raise click.UsageError(
                     f"Conflict index {index} out of range for artifact '{artifact_name}' "
-                    f"({len(conflicts)} conflict(s) present, indices 0–{len(conflicts) - 1})."
+                    f"({len(items)} concern(s) present, indices 0–{len(items) - 1})."
                 )
-            item = conflicts[index]
+            item = items[index]
             if isinstance(item, dict):
                 item["resolution"] = resolution
             else:
-                conflicts[index] = {"conflict": str(item), "resolution": resolution}
-            artifact["conflicts"] = conflicts
+                concern_key = "concern" if field == "concerns" else "conflict"
+                items[index] = {concern_key: str(item), "resolution": resolution}
+            artifact[field] = items
             return
     raise click.UsageError(
         f"Artifact '{artifact_name}' not found in plan. "
@@ -789,16 +794,29 @@ def _group_sources_for_extract_plan(source_records: list[dict]) -> list[dict]:
     return list(grouped.values())
 
 
+_ARTIFACT_PURPOSES: dict[str, str] = {
+    "eligibility-criteria": "Provides population inclusion/exclusion criteria for downstream CDS applicability conditions.",
+    "risk-factors": "Captures patient and contextual risk factors for use in risk stratification and decision logic.",
+    "evidence-summary": "Synthesizes evidence on clinical outcomes for downstream advisory content and guideline alignment.",
+    "decision-table": "Encodes conditional clinical decision logic for CDS rule formalization.",
+    "care-pathway": "Maps clinical workflow steps and transitions for protocol-based guidance.",
+    "terminology": "Defines value sets and concept maps for semantic interoperability.",
+    "measure": "Specifies quality measurement logic for clinical performance tracking.",
+    "assessment": "Structures a validated clinical instrument for patient evaluation.",
+    "policy": "Captures coverage or authorization rules for policy-driven guidance.",
+}
+
+
 def _build_plan_artifact_entry(group: dict) -> dict:
     source_names = [record["name"] for record in group["sources"]]
     source_files = [record["relative_path"] for record in group["sources"]]
     source_count = len(source_files)
     artifact_name = group["artifact_type"]
 
-    plan_conflicts: list[dict] = []
+    plan_concerns: list[dict] = []
     if source_count > 1:
-        plan_conflicts.append({
-            "conflict": "Multiple normalized sources contribute to this artifact; confirm that thresholds, timing, and terminology align before derive.",
+        plan_concerns.append({
+            "concern": "Multiple normalized sources contribute to this artifact; confirm that thresholds, timing, and terminology align before derive.",
             "resolution": "",
         })
     if any(
@@ -806,28 +824,34 @@ def _build_plan_artifact_entry(group: dict) -> dict:
         for record in group["sources"]
         for keyword in ("however", "conflict", "differ", "disagree", "uncertain", "versus", "vs.")
     ):
-        plan_conflicts.append({
-            "conflict": "At least one contributing source contains potentially conflicting or qualified guidance that requires reviewer confirmation.",
+        plan_concerns.append({
+            "concern": "At least one contributing source contains potentially conflicting or qualified guidance that requires reviewer confirmation.",
             "resolution": "",
         })
 
     section_val = group["section"]
     middle_sections = section_val if isinstance(section_val, list) else [section_val]
     required_sections = ["summary"] + middle_sections + ["evidence_traceability"]
-    if plan_conflicts:
+    if plan_concerns:
         required_sections.append("conflicts")
 
+    purpose = _ARTIFACT_PURPOSES.get(
+        group["artifact_type"],
+        "Provides structured clinical content for downstream formalization.",
+    )
     rationale = (
         f"Synthesizes {source_count} normalized source(s) contributing to {group['artifact_type']} for review and downstream formalization."
     )
     return {
         "name": artifact_name,
         "artifact_type": group["artifact_type"],
+        "custom_artifact_type": None,
         "source_files": source_files,
+        "purpose": purpose,
         "rationale": rationale,
         "key_questions": [group["key_question"]],
         "required_sections": required_sections,
-        "conflicts": plan_conflicts,
+        "concerns": plan_concerns,
         "reviewer_decision": "pending-review",
         "approval_notes": "",
     }
@@ -900,21 +924,26 @@ def _render_extract_readout(plan: dict) -> str:
             f"## {icon} {artifact.get('name', 'unknown')}",
             "",
             f"- Type: `{artifact.get('artifact_type', 'unknown')}`",
+        ])
+        if artifact.get("custom_artifact_type"):
+            lines.append(f"- Custom type: `{artifact['custom_artifact_type']}`")
+        lines.extend([
+            f"- Purpose: {artifact.get('purpose', '')}",
             f"- Source coverage: {', '.join(artifact.get('source_files', []))}",
             f"- Rationale: {artifact.get('rationale', '')}",
             f"- Key questions: {', '.join(artifact.get('key_questions', []))}",
             f"- Required sections: {', '.join(artifact.get('required_sections', []))}",
         ])
-        conflicts = artifact.get("conflicts") or []
-        if conflicts:
-            lines.append("- Conflicts:")
-            for item in conflicts:
-                c = item.get("conflict", item) if isinstance(item, dict) else item
+        concerns = artifact.get("concerns") or []
+        if concerns:
+            lines.append("- Concerns:")
+            for item in concerns:
+                c = item.get("concern", item.get("conflict", item)) if isinstance(item, dict) else item
                 r = item.get("resolution", "") if isinstance(item, dict) else ""
-                lines.append(f"  - **Conflict:** {c}")
+                lines.append(f"  - **Concern:** {c}")
                 lines.append(f"    - **Resolution:** {r if r else '_pending_'}")
         else:
-            lines.append("- Conflicts: none identified during deterministic planning")
+            lines.append("- Concerns: none identified during deterministic planning")
         lines.append(f"- **Reviewer decision: `{decision}`**")
         lines.append(f"- Approval notes: {notes if notes else '_pending reviewer input_'}")
         lines.append("")
@@ -972,22 +1001,22 @@ def _apply_artifact_decision(
     add_conflicts: tuple[str, ...] = (),
     add_sources: tuple[str, ...] = (),
 ) -> None:
-    """Mutate plan in-place: set reviewer_decision, optional notes, append conflicts/sources."""
+    """Mutate plan in-place: set reviewer_decision, optional notes, append concerns/sources."""
     for artifact in plan.get("artifacts", []) or []:
         if artifact.get("name") == artifact_name:
             artifact["reviewer_decision"] = decision
             if notes:
                 artifact["approval_notes"] = notes
             if add_conflicts:
-                existing = artifact.get("conflicts") or []
+                existing = artifact.get("concerns") or []
                 new_entries = []
                 for raw in add_conflicts:
                     parts = raw.split("|", 1)
                     new_entries.append({
-                        "conflict": parts[0].strip(),
+                        "concern": parts[0].strip(),
                         "resolution": parts[1].strip() if len(parts) > 1 else "",
                     })
-                artifact["conflicts"] = existing + new_entries
+                artifact["concerns"] = existing + new_entries
             if add_sources:
                 existing_sources = list(artifact.get("source_files") or [])
                 for src in add_sources:
@@ -1019,15 +1048,15 @@ def _interactive_approve(
             art_type = artifact.get("artifact_type", "")
             sources = ", ".join(artifact.get("source_files", []))
             key_q = ", ".join(artifact.get("key_questions", []))
-            conflicts = artifact.get("conflicts") or []
+            concerns = artifact.get("concerns") or artifact.get("conflicts") or []
             click.echo(f"  Artifact : {name}")
             click.echo(f"  Type     : {art_type}")
             click.echo(f"  Sources  : {sources}")
             click.echo(f"  Question : {key_q}")
-            if conflicts:
-                for item in conflicts:
-                    c = item.get("conflict", item) if isinstance(item, dict) else item
-                    click.echo(f"  Conflict : {c}")
+            if concerns:
+                for item in concerns:
+                    c = item.get("concern", item.get("conflict", item)) if isinstance(item, dict) else item
+                    click.echo(f"  Concern  : {c}")
 
             choice = click.prompt(
                 "  Decision",
@@ -1298,7 +1327,7 @@ def plan(topic, force):
 @click.option("--notes", default="", help="Approval notes (used with --artifact).")
 @click.option(
     "--add-conflict", "add_conflicts", multiple=True, metavar="TEXT",
-    help="Append a conflict to the artifact's conflicts list. Use 'conflict text' or 'conflict|resolution' format (repeatable).",
+    help="Append a concern to the artifact's concerns list. Use 'concern text' or 'concern|resolution' format (repeatable).",
 )
 @click.option(
     "--add-source", "add_sources", multiple=True, metavar="SLUG",
@@ -1307,7 +1336,7 @@ def plan(topic, force):
 @click.option("--reviewer", default=None, help="Reviewer name written to plan header.")
 @click.option(
     "--review-summary", "review_summary", default=None,
-    help="Plan-level review summary written to extract-plan.yaml (required when conflicts exist).",
+    help="Plan-level review summary written to extract-plan.yaml (required when concerns exist).",
 )
 @click.option(
     "--finalize", is_flag=True,

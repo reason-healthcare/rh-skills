@@ -36,18 +36,26 @@ cross_artifact_issues:
 artifacts:
   - name: <kebab-case>
     artifact_type: <catalog type>
-    custom_artifact_type: <optional custom label>
+    custom_artifact_type: <optional custom label or null>
     source_files:
       - sources/normalized/<source>.md
-    rationale: <string>
+    purpose: >-
+      <Forward-looking statement: what this artifact does downstream — e.g.
+      "Defines eligibility thresholds consumed by decision-table and measure artifacts.">
+    rationale: >-
+      <Why these sources were selected — e.g. "ADA and USPSTF together cover
+      the primary clinical and preventive-services evidence for screening.">
     key_questions:
-      - <question>
+      - <Clinical question this artifact must answer>
     required_sections:
       - summary
       - evidence_traceability
-    conflicts:
-      - conflict: <conflict description>
-        resolution: <resolution or empty>
+    concerns:
+      - concern: >-
+          <Tension, ambiguity, or guideline disagreement identified during
+          planning — e.g. "ADA annual screening vs USPSTF interval framing differ.">
+        resolution: >-
+          <Resolution text, or empty string "" if still open>
     candidate_codes:               # populated by reasonhub MCP during plan; only present for terminology artifacts
       - code: <code>
         system: <system-url>
@@ -378,7 +386,7 @@ Multiple `--evidence-ref` flags can be passed for a single artifact.
 - `derived_from[]` does not match the approved plan source set
 - a required section from the plan is missing from `sections`
 - `evidence_traceability` is required but empty or missing claim/evidence locators
-- `conflicts[]` is missing despite unresolved conflicts in the approved plan
+- `conflicts[]` is missing despite open concerns recorded in the approved plan
 
 Warnings:
 - artifact exists but is not listed in the current extract plan

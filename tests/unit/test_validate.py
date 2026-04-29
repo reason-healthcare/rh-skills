@@ -26,7 +26,7 @@ derived_from:
 """)
 
 
-def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, conflicts=None):
+def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, concerns=None):
     plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "extract-plan.yaml"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     y = YAML()
@@ -46,7 +46,7 @@ def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, 
             "rationale": "Primary criteria artifact",
             "key_questions": ["Who qualifies?"],
             "required_sections": ["summary", "evidence_traceability"],
-            "conflicts": conflicts or [],
+            "concerns": concerns or [],
             "reviewer_decision": "approved",
             "approval_notes": "Proceed",
         }],
@@ -251,7 +251,7 @@ conflicts: []
 
 
 def test_validate_extract_artifact_fails_missing_conflicts_when_plan_requires_them(tmp_repo):
-    write_extract_plan(tmp_repo, conflicts=[{"conflict": "Guidelines disagree", "resolution": ""}])
+    write_extract_plan(tmp_repo, concerns=[{"concern": "Guidelines disagree", "resolution": ""}])
     make_valid_extract_l2(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact" / "test-artifact.yaml"
     data = YAML().load(td.read_text())

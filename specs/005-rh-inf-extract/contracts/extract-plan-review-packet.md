@@ -19,17 +19,19 @@ reviewed_at: <ISO-8601 timestamp or null>
 artifacts:
   - name: <kebab-case artifact name>
     artifact_type: <catalog type>
-    custom_artifact_type: <optional custom label>
+    custom_artifact_type: <optional custom label or null>
     source_files:
       - sources/normalized/<source>.md
-    rationale: <string>
+    purpose: <string — what this artifact does downstream>
+    rationale: <string — why these sources were selected>
     key_questions:
       - <question>
     required_sections:
       - summary
       - evidence_traceability
-    unresolved_conflicts:
-      - <conflict description>
+    concerns:
+      - concern: <description of tension or ambiguity>
+        resolution: <resolution text or empty string if open>
     reviewer_decision: <pending-review | approved | needs-revision | rejected>
     approval_notes: <string>
 ```
@@ -48,9 +50,9 @@ The Markdown body must appear in this order:
 Under `Proposed Artifacts`, each artifact should have a review card containing:
 - artifact name and type
 - source coverage summary
-- clinical question / rationale
+- purpose and clinical rationale
 - required sections to derive
-- unresolved conflicts
+- open concerns
 - reviewer decision summary
 
 ## Approval Gate Semantics

@@ -18,9 +18,11 @@ reviewed_at: null
 artifacts:
   - name: screening-criteria
     artifact_type: eligibility-criteria
+    custom_artifact_type: null
     source_files:
       - sources/normalized/ada-2024-guideline.md
       - sources/normalized/uspstf-screening.md
+    purpose: "Defines who qualifies for screening; consumed by eligibility rules and patient flow."
     rationale: "Combines guideline and preventive-service evidence for screening criteria."
     key_questions:
       - Who should be screened?
@@ -29,9 +31,9 @@ artifacts:
       - summary
       - criteria
       - evidence_traceability
-      - conflicts
-    unresolved_conflicts:
-      - "ADA annual screening language differs from USPSTF interval framing."
+    concerns:
+      - concern: "ADA annual screening language differs from USPSTF interval framing."
+        resolution: ""
     reviewer_decision: pending-review
     approval_notes: ""
 ---
@@ -61,6 +63,7 @@ artifacts:
   source_files:
     - sources/normalized/ada-2024-guideline.md
     - sources/normalized/cdc-surveillance.md
+  purpose: "Provides the structured risk-factor reference used by eligibility and monitoring artifacts."
   rationale: "Captures cross-source patient and contextual risk factors."
   key_questions:
     - Which factors materially increase risk?
@@ -68,9 +71,9 @@ artifacts:
     - summary
     - factors
     - evidence_traceability
-    - conflicts
-  unresolved_conflicts:
-    - "Some sources distinguish obesity thresholds differently."
+  concerns:
+    - concern: "Some sources distinguish obesity thresholds differently."
+      resolution: ""
   reviewer_decision: needs-revision
   approval_notes: "Clarify age-band handling before derive."
 ```
@@ -80,6 +83,8 @@ artifacts:
 - `artifact_type` is required and should come from the hybrid catalog when possible.
 - `custom_artifact_type` is optional and only used when the artifact falls outside the standard catalog.
 - `source_files[]` contains normalized source paths, not raw source files.
+- `purpose` describes what the artifact does downstream; `rationale` explains why these sources were chosen.
+- `concerns[]` captures tensions or ambiguities; each entry has a `concern` string and a `resolution` string (empty when open).
 - `reviewer_decision` is one of `pending-review`, `approved`, `needs-revision`, `rejected`.
 
 ---
@@ -125,7 +130,7 @@ conflicts:
 
 **Rules**:
 - Existing required metadata (`id`, `name`, `title`, `version`, `status`, `domain`, `description`, `derived_from`) remains intact.
-- `artifact_type`, `clinical_question`, `sections`, and `conflicts` are 005 additions.
+- `artifact_type`, `clinical_question`, `sections`, and `conflicts` are 005 additions (L2 artifact `conflicts` uses `{issue, positions, preferred_interpretation}` structure — distinct from plan-level `concerns`).
 - Claims under structured sections should support explicit evidence references.
 - `conflicts[]` may be empty but must be present when the plan required conflict handling.
 

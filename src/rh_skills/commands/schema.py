@@ -48,6 +48,7 @@ _DISCOVERY_PLAN_SCHEMA = {
 
 _SCHEMAS = {
     "discovery-plan": _DISCOVERY_PLAN_SCHEMA,
+    "extract-plan": "extract-plan-schema.yaml",
     "l2": "l2-schema.yaml",
     "structured": "l2-schema.yaml",
     "l3": "l3-schema.yaml",
@@ -74,13 +75,14 @@ def show(artifact_type, as_json):
     \b
     Types:
       discovery-plan   Fields and vocabulary for discovery-plan.yaml
+      extract-plan     Fields and vocabulary for extract-plan.yaml
       l2 / structured  Required/optional fields for L2 structured artifacts
       l3 / computable  Required/optional fields for L3 computable artifacts
 
     \b
     Examples:
       rh-skills schema show discovery-plan
-      rh-skills schema show discovery-plan --json
+      rh-skills schema show extract-plan
       rh-skills schema show l2
       rh-skills schema show l3
     """
@@ -88,7 +90,7 @@ def show(artifact_type, as_json):
     canonical = _ALIASES.get(key, key)
 
     if canonical not in _SCHEMAS:
-        available = "  ".join(sorted(set(_ALIASES) | {"discovery-plan", "l2", "l3"}))
+        available = "  ".join(sorted(set(_ALIASES) | {"discovery-plan", "extract-plan", "l2", "l3"}))
         raise click.UsageError(
             f"Unknown artifact type: '{artifact_type}'\n"
             f"Available types: {available}"
@@ -98,9 +100,11 @@ def show(artifact_type, as_json):
 
     if canonical == "discovery-plan":
         data = schema_ref
-    else:
+    elif isinstance(schema_ref, str):
         data = load_schema(schema_ref)
         data["artifact"] = canonical
+    else:
+        data = schema_ref
 
     if as_json:
         click.echo(json.dumps(data, indent=2, default=str))
