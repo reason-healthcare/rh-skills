@@ -96,7 +96,7 @@ This keeps registration deterministic and visible in agent execution logs.
 
 6. ANNOTATE: rh-skills ingest annotate <name> --topic <topic> --concept "name:type"
    ├─ For each source (STRICTLY SERIAL — no parallelism):
-   │   ├─ Read normalized.md content
+   │   ├─ Read sources/normalized/<name>.md content
    │   ├─ Identify concepts:
    │   │   ├─ Conditions (e.g., "Hypertension")
    │   │   ├─ Medications (e.g., "ACE Inhibitor")
@@ -104,14 +104,14 @@ This keeps registration deterministic and visible in agent execution logs.
    │   │   ├─ Terminology codes (ICD-10, SNOMED, LOINC, RxNorm)
    │   │   ├─ Guideline references, SDOH factors
    │   │   └─ Quality measures
-   │   ├─ Update normalized/<name>.md frontmatter: add concepts[]
+   │   ├─ Update sources/normalized/<name>.md frontmatter: add concepts[]
    │   ├─ Update topics/<topic>/process/concepts.yaml (accumulated concept registry)
    │   └─ Update tracking.yaml: annotated_at, concept_count
    └─ Event: source_annotated
 
 7. VERIFY: rh-skills ingest verify <topic>
    ├─ Re-checksum all sources in tracking.yaml
-   ├─ Check normalized.md files exist
+   ├─ Check sources/normalized/<name>.md files exist
    ├─ Check classification events recorded
    ├─ Check annotation events recorded
    ├─ Validate concepts.yaml schema
@@ -160,6 +160,9 @@ concepts:
 
 Each `annotate` call appends new entries; concepts from different sources appear as
 separate entries. Pass `--overwrite` to replace all entries for a given source.
+
+Concept delimiter safety: `annotate` parses each concept as `name:type`, so concept
+names must not contain unescaped colons.
 
 ---
 
