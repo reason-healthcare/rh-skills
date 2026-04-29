@@ -177,10 +177,6 @@ If the mode is unrecognized, print the table above and exit.
 
 5. Emit status block and **stop**. Do not proceed automatically.
 
-Compatibility note: framework tests still expect the conventional artifact name
-`topics/<topic>/process/plans/rh-inf-ingest-plan.md` to be documented, but for
-004 this path is intentionally **not** written during normal plan mode.
-
 Status block format:
 ```
 ▸ rh-inf-ingest  <topic>
@@ -213,7 +209,7 @@ Register each untracked file individually (from the list identified in plan mode
 rh-skills ingest implement sources/<file> [--topic <topic>]
 ```
 
-Repeat the above command for each file reported by `ingest list-manual`. 
+Repeat the above command for each file listed in the plan-mode output (from `rh-skills ingest plan`).
 Do not add `--type`; registration-time type is inferred automatically for local
 files, and final type/evidence metadata are set later by classify.
 
