@@ -154,10 +154,12 @@ Outputs each untracked file and a corresponding `rh-skills ingest implement sour
 Download a URL to `sources/` and register it in `tracking.yaml`.
 
 ```
-rh-skills source download --url <url> --name <name>
+rh-skills source download --url <url> --name <name> [--type <source-type>] [--topic <topic>]
 ```
 
 Use this command (not `ingest implement`) for URL-based acquisition.
+`--type` persists an initial source-type hint at registration time; later
+`rh-skills ingest classify` remains the authoritative classification step.
 
 ### `rh-skills ingest verify`
 

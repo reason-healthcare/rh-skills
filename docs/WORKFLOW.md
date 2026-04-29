@@ -132,12 +132,11 @@ Every state-changing operation appends a named event to `tracking.yaml`:
 | Event | Triggered By |
 |-------|-------------|
 | `topic_created` | `rh-skills init` |
-| `source_added` | `rh-skills ingest implement` |
-| `source_changed` | `rh-skills ingest implement` (re-registration) |
+| `source_added` | `rh-skills ingest implement`; `rh-skills source download` |
+| `source_changed` | `rh-skills ingest implement` (re-registration); `rh-skills source download` (re-download) |
 | `source_classified` | `rh-skills ingest classify` |
 | `source_annotated` | `rh-skills ingest annotate` |
 | `discovery_planned` | `rh-inf-discovery plan` mode |
-| `discovery_implemented` | `rh-inf-discovery implement` mode |
 | `extract_planned` | `rh-skills promote plan` |
 | `structured_derived` | `rh-skills promote derive` |
 | `formalize_planned` | `rh-skills promote formalize-plan` |

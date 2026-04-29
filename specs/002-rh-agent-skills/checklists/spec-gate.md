@@ -24,7 +24,7 @@
 - [ ] CHK009 — Are the options and arguments for each CLI command fully enumerated in the spec (not only in docs/COMMANDS.md)? [Completeness, Gap]
 - [ ] CHK010 — Is the `rh-skills status` command table entry updated to reflect the current subcommand interface (`show`, `progress`, `next-steps`, `check-changes`)? [Consistency, Spec §CLI Commands]
 - [ ] CHK011 — Are the `rh-skills promote derive` and `rh-skills promote combine` commands' failure behaviors specified (e.g., what happens when target artifact already exists, when source artifacts are missing)? [Completeness, FR-008, FR-009]
-- [ ] CHK012 — Is the behavior of `rh-skills ingest plan` specified for the case where an `ingest-plan.md` already exists? Is the `--force` override required here too (per FR-020)? [Consistency, FR-004, FR-020]
+- [ ] CHK012 — Is `rh-skills ingest plan` clearly specified as a transient read-only pre-flight summary, including what it prints and how it differs from `rh-skills ingest list-manual`? [Consistency, FR-004]
 - [ ] CHK013 — Is `rh-skills test <topic> <skill>` fully specified: what "run the skill" means, what constitutes a pass vs. fail, and what the `results/` output format looks like? [Clarity, FR-014]
 - [ ] CHK014 — Are the `rh-skills tasks` commands specified with enough detail to understand their behavior when `tasks.md` doesn't exist yet? [Edge Case, FR-011, FR-012]
 - [ ] CHK015 — Is the `rh-skills validate` command specified for both L2 and L3 artifacts, including which schema each level validates against? Are the schemas documented or referenced? [Completeness, FR-010, Gap]

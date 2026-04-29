@@ -33,8 +33,8 @@
 > **Status**: ✅ CLI fully implemented in `src/rh_skills/commands/ingest.py`.
 
 - [X] T005 ✅ `rh-skills ingest` click group with `plan`/`implement`/`verify` subcommand routing
-- [X] T006 ✅ `rh-skills ingest plan [--force]`: write `plans/ingest-plan.md` with YAML front matter template; re-run guard
-- [X] T007 ✅ `rh-skills ingest implement <file> [--force]`: copy to `sources/`, compute SHA-256, append `sources[]` entry in `tracking.yaml`, append `source_added` event
+- [X] T006 ✅ `rh-skills ingest plan [<topic>]`: print a transient pre-flight summary listing untracked files, exact registration commands, and tool availability
+- [X] T007 ✅ `rh-skills ingest implement <file> [--topic <topic>]`: register a local source, compute SHA-256, append `sources[]` entry in `tracking.yaml`, append `source_added` event
 - [X] T008 ✅ Optional text extraction: detect `pdftotext` (PDF) and `pandoc` (Word/Excel); emit warning if tool absent; set `text_extracted` flag
 - [X] T009 ✅ `rh-skills ingest verify`: re-checksum all registered sources, report `✓ OK` or `✗ CHANGED`; exit 1 if any mismatch
 - [X] T010 [P] ✅ Create `tests/unit/test_ingest.py`: 13 tests covering plan/implement/verify subcommands, checksum, force flag, missing-file error
