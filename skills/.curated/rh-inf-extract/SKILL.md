@@ -183,8 +183,9 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    - **Does the plan group sources that share a conflicting value into the same
      artifact?** The planner assigns sources by count/type and uses an LLM call
      to surface specific cross-source concerns (e.g., "source A specifies HbA1c
-     <7.0%; source B specifies ≤6.5%"). In stub/offline mode the `concerns[]`
+     <7.0%; source B specifies ≤6.5%"). In offline mode (no `LLM_PROVIDER`, no `RH_STUB_RESPONSE`) the `concerns[]`
      list starts empty — the agent adds specific concerns via `--add-conflict`.
+     In agent mode (`RH_STUB_RESPONSE` set), concerns are parsed from the injected YAML.
      If two sources disagree on the same clinical value, they must end up in the
      same artifact so the concern can be recorded. If they are in separate
      artifacts, re-run with `--force`.

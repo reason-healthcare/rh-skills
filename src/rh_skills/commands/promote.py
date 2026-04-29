@@ -823,9 +823,12 @@ _CONCERN_ALIGNMENT_ASPECTS: dict[str, str] = {
 def _identify_group_concerns(group: dict) -> list[dict]:
     """Call LLM to surface specific clinical concerns for this artifact group.
 
-    Returns [] in stub mode — reviewer adds concerns via --add-conflict at approve time.
+    In offline mode (no LLM, no agent content) returns [] — reviewer adds
+    concerns via --add-conflict at approve time.
+    In agent mode (RH_STUB_RESPONSE set) or LLM mode, parses the response as
+    a YAML list of {concern, resolution} items.
     """
-    if config_value("LLM_PROVIDER", "stub") == "stub":
+    if _is_offline_mode():
         return []
 
     artifact_type = group["artifact_type"]
@@ -1151,6 +1154,20 @@ def _interactive_approve(
     _write_plan_and_readout(plan_path, readout_path, plan)
     approved = sum(1 for a in artifacts if a.get("reviewer_decision") == "approved")
     log_info(f"Plan updated: {approved}/{len(artifacts)} artifact(s) approved, status={plan['status']}")
+
+
+def _is_offline_mode() -> bool:
+    """Return True when no LLM is configured and the agent has not injected content.
+
+    Offline mode: LLM_PROVIDER is unset/stub AND RH_STUB_RESPONSE is not set.
+    Agent mode:   LLM_PROVIDER is unset/stub BUT RH_STUB_RESPONSE IS set
+                  (the agent is the reasoning layer; it injects content via the env var).
+    LLM mode:     LLM_PROVIDER is set to a real provider (anthropic, openai, ollama).
+    """
+    return (
+        config_value("LLM_PROVIDER", "stub") == "stub"
+        and config_value("RH_STUB_RESPONSE", None) is None
+    )
 
 
 def _invoke_llm(system_prompt: str, user_prompt: str) -> str:
@@ -1625,8 +1642,8 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
         l2_file = td / "structured" / artifact_name / f"{artifact_name}.yaml"
         l2_file.parent.mkdir(parents=True, exist_ok=True)
 
-        if llm_output == "Stub response":
-            # Write a minimal valid L2 artifact template for stub mode
+        if _is_offline_mode():
+            # No LLM and no agent-injected content — write a scaffold with placeholders
             l2_file.write_text(
                 _build_stub_l2_artifact(
                     artifact_name,

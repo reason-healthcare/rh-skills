@@ -435,7 +435,93 @@ def test_plan_warns_and_does_not_write_without_normalized_sources(tmp_repo):
     assert not (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").exists()
 
 
-def test_approved_extract_artifacts_requires_approved_plan(tmp_repo):
+def test_plan_offline_mode_produces_empty_concerns(tmp_repo, monkeypatch):
+    """Offline mode (LLM_PROVIDER=stub, no RH_STUB_RESPONSE): concerns[] starts empty."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    setup_topic_with_normalized_sources(
+        tmp_repo,
+        source_names=("ada-screening-guideline", "uspstf-screening-update"),
+    )
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+    plan = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text()
+    )
+    assert plan["artifacts"][0]["concerns"] == []
+
+
+def test_plan_agent_mode_parses_injected_concerns(tmp_repo, monkeypatch):
+    """Agent mode (LLM_PROVIDER=stub, RH_STUB_RESPONSE set): concerns parsed from injected YAML."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv(
+        "RH_STUB_RESPONSE",
+        '- concern: "Source ada-screening-guideline uses threshold 140 mmHg; uspstf-screening-update uses 160 mmHg"\n',
+    )
+    setup_topic_with_normalized_sources(
+        tmp_repo,
+        source_names=("ada-screening-guideline", "uspstf-screening-update"),
+    )
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+    plan = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text()
+    )
+    concerns = plan["artifacts"][0]["concerns"]
+    assert len(concerns) == 1
+    assert "140 mmHg" in concerns[0]["concern"]
+    assert concerns[0]["resolution"] == ""
+
+
+def test_derive_agent_mode_writes_injected_content(tmp_repo, monkeypatch):
+    """Agent mode: RH_STUB_RESPONSE content is written as L2 artifact (not scaffold)."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv(
+        "RH_STUB_RESPONSE",
+        "artifact_type: decision-table\nclinical_question: Who should be screened?\nsections:\n  summary: Agent-generated content.\n",
+    )
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--source", "ada-guidelines",
+        "--artifact-type", "decision-table",
+        "--clinical-question", "Who should be screened?",
+        "--required-section", "summary",
+        "--required-section", "evidence_traceability",
+    ])
+    assert result.exit_code == 0, result.output
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
+    content = artifact_path.read_text()
+    assert "<stub:" not in content
+    assert "Agent-generated content." in content
+
+
+def test_derive_offline_mode_writes_stub_scaffold(tmp_repo, monkeypatch):
+    """Offline mode: no RH_STUB_RESPONSE → scaffold with <stub: ...> placeholders."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--source", "ada-guidelines",
+        "--artifact-type", "decision-table",
+        "--clinical-question", "Who should be screened?",
+        "--required-section", "summary",
+        "--required-section", "evidence_traceability",
+        "--required-section", "decision_rules",
+    ])
+    assert result.exit_code == 0, result.output
+    content = (
+        tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
+    ).read_text()
+    assert "<stub:" in content
+
+
+
     setup_topic_with_source(tmp_repo)
     write_extract_plan(
         tmp_repo,
