@@ -120,13 +120,6 @@ entry per concept per source). Pass `--overwrite` to replace entries previously 
 that source. Downstream skills (`rh-inf-extract`, `rh-inf-formalize`) consume this file as
 an accumulated vocabulary; any deduplication of concept names is their responsibility.
 
-**Concept quality normalization guidance:**
-- De-duplication is lowercase exact-match only, so canonical naming matters; prefer canonical singular concept names (`Clinical Practice Guideline`, not `Clinical Practice Guidelines`).
-- Avoid broad methodology-only labels in `term` unless clinically specific (`Systematic Review` by itself is too generic for most topics).
-- Exclude framework/process dimensions that are not clinical domain concepts (for example GLIA dimensions like `Computability` / `Measurability`) unless the user explicitly wants those dimensions captured.
-- Exclude low-information generic labels (for example `Key Action Statement`) unless paired with a discriminating clinical qualifier.
-- If uncertain, ask the user whether to keep or drop the candidate concept before running `annotate`.
-
 ---
 
 ## normalized.md Frontmatter Schema
