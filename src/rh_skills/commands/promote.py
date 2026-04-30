@@ -24,7 +24,9 @@ from rh_skills.common import (
     topic_dir,
     unlock_file,
 )
-from rh_skills.commands.validate import validate_artifact_file
+from rh_skills.commands.validate import (
+    validate_artifact_file,
+)
 
 EXTRACT_ARTIFACT_PROFILES = (
     {
@@ -620,6 +622,149 @@ def _parse_conflicts(raw_conflicts: tuple[str, ...]) -> list[dict]:
                 "rationale": parts[4],
             }
     return list(merged.values())
+
+
+def _load_body_file(path: str) -> dict:
+    data = _yaml_safe().load(Path(path).read_text()) or {}
+    if not isinstance(data, dict):
+        raise click.UsageError("--body-file must contain a YAML mapping at the top level")
+    return data
+
+
+def _canonicalize_evidence_refs(entries: list[dict]) -> set[tuple[str, str, str, str]]:
+    canonical: set[tuple[str, str, str, str]] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        claim_id = entry.get("claim_id")
+        statement = entry.get("statement")
+        if not claim_id or not statement:
+            continue
+        for evidence in entry.get("evidence") or []:
+            if not isinstance(evidence, dict):
+                continue
+            source = evidence.get("source")
+            locator = evidence.get("locator")
+            if source and locator:
+                canonical.add((claim_id, statement, source, locator))
+    return canonical
+
+
+def _canonicalize_conflicts(conflicts: list[dict]) -> dict[str, dict]:
+    canonical: dict[str, dict] = {}
+    for conflict in conflicts:
+        if not isinstance(conflict, dict):
+            continue
+        issue = conflict.get("issue")
+        if not issue:
+            continue
+        positions = []
+        for position in conflict.get("positions") or []:
+            if not isinstance(position, dict):
+                continue
+            source = position.get("source")
+            statement = position.get("statement")
+            if source and statement:
+                positions.append((source, statement))
+        preferred = conflict.get("preferred_interpretation") or {}
+        canonical[issue] = {
+            "positions": set(positions),
+            "preferred_source": preferred.get("source"),
+            "preferred_rationale": preferred.get("rationale"),
+        }
+    return canonical
+
+
+def _validate_body_file_consistency(
+    *,
+    artifact_name: str,
+    source: tuple[str, ...],
+    artifact_type: str | None,
+    clinical_question: str | None,
+    required_sections: tuple[str, ...],
+    evidence_refs: tuple[str, ...],
+    conflicts: tuple[str, ...],
+    body: dict,
+) -> None:
+    body_id = body.get("id")
+    if body_id and body_id != artifact_name:
+        raise click.UsageError(
+            f"--body-file id '{body_id}' does not match artifact name '{artifact_name}'"
+        )
+
+    body_name = body.get("name")
+    if body_name and body_name != artifact_name:
+        raise click.UsageError(
+            f"--body-file name '{body_name}' does not match artifact name '{artifact_name}'"
+        )
+
+    body_sources = body.get("derived_from")
+    if body_sources is not None:
+        if not isinstance(body_sources, list):
+            raise click.UsageError("--body-file derived_from must be a list")
+        if set(body_sources) != set(source):
+            raise click.UsageError(
+                "--body-file derived_from does not match --source values: "
+                f"expected {sorted(source)}, got {sorted(body_sources)}"
+            )
+
+    if artifact_type and body.get("artifact_type") and body["artifact_type"] != artifact_type:
+        raise click.UsageError(
+            "--artifact-type does not match --body-file artifact_type: "
+            f"expected '{artifact_type}', got '{body['artifact_type']}'"
+        )
+
+    if clinical_question and body.get("clinical_question") and body["clinical_question"] != clinical_question:
+        raise click.UsageError("--clinical-question does not match --body-file clinical_question")
+
+    if required_sections:
+        sections = body.get("sections")
+        if not isinstance(sections, dict):
+            raise click.UsageError(
+                "--required-section was provided, but --body-file sections is missing or invalid"
+            )
+        missing_sections = [name for name in required_sections if name not in sections]
+        if missing_sections:
+            raise click.UsageError(
+                "--required-section values are missing from --body-file sections: "
+                + ", ".join(missing_sections)
+            )
+
+    if evidence_refs:
+        expected_refs = {
+            (entry["claim_id"], entry["statement"], ev["source"], ev["locator"])
+            for entry in _parse_evidence_refs(evidence_refs)
+            for ev in entry["evidence"]
+        }
+        actual_refs = _canonicalize_evidence_refs(body.get("sections", {}).get("evidence_traceability", []))
+        missing_refs = expected_refs - actual_refs
+        if missing_refs:
+            raise click.UsageError(
+                "--evidence-ref values do not match --body-file evidence_traceability entries"
+            )
+
+    if conflicts:
+        expected_conflicts = _canonicalize_conflicts(_parse_conflicts(conflicts))
+        actual_conflicts = _canonicalize_conflicts(body.get("conflicts") or [])
+        mismatched_issues: list[str] = []
+        for issue, expected in expected_conflicts.items():
+            actual = actual_conflicts.get(issue)
+            if actual is None:
+                mismatched_issues.append(issue)
+                continue
+            if not expected["positions"].issubset(actual["positions"]):
+                mismatched_issues.append(issue)
+                continue
+            if expected["preferred_source"] and expected["preferred_source"] != actual["preferred_source"]:
+                mismatched_issues.append(issue)
+                continue
+            if expected["preferred_rationale"] and expected["preferred_rationale"] != actual["preferred_rationale"]:
+                mismatched_issues.append(issue)
+        if mismatched_issues:
+            raise click.UsageError(
+                "--conflict values do not match --body-file conflicts for issue(s): "
+                + ", ".join(sorted(mismatched_issues))
+            )
 
 
 # Structurally valid stub shapes for known section names.
@@ -1566,7 +1711,7 @@ def formalize_plan(topic, force):
 @click.option("--conflict", "conflicts", multiple=True,
               help="Conflict in 'issue|source|statement[|preferred_source|preferred_rationale]' format")
 @click.option("--body-file", default=None, type=click.Path(exists=True, readable=True),
-              help="Path to a YAML file containing the pre-reasoned artifact body (agent use)")
+              help="Path to a YAML file containing the complete artifact body; repeated content flags become consistency checks")
 @click.option("--dry-run", is_flag=True, help="Print what would be created without doing it")
 def derive(
     topic,
@@ -1615,13 +1760,31 @@ Rules:
 - description: clear clinical description (2-4 sentences)
 - derived_from: list containing the source L1 artifact name
 
-Output ONLY the YAML block. No markdown fences, no explanation."""
+    Output ONLY the YAML block. No markdown fences, no explanation."""
 
     for artifact_name in artifact_names:
+        body_data = _load_body_file(body_file) if body_file else None
+        if body_data is not None:
+            _validate_body_file_consistency(
+                artifact_name=artifact_name,
+                source=source,
+                artifact_type=artifact_type,
+                clinical_question=clinical_question,
+                required_sections=required_sections,
+                evidence_refs=evidence_refs,
+                conflicts=conflicts,
+                body=body_data,
+            )
+
+        effective_artifact_type = (
+            artifact_type
+            or (body_data.get("artifact_type") if body_data is not None else None)
+            or "evidence-summary"
+        )
         user_prompt = (
             f"Source L1 artifact name: {', '.join(source)}\n"
             f"Generate L2 artifact: {artifact_name}\n"
-            f"Artifact type: {artifact_type or 'evidence-summary'}\n"
+            f"Artifact type: {effective_artifact_type}\n"
             f"Clinical question: {clinical_question or ''}"
         )
 
@@ -1645,14 +1808,15 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
 
         if body_file:
             # Agent-provided artifact body — read file directly, skip LLM and scaffold.
-            l2_file.write_text(_sanitize_yaml(Path(body_file).read_text() + "\n"))
+            body_text = Path(body_file).read_text()
+            l2_file.write_text(_sanitize_yaml(body_text + "\n"))
         elif _is_offline_mode():
             # No LLM and no agent-provided body — write a scaffold with placeholders.
             l2_file.write_text(
                 _build_stub_l2_artifact(
                     artifact_name,
                     source,
-                    artifact_type,
+                    effective_artifact_type,
                     clinical_question,
                     required_sections,
                     evidence_refs,
@@ -1672,7 +1836,7 @@ Output ONLY the YAML block. No markdown fences, no explanation."""
             "created_at": timestamp,
             "checksum": checksum,
             "derived_from": list(source),
-            "artifact_type": artifact_type or "evidence-summary",
+            "artifact_type": effective_artifact_type,
         })
         append_topic_event(tracking, topic, "structured_derived", f"Derived {artifact_name} from {', '.join(source)}")
         save_tracking(tracking)
