@@ -38,7 +38,7 @@ EXTRACT_ARTIFACT_PROFILES = (
         "keywords": ("decision table", "decision", "condition", "action", "rule", "if-then",
                       "threshold", "diagnostic", "criteria", "eligibility", "screen",
                       "exclusion", "contraind", "avoid"),
-        "section": "decision_table",
+        "section": ["conditions", "actions", "rules"],
         "key_question": "What conditions, eligibility, exclusions, and actions form the decision logic?",
     },
     {
