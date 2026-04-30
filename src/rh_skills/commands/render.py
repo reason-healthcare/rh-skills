@@ -23,6 +23,8 @@ REQUIRED_SECTIONS: dict[str, list[str]] = {
 }
 
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "render"
+_CONDITION_HEADER_MAX_CHARS = 14
+_ACTION_CELL_MAX_CHARS = 24
 
 
 def _jinja_env(type_dir: Path) -> Environment:
@@ -57,6 +59,17 @@ def _validate_sections(sections: dict | None, artifact_type: str) -> None:
 
 
 # ── Completeness algorithm (pure logic, not a template) ─────────────────────
+
+
+def _truncate_table_label(text: str, max_chars: int = _CONDITION_HEADER_MAX_CHARS) -> str:
+    """Shorten a column label so markdown tables stay readable."""
+    normalized = " ".join((text or "").split())
+    if len(normalized) <= max_chars:
+        return normalized
+    truncated = normalized[: max_chars - 3].rstrip()
+    if " " in truncated:
+        truncated = truncated.rsplit(" ", 1)[0]
+    return f"{truncated}..."
 
 
 def _check_completeness(conditions: list[dict], rules: list[dict]) -> dict:
@@ -108,6 +121,85 @@ def _check_completeness(conditions: list[dict], rules: list[dict]) -> dict:
     }
 
 
+def _build_decision_matrix_context(sections: dict | None) -> dict:
+    """Prepare display-friendly context for decision-table markdown rendering."""
+    sections = sections or {}
+    events = sections.get("events", [])
+    conditions = sections.get("conditions", [])
+    actions = sections.get("actions", [])
+    rules = sections.get("rules", [])
+
+    event_rows = [
+        {
+            "key": event.get("id", "?"),
+            "meaning": event.get("label") or event.get("description") or event.get("id", "?"),
+            "description": event.get("description", ""),
+        }
+        for event in events
+    ]
+    condition_rows = [
+        {
+            "key": condition.get("id", "?"),
+            "meaning": condition.get("label") or condition.get("id", "?"),
+            "rule_header": " ".join(
+                part for part in [
+                    condition.get("id", "?"),
+                    _truncate_table_label(condition.get("label") or condition.get("id", "?")),
+                ] if part
+            ),
+            "values": condition.get("values", []),
+        }
+        for condition in conditions
+    ]
+    action_rows = [
+        {
+            "key": action.get("id", "?"),
+            "meaning": action.get("label") or action.get("id", "?"),
+            "rule_label": " ".join(
+                part for part in [
+                    action.get("id", "?"),
+                    _truncate_table_label(
+                        action.get("label") or action.get("id", "?"),
+                        _ACTION_CELL_MAX_CHARS,
+                    ),
+                ] if part
+            ),
+        }
+        for action in actions
+    ]
+
+    event_map = {row["key"]: row["meaning"] for row in event_rows}
+    action_rule_map = {row["key"]: row["rule_label"] for row in action_rows}
+
+    rule_rows = []
+    for rule in rules:
+        when = rule.get("when", {}) if isinstance(rule.get("when"), dict) else {}
+        rule_actions = []
+        for action_id in rule.get("then", []):
+            rule_actions.append(action_rule_map.get(action_id, action_id))
+        event_id = rule.get("event")
+        event_display = "-"
+        if events:
+            if event_id:
+                event_label = event_map.get(event_id, event_id)
+                event_display = f"{event_id} {event_label}" if event_label != event_id else event_id
+        rule_rows.append(
+            {
+                "id": rule.get("id", "?"),
+                "event": event_display,
+                "condition_values": [when.get(condition.get("id", "?"), "-") for condition in conditions],
+                "actions": rule_actions,
+            }
+        )
+
+    return {
+        "event_rows": event_rows,
+        "condition_rows": condition_rows,
+        "action_rows": action_rows,
+        "rule_rows": rule_rows,
+    }
+
+
 # ── Template-driven renderer ─────────────────────────────────────────────────
 
 
@@ -128,6 +220,7 @@ def _render_from_templates(data: dict, artifact_dir: Path, artifact_name: str) -
     extra: dict = {}
     if artifact_type == "decision-table":
         sections = data.get("sections", {})
+        extra["decision_matrix"] = _build_decision_matrix_context(sections)
         extra["completeness"] = _check_completeness(
             sections.get("conditions", []),
             sections.get("rules", []),
