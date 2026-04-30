@@ -479,7 +479,27 @@ def test_derive_agent_mode_writes_injected_content(tmp_repo, monkeypatch):
     """Agent mode: --body-file content is written as L2 artifact (not scaffold)."""
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
-    body_content = "artifact_type: decision-table\nclinical_question: Who should be screened?\nsections:\n  summary: Agent-generated content.\n"
+    body_content = """\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Agent-generated content.
+derived_from:
+  - ada-guidelines
+artifact_type: decision-table
+clinical_question: Who should be screened?
+sections:
+  summary: Agent-generated content.
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: Screen adults at risk
+      evidence:
+        - source: ada-guidelines
+          locator: Section 2
+"""
     body_file = tmp_repo / "agent-body.yaml"
     body_file.write_text(body_content)
     setup_topic_with_source(tmp_repo)
@@ -498,6 +518,118 @@ def test_derive_agent_mode_writes_injected_content(tmp_repo, monkeypatch):
     content = artifact_path.read_text()
     assert "<stub:" not in content
     assert "Agent-generated content." in content
+
+
+def test_derive_body_file_uses_artifact_type_from_body_for_tracking(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Agent-generated content.
+derived_from:
+  - ada-guidelines
+artifact_type: decision-table
+clinical_question: Who should be screened?
+sections:
+  summary: Agent-generated content.
+""")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--source", "ada-guidelines",
+        "--body-file", str(body_file),
+    ])
+    assert result.exit_code == 0, result.output
+    tracking = load_yaml(tmp_repo / "tracking.yaml")
+    topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
+    assert topic["structured"][0]["artifact_type"] == "decision-table"
+
+
+def test_derive_body_file_rejects_conflicting_content_flags(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Agent-generated content.
+derived_from:
+  - ada-guidelines
+artifact_type: decision-table
+clinical_question: Who should be screened?
+sections:
+  summary: Agent-generated content.
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: Screen adults at risk
+      evidence:
+        - source: ada-guidelines
+          locator: Section 2
+conflicts:
+  - issue: Interval differs
+    positions:
+      - source: ada-guidelines
+        statement: Annual screening
+    preferred_interpretation:
+      source: ada-guidelines
+      rationale: Explicit interval language
+""")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--source", "ada-guidelines",
+        "--artifact-type", "evidence-summary",
+        "--clinical-question", "A different question",
+        "--required-section", "summary",
+        "--required-section", "conditions",
+        "--evidence-ref", "crit-001|A different statement|ada-guidelines|Section 2",
+        "--conflict", "Different issue|ada-guidelines|Annual screening",
+        "--body-file", str(body_file),
+    ])
+    assert result.exit_code == 2
+    assert "--artifact-type does not match --body-file artifact_type" in result.output
+
+
+def test_derive_body_file_rejects_source_mismatch(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Agent-generated content.
+derived_from:
+  - uspstf-guidelines
+artifact_type: decision-table
+clinical_question: Who should be screened?
+sections:
+  summary: Agent-generated content.
+""")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--source", "ada-guidelines",
+        "--body-file", str(body_file),
+    ])
+    assert result.exit_code == 2
+    assert "--body-file derived_from does not match --source values" in result.output
 
 
 def test_derive_offline_mode_writes_stub_scaffold(tmp_repo, monkeypatch):

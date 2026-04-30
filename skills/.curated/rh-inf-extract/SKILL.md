@@ -160,6 +160,25 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
      Standard types: evidence-summary · decision-table · care-pathway · terminology ·
      measure · assessment · policy · custom (when clearly justified).
 
+   - **Type-appropriate content inventory** — for each candidate artifact, enumerate
+     the substantive source elements that the artifact must account for. The format
+     depends on the artifact type:
+
+     | Artifact type | Enumerate from the sources |
+     |---|---|
+     | `decision-table` / `policy` | Every normative "if X do Y" or "should/shall/must/consider" statement; each distinct condition threshold; each action or recommendation |
+     | `evidence-summary` | Each distinct finding, conclusion, or evidence grade reported; each PICOTS frame if present |
+     | `care-pathway` | Each named clinical sequence step, actor assignment, or timing constraint |
+     | `measure` | Each defined outcome, population definition, numerator/denominator specification |
+     | `assessment` | Each instrument domain, scored item, or response scale described |
+     | `terminology` | Each clinical concept, code system reference, or value set boundary mentioned |
+
+     Record these as a numbered list per artifact. This list is the **coverage
+     target** — every item must map to at least one structural element in the
+     derived artifact (a condition/action pair, a finding, a step, a population,
+     an item, or a code). Use it in step 4's completeness check and carry it
+     forward to implement mode.
+
    - **Specific cross-source disagreements** — exact values, thresholds, or
      recommendations that differ between sources (e.g., "source A: HbA1c <7.0%;
      source B: <=6.5%"). These become `concerns[]` entries at approve time.
@@ -266,7 +285,13 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
         > "Proposed resolution: [your reasoning]. Does this look correct, or would
         > you like to provide a different resolution?"
      3. **Wait for the user's explicit confirmation or alternative before proceeding.**
-     4. Record the confirmed resolution with `rh-skills promote resolve-conflict`
+     4. Record the confirmed resolution with `rh-skills promote resolve-conflict`:
+        ```sh
+        rh-skills promote resolve-conflict <topic> \
+          --plan extract --artifact <name> --index <N> \
+          --resolution "<confirmed resolution text>"
+        ```
+        Use the `index` shown by `rh-skills promote conflicts <topic>` (0-based).
 
      Only after all concerns are cleared proceed to the plan-complete output below.
    - If output is `"No open conflicts for topic '<topic>'."`, proceed immediately
@@ -433,6 +458,9 @@ all deterministic writes must go through `rh-skills promote derive` and
    > top-level fields.** The body file MUST include ALL required L2 fields.
    > `derived_from` must exactly match the `source_files[]` entries from the
    > approved plan (bare slugs, e.g. `ada-guidelines-2024` — no path prefix).
+   > If you also pass `--clinical-question`, `--required-section`,
+   > `--evidence-ref`, or `--conflict`, the CLI treats them as **consistency
+   > checks** against the body file instead of merge inputs.
 
    ```sh
    # Write your reasoned artifact YAML to a temp file first.
@@ -473,6 +501,10 @@ all deterministic writes must go through `rh-skills promote derive` and
 
    Without `--body-file`, the CLI produces a scaffold with `<stub: ...>`
    placeholders that will **fail** validation.
+
+   When running without `--body-file`, keep using `--clinical-question`,
+   `--required-section`, `--evidence-ref`, and `--conflict` to shape the
+   generated scaffold content.
 
    **Recording conflicts with multiple positions**: Pass one `--conflict` flag
    per source position, using the **same issue text** for both. The CLI merges
