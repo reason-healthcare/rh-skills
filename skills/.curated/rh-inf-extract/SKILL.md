@@ -429,13 +429,35 @@ all deterministic writes must go through `rh-skills promote derive` and
 
    Write the constructed YAML to a temp file, then pass it with `--body-file`:
 
+   > **`--body-file` writes the file directly — the CLI does NOT inject or merge
+   > top-level fields.** The body file MUST include ALL required L2 fields.
+   > `derived_from` must exactly match the `source_files[]` entries from the
+   > approved plan (bare slugs, e.g. `ada-guidelines-2024` — no path prefix).
+
    ```sh
-   # Write your reasoned artifact YAML to a temp file first:
+   # Write your reasoned artifact YAML to a temp file first.
+   # Include every required top-level field — the CLI writes this verbatim.
    cat > /tmp/rh-<artifact-name>.yaml << 'EOF'
-   artifact_type: decision-table
-   clinical_question: "..."
+   id: <artifact-name>
+   name: <artifact-name>
+   title: <Human Readable Title>
+   version: "1.0.0"
+   status: draft
+   domain: <clinical domain>
+   description: <2-4 sentence description>
+   derived_from:
+     - <source-name>   # must exactly match source_files[] from the approved plan
+   artifact_type: <artifact-type>
+   clinical_question: "<clinical question>"
    sections:
-     summary: "..."
+     summary: "<clinical question>"
+     # ... type-specific sections (see reference.md Type-Specific Section Shapes) ...
+     evidence_traceability:
+       - claim_id: <id>
+         statement: "<text>"
+         evidence:
+           - source: <source-name>
+             locator: "<section/page/heading>"
    EOF
 
    # Then derive, passing the file:
