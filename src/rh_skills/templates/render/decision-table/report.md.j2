@@ -1,8 +1,11 @@
+{% set events = data.sections.events or [] %}
 {% set conditions = data.sections.conditions or [] %}
 {% set actions = data.sections.actions or [] %}
 {% set rules = data.sections.rules or [] %}
 {% set action_map = {} %}
 {% for a in actions %}{% set _ = action_map.update({a.id: a.label or a.id}) %}{% endfor %}
+{% set event_map = {} %}
+{% for e in events %}{% set _ = event_map.update({e.id: e.label or e.id}) %}{% endfor %}
 {% set cond_map = {} %}
 {% for c in conditions %}{% set _ = cond_map.update({c.id: c.label or c.id}) %}{% endfor %}
 # Decision Table — {{ data.title or data.name or '' }}
@@ -19,10 +22,18 @@
 {{ sections.summary }}
 
 {% endif %}
-| Rule |{% for c in conditions %} {{ cond_map[c.id] }} |{% endfor %} Actions |
-|---|{% for c in conditions %}---|{% endfor %}---|
+{% if events %}
+## Events
+
+{% for event in events -%}
+- **{{ event.label or event.id or '?' }}**{% if event.description %}: {{ event.description }}{% endif %}
+{% endfor %}
+
+{% endif %}
+| Rule |{% if events %} Event |{% endif %}{% for c in conditions %} {{ cond_map[c.id] }} |{% endfor %} Actions |
+|---|{% if events %}---|{% endif %}{% for c in conditions %}---|{% endfor %}---|
 {% for rule in rules -%}
-| {{ rule.id or '?' }} |{% for c in conditions %} {{ rule.when.get(c.id, '-') if rule.when is mapping else '-' }} |{% endfor %} {% if rule.then %}{% for aid in rule.then %}{{ action_map.get(aid, aid) }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %} |
+| {{ rule.id or '?' }} |{% if events %} {{ event_map.get(rule.event, rule.event or '-') }} |{% endif %}{% for c in conditions %} {{ rule.when.get(c.id, '-') if rule.when is mapping else '-' }} |{% endfor %} {% if rule.then %}{% for aid in rule.then %}{{ action_map.get(aid, aid) }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %} |
 {% endfor %}
 
 {% set traceability = sections.evidence_traceability or [] %}

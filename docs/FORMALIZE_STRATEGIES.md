@@ -108,9 +108,10 @@ sections:
 ```yaml
 artifact_type: decision-table
 sections:
+  events: [...]       # trigger definitions for when the table applies
   conditions: [...]   # decision conditions with thresholds
   actions: [...]      # resulting actions per condition branch
-  rules: [...]        # condition→action mappings
+  rules: [...]        # event + condition → action mappings
   exceptions: [...]   # override / exclusion rules
 ```
 

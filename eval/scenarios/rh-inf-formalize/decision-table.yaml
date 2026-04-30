@@ -42,9 +42,10 @@ workspace:
               - sources/normalized/surviving-sepsis-2021.md
             clinical_question: "What decision rules apply for early sepsis screening?"
             required_sections:
+              - events
               - conditions
               - actions
-              - logic
+              - rules
             reviewer_decision: approved
 
     - path: topics/sepsis-screening/structured/sepsis-screening-rules/sepsis-screening-rules.yaml
@@ -61,16 +62,49 @@ workspace:
           - surviving-sepsis-2021
         clinical_question: "What decision rules apply for early sepsis screening?"
         sections:
-          decision_table:
-            - condition: "qSOFA ≥ 2"
-              action: "Order blood cultures and serum lactate"
-              priority: high
-            - condition: "Temperature > 38.3°C or < 36°C AND HR > 90"
-              action: "Initiate SIRS screening pathway"
-              priority: medium
-            - condition: "Serum lactate ≥ 2 mmol/L"
-              action: "Administer IV fluids 30 mL/kg within 3 hours"
-              priority: high
+          events:
+            - id: event-001
+              label: "Adult patient screened for suspected sepsis"
+              description: "Trigger the rule set during initial sepsis evaluation."
+          conditions:
+            - id: cond-001
+              label: "qSOFA ≥ 2"
+              values: ["Yes", "No"]
+            - id: cond-002
+              label: "Temperature > 38.3°C or < 36°C AND HR > 90"
+              values: ["Yes", "No"]
+            - id: cond-003
+              label: "Serum lactate ≥ 2 mmol/L"
+              values: ["Yes", "No"]
+          actions:
+            - id: act-001
+              label: "Order blood cultures and serum lactate"
+              description: "Obtain initial diagnostic workup for likely sepsis."
+            - id: act-002
+              label: "Initiate SIRS screening pathway"
+              description: "Advance the patient through the SIRS-based screening workflow."
+            - id: act-003
+              label: "Administer IV fluids 30 mL/kg within 3 hours"
+              description: "Begin early resuscitation for elevated lactate."
+          rules:
+            - id: rule-001
+              event: event-001
+              when:
+                cond-001: "Yes"
+              then:
+                - act-001
+            - id: rule-002
+              event: event-001
+              when:
+                cond-002: "Yes"
+              then:
+                - act-002
+            - id: rule-003
+              event: event-001
+              when:
+                cond-003: "Yes"
+              then:
+                - act-003
 
 prompt: |
   Use the rh-inf-formalize skill for the topic `sepsis-screening`.

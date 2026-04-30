@@ -70,11 +70,45 @@ def test_render_missing_required_sections_exits_1(tmp_repo):
     _write_artifact(tmp_repo, "my-skill", "bad-dt", {
         "id": "bad-dt",
         "artifact_type": "decision-table",
-        "sections": {"conditions": []},  # missing actions, rules
+        "sections": {
+            "conditions": [{"id": "c1", "label": "Condition", "values": ["Yes", "No"]}],
+            "actions": [{"id": "a1", "label": "Action"}],
+            "rules": [{"id": "r1", "when": {"c1": "Yes"}, "then": ["a1"]}],
+        },  # missing events
     })
     runner = CliRunner()
     result = runner.invoke(render, ["my-skill", "bad-dt"])
     assert result.exit_code == 1
+
+
+def test_render_decision_table_shows_event_column_when_present(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "good-dt", {
+        "id": "good-dt",
+        "title": "Good Decision Table",
+        "artifact_type": "decision-table",
+        "sections": {
+            "events": [
+                {"id": "ev1", "label": "Screening encounter", "description": "Initial screening trigger"},
+            ],
+            "conditions": [
+                {"id": "c1", "label": "High risk", "values": ["Yes", "No"]},
+            ],
+            "actions": [
+                {"id": "a1", "label": "Order test"},
+            ],
+            "rules": [
+                {"id": "r1", "event": "ev1", "when": {"c1": "Yes"}, "then": ["a1"]},
+            ],
+        },
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "good-dt"])
+    assert result.exit_code == 0
+    artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "good-dt"
+    content = (artifact_dir / "good-dt-report.md").read_text()
+    assert "## Events" in content
+    assert "Screening encounter" in content
+    assert "| Rule | Event | High risk | Actions |" in content
 
 
 # ── Evidence-summary ────────────────────────────────────────────────────────────
@@ -214,6 +248,9 @@ def _make_complete_binary_table():
         "title": "Complete Decision Table",
         "artifact_type": "decision-table",
         "sections": {
+            "events": [
+                {"id": "ev1", "label": "Decision evaluation"},
+            ],
             "conditions": [
                 {"id": "c1", "label": "Condition A", "values": ["yes", "no"]},
                 {"id": "c2", "label": "Condition B", "values": ["yes", "no"]},
@@ -224,14 +261,14 @@ def _make_complete_binary_table():
                 {"id": "a2", "label": "Action 2"},
             ],
             "rules": [
-                {"id": "r1", "when": {"c1": "yes", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
-                {"id": "r2", "when": {"c1": "yes", "c2": "yes", "c3": "no"}, "then": ["a1"]},
-                {"id": "r3", "when": {"c1": "yes", "c2": "no", "c3": "yes"}, "then": ["a2"]},
-                {"id": "r4", "when": {"c1": "yes", "c2": "no", "c3": "no"}, "then": ["a2"]},
-                {"id": "r5", "when": {"c1": "no", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
-                {"id": "r6", "when": {"c1": "no", "c2": "yes", "c3": "no"}, "then": ["a2"]},
-                {"id": "r7", "when": {"c1": "no", "c2": "no", "c3": "yes"}, "then": ["a2"]},
-                {"id": "r8", "when": {"c1": "no", "c2": "no", "c3": "no"}, "then": ["a2"]},
+                {"id": "r1", "event": "ev1", "when": {"c1": "yes", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+                {"id": "r2", "event": "ev1", "when": {"c1": "yes", "c2": "yes", "c3": "no"}, "then": ["a1"]},
+                {"id": "r3", "event": "ev1", "when": {"c1": "yes", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+                {"id": "r4", "event": "ev1", "when": {"c1": "yes", "c2": "no", "c3": "no"}, "then": ["a2"]},
+                {"id": "r5", "event": "ev1", "when": {"c1": "no", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+                {"id": "r6", "event": "ev1", "when": {"c1": "no", "c2": "yes", "c3": "no"}, "then": ["a2"]},
+                {"id": "r7", "event": "ev1", "when": {"c1": "no", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+                {"id": "r8", "event": "ev1", "when": {"c1": "no", "c2": "no", "c3": "no"}, "then": ["a2"]},
             ],
         },
     }

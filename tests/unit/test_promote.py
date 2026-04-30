@@ -654,7 +654,32 @@ def test_derive_offline_mode_writes_stub_scaffold(tmp_repo, monkeypatch):
     assert "<stub:" in content
 
 
+def test_decision_table_stub_supports_event_condition_action_shape(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--source", "ada-guidelines",
+        "--artifact-type", "decision-table",
+        "--clinical-question", "Who should be screened?",
+        "--required-section", "events",
+        "--required-section", "conditions",
+        "--required-section", "actions",
+        "--required-section", "rules",
+    ])
+    assert result.exit_code == 0, result.output
+    content = (
+        tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
+    ).read_text()
+    assert "events:" in content
+    assert "event-001" in content
+    assert "rules:" in content
+    assert "event: event-001" in content
 
+
+def test_approved_extract_artifacts_rejects_unapproved_plan(tmp_repo):
     setup_topic_with_source(tmp_repo)
     write_extract_plan(
         tmp_repo,
