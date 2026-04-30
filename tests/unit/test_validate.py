@@ -82,7 +82,7 @@ sections:
       evidence:
         - source: source-l1
           locator: "Section 2"
-conflicts: []
+concerns: []
 """)
 
 
@@ -242,7 +242,7 @@ artifact_type: decision-table
 clinical_question: "Who should be screened?"
 sections:
   summary: "Adults at risk should be screened."
-conflicts: []
+concerns: []
 """)
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
@@ -250,12 +250,12 @@ conflicts: []
     assert "evidence traceability" in result.output.lower()
 
 
-def test_validate_extract_artifact_fails_missing_conflicts_when_plan_requires_them(tmp_repo):
+def test_validate_extract_artifact_fails_missing_concerns_when_plan_requires_them(tmp_repo):
     write_extract_plan(tmp_repo, concerns=[{"concern": "Guidelines disagree", "resolution": ""}])
     make_valid_extract_l2(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact" / "test-artifact.yaml"
     data = YAML().load(td.read_text())
-    data["conflicts"] = []
+    data["concerns"] = []
     y = YAML()
     y.default_flow_style = False
     with open(td, "w") as f:
@@ -263,7 +263,7 @@ def test_validate_extract_artifact_fails_missing_conflicts_when_plan_requires_th
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
     assert result.exit_code == 1
-    assert "missing conflicts" in result.output.lower()
+    assert "missing concerns" in result.output.lower()
 
 
 def test_validate_formalize_artifact_checks_approved_plan_requirements(tmp_repo):
@@ -337,7 +337,7 @@ sections:
       evidence:
         - source: source-l1
           locator: "Section 2"
-conflicts: []
+concerns: []
 """)
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
@@ -355,12 +355,12 @@ def test_collect_stub_paths_finds_nested_stubs():
             {"factor": "<stub: factor name>", "threshold": "LDL >= 190"},
             {"factor": "Diabetes", "threshold": "<stub: threshold>"},
         ],
-        "conflicts": "<stub: populate conflicts content>",
+        "concerns": "<stub: populate concerns content>",
     }
     paths = _collect_stub_paths(data)
     assert "factors[0].factor" in paths
     assert "factors[1].threshold" in paths
-    assert "conflicts" in paths
+    assert "concerns" in paths
     assert "summary" not in paths
 
 

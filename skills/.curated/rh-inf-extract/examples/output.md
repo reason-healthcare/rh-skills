@@ -88,7 +88,7 @@ sections:
       evidence:
         - source: ada-2024-guideline
           locator: "Section 2"
-conflicts:
+concerns:
   - issue: "Interval language differs between ADA and USPSTF"
     positions:
       - source: ada-2024-guideline
@@ -111,12 +111,12 @@ rh-skills promote derive diabetes-ccm screening-decisions \
   --required-section rules \
   --required-section evidence_traceability \
   --evidence-ref "c1|Elevated risk warrants annual screening|ada-2024-guideline|Section 2" \
-  --conflict "Interval language differs between ADA and USPSTF|ada-2024-guideline|Annual screening|ada-2024-guideline|More explicit for chronic care workflows" \
+  --concern "Interval language differs between ADA and USPSTF|ada-2024-guideline|Annual screening|ada-2024-guideline|More explicit for chronic care workflows" \
   --body-file /tmp/rh-screening-decisions.yaml
 ```
 
 In `--body-file` mode, the YAML is authoritative. Optional flags like
-`--clinical-question`, `--required-section`, `--evidence-ref`, and `--conflict`
+`--clinical-question`, `--required-section`, `--evidence-ref`, and `--concern`
 act as consistency checks only; they are not merged into the artifact.
 
 Then validating:
@@ -167,7 +167,7 @@ rh-skills render diabetes-ccm screening-decisions
 Example result:
 
 ```text
-✓ screening-decisions  — all required fields, traceability entries, and conflict records present
+✓ screening-decisions  — all required fields, traceability entries, and concern records present
 Rendered 1 view(s) for 'screening-decisions' (decision-table):
   topics/diabetes-ccm/structured/screening-decisions/screening-decisions-report.md: it does not create, modify, or delete files and does
 not write to tracking.yaml.

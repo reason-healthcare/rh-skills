@@ -122,10 +122,10 @@ Custom types are allowed when a standard type would obscure the clinical purpose
 > Example: `magnitude: ">=190 mg/dL"` — not `magnitude: >=190 mg/dL`.
 > Use `"N/A"` or `not-applicable` instead of bare `-` for irrelevant conditions.
 
-> **`conflicts` placement:** When `conflicts` is a required section, it must
-> appear in **both** `sections.conflicts` (short summary with disposition)
-> **and** top-level `conflicts` (full positions/preferred_interpretation).
-> The validator checks `sections.conflicts`; the top-level block preserves
+> **`concerns` placement:** When `concerns` is a required section, it must
+> appear in **both** `sections.concerns` (short summary with disposition)
+> **and** top-level `concerns` (full positions/preferred_interpretation).
+> The validator checks `sections.concerns`; the top-level block preserves
 > full provenance for downstream formalization.
 
 ```yaml
@@ -148,10 +148,10 @@ sections:
       evidence:
         - source: <source-name>
           locator: <section/page/heading>
-  conflicts:                      # required when plan lists conflicts
+  concerns:                       # required when plan lists concerns
     - issue: <summary>
       disposition: <how resolved>
-conflicts:
+concerns:
   - issue: <summary>
     positions:
       - source: <source-name>
@@ -189,7 +189,7 @@ sections:
         - <expected outcome>
       timing: <time horizon>
       setting: <clinical setting>
-  conflicts:              # required when plan lists conflicts
+  concerns:               # required when plan lists concerns
     - issue: <summary>
       disposition: <how resolved>
 ```
@@ -231,7 +231,7 @@ sections:
       evidence:
         - source: <source-name>
           locator: <section/page/heading>
-  conflicts:                           # required when plan lists conflicts
+  concerns:                            # required when plan lists concerns
     - issue: <summary>
       disposition: <how resolved>
 ```
@@ -373,10 +373,10 @@ Evidence references passed to `rh-skills promote derive` use a `|`-delimited str
 
 Multiple `--evidence-ref` flags can be passed for a single artifact.
 
-### `--conflict` pipe format
+### `--concern` pipe format
 
 ```
---conflict "issue|source|statement|preferred_source|preferred_rationale"
+--concern "issue|source|statement|preferred_source|preferred_rationale"
 ```
 
 | Field | Description |
@@ -397,7 +397,7 @@ Multiple `--evidence-ref` flags can be passed for a single artifact.
 - `derived_from[]` does not match the approved plan source set
 - a required section from the plan is missing from `sections`
 - `evidence_traceability` is required but empty or missing claim/evidence locators
-- `conflicts[]` is missing despite open concerns recorded in the approved plan
+- `concerns[]` is missing despite open concerns recorded in the approved plan
 
 Warnings:
 - artifact exists but is not listed in the current extract plan

@@ -198,7 +198,7 @@ artifact_fields:
       The validator enforces their presence after derivation.
     guidance: >
       Always include 'summary' and 'evidence_traceability'. Add
-      domain-specific sections based on artifact_type. Add 'conflicts' when
+      domain-specific sections based on artifact_type. Add 'concerns' when
       any concerns are cross-source disagreements that require resolution
       within the artifact itself.
     common_values:
@@ -207,7 +207,7 @@ artifact_fields:
       - criteria              # eligibility-criteria, policy
       - factors               # risk-factors
       - actions               # decision-table, care-pathway, policy
-      - conflicts             # include when source disagreements must be documented
+      - concerns              # include when source disagreements must be documented
       - recommendations       # evidence-summary
 
   concerns:
@@ -265,7 +265,7 @@ concern_entry_fields:
     type: string
     description: >
       How the concern was or should be resolved. Empty string means the
-      resolution is pending reviewer input. Use 'resolve-conflict' command
+      resolution is pending reviewer input. Use 'resolve-concern' command
       to record resolutions without editing YAML directly.
     example: >
       ADA framing adopted as primary for this chronic-disease-management

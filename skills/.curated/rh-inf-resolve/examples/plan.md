@@ -19,8 +19,8 @@ artifacts:
     source_files:
       - sources/normalized/ada-2024-guideline.md
       - sources/normalized/uspstf-screening.md
-    conflicts:
-      - conflict: "ADA interval language is more explicit than USPSTF interval framing."
+    concerns:
+      - concern: "ADA interval language is more explicit than USPSTF interval framing."
         resolution: ""
     reviewer_decision: pending-review
 ```
@@ -44,8 +44,8 @@ artifacts:
     source_files:
       - sources/normalized/ada-2024-guideline.md
       - sources/normalized/uspstf-screening.md
-    conflicts:
-      - conflict: "ADA interval language is more explicit than USPSTF interval framing."
+    concerns:
+      - concern: "ADA interval language is more explicit than USPSTF interval framing."
         resolution: >-
           ADA 2024 is the primary guideline. Use ADA interval language (every 3
           years for low-risk, annually for high-risk). USPSTF framing is
@@ -53,10 +53,10 @@ artifacts:
     reviewer_decision: pending-review
 ```
 
-After this, `rh-skills promote conflicts diabetes-ccm` returns:
+After this, `rh-skills promote concerns diabetes-ccm` returns:
 
 ```
-No open conflicts for topic 'diabetes-ccm'.
+No open concerns for topic 'diabetes-ccm'.
 ```
 
 The topic is clear to proceed to `rh-skills promote approve`.

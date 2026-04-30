@@ -175,18 +175,18 @@ def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict
     return approved
 
 
-def _conflict_text(item: object) -> str:
+def _concern_text(item: object) -> str:
     """Return the human-readable concern/conflict description from an entry."""
     if isinstance(item, dict):
         return item.get("concern") or item.get("conflict") or item.get("issue") or str(item)
     return str(item)
 
 
-def _collect_open_conflicts(topic: str) -> list[dict]:
-    """Return all unresolved conflict entries across extract and formalize plans.
+def _collect_open_concerns(topic: str) -> list[dict]:
+    """Return all unresolved concern entries across extract and formalize plans.
 
     Each entry is a dict with keys:
-      plan_type, artifact, index, conflict, resolution
+      plan_type, artifact, index, concern, resolution
     """
     results: list[dict] = []
     candidates = [
@@ -213,13 +213,13 @@ def _collect_open_conflicts(topic: str) -> list[dict]:
                         "plan_type": plan_type,
                         "artifact": name,
                         "index": idx,
-                        "conflict": _conflict_text(item),
+                        "concern": _concern_text(item),
                         "resolution": resolution,
                     })
     return results
 
 
-def _set_conflict_resolution(plan: dict, artifact_name: str, index: int, resolution: str) -> None:
+def _set_concern_resolution(plan: dict, artifact_name: str, index: int, resolution: str) -> None:
     """Mutate plan in-place: set resolution on concerns[index] or conflicts[index]."""
     for artifact in plan.get("artifacts") or []:
         if artifact.get("name") == artifact_name:
@@ -228,7 +228,7 @@ def _set_conflict_resolution(plan: dict, artifact_name: str, index: int, resolut
             items = artifact.get(field) or []
             if index < 0 or index >= len(items):
                 raise click.UsageError(
-                    f"Conflict index {index} out of range for artifact '{artifact_name}' "
+                    f"Concern index {index} out of range for artifact '{artifact_name}' "
                     f"({len(items)} concern(s) present, indices 0–{len(items) - 1})."
                 )
             item = items[index]
@@ -594,8 +594,8 @@ def _parse_evidence_refs(raw_refs: tuple[str, ...]) -> list[dict]:
     return entries
 
 
-def _parse_conflicts(raw_conflicts: tuple[str, ...]) -> list[dict]:
-    """Parse --conflict flags into conflict entries.
+def _parse_concerns(raw_concerns: tuple[str, ...]) -> list[dict]:
+    """Parse --concern flags into concern entries.
 
     Flags with the same issue are merged into one entry with multiple positions.
     The preferred_interpretation comes from whichever flag supplies it.
@@ -605,11 +605,11 @@ def _parse_conflicts(raw_conflicts: tuple[str, ...]) -> list[dict]:
       issue|source|statement|preferred_source|preferred_rationale
     """
     merged: dict[str, dict] = {}
-    for raw in raw_conflicts:
+    for raw in raw_concerns:
         parts = [part.strip() for part in raw.split("|")]
         if len(parts) < 3:
             raise click.UsageError(
-                "--conflict must use 'issue|source|statement' or "
+                "--concern must use 'issue|source|statement' or "
                 "'issue|source|statement|preferred_source|preferred_rationale'"
             )
         issue, source, statement = parts[:3]
@@ -650,23 +650,23 @@ def _canonicalize_evidence_refs(entries: list[dict]) -> set[tuple[str, str, str,
     return canonical
 
 
-def _canonicalize_conflicts(conflicts: list[dict]) -> dict[str, dict]:
+def _canonicalize_concerns(concerns: list[dict]) -> dict[str, dict]:
     canonical: dict[str, dict] = {}
-    for conflict in conflicts:
-        if not isinstance(conflict, dict):
+    for concern in concerns:
+        if not isinstance(concern, dict):
             continue
-        issue = conflict.get("issue")
+        issue = concern.get("issue")
         if not issue:
             continue
         positions = []
-        for position in conflict.get("positions") or []:
+        for position in concern.get("positions") or []:
             if not isinstance(position, dict):
                 continue
             source = position.get("source")
             statement = position.get("statement")
             if source and statement:
                 positions.append((source, statement))
-        preferred = conflict.get("preferred_interpretation") or {}
+        preferred = concern.get("preferred_interpretation") or {}
         canonical[issue] = {
             "positions": set(positions),
             "preferred_source": preferred.get("source"),
@@ -683,7 +683,7 @@ def _validate_body_file_consistency(
     clinical_question: str | None,
     required_sections: tuple[str, ...],
     evidence_refs: tuple[str, ...],
-    conflicts: tuple[str, ...],
+    concerns: tuple[str, ...],
     body: dict,
 ) -> None:
     body_id = body.get("id")
@@ -743,9 +743,9 @@ def _validate_body_file_consistency(
                 "--evidence-ref values do not match --body-file evidence_traceability entries"
             )
 
-    if conflicts:
-        expected_conflicts = _canonicalize_conflicts(_parse_conflicts(conflicts))
-        actual_conflicts = _canonicalize_conflicts(body.get("conflicts") or [])
+    if concerns:
+        expected_conflicts = _canonicalize_concerns(_parse_concerns(concerns))
+        actual_conflicts = _canonicalize_concerns(body.get("concerns") or body.get("conflicts") or [])
         mismatched_issues: list[str] = []
         for issue, expected in expected_conflicts.items():
             actual = actual_conflicts.get(issue)
@@ -762,7 +762,7 @@ def _validate_body_file_consistency(
                 mismatched_issues.append(issue)
         if mismatched_issues:
             raise click.UsageError(
-                "--conflict values do not match --body-file conflicts for issue(s): "
+                "--concern values do not match --body-file concerns for issue(s): "
                 + ", ".join(sorted(mismatched_issues))
             )
 
@@ -788,6 +788,7 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
     "value_sets": [{"id": "vs-001", "name": "<stub: value set>", "system": "<stub: system>", "codes": []}],
     "concept_maps": [{"id": "cm-001", "source_system": "<stub: source>", "target_system": "<stub: target>",
                       "mappings": [{"source_code": "<stub>", "target_code": "<stub>", "equivalence": "equivalent"}]}],
+    "concerns": [{"issue": "<stub: concern>", "disposition": "<stub: disposition>"}],
     # measure sections
     "populations": [{"id": "pop-001", "type": "initial-population", "description": "<stub: population>"}],
     "scoring": {"method": "proportion", "unit": "percentage"},
@@ -830,12 +831,16 @@ def _build_sections(
     required_sections: tuple[str, ...],
     clinical_question: str | None,
     evidence_refs: tuple[str, ...],
+    concern_refs: tuple[str, ...],
     artifact_type: str | None = None,
 ) -> dict:
     section_names = list(required_sections) if required_sections else ["summary"]
     evidence_entries = _parse_evidence_refs(evidence_refs)
+    concern_entries = _parse_concerns(concern_refs)
     if evidence_entries and "evidence_traceability" not in section_names:
         section_names.append("evidence_traceability")
+    if concern_entries and "concerns" not in section_names:
+        section_names.append("concerns")
 
     sections: dict = {}
     for name in section_names:
@@ -843,6 +848,12 @@ def _build_sections(
             sections[name] = clinical_question or ""
         elif name == "evidence_traceability":
             sections[name] = evidence_entries
+        elif name == "concerns":
+            sections[name] = [
+                {"issue": entry["issue"], "disposition": "<pending reviewer resolution>"}
+                for entry in concern_entries
+                if isinstance(entry, dict) and entry.get("issue")
+            ]
         else:
             sections[name] = _stub_section_value(name, artifact_type)
     return sections
@@ -855,7 +866,7 @@ def _build_stub_l2_artifact(
     clinical_question: str | None,
     required_sections: tuple[str, ...],
     evidence_refs: tuple[str, ...],
-    conflicts: tuple[str, ...],
+    concerns: tuple[str, ...],
 ) -> str:
     data = {
         "id": artifact_name,
@@ -868,8 +879,8 @@ def _build_stub_l2_artifact(
         "derived_from": list(source),
         "artifact_type": artifact_type or "evidence-summary",
         "clinical_question": clinical_question or "",
-        "sections": _build_sections(required_sections, clinical_question, evidence_refs, artifact_type),
-        "conflicts": _parse_conflicts(conflicts),
+        "sections": _build_sections(required_sections, clinical_question, evidence_refs, concerns, artifact_type),
+        "concerns": _parse_concerns(concerns),
     }
     buf = io.StringIO()
     _yaml_rt().dump(data, buf)
@@ -970,7 +981,7 @@ def _identify_group_concerns(group: dict) -> list[dict]:
     """Call LLM to surface specific clinical concerns for this artifact group.
 
     In offline mode (no LLM, no agent content) returns [] — reviewer adds
-    concerns via --add-conflict at approve time.
+    concerns via --add-concern at approve time.
     In agent mode (RH_STUB_RESPONSE set) or LLM mode, parses the response as
     a YAML list of {concern, resolution} items.
     """
@@ -1048,7 +1059,7 @@ def _build_plan_artifact_entry(group: dict, concerns: list[dict] | None = None) 
     middle_sections = section_val if isinstance(section_val, list) else [section_val]
     required_sections = ["summary"] + middle_sections + ["evidence_traceability"]
     if plan_concerns:
-        required_sections.append("conflicts")
+        required_sections.append("concerns")
 
     purpose = _ARTIFACT_PURPOSES.get(
         group["artifact_type"],
@@ -1213,7 +1224,7 @@ def _lock_plan(plan_path: Path):
 
 def _apply_artifact_decision(
     plan: dict, artifact_name: str, decision: str, notes: str = "",
-    add_conflicts: tuple[str, ...] = (),
+    add_concerns: tuple[str, ...] = (),
     add_sources: tuple[str, ...] = (),
 ) -> None:
     """Mutate plan in-place: set reviewer_decision, optional notes, append concerns/sources."""
@@ -1222,10 +1233,10 @@ def _apply_artifact_decision(
             artifact["reviewer_decision"] = decision
             if notes:
                 artifact["approval_notes"] = notes
-            if add_conflicts:
+            if add_concerns:
                 existing = artifact.get("concerns") or []
                 new_entries = []
-                for raw in add_conflicts:
+                for raw in add_concerns:
                     parts = raw.split("|", 1)
                     new_entries.append({
                         "concern": parts[0].strip(),
@@ -1558,8 +1569,12 @@ def plan(topic, force):
 )
 @click.option("--notes", default="", help="Approval notes (used with --artifact).")
 @click.option(
-    "--add-conflict", "add_conflicts", multiple=True, metavar="TEXT",
+    "--add-concern", "add_concerns", multiple=True, metavar="TEXT",
     help="Append a concern to the artifact's concerns list. Use 'concern text' or 'concern|resolution' format (repeatable).",
+)
+@click.option(
+    "--add-conflict", "add_concerns", multiple=True, metavar="TEXT", hidden=True,
+    help="Deprecated alias for --add-concern.",
 )
 @click.option(
     "--add-source", "add_sources", multiple=True, metavar="SLUG",
@@ -1574,7 +1589,7 @@ def plan(topic, force):
     "--finalize", is_flag=True,
     help="Set plan status to 'approved' and record reviewer/timestamp.",
 )
-def approve(topic, artifact_name, decision, notes, add_conflicts, add_sources, reviewer, review_summary, finalize):
+def approve(topic, artifact_name, decision, notes, add_concerns, add_sources, reviewer, review_summary, finalize):
     """Record reviewer decisions on extract-plan.yaml artifacts.
 
     \b
@@ -1582,13 +1597,13 @@ def approve(topic, artifact_name, decision, notes, add_conflicts, add_sources, r
       # Approve one artifact and finalize in a single atomic call (recommended):
       rh-skills promote approve TOPIC --artifact NAME --decision approved --finalize [--reviewer NAME]
 
-      # Record a cross-source conflict and finalize:
+      # Record a cross-source concern and finalize:
       rh-skills promote approve TOPIC --artifact NAME --decision approved \\
-        --add-conflict "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%" --finalize
+        --add-concern "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%" --finalize
 
       # Add a source the planner omitted (e.g. planner split conflicting sources):
       rh-skills promote approve TOPIC --artifact NAME --decision approved \\
-        --add-source aace-guidelines-2022 --add-conflict "HbA1c target" --finalize
+        --add-source aace-guidelines-2022 --add-concern "HbA1c target" --finalize
 
       # Or as separate sequential calls:
       rh-skills promote approve TOPIC --artifact NAME --decision approved [--notes TEXT]
@@ -1618,7 +1633,7 @@ def approve(topic, artifact_name, decision, notes, add_conflicts, add_sources, r
             if artifact_name:
                 if not decision:
                     raise click.UsageError("--decision is required when --artifact is specified.")
-                _apply_artifact_decision(plan, artifact_name, decision, notes, add_conflicts, add_sources)
+                _apply_artifact_decision(plan, artifact_name, decision, notes, add_concerns, add_sources)
                 if review_summary is not None:
                     plan["review_summary"] = review_summary
                 _write_plan_and_readout(plan_path, readout_path, plan)
@@ -1709,8 +1724,10 @@ def formalize_plan(topic, force):
               help="Required section to emit in the L2 artifact (repeatable)")
 @click.option("--evidence-ref", "evidence_refs", multiple=True,
               help="Claim evidence in 'claim_id|statement|source|locator' format (repeatable)")
-@click.option("--conflict", "conflicts", multiple=True,
-              help="Conflict in 'issue|source|statement[|preferred_source|preferred_rationale]' format")
+@click.option("--concern", "concerns", multiple=True,
+              help="Concern in 'issue|source|statement[|preferred_source|preferred_rationale]' format")
+@click.option("--conflict", "concerns", multiple=True, hidden=True,
+              help="Deprecated alias for --concern.")
 @click.option("--body-file", default=None, type=click.Path(exists=True, readable=True),
               help="Path to a YAML file containing the complete artifact body; repeated content flags become consistency checks")
 @click.option("--dry-run", is_flag=True, help="Print what would be created without doing it")
@@ -1723,7 +1740,7 @@ def derive(
     clinical_question,
     required_sections,
     evidence_refs,
-    conflicts,
+    concerns,
     body_file,
     dry_run,
 ):
@@ -1773,7 +1790,7 @@ Rules:
                 clinical_question=clinical_question,
                 required_sections=required_sections,
                 evidence_refs=evidence_refs,
-                conflicts=conflicts,
+                concerns=concerns,
                 body=body_data,
             )
 
@@ -1821,7 +1838,7 @@ Rules:
                     clinical_question,
                     required_sections,
                     evidence_refs,
-                    conflicts,
+                    concerns,
                 )
             )
         else:
@@ -1956,75 +1973,65 @@ converged_from:
     log_info(f"Created: {l3_file}")
 
 
-@promote.command("conflicts")
-@click.argument("topic")
-def conflicts(topic):
-    """List open (unresolved) conflicts across extract and formalize plans.
+def _print_open_concerns(topic: str) -> None:
+    """List open (unresolved) concerns across extract and formalize plans.
 
     Scans both extract-plan.yaml and formalize-plan.yaml (whichever exist) and
-    reports every conflict entry whose resolution field is empty or absent.
+    reports every concern/conflict entry whose resolution field is empty or absent.
     Exit code 0 in all cases; use the output to decide whether to proceed.
-
-    Example (agent workflow):
-      rh-skills promote conflicts diabetes-ccm
-
-    Each conflict line includes: plan type, artifact name, index, conflict text.
-    Use 'resolve-conflict' to record a resolution.
     """
-    open_conflicts = _collect_open_conflicts(topic)
-    if not open_conflicts:
-        click.echo(f"No open conflicts for topic '{topic}'.")
+    open_concerns = _collect_open_concerns(topic)
+    if not open_concerns:
+        click.echo(f"No open concerns for topic '{topic}'.")
         return
 
-    click.echo(f"Open conflicts for topic '{topic}':\n")
-    for c in open_conflicts:
+    click.echo(f"Open concerns for topic '{topic}':\n")
+    for concern in open_concerns:
         click.echo(
-            f"  plan={c['plan_type']}  artifact={c['artifact']}  index={c['index']}"
+            f"  plan={concern['plan_type']}  artifact={concern['artifact']}  index={concern['index']}"
         )
-        click.echo(f"    Conflict  : {c['conflict']}")
-        click.echo(f"    Resolution: {c['resolution'] or '_pending_'}")
+        click.echo(f"    Concern   : {concern['concern']}")
+        click.echo(f"    Resolution: {concern['resolution'] or '_pending_'}")
         click.echo()
 
     click.echo(
-        f"Total: {len(open_conflicts)} open conflict(s). "
-        "Use 'rh-skills promote resolve-conflict' to record resolutions."
+        f"Total: {len(open_concerns)} open concern(s). "
+        "Use 'rh-skills promote resolve-concern' to record resolutions."
     )
 
 
-@promote.command("resolve-conflict")
+@promote.command("concerns")
 @click.argument("topic")
-@click.option(
-    "--artifact", "artifact_name", required=True, metavar="NAME",
-    help="Name of the artifact containing the conflict.",
-)
-@click.option(
-    "--index", "conflict_index", required=True, type=int, metavar="N",
-    help="0-based index of the conflict entry within the artifact's conflicts list.",
-)
-@click.option(
-    "--resolution", required=True, metavar="TEXT",
-    help="Resolution text to record for this conflict.",
-)
-@click.option(
-    "--plan", "plan_type", required=True,
-    type=click.Choice(["extract", "formalize"]),
-    help="Which plan file to update (extract-plan.yaml or formalize-plan.yaml).",
-)
-def resolve_conflict(topic, artifact_name, conflict_index, resolution, plan_type):
-    """Record the resolution for a specific conflict entry.
+def concerns(topic):
+    """List open (unresolved) concerns across extract and formalize plans.
 
-    Use 'rh-skills promote conflicts <topic>' first to list open conflicts and
-    their indices, then call this command for each one.
+    Scans both extract-plan.yaml and formalize-plan.yaml (whichever exist) and
+    reports every concern/conflict entry whose resolution field is empty or absent.
+    Exit code 0 in all cases; use the output to decide whether to proceed.
 
-    Example:
-      # List open conflicts first:
-      rh-skills promote conflicts diabetes-ccm
+    Example (agent workflow):
+      rh-skills promote concerns diabetes-ccm
 
-      # Then resolve each by plan/artifact/index:
-      rh-skills promote resolve-conflict diabetes-ccm \\
-        --plan extract --artifact screening-decisions --index 0 \\
-        --resolution "ADA 2024 is the primary guideline; USPSTF framing is supplementary."
+    Each concern line includes: plan type, artifact name, index, concern text.
+    Use 'resolve-concern' to record a resolution.
     """
+    _print_open_concerns(topic)
+
+
+@promote.command("conflicts", hidden=True)
+@click.argument("topic")
+def conflicts(topic):
+    """Deprecated alias for `concerns`."""
+    _print_open_concerns(topic)
+
+
+def _resolve_concern(
+    topic: str,
+    artifact_name: str,
+    concern_index: int,
+    resolution: str,
+    plan_type: str,
+) -> None:
     if plan_type == "extract":
         plan_path = _extract_plan_path(topic)
         readout_path = _extract_readout_path(topic)
@@ -2035,7 +2042,7 @@ def resolve_conflict(topic, artifact_name, conflict_index, resolution, plan_type
         load_fn = _load_formalize_plan
 
     plan = load_fn(topic)
-    _set_conflict_resolution(plan, artifact_name, conflict_index, resolution)
+    _set_concern_resolution(plan, artifact_name, concern_index, resolution)
 
     if plan_type == "extract":
         _write_plan_and_readout(plan_path, readout_path, plan)
@@ -2047,15 +2054,76 @@ def resolve_conflict(topic, artifact_name, conflict_index, resolution, plan_type
             pass
         _write_formalize_plan_and_readout(topic, plan, blocked_inputs)
 
-    remaining = _collect_open_conflicts(topic)
+    remaining = _collect_open_concerns(topic)
     remaining_this_plan = [c for c in remaining if c["plan_type"] == plan_type]
     click.echo(
-        f"Resolved conflict {conflict_index} on '{artifact_name}' "
+        f"Resolved concern {concern_index} on '{artifact_name}' "
         f"in {plan_type}-plan.yaml."
     )
     if remaining_this_plan:
         click.echo(
-            f"{len(remaining_this_plan)} open conflict(s) remain in {plan_type}-plan.yaml."
+            f"{len(remaining_this_plan)} open concern(s) remain in {plan_type}-plan.yaml."
         )
     else:
-        click.echo(f"No open conflicts remain in {plan_type}-plan.yaml.")
+        click.echo(f"No open concerns remain in {plan_type}-plan.yaml.")
+
+
+@promote.command("resolve-concern")
+@click.argument("topic")
+@click.option(
+    "--artifact", "artifact_name", required=True, metavar="NAME",
+    help="Name of the artifact containing the concern.",
+)
+@click.option(
+    "--index", "concern_index", required=True, type=int, metavar="N",
+    help="0-based index of the concern entry within the artifact's concerns/conflicts list.",
+)
+@click.option(
+    "--resolution", required=True, metavar="TEXT",
+    help="Resolution text to record for this concern.",
+)
+@click.option(
+    "--plan", "plan_type", required=True,
+    type=click.Choice(["extract", "formalize"]),
+    help="Which plan file to update (extract-plan.yaml or formalize-plan.yaml).",
+)
+def resolve_concern(topic, artifact_name, concern_index, resolution, plan_type):
+    """Record the resolution for a specific concern entry.
+
+    Use 'rh-skills promote concerns <topic>' first to list open concerns and
+    their indices, then call this command for each one.
+
+    Example:
+      # List open concerns first:
+      rh-skills promote concerns diabetes-ccm
+
+      # Then resolve each by plan/artifact/index:
+      rh-skills promote resolve-concern diabetes-ccm \\
+        --plan extract --artifact screening-decisions --index 0 \\
+        --resolution "ADA 2024 is the primary guideline; USPSTF framing is supplementary."
+    """
+    _resolve_concern(topic, artifact_name, concern_index, resolution, plan_type)
+
+
+@promote.command("resolve-conflict", hidden=True)
+@click.argument("topic")
+@click.option(
+    "--artifact", "artifact_name", required=True, metavar="NAME",
+    help="Name of the artifact containing the concern.",
+)
+@click.option(
+    "--index", "concern_index", required=True, type=int, metavar="N",
+    help="0-based index of the concern entry within the artifact's concerns/conflicts list.",
+)
+@click.option(
+    "--resolution", required=True, metavar="TEXT",
+    help="Resolution text to record for this concern.",
+)
+@click.option(
+    "--plan", "plan_type", required=True,
+    type=click.Choice(["extract", "formalize"]),
+    help="Which plan file to update (extract-plan.yaml or formalize-plan.yaml).",
+)
+def resolve_conflict(topic, artifact_name, concern_index, resolution, plan_type):
+    """Deprecated alias for `resolve-concern`."""
+    _resolve_concern(topic, artifact_name, concern_index, resolution, plan_type)

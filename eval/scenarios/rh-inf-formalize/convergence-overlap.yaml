@@ -44,7 +44,7 @@ workspace:
             clinical_question: "When should sepsis screening be triggered?"
             required_sections:
               - decision_table
-            conflicts: []
+            concerns: []
             reviewer_decision: approved
             approval_notes: ""
           - name: sepsis-treatment-pathway
@@ -54,7 +54,7 @@ workspace:
             clinical_question: "What is the treatment protocol for suspected sepsis?"
             required_sections:
               - steps
-            conflicts: []
+            concerns: []
             reviewer_decision: approved
             approval_notes: ""
 

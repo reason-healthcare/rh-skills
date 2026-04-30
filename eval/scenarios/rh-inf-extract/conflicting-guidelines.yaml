@@ -3,7 +3,7 @@ skill: rh-inf-extract
 description: >
   Two normalized sources with a direct conflict on HbA1c targets (ADA <7% vs
   a more permissive threshold in an older source). Agent must surface the
-  conflict explicitly in the L2 artifact with preferred rationale.
+  concern explicitly in the L2 artifact with preferred rationale.
 
 topic: diabetes-ccm
 
@@ -101,17 +101,17 @@ prompt: |
   - AACE 2022 recommends ≤6.5% (more stringent) where safe
 
   Run the full extract cycle:
-  1. **plan** — generate an extract plan that identifies the conflict
+  1. **plan** — generate an extract plan that identifies the concern
   2. Wait for reviewer approval (simulate approval by responding "approved")
-  3. **implement** — produce the L2 artifact, explicitly recording the conflict
-     with a preferred source and rationale via --conflict flag
+  3. **implement** — produce the L2 artifact, explicitly recording the concern
+     with a preferred source and rationale via --concern flag
   4. **verify** — validate the artifact
 
 expected_outputs:
   - path: topics/diabetes-ccm/process/plans/extract-plan-readout.md
     checks:
       - exists
-      - contains: "conflict"
+      - contains: "concern"
   - path: topics/diabetes-ccm/process/plans/extract-plan.yaml
     checks:
       - exists
@@ -121,24 +121,24 @@ expected_outputs:
       - event: structured_derived
 
   # Note: The artifact path is planner-generated and may vary. Check for any
-  # YAML file under topics/diabetes-ccm/structured/ that contains conflicts:
+  # YAML file under topics/diabetes-ccm/structured/ that contains concerns:
   # and preferred_interpretation: fields.
   # Known planner limitation: the deterministic planner may split two sources
   # into separate artifact types if they match different keyword profiles.
   # The agent is expected to catch this at approve time using --add-source
-  # and --add-conflict. The conflict record uses preferred_interpretation:
+  # and --add-concern. The concern record uses preferred_interpretation:
   # not preferred_source: at the top level.
 
 efficiency_focus:
   - "Does the agent identify the planner's mistake during plan review (before implement)?"
-  - "Does it use the --conflict flag on rh-skills promote derive rather than writing inline YAML?"
+  - "Does it use the --concern flag on rh-skills promote derive rather than writing inline YAML?"
   - "Does it provide a clinical rationale for the preferred source rather than just picking one arbitrarily?"
   - "Does it avoid re-reading both source files more than once each?"
   - "Does it use promote approve --add-source to repair cross-source grouping rather than editing YAML directly?"
 
 quality_focus:
-  - "Is the conflict record in the L2 artifact complete: issue, both sources, both statements, preferred_source, preferred_rationale?"
+  - "Is the concern record in the L2 artifact complete: issue, both sources, both statements, preferred_source, preferred_rationale?"
   - "Is the rationale for preferring ADA vs AACE clinically defensible?"
-  - "Does the rest of the artifact (non-conflicting sections) still extract correctly?"
-  - "Does rh-skills validate pass despite the recorded conflict?"
-  - "Is the conflict surfaced clearly enough for a clinical reviewer to make a decision?"
+  - "Does the rest of the artifact (sections unrelated to the concern) still extract correctly?"
+  - "Does rh-skills validate pass despite the recorded concern?"
+  - "Is the concern surfaced clearly enough for a clinical reviewer to make a decision?"

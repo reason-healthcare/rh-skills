@@ -123,7 +123,7 @@ def _validate_extract_artifact(
     artifacts = plan.get("artifacts", []) or []
     plan_entry = next((entry for entry in artifacts if entry.get("name") == artifact), None)
     if plan_entry is None:
-        if any(key in artifact_data for key in ("artifact_type", "clinical_question", "sections", "conflicts")):
+        if any(key in artifact_data for key in ("artifact_type", "clinical_question", "sections", "concerns", "conflicts")):
             _report_warn("  extract-plan.yaml exists but this artifact is not listed there", emit=emit)
             return 0, 1
         return 0, 0
@@ -158,7 +158,11 @@ def _validate_extract_artifact(
         errors += 1
 
     for section_name in plan_entry.get("required_sections", []) or []:
-        if section_name not in sections:
+        legacy_alias = "conflicts" if section_name == "concerns" else None
+        canonical_alias = "concerns" if section_name == "conflicts" else None
+        if section_name not in sections and (legacy_alias is None or legacy_alias not in sections) and (
+            canonical_alias is None or canonical_alias not in sections
+        ):
             _report_error(f"  MISSING required extract section: sections.{section_name}", emit=emit)
             errors += 1
 
@@ -195,13 +199,15 @@ def _validate_extract_artifact(
                             )
                             errors += 1
 
-    plan_conflicts = plan_entry.get("concerns") or plan_entry.get("conflicts", []) or []
-    conflicts = artifact_data.get("conflicts") or []
-    if plan_conflicts and not conflicts:
-        _report_error("  MISSING conflicts[] despite conflicts listed in approved plan", emit=emit)
+    plan_concerns = plan_entry.get("concerns") or plan_entry.get("conflicts", []) or []
+    artifact_concerns = artifact_data.get("concerns")
+    if artifact_concerns is None:
+        artifact_concerns = artifact_data.get("conflicts") or []
+    if plan_concerns and not artifact_concerns:
+        _report_error("  MISSING concerns[] despite concerns listed in approved plan", emit=emit)
         errors += 1
-    elif conflicts and not isinstance(conflicts, list):
-        _report_error("  conflicts must be a list", emit=emit)
+    elif artifact_concerns and not isinstance(artifact_concerns, list):
+        _report_error("  concerns must be a list", emit=emit)
         errors += 1
 
     stub_paths = _collect_stub_paths(sections, path="sections")

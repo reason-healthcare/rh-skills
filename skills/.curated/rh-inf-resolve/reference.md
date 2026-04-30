@@ -2,31 +2,31 @@
 
 ## CLI Commands
 
-### List open conflicts
+### List open concerns
 
 ```sh
-rh-skills promote conflicts <topic>
+rh-skills promote concerns <topic>
 ```
 
-Lists all conflict entries with an empty or absent `resolution` field, across
+Lists all concern/conflict entries with an empty or absent `resolution` field, across
 both `extract-plan.yaml` and `formalize-plan.yaml` (whichever exist).
 
-**Output format (one block per open conflict):**
+**Output format (one block per open concern):**
 
 ```
-Open conflicts for topic '<topic>':
+Open concerns for topic '<topic>':
 
   plan=extract  artifact=screening-decisions  index=0
-    Conflict  : ADA interval language is more explicit than USPSTF interval framing.
+    Concern   : ADA interval language is more explicit than USPSTF interval framing.
     Resolution: _pending_
 
-Total: 1 open conflict(s). Use 'rh-skills promote resolve-conflict' to record resolutions.
+Total: 1 open concern(s). Use 'rh-skills promote resolve-concern' to record resolutions.
 ```
 
-If no open conflicts exist:
+If no open concerns exist:
 
 ```
-No open conflicts for topic '<topic>'.
+No open concerns for topic '<topic>'.
 ```
 
 ---
@@ -34,7 +34,7 @@ No open conflicts for topic '<topic>'.
 ### Record a resolution
 
 ```sh
-rh-skills promote resolve-conflict <topic> \
+rh-skills promote resolve-concern <topic> \
   --plan <extract|formalize> \
   --artifact <artifact_name> \
   --index <N> \
@@ -44,14 +44,14 @@ rh-skills promote resolve-conflict <topic> \
 | Option        | Description                                              |
 |---------------|----------------------------------------------------------|
 | `--plan`      | `extract` (extract-plan.yaml) or `formalize`             |
-| `--artifact`  | Artifact name as shown in the conflicts listing          |
-| `--index`     | 0-based index of the conflict within that artifact       |
+| `--artifact`  | Artifact name as shown in the concerns listing           |
+| `--index`     | 0-based index of the concern within that artifact        |
 | `--resolution`| Human-supplied resolution text                           |
 
 **Example:**
 
 ```sh
-rh-skills promote resolve-conflict diabetes-ccm \
+rh-skills promote resolve-concern diabetes-ccm \
   --plan extract \
   --artifact screening-decisions \
   --index 0 \
@@ -62,28 +62,28 @@ supplementary and does not override the primary recommendation."
 **Confirmation output:**
 
 ```
-Resolved conflict 0 on 'screening-decisions' in extract-plan.yaml.
-No open conflicts remain in extract-plan.yaml.
+Resolved concern 0 on 'screening-decisions' in extract-plan.yaml.
+No open concerns remain in extract-plan.yaml.
 ```
 
 ---
 
-## Conflict Data Model
+## Concern Data Model
 
-Conflicts are stored in `extract-plan.yaml` or `formalize-plan.yaml` under
-each artifact:
+Extract plans store `concerns[]`; formalize plans continue to store
+`conflicts[]`, and the CLI surfaces both through the `concerns` command:
 
 ```yaml
 artifacts:
   - name: screening-decisions
-    conflicts:
-      - conflict: "ADA interval language is more explicit than USPSTF."
+    concerns:
+      - concern: "ADA interval language is more explicit than USPSTF."
         resolution: ""           # empty = open
-      - conflict: "ADA <7.0% vs AACE ≤6.5%"
+      - concern: "ADA <7.0% vs AACE ≤6.5%"
         resolution: "ADA 2024 preferred per clinical lead."   # filled = resolved
 ```
 
-A conflict is **open** when `resolution` is absent, null, or empty string.
+A concern is **open** when `resolution` is absent, null, or empty string.
 
 ---
 
@@ -94,7 +94,7 @@ A conflict is **open** when `resolution` is absent, null, or empty string.
 After `promote plan`, before `promote approve`:
 
 ```sh
-rh-skills promote conflicts <topic>
+rh-skills promote concerns <topic>
 # If any open → invoke rh-inf-resolve <topic> before approving
 ```
 
@@ -103,7 +103,7 @@ rh-skills promote conflicts <topic>
 After `promote formalize-plan`, before `formalize`:
 
 ```sh
-rh-skills promote conflicts <topic>
+rh-skills promote concerns <topic>
 # If any open → invoke rh-inf-resolve <topic> before formalizing
 ```
 
