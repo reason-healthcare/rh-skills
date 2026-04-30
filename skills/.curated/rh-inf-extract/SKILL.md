@@ -155,7 +155,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
      > **If the domain involves branching clinical decisions or choosing between
      > guideline recommendations → artifact_type MUST be `decision-table`.**
      > `evidence-summary` is ONLY for narrative reviews with no branching choice.
-     > When in doubt: conflicting guidelines with conditions/actions = `decision-table`.
+     > When in doubt: conflicting guidelines with event/condition/action logic = `decision-table`.
 
      Standard types: evidence-summary · decision-table · care-pathway · terminology ·
      measure · assessment · policy · custom (when clearly justified).
@@ -166,7 +166,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 
      | Artifact type | Enumerate from the sources |
      |---|---|
-     | `decision-table` / `policy` | Every normative "if X do Y" or "should/shall/must/consider" statement; each distinct condition threshold; each action or recommendation |
+     | `decision-table` / `policy` | Every triggering event, every normative "if X do Y" or "should/shall/must/consider" statement, each distinct condition threshold, and each action or recommendation |
      | `evidence-summary` | Each distinct finding, conclusion, or evidence grade reported; each PICOTS frame if present |
      | `care-pathway` | Each named clinical sequence step, actor assignment, or timing constraint |
      | `measure` | Each defined outcome, population definition, numerator/denominator specification |

@@ -29,7 +29,7 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 | Type | SME Question | L3 FHIR Target | Key Sections |
 |------|-------------|-----------------|--------------|
 | **evidence-summary** | What does the evidence say? | Evidence, EvidenceVariable, Citation | summary_points, risk_factors, evidence_traceability |
-| **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), Library (CQL) | conditions, actions, rules, exceptions |
+| **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), Library (CQL) | events, conditions, actions, rules, exceptions |
 | **care-pathway** | In what order do things happen? | PlanDefinition (clinical-protocol), ActivityDefinition | triggers, steps (ordered with actor + next-step) |
 | **terminology** | What codes define the concepts? | ValueSet, ConceptMap | value_sets, concept_maps |
 | **measure** | How do we know it's working? | Measure, Library (CQL) | populations, scoring, improvement_notation |
@@ -79,7 +79,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
    │   │   ├─ Evidence traceability: claims have evidence entries
    │   │   └─ Conflicts: present when plan listed them
    │   ├─ Render: rh-skills render <topic> structured <name>
-   │   │   └─ Generate report.md + Mermaid diagrams
+   │   │   └─ Generate report.md + Mermaid diagrams (`decision-table` requires `events`, `conditions`, `actions`, and `rules`)
    │   └─ Report ✓ or ✗ per artifact
    └─ Stop on first blocking failure
 
@@ -140,7 +140,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 
 Post-derive validation checks:
 1. Required top-level fields: id, name, title, version, status, domain, description, derived_from[], artifact_type, clinical_question
-2. Type-specific required sections (e.g., decision-table MUST have conditions, actions, rules)
+2. Type-specific required sections (e.g., decision-table MUST have events, conditions, actions, rules)
 3. Evidence traceability: claims have evidence[] entries
 4. Conflicts present when extract-plan listed unresolved conflicts
 

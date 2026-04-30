@@ -14,7 +14,7 @@ from rh_skills.common import topic_dir
 # Type → required section keys (validated at render time)
 REQUIRED_SECTIONS: dict[str, list[str]] = {
     "evidence-summary": ["summary_points"],
-    "decision-table": ["conditions", "actions", "rules"],
+    "decision-table": ["events", "conditions", "actions", "rules"],
     "care-pathway": ["steps"],
     "terminology": ["value_sets"],
     "measure": ["populations"],

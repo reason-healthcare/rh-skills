@@ -61,6 +61,9 @@ artifact_type: decision-table
 clinical_question: "Who should be screened and at what interval?"
 sections:
   summary: "Adults at elevated risk should receive annual screening."
+  events:
+    - id: e1
+      label: "Adult diabetes screening encounter"
   conditions:
     - id: c1
       label: "Risk status"
@@ -72,9 +75,11 @@ sections:
       label: "Screening every 3 years"
   rules:
     - id: r1
+      event: e1
       when: {c1: "elevated"}
       then: [a1]
     - id: r2
+      event: e1
       when: {c1: "average"}
       then: [a2]
   evidence_traceability:
@@ -100,6 +105,7 @@ rh-skills promote derive diabetes-ccm screening-decisions \
   --artifact-type decision-table \
   --clinical-question "Who should be screened and at what interval?" \
   --required-section summary \
+  --required-section events \
   --required-section conditions \
   --required-section actions \
   --required-section rules \

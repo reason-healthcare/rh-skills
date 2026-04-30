@@ -232,6 +232,7 @@ expected_outputs:
     checks:
       - exists
       - contains_any_file_with: "artifact_type: decision-table"
+      - contains_any_file_with: "events:"
       - contains_any_file_with: "conditions:"
       - contains_any_file_with: "rules:"
       - contains_any_file_with: "evidence_traceability:"
@@ -249,10 +250,10 @@ efficiency_focus:
 
 quality_focus:
   - "Does the extract plan propose multiple decision-table artifacts to capture the layered logic?"
-  - "Does at least one decision-table capture the CHA₂DS₂-VASc → eligibility → drug class → renal adjustment cascade?"
+  - "Does at least one decision-table capture the CHA₂DS₂-VASc → eligibility → drug class → renal adjustment cascade with explicit triggering events?"
   - "Are CrCl thresholds accurately captured as condition values (≥50, 30–49, 15–29, <15)?"
   - "Are the DOAC-specific dose adjustments present in the rules (e.g., dabigatran 75mg BID for CrCl 30–49)?"
-  - "Does a bridging decision-table capture the risk-stratified logic (low vs high thromboembolic risk, valve status)?"
+  - "Does a bridging decision-table capture the risk-stratified logic (low vs high thromboembolic risk, valve status) with explicit triggering events?"
   - "Does the DOAC hold timing by renal function appear somewhere (24h/48h/36h/72h/48h/96h grid)?"
   - "Are special population modifiers (elderly, obesity, dialysis) captured — either as additional conditions in the main tables or as a separate artifact?"
   - "Does each artifact have evidence_traceability linking to Class/LOE from the evidence summary table?"

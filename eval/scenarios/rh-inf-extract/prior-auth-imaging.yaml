@@ -146,7 +146,7 @@ prompt: |
 
   One source is fully ingested: `payer-mri-auth-policy-2024`. It contains:
   - Prior authorization policy with applicability, criteria, and actions
-  - An explicit decision table with conditions, rules, and outcomes
+  - An explicit decision table with events, conditions, rules, and outcomes
   - A workflow describing the authorization process steps
 
   Run the full extract cycle:
@@ -168,6 +168,7 @@ expected_outputs:
       - exists
       - contains_any_file_with: "artifact_type: policy"
       - contains_any_file_with: "artifact_type: decision-table"
+      - contains_any_file_with: "events:"
       - contains_any_file_with: "conditions:"
       - contains_any_file_with: "rules:"
       - contains_any_file_with: "criteria:"
@@ -186,7 +187,7 @@ efficiency_focus:
 quality_focus:
   - "Does the extract plan propose at least policy, decision-table, and care-pathway types?"
   - "Does the policy artifact contain applicability (payer_types, service_category, codes), criteria, and actions (approve/deny/pend)?"
-  - "Does the decision-table artifact have correctly structured conditions with values, and rules with when/then mappings?"
+  - "Does the decision-table artifact have correctly structured events, conditions with values, and rules with event/when/then mappings?"
   - "Are the 5 decision rules from the source accurately captured in the decision-table rules?"
   - "Does the decision-table use dash notation for irrelevant conditions (e.g., Rule 1 red flags=Yes, other conditions='-')?"
   - "Does the care-pathway artifact capture the 8-step authorization workflow?"

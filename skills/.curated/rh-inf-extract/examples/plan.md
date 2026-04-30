@@ -17,6 +17,7 @@ artifacts:
       - What are the exclusion criteria?
     required_sections:
       - summary
+      - events
       - conditions
       - actions
       - rules

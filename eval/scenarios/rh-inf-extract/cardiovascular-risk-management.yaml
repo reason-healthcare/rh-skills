@@ -196,6 +196,7 @@ expected_outputs:
       - contains_any_file_with: "artifact_type: evidence-summary"
       - contains_any_file_with: "artifact_type: decision-table"
       - contains_any_file_with: "risk_factors:"
+      - contains_any_file_with: "events:"
       - contains_any_file_with: "conditions:"
       - contains_any_file_with: "evidence:"
   - path: tracking.yaml
@@ -213,7 +214,7 @@ quality_focus:
   - "Does the extract plan propose at least evidence-summary and decision-table types?"
   - "Does the evidence-summary artifact include a risk_factors section separating major from risk-enhancing factors?"
   - "Does the decision-table conditions include eligibility and exclusion logic?"
-  - "Does the decision-table capture clinical thresholds and branching logic?"
+  - "Does the decision-table capture explicit triggering events, clinical thresholds, and branching logic?"
   - "Does the evidence-summary artifact include source, design, GRADE rating, and quantitative findings (RR, CI, NNH)?"
   - "Are the specific numeric thresholds from the guideline accurately captured (LDL ≥190, risk ≥20%, etc.)?"
   - "Is evidence_traceability present linking claims to acc-aha-lipid-2023?"

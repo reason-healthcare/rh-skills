@@ -196,15 +196,20 @@ sections:
 
 #### decision-table
 
-Includes eligibility conditions and exclusion conditions alongside clinical decision logic.
+Includes eligibility conditions and exclusion conditions alongside explicit
+event-condition-action clinical decision logic.
 
-> **Flat sections — no wrapper key.** `conditions`, `actions`, and `rules` go
-> directly under `sections:`. Do NOT nest them under a `decision_table:` wrapper
-> (e.g., `sections.decision_table.conditions` is wrong; use `sections.conditions`).
+> **Flat sections — no wrapper key.** `events`, `conditions`, `actions`, and
+> `rules` go directly under `sections:`. Do NOT nest them under a
+> `decision_table:` wrapper (e.g., `sections.decision_table.conditions` is
+> wrong; use `sections.conditions`).
 
 ```yaml
 sections:
   summary: <string>
+  events:
+    - id: e1
+      label: <triggering clinical or workflow event>
   conditions:
     - id: c1
       label: <condition name>
@@ -215,6 +220,7 @@ sections:
       label: <action name>
   rules:
     - id: r1
+      event: e1
       when:
         c1: <value or "N/A" for irrelevant>
       then:
@@ -229,6 +235,11 @@ sections:
     - issue: <summary>
       disposition: <how resolved>
 ```
+
+`rules[]` are the binding layer: each rule references the event that triggers
+evaluation, the condition values that must hold, and the actions that follow.
+If every rule shares the same trigger, keep the event reference explicit on each
+rule for now; de-duplication can happen later during formalization.
 
 #### care-pathway
 

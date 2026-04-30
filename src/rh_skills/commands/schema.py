@@ -156,6 +156,8 @@ def _print_artifact_schema(artifact_type: str, data: dict) -> None:
     required = data.get("required_fields", [])
     optional = data.get("optional_fields", [])
     optional_sections = data.get("optional_sections", {})
+    artifact_types = data.get("artifact_types", [])
+    artifact_type_sections = data.get("artifact_type_sections", {})
     status_values = data.get("status_values", [])
 
     if required:
@@ -181,6 +183,24 @@ def _print_artifact_schema(artifact_type: str, data: dict) -> None:
                     click.echo(f"    fields: {', '.join(fields)}")
             else:
                 click.echo(f"  {section}")
+
+    if artifact_types:
+        click.echo(f"\nArtifact types: {', '.join(artifact_types)}")
+
+    if artifact_type_sections:
+        click.echo("\nArtifact-type sections:")
+        for atype, info in artifact_type_sections.items():
+            click.echo(f"  {atype}")
+            if isinstance(info, dict):
+                description = info.get("description", "")
+                if description:
+                    click.echo(f"    {description}")
+                recommended = info.get("recommended_sections", [])
+                if recommended:
+                    click.echo(f"    recommended sections: {', '.join(recommended)}")
+                section_defs = info.get("section_definitions", {})
+                for name, desc in section_defs.items():
+                    click.echo(f"    {name}: {desc}")
 
     if status_values:
         click.echo(f"\nValid status values: {', '.join(status_values)}")
