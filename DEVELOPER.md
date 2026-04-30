@@ -254,7 +254,7 @@ See `eval/scenarios/README.md` for the full schema.
 | `rh-inf-ingest` | `open-access-sources` | Full ingest cycle, 3 open-access sources |
 | `rh-inf-ingest` | `authenticated-source` | Correct advisory for gated source; no content fabrication |
 | `rh-inf-extract` | `single-source` | Plan → implement → verify with one guideline source |
-| `rh-inf-extract` | `conflicting-guidelines` | Explicit conflict record when two sources disagree |
+| `rh-inf-extract` | `conflicting-guidelines` | Explicit concern record when two sources disagree |
 | `rh-inf-formalize` | `converge-l2` | Converge two approved L2 artifacts into one L3 package |
 | `rh-inf-status` | `empty-portfolio` | Empty portfolio — correct next-step guidance |
 | `rh-inf-status` | `mid-workflow` | Two topics at different stages — distinct per-topic recommendations |
@@ -383,11 +383,11 @@ rh-skills promote derive <topic> <artifact-name> \
   [--clinical-question "<question>"] \
   [--required-section <section>] \
   [--evidence-ref "claim_id|statement|source|locator"] \
-  [--conflict "issue|source|statement|preferred_source|preferred_rationale"]
+  [--concern "issue|source|statement|preferred_source|preferred_rationale"]
 ```
 
 - multiple `--source` flags are supported for multi-source extraction
-- stub/test mode now writes richer L2 artifact fields: `artifact_type`, `clinical_question`, `sections`, and `conflicts`
+- stub/test mode now writes richer L2 artifact fields: `artifact_type`, `clinical_question`, `sections`, and `concerns`
 - `--evidence-ref` is repeatable and populates `sections.evidence_traceability`
 
 ### rh-skills promote plan
@@ -442,7 +442,7 @@ When `topics/<topic>/process/plans/extract-plan.md` exists and lists the artifac
 - approved `source_files[]` vs `derived_from[]`
 - required extract sections
 - evidence traceability entries
-- conflict records when the plan requires them
+- concern records when the plan requires them
 
 When `topics/<topic>/process/plans/formalize-plan.md` exists, is approved, and
 marks the artifact as the implementation target, validation also checks:

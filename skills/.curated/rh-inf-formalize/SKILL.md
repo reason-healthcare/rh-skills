@@ -164,20 +164,20 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
 6. If `formalize-plan.yaml` already exists and `--force` is not present, warn and stop without overwriting.
 7. After writing the plan, check for cross-artifact issues before proceeding:
 
-   **⚠ HUMAN-IN-THE-LOOP: Cross-artifact conflicts require explicit human confirmation.**
+   **⚠ HUMAN-IN-THE-LOOP: Cross-artifact concerns require explicit human confirmation.**
 
-   Always check for open conflicts using the CLI before proceeding:
+   Always check for open concerns using the CLI before proceeding:
 
    ```sh
-   rh-skills promote conflicts <topic>
+   rh-skills promote concerns <topic>
    ```
 
-   - If **any open conflicts are listed**: do **not** show the plan-complete output
+   - If **any open concerns are listed**: do **not** show the plan-complete output
      contract. Instead, immediately begin the `rh-inf-resolve` interactive flow
-     inline — present each conflict one-by-one, wait for the reviewer's resolution,
-     record it with `rh-skills promote resolve-conflict`, and only after all
-     conflicts are cleared proceed to the plan-complete output below.
-   - If output is `"No open conflicts for topic '<topic>'."`: proceed directly to
+     inline — present each concern one-by-one, wait for the reviewer's resolution,
+     record it with `rh-skills promote resolve-concern`, and only after all
+     concerns are cleared proceed to the plan-complete output below.
+   - If output is `"No open concerns for topic '<topic>'."`: proceed directly to
      the plan-complete output below.
 
 ### What to capture per artifact
@@ -199,7 +199,7 @@ Emit this status block as the **last thing** in your response (no text after):
 ```
 ▸ rh-inf-formalize  <topic>
   Stage:    plan — complete
-  Artifacts: <N> proposed · <M> conflicts resolved
+  Artifacts: <N> proposed · <M> concerns resolved
   Next:     Review the plan, then approve and implement
 ```
 

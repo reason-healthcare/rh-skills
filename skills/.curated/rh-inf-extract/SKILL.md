@@ -199,7 +199,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
      `--force` still separates them, add the missing source at approve time with
      `--add-source <slug>`.
    - **Concerns**: Add each disagreement you identified in step 2 via
-     `--add-conflict` at approve time (see Review & Approval below).
+     `--add-concern` at approve time (see Review & Approval below).
 
    A narrower-than-ideal plan is acceptable — approve with gaps in `review_summary`.
    Only re-plan if a gap would make the derived artifact clinically misleading.
@@ -275,7 +275,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    Always check for open concerns using the CLI before proceeding:
 
    ```sh
-   rh-skills promote conflicts <topic>
+   rh-skills promote concerns <topic>
    ```
 
    - If **any open concerns are listed**: do **not** show the plan-complete output
@@ -285,16 +285,16 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
         > "Proposed resolution: [your reasoning]. Does this look correct, or would
         > you like to provide a different resolution?"
      3. **Wait for the user's explicit confirmation or alternative before proceeding.**
-     4. Record the confirmed resolution with `rh-skills promote resolve-conflict`:
+     4. Record the confirmed resolution with `rh-skills promote resolve-concern`:
         ```sh
-        rh-skills promote resolve-conflict <topic> \
+        rh-skills promote resolve-concern <topic> \
           --plan extract --artifact <name> --index <N> \
           --resolution "<confirmed resolution text>"
         ```
-        Use the `index` shown by `rh-skills promote conflicts <topic>` (0-based).
+        Use the `index` shown by `rh-skills promote concerns <topic>` (0-based).
 
      Only after all concerns are cleared proceed to the plan-complete output below.
-   - If output is `"No open conflicts for topic '<topic>'."`, proceed immediately
+   - If output is `"No open concerns for topic '<topic>'."`, proceed immediately
      to the Review & Approval phase below and run `rh-skills promote approve`
      without waiting for user confirmation.
 
@@ -336,7 +336,7 @@ artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
 
 > **⚠ HUMAN-IN-THE-LOOP RULE**: Concerns are resolved inline during plan mode
-> before this phase is reached. If `rh-skills promote conflicts <topic>` still
+> before this phase is reached. If `rh-skills promote concerns <topic>` still
 > shows open concerns at this point, re-run plan mode — do not run
 > `rh-skills promote approve` while concerns remain open.
 
@@ -348,10 +348,10 @@ rh-skills promote approve <topic> \
   --artifact <name> --decision approved --notes "Optional note" \
   --finalize --reviewer "<reviewer-name>"
 
-# When the planner missed a cross-source concern, record it with --add-conflict:
+# When the planner missed a cross-source concern, record it with --add-concern:
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
-  --add-conflict "HbA1c threshold: ADA 2024 <7.0% vs AACE 2022 <=6.5%" \
+  --add-concern "HbA1c threshold: ADA 2024 <7.0% vs AACE 2022 <=6.5%" \
   --review-summary "Cross-source HbA1c concern added during review; planner split sources into separate artifacts." \
   --finalize --reviewer "<reviewer-name>"
 
@@ -360,14 +360,14 @@ rh-skills promote approve <topic> \
 # confirmation before embedding it. Do not record a resolution autonomously.
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
-  --add-conflict "HbA1c threshold: ADA <7.0% vs AACE <=6.5%|Prefer AACE threshold when safely achievable" \
+  --add-concern "HbA1c threshold: ADA <7.0% vs AACE <=6.5%|Prefer AACE threshold when safely achievable" \
   --finalize
 
-# --add-conflict is repeatable for multiple concerns on one artifact:
+# --add-concern is repeatable for multiple concerns on one artifact:
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
-  --add-conflict "Concern A description" \
-  --add-conflict "Concern B|Resolution B" \
+  --add-concern "Concern A description" \
+  --add-concern "Concern B|Resolution B" \
   --finalize
 
 # When the planner split conflicting sources into separate artifacts, add the
@@ -376,7 +376,7 @@ rh-skills promote approve <topic> \
 rh-skills promote approve <topic> \
   --artifact <name> --decision approved \
   --add-source aace-guidelines-2022 \
-  --add-conflict "HbA1c target: ADA <7.0% vs AACE <=6.5%" \
+  --add-concern "HbA1c target: ADA <7.0% vs AACE <=6.5%" \
   --review-summary "Added AACE source; planner separated conflicting sources. Both positions captured in concerns[]." \
   --finalize --reviewer "<reviewer-name>"
 
@@ -459,7 +459,7 @@ all deterministic writes must go through `rh-skills promote derive` and
    > `derived_from` must exactly match the `source_files[]` entries from the
    > approved plan (bare slugs, e.g. `ada-guidelines-2024` — no path prefix).
    > If you also pass `--clinical-question`, `--required-section`,
-   > `--evidence-ref`, or `--conflict`, the CLI treats them as **consistency
+   > `--evidence-ref`, or `--concern`, the CLI treats them as **consistency
    > checks** against the body file instead of merge inputs.
 
    ```sh
@@ -495,7 +495,7 @@ all deterministic writes must go through `rh-skills promote derive` and
      --clinical-question "<clinical question>" \
      --required-section <section> \
      --evidence-ref "<claim_id|statement|source|locator>" \
-     --conflict "<issue|source|statement|preferred_source|preferred_rationale>" \
+     --concern "<issue|source|statement|preferred_source|preferred_rationale>" \
      --body-file /tmp/rh-<artifact-name>.yaml
    ```
 
@@ -503,12 +503,12 @@ all deterministic writes must go through `rh-skills promote derive` and
    placeholders that will **fail** validation.
 
    When running without `--body-file`, keep using `--clinical-question`,
-   `--required-section`, `--evidence-ref`, and `--conflict` to shape the
+   `--required-section`, `--evidence-ref`, and `--concern` to shape the
    generated scaffold content.
 
-   **Recording conflicts with multiple positions**: Pass one `--conflict` flag
+   **Recording concerns with multiple positions**: Pass one `--concern` flag
    per source position, using the **same issue text** for both. The CLI merges
-   flags with the same issue into a single conflict entry with multiple
+   flags with the same issue into a single concern entry with multiple
    `positions[]`. Add `preferred_source|preferred_rationale` only to the flag
    for the preferred position.
 
@@ -519,13 +519,13 @@ all deterministic writes must go through `rh-skills promote derive` and
 
    ```sh
    # ADA position (non-preferred — no preferred_ fields):
-   --conflict "HbA1c target threshold|ada-standards-2024|ADA recommends HbA1c <7.0%" \
+   --concern "HbA1c target threshold|ada-standards-2024|ADA recommends HbA1c <7.0%" \
    # AACE position (preferred — include preferred_source and preferred_rationale):
-   --conflict "HbA1c target threshold|aace-guidelines-2022|AACE recommends <=6.5%|aace-guidelines-2022|More specific intensive-control target with explicit hypoglycemia guard"
+   --concern "HbA1c target threshold|aace-guidelines-2022|AACE recommends <=6.5%|aace-guidelines-2022|More specific intensive-control target with explicit hypoglycemia guard"
    ```
 
    > **ASCII in shell flag values**: Use ASCII approximations for Unicode operators
-   > in all `--conflict`, `--add-conflict`, and `--evidence-ref` values:
+   > in all `--concern`, `--add-concern`, and `--evidence-ref` values:
    > `<=` not `≤`, `>=` not `≥`, `!=` not `≠`. Unicode characters in shell flag
    > strings may be silently dropped or corrupted. After running `approve`,
    > inspect the resulting `concerns[]` in `extract-plan.yaml` to confirm

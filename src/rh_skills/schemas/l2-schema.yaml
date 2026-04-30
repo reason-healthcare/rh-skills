@@ -25,7 +25,8 @@ optional_fields:
   - artifact_type      # structured artifact strategy, e.g. decision-table | care-pathway
   - clinical_question  # extraction question answered by this artifact
   - sections           # artifact-type-specific structured content
-  - conflicts          # list of unresolved or resolved source conflicts
+  - concerns           # list of unresolved or resolved source concerns
+  - conflicts          # legacy alias for concerns
 
 artifact_types:
   - evidence-summary

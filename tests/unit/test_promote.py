@@ -206,7 +206,7 @@ def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", ar
             "artifact_type": artifact_type,
             "clinical_question": f"What does {artifact_name} contribute?",
             "sections": sections,
-            "conflicts": [],
+            "concerns": [],
         }, buf)
         artifact_dir = td / artifact_name
         artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -343,7 +343,7 @@ def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
         "--required-section", "summary",
         "--required-section", "evidence_traceability",
         "--evidence-ref", "crit-001|Screen adults at risk|ada-guidelines|Section 2",
-        "--conflict", "Interval differs|ada-guidelines|Annual screening|ada-guidelines|Explicit interval language",
+        "--concern", "Interval differs|ada-guidelines|Annual screening|ada-guidelines|Explicit interval language",
     ])
     assert result.exit_code == 0, result.output
     data = load_yaml(tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml")
@@ -351,8 +351,8 @@ def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
     assert data["clinical_question"] == "Who should be screened?"
     assert "evidence_traceability" in data["sections"]
     assert data["sections"]["evidence_traceability"][0]["claim_id"] == "crit-001"
-    assert data["conflicts"][0]["issue"] == "Interval differs"
-    assert data["conflicts"][0]["preferred_interpretation"]["source"] == "ada-guidelines"
+    assert data["concerns"][0]["issue"] == "Interval differs"
+    assert data["concerns"][0]["preferred_interpretation"]["source"] == "ada-guidelines"
 
 
 def test_derive_invalid_evidence_ref_format_exits_2(tmp_repo, monkeypatch):
@@ -367,8 +367,8 @@ def test_derive_invalid_evidence_ref_format_exits_2(tmp_repo, monkeypatch):
     assert result.exit_code == 2
 
 
-def test_derive_conflict_same_issue_merges_positions(tmp_repo, monkeypatch):
-    """Two --conflict flags with the same issue merge into one entry with multiple positions."""
+def test_derive_concern_same_issue_merges_positions(tmp_repo, monkeypatch):
+    """Two --concern flags with the same issue merge into one entry with multiple positions."""
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
@@ -376,18 +376,34 @@ def test_derive_conflict_same_issue_merges_positions(tmp_repo, monkeypatch):
         "derive", "my-skill", "hba1c-target",
         "--source", "ada-guidelines",
         "--artifact-type", "decision-table",
-        "--conflict", "HbA1c target|ada-guidelines|ADA recommends <7.0%",
-        "--conflict", "HbA1c target|aace-guidelines|AACE recommends ≤6.5%|aace-guidelines|More specific target",
+        "--concern", "HbA1c target|ada-guidelines|ADA recommends <7.0%",
+        "--concern", "HbA1c target|aace-guidelines|AACE recommends ≤6.5%|aace-guidelines|More specific target",
     ])
     assert result.exit_code == 0, result.output
     artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "hba1c-target" / "hba1c-target.yaml"
     data = YAML(typ="safe").load(artifact_path.read_text())
-    conflicts = data.get("conflicts", [])
-    assert len(conflicts) == 1, f"Expected 1 merged conflict entry, got {len(conflicts)}"
-    assert len(conflicts[0]["positions"]) == 2
-    sources = {p["source"] for p in conflicts[0]["positions"]}
+    concerns = data.get("concerns", [])
+    assert len(concerns) == 1, f"Expected 1 merged concern entry, got {len(concerns)}"
+    assert len(concerns[0]["positions"]) == 2
+    sources = {p["source"] for p in concerns[0]["positions"]}
     assert sources == {"ada-guidelines", "aace-guidelines"}
-    assert conflicts[0]["preferred_interpretation"]["source"] == "aace-guidelines"
+    assert concerns[0]["preferred_interpretation"]["source"] == "aace-guidelines"
+
+
+def test_derive_conflict_alias_still_writes_concerns(tmp_repo, monkeypatch):
+    """Legacy --conflict remains supported but writes canonical concerns[]."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--source", "ada-guidelines",
+        "--conflict", "Interval differs|ada-guidelines|Annual screening",
+    ])
+    assert result.exit_code == 0, result.output
+    data = load_yaml(tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml")
+    assert "concerns" in data
+    assert "conflicts" not in data
 
 
 def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
@@ -576,7 +592,7 @@ sections:
       evidence:
         - source: ada-guidelines
           locator: Section 2
-conflicts:
+concerns:
   - issue: Interval differs
     positions:
       - source: ada-guidelines
@@ -595,7 +611,7 @@ conflicts:
         "--required-section", "summary",
         "--required-section", "conditions",
         "--evidence-ref", "crit-001|A different statement|ada-guidelines|Section 2",
-        "--conflict", "Different issue|ada-guidelines|Annual screening",
+        "--concern", "Different issue|ada-guidelines|Annual screening",
         "--body-file", str(body_file),
     ])
     assert result.exit_code == 2
@@ -1042,8 +1058,36 @@ def test_approve_review_summary_written_to_plan(tmp_repo):
     assert plan["status"] == "approved"
 
 
-def test_approve_add_conflict_appends_to_conflicts(tmp_repo):
-    """--add-conflict appends to artifact's concerns list with concern/resolution keys."""
+def test_approve_add_concern_appends_to_concerns(tmp_repo):
+    """--add-concern appends to artifact's concerns list with concern/resolution keys."""
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "hba1c-target", "reviewer_decision": "pending-review",
+                    "approval_notes": "", "concerns": []}],
+    )
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "approve", "my-skill",
+        "--artifact", "hba1c-target",
+        "--decision", "approved",
+        "--add-concern", "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%",
+        "--add-concern", "Monitoring frequency|ADA annual preferred",
+        "--finalize", "--reviewer", "Test",
+    ])
+    assert result.exit_code == 0, result.output
+    plan = _read_plan(tmp_repo)
+    concerns = plan["artifacts"][0]["concerns"]
+    assert len(concerns) == 2
+    assert concerns[0]["concern"] == "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%"
+    assert concerns[0]["resolution"] == ""
+    assert concerns[1]["concern"] == "Monitoring frequency"
+    assert concerns[1]["resolution"] == "ADA annual preferred"
+
+
+def test_approve_add_conflict_alias_still_appends_to_concerns(tmp_repo):
+    """Legacy --add-conflict remains supported as an alias for --add-concern."""
     setup_topic_with_source(tmp_repo)
     write_extract_plan(
         tmp_repo,
@@ -1057,17 +1101,10 @@ def test_approve_add_conflict_appends_to_conflicts(tmp_repo):
         "--artifact", "hba1c-target",
         "--decision", "approved",
         "--add-conflict", "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%",
-        "--add-conflict", "Monitoring frequency|ADA annual preferred",
-        "--finalize", "--reviewer", "Test",
     ])
     assert result.exit_code == 0, result.output
     plan = _read_plan(tmp_repo)
-    concerns = plan["artifacts"][0]["concerns"]
-    assert len(concerns) == 2
-    assert concerns[0]["concern"] == "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%"
-    assert concerns[0]["resolution"] == ""
-    assert concerns[1]["concern"] == "Monitoring frequency"
-    assert concerns[1]["resolution"] == "ADA annual preferred"
+    assert plan["artifacts"][0]["concerns"][0]["concern"] == "HbA1c threshold: ADA <7.0% vs AACE ≤6.5%"
 
 
 # ── Formalize section mapping tests (T031) ───────────────────────────────────
@@ -1369,10 +1406,10 @@ def test_concurrent_approve_preserves_all_decisions(tmp_repo):
     )
 
 
-# ── conflicts / resolve-conflict commands ────────────────────────────────────
+# ── concerns / resolve-concern commands ──────────────────────────────────────
 
 
-def test_conflicts_reports_no_open_when_all_resolved(tmp_repo):
+def test_concerns_reports_no_open_when_all_resolved(tmp_repo):
     write_extract_plan(tmp_repo, artifacts=[{
         "name": "art-a",
         "artifact_type": "decision-table",
@@ -1384,12 +1421,12 @@ def test_conflicts_reports_no_open_when_all_resolved(tmp_repo):
         "approval_notes": "",
     }])
     runner = CliRunner()
-    result = runner.invoke(promote, ["conflicts", "my-skill"])
+    result = runner.invoke(promote, ["concerns", "my-skill"])
     assert result.exit_code == 0, result.output
-    assert "No open conflicts" in result.output
+    assert "No open concerns" in result.output
 
 
-def test_conflicts_lists_open_extract_conflicts(tmp_repo):
+def test_concerns_lists_open_extract_concerns(tmp_repo):
     write_extract_plan(tmp_repo, artifacts=[{
         "name": "art-a",
         "artifact_type": "decision-table",
@@ -1404,21 +1441,66 @@ def test_conflicts_lists_open_extract_conflicts(tmp_repo):
         "approval_notes": "",
     }])
     runner = CliRunner()
-    result = runner.invoke(promote, ["conflicts", "my-skill"])
+    result = runner.invoke(promote, ["concerns", "my-skill"])
     assert result.exit_code == 0, result.output
     assert "HbA1c threshold disagreement" in result.output
     assert "Screening interval" not in result.output  # resolved, should not appear
-    assert "1 open conflict" in result.output
+    assert "1 open concern" in result.output
 
 
-def test_conflicts_reports_no_open_when_no_plans_exist(tmp_repo):
+def test_concerns_reports_no_open_when_no_plans_exist(tmp_repo):
+    runner = CliRunner()
+    result = runner.invoke(promote, ["concerns", "my-skill"])
+    assert result.exit_code == 0, result.output
+    assert "No open concerns" in result.output
+
+
+def test_conflicts_alias_still_lists_open_concerns(tmp_repo):
+    write_extract_plan(tmp_repo, artifacts=[{
+        "name": "art-a",
+        "artifact_type": "decision-table",
+        "source_files": [],
+        "required_sections": [],
+        "key_questions": [],
+        "concerns": [{"concern": "ADA vs AACE", "resolution": ""}],
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }])
     runner = CliRunner()
     result = runner.invoke(promote, ["conflicts", "my-skill"])
     assert result.exit_code == 0, result.output
-    assert "No open conflicts" in result.output
+    assert "Open concerns" in result.output
 
 
-def test_resolve_conflict_updates_extract_plan(tmp_repo):
+def test_resolve_concern_updates_extract_plan(tmp_repo):
+    write_extract_plan(tmp_repo, artifacts=[{
+        "name": "art-a",
+        "artifact_type": "decision-table",
+        "source_files": [],
+        "required_sections": [],
+        "key_questions": [],
+        "concerns": [{"concern": "ADA vs AACE", "resolution": ""}],
+        "reviewer_decision": "pending-review",
+        "approval_notes": "",
+    }])
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "resolve-concern", "my-skill",
+        "--plan", "extract",
+        "--artifact", "art-a",
+        "--index", "0",
+        "--resolution", "ADA 2024 preferred.",
+    ])
+    assert result.exit_code == 0, result.output
+    assert "Resolved concern 0" in result.output
+
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
+    plan = load_yaml(plan_path)
+    art = next(a for a in plan["artifacts"] if a["name"] == "art-a")
+    assert art["concerns"][0]["resolution"] == "ADA 2024 preferred."
+
+
+def test_resolve_conflict_alias_still_updates_extract_plan(tmp_repo):
     write_extract_plan(tmp_repo, artifacts=[{
         "name": "art-a",
         "artifact_type": "decision-table",
@@ -1438,15 +1520,10 @@ def test_resolve_conflict_updates_extract_plan(tmp_repo):
         "--resolution", "ADA 2024 preferred.",
     ])
     assert result.exit_code == 0, result.output
-    assert "Resolved conflict 0" in result.output
-
-    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
-    plan = load_yaml(plan_path)
-    art = next(a for a in plan["artifacts"] if a["name"] == "art-a")
-    assert art["concerns"][0]["resolution"] == "ADA 2024 preferred."
+    assert "Resolved concern 0" in result.output
 
 
-def test_resolve_conflict_index_out_of_range(tmp_repo):
+def test_resolve_concern_index_out_of_range(tmp_repo):
     write_extract_plan(tmp_repo, artifacts=[{
         "name": "art-a",
         "artifact_type": "decision-table",
@@ -1459,7 +1536,7 @@ def test_resolve_conflict_index_out_of_range(tmp_repo):
     }])
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "resolve-conflict", "my-skill",
+        "resolve-concern", "my-skill",
         "--plan", "extract",
         "--artifact", "art-a",
         "--index", "5",
@@ -1468,20 +1545,20 @@ def test_resolve_conflict_index_out_of_range(tmp_repo):
     assert result.exit_code != 0
 
 
-def test_resolve_conflict_unknown_artifact(tmp_repo):
+def test_resolve_concern_unknown_artifact(tmp_repo):
     write_extract_plan(tmp_repo, artifacts=[{
         "name": "art-a",
         "artifact_type": "decision-table",
         "source_files": [],
         "required_sections": [],
         "key_questions": [],
-        "conflicts": [],
+        "concerns": [],
         "reviewer_decision": "pending-review",
         "approval_notes": "",
     }])
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "resolve-conflict", "my-skill",
+        "resolve-concern", "my-skill",
         "--plan", "extract",
         "--artifact", "no-such-artifact",
         "--index", "0",
@@ -1490,8 +1567,8 @@ def test_resolve_conflict_unknown_artifact(tmp_repo):
     assert result.exit_code != 0
 
 
-def test_conflicts_scans_both_plans_when_both_exist(tmp_repo):
-    """Conflicts from both extract and formalize plans appear in a single listing."""
+def test_concerns_scans_both_plans_when_both_exist(tmp_repo):
+    """Concerns from both extract and formalize plans appear in a single listing."""
     write_extract_plan(tmp_repo, artifacts=[{
         "name": "art-a",
         "artifact_type": "decision-table",
@@ -1509,8 +1586,8 @@ def test_conflicts_scans_both_plans_when_both_exist(tmp_repo):
         "conflicts": [{"conflict": "Formalize conflict", "resolution": ""}],
     }])
     runner = CliRunner()
-    result = runner.invoke(promote, ["conflicts", "my-skill"])
+    result = runner.invoke(promote, ["concerns", "my-skill"])
     assert result.exit_code == 0, result.output
     assert "Extract conflict" in result.output
     assert "Formalize conflict" in result.output
-    assert "2 open conflict" in result.output
+    assert "2 open concern" in result.output

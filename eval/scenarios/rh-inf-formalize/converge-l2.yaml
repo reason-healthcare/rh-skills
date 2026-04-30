@@ -55,7 +55,7 @@ workspace:
               - glycemic_targets
               - blood_pressure
               - ccm_components
-            conflicts: []
+            concerns: []
             reviewer_decision: approved
             approval_notes: ""
           - name: diabetes-ccm-quality-measures
@@ -65,7 +65,7 @@ workspace:
             clinical_question: "What CMS quality measures apply to diabetes CCM?"
             required_sections:
               - measures
-            conflicts: []
+            concerns: []
             reviewer_decision: approved
             approval_notes: ""
 

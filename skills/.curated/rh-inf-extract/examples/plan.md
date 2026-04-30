@@ -22,7 +22,7 @@ artifacts:
       - actions
       - rules
       - evidence_traceability
-      - conflicts
+      - concerns
     concerns:
       - concern: "ADA interval language is more explicit than USPSTF interval framing."
         resolution: ""

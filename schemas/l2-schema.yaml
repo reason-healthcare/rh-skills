@@ -22,6 +22,8 @@ optional_fields:
   - author             # author name or team
   - codings            # list of {code, system, display} — canonical codes for this artifact
                        # (e.g. LOINC panel codes for assessment instruments)
+  - concerns           # list of unresolved or resolved source concerns
+  - conflicts          # legacy alias for concerns
 
 status_values:
   - draft

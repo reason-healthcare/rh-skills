@@ -191,7 +191,7 @@ Creates `topics/<topic>/structured/<name>.yaml` with schema-valid YAML scaffold.
 When `--body-file` is provided, the YAML body is written verbatim and must
 already contain all required L2 fields. In that mode, repeated content flags
 such as `--clinical-question`, `--required-section`, `--evidence-ref`, and
-`--conflict` are treated as consistency checks rather than merge inputs.
+`--concern` are treated as consistency checks rather than merge inputs.
 
 For `decision-table` artifacts, use explicit ECA sections in the body:
 `events`, `conditions`, `actions`, and `rules`. `rh-skills render` now treats
