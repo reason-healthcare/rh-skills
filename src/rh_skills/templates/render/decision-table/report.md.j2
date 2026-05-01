@@ -17,39 +17,9 @@
 {{ sections.summary }}
 
 {% endif %}
-{% if events %}
-## Event Key
-
-| Key | Meaning |
-|---|---|
-{% for event in events -%}
-| {{ event.key }} | {{ event.meaning }}{% if event.description and event.description != event.meaning %} - {{ event.description }}{% endif %} |
-{% endfor %}
-
-{% endif %}
-{% if conditions %}
-## Condition Key
-
-| Key | Meaning | Allowed Values |
-|---|---|---|
-{% for condition in conditions -%}
-| {{ condition.key }} | {{ condition.meaning }} | {{ condition["values"] | join(', ') }} |
-{% endfor %}
-
-{% endif %}
-{% if actions %}
-## Action Key
-
-| Key | Meaning |
-|---|---|
-{% for action in actions -%}
-| {{ action.key }} | {{ action.meaning }} |
-{% endfor %}
-
-{% endif %}
 ## Rules
 
-|{% if events %} Event |{% endif %}{% for condition in conditions %} {{ condition.rule_header }} |{% endfor %} Actions |
+|{% if events %} Event Pattern |{% endif %}{% for condition in conditions %} {{ condition.rule_header }} |{% endfor %} Actions |
 |{% if events %}---|{% endif %}{% for condition in conditions %}---|{% endfor %}---|
 {% for rule in rules -%}
 |{% if events %} {{ rule.event }} |{% endif %}{% for value in rule.condition_values %} {{ value }} |{% endfor %} {{ rule.actions | join('; ') }} |

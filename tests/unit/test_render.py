@@ -10,7 +10,6 @@ from rh_skills.commands.render import (
     render,
     _check_completeness,
     REQUIRED_SECTIONS,
-    _truncate_table_label,
 )
 
 
@@ -107,15 +106,12 @@ def test_render_decision_table_shows_event_column_when_present(tmp_repo):
     assert result.exit_code == 0
     artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "good-dt"
     content = (artifact_dir / "good-dt-report.md").read_text()
-    assert "## Event Key" in content
-    assert "## Condition Key" in content
-    assert "## Action Key" in content
+    assert "Decision Matrix" in content
     assert "## Rules" in content
     assert "Screening encounter" in content
-    assert "| Event | c1 High risk | Actions |" in content
-    assert "| ev1 | Screening encounter" in content
-    assert "| c1 | High risk | Yes, No |" in content
-    assert "| a1 | Order test |" in content
+    assert "| Event Pattern | c1 High risk | Actions |" in content
+    assert "| ev1 Screening encounter | Yes | a1 Order test |" in content
+    assert "Order test" in content
 
 
 # ── Evidence-summary ────────────────────────────────────────────────────────────
@@ -291,10 +287,8 @@ def test_render_decision_table_complete(tmp_repo):
     assert not (art_dir / "dt-complete-decision-tree.md").exists()
     rules_table = (art_dir / "dt-complete-report.md").read_text()
     assert "Decision Matrix" in rules_table
-    assert "## Condition Key" in rules_table
-    assert "## Action Key" in rules_table
     assert "## Rules" in rules_table
-    assert "| Event | c1 Condition A | c2 Condition B | c3 Condition C | Actions |" in rules_table
+    assert "| Event Pattern | c1 Condition A | c2 Condition B | c3 Condition C | Actions |" in rules_table
     assert "a1 Action 1" in rules_table
 
 
@@ -311,7 +305,7 @@ def test_render_decision_table_incomplete(tmp_repo):
     assert "rules" in report.lower() or "Rule" in report
 
 
-def test_render_decision_table_truncates_long_condition_headers(tmp_repo):
+def test_render_decision_table_shows_full_long_labels(tmp_repo):
     _write_artifact(tmp_repo, "my-skill", "dt-long-header", {
         "id": "dt-long-header",
         "title": "Long Header Decision Table",
@@ -334,10 +328,9 @@ def test_render_decision_table_truncates_long_condition_headers(tmp_repo):
     assert result.exit_code == 0
     report_path = tmp_repo / "topics" / "my-skill" / "structured" / "dt-long-header" / "dt-long-header-report.md"
     report = report_path.read_text()
-    assert "| Event | c1 Significant... | Actions |" in report
-    assert "| c1 | Significant or persistent purulent nasal discharge | yes, no |" in report
-    assert f"a1 {_truncate_table_label('Consider prolonged oral antibiotic therapy', 24)}" in report
-    assert "| a1 | Consider prolonged oral antibiotic therapy |" in report
+    assert "| Event Pattern | c1 Significant or persistent purulent nasal discharge | Actions |" in report
+    assert "a1 Consider prolonged oral antibiotic therapy" in report
+    assert "| ev1 Review | yes |" in report
 
 
 # ── Idempotent re-render ────────────────────────────────────────────────────────
@@ -380,11 +373,6 @@ def test_completeness_complete_table():
     assert result["total_space"] == 8
     assert result["complete"] is True
     assert len(result["missing"]) == 0
-
-
-def test_truncate_table_label_prefers_word_boundary():
-    assert _truncate_table_label("Significant or persistent purulent nasal discharge") == "Significant..."
-    assert _truncate_table_label("High risk") == "High risk"
 
 
 def test_completeness_incomplete_table():
