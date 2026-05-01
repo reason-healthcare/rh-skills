@@ -79,6 +79,20 @@ top_level_fields:
       artifacts and cannot be fully resolved within a single artifact's
       concerns list. Leave as empty list when none are identified.
 
+  concept_review:
+    type: mapping
+    required: false
+    description: >
+      Optional concept-standardization review packet generated from normalized
+      source front matter. Present when source annotations include concepts.
+    guidance: >
+      First enrich with `rh-skills promote enrich-concepts <topic> ...`, then
+      review with `rh-skills promote review-concepts <topic>`. The packet
+      signals that ReasonHub MCP must be used to identify standardized codes
+      before human approval, and that only descendant is-a concepts should be
+      proposed as related approvals. The extract plan must not be finalized
+      while this review remains pending.
+
   artifacts:
     type: list            # list of artifact entries; see artifact_fields below
     required: true

@@ -60,14 +60,6 @@ def _parse_frontmatter(text: str) -> dict:
     return y.load(parts[1]) or {}
 
 
-def _load_concepts_yaml(tmp_repo, topic):
-    concepts_path = tmp_repo / "topics" / topic / "process" / "concepts.yaml"
-    if not concepts_path.exists():
-        return None
-    y = YAML(typ="safe")
-    return y.load(concepts_path.read_text())
-
-
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 def test_annotate_updates_normalized_frontmatter(tmp_repo):
@@ -92,8 +84,8 @@ def test_annotate_updates_normalized_frontmatter(tmp_repo):
     assert "Metoprolol" in names
 
 
-def test_annotate_creates_concepts_yaml(tmp_repo):
-    """concepts.yaml created with correct structure after annotate."""
+def test_annotate_writes_concepts_to_frontmatter_only(tmp_repo):
+    """Concept annotations now live only in normalized front matter."""
     _register_source(tmp_repo, "src-b")
     _create_normalized_md(tmp_repo, "src-b")
 
@@ -106,19 +98,16 @@ def test_annotate_creates_concepts_yaml(tmp_repo):
     ])
 
     assert result.exit_code == 0, result.output
-    data = _load_concepts_yaml(tmp_repo, "test-topic")
-    assert data is not None
-    assert data["topic"] == "test-topic"
-    names = [c["name"] for c in data["concepts"]]
+    norm = tmp_repo / "sources" / "normalized" / "src-b.md"
+    fm = _parse_frontmatter(norm.read_text())
+    names = [c["name"] for c in fm["concepts"]]
     assert "SBP" in names
     assert "ICD-10 I10" in names
-    for c in data["concepts"]:
-        assert "sources" in c
-        assert "src-b" in c["sources"]
+    assert not (tmp_repo / "topics" / "test-topic" / "process" / "concepts.yaml").exists()
 
 
 def test_annotate_append_across_calls(tmp_repo):
-    """Annotate same source twice; concepts accumulate in concepts.yaml (no dedup)."""
+    """Annotate same source twice; concepts accumulate in front matter (no dedup)."""
     _register_source(tmp_repo, "src-c")
     _create_normalized_md(tmp_repo, "src-c")
 
@@ -135,11 +124,11 @@ def test_annotate_append_across_calls(tmp_repo):
         "--concept", "Metoprolol:medication",
     ])
 
-    data = _load_concepts_yaml(tmp_repo, "test-topic")
-    # Without dedup, the second call appends — both Hypertension entries and Metoprolol are present
-    ht_entries = [c for c in data["concepts"] if c["name"].lower() == "hypertension"]
+    norm = tmp_repo / "sources" / "normalized" / "src-c.md"
+    fm = _parse_frontmatter(norm.read_text())
+    ht_entries = [c for c in fm["concepts"] if c["name"].lower() == "hypertension"]
     assert len(ht_entries) == 2
-    names = [c["name"] for c in data["concepts"]]
+    names = [c["name"] for c in fm["concepts"]]
     assert "Metoprolol" in names
 
 
@@ -161,8 +150,9 @@ def test_annotate_overwrite_replaces_source_concepts(tmp_repo):
         "--concept", "Metoprolol:medication",
     ])
 
-    data = _load_concepts_yaml(tmp_repo, "test-topic")
-    names = [c["name"] for c in data["concepts"]]
+    norm = tmp_repo / "sources" / "normalized" / "src-c2.md"
+    fm = _parse_frontmatter(norm.read_text())
+    names = [c["name"] for c in fm["concepts"]]
     assert "Metoprolol" in names
     assert "Hypertension" not in names
 
@@ -191,8 +181,8 @@ def test_annotate_append_to_normalized_frontmatter(tmp_repo):
     assert "Metoprolol" in names
 
 
-def test_annotate_two_sources_each_has_own_entry(tmp_repo):
-    """Annotate two sources with shared concept name; each source gets its own entry (no dedup)."""
+def test_annotate_two_sources_each_has_own_frontmatter_entry(tmp_repo):
+    """Two sources may repeat the same concept in their own normalized front matter."""
     _register_source(tmp_repo, "src-d")
     _register_source(tmp_repo, "src-e")
     _create_normalized_md(tmp_repo, "src-d")
@@ -210,12 +200,10 @@ def test_annotate_two_sources_each_has_own_entry(tmp_repo):
         "--concept", "Hypertension:condition",
     ])
 
-    data = _load_concepts_yaml(tmp_repo, "test-topic")
-    ht_entries = [c for c in data["concepts"] if c["name"].lower() == "hypertension"]
-    assert len(ht_entries) == 2
-    sources_seen = {ht["sources"][0] for ht in ht_entries}
-    assert "src-d" in sources_seen
-    assert "src-e" in sources_seen
+    fm_d = _parse_frontmatter((tmp_repo / "sources" / "normalized" / "src-d.md").read_text())
+    fm_e = _parse_frontmatter((tmp_repo / "sources" / "normalized" / "src-e.md").read_text())
+    assert [c["name"] for c in fm_d["concepts"]] == ["Hypertension"]
+    assert [c["name"] for c in fm_e["concepts"]] == ["Hypertension"]
 
 
 def test_annotate_event_appended(tmp_repo):
@@ -283,6 +271,7 @@ def test_annotate_concept_default_type_term(tmp_repo):
     ])
 
     assert result.exit_code == 0, result.output
-    data = _load_concepts_yaml(tmp_repo, "test-topic")
-    entry = next(c for c in data["concepts"] if c["name"] == "SomeConceptWithNoColon")
+    norm = tmp_repo / "sources" / "normalized" / "src-i.md"
+    fm = _parse_frontmatter(norm.read_text())
+    entry = next(c for c in fm["concepts"] if c["name"] == "SomeConceptWithNoColon")
     assert entry["type"] == "term"

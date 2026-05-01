@@ -33,6 +33,13 @@ reviewed_at: <ISO-8601 or null>
 review_summary: <free-text notes from reviewer>
 cross_artifact_issues:
   - <issue summary>
+concept_review:                    # present when normalized front matter includes concepts
+  source: normalized-frontmatter
+  status: <pending-review | approved>
+  concept_count: <int>
+  lookup_completed: <true | false>
+  review_artifact: topics/<topic>/process/reviews/concepts-review.yaml
+  final_artifact: topics/<topic>/structured/concepts/concepts.yaml
 artifacts:
   - name: <kebab-case>
     artifact_type: <catalog type>
@@ -92,6 +99,114 @@ Each `terminology` artifact entry in the plan SHOULD include a
 `candidate_codes[]` list. The reviewer inspects, prunes, or augments this list
 before approving. Approved codes carry forward into the L3 `value_sets[]`
 section during formalize.
+
+### Concept Review Packet
+
+When normalized source front matter contains `concepts[]`, extract planning also
+writes `topics/<topic>/process/reviews/concepts-review.yaml`. This packet:
+
+- deduplicates concepts across normalized sources
+- records source provenance
+- records the MCP lookup step before human approval
+- limits related-concept review to descendant `is-a` concepts
+
+Review it with:
+
+```sh
+rh-skills promote enrich-concepts <topic> --concept <name> --body-file <yaml>
+rh-skills promote review-concepts <topic>
+```
+
+When review is complete, the CLI writes:
+
+`topics/<topic>/structured/concepts/concepts.yaml`
+
+This L2 terminology artifact preserves approved concept codes and any approved
+descendant relationships for downstream formalization.
+
+#### concepts-review.yaml schema
+
+```yaml
+topic: <topic-slug>
+status: <pending-review | approved>
+generated_at: <ISO-8601 timestamp>
+reviewed_at: <ISO-8601 timestamp or null>
+review_summary: <optional free text>
+source: normalized-frontmatter
+lookup_completed: <true | false>
+lookup_policy:
+  service: reasonhub-mcp
+  directive: use-mcp-to-identify-standardized-codes
+  descendant_policy: descendants-only
+  approval_order: dedupe-then-mcp-lookup-then-human-approval
+review_artifact: topics/<topic>/process/reviews/concepts-review.yaml
+final_artifact: topics/<topic>/structured/concepts/concepts.yaml
+concepts:
+  - name: <concept name>
+    type: <concept type>
+    sources:
+      - <source slug>
+    source_files:
+      - sources/normalized/<source>.md
+    lookup_completed: <true | false>
+    lookup_query: <default MCP query string>
+    candidate_codes:
+      - system: <code system label or URI>
+        code: <candidate code>
+        display: <candidate display text>
+        confidence: <optional confidence label>
+        search_query: <query used in MCP>
+        related_candidates:
+          - system: <code system label or URI>
+            code: <descendant candidate code>
+            display: <descendant display>
+            relationship: is-a
+            confidence: <optional confidence label>
+    review_status: <pending-review | approved | excluded>
+    review_notes: <optional reviewer notes>
+    custom_concept: <true | false>
+    codes:
+      - system: <approved code system label or URI>
+        code: <approved code>
+        display: <approved display>
+        related:
+          - system: <approved descendant code system label or URI>
+            code: <approved descendant code>
+            display: <approved descendant display>
+            relationship: is-a
+```
+
+During concept review, a reviewer may also exclude a concept from the final L2
+terminology artifact. Excluded concepts remain in `concepts-review.yaml` with
+their reviewer note for provenance, but are omitted from
+`topics/<topic>/structured/concepts/concepts.yaml`.
+
+#### Final L2 terminology concept schema
+
+The resulting terminology-oriented L2 artifact should preserve approved concept
+codings using this shape:
+
+```yaml
+concepts:
+  - name: Loss of sense of smell
+    type: finding
+    codes:
+      - system: SNOMED-CT
+        code: 44169009
+        display: Anosmia (finding)
+        related:
+          - system: SNOMED-CT
+            code: 1279831004
+            display: Congenital insensitivity to pain, anosmia, neuropathic arthropathy
+            relationship: is-a
+          - system: SNOMED-CT
+            code: 230502003
+            display: Congenital anosmia (disorder)
+            relationship: is-a
+      - system: ICD-10-CM
+        code: R43.0
+        display: Anosmia
+```
 
 ---
 

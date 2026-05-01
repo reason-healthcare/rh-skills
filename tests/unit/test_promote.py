@@ -123,6 +123,15 @@ def setup_topic_with_normalized_sources(tmp_repo, topic_name="my-skill", source_
     for source_name in source_names:
         normalized_path = normalized_root / f"{source_name}.md"
         normalized_path.write_text(
+            "---\n"
+            f"source: {source_name}\n"
+            f"topic: {topic_name}\n"
+            "concepts:\n"
+            "  - name: Hypertension\n"
+            "    type: condition\n"
+            "  - name: Blood pressure screening\n"
+            "    type: procedure\n"
+            "---\n\n"
             f"{source_name} guidance covering screening criteria, workflow steps, and evidence traceability."
         )
         tracking["sources"].append({
@@ -137,7 +146,15 @@ def setup_topic_with_normalized_sources(tmp_repo, topic_name="my-skill", source_
         y.dump(tracking, f)
 
 
-def write_extract_plan(tmp_repo, topic_name="my-skill", status="approved", artifacts=None):
+def write_extract_plan(
+    tmp_repo,
+    topic_name="my-skill",
+    status="approved",
+    artifacts=None,
+    *,
+    concept_review_status="approved",
+    concept_lookup_completed=True,
+):
     plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "extract-plan.yaml"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     y = YAML()
@@ -150,6 +167,14 @@ def write_extract_plan(tmp_repo, topic_name="my-skill", status="approved", artif
         "reviewed_at": "2026-04-14T00:00:00Z" if status == "approved" else None,
         "review_summary": "",
         "cross_artifact_issues": [],
+        "concept_review": {
+            "source": "normalized-frontmatter",
+            "status": concept_review_status,
+            "concept_count": 2,
+            "lookup_completed": concept_lookup_completed,
+            "review_artifact": f"topics/{topic_name}/process/reviews/concepts-review.yaml",
+            "final_artifact": f"topics/{topic_name}/structured/concepts/concepts.yaml",
+        },
         "artifacts": artifacts or [],
     }
     buf = io.StringIO()
@@ -425,14 +450,29 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     assert plan["plan_type"] == "extract"
     assert plan["status"] == "pending-review"
     assert plan["artifacts"]
+    assert plan["concept_review"]["status"] == "pending-review"
+    assert plan["concept_review"]["concept_count"] == 2
+    assert plan["concept_review"]["lookup_completed"] is False
     artifact = plan["artifacts"][0]
     assert artifact["reviewer_decision"] == "pending-review"
     assert artifact["source_files"]
     assert "evidence_traceability" in artifact["required_sections"]
 
+    concept_review_path = tmp_repo / "topics" / "my-skill" / "process" / "reviews" / "concepts-review.yaml"
+    assert concept_review_path.exists()
+    concept_review = YAML(typ="safe").load(concept_review_path.read_text())
+    assert concept_review["status"] == "pending-review"
+    assert concept_review["lookup_completed"] is False
+    assert len(concept_review["concepts"]) == 2
+    hypertension = next(c for c in concept_review["concepts"] if c["name"] == "Hypertension")
+    assert sorted(hypertension["sources"]) == ["ada-screening-guideline", "uspstf-screening-update"]
+    assert hypertension["lookup_completed"] is False
+    assert hypertension["candidate_codes"] == []
+
     raw_readout = readout_path.read_text()
     assert "extract-plan.yaml" in raw_readout
     assert "Review Summary" in raw_readout
+    assert "Concept Review" in raw_readout
     assert "Proposed Artifacts" in raw_readout
     assert "Cross-Artifact Issues" in raw_readout
     assert "Implementation Readiness" in raw_readout
@@ -440,6 +480,168 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     tracking = load_yaml(tmp_repo / "tracking.yaml")
     topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
     assert "extract_planned" in [event["type"] for event in topic["events"]]
+
+
+def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    enrich_body = tmp_repo / "hypertension-candidates.yaml"
+    enrich_body.write_text(
+        "lookup_query: Hypertension\n"
+        "candidate_codes:\n"
+        "  - system: SNOMED-CT\n"
+        "    code: '38341003'\n"
+        "    display: Hypertensive disorder, systemic arterial (disorder)\n"
+        "    search_query: Hypertension\n"
+        "    confidence: high\n"
+        "    related_candidates:\n"
+        "      - system: SNOMED-CT\n"
+        "        code: '59621000'\n"
+        "        display: Essential hypertension (disorder)\n"
+        "        relationship: is-a\n"
+        "        confidence: medium\n"
+    )
+    result = runner.invoke(
+        promote,
+        ["enrich-concepts", "my-skill", "--concept", "Hypertension", "--type", "condition", "--body-file", str(enrich_body)],
+    )
+    assert result.exit_code == 0, result.output
+
+    enrich_body = tmp_repo / "bp-screening-candidates.yaml"
+    enrich_body.write_text(
+        "lookup_query: Blood pressure screening\n"
+        "candidate_codes:\n"
+        "  - system: SNOMED-CT\n"
+        "    code: '171207006'\n"
+        "    display: Blood pressure screening (procedure)\n"
+        "    search_query: Blood pressure screening\n"
+        "    confidence: high\n"
+    )
+    result = runner.invoke(
+        promote,
+        ["enrich-concepts", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure", "--body-file", str(enrich_body)],
+    )
+    assert result.exit_code == 0, result.output
+    plan = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text())
+    assert plan["concept_review"]["status"] == "pending-review"
+    assert plan["concept_review"]["lookup_completed"] is True
+
+    result = runner.invoke(
+        promote,
+        ["review-concepts", "my-skill"],
+        input=(
+            "approve\n"
+            "y\n"
+            "SNOMED-CT\n"
+            "38341003\n"
+            "Hypertensive disorder, systemic arterial (disorder)\n"
+            "y\n"
+            "SNOMED-CT\n"
+            "59621000\n"
+            "Essential hypertension (disorder)\n"
+            "n\n"
+            "n\n"
+            "\n"
+            "approve\n"
+            "y\n"
+            "SNOMED-CT\n"
+            "171207006\n"
+            "Blood pressure screening (procedure)\n"
+            "n\n"
+            "n\n"
+            "\n"
+        ),
+    )
+    assert result.exit_code == 0, result.output
+
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml"
+    assert artifact_path.exists()
+    artifact = YAML(typ="safe").load(artifact_path.read_text())
+    assert artifact["artifact_type"] == "terminology"
+    assert artifact["review_status"] == "approved"
+    plan = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text())
+    assert plan["concept_review"]["status"] == "approved"
+    hypertension = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
+    assert hypertension["codes"][0]["code"] == "38341003"
+    assert hypertension["codes"][0]["related"][0]["relationship"] == "is-a"
+
+
+def test_review_concepts_requires_mcp_enrichment(tmp_repo):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    result = runner.invoke(promote, ["review-concepts", "my-skill"])
+    assert result.exit_code != 0
+    assert "Complete RH MCP enrichment first" in result.output
+
+
+def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    hypertension_body = tmp_repo / "hypertension-candidates.yaml"
+    hypertension_body.write_text(
+        "lookup_query: Hypertension\n"
+        "candidate_codes:\n"
+        "  - system: SNOMED-CT\n"
+        "    code: '38341003'\n"
+        "    display: Hypertensive disorder, systemic arterial (disorder)\n"
+        "    search_query: Hypertension\n"
+    )
+    result = runner.invoke(
+        promote,
+        ["enrich-concepts", "my-skill", "--concept", "Hypertension", "--type", "condition", "--body-file", str(hypertension_body)],
+    )
+    assert result.exit_code == 0, result.output
+
+    screening_body = tmp_repo / "bp-screening-candidates.yaml"
+    screening_body.write_text(
+        "lookup_query: Blood pressure screening\n"
+        "candidate_codes:\n"
+        "  - system: SNOMED-CT\n"
+        "    code: '171207006'\n"
+        "    display: Blood pressure screening (procedure)\n"
+        "    search_query: Blood pressure screening\n"
+    )
+    result = runner.invoke(
+        promote,
+        ["enrich-concepts", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure", "--body-file", str(screening_body)],
+    )
+    assert result.exit_code == 0, result.output
+
+    result = runner.invoke(
+        promote,
+        ["review-concepts", "my-skill"],
+        input=(
+            "exclude\n"
+            "Too broad for this computable guideline\n"
+            "approve\n"
+            "y\n"
+            "SNOMED-CT\n"
+            "171207006\n"
+            "Blood pressure screening (procedure)\n"
+            "n\n"
+            "\n"
+        ),
+    )
+    assert result.exit_code == 0, result.output
+
+    review_packet = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "process" / "reviews" / "concepts-review.yaml").read_text())
+    hypertension = next(c for c in review_packet["concepts"] if c["name"] == "Hypertension")
+    assert hypertension["review_status"] == "excluded"
+    assert hypertension["review_notes"] == "Too broad for this computable guideline"
+
+    artifact = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text())
+    concept_names = [c["name"] for c in artifact["concepts"]]
+    assert "Hypertension" not in concept_names
+    assert concept_names == ["Blood pressure screening"]
 
 
 def test_plan_warns_and_does_not_write_without_normalized_sources(tmp_repo):
@@ -719,6 +921,18 @@ def test_approved_extract_artifacts_selects_only_approved_entries_when_not_stric
     assert [artifact["name"] for artifact in approved] == ["screening-criteria"]
 
 
+def test_approved_extract_artifacts_blocks_pending_concept_review(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        artifacts=[{"name": "screening-criteria", "reviewer_decision": "approved"}],
+        concept_review_status="pending-review",
+        concept_lookup_completed=False,
+    )
+    with pytest.raises(click.UsageError, match="Concept review is not approved"):
+        _approved_extract_artifacts("my-skill")
+
+
 def test_approved_extract_artifacts_blocks_unapproved_entries_in_strict_mode(tmp_repo):
     setup_topic_with_source(tmp_repo)
     write_extract_plan(
@@ -988,6 +1202,24 @@ def test_approve_finalize_sets_status_and_timestamp(tmp_repo):
     assert plan["status"] == "approved"
     assert plan["reviewer"] == "Jane"
     assert plan["reviewed_at"] is not None
+
+
+def test_approve_finalize_blocks_pending_concept_review(tmp_repo):
+    setup_topic_with_source(tmp_repo)
+    write_extract_plan(
+        tmp_repo,
+        status="pending-review",
+        artifacts=[{"name": "screening-criteria", "reviewer_decision": "approved", "approval_notes": ""}],
+        concept_review_status="pending-review",
+        concept_lookup_completed=False,
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        promote,
+        ["approve", "my-skill", "--finalize", "--reviewer", "Jane"],
+    )
+    assert result.exit_code != 0
+    assert "Concept review is not approved" in result.output
 
 
 def test_approve_no_plan_raises_usage_error(tmp_repo):

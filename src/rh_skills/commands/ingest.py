@@ -260,40 +260,40 @@ def _load_frontmatter(markdown_path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
-def _validate_concepts_file(topic: str) -> tuple[bool, list[str]]:
-    concepts_path = repo_root() / "topics" / topic / "process" / "concepts.yaml"
-    if not concepts_path.exists():
-        return False, [f"concepts.yaml missing: {concepts_path}"]
-
-    try:
-        data = _yaml_safe().load(concepts_path.read_text()) or {}
-    except Exception as exc:
-        return False, [f"concepts.yaml parse error: {exc}"]
+def _validate_topic_frontmatter_concepts(topic: str) -> tuple[bool, list[str]]:
+    """Validate concept annotations stored in normalized source front matter."""
+    tracking = _tracking_or_empty()
+    discovery = _load_discovery_plan(topic) or {}
+    discovery_sources = discovery.get("sources", []) if isinstance(discovery.get("sources", []), list) else []
+    discovery_names = {
+        source.get("name")
+        for source in discovery_sources
+        if source.get("name")
+    }
+    tracked_sources = _topic_tracked_sources(tracking, topic, discovery_names)
 
     errors: list[str] = []
-    if not isinstance(data, dict):
-        return False, ["concepts.yaml is not a YAML mapping"]
-    if data.get("topic") != topic:
-        errors.append(f"concepts.yaml topic mismatch: expected {topic}")
-    concepts = data.get("concepts")
-    if not isinstance(concepts, list):
-        errors.append("concepts.yaml concepts must be a list")
-        return False, errors
-
-    for index, concept in enumerate(concepts, start=1):
-        if not isinstance(concept, dict):
-            errors.append(f"concept #{index} is not a mapping")
+    for source in tracked_sources:
+        source_name = source.get("name") or source.get("id") or "<unknown>"
+        normalized_rel = source.get("normalized", f"sources/normalized/{source_name}.md")
+        normalized_path = repo_root() / normalized_rel
+        if not normalized_path.exists():
             continue
-        name = concept.get("name")
-        ctype = concept.get("type")
-        sources = concept.get("sources")
-        if not name:
-            errors.append(f"concept #{index} missing name")
+        frontmatter = _load_frontmatter(normalized_path)
+        concepts = frontmatter.get("concepts")
+        if concepts is None:
             continue
-        if not ctype:
-            errors.append(f"concept '{name}' missing type")
-        if not isinstance(sources, list) or not sources:
-            errors.append(f"concept '{name}' missing sources[]")
+        if not isinstance(concepts, list):
+            errors.append(f"{normalized_rel}: concepts must be a list")
+            continue
+        for index, concept in enumerate(concepts, start=1):
+            if not isinstance(concept, dict):
+                errors.append(f"{normalized_rel}: concept #{index} is not a mapping")
+                continue
+            if not concept.get("name"):
+                errors.append(f"{normalized_rel}: concept #{index} missing name")
+            if not concept.get("type"):
+                errors.append(f"{normalized_rel}: concept #{index} missing type")
 
     return not errors, errors
 
@@ -414,11 +414,11 @@ def _verify_topic(topic: str) -> None:
             click.echo(f"  - {path.name}")
         any_failures = True
 
-    concepts_valid, concept_errors = _validate_concepts_file(topic)
+    concepts_valid, concept_errors = _validate_topic_frontmatter_concepts(topic)
     if concepts_valid:
-        click.echo("concepts.yaml: VALID")
+        click.echo("normalized front matter concepts: VALID")
     else:
-        click.echo("concepts.yaml: INVALID")
+        click.echo("normalized front matter concepts: INVALID")
         for error in concept_errors:
             click.echo(f"  - {error}")
         any_failures = True
@@ -700,7 +700,7 @@ def classify(name, topic, source_type, evidence_level, tags):
 @click.option("--overwrite", is_flag=True, default=False,
               help="Replace existing concepts instead of appending (default: append).")
 def annotate(name, topic, concepts, overwrite):
-    """Add concept annotations to normalized.md and update concepts.yaml.
+    """Add concept annotations to normalized.md front matter.
 
     By default, new concepts are appended to any already present. Pass
     --overwrite to replace all existing concepts for this source.
@@ -746,41 +746,11 @@ def annotate(name, topic, concepts, overwrite):
     else:
         existing_fm = fm_data.get("concepts") or []
         fm_data["concepts"] = list(existing_fm) + new_fm_concepts
+    total_concepts = len(fm_data["concepts"])
     buf = io.StringIO()
     _y.dump(dict(fm_data), buf)
     new_fm = buf.getvalue()
     normalized_md.write_text(f"---\n{new_fm}---\n\n{body.lstrip()}")
-
-    # Update concepts.yaml
-    concepts_path = repo_root() / "topics" / topic / "process" / "concepts.yaml"
-    concepts_path.parent.mkdir(parents=True, exist_ok=True)
-    _yc = _YAML()
-    _yc.default_flow_style = False
-    if concepts_path.exists():
-        existing = _yc.load(concepts_path.read_text())
-        if existing is None:
-            existing = {"topic": topic, "generated": now_iso(), "concepts": []}
-    else:
-        existing = {"topic": topic, "generated": now_iso(), "concepts": []}
-    existing_concepts = existing.get("concepts") or []
-
-    if overwrite:
-        # Remove all entries previously attributed solely to this source, then add new ones.
-        existing_concepts = [
-            ec for ec in existing_concepts
-            if ec.get("sources") != [name]
-        ]
-
-    for pc in parsed_concepts:
-        existing_concepts.append({
-            "name": pc["name"],
-            "type": pc["type"],
-            "sources": [name],
-        })
-    existing["concepts"] = existing_concepts
-    buf2 = io.StringIO()
-    _yc.dump(dict(existing), buf2)
-    concepts_path.write_text(buf2.getvalue())
 
     # Update tracking.yaml — soft-fail if source not found
     try:
@@ -794,7 +764,7 @@ def annotate(name, topic, concepts, overwrite):
             for s in tracking.get("sources", []):
                 if s.get("name") == name:
                     s["annotated_at"] = now_iso()
-                    s["concept_count"] = len(parsed_concepts)
+                    s["concept_count"] = total_concepts
                     s["topic"] = topic
             append_root_event(
                 tracking, "source_annotated",
@@ -812,7 +782,10 @@ def annotate(name, topic, concepts, overwrite):
         except Exception:
             pass
 
-    click.echo(f"✓ Annotated: {name} ({len(parsed_concepts)} concepts added to concepts.yaml)")
+    click.echo(
+        f"✓ Annotated: {name} "
+        f"({len(parsed_concepts)} concepts written; {total_concepts} now in normalized front matter)"
+    )
 
 
 @ingest.command()

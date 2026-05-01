@@ -195,7 +195,7 @@ rh-skills ingest annotate acc-aha-2017-hypertension \
   --concept "Cardiovascular Risk:term"
 ```
 ```
-✓ Annotated: acc-aha-2017-hypertension (8 concepts added to concepts.yaml)
+✓ Annotated: acc-aha-2017-hypertension (8 concepts written; 8 now in normalized front matter)
 ```
 
 Reading `sources/normalized/uspstf-hypertension-screening.md`…
@@ -209,7 +209,7 @@ rh-skills ingest annotate uspstf-hypertension-screening \
   --concept "Screening Interval:measure"
 ```
 ```
-✓ Annotated: uspstf-hypertension-screening (4 concepts added to concepts.yaml)
+✓ Annotated: uspstf-hypertension-screening (4 concepts written; 4 now in normalized front matter)
 ```
 
 Reading `sources/normalized/jnc8-hypertension-management.md`…
@@ -224,7 +224,7 @@ rh-skills ingest annotate jnc8-hypertension-management \
   --concept "Calcium Channel Blocker:medication"
 ```
 ```
-✓ Annotated: jnc8-hypertension-management (5 concepts added to concepts.yaml)
+✓ Annotated: jnc8-hypertension-management (5 concepts written; 5 now in normalized front matter)
 ```
 
 ```
@@ -248,12 +248,12 @@ Ingest readiness for 'young-adult-hypertension'
 acc-aha-2017-hypertension: file=OK checksum=OK normalized=YES classified=YES annotated=YES
 uspstf-hypertension-screening: file=OK checksum=OK normalized=YES classified=YES annotated=YES
 jnc8-hypertension-management: file=OK checksum=OK normalized=YES classified=YES annotated=YES
-concepts.yaml: VALID
+normalized front matter concepts: VALID
 ```
 
 **Per-source status:** all three sources are present, checksum-stable, normalized, classified, and annotated.
 
-**concepts.yaml validation:** ✓ valid schema and source backlinks present
+**Front matter concept validation:** ✓ valid `concepts[]` structure present in normalized source files
 
 ```
 ▸ rh-inf-ingest  young-adult-hypertension
