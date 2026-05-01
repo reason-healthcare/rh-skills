@@ -155,32 +155,6 @@ sources:
 
 ---
 
-## concepts.yaml Schema
-
-`topics/<topic>/process/concepts.yaml` is produced and updated by `rh-skills ingest annotate`.
-
-```yaml
-topic: "<topic-slug>"
-generated: "<ISO-8601 timestamp>"
-concepts:
-  - name: "<canonical concept name>"
-    type: "<concept type>"        # see Concept Type Vocabulary above
-    sources:
-      - "<source-name>"
-
-  - name: "SNOMEDCT 897657000 Chronic rhinosinusitis"
-    type: "code"
-    sources:
-      - "<source-name>"
-```
-
-Each call to `rh-skills ingest annotate` **appends** new concept entries to this file (one
-entry per concept per source). Pass `--overwrite` to replace entries previously written for
-that source. Downstream skills (`rh-inf-extract`, `rh-inf-formalize`) consume this file as
-an accumulated vocabulary; any deduplication of concept names is their responsibility.
-
----
-
 ## normalized.md Frontmatter Schema
 
 Every `sources/normalized/<name>.md` begins with a YAML frontmatter block:
@@ -199,3 +173,9 @@ concepts:                          # added by rh-skills ingest annotate
 
 <extracted markdown content>
 ```
+
+`rh-skills ingest annotate` updates only this front matter. By default it
+appends concepts already present for the source; pass `--overwrite` to replace
+the source's existing concept list. Downstream extract planning is responsible
+for deduplicating concepts across normalized sources and producing any review
+packets or terminology artifacts.

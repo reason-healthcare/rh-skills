@@ -132,14 +132,6 @@ def _create_normalized_md(tmp_repo, name, topic="test-topic", *, concepts=None, 
     return norm
 
 
-def _write_concepts_yaml(tmp_repo, topic, concepts):
-    path = tmp_repo / "topics" / topic / "process" / "concepts.yaml"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    y = YAML()
-    y.default_flow_style = False
-    y.dump({"topic": topic, "generated": "2025-01-01T00:00:00Z", "concepts": concepts}, path)
-    return path
-
 def test_plan_without_topic_summarizes_untracked_files_and_register_commands(tmp_repo):
     (tmp_repo / "sources" / "manual.pdf").write_text("manual file")
 
@@ -329,7 +321,7 @@ def test_verify_no_sources_exits_cleanly(tmp_repo):
     assert "No" in result.output
 
 
-def test_verify_topic_reports_readiness_and_valid_concepts(tmp_repo):
+def test_verify_topic_reports_readiness_and_valid_frontmatter_concepts(tmp_repo):
     src = tmp_repo / "sources" / "topic-source.md"
     src.write_text("Tracked source")
     _register_source(
@@ -349,19 +341,13 @@ def test_verify_topic_reports_readiness_and_valid_concepts(tmp_repo):
         topic="hypertension",
         concepts=[{"name": "Hypertension", "type": "condition"}],
     )
-    _write_concepts_yaml(
-        tmp_repo,
-        "hypertension",
-        [{"name": "Hypertension", "type": "condition", "sources": ["topic-source"]}],
-    )
-
     runner = CliRunner()
     result = runner.invoke(ingest, ["verify", "hypertension"])
 
     assert result.exit_code == 0, result.output
     assert "Ingest readiness for 'hypertension'" in result.output
     assert "topic-source: file=OK checksum=OK normalized=YES classified=YES annotated=YES" in result.output
-    assert "concepts.yaml: VALID" in result.output
+    assert "normalized front matter concepts: VALID" in result.output
 
 
 def test_verify_topic_reports_untracked_manual_files(tmp_repo):

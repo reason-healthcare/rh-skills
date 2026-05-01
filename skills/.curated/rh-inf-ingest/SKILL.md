@@ -4,8 +4,8 @@ description: >
   Source preparation skill for the HI evidence pipeline. Normalizes all files
   in sources/ to Markdown, infers and initializes topics, classifies each source
   (using discovery-plan.yaml as optional enrichment when present), and annotates
-  with concept metadata. Produces concepts.yaml as an accumulated concept registry for
-  downstream extraction. Modes: plan · implement · verify.
+  with concept metadata in normalized front matter for downstream extraction.
+  Modes: plan · implement · verify.
 compatibility: "rh-skills >= 0.1.0"
 context_files:
   - reference.md
@@ -45,11 +45,11 @@ manually) and drives the full pipeline:
    if present
 5. **Annotate** — identify key clinical concepts, prefer canonical clinical names,
   and add terminology-aligned code concepts when confidence is high; write them
-  into `sources/normalized/<name>.md` frontmatter and `topics/<topic>/process/concepts.yaml`
-  via `rh-skills ingest annotate`
+  into `sources/normalized/<name>.md` front matter via `rh-skills ingest annotate`
 
-The result is a `concepts.yaml` that downstream skills
-(`rh-inf-extract`, `rh-inf-formalize`) consume to advance artifacts toward L2 and L3.
+The result is a set of normalized source files whose front matter carries the
+concept annotations that downstream skills (`rh-inf-extract`, `rh-inf-formalize`)
+consume to advance artifacts toward L2 and L3.
 
 All file I/O is delegated exclusively to the `rh-skills` CLI. The agent performs
 reasoning (concept identification, classification proposals, topic name inference).
@@ -359,11 +359,11 @@ Annotation guidance:
 By default, `annotate` **appends** new concepts to any already recorded for this source.
 Pass `--overwrite` to replace all existing concepts for the source.
 
-**⚠️ CRITICAL — annotate commands MUST be run serially (one at a time).** All
-`annotate` calls write to the same `topics/<topic>/process/concepts.yaml` file.
-Running two annotate commands concurrently causes a write race — the second write
-overwrites the first, silently dropping concepts. Always wait for each `annotate`
-to complete before starting the next.
+**⚠️ CRITICAL — annotate commands SHOULD still be run serially (one at a time).**
+Each call rewrites the normalized file's front matter for that source. Running
+two annotate commands against the same source concurrently risks clobbering
+front-matter changes. Always wait for each `annotate` to complete before
+starting the next call for the same source.
 
 See `./reference.md` for the concept type vocabulary.
 
@@ -398,8 +398,9 @@ write any files or events; all tracking writes go via `rh-skills` CLI in impleme
    - Check `sources/normalized/<name>.md` exists
    - Check `source_classified` event present in tracking events
    - Check `source_annotated` event present in tracking events
-3. Validate `topics/<topic>/process/concepts.yaml` schema:
-   - Each entry must have `name`, `type`, `sources[]`
+3. Validate concept annotations in `sources/normalized/<name>.md` front matter:
+   - `concepts` must be a list when present
+   - Each concept entry must have `name` and `type`
 4. Print per-source table:
 
   | Source | Registered | Normalized | Classified | Annotated |

@@ -27,6 +27,8 @@ optional_fields:
   - sections           # artifact-type-specific structured content
   - concerns           # list of unresolved or resolved source concerns
   - conflicts          # legacy alias for concerns
+  - review_status      # auxiliary reviewer state for partially reviewed extract outputs
+  - concepts           # deduplicated concept catalog used by terminology-oriented L2 artifacts
 
 artifact_types:
   - evidence-summary

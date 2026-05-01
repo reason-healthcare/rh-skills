@@ -119,6 +119,14 @@ def _extract_readout_path(topic: str) -> Path:
     return topic_dir(topic) / "process" / "plans" / "extract-plan-readout.md"
 
 
+def _concept_review_path(topic: str) -> Path:
+    return topic_dir(topic) / "process" / "reviews" / "concepts-review.yaml"
+
+
+def _concept_artifact_path(topic: str) -> Path:
+    return topic_dir(topic) / "structured" / "concepts" / "concepts.yaml"
+
+
 def _formalize_plan_path(topic: str) -> Path:
     return topic_dir(topic) / "process" / "plans" / "formalize-plan.yaml"
 
@@ -153,6 +161,7 @@ def _load_formalize_plan(topic: str) -> dict:
 
 def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict]:
     plan = _load_extract_plan(topic)
+    _require_concept_review_approved(plan)
     if plan.get("status") != "approved":
         raise click.UsageError(
             "extract-plan.yaml is not approved. Review and update the plan before implement."
@@ -173,6 +182,16 @@ def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict
             "Artifacts not approved for implementation: " + ", ".join(blocked)
         )
     return approved
+
+
+def _require_concept_review_approved(plan: dict) -> None:
+    concept_review = plan.get("concept_review") or {}
+    if concept_review and concept_review.get("status") != "approved":
+        topic = plan.get("topic", "<topic>")
+        raise click.UsageError(
+            "Concept review is not approved. "
+            f"Run 'rh-skills promote review-concepts {topic}' before finalizing or implementing extract artifacts."
+        )
 
 
 def _concern_text(item: object) -> str:
@@ -913,6 +932,255 @@ def _normalized_source_records(tracking: dict, topic: str) -> list[dict]:
     return records
 
 
+def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
+    """Return deduplicated concepts aggregated from normalized front matter."""
+    deduped: dict[tuple[str, str], dict] = {}
+    for record in source_records:
+        frontmatter = _parse_markdown_frontmatter(record["path"])
+        concepts = frontmatter.get("concepts") or []
+        if not isinstance(concepts, list):
+            continue
+        for concept in concepts:
+            if not isinstance(concept, dict):
+                continue
+            name = str(concept.get("name") or "").strip()
+            concept_type = str(concept.get("type") or "").strip()
+            if not name or not concept_type:
+                continue
+            key = (name.casefold(), concept_type.casefold())
+            entry = deduped.setdefault(
+                key,
+                {
+                    "name": name,
+                    "type": concept_type,
+                    "sources": [],
+                    "source_files": [],
+                },
+            )
+            if record["name"] not in entry["sources"]:
+                entry["sources"].append(record["name"])
+            if record["relative_path"] not in entry["source_files"]:
+                entry["source_files"].append(record["relative_path"])
+    return sorted(
+        deduped.values(),
+        key=lambda item: (item["name"].casefold(), item["type"].casefold()),
+    )
+
+
+def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
+    if not concepts:
+        return None
+    return {
+        "source": "normalized-frontmatter",
+        "status": "pending-review",
+        "concept_count": len(concepts),
+        "lookup_completed": False,
+        "review_artifact": f"topics/{topic}/process/reviews/concepts-review.yaml",
+        "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
+    }
+
+
+def _build_concept_review_packet(topic: str, concepts: list[dict]) -> dict:
+    return {
+        "topic": topic,
+        "status": "pending-review",
+        "concept_count": len(concepts),
+        "generated_at": now_iso(),
+        "reviewed_at": None,
+        "review_summary": "",
+        "source": "normalized-frontmatter",
+        "lookup_completed": False,
+        "lookup_policy": {
+            "service": "reasonhub-mcp",
+            "directive": "use-mcp-to-identify-standardized-codes",
+            "descendant_policy": "descendants-only",
+            "approval_order": "dedupe-then-mcp-lookup-then-human-approval",
+        },
+        "review_artifact": f"topics/{topic}/process/reviews/concepts-review.yaml",
+        "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
+        "concepts": [
+            {
+                "name": concept["name"],
+                "type": concept["type"],
+                "sources": list(concept["sources"]),
+                "source_files": list(concept["source_files"]),
+                "lookup_completed": False,
+                "lookup_query": concept["name"],
+                "candidate_codes": [],
+                "review_status": "pending-review",
+                "review_notes": "",
+                "custom_concept": False,
+                "codes": [],
+            }
+            for concept in concepts
+        ],
+    }
+
+
+def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
+    reviewed_concepts = [
+        concept
+        for concept in (review_packet.get("concepts", []) or [])
+        if concept.get("review_status") != "excluded"
+    ]
+    derived_from = sorted({
+        source
+        for concept in reviewed_concepts
+        for source in (concept.get("sources") or [])
+    })
+    evidence_traceability = []
+    concept_rows = []
+    for index, concept in enumerate(reviewed_concepts, start=1):
+        evidence_traceability.append({
+            "claim_id": f"concept-{index:03d}",
+            "statement": (
+                f"Concept '{concept.get('name', '')}' ({concept.get('type', '')}) "
+                "was captured from normalized source front matter."
+            ),
+            "evidence": [
+                {
+                    "source": source_name,
+                    "locator": "frontmatter.concepts[]",
+                }
+                for source_name in (concept.get("sources") or [])
+            ],
+        })
+        concept_row = {
+            "name": concept.get("name", ""),
+            "type": concept.get("type", ""),
+        }
+        codes = concept.get("codes") or []
+        if codes:
+            concept_row["codes"] = codes
+        if concept.get("custom_concept"):
+            concept_row["custom_concept"] = True
+        if concept.get("review_notes"):
+            concept_row["notes"] = concept["review_notes"]
+        concept_rows.append(concept_row)
+
+    return {
+        "id": "concepts",
+        "name": "concepts",
+        "title": f"{_human_title(topic)} Concept Catalog",
+        "version": "1.0.0",
+        "status": "draft",
+        "domain": "terminology",
+        "description": (
+            "Deduplicated concept catalog derived from normalized source front matter "
+            "and reviewed for standardized coding."
+        ),
+        "derived_from": derived_from,
+        "artifact_type": "terminology",
+        "clinical_question": (
+            "Which deduplicated concepts from normalized front matter should be "
+            "represented with standardized codes and approved descendants?"
+        ),
+        "review_status": review_packet.get("status", "pending-review"),
+        "sections": {
+            "summary": (
+                "Terminology review output derived from normalized front matter. "
+                "Each concept was deduplicated across sources before human review."
+            ),
+            "evidence_traceability": evidence_traceability,
+        },
+        "concepts": concept_rows,
+    }
+
+
+def _write_concept_review_packet(topic: str, packet: dict) -> Path:
+    review_path = _concept_review_path(topic)
+    review_path.parent.mkdir(parents=True, exist_ok=True)
+    buf = io.StringIO()
+    _yaml_rt().dump(packet, buf)
+    review_path.write_text(buf.getvalue())
+    return review_path
+
+
+def _sync_plan_concept_review(topic: str, packet: dict) -> None:
+    plan_path = _extract_plan_path(topic)
+    readout_path = _extract_readout_path(topic)
+    if not plan_path.exists():
+        return
+    plan = _yaml_safe().load(plan_path.read_text()) or {}
+    if not isinstance(plan, dict):
+        return
+    concept_review = plan.get("concept_review") or {}
+    if not concept_review:
+        return
+    concept_review["status"] = packet.get("status", concept_review.get("status", "pending-review"))
+    concept_review["concept_count"] = packet.get("concept_count", concept_review.get("concept_count", 0))
+    concept_review["review_artifact"] = packet.get("review_artifact", concept_review.get("review_artifact", ""))
+    concept_review["final_artifact"] = packet.get("final_artifact", concept_review.get("final_artifact", ""))
+    concept_review["lookup_completed"] = packet.get("lookup_completed", concept_review.get("lookup_completed", False))
+    plan["concept_review"] = concept_review
+    _write_plan_and_readout(plan_path, readout_path, plan)
+
+
+def _write_concepts_l2_artifact(topic: str, tracking: dict, review_packet: dict) -> Path:
+    artifact_path = _concept_artifact_path(topic)
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact = _build_concepts_l2_artifact(topic, review_packet)
+    buf = io.StringIO()
+    _yaml_rt().dump(artifact, buf)
+    artifact_path.write_text(buf.getvalue())
+
+    checksum = sha256_file(artifact_path)
+    topic_entry = require_topic(tracking, topic)
+    structured = topic_entry.setdefault("structured", [])
+    entry = next((item for item in structured if item.get("name") == "concepts"), None)
+    payload = {
+        "name": "concepts",
+        "file": f"topics/{topic}/structured/concepts/concepts.yaml",
+        "created_at": now_iso(),
+        "checksum": checksum,
+        "derived_from": artifact.get("derived_from", []),
+        "artifact_type": "terminology",
+    }
+    if entry is None:
+        structured.append(payload)
+    else:
+        entry.update(payload)
+    append_topic_event(
+        tracking,
+        topic,
+        "structured_derived",
+        "Derived concepts terminology artifact from normalized front matter review",
+    )
+    save_tracking(tracking)
+    return artifact_path
+
+
+def _load_concept_review_packet(topic: str) -> dict:
+    review_path = _concept_review_path(topic)
+    if not review_path.exists():
+        raise click.UsageError(
+            f"No concept review packet found. Run 'rh-skills promote plan {topic}' first."
+        )
+    packet = _yaml_safe().load(review_path.read_text()) or {}
+    if not isinstance(packet, dict):
+        raise click.UsageError(f"Concept review packet is empty or invalid: {review_path}")
+    return packet
+
+
+def _find_review_concept(packet: dict, name: str, concept_type: str | None) -> dict:
+    matches = [
+        concept
+        for concept in (packet.get("concepts", []) or [])
+        if concept.get("name") == name and (concept_type is None or concept.get("type") == concept_type)
+    ]
+    if not matches:
+        raise click.UsageError(
+            f"Concept '{name}'"
+            + (f" ({concept_type})" if concept_type else "")
+            + " not found in concepts-review.yaml."
+        )
+    if len(matches) > 1:
+        raise click.UsageError(
+            f"Concept name '{name}' is ambiguous in concepts-review.yaml; re-run with --type."
+        )
+    return matches[0]
+
+
 _EVIDENCE_SUMMARY_FALLBACK = {
     "artifact_type": "evidence-summary",
     "section": "summary_points",
@@ -1083,7 +1351,7 @@ def _build_plan_artifact_entry(group: dict, concerns: list[dict] | None = None) 
     }
 
 
-def _render_extract_plan(topic: str, artifacts: list[dict], has_concepts: bool) -> str:
+def _render_extract_plan(topic: str, artifacts: list[dict], concept_review: dict | None) -> str:
     """Return pure-YAML control file content for extract-plan.yaml."""
     plan = {
         "topic": topic,
@@ -1095,6 +1363,8 @@ def _render_extract_plan(topic: str, artifacts: list[dict], has_concepts: bool) 
         "cross_artifact_issues": [],
         "artifacts": artifacts,
     }
+    if concept_review:
+        plan["concept_review"] = concept_review
     buf = io.StringIO()
     _yaml_rt().dump(plan, buf)
     return buf.getvalue()
@@ -1117,6 +1387,7 @@ def _render_extract_readout(plan: dict) -> str:
     reviewed_at = plan.get("reviewed_at") or ""
     review_summary = plan.get("review_summary") or ""
     cross_issues = plan.get("cross_artifact_issues", []) or []
+    concept_review = plan.get("concept_review") or {}
 
     status_icon = "✅ APPROVED" if status == "approved" else "⏳ PENDING REVIEW"
 
@@ -1134,11 +1405,30 @@ def _render_extract_readout(plan: dict) -> str:
         f"- Plan status: `{status}`",
         f"- Proposed artifacts: {len(artifacts)}",
     ]
+    if concept_review:
+        lines.append(
+            f"- Concept review: `{concept_review.get('status', 'pending-review')}` "
+            f"({concept_review.get('concept_count', 0)} deduplicated concept(s))"
+        )
+        lines.append(f"- MCP lookup completed: `{concept_review.get('lookup_completed', False)}`")
     if review_summary:
         lines.append(f"- Notes: {review_summary}")
     if status != "approved":
         lines.append(f"- Reviewer action required: run `rh-skills promote approve {topic}`")
     lines.append("")
+
+    if concept_review:
+        lines.extend([
+            "# Concept Review",
+            "",
+            f"- Source: `{concept_review.get('source', 'normalized-frontmatter')}`",
+            f"- Review artifact: `{concept_review.get('review_artifact', '')}`",
+            f"- Final artifact target: `{concept_review.get('final_artifact', '')}`",
+            f"- MCP enrichment command: `rh-skills promote enrich-concepts {topic} --concept <name> --body-file <yaml>`",
+            f"- Review command: `rh-skills promote review-concepts {topic}`",
+            "- Lookup policy: use ReasonHub MCP for standardized codes; when a high-confidence match is found, review descendants only.",
+            "",
+        ])
 
     lines.extend(["# Proposed Artifacts", ""])
 
@@ -1301,6 +1591,7 @@ def _interactive_approve(
 
     all_decided = all(a.get("reviewer_decision") != "pending-review" for a in artifacts)
     if all_decided and click.confirm("Finalize plan as approved?", default=True):
+        _require_concept_review_approved(plan)
         rev = reviewer or plan.get("reviewer") or ""
         if not rev:
             rev = click.prompt("Reviewer name", default="")
@@ -1531,14 +1822,20 @@ def plan(topic, force):
     for group in grouped:
         concerns = _identify_group_concerns(group)
         artifacts.append(_build_plan_artifact_entry(group, concerns=concerns))
-    concepts_path = topic_dir(topic) / "process" / "concepts.yaml"
-    has_concepts = concepts_path.exists()
+    frontmatter_concepts = _collect_frontmatter_concepts(source_records)
+    concept_review = _build_concept_review(topic, frontmatter_concepts)
 
     plan_path.parent.mkdir(parents=True, exist_ok=True)
-    plan_yaml = _render_extract_plan(topic, artifacts, has_concepts)
+    plan_yaml = _render_extract_plan(topic, artifacts, concept_review)
     plan_path.write_text(plan_yaml)
     plan = _yaml_safe().load(plan_yaml)
     _extract_readout_path(topic).write_text(_render_extract_readout(plan))
+    if frontmatter_concepts:
+        review_path = _write_concept_review_packet(
+            topic,
+            _build_concept_review_packet(topic, frontmatter_concepts),
+        )
+        log_info(f"Created: {review_path}")
 
     append_topic_event(
         tracking,
@@ -1551,8 +1848,14 @@ def plan(topic, force):
     log_info(f"Created: {_extract_readout_path(topic)}")
     click.echo("\nNext steps:")
     click.echo(f"  1. Review the readout : cat topics/{topic}/process/plans/extract-plan-readout.md")
-    click.echo(f"  2. Approve artifacts  : rh-inf-extract approve {topic}")
-    click.echo(f"  3. Run extraction     : rh-inf-extract implement {topic}")
+    if frontmatter_concepts:
+        click.echo(f"  2. Enrich concepts    : rh-skills promote enrich-concepts {topic} --concept <name> --body-file <yaml>")
+        click.echo(f"  3. Review concepts    : rh-skills promote review-concepts {topic}")
+        click.echo(f"  4. Approve artifacts  : rh-inf-extract approve {topic}")
+        click.echo(f"  5. Run extraction     : rh-inf-extract implement {topic}")
+    else:
+        click.echo(f"  2. Approve artifacts  : rh-inf-extract approve {topic}")
+        click.echo(f"  3. Run extraction     : rh-inf-extract implement {topic}")
 
 
 @promote.command("approve")
@@ -1643,6 +1946,7 @@ def approve(topic, artifact_name, decision, notes, add_concerns, add_sources, re
                 if not artifact_name:
                     # Re-read so we see writes from prior locked invocations.
                     plan = _yaml_safe().load(plan_path.read_text())
+                _require_concept_review_approved(plan)
                 rev = reviewer or plan.get("reviewer") or ""
                 plan["status"] = "approved"
                 plan["reviewer"] = rev
@@ -1664,6 +1968,196 @@ def approve(topic, artifact_name, decision, notes, add_concerns, add_sources, re
     if not plan or not isinstance(plan, dict):
         raise click.UsageError(f"Plan is empty or invalid: {plan_path}")
     _interactive_approve(plan, plan_path, readout_path, reviewer)
+
+
+def _prompt_code_entry(label: str) -> dict:
+    system = click.prompt(f"{label} system")
+    code = click.prompt(f"{label} code")
+    display = click.prompt(f"{label} display")
+    return {
+        "system": system,
+        "code": code,
+        "display": display,
+    }
+
+
+def _prompt_related_codes() -> list[dict]:
+    related = []
+    while click.confirm("Add approved descendant is-a concept?", default=False):
+        entry = _prompt_code_entry("  Descendant")
+        entry["relationship"] = "is-a"
+        related.append(entry)
+    return related
+
+
+@promote.command("enrich-concepts")
+@click.argument("topic")
+@click.option("--concept", "concept_name", required=True, metavar="NAME", help="Concept name to enrich.")
+@click.option("--type", "concept_type", default=None, metavar="TYPE", help="Concept type when the name is ambiguous.")
+@click.option(
+    "--body-file",
+    required=True,
+    type=click.Path(exists=True, readable=True),
+    help="YAML file with MCP lookup data: lookup_query and candidate_codes[].",
+)
+def enrich_concepts(topic, concept_name, concept_type, body_file):
+    """Record RH MCP lookup candidates for one deduplicated concept review entry."""
+    require_topic(require_tracking(), topic)
+    packet = _load_concept_review_packet(topic)
+    if packet.get("status") == "approved":
+        raise click.UsageError("Concept review is already approved; re-plan if you need to change MCP candidates.")
+
+    payload = _yaml_safe().load(Path(body_file).read_text()) or {}
+    if not isinstance(payload, dict):
+        raise click.UsageError("--body-file must contain a YAML mapping.")
+    candidate_codes = payload.get("candidate_codes")
+    if candidate_codes is None or not isinstance(candidate_codes, list):
+        raise click.UsageError("--body-file must include candidate_codes as a list (may be empty).")
+
+    concept = _find_review_concept(packet, concept_name, concept_type)
+    concept["lookup_query"] = payload.get("lookup_query") or concept.get("lookup_query") or concept_name
+    concept["candidate_codes"] = candidate_codes
+    concept["lookup_completed"] = True
+    if "lookup_notes" in payload:
+        concept["lookup_notes"] = payload.get("lookup_notes", "")
+
+    all_enriched = all(
+        concept_entry.get("lookup_completed") is True
+        for concept_entry in (packet.get("concepts", []) or [])
+    )
+    packet["lookup_completed"] = all_enriched
+    _write_concept_review_packet(topic, packet)
+    _sync_plan_concept_review(topic, packet)
+
+    remaining = sum(
+        1
+        for concept_entry in (packet.get("concepts", []) or [])
+        if concept_entry.get("lookup_completed") is not True
+    )
+    log_info(
+        f"Recorded MCP candidates for '{concept_name}'"
+        + (f" ({concept_type})" if concept_type else "")
+        + f"; {remaining} concept(s) still pending MCP enrichment."
+    )
+
+
+@promote.command("review-concepts")
+@click.argument("topic")
+def review_concepts(topic):
+    """Interactively review deduplicated concept candidates from normalized front matter."""
+    tracking = require_tracking()
+    require_topic(tracking, topic)
+
+    packet = _load_concept_review_packet(topic)
+    concepts = packet.get("concepts", []) or []
+    pending_lookup = [
+        concept
+        for concept in concepts
+        if concept.get("lookup_completed") is not True
+    ]
+    if packet.get("lookup_completed") is not True or pending_lookup:
+        raise click.UsageError(
+            "Concept review packet is not ready for human approval. "
+            f"Complete RH MCP enrichment first with 'rh-skills promote enrich-concepts {topic} --concept <name> --body-file <yaml>'."
+        )
+    pending = [concept for concept in concepts if concept.get("review_status") == "pending-review"]
+    if not pending:
+        packet["status"] = "approved"
+        packet["reviewed_at"] = now_iso()
+        _write_concept_review_packet(topic, packet)
+        _sync_plan_concept_review(topic, packet)
+        artifact_path = _write_concepts_l2_artifact(topic, tracking, packet)
+        log_info(f"Concept review already complete: {artifact_path}")
+        return
+
+    click.echo(f"Concept review for '{topic}'")
+    click.echo("Use ReasonHub MCP to identify standardized codes before approving them.")
+    click.echo("Only review descendant is-a concepts for approved primary matches.\n")
+
+    for concept in concepts:
+        if concept.get("review_status") != "pending-review":
+            continue
+
+        click.echo(f"Concept: {concept.get('name', '')} ({concept.get('type', '')})")
+        click.echo(f"Sources: {', '.join(concept.get('sources', []))}")
+        candidates = concept.get("candidate_codes") or []
+        if candidates:
+            click.echo("MCP candidates:")
+            for idx, candidate in enumerate(candidates, start=1):
+                click.echo(
+                    f"  {idx}. {candidate.get('system', '')} {candidate.get('code', '')} "
+                    f"- {candidate.get('display', '')}"
+                )
+                for related in candidate.get("related_candidates") or []:
+                    click.echo(
+                        f"     related ({related.get('relationship', '')}): "
+                        f"{related.get('system', '')} {related.get('code', '')} - {related.get('display', '')}"
+                    )
+        decision = click.prompt(
+            "Decision",
+            type=click.Choice(["approve", "custom", "exclude", "skip"]),
+            default="skip",
+            show_choices=True,
+        )
+        if decision == "skip":
+            click.echo("")
+            continue
+
+        if decision == "exclude":
+            note = click.prompt("Exclusion note", default="", show_default=False)
+            concept["custom_concept"] = False
+            concept["codes"] = []
+            concept["review_notes"] = note
+            concept["review_status"] = "excluded"
+            click.echo("")
+            continue
+
+        if decision == "custom":
+            note = click.prompt("Custom concept note", default="", show_default=False)
+            concept["custom_concept"] = True
+            concept["codes"] = []
+            concept["review_notes"] = note
+            concept["review_status"] = "approved"
+            click.echo("")
+            continue
+
+        approved_codes = []
+        while click.confirm("Add an approved standardized code?", default=(len(approved_codes) == 0)):
+            code_entry = _prompt_code_entry("Primary")
+            related = _prompt_related_codes()
+            if related:
+                code_entry["related"] = related
+            approved_codes.append(code_entry)
+        if not approved_codes:
+            click.echo("No codes recorded; leaving concept pending review.\n")
+            continue
+
+        note = click.prompt("Review notes", default="", show_default=False)
+        concept["custom_concept"] = False
+        concept["codes"] = approved_codes
+        concept["review_notes"] = note
+        concept["review_status"] = "approved"
+        click.echo("")
+
+    all_reviewed = all(
+        concept.get("review_status") != "pending-review"
+        for concept in packet.get("concepts", []) or []
+    )
+    packet["status"] = "approved" if all_reviewed else "pending-review"
+    packet["reviewed_at"] = now_iso() if all_reviewed else None
+    _write_concept_review_packet(topic, packet)
+    _sync_plan_concept_review(topic, packet)
+
+    if all_reviewed:
+        artifact_path = _write_concepts_l2_artifact(topic, tracking, packet)
+        log_info(f"Created: {artifact_path}")
+    else:
+        remaining = sum(
+            1
+            for concept in packet.get("concepts", []) or []
+            if concept.get("review_status") == "pending-review"
+        )
+        log_info(f"Concept review saved with {remaining} concept(s) still pending.")
 
 
 @promote.command("formalize-plan")
