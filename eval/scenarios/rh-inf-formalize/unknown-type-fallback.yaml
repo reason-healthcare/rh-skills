@@ -71,7 +71,7 @@ workspace:
               evidence:
                 - source: internal-protocol-v3
                   locator: "Section 2.1"
-        conflicts: []
+        concerns: []
 
 steps:
   - action: plan

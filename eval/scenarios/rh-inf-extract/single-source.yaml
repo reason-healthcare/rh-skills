@@ -3,7 +3,7 @@ skill: rh-inf-extract
 description: >
   One normalized guideline source fully ingested; agent must plan and implement
   a single L2 extraction, producing a structured artifact with evidence
-  traceability and no conflicts.
+  traceability and no concerns.
 
 topic: diabetes-ccm
 

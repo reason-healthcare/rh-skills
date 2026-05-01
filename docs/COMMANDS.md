@@ -188,6 +188,10 @@ rh-skills promote derive <topic> <name>
 ```
 
 Creates `topics/<topic>/structured/<name>.yaml` with schema-valid YAML scaffold.
+When `--body-file` is provided, the YAML body is written verbatim and must
+already contain all required L2 fields. In that mode, repeated content flags
+such as `--clinical-question`, `--required-section`, `--evidence-ref`, and
+`--concern` are treated as consistency checks rather than merge inputs.
 
 ### `rh-skills promote combine <topic> <sources…> <target>`
 

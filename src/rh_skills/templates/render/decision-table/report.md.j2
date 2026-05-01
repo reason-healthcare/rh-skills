@@ -1,10 +1,14 @@
-{% set conditions = data.sections.conditions or [] %}
-{% set actions = data.sections.actions or [] %}
-{% set rules = data.sections.rules or [] %}
-{% set action_map = {} %}
-{% for a in actions %}{% set _ = action_map.update({a.id: a.label or a.id}) %}{% endfor %}
-{% set cond_map = {} %}
-{% for c in conditions %}{% set _ = cond_map.update({c.id: c.label or c.id}) %}{% endfor %}
+{% set sections = data.sections or {} %}
+{% set events = sections.events or [] %}
+{% set conditions = sections.conditions or [] %}
+{% set actions = sections.actions or [] %}
+{% set rules = sections.rules or [] %}
+{% set event_map = namespace(d={}) %}
+{% for e in events %}{% set _ = event_map.d.update({e.id: ((e.id ~ ' ' ~ (e.label or e.description or e.id)) if e.id else (e.label or e.description or '?'))}) %}{% endfor %}
+{% set action_map = namespace(d={}) %}
+{% for a in actions %}{% set _ = action_map.d.update({a.id: ((a.id ~ ' ' ~ (a.label or a.id)) if a.id else (a.label or '?'))}) %}{% endfor %}
+{% set cond_map = namespace(d={}) %}
+{% for c in conditions %}{% set _ = cond_map.d.update({c.id: ((c.id ~ ' ' ~ (c.label or c.id)) if c.id else (c.label or '?'))}) %}{% endfor %}
 # Decision Table — {{ data.title or data.name or '' }}
 
 {% if data.clinical_question %}**Clinical Question**: {{ data.clinical_question }}
@@ -12,17 +16,18 @@
 {% if data.derived_from %}**Derived From**: {{ data.derived_from | join(', ') }}
 {% endif %}
 
-{% set sections = data.sections or {} %}
 {% if sections.summary %}
 ## Summary
 
 {{ sections.summary }}
 
 {% endif %}
-| Rule |{% for c in conditions %} {{ cond_map[c.id] }} |{% endfor %} Actions |
-|---|{% for c in conditions %}---|{% endfor %}---|
+## Rules
+
+|{% if events %} Event Pattern |{% endif %}{% for c in conditions %} {{ cond_map.d[c.id] }} |{% endfor %} Actions |
+|{% if events %}---|{% endif %}{% for c in conditions %}---|{% endfor %}---|
 {% for rule in rules -%}
-| {{ rule.id or '?' }} |{% for c in conditions %} {{ rule.when.get(c.id, '-') if rule.when is mapping else '-' }} |{% endfor %} {% if rule.then %}{% for aid in rule.then %}{{ action_map.get(aid, aid) }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %} |
+|{% if events %} {{ event_map.d.get(rule.event, rule.event or '-') }} |{% endif %}{% for c in conditions %} {{ rule.when.get(c.id, '-') if rule.when is mapping else '-' }} |{% endfor %} {% for aid in (rule.then or []) %}{{ action_map.d.get(aid, aid) }}{% if not loop.last %}, {% endif %}{% endfor %} |
 {% endfor %}
 
 {% set traceability = sections.evidence_traceability or [] %}

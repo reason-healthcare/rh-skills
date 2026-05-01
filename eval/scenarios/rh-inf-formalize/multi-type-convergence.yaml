@@ -46,7 +46,7 @@ workspace:
             clinical_question: "When should adults be screened for T2D?"
             required_sections:
               - decision_table
-            conflicts: []
+            concerns: []
             reviewer_decision: approved
             approval_notes: ""
           - name: diabetes-terminology
@@ -56,7 +56,7 @@ workspace:
             clinical_question: "What codes define diabetes screening concepts?"
             required_sections:
               - value_sets
-            conflicts: []
+            concerns: []
             reviewer_decision: approved
             approval_notes: ""
           - name: diabetes-screening-measure
@@ -66,7 +66,7 @@ workspace:
             clinical_question: "How is diabetes screening adherence measured?"
             required_sections:
               - populations
-            conflicts: []
+            concerns: []
             reviewer_decision: approved
             approval_notes: ""
 

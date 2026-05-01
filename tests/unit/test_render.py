@@ -70,11 +70,48 @@ def test_render_missing_required_sections_exits_1(tmp_repo):
     _write_artifact(tmp_repo, "my-skill", "bad-dt", {
         "id": "bad-dt",
         "artifact_type": "decision-table",
-        "sections": {"conditions": []},  # missing actions, rules
+        "sections": {
+            "conditions": [{"id": "c1", "label": "Condition", "values": ["Yes", "No"]}],
+            "actions": [{"id": "a1", "label": "Action"}],
+            "rules": [{"id": "r1", "when": {"c1": "Yes"}, "then": ["a1"]}],
+        },  # missing events
     })
     runner = CliRunner()
     result = runner.invoke(render, ["my-skill", "bad-dt"])
     assert result.exit_code == 1
+
+
+def test_render_decision_table_shows_event_column_when_present(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "good-dt", {
+        "id": "good-dt",
+        "title": "Good Decision Table",
+        "artifact_type": "decision-table",
+        "sections": {
+            "events": [
+                {"id": "ev1", "label": "Screening encounter", "description": "Initial screening trigger"},
+            ],
+            "conditions": [
+                {"id": "c1", "label": "High risk", "values": ["Yes", "No"]},
+            ],
+            "actions": [
+                {"id": "a1", "label": "Order test"},
+            ],
+            "rules": [
+                {"id": "r1", "event": "ev1", "when": {"c1": "Yes"}, "then": ["a1"]},
+            ],
+        },
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "good-dt"])
+    assert result.exit_code == 0
+    artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "good-dt"
+    content = (artifact_dir / "good-dt-report.md").read_text()
+    assert "Decision Table" in content
+    assert "## Rules" in content
+    assert "Screening encounter" in content
+    assert "| Event Pattern | c1 High risk | Actions |" in content
+    assert "| ev1 Screening encounter | Yes | a1 Order test |" in content
+    assert "Order test" in content
 
 
 # ── Evidence-summary ────────────────────────────────────────────────────────────
@@ -214,6 +251,9 @@ def _make_complete_binary_table():
         "title": "Complete Decision Table",
         "artifact_type": "decision-table",
         "sections": {
+            "events": [
+                {"id": "ev1", "label": "Decision evaluation"},
+            ],
             "conditions": [
                 {"id": "c1", "label": "Condition A", "values": ["yes", "no"]},
                 {"id": "c2", "label": "Condition B", "values": ["yes", "no"]},
@@ -224,14 +264,14 @@ def _make_complete_binary_table():
                 {"id": "a2", "label": "Action 2"},
             ],
             "rules": [
-                {"id": "r1", "when": {"c1": "yes", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
-                {"id": "r2", "when": {"c1": "yes", "c2": "yes", "c3": "no"}, "then": ["a1"]},
-                {"id": "r3", "when": {"c1": "yes", "c2": "no", "c3": "yes"}, "then": ["a2"]},
-                {"id": "r4", "when": {"c1": "yes", "c2": "no", "c3": "no"}, "then": ["a2"]},
-                {"id": "r5", "when": {"c1": "no", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
-                {"id": "r6", "when": {"c1": "no", "c2": "yes", "c3": "no"}, "then": ["a2"]},
-                {"id": "r7", "when": {"c1": "no", "c2": "no", "c3": "yes"}, "then": ["a2"]},
-                {"id": "r8", "when": {"c1": "no", "c2": "no", "c3": "no"}, "then": ["a2"]},
+                {"id": "r1", "event": "ev1", "when": {"c1": "yes", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+                {"id": "r2", "event": "ev1", "when": {"c1": "yes", "c2": "yes", "c3": "no"}, "then": ["a1"]},
+                {"id": "r3", "event": "ev1", "when": {"c1": "yes", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+                {"id": "r4", "event": "ev1", "when": {"c1": "yes", "c2": "no", "c3": "no"}, "then": ["a2"]},
+                {"id": "r5", "event": "ev1", "when": {"c1": "no", "c2": "yes", "c3": "yes"}, "then": ["a1"]},
+                {"id": "r6", "event": "ev1", "when": {"c1": "no", "c2": "yes", "c3": "no"}, "then": ["a2"]},
+                {"id": "r7", "event": "ev1", "when": {"c1": "no", "c2": "no", "c3": "yes"}, "then": ["a2"]},
+                {"id": "r8", "event": "ev1", "when": {"c1": "no", "c2": "no", "c3": "no"}, "then": ["a2"]},
             ],
         },
     }
@@ -247,7 +287,9 @@ def test_render_decision_table_complete(tmp_repo):
     assert not (art_dir / "dt-complete-decision-tree.md").exists()
     rules_table = (art_dir / "dt-complete-report.md").read_text()
     assert "Decision Table" in rules_table
-    assert "Rule" in rules_table
+    assert "## Rules" in rules_table
+    assert "| Event Pattern | c1 Condition A | c2 Condition B | c3 Condition C | Actions |" in rules_table
+    assert "a1 Action 1" in rules_table
 
 
 def test_render_decision_table_incomplete(tmp_repo):
@@ -261,6 +303,34 @@ def test_render_decision_table_incomplete(tmp_repo):
     report_path = tmp_repo / "topics" / "my-skill" / "structured" / "dt-incomplete" / "dt-incomplete-report.md"
     report = report_path.read_text()
     assert "rules" in report.lower() or "Rule" in report
+
+
+def test_render_decision_table_shows_full_long_labels(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "dt-long-header", {
+        "id": "dt-long-header",
+        "title": "Long Header Decision Table",
+        "artifact_type": "decision-table",
+        "sections": {
+            "events": [{"id": "ev1", "label": "Review"}],
+            "conditions": [
+                {
+                    "id": "c1",
+                    "label": "Significant or persistent purulent nasal discharge",
+                    "values": ["yes", "no"],
+                },
+            ],
+            "actions": [{"id": "a1", "label": "Consider prolonged oral antibiotic therapy"}],
+            "rules": [{"id": "r1", "event": "ev1", "when": {"c1": "yes"}, "then": ["a1"]}],
+        },
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "dt-long-header"])
+    assert result.exit_code == 0
+    report_path = tmp_repo / "topics" / "my-skill" / "structured" / "dt-long-header" / "dt-long-header-report.md"
+    report = report_path.read_text()
+    assert "| Event Pattern | c1 Significant or persistent purulent nasal discharge | Actions |" in report
+    assert "a1 Consider prolonged oral antibiotic therapy" in report
+    assert "| ev1 Review | yes |" in report
 
 
 # ── Idempotent re-render ────────────────────────────────────────────────────────

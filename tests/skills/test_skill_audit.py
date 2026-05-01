@@ -143,6 +143,14 @@ class TestFrameworkContracts:
         body = skill_body(curated_skill / "SKILL.md")
         if "## Mode: `plan`" not in body and "### `plan`" not in body:
             pytest.skip(f"{curated_skill.name} has no plan mode")
+        if curated_skill.name == "rh-inf-ingest":
+            assert "read-only" in body.lower(), (
+                f"{curated_skill.name}: plan mode is intentionally transient and must state that it is read-only"
+            )
+            assert "discovery-plan.yaml" in body, (
+                f"{curated_skill.name}: plan mode must reference discovery-plan.yaml as the durable upstream planning artifact"
+            )
+            return
         if curated_skill.name == "rh-inf-discovery":
             assert "topics/<topic>/process/plans/" in body, (
                 f"{curated_skill.name}: discovery plan mode must write to topics/<topic>/process/plans/ (FR-018)"

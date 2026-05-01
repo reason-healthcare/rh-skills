@@ -22,6 +22,48 @@ optional_fields:
   - author             # author name or team
   - codings            # list of {code, system, display} — canonical codes for this artifact
                        # (e.g. LOINC panel codes for assessment instruments)
+  - artifact_type      # structured artifact strategy, e.g. decision-table | care-pathway
+  - clinical_question  # extraction question answered by this artifact
+  - sections           # artifact-type-specific structured content
+  - concerns           # list of unresolved or resolved source concerns
+  - conflicts          # legacy alias for concerns
+
+artifact_types:
+  - evidence-summary
+  - decision-table
+  - care-pathway
+  - terminology
+  - measure
+  - assessment
+  - policy
+
+artifact_type_sections:
+  decision-table:
+    description: >
+      Event-condition-action (ECA) decision logic intended for downstream
+      PlanDefinition (eca-rule) formalization.
+    recommended_sections:
+      - summary
+      - evidence_traceability
+      - events
+      - conditions
+      - actions
+      - rules
+    section_definitions:
+      events: >
+        List of trigger definitions, typically {id, label, description?}. Use
+        to identify the clinical or workflow event that activates the rule.
+      conditions: >
+        List of condition definitions, typically {id, label, description?,
+        values[]}. Conditions represent the decision inputs or threshold tests.
+      actions: >
+        List of action definitions, typically {id, label, description?, type?,
+        intent?}. Actions represent the clinical recommendation or workflow
+        consequence of a rule firing.
+      rules: >
+        List of ECA bindings, typically {id, event?, when{}, then[]}. Each
+        rule references one event (optional when global), maps condition ids to
+        values in `when`, and lists action ids in `then`.
 
 status_values:
   - draft

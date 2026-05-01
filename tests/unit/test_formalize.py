@@ -194,6 +194,9 @@ description: A test decision-table artifact.
 fhir_version: "4.0.1"
 sections:
   summary: Test summary
+  events:
+    - id: ev1
+      label: Screening encounter
   conditions:
 {rows}
   actions:
@@ -201,6 +204,7 @@ sections:
       label: Refer to specialist
   rules:
     - id: r1
+      event: ev1
       when:
         {conditions[0]['id']}: 'yes'
       then:

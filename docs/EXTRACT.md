@@ -17,8 +17,8 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 | Command | Purpose | Writes To |
 |---------|---------|-----------|
 | `rh-skills promote plan <topic> [--force]` | Generate extract review packet | `extract-plan.yaml`, `extract-plan-readout.md`, tracking event |
-| `rh-skills promote approve <topic> --artifact <name> --decision <approved\|rejected\|needs-revision> [--finalize]` | Record reviewer approval decisions | `extract-plan.yaml` (updated), `extract-plan-readout.md` (regenerated) |
-| `rh-skills promote derive <topic> <name> --source <source> [--artifact-type TYPE] [--clinical-question TEXT] [--required-section S] [--evidence-ref REF] [--conflict C]` | Create single L2 artifact via LLM | `structured/<name>/<name>.yaml`, tracking event |
+| `rh-skills promote approve <topic> --artifact <name> --decision <approved\|rejected\|needs-revision> [--add-concern TEXT] [--finalize]` | Record reviewer approval decisions | `extract-plan.yaml` (updated), `extract-plan-readout.md` (regenerated) |
+| `rh-skills promote derive <topic> <name> --source <source> [--artifact-type TYPE] [--clinical-question TEXT] [--required-section S] [--evidence-ref REF] [--concern C]` | Create single L2 artifact via LLM | `structured/<name>/<name>.yaml`, tracking event |
 | `rh-skills validate <topic> structured <artifact>` | Schema-validate L2 artifact | (read-only) |
 | `rh-skills render <topic> structured <artifact>` | Generate human-readable Markdown report with Mermaid diagrams | `structured/<name>/<name>-report.md` |
 
@@ -29,7 +29,7 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 | Type | SME Question | L3 FHIR Target | Key Sections |
 |------|-------------|-----------------|--------------|
 | **evidence-summary** | What does the evidence say? | Evidence, EvidenceVariable, Citation | summary_points, risk_factors, evidence_traceability |
-| **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), Library (CQL) | conditions, actions, rules, exceptions |
+| **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), Library (CQL) | events, conditions, actions, rules, exceptions |
 | **care-pathway** | In what order do things happen? | PlanDefinition (clinical-protocol), ActivityDefinition | triggers, steps (ordered with actor + next-step) |
 | **terminology** | What codes define the concepts? | ValueSet, ConceptMap | value_sets, concept_maps |
 | **measure** | How do we know it's working? | Measure, Library (CQL) | populations, scoring, improvement_notation |
@@ -53,7 +53,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
    │   ├─ Infer artifact profiles from source type/count
    │   ├─ Group sources by clinical domain/question
    │   ├─ Propose L2 artifacts using 7-type catalog
-   │   └─ Detect cross-source conflicts
+   │   └─ Detect cross-source concerns
    ├─ For terminology: use reasonhub MCP (optional)
    │   ├─ Search SNOMED/LOINC/ICD-10/RxNorm
    │   └─ Populate candidate_codes[] in review packet
@@ -64,7 +64,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 2. REVIEW GATE: rh-skills promote approve <topic> --artifact <name> --decision approved --finalize
    ├─ Reviewer reads extract-plan-readout.md
    ├─ Per-artifact decisions: approved | rejected | needs-revision
-   ├─ Optional: --add-conflict, --add-source for refinements
+   ├─ Optional: --add-concern, --add-source for refinements
    ├─ Regenerates readout with final decisions
    └─ Plan status → approved
 
@@ -77,16 +77,16 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
    │   ├─ Validate: rh-skills validate <topic> structured <name>
    │   │   ├─ Schema: required fields, type-specific sections
    │   │   ├─ Evidence traceability: claims have evidence entries
-   │   │   └─ Conflicts: present when plan listed them
+   │   │   └─ Conflict records: present when plan listed concerns
    │   ├─ Render: rh-skills render <topic> structured <name>
-   │   │   └─ Generate report.md + Mermaid diagrams
+   │   │   └─ Generate report.md + Mermaid diagrams (`decision-table` requires `events`, `conditions`, `actions`, and `rules`)
    │   └─ Report ✓ or ✗ per artifact
    └─ Stop on first blocking failure
 
 4. VERIFY: rh-skills validate <topic> structured <artifact> (for each)
    ├─ Re-validate schema, sections, evidence traceability
    ├─ Confirm render reports present
-   ├─ Check conflict records (when plan had conflicts)
+   ├─ Check concern records (when plan had concerns)
    ├─ Non-destructive, safe to rerun
    └─ Report pass/fail per artifact
 
@@ -107,8 +107,8 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 |------|------|
 | `src/rh_skills/commands/promote.py` | Plan generation, approve, derive commands (~1400 lines) |
 | `skills/.curated/rh-inf-extract/SKILL.md` | Skill definition; plan/implement/verify modes |
-| `skills/.curated/rh-inf-extract/reference.md` | L2 type catalog, validation rules, conflict resolution |
-| `topics/<topic>/process/plans/extract-plan.yaml` | **Control file**: proposed/approved artifacts, sources, conflicts |
+| `skills/.curated/rh-inf-extract/reference.md` | L2 type catalog, validation rules, concern handling |
+| `topics/<topic>/process/plans/extract-plan.yaml` | **Control file**: proposed/approved artifacts, sources, concerns |
 | `topics/<topic>/process/plans/extract-plan-readout.md` | **Derived**: human-friendly narrative (do not edit directly) |
 | `topics/<topic>/structured/<name>/<name>.yaml` | **L2 artifact**: semi-structured clinical content |
 | `topics/<topic>/structured/<name>/<name>-report.md` | **Rendered report**: Mermaid diagrams for SME review |
@@ -126,7 +126,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 2. Count (single source → single artifact proposal)
 3. Inferred profiles (e.g., PDF with eligibility rules → decision-table)
 
-**Limitation:** Deterministic planner groups by type, not clinical conflicts. If conflicting sources end up in separate artifacts, the reviewer must consolidate using `--add-source` at approval time.
+**Limitation:** Deterministic planner groups by type, not clinical concerns. If conflicting sources end up in separate artifacts, the reviewer must consolidate using `--add-source` at approval time.
 
 ### LLM Usage (Artifact Generation)
 
@@ -140,9 +140,9 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 
 Post-derive validation checks:
 1. Required top-level fields: id, name, title, version, status, domain, description, derived_from[], artifact_type, clinical_question
-2. Type-specific required sections (e.g., decision-table MUST have conditions, actions, rules)
+2. Type-specific required sections (e.g., decision-table MUST have events, conditions, actions, rules)
 3. Evidence traceability: claims have evidence[] entries
-4. Conflicts present when extract-plan listed unresolved conflicts
+4. Conflict records present when extract-plan listed unresolved concerns
 
 ### Extract → Formalize Linkage
 

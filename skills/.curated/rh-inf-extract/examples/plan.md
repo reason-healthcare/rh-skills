@@ -17,10 +17,14 @@ artifacts:
       - What are the exclusion criteria?
     required_sections:
       - summary
+      - events
+      - conditions
+      - actions
+      - rules
       - evidence_traceability
-      - conflicts
-    conflicts:
-      - conflict: "ADA interval language is more explicit than USPSTF interval framing."
+      - concerns
+    concerns:
+      - concern: "ADA interval language is more explicit than USPSTF interval framing."
         resolution: ""
     reviewer_decision: pending-review
     approval_notes: ""
@@ -37,7 +41,7 @@ artifacts:
       - summary_points
       - risk_factors
       - evidence_traceability
-    conflicts: []
+    concerns: []
     reviewer_decision: pending-review
     approval_notes: ""
 ---

@@ -122,10 +122,10 @@ Custom types are allowed when a standard type would obscure the clinical purpose
 > Example: `magnitude: ">=190 mg/dL"` — not `magnitude: >=190 mg/dL`.
 > Use `"N/A"` or `not-applicable` instead of bare `-` for irrelevant conditions.
 
-> **`conflicts` placement:** When `conflicts` is a required section, it must
-> appear in **both** `sections.conflicts` (short summary with disposition)
-> **and** top-level `conflicts` (full positions/preferred_interpretation).
-> The validator checks `sections.conflicts`; the top-level block preserves
+> **`concerns` placement:** When `concerns` is a required section, it must
+> appear in **both** `sections.concerns` (short summary with disposition)
+> **and** top-level `concerns` (full positions/preferred_interpretation).
+> The validator checks `sections.concerns`; the top-level block preserves
 > full provenance for downstream formalization.
 
 ```yaml
@@ -148,10 +148,10 @@ sections:
       evidence:
         - source: <source-name>
           locator: <section/page/heading>
-  conflicts:                      # required when plan lists conflicts
+  concerns:                       # required when plan lists concerns
     - issue: <summary>
       disposition: <how resolved>
-conflicts:
+concerns:
   - issue: <summary>
     positions:
       - source: <source-name>
@@ -189,22 +189,27 @@ sections:
         - <expected outcome>
       timing: <time horizon>
       setting: <clinical setting>
-  conflicts:              # required when plan lists conflicts
+  concerns:               # required when plan lists concerns
     - issue: <summary>
       disposition: <how resolved>
 ```
 
 #### decision-table
 
-Includes eligibility conditions and exclusion conditions alongside clinical decision logic.
+Includes eligibility conditions and exclusion conditions alongside explicit
+event-condition-action clinical decision logic.
 
-> **Flat sections — no wrapper key.** `conditions`, `actions`, and `rules` go
-> directly under `sections:`. Do NOT nest them under a `decision_table:` wrapper
-> (e.g., `sections.decision_table.conditions` is wrong; use `sections.conditions`).
+> **Flat sections — no wrapper key.** `events`, `conditions`, `actions`, and
+> `rules` go directly under `sections:`. Do NOT nest them under a
+> `decision_table:` wrapper (e.g., `sections.decision_table.conditions` is
+> wrong; use `sections.conditions`).
 
 ```yaml
 sections:
   summary: <string>
+  events:
+    - id: e1
+      label: <triggering clinical or workflow event>
   conditions:
     - id: c1
       label: <condition name>
@@ -215,6 +220,7 @@ sections:
       label: <action name>
   rules:
     - id: r1
+      event: e1
       when:
         c1: <value or "N/A" for irrelevant>
       then:
@@ -225,10 +231,15 @@ sections:
       evidence:
         - source: <source-name>
           locator: <section/page/heading>
-  conflicts:                           # required when plan lists conflicts
+  concerns:                            # required when plan lists concerns
     - issue: <summary>
       disposition: <how resolved>
 ```
+
+`rules[]` are the binding layer: each rule references the event that triggers
+evaluation, the condition values that must hold, and the actions that follow.
+If every rule shares the same trigger, keep the event reference explicit on each
+rule for now; de-duplication can happen later during formalization.
 
 #### care-pathway
 
@@ -362,10 +373,10 @@ Evidence references passed to `rh-skills promote derive` use a `|`-delimited str
 
 Multiple `--evidence-ref` flags can be passed for a single artifact.
 
-### `--conflict` pipe format
+### `--concern` pipe format
 
 ```
---conflict "issue|source|statement|preferred_source|preferred_rationale"
+--concern "issue|source|statement|preferred_source|preferred_rationale"
 ```
 
 | Field | Description |
@@ -386,7 +397,7 @@ Multiple `--evidence-ref` flags can be passed for a single artifact.
 - `derived_from[]` does not match the approved plan source set
 - a required section from the plan is missing from `sections`
 - `evidence_traceability` is required but empty or missing claim/evidence locators
-- `conflicts[]` is missing despite open concerns recorded in the approved plan
+- `concerns[]` is missing despite open concerns recorded in the approved plan
 
 Warnings:
 - artifact exists but is not listed in the current extract plan
