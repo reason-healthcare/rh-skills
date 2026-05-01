@@ -23,8 +23,6 @@ REQUIRED_SECTIONS: dict[str, list[str]] = {
 }
 
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "render"
-_CONDITION_HEADER_MAX_CHARS = 14
-_ACTION_CELL_MAX_CHARS = 24
 
 
 def _jinja_env(type_dir: Path) -> Environment:
@@ -59,17 +57,6 @@ def _validate_sections(sections: dict | None, artifact_type: str) -> None:
 
 
 # ── Completeness algorithm (pure logic, not a template) ─────────────────────
-
-
-def _truncate_table_label(text: str, max_chars: int = _CONDITION_HEADER_MAX_CHARS) -> str:
-    """Shorten a column label so markdown tables stay readable."""
-    normalized = " ".join((text or "").split())
-    if len(normalized) <= max_chars:
-        return normalized
-    truncated = normalized[: max_chars - 3].rstrip()
-    if " " in truncated:
-        truncated = truncated.rsplit(" ", 1)[0]
-    return f"{truncated}..."
 
 
 def _check_completeness(conditions: list[dict], rules: list[dict]) -> dict:
@@ -134,6 +121,12 @@ def _build_decision_matrix_context(sections: dict | None) -> dict:
             "key": event.get("id", "?"),
             "meaning": event.get("label") or event.get("description") or event.get("id", "?"),
             "description": event.get("description", ""),
+            "rule_label": " ".join(
+                part for part in [
+                    event.get("id", "?"),
+                    event.get("label") or event.get("description") or event.get("id", "?"),
+                ] if part
+            ),
         }
         for event in events
     ]
@@ -144,7 +137,7 @@ def _build_decision_matrix_context(sections: dict | None) -> dict:
             "rule_header": " ".join(
                 part for part in [
                     condition.get("id", "?"),
-                    _truncate_table_label(condition.get("label") or condition.get("id", "?")),
+                    condition.get("label") or condition.get("id", "?"),
                 ] if part
             ),
             "values": condition.get("values", []),
@@ -158,17 +151,14 @@ def _build_decision_matrix_context(sections: dict | None) -> dict:
             "rule_label": " ".join(
                 part for part in [
                     action.get("id", "?"),
-                    _truncate_table_label(
-                        action.get("label") or action.get("id", "?"),
-                        _ACTION_CELL_MAX_CHARS,
-                    ),
+                    action.get("label") or action.get("id", "?"),
                 ] if part
             ),
         }
         for action in actions
     ]
 
-    event_map = {row["key"]: row["meaning"] for row in event_rows}
+    event_map = {row["key"]: row["rule_label"] for row in event_rows}
     action_rule_map = {row["key"]: row["rule_label"] for row in action_rows}
 
     rule_rows = []
@@ -181,8 +171,7 @@ def _build_decision_matrix_context(sections: dict | None) -> dict:
         event_display = "-"
         if events:
             if event_id:
-                event_label = event_map.get(event_id, event_id)
-                event_display = f"{event_id} {event_label}" if event_label != event_id else event_id
+                event_display = event_map.get(event_id, event_id)
         rule_rows.append(
             {
                 "id": rule.get("id", "?"),
