@@ -111,7 +111,7 @@ sections:
   events: [...]       # trigger definitions for when the table applies
   conditions: [...]   # decision conditions with thresholds
   actions: [...]      # resulting actions per condition branch
-  rules: [...]        # event + condition → action mappings
+  rules: [...]        # event → condition → action mappings
   exceptions: [...]   # override / exclusion rules
 ```
 

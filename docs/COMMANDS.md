@@ -193,10 +193,6 @@ already contain all required L2 fields. In that mode, repeated content flags
 such as `--clinical-question`, `--required-section`, `--evidence-ref`, and
 `--concern` are treated as consistency checks rather than merge inputs.
 
-For `decision-table` artifacts, use explicit ECA sections in the body:
-`events`, `conditions`, `actions`, and `rules`. `rh-skills render` now treats
-all four as required for decision tables.
-
 ### `rh-skills promote combine <topic> <sources…> <target>`
 
 > **Deprecated** — Use `rh-skills formalize` for individual FHIR JSON generation
