@@ -108,87 +108,6 @@ def _check_completeness(conditions: list[dict], rules: list[dict]) -> dict:
     }
 
 
-def _build_decision_matrix_context(sections: dict | None) -> dict:
-    """Prepare display-friendly context for decision-table markdown rendering."""
-    sections = sections or {}
-    events = sections.get("events", [])
-    conditions = sections.get("conditions", [])
-    actions = sections.get("actions", [])
-    rules = sections.get("rules", [])
-
-    event_rows = [
-        {
-            "key": event.get("id", "?"),
-            "meaning": event.get("label") or event.get("description") or event.get("id", "?"),
-            "description": event.get("description", ""),
-            "rule_label": " ".join(
-                part for part in [
-                    event.get("id", "?"),
-                    event.get("label") or event.get("description") or event.get("id", "?"),
-                ] if part
-            ),
-        }
-        for event in events
-    ]
-    condition_rows = [
-        {
-            "key": condition.get("id", "?"),
-            "meaning": condition.get("label") or condition.get("id", "?"),
-            "rule_header": " ".join(
-                part for part in [
-                    condition.get("id", "?"),
-                    condition.get("label") or condition.get("id", "?"),
-                ] if part
-            ),
-            "values": condition.get("values", []),
-        }
-        for condition in conditions
-    ]
-    action_rows = [
-        {
-            "key": action.get("id", "?"),
-            "meaning": action.get("label") or action.get("id", "?"),
-            "rule_label": " ".join(
-                part for part in [
-                    action.get("id", "?"),
-                    action.get("label") or action.get("id", "?"),
-                ] if part
-            ),
-        }
-        for action in actions
-    ]
-
-    event_map = {row["key"]: row["rule_label"] for row in event_rows}
-    action_rule_map = {row["key"]: row["rule_label"] for row in action_rows}
-
-    rule_rows = []
-    for rule in rules:
-        when = rule.get("when", {}) if isinstance(rule.get("when"), dict) else {}
-        rule_actions = []
-        for action_id in rule.get("then", []):
-            rule_actions.append(action_rule_map.get(action_id, action_id))
-        event_id = rule.get("event")
-        event_display = "-"
-        if events:
-            if event_id:
-                event_display = event_map.get(event_id, event_id)
-        rule_rows.append(
-            {
-                "id": rule.get("id", "?"),
-                "event": event_display,
-                "condition_values": [when.get(condition.get("id", "?"), "-") for condition in conditions],
-                "actions": rule_actions,
-            }
-        )
-
-    return {
-        "event_rows": event_rows,
-        "condition_rows": condition_rows,
-        "action_rows": action_rows,
-        "rule_rows": rule_rows,
-    }
-
-
 # ── Template-driven renderer ─────────────────────────────────────────────────
 
 
@@ -209,7 +128,6 @@ def _render_from_templates(data: dict, artifact_dir: Path, artifact_name: str) -
     extra: dict = {}
     if artifact_type == "decision-table":
         sections = data.get("sections", {})
-        extra["decision_matrix"] = _build_decision_matrix_context(sections)
         extra["completeness"] = _check_completeness(
             sections.get("conditions", []),
             sections.get("rules", []),

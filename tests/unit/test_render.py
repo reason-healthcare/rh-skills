@@ -106,7 +106,7 @@ def test_render_decision_table_shows_event_column_when_present(tmp_repo):
     assert result.exit_code == 0
     artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "good-dt"
     content = (artifact_dir / "good-dt-report.md").read_text()
-    assert "Decision Matrix" in content
+    assert "Decision Table" in content
     assert "## Rules" in content
     assert "Screening encounter" in content
     assert "| Event Pattern | c1 High risk | Actions |" in content
@@ -286,7 +286,7 @@ def test_render_decision_table_complete(tmp_repo):
     assert (art_dir / "dt-complete-report.md").exists()
     assert not (art_dir / "dt-complete-decision-tree.md").exists()
     rules_table = (art_dir / "dt-complete-report.md").read_text()
-    assert "Decision Matrix" in rules_table
+    assert "Decision Table" in rules_table
     assert "## Rules" in rules_table
     assert "| Event Pattern | c1 Condition A | c2 Condition B | c3 Condition C | Actions |" in rules_table
     assert "a1 Action 1" in rules_table
