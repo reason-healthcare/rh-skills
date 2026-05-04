@@ -29,6 +29,25 @@ optional_fields:
   - conflicts          # legacy alias for concerns
   - review_status      # auxiliary reviewer state for partially reviewed extract outputs
   - concepts           # deduplicated concept catalog used by terminology-oriented L2 artifacts
+                       # Structure:
+                       #   concepts:
+                       #   - name: <human-readable concept label>  # required
+                       #     type: <SNOMED semantic tag, e.g. finding | disorder | procedure | observable entity>  # required
+                       #     codes:                                # required; at least one entry
+                       #     - system: <code system, e.g. SNOMED-CT | ICD-10-CM | LOINC | RxNorm>  # required
+                       #       code: <code value>                  # required
+                       #       display: <canonical display name>   # required
+                       #       related:                            # optional; within-system descendants only
+                       #       - system: <same system as parent>   # required
+                       #         code: <descendant code>           # required
+                       #         display: <canonical display name> # required
+                       #         relationship: is-a                # required; only is-a (SNOMED subsumption) is currently valid
+                       # Rules:
+                       #   - Each concept entry is deduplicated by (name, type).
+                       #   - codes[] maps the concept across code systems; each system appears at most once.
+                       #   - related[] is for within-system descendants (is-a children) only.
+                       #     Cross-system mappings belong as sibling codes[] entries, not related[].
+                       #   - relationship must be 'is-a'; cross-system equivalences use ConceptMap, not related[].
 
 artifact_types:
   - evidence-summary

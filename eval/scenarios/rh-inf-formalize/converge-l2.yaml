@@ -89,25 +89,10 @@ workspace:
         sections:
           glycemic_targets:
             summary: HbA1c < 7.0% for most adults; < 8.0% for limited life expectancy.
-            evidence_traceability:
-              - claim_id: hba1c-primary
-                statement: "HbA1c goal <7%"
-                source: ada-standards-2024
-                locator: "Section: Glycemic Targets"
           blood_pressure:
             summary: Target BP < 130/80 mmHg for most patients with diabetes.
-            evidence_traceability:
-              - claim_id: bp-target
-                statement: "<130/80 mmHg"
-                source: ada-standards-2024
-                locator: "Section: Blood Pressure"
           ccm_components:
             summary: "Annual foot exam, UACR, dilated eye exam every 1-2 years."
-            evidence_traceability:
-              - claim_id: ccm-foot
-                statement: "Comprehensive foot exam annually"
-                source: ada-standards-2024
-                locator: "Section: Chronic Care Management Components"
 
     - path: topics/diabetes-ccm/structured/diabetes-ccm-quality-measures/diabetes-ccm-quality-measures.yaml
       content: |
@@ -137,11 +122,6 @@ workspace:
                 name: "Diabetes: Foot Exam"
                 type: process
                 program: MIPS
-            evidence_traceability:
-              - claim_id: cms122
-                statement: "CMS122 HbA1c Poor Control measure"
-                source: cms-diabetes-measures
-                locator: "eCQM CMS122v12"
 
 prompt: |
   Use the rh-inf-formalize skill for the topic `diabetes-ccm`.

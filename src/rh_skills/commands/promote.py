@@ -120,8 +120,7 @@ def _extract_readout_path(topic: str) -> Path:
 
 
 def _concept_review_path(topic: str) -> Path:
-    return topic_dir(topic) / "process" / "reviews" / "concepts-review.yaml"
-
+    return topic_dir(topic) / "process" / "plans" / "concepts-review.yml"
 
 def _concept_artifact_path(topic: str) -> Path:
     return topic_dir(topic) / "structured" / "concepts" / "concepts.yaml"
@@ -975,7 +974,7 @@ def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
         "status": "pending-review",
         "concept_count": len(concepts),
         "lookup_completed": False,
-        "review_artifact": f"topics/{topic}/process/reviews/concepts-review.yaml",
+        "review_artifact": f"topics/{topic}/process/plans/concepts-review.yml",
         "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
     }
 
@@ -996,7 +995,7 @@ def _build_concept_review_packet(topic: str, concepts: list[dict]) -> dict:
             "descendant_policy": "descendants-only",
             "approval_order": "dedupe-then-mcp-lookup-then-human-approval",
         },
-        "review_artifact": f"topics/{topic}/process/reviews/concepts-review.yaml",
+        "review_artifact": f"topics/{topic}/process/plans/concepts-review.yml",
         "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
         "concepts": [
             {
@@ -1008,9 +1007,7 @@ def _build_concept_review_packet(topic: str, concepts: list[dict]) -> dict:
                 "lookup_query": concept["name"],
                 "candidate_codes": [],
                 "review_status": "pending-review",
-                "review_notes": "",
-                "custom_concept": False,
-                "codes": [],
+                "review_notes": "",                "codes": [],
             }
             for concept in concepts
         ],
@@ -1018,6 +1015,24 @@ def _build_concept_review_packet(topic: str, concepts: list[dict]) -> dict:
 
 
 def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
+    def _codes_for_l2(codes: list[dict]) -> list[dict]:
+        normalized: list[dict] = []
+        for code in codes:
+            if not isinstance(code, dict):
+                continue
+            entry = {
+                "system": code.get("system", ""),
+                "code": code.get("code", ""),
+                "display": code.get("display", ""),
+            }
+            related = code.get("related")
+            if not related and code.get("related_candidates"):
+                related = code.get("related_candidates")
+            if related:
+                entry["related"] = related
+            normalized.append(entry)
+        return normalized
+
     reviewed_concepts = [
         concept
         for concept in (review_packet.get("concepts", []) or [])
@@ -1028,32 +1043,15 @@ def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
         for concept in reviewed_concepts
         for source in (concept.get("sources") or [])
     })
-    evidence_traceability = []
     concept_rows = []
     for index, concept in enumerate(reviewed_concepts, start=1):
-        evidence_traceability.append({
-            "claim_id": f"concept-{index:03d}",
-            "statement": (
-                f"Concept '{concept.get('name', '')}' ({concept.get('type', '')}) "
-                "was captured from normalized source front matter."
-            ),
-            "evidence": [
-                {
-                    "source": source_name,
-                    "locator": "frontmatter.concepts[]",
-                }
-                for source_name in (concept.get("sources") or [])
-            ],
-        })
         concept_row = {
             "name": concept.get("name", ""),
             "type": concept.get("type", ""),
         }
-        codes = concept.get("codes") or []
+        codes = _codes_for_l2(concept.get("codes") or [])
         if codes:
             concept_row["codes"] = codes
-        if concept.get("custom_concept"):
-            concept_row["custom_concept"] = True
         if concept.get("review_notes"):
             concept_row["notes"] = concept["review_notes"]
         concept_rows.append(concept_row)
@@ -1081,7 +1079,6 @@ def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
                 "Terminology review output derived from normalized front matter. "
                 "Each concept was deduplicated across sources before human review."
             ),
-            "evidence_traceability": evidence_traceability,
         },
         "concepts": concept_rows,
     }
@@ -1153,9 +1150,9 @@ def _write_concepts_l2_artifact(topic: str, tracking: dict, review_packet: dict)
 def _load_concept_review_packet(topic: str) -> dict:
     review_path = _concept_review_path(topic)
     if not review_path.exists():
-        raise click.UsageError(
-            f"No concept review packet found. Run 'rh-skills promote plan {topic}' first."
-        )
+            raise click.UsageError(
+                f"No concept review packet found. Run 'rh-skills promote plan {topic}' first."
+            )
     packet = _yaml_safe().load(review_path.read_text()) or {}
     if not isinstance(packet, dict):
         raise click.UsageError(f"Concept review packet is empty or invalid: {review_path}")
@@ -1172,11 +1169,11 @@ def _find_review_concept(packet: dict, name: str, concept_type: str | None) -> d
         raise click.UsageError(
             f"Concept '{name}'"
             + (f" ({concept_type})" if concept_type else "")
-            + " not found in concepts-review.yaml."
+            + " not found in concepts-review.yml."
         )
     if len(matches) > 1:
         raise click.UsageError(
-            f"Concept name '{name}' is ambiguous in concepts-review.yaml; re-run with --type."
+            f"Concept name '{name}' is ambiguous in concepts-review.yml; re-run with --type."
         )
     return matches[0]
 
@@ -1990,6 +1987,15 @@ def _prompt_related_codes() -> list[dict]:
     return related
 
 
+def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> list[dict]:
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        if candidate.get("system") == code_entry.get("system") and candidate.get("code") == code_entry.get("code"):
+            return list(candidate.get("related_candidates") or [])
+    return []
+
+
 @promote.command("enrich-concepts")
 @click.argument("topic")
 @click.option("--concept", "concept_name", required=True, metavar="NAME", help="Concept name to enrich.")
@@ -2095,7 +2101,7 @@ def review_concepts(topic):
                     )
         decision = click.prompt(
             "Decision",
-            type=click.Choice(["approve", "custom", "exclude", "skip"]),
+            type=click.Choice(["approve", "exclude", "skip"]),
             default="skip",
             show_choices=True,
         )
@@ -2105,19 +2111,9 @@ def review_concepts(topic):
 
         if decision == "exclude":
             note = click.prompt("Exclusion note", default="", show_default=False)
-            concept["custom_concept"] = False
             concept["codes"] = []
             concept["review_notes"] = note
             concept["review_status"] = "excluded"
-            click.echo("")
-            continue
-
-        if decision == "custom":
-            note = click.prompt("Custom concept note", default="", show_default=False)
-            concept["custom_concept"] = True
-            concept["codes"] = []
-            concept["review_notes"] = note
-            concept["review_status"] = "approved"
             click.echo("")
             continue
 
@@ -2127,13 +2123,17 @@ def review_concepts(topic):
             related = _prompt_related_codes()
             if related:
                 code_entry["related"] = related
+            matched_related_candidates = _related_candidates_for_code(code_entry, candidates)
+            if matched_related_candidates:
+                code_entry["related_candidates"] = matched_related_candidates
+                if "related" not in code_entry:
+                    code_entry["related"] = matched_related_candidates
             approved_codes.append(code_entry)
         if not approved_codes:
             click.echo("No codes recorded; leaving concept pending review.\n")
             continue
 
         note = click.prompt("Review notes", default="", show_default=False)
-        concept["custom_concept"] = False
         concept["codes"] = approved_codes
         concept["review_notes"] = note
         concept["review_status"] = "approved"
