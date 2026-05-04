@@ -117,6 +117,29 @@ rh-skills promote enrich-concepts <topic> --concept <name> --body-file <yaml>
 rh-skills promote review-concepts <topic>
 ```
 
+The `--body-file` YAML payload schema:
+
+```yaml
+lookup_query: <query string used in MCP search>  # optional; defaults to concept name
+candidate_codes:                                  # required; empty list when no candidates found
+  - system: <code system label or URI>
+    code: <candidate code>
+    display: <candidate display text>
+    confidence: <optional confidence label>
+    search_query: <query used in MCP>
+    related_candidates:
+      - system: <same system as parent>
+        code: <descendant code>
+        display: <descendant display>
+        relationship: is-a
+        confidence: <optional confidence label>
+lookup_notes: <agent notes about the MCP search; required when candidate_codes is empty —
+              record rationale here, e.g. "No SNOMED match found; concept too specific">
+```
+
+Always populate `lookup_notes` when `candidate_codes` is empty so the rationale
+is preserved in the review packet for human reviewers.
+
 When review is complete, the CLI writes:
 
 `topics/<topic>/structured/concepts/concepts.yaml`
@@ -164,7 +187,6 @@ concepts:
             confidence: <optional confidence label>
     review_status: <pending-review | approved | excluded>
     review_notes: <optional reviewer notes>
-    custom_concept: <true | false>
     codes:
       - system: <approved code system label or URI>
         code: <approved code>
