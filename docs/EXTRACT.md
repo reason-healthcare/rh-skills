@@ -113,6 +113,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 | `topics/<topic>/structured/<name>/<name>.yaml` | **L2 artifact**: semi-structured clinical content |
 | `topics/<topic>/structured/<name>/<name>-report.md` | **Rendered report**: Mermaid diagrams for SME review |
 | `topics/<topic>/process/plans/concepts-plan.yaml` | **Review packet**: pending concept coding review (written by `promote plan`, input to `promote review-concepts`) |
+| `topics/<topic>/process/plans/concepts-plan-readout.md` | **Derived**: human-friendly concept review narrative (do not edit directly) |
 | `tracking.yaml` | Records extract_planned, structured_derived events |
 
 ---
