@@ -103,7 +103,8 @@ section during formalize.
 ### Concept Review Packet
 
 When normalized source front matter contains `concepts[]`, extract planning also
-writes `topics/<topic>/process/plans/concepts-plan.yaml`. This packet:
+writes `topics/<topic>/process/plans/concepts-plan.yaml` and a derived readout
+`topics/<topic>/process/plans/concepts-plan-readout.md`. This packet:
 
 - deduplicates concepts across normalized sources
 - records source provenance

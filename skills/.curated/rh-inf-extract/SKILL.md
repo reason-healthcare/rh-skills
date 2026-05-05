@@ -18,6 +18,7 @@ metadata:
     - topics/<topic>/process/plans/extract-plan.yaml       # control file (source of truth)
     - topics/<topic>/process/plans/extract-plan-readout.md # human-friendly readout (derived, do not edit)
     - topics/<topic>/process/plans/concepts-plan.yaml    # concept coding review packet when front matter concepts are present
+    - topics/<topic>/process/plans/concepts-plan-readout.md # human-friendly readout (derived, do not edit)
     - sources/normalized/
   writes_via_cli:
     - "rh-skills promote derive"
@@ -195,7 +196,8 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    `--force` to regenerate or record corrections in `review_summary` when approving.
 
    If normalized front matter contains concepts, this command also writes
-   `topics/<topic>/process/plans/concepts-plan.yaml`, a deduplicated
+   `topics/<topic>/process/plans/concepts-plan.yaml` and
+   `topics/<topic>/process/plans/concepts-plan-readout.md`, a deduplicated
    pending-review packet for terminology approval.
 
   Before prompting a human to approve terminology concepts, enrich that packet
@@ -364,6 +366,26 @@ Do not prompt for concept approval until RH MCP lookup candidates have been
 gathered into the review packet. That interactive review writes approved
 standardized codes and descendant `is-a` concepts into
 `topics/<topic>/structured/concepts.yaml`.
+
+> **⚠ HUMAN-IN-THE-LOOP RULE — concept review is a two-step propose-then-confirm loop**:
+>
+> **Step 1 — Propose all concepts as a batch (before running the command)**
+> Present a single summary covering every pending concept. For each, include:
+> - Proposed decision: `approve` / `exclude` / `skip`
+> - For `approve`: the primary code(s) you intend to enter (system, code, display),
+>   any `is-a` descendant codes, and your proposed review note
+> - For `exclude`: your proposed exclusion note
+> - For `skip`: reason you are deferring
+>
+> Wait for the user to confirm or correct the full batch.
+> Accept any corrections verbatim.
+>
+> **Step 2 — Execute (after user confirms)**
+> Run `rh-skills promote review-concepts <topic> --reviewer "<your-name>"` and respond to each CLI
+> prompt using the confirmed decisions. At the end the CLI will prompt for a
+> review summary — enter a brief note capturing any decisions or rationale.
+> Do not deviate from what was agreed.
+> Do not run the command before receiving user confirmation.
 
 > **⚠ HUMAN-IN-THE-LOOP RULE**: Concerns are resolved inline during plan mode
 > before this phase is reached. If `rh-skills promote concerns <topic>` still

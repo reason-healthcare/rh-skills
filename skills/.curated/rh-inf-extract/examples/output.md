@@ -23,6 +23,7 @@ Writing:
 `topics/diabetes-ccm/process/plans/extract-plan.yaml`
 `topics/diabetes-ccm/process/plans/extract-plan-readout.md`
 `topics/diabetes-ccm/process/plans/concepts-plan.yaml`
+`topics/diabetes-ccm/process/plans/concepts-plan-readout.md`
 
 Enrich `concepts-plan.yaml` with RH MCP candidate codes and descendant `is-a`
 matches before human approval, for example:
