@@ -39,7 +39,7 @@ concept_review:                    # present when normalized front matter includ
   concept_count: <int>
   lookup_completed: <true | false>
   review_artifact: topics/<topic>/process/reviews/concepts-review.yaml
-  final_artifact: topics/<topic>/structured/concepts/concepts.yaml
+  final_artifact: topics/<topic>/structured/concepts.yaml
 artifacts:
   - name: <kebab-case>
     artifact_type: <catalog type>
@@ -142,7 +142,7 @@ is preserved in the review packet for human reviewers.
 
 When review is complete, the CLI writes:
 
-`topics/<topic>/structured/concepts/concepts.yaml`
+`topics/<topic>/structured/concepts.yaml`
 
 This L2 terminology artifact preserves approved concept codes and any approved
 descendant relationships for downstream formalization.
@@ -163,7 +163,7 @@ lookup_policy:
   descendant_policy: descendants-only
   approval_order: dedupe-then-mcp-lookup-then-human-approval
 review_artifact: topics/<topic>/process/reviews/concepts-review.yaml
-final_artifact: topics/<topic>/structured/concepts/concepts.yaml
+final_artifact: topics/<topic>/structured/concepts.yaml
 concepts:
   - name: <concept name>
     type: <concept type>
@@ -201,7 +201,7 @@ concepts:
 During concept review, a reviewer may also exclude a concept from the final L2
 terminology artifact. Excluded concepts remain in `concepts-review.yaml` with
 their reviewer note for provenance, but are omitted from
-`topics/<topic>/structured/concepts/concepts.yaml`.
+`topics/<topic>/structured/concepts.yaml`.
 
 #### Final L2 terminology concept schema
 

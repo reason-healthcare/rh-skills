@@ -195,7 +195,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    `--force` to regenerate or record corrections in `review_summary` when approving.
 
    If normalized front matter contains concepts, this command also writes
-   `topics/<topic>/process/reviews/concepts-review.yaml`, a deduplicated
+   `topics/<topic>/process/concepts-review.yaml`, a deduplicated
    pending-review packet for terminology approval.
 
   Before prompting a human to approve terminology concepts, enrich that packet
@@ -363,7 +363,7 @@ using a body file generated from prior MCP query results.
 Do not prompt for concept approval until RH MCP lookup candidates have been
 gathered into the review packet. That interactive review writes approved
 standardized codes and descendant `is-a` concepts into
-`topics/<topic>/structured/concepts/concepts.yaml`.
+`topics/<topic>/structured/concepts.yaml`.
 
 > **⚠ HUMAN-IN-THE-LOOP RULE**: Concerns are resolved inline during plan mode
 > before this phase is reached. If `rh-skills promote concerns <topic>` still

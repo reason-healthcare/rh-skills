@@ -2052,12 +2052,69 @@ def _prompt_related_codes() -> list[dict]:
     return related
 
 
+def _normalize_candidate_identity(candidate: object) -> dict[str, str]:
+    """Return normalized system/code/display fields for heterogeneous candidate payloads."""
+    if not isinstance(candidate, dict):
+        return {"system": "", "code": "", "display": ""}
+
+    coding = candidate.get("coding")
+    if not isinstance(coding, dict):
+        coding = {}
+
+    system = str(
+        candidate.get("system")
+        or candidate.get("system_uri")
+        or candidate.get("system_url")
+        or coding.get("system")
+        or ""
+    ).strip()
+    code = str(
+        candidate.get("code")
+        or candidate.get("value")
+        or coding.get("code")
+        or ""
+    ).strip()
+    display = str(
+        candidate.get("display")
+        or candidate.get("name")
+        or candidate.get("label")
+        or coding.get("display")
+        or ""
+    ).strip()
+    return {
+        "system": system,
+        "code": code,
+        "display": display,
+    }
+
+
+def _render_candidate_line(candidate: object) -> str:
+    normalized = _normalize_candidate_identity(candidate)
+    system = normalized["system"] or "[system missing]"
+    code = normalized["code"] or "[code missing]"
+    display = normalized["display"] or "[display missing]"
+    return f"{system} {code} - {display}"
+
+
+def _candidate_related_items(candidate: object) -> list[dict]:
+    if not isinstance(candidate, dict):
+        return []
+    related = candidate.get("related_candidates")
+    if not isinstance(related, list):
+        return []
+    return [item for item in related if isinstance(item, dict)]
+
+
 def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> list[dict]:
+    target_system = str(code_entry.get("system") or "").strip().casefold()
+    target_code = str(code_entry.get("code") or "").strip().casefold()
     for candidate in candidates:
-        if not isinstance(candidate, dict):
-            continue
-        if candidate.get("system") == code_entry.get("system") and candidate.get("code") == code_entry.get("code"):
-            return list(candidate.get("related_candidates") or [])
+        normalized = _normalize_candidate_identity(candidate)
+        if (
+            normalized["system"].casefold() == target_system
+            and normalized["code"].casefold() == target_code
+        ):
+            return _candidate_related_items(candidate)
     return []
 
 
@@ -2149,21 +2206,40 @@ def review_concepts(topic):
         if concept.get("review_status") != "pending-review":
             continue
 
+        click.echo("")
         click.echo(f"Concept: {concept.get('name', '')} ({concept.get('type', '')})")
         click.echo(f"Sources: {', '.join(concept.get('sources', []))}")
+        lookup_query = concept.get("lookup_query") or concept.get("name", "")
+        click.echo(f"Lookup query: {lookup_query}")
         candidates = concept.get("candidate_codes") or []
+        click.echo("MCP candidates:")
         if candidates:
-            click.echo("MCP candidates:")
             for idx, candidate in enumerate(candidates, start=1):
-                click.echo(
-                    f"  {idx}. {candidate.get('system', '')} {candidate.get('code', '')} "
-                    f"- {candidate.get('display', '')}"
-                )
-                for related in candidate.get("related_candidates") or []:
+                click.echo(f"  {idx}. {_render_candidate_line(candidate)}")
+                if isinstance(candidate, dict):
+                    confidence = str(candidate.get("confidence") or "").strip()
+                    search_query = str(candidate.get("search_query") or "").strip()
+                    if confidence:
+                        click.echo(f"     confidence: {confidence}")
+                    if search_query:
+                        click.echo(f"     search_query: {search_query}")
+                    normalized = _normalize_candidate_identity(candidate)
+                    if not normalized["system"] or not normalized["code"]:
+                        click.echo(
+                            "     note: candidate payload is missing canonical system/code fields; "
+                            f"available keys: {', '.join(sorted(candidate.keys()))}"
+                        )
+                for related in _candidate_related_items(candidate):
+                    relationship = str(related.get("relationship") or "").strip() or "related"
                     click.echo(
-                        f"     related ({related.get('relationship', '')}): "
-                        f"{related.get('system', '')} {related.get('code', '')} - {related.get('display', '')}"
+                        f"     {relationship}: {_render_candidate_line(related)}"
                     )
+        else:
+            click.echo("  (none)")
+        lookup_notes = str(concept.get("lookup_notes") or "").strip()
+        if lookup_notes:
+            click.echo(f"Lookup notes: {lookup_notes}")
+        click.echo("")
         decision = click.prompt(
             "Decision",
             type=click.Choice(["approve", "exclude", "skip"]),
