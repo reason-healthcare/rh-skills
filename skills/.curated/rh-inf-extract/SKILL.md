@@ -22,7 +22,7 @@ metadata:
     - sources/normalized/
   writes_via_cli:
     - "rh-skills promote derive"
-    - "rh-skills promote review-concepts"
+    - "rh-skills promote concept review"
     - "rh-skills validate"
     - "rh-skills render"
   uses_mcp:
@@ -61,7 +61,7 @@ instructions to follow.
 
 MCP ownership boundary: this skill/agent performs ReasonHub MCP searches and
 lookups. CLI commands do not perform live MCP lookup on your behalf.
-`rh-skills promote enrich-concepts` only records already-collected lookup
+`rh-skills promote concept enrich` only records already-collected lookup
 results into the review packet.
 
 > **Never inspect `rh-skills` source code** (Python files, test files, or
@@ -202,7 +202,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 
   Before prompting a human to approve terminology concepts, enrich that packet
   with ReasonHub MCP results. MCP queries are run by the agent using MCP tools,
-  then persisted via `rh-skills promote enrich-concepts`.
+  then persisted via `rh-skills promote concept enrich`.
   The required order is:
    1. deduplicate concepts from normalized front matter
    2. run RH MCP terminology lookup for candidate codes
@@ -361,23 +361,23 @@ artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
 
 If the plan includes `concept_review`, populate the packet by calling
-`rh-skills promote enrich-concepts` once per primary MCP result:
-`rh-skills promote enrich-concepts <topic> --concept <name> --candidate "system|code|display[|confidence[|distance]]" --related-candidate "system|code|display[|confidence[|distance]]"`
+`rh-skills promote concept enrich` once per primary MCP result:
+`rh-skills promote concept enrich <topic> --concept <name> --candidate "system|code|display[|confidence[|distance]]" --related-candidate "system|code|display[|confidence[|distance]]"`
 Use `--related-candidate` (repeatable) for is-a descendants of that primary.
 Successive calls for the same concept **append** to `candidate_codes[]`.
 Omit `--candidate` entirely when MCP returned no results — still call to mark lookup complete.
-**Call `enrich-concepts` for every concept before presenting any proposal.**
-`enrich-concepts` only records MCP candidates — it requires no human decision.
+**Call `concept enrich` for every concept before presenting any proposal.**
+`concept enrich` only records MCP candidates — it requires no human decision.
 Once all concepts are enriched, present a **single batch proposal** covering
 every pending concept so the reviewer can see the full candidate list and
 confirm or correct. After the reviewer confirms, execute decisions
-one concept at a time via `review-concepts`. `concepts.yaml` is written during implement mode via `rh-skills promote write-concepts`.
+one concept at a time via `concept review`. `concepts.yaml` is written during implement mode via `rh-skills promote concept write`.
 
 > **⚠ HUMAN-IN-THE-LOOP RULE — concept review is a three-step loop**:
 >
 > **Step 1 — Enrich all concepts (before proposing anything)**
 > For each pending concept, call MCP search tools using the **exact concept name**
-> as the query (do not generate alternative search terms), then call `enrich-concepts`
+> as the query (do not generate alternative search terms), then call `concept enrich`
 > once per primary result with `--related-candidate` for each is-a descendant.
 > Successive calls for the same concept append to `candidate_codes[]`.
 > Omit `--candidate` when MCP returned no results — still call to mark lookup complete.
@@ -387,10 +387,10 @@ one concept at a time via `review-concepts`. `concepts.yaml` is written during i
 > **MCP lookup parallelism**: dispatch all MCP searches as parallel tool calls
 > in a single response turn — do not use subagents. For very large concept sets
 > (>10), batch lookups in groups of 10 to avoid context overload. After all
-> results return, call `enrich-concepts` once per concept sequentially — CLI
+> results return, call `concept enrich` once per concept sequentially — CLI
 > writes must be serial.
 >
-> Do not call `enrich-concepts` in parallel — always write results to the packet one at a time.
+> Do not call `concept enrich` in parallel — always write results to the packet one at a time.
 >
 > **Step 2 — Present the full batch proposal**
 > In a single response, show every pending concept with its MCP candidates
@@ -406,18 +406,18 @@ one concept at a time via `review-concepts`. `concepts.yaml` is written during i
 > explicitly approves the full set (or a clearly stated subset).
 >
 > **Step 3 — Execute decisions (after batch is confirmed)**
-> Call `review-concepts` once per concept, adding `--finalize` on the last call.
+> Call `concept review` once per concept, adding `--finalize` on the last call.
 > `--finalize` seals the review packet only — `concepts.yaml` is written during
-> implement mode via `rh-skills promote write-concepts`.
+> implement mode via `rh-skills promote concept write`.
 > ```sh
-> rh-skills promote review-concepts <topic> \
+> rh-skills promote concept review <topic> \
 >   --concept "Concept A" --decision approved \
 >   --code "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)" \
 >   --reject-candidate "ICD-10|I10|Essential hypertension|SNOMED preferred over ICD-10" \
 >   --note "FSN confirmed"
 >
 > # ... repeat for remaining concepts, --finalize on the last one:
-> rh-skills promote review-concepts <topic> \
+> rh-skills promote concept review <topic> \
 >   --concept "Concept B" --decision exclude --note "Out of scope" \
 >   --finalize --reviewer "<reviewer-name>" --review-summary "<summary>"
 > ```
@@ -532,7 +532,7 @@ rh-skills promote approve <topic> \
 
 **Goal**: Execute only approved extract artifacts. Never write files directly;
 all deterministic writes must go through `rh-skills promote derive`,
-`rh-skills promote write-concepts`, and `rh-skills validate`.
+`rh-skills promote concept write`, and `rh-skills validate`.
 
 ### Steps
 
@@ -542,7 +542,7 @@ all deterministic writes must go through `rh-skills promote derive`,
    If the plan includes `concept_review` with `status: approved`, write
    `concepts.yaml` first before processing other artifacts:
    ```sh
-   rh-skills promote write-concepts <topic>
+   rh-skills promote concept write <topic>
    ```
 3. For each approved artifact, construct the artifact YAML by reasoning over the
    normalized source files and the schema for the artifact type (see `reference.md`).
@@ -650,7 +650,7 @@ all deterministic writes must go through `rh-skills promote derive`,
 
 ### Events
 
-- `structured_derived` — appended by `rh-skills promote derive` for each derived artifact and by `rh-skills promote write-concepts` for the concepts artifact
+- `structured_derived` — appended by `rh-skills promote derive` for each derived artifact and by `rh-skills promote concept write` for the concepts artifact
 
 ### After implement mode — output to user
 
