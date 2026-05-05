@@ -243,12 +243,23 @@ rh-skills promote approve <topic> [OPTIONS]
 - Sets `reviewer_decision` on the named artifact (or enters interactive mode if `--artifact` is omitted)
 - `--finalize` seals the plan (`status: approved`) — required before `rh-inf-extract implement` can run
 
-### `rh-skills promote enrich-concepts <topic>`
+### `rh-skills promote concept <subcommand>`
+
+Manage concept coding review for a topic. The three subcommands mirror the
+`approve` / `derive` pattern used for artifact review:
+
+| Subcommand | Parallel | Purpose |
+|---|---|---|
+| `enrich` | *(unique to concepts)* | Record RH MCP code candidates |
+| `review` | `approve` | Human review/approval decisions |
+| `write` | `derive` | Write `concepts.yaml` from approved packet |
+
+#### `rh-skills promote concept enrich <topic>`
 
 Record one RH MCP candidate for a concept review entry.
 
 ```
-rh-skills promote enrich-concepts <topic> [OPTIONS]
+rh-skills promote concept enrich <topic> [OPTIONS]
 ```
 
 **Options:**
@@ -266,12 +277,12 @@ rh-skills promote enrich-concepts <topic> [OPTIONS]
 - Omit `--candidate` (without `--reset`) to mark lookup complete with no results
 - Call once per primary candidate; use `--related-candidate` for is-a descendants
 
-### `rh-skills promote review-concepts <topic>`
+#### `rh-skills promote concept review <topic>`
 
 Record reviewer decisions for concepts in the concept review packet.
 
 ```
-rh-skills promote review-concepts <topic> [OPTIONS]
+rh-skills promote concept review <topic> [OPTIONS]
 ```
 
 **Options:**
@@ -282,44 +293,44 @@ rh-skills promote review-concepts <topic> [OPTIONS]
 - `--related system|code|display` — Approved is-a descendant code. Repeatable
 - `--reject-candidate system|code[|display[|reason]]` — Explicitly rejected candidate. Repeatable
 - `--note TEXT` — Review note recorded with this concept
-- `--finalize` — Seal the review packet (`status: approved`). **Does NOT write `concepts.yaml`** — run `write-concepts` during implement for that. Can be used alone or with `--concept`
+- `--finalize` — Seal the review packet (`status: approved`). **Does NOT write `concepts.yaml`** — run `concept write` during implement for that. Can be used alone or with `--concept`
 - `--reviewer NAME` — Reviewer name recorded at finalize time
 - `--review-summary TEXT` — Summary note recorded at finalize time
 
 **Behavior:**
 - Sets `review_status` on each concept in `concepts-plan.yaml`
-- `--finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml`; run `rh-skills promote write-concepts <topic>` separately during implement
+- `--finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml`; run `rh-skills promote concept write <topic>` separately during implement
 
 **Examples:**
 ```bash
 # Approve one concept:
-rh-skills promote review-concepts diabetes-screening \
+rh-skills promote concept review diabetes-screening \
   --concept "HbA1c" --decision approved \
   --code "http://loinc.org|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood"
 
 # Exclude and finalize on the last concept:
-rh-skills promote review-concepts diabetes-screening \
+rh-skills promote concept review diabetes-screening \
   --concept "Other" --decision exclude --note "Out of scope" \
   --finalize --reviewer "taylor" --review-summary "Initial review"
 
 # Standalone finalize after manual edits:
-rh-skills promote review-concepts diabetes-screening \
+rh-skills promote concept review diabetes-screening \
   --finalize --reviewer "taylor" --review-summary "Reviewed manually"
 ```
 
-### `rh-skills promote write-concepts <topic>`
+#### `rh-skills promote concept write <topic>`
 
 Write `topics/<topic>/structured/concepts.yaml` from the approved concept review packet.
 
 ```
-rh-skills promote write-concepts <topic>
+rh-skills promote concept write <topic>
 ```
 
 **Behavior:**
 - Requires concept review to be finalized (`status: approved` in `concepts-plan.yaml`)
 - Derives and writes the L2 terminology artifact `concepts.yaml` from approved concept decisions
 - Registers the artifact in `tracking.yaml`
-- Call this during **implement mode** after the extract plan is approved; it is a **separate step** from `review-concepts --finalize`
+- Call this during **implement mode** after the extract plan is approved; it is a **separate step** from `concept review --finalize`
 
 ### `rh-skills promote concerns <topic>`
 

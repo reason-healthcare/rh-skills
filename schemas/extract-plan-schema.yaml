@@ -86,8 +86,8 @@ top_level_fields:
       Optional concept-standardization review packet generated from normalized
       source front matter. Present when source annotations include concepts.
     guidance: >
-      First enrich with `rh-skills promote enrich-concepts <topic> ...`, then
-      review with `rh-skills promote review-concepts <topic>`. The packet
+      First enrich with `rh-skills promote concept enrich <topic> ...`, then
+      review with `rh-skills promote concept review <topic>`. The packet
       signals that ReasonHub MCP must be used to identify standardized codes
       before human approval, and that only descendant is-a concepts should be
       proposed as related approvals. The extract plan must not be finalized

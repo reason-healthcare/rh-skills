@@ -112,7 +112,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 | `topics/<topic>/process/plans/extract-plan-readout.md` | **Derived**: human-friendly narrative (do not edit directly) |
 | `topics/<topic>/structured/<name>/<name>.yaml` | **L2 artifact**: semi-structured clinical content |
 | `topics/<topic>/structured/<name>/<name>-report.md` | **Rendered report**: Mermaid diagrams for SME review |
-| `topics/<topic>/process/plans/concepts-plan.yaml` | **Review packet**: pending concept coding review (written by `promote plan`). Use `promote enrich-concepts` to add MCP candidates, then `promote review-concepts --concept <name> --decision ...` per concept. `promote review-concepts --finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml` — run `promote write-concepts <topic>` during implement for that. |
+| `topics/<topic>/process/plans/concepts-plan.yaml` | **Review packet**: pending concept coding review (written by `promote plan`). Use `promote concept enrich` to add MCP candidates, then `promote concept review --concept <name> --decision ...` per concept. `promote concept review --finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml` — run `promote concept write <topic>` during implement for that. |
 | `topics/<topic>/process/plans/concepts-plan-readout.md` | **Derived**: human-friendly concept review narrative (do not edit directly) |
 | `tracking.yaml` | Records extract_planned, structured_derived events |
 

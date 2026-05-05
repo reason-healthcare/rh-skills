@@ -492,7 +492,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill", "--concept", "Hypertension", "--type", "condition",
+            "concept", "enrich", "my-skill", "--concept", "Hypertension", "--type", "condition",
             "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|high",
             "--related-candidate", "SNOMED-CT|59621000|Essential hypertension (disorder)|medium",
             "--lookup-query", "Hypertension",
@@ -504,7 +504,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure",
+            "concept", "enrich", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure",
             "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)|high",
             "--lookup-query", "Blood pressure screening",
         ],
@@ -518,7 +518,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "review-concepts", "my-skill",
+            "concept", "review", "my-skill",
             "--concept", "Blood pressure screening",
             "--decision", "approved",
             "--code", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
@@ -531,7 +531,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "review-concepts", "my-skill",
+            "concept", "review", "my-skill",
             "--concept", "Hypertension",
             "--decision", "approved",
             "--code", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
@@ -551,7 +551,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     review_hypertension = next(c for c in review_packet["concepts"] if c["name"] == "Hypertension")
     assert review_hypertension["codes"][0]["related_candidates"][0]["code"] == "59621000"
 
-    result = runner.invoke(promote, ["write-concepts", "my-skill"])
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
     artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml"
@@ -630,7 +630,7 @@ def test_review_concepts_requires_mcp_enrichment(tmp_repo):
 
     result = runner.invoke(
         promote,
-        ["review-concepts", "my-skill", "--concept", "Hypertension", "--decision", "approved",
+        ["concept", "review", "my-skill", "--concept", "Hypertension", "--decision", "approved",
          "--code", "SNOMED-CT|38341003|Hypertensive disorder"],
     )
     assert result.exit_code != 0
@@ -646,7 +646,7 @@ def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill", "--concept", "Hypertension", "--type", "condition",
+            "concept", "enrich", "my-skill", "--concept", "Hypertension", "--type", "condition",
             "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
             "--lookup-query", "Hypertension",
         ],
@@ -656,7 +656,7 @@ def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure",
+            "concept", "enrich", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure",
             "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
             "--lookup-query", "Blood pressure screening",
         ],
@@ -667,7 +667,7 @@ def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "review-concepts", "my-skill",
+            "concept", "review", "my-skill",
             "--concept", "Blood pressure screening",
             "--decision", "approved",
             "--code", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
@@ -679,7 +679,7 @@ def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "review-concepts", "my-skill",
+            "concept", "review", "my-skill",
             "--concept", "Hypertension",
             "--decision", "exclude",
             "--note", "Too broad for this computable guideline",
@@ -693,7 +693,7 @@ def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
     assert hypertension["review_status"] == "excluded"
     assert hypertension["review_notes"] == "Too broad for this computable guideline"
 
-    result = runner.invoke(promote, ["write-concepts", "my-skill"])
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text())
@@ -707,7 +707,7 @@ def _enrich_two_concepts(tmp_repo, runner):
     runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill", "--concept", "Hypertension", "--type", "condition",
+            "concept", "enrich", "my-skill", "--concept", "Hypertension", "--type", "condition",
             "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
             "--lookup-query", "Hypertension",
         ],
@@ -715,7 +715,7 @@ def _enrich_two_concepts(tmp_repo, runner):
     runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure",
+            "concept", "enrich", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure",
             "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
             "--lookup-query", "Blood pressure screening",
         ],
@@ -723,7 +723,7 @@ def _enrich_two_concepts(tmp_repo, runner):
 
 
 def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
-    """Per-concept review calls accumulate decisions; write-concepts writes concepts.yaml."""
+    """Per-concept review calls accumulate decisions; concept write writes concepts.yaml."""
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     result = runner.invoke(promote, ["plan", "my-skill"])
@@ -734,7 +734,7 @@ def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "review-concepts", "my-skill",
+            "concept", "review", "my-skill",
             "--concept", "Hypertension", "--decision", "approved",
             "--code", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
             "--note", "FSN confirmed",
@@ -745,7 +745,7 @@ def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "review-concepts", "my-skill",
+            "concept", "review", "my-skill",
             "--concept", "Blood pressure screening", "--decision", "exclude",
             "--note", "Out of scope",
             "--finalize", "--reviewer", "batch-reviewer",
@@ -765,7 +765,7 @@ def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
     bp = next(c for c in packet["concepts"] if c["name"] == "Blood pressure screening")
     assert bp["review_status"] == "excluded"
 
-    result = runner.invoke(promote, ["write-concepts", "my-skill"])
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load(
@@ -787,7 +787,7 @@ def test_review_concepts_reject_candidate_stored_in_packet(tmp_repo):
     runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill",
+            "concept", "enrich", "my-skill",
             "--concept", "Hypertension",
             "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|high",
         ],
@@ -795,7 +795,7 @@ def test_review_concepts_reject_candidate_stored_in_packet(tmp_repo):
     runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill",
+            "concept", "enrich", "my-skill",
             "--concept", "Hypertension",
             "--candidate", "ICD-10|I10|Essential (primary) hypertension|medium",
         ],
@@ -803,7 +803,7 @@ def test_review_concepts_reject_candidate_stored_in_packet(tmp_repo):
     runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill",
+            "concept", "enrich", "my-skill",
             "--concept", "Blood pressure screening",
             "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)|high",
         ],
@@ -812,7 +812,7 @@ def test_review_concepts_reject_candidate_stored_in_packet(tmp_repo):
     result = runner.invoke(
         promote,
         [
-            "review-concepts", "my-skill",
+            "concept", "review", "my-skill",
             "--concept", "Hypertension", "--decision", "approved",
             "--code", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
             "--reject-candidate", "ICD-10|I10|Essential (primary) hypertension|SNOMED preferred over ICD-10",
@@ -845,7 +845,7 @@ def test_review_concepts_reject_candidate_display_filled_from_enrichment(tmp_rep
     runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill",
+            "concept", "enrich", "my-skill",
             "--concept", "Hypertension",
             "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|high",
         ],
@@ -853,7 +853,7 @@ def test_review_concepts_reject_candidate_display_filled_from_enrichment(tmp_rep
     runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill",
+            "concept", "enrich", "my-skill",
             "--concept", "Hypertension",
             "--candidate", "ICD-10|I10|Essential (primary) hypertension|medium",
         ],
@@ -861,7 +861,7 @@ def test_review_concepts_reject_candidate_display_filled_from_enrichment(tmp_rep
     runner.invoke(
         promote,
         [
-            "enrich-concepts", "my-skill",
+            "concept", "enrich", "my-skill",
             "--concept", "Blood pressure screening",
             "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)|high",
         ],
@@ -871,7 +871,7 @@ def test_review_concepts_reject_candidate_display_filled_from_enrichment(tmp_rep
     result = runner.invoke(
         promote,
         [
-            "review-concepts", "my-skill",
+            "concept", "review", "my-skill",
             "--concept", "Hypertension", "--decision", "approved",
             "--code", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
             "--reject-candidate", "ICD-10|I10",
@@ -918,13 +918,13 @@ def test_review_concepts_standalone_finalize_seals_manually_edited_plan(tmp_repo
 
     result = runner.invoke(
         promote,
-        ["review-concepts", "my-skill", "--finalize", "--reviewer", "manual-reviewer",
+        ["concept", "review", "my-skill", "--finalize", "--reviewer", "manual-reviewer",
          "--review-summary", "Edited directly"],
     )
     assert result.exit_code == 0, result.output
     assert "finalized" in result.output
 
-    result = runner.invoke(promote, ["write-concepts", "my-skill"])
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load(
@@ -947,7 +947,7 @@ def test_review_concepts_standalone_finalize_fails_when_concepts_pending(tmp_rep
     # Only approve one concept, leave the other pending
     result = runner.invoke(
         promote,
-        ["review-concepts", "my-skill", "--concept", "Hypertension", "--decision", "approved",
+        ["concept", "review", "my-skill", "--concept", "Hypertension", "--decision", "approved",
          "--code", "SNOMED-CT|38341003|Hypertensive disorder"],
     )
     assert result.exit_code == 0, result.output
@@ -955,7 +955,7 @@ def test_review_concepts_standalone_finalize_fails_when_concepts_pending(tmp_rep
     # Standalone --finalize should warn about the remaining pending concept
     result = runner.invoke(
         promote,
-        ["review-concepts", "my-skill", "--finalize"],
+        ["concept", "review", "my-skill", "--finalize"],
     )
     assert result.exit_code == 0, result.output
     assert "pending review" in result.output
@@ -963,7 +963,7 @@ def test_review_concepts_standalone_finalize_fails_when_concepts_pending(tmp_rep
 
 
 def test_write_concepts_requires_approved_packet(tmp_repo):
-    """write-concepts fails if concept review packet is not yet finalized."""
+    """concept write fails if concept review packet is not yet finalized."""
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     result = runner.invoke(promote, ["plan", "my-skill"])
@@ -971,7 +971,7 @@ def test_write_concepts_requires_approved_packet(tmp_repo):
 
     _enrich_two_concepts(tmp_repo, runner)
 
-    result = runner.invoke(promote, ["write-concepts", "my-skill"])
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code != 0
     assert "not approved" in result.output
 
