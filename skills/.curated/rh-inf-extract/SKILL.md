@@ -230,11 +230,13 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
   are available**, resolve candidate codes before writing the plan.
   These are direct MCP tool calls from the agent (not `rh-skills` lookup CLI):
    a. If the target code system is not yet clear, call
-      `reasonhub-search_all_codesystems` with each key clinical concept as the
-      query to identify the most appropriate system(s).
+      `reasonhub-search_all_codesystems` using the **exact concept name** as the
+      query to identify the most appropriate system(s). Do not rephrase or
+      generate alternative search terms — use the concept name verbatim.
    b. Refine with system-specific searches (`reasonhub-search_snomed`,
       `reasonhub-search_loinc`, `reasonhub-search_icd10`,
-      `reasonhub-search_rxnorm`) based on the concept domain:
+      `reasonhub-search_rxnorm`) based on the concept domain, again using the
+      **exact concept name** as the query:
       - lab / observable → LOINC
       - clinical finding / procedure / condition → SNOMED CT
       - diagnosis / billing → ICD-10-CM
@@ -243,9 +245,9 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       canonical display name and, for quantitative LOINC codes, the recommended
       UCUM unit.
    d. Record candidate codes in the artifact's `candidate_codes[]` field in the
-      review packet. Include `code`, `system`, `display`, and `search_query` for
-      each entry so the reviewer can evaluate and approve or remove codes before
-      implement.
+      review packet. Include `code`, `system`, `display`, `search_query`,
+      `confidence`, and `distance` for each entry so the reviewer can evaluate
+      and approve or remove codes before implement.
 
    For each proposed `assessment` artifact, resolve LOINC codes using the
    reasonhub MCP tools. **This is required, not optional.** If the source
@@ -358,34 +360,71 @@ After plan mode completes, the plan is in `status: pending-review` and each
 artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
 
-If the plan includes `concept_review`, run `rh-skills promote review-concepts <topic>`
-before finalizing extraction. First populate the packet through
-`rh-skills promote enrich-concepts <topic> --concept <name> --body-file <yaml>`
-using a body file generated from prior MCP query results.
-Do not prompt for concept approval until RH MCP lookup candidates have been
-gathered into the review packet. That interactive review writes approved
-standardized codes and descendant `is-a` concepts into
-`topics/<topic>/structured/concepts.yaml`.
+If the plan includes `concept_review`, populate the packet by calling
+`rh-skills promote enrich-concepts` once per primary MCP result:
+`rh-skills promote enrich-concepts <topic> --concept <name> --candidate "system|code|display[|confidence[|distance]]" --related-candidate "system|code|display[|confidence[|distance]]"`
+Use `--related-candidate` (repeatable) for is-a descendants of that primary.
+Successive calls for the same concept **append** to `candidate_codes[]`.
+Omit `--candidate` entirely when MCP returned no results — still call to mark lookup complete.
+**Call `enrich-concepts` for every concept before presenting any proposal.**
+`enrich-concepts` only records MCP candidates — it requires no human decision.
+Once all concepts are enriched, present a **single batch proposal** covering
+every pending concept so the reviewer can see the full candidate list and
+confirm or correct. After the reviewer confirms, execute decisions
+one concept at a time via `review-concepts`. `concepts.yaml` is written during implement mode via `rh-skills promote write-concepts`.
 
-> **⚠ HUMAN-IN-THE-LOOP RULE — concept review is a two-step propose-then-confirm loop**:
+> **⚠ HUMAN-IN-THE-LOOP RULE — concept review is a three-step loop**:
 >
-> **Step 1 — Propose all concepts as a batch (before running the command)**
-> Present a single summary covering every pending concept. For each, include:
-> - Proposed decision: `approve` / `exclude` / `skip`
-> - For `approve`: the primary code(s) you intend to enter (system, code, display),
+> **Step 1 — Enrich all concepts (before proposing anything)**
+> For each pending concept, call MCP search tools using the **exact concept name**
+> as the query (do not generate alternative search terms), then call `enrich-concepts`
+> once per primary result with `--related-candidate` for each is-a descendant.
+> Successive calls for the same concept append to `candidate_codes[]`.
+> Omit `--candidate` when MCP returned no results — still call to mark lookup complete.
+> Do this for every concept before showing any proposal to the user.
+> No human confirmation is needed for this step — it records data, not decisions.
+>
+> **MCP lookup parallelism**: dispatch all MCP searches as parallel tool calls
+> in a single response turn — do not use subagents. For very large concept sets
+> (>10), batch lookups in groups of 10 to avoid context overload. After all
+> results return, call `enrich-concepts` once per concept sequentially — CLI
+> writes must be serial.
+>
+> Do not call `enrich-concepts` in parallel — always write results to the packet one at a time.
+>
+> **Step 2 — Present the full batch proposal**
+> In a single response, show every pending concept with its MCP candidates
+> (`confidence` included) and your proposed decision for each:
+> - Proposed decision: `approve` / `exclude`
+> - For `approve`: the specific code from `candidate_codes[]` you recommend,
 >   any `is-a` descendant codes, and your proposed review note
 > - For `exclude`: your proposed exclusion note
-> - For `skip`: reason you are deferring
 >
-> Wait for the user to confirm or correct the full batch.
-> Accept any corrections verbatim.
+> **⚠ Present all concepts together and wait for the reviewer to confirm or
+> correct the entire batch before running any CLI command.**
+> Accept any corrections verbatim. Do not record anything until the reviewer
+> explicitly approves the full set (or a clearly stated subset).
 >
-> **Step 2 — Execute (after user confirms)**
-> Run `rh-skills promote review-concepts <topic> --reviewer "<your-name>"` and respond to each CLI
-> prompt using the confirmed decisions. At the end the CLI will prompt for a
-> review summary — enter a brief note capturing any decisions or rationale.
-> Do not deviate from what was agreed.
-> Do not run the command before receiving user confirmation.
+> **Step 3 — Execute decisions (after batch is confirmed)**
+> Call `review-concepts` once per concept, adding `--finalize` on the last call.
+> `--finalize` seals the review packet only — `concepts.yaml` is written during
+> implement mode via `rh-skills promote write-concepts`.
+> ```sh
+> rh-skills promote review-concepts <topic> \
+>   --concept "Concept A" --decision approved \
+>   --code "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)" \
+>   --reject-candidate "ICD-10|I10|Essential hypertension|SNOMED preferred over ICD-10" \
+>   --note "FSN confirmed"
+>
+> # ... repeat for remaining concepts, --finalize on the last one:
+> rh-skills promote review-concepts <topic> \
+>   --concept "Concept B" --decision exclude --note "Out of scope" \
+>   --finalize --reviewer "<reviewer-name>" --review-summary "<summary>"
+> ```
+> Use `--reject-candidate "system|code[|display[|reason]]"` (repeatable) to record
+> which candidates from `candidate_codes[]` were explicitly considered and rejected.
+> It is optional — candidates not mentioned are silently dropped; use it when the
+> rejection rationale should be preserved for audit.
 
 > **⚠ HUMAN-IN-THE-LOOP RULE**: Concerns are resolved inline during plan mode
 > before this phase is reached. If `rh-skills promote concerns <topic>` still
@@ -492,14 +531,19 @@ rh-skills promote approve <topic> \
 ## Mode: `implement`
 
 **Goal**: Execute only approved extract artifacts. Never write files directly;
-all deterministic writes must go through `rh-skills promote derive` and
-`rh-skills validate`.
+all deterministic writes must go through `rh-skills promote derive`,
+`rh-skills promote write-concepts`, and `rh-skills validate`.
 
 ### Steps
 
 1. Read and validate `topics/<topic>/process/plans/extract-plan.yaml`.
 2. Fail if the plan is missing, if plan status is not `approved`, or if any
    target artifact remains `pending-review`, `needs-revision`, or `rejected`.
+   If the plan includes `concept_review` with `status: approved`, write
+   `concepts.yaml` first before processing other artifacts:
+   ```sh
+   rh-skills promote write-concepts <topic>
+   ```
 3. For each approved artifact, construct the artifact YAML by reasoning over the
    normalized source files and the schema for the artifact type (see `reference.md`).
    You are the reasoning layer — the CLI only writes what you provide.
@@ -606,7 +650,7 @@ all deterministic writes must go through `rh-skills promote derive` and
 
 ### Events
 
-- `structured_derived` — appended by `rh-skills promote derive` for each derived artifact
+- `structured_derived` — appended by `rh-skills promote derive` for each derived artifact and by `rh-skills promote write-concepts` for the concepts artifact
 
 ### After implement mode — output to user
 
