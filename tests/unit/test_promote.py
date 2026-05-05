@@ -556,6 +556,11 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
         ),
     )
     assert result.exit_code == 0, result.output
+    assert "MCP candidates:" in result.output
+    assert "SNOMED-CT 38341003 - Hypertensive disorder, systemic arterial (disorder)" in result.output
+    assert "confidence: high" in result.output
+    assert "search_query: Hypertension" in result.output
+    assert "is-a: SNOMED-CT 59621000 - Essential hypertension (disorder)" in result.output
 
     review_packet = YAML(typ="safe").load(
         (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yaml").read_text()
