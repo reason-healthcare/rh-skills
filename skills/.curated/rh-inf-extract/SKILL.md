@@ -17,7 +17,7 @@ metadata:
     - tracking.yaml
     - topics/<topic>/process/plans/extract-plan.yaml       # control file (source of truth)
     - topics/<topic>/process/plans/extract-plan-readout.md # human-friendly readout (derived, do not edit)
-    - topics/<topic>/process/reviews/concepts-review.yaml  # concept coding review packet when front matter concepts are present
+    - topics/<topic>/process/plans/concepts-plan.yaml    # concept coding review packet when front matter concepts are present
     - sources/normalized/
   writes_via_cli:
     - "rh-skills promote derive"
@@ -195,7 +195,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    `--force` to regenerate or record corrections in `review_summary` when approving.
 
    If normalized front matter contains concepts, this command also writes
-   `topics/<topic>/process/concepts-review.yaml`, a deduplicated
+   `topics/<topic>/process/plans/concepts-plan.yaml`, a deduplicated
    pending-review packet for terminology approval.
 
   Before prompting a human to approve terminology concepts, enrich that packet

@@ -38,7 +38,7 @@ concept_review:                    # present when normalized front matter includ
   status: <pending-review | approved>
   concept_count: <int>
   lookup_completed: <true | false>
-  review_artifact: topics/<topic>/process/reviews/concepts-review.yaml
+  review_artifact: topics/<topic>/process/plans/concepts-plan.yaml
   final_artifact: topics/<topic>/structured/concepts.yaml
 artifacts:
   - name: <kebab-case>
@@ -103,7 +103,7 @@ section during formalize.
 ### Concept Review Packet
 
 When normalized source front matter contains `concepts[]`, extract planning also
-writes `topics/<topic>/process/reviews/concepts-review.yaml`. This packet:
+writes `topics/<topic>/process/plans/concepts-plan.yaml`. This packet:
 
 - deduplicates concepts across normalized sources
 - records source provenance
@@ -147,7 +147,7 @@ When review is complete, the CLI writes:
 This L2 terminology artifact preserves approved concept codes and any approved
 descendant relationships for downstream formalization.
 
-#### concepts-review.yaml schema
+#### concepts-plan.yaml schema
 
 ```yaml
 topic: <topic-slug>
@@ -162,7 +162,7 @@ lookup_policy:
   directive: use-mcp-to-identify-standardized-codes
   descendant_policy: descendants-only
   approval_order: dedupe-then-mcp-lookup-then-human-approval
-review_artifact: topics/<topic>/process/reviews/concepts-review.yaml
+review_artifact: topics/<topic>/process/plans/concepts-plan.yaml
 final_artifact: topics/<topic>/structured/concepts.yaml
 concepts:
   - name: <concept name>
@@ -199,7 +199,7 @@ concepts:
 ```
 
 During concept review, a reviewer may also exclude a concept from the final L2
-terminology artifact. Excluded concepts remain in `concepts-review.yaml` with
+terminology artifact. Excluded concepts remain in `concepts-plan.yaml` with
 their reviewer note for provenance, but are omitted from
 `topics/<topic>/structured/concepts.yaml`.
 

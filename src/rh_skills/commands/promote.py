@@ -120,7 +120,7 @@ def _extract_readout_path(topic: str) -> Path:
 
 
 def _concept_review_path(topic: str) -> Path:
-    return topic_dir(topic) / "process" / "plans" / "concepts-review.yaml"
+    return topic_dir(topic) / "process" / "plans" / "concepts-plan.yaml"
 
 def _concept_artifact_path(topic: str) -> Path:
     return topic_dir(topic) / "structured" / "concepts.yaml"
@@ -973,7 +973,7 @@ def _build_concept_review(topic: str, concepts: list[dict], source: str = "norma
         "status": "pending-review",
         "concept_count": len(concepts),
         "lookup_completed": False,
-        "review_artifact": f"topics/{topic}/process/plans/concepts-review.yaml",
+        "review_artifact": f"topics/{topic}/process/plans/concepts-plan.yaml",
         "final_artifact": f"topics/{topic}/structured/concepts.yaml",
     }
 
@@ -994,7 +994,7 @@ def _build_concept_review_packet(topic: str, concepts: list[dict], source: str =
             "descendant_policy": "descendants-only",
             "approval_order": "dedupe-then-mcp-lookup-then-human-approval",
         },
-        "review_artifact": f"topics/{topic}/process/plans/concepts-review.yaml",
+        "review_artifact": f"topics/{topic}/process/plans/concepts-plan.yaml",
         "final_artifact": f"topics/{topic}/structured/concepts.yaml",
         "concepts": [
             {
@@ -1234,11 +1234,11 @@ def _find_review_concept(packet: dict, name: str, concept_type: str | None) -> d
         raise click.UsageError(
             f"Concept '{name}'"
             + (f" ({concept_type})" if concept_type else "")
-            + " not found in concepts-review.yaml."
+            + " not found in concepts-plan.yaml."
         )
     if len(matches) > 1:
         raise click.UsageError(
-            f"Concept name '{name}' is ambiguous in concepts-review.yaml; re-run with --type."
+            f"Concept name '{name}' is ambiguous in concepts-plan.yaml; re-run with --type."
         )
     return matches[0]
 
