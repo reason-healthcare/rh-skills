@@ -117,24 +117,24 @@ Review it with:
 # Step 1: enrich all concepts (no human decision required)
 # One call per primary candidate; --related-candidate for each is-a descendant.
 # Successive calls for the same concept append to candidate_codes[].
-rh-skills promote enrich-concepts <topic> --concept <name> \
+rh-skills promote concept enrich <topic> --concept <name> \
   --candidate "system|code|display[|confidence[|distance]]" \
   --related-candidate "system|code|display[|confidence[|distance]]"
-# Omit --candidate entirely when MCP returned no results; still call enrich-concepts.
+# Omit --candidate entirely when MCP returned no results; still call concept enrich.
 # ... repeat for every concept ...
 
 # Step 2: record decisions — one call per concept; --finalize on the last
-rh-skills promote review-concepts <topic> \
+rh-skills promote concept review <topic> \
   --concept "<name>" --decision approved \
   --code "system|code|display" \
   --reject-candidate "system|code[|display[|reason]]" \
   --note "<rationale>"
-rh-skills promote review-concepts <topic> \
+rh-skills promote concept review <topic> \
   --concept "<name>" --decision exclude --note "<reason>" \
   --finalize --reviewer "<name>" --review-summary "<summary>"
 
 # Standalone finalize (after manually editing concepts-plan.yaml):
-rh-skills promote review-concepts <topic> \
+rh-skills promote concept review <topic> \
   --finalize --reviewer "<name>" --review-summary "<summary>"
 ```
 
@@ -177,21 +177,21 @@ system|code|display[|confidence[|distance]]
 entry, each with `relationship: is-a` added automatically.
 
 Successive calls for the same concept append to `candidate_codes[]`.
-Omit `--candidate` entirely when MCP returned no results — still call `enrich-concepts`
+Omit `--candidate` entirely when MCP returned no results — still call `concept enrich`
 to mark the concept as lookup-completed.
 
 Use `--lookup-notes` to record why no candidates were found:
 ```sh
-rh-skills promote enrich-concepts <topic> --concept "Rare finding" \
+rh-skills promote concept enrich <topic> --concept "Rare finding" \
   --lookup-notes "No SNOMED match found; concept too specific"
 ```
 
 Use `--reset` to clear `candidate_codes[]` and start fresh:
 ```sh
-rh-skills promote enrich-concepts <topic> --concept <name> --reset
+rh-skills promote concept enrich <topic> --concept <name> --reset
 ```
 
-### `--reject-candidate` flag format (`review-concepts`)
+### `--reject-candidate` flag format (`concept review`)
 
 ```
 system|code[|display[|reason]]
