@@ -120,11 +120,10 @@ def _extract_readout_path(topic: str) -> Path:
 
 
 def _concept_review_path(topic: str) -> Path:
-    return topic_dir(topic) / "process" / "plans" / "concepts-review.yml"
+    return topic_dir(topic) / "process" / "plans" / "concepts-review.yaml"
 
 def _concept_artifact_path(topic: str) -> Path:
-    return topic_dir(topic) / "structured" / "concepts" / "concepts.yaml"
-
+    return topic_dir(topic) / "structured" / "concepts.yaml"
 
 def _formalize_plan_path(topic: str) -> Path:
     return topic_dir(topic) / "process" / "plans" / "formalize-plan.yaml"
@@ -966,20 +965,20 @@ def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
     )
 
 
-def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
+def _build_concept_review(topic: str, concepts: list[dict], source: str = "normalized-frontmatter") -> dict | None:
     if not concepts:
         return None
     return {
-        "source": "normalized-frontmatter",
+        "source": source,
         "status": "pending-review",
         "concept_count": len(concepts),
         "lookup_completed": False,
-        "review_artifact": f"topics/{topic}/process/plans/concepts-review.yml",
-        "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
+        "review_artifact": f"topics/{topic}/process/plans/concepts-review.yaml",
+        "final_artifact": f"topics/{topic}/structured/concepts.yaml",
     }
 
 
-def _build_concept_review_packet(topic: str, concepts: list[dict]) -> dict:
+def _build_concept_review_packet(topic: str, concepts: list[dict], source: str = "normalized-frontmatter") -> dict:
     return {
         "topic": topic,
         "status": "pending-review",
@@ -987,7 +986,7 @@ def _build_concept_review_packet(topic: str, concepts: list[dict]) -> dict:
         "generated_at": now_iso(),
         "reviewed_at": None,
         "review_summary": "",
-        "source": "normalized-frontmatter",
+        "source": source,
         "lookup_completed": False,
         "lookup_policy": {
             "service": "reasonhub-mcp",
@@ -995,8 +994,8 @@ def _build_concept_review_packet(topic: str, concepts: list[dict]) -> dict:
             "descendant_policy": "descendants-only",
             "approval_order": "dedupe-then-mcp-lookup-then-human-approval",
         },
-        "review_artifact": f"topics/{topic}/process/plans/concepts-review.yml",
-        "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
+        "review_artifact": f"topics/{topic}/process/plans/concepts-review.yaml",
+        "final_artifact": f"topics/{topic}/structured/concepts.yaml",
         "concepts": [
             {
                 "name": concept["name"],
@@ -1016,21 +1015,91 @@ def _build_concept_review_packet(topic: str, concepts: list[dict]) -> dict:
 
 def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
     def _codes_for_l2(codes: list[dict]) -> list[dict]:
-        normalized: list[dict] = []
+        def _related_entries(values: object) -> list[dict]:
+            if not isinstance(values, list):
+                return []
+            deduped_related: list[dict] = []
+            related_keys: set[tuple[str, str, str]] = set()
+            for related in values:
+                if not isinstance(related, dict):
+                    continue
+                system = str(related.get("system") or "").strip()
+                code = str(related.get("code") or "").strip()
+                if not system or not code:
+                    continue
+                relationship = str(related.get("relationship") or "").strip()
+                dedup_key = (system.casefold(), code.casefold(), relationship.casefold())
+                if dedup_key in related_keys:
+                    continue
+                related_keys.add(dedup_key)
+                deduped_related.append(
+                    {
+                        "system": system,
+                        "code": code,
+                        "display": str(related.get("display") or ""),
+                        **({"relationship": relationship} if relationship else {}),
+                    }
+                )
+            return deduped_related
+
+        deduped_codes: dict[tuple[str, str], dict] = {}
+        code_order: list[tuple[str, str]] = []
         for code in codes:
             if not isinstance(code, dict):
                 continue
-            entry = {
-                "system": code.get("system", ""),
-                "code": code.get("code", ""),
-                "display": code.get("display", ""),
-            }
+            system = str(code.get("system") or "").strip()
+            code_value = str(code.get("code") or "").strip()
+            if not system or not code_value:
+                continue
+            dedup_key = (system.casefold(), code_value.casefold())
             related = code.get("related")
             if not related and code.get("related_candidates"):
                 related = code.get("related_candidates")
-            if related:
-                entry["related"] = related
-            normalized.append(entry)
+            normalized_related = _related_entries(related)
+
+            if dedup_key not in deduped_codes:
+                entry = {
+                    "system": system,
+                    "code": code_value,
+                    "display": str(code.get("display") or ""),
+                }
+                if normalized_related:
+                    entry["related"] = normalized_related
+                deduped_codes[dedup_key] = entry
+                code_order.append(dedup_key)
+                continue
+
+            existing = deduped_codes[dedup_key]
+            if not existing.get("display") and code.get("display"):
+                existing["display"] = str(code.get("display"))
+
+            if normalized_related:
+                merged_related = list(existing.get("related") or [])
+                seen_related = {
+                    (
+                        str(item.get("system") or "").casefold(),
+                        str(item.get("code") or "").casefold(),
+                        str(item.get("relationship") or "").casefold(),
+                    )
+                    for item in merged_related
+                    if isinstance(item, dict)
+                }
+                for related_entry in normalized_related:
+                    related_key = (
+                        str(related_entry.get("system") or "").casefold(),
+                        str(related_entry.get("code") or "").casefold(),
+                        str(related_entry.get("relationship") or "").casefold(),
+                    )
+                    if related_key in seen_related:
+                        continue
+                    merged_related.append(related_entry)
+                    seen_related.add(related_key)
+                if merged_related:
+                    existing["related"] = merged_related
+
+        normalized: list[dict] = []
+        for dedup_key in code_order:
+            normalized.append(dict(deduped_codes[dedup_key]))
         return normalized
 
     reviewed_concepts = [
@@ -1044,7 +1113,7 @@ def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
         for source in (concept.get("sources") or [])
     })
     concept_rows = []
-    for index, concept in enumerate(reviewed_concepts, start=1):
+    for concept in reviewed_concepts:
         concept_row = {
             "name": concept.get("name", ""),
             "type": concept.get("type", ""),
@@ -1064,19 +1133,15 @@ def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
         "status": "draft",
         "domain": "terminology",
         "description": (
-            "Deduplicated concept catalog derived from normalized source front matter "
+            "Deduplicated concept catalog derived from topic concept annotations "
             "and reviewed for standardized coding."
         ),
         "derived_from": derived_from,
         "artifact_type": "terminology",
-        "clinical_question": (
-            "Which deduplicated concepts from normalized front matter should be "
-            "represented with standardized codes and approved descendants?"
-        ),
         "review_status": review_packet.get("status", "pending-review"),
         "sections": {
             "summary": (
-                "Terminology review output derived from normalized front matter. "
+                "Terminology review output derived from topic concept annotations. "
                 "Each concept was deduplicated across sources before human review."
             ),
         },
@@ -1127,7 +1192,7 @@ def _write_concepts_l2_artifact(topic: str, tracking: dict, review_packet: dict)
     entry = next((item for item in structured if item.get("name") == "concepts"), None)
     payload = {
         "name": "concepts",
-        "file": f"topics/{topic}/structured/concepts/concepts.yaml",
+        "file": f"topics/{topic}/structured/concepts.yaml",
         "created_at": now_iso(),
         "checksum": checksum,
         "derived_from": artifact.get("derived_from", []),
@@ -1169,11 +1234,11 @@ def _find_review_concept(packet: dict, name: str, concept_type: str | None) -> d
         raise click.UsageError(
             f"Concept '{name}'"
             + (f" ({concept_type})" if concept_type else "")
-            + " not found in concepts-review.yml."
+            + " not found in concepts-review.yaml."
         )
     if len(matches) > 1:
         raise click.UsageError(
-            f"Concept name '{name}' is ambiguous in concepts-review.yml; re-run with --type."
+            f"Concept name '{name}' is ambiguous in concepts-review.yaml; re-run with --type."
         )
     return matches[0]
 
