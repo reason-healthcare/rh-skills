@@ -172,8 +172,8 @@ def write_extract_plan(
             "status": concept_review_status,
             "concept_count": 2,
             "lookup_completed": concept_lookup_completed,
-            "review_artifact": f"topics/{topic_name}/process/plans/concepts-review.yml",
-            "final_artifact": f"topics/{topic_name}/structured/concepts/concepts.yaml",
+            "review_artifact": f"topics/{topic_name}/process/plans/concepts-review.yaml",
+            "final_artifact": f"topics/{topic_name}/structured/concepts.yaml",
         },
         "artifacts": artifacts or [],
     }
@@ -458,7 +458,7 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     assert artifact["source_files"]
     assert "evidence_traceability" in artifact["required_sections"]
 
-    concept_review_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yml"
+    concept_review_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yaml"
     assert concept_review_path.exists()
     concept_review = YAML(typ="safe").load(concept_review_path.read_text())
     assert concept_review["status"] == "pending-review"
@@ -558,12 +558,12 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     assert result.exit_code == 0, result.output
 
     review_packet = YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yml").read_text()
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yaml").read_text()
     )
     review_hypertension = next(c for c in review_packet["concepts"] if c["name"] == "Hypertension")
     assert review_hypertension["codes"][0]["related_candidates"][0]["code"] == "59621000"
 
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml"
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml"
     assert artifact_path.exists()
     artifact = YAML(typ="safe").load(artifact_path.read_text())
     assert artifact["artifact_type"] == "terminology"
@@ -573,6 +573,62 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     hypertension = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
     assert hypertension["codes"][0]["code"] == "38341003"
     assert hypertension["codes"][0]["related"][0]["relationship"] == "is-a"
+
+
+def test_concepts_l2_dedups_primary_codes_but_keeps_related_overlap():
+    from rh_skills.commands.promote import _build_concepts_l2_artifact
+
+    review_packet = {
+        "status": "approved",
+        "concepts": [
+            {
+                "name": "Nasal discharge",
+                "type": "finding",
+                "sources": ["cdc-rhinitis"],
+                "review_status": "approved",
+                "codes": [
+                    {
+                        "system": "http://snomed.info/sct",
+                        "code": "64531003",
+                        "display": "Nasal discharge (finding)",
+                        "related_candidates": [
+                            {
+                                "system": "http://snomed.info/sct",
+                                "code": "14310000",
+                                "display": "Purulent nasal discharge (finding)",
+                                "relationship": "is-a",
+                            },
+                            {
+                                "system": "http://snomed.info/sct",
+                                "code": "14310000",
+                                "display": "Purulent nasal discharge (finding)",
+                                "relationship": "is-a",
+                            },
+                        ],
+                    },
+                    {
+                        "system": "http://snomed.info/sct",
+                        "code": "64531003",
+                        "display": "Nasal discharge (finding)",
+                    },
+                    {
+                        "system": "http://snomed.info/sct",
+                        "code": "14310000",
+                        "display": "Purulent nasal discharge (finding)",
+                    },
+                ],
+            }
+        ],
+    }
+
+    artifact = _build_concepts_l2_artifact("rhinitis", review_packet)
+    codes = artifact["concepts"][0]["codes"]
+
+    assert len(codes) == 2
+    assert codes[0]["code"] == "64531003"
+    assert len(codes[0]["related"]) == 1
+    assert codes[0]["related"][0]["code"] == "14310000"
+    assert codes[1]["code"] == "14310000"
 
 
 def test_review_concepts_requires_mcp_enrichment(tmp_repo):
@@ -640,12 +696,12 @@ def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
     )
     assert result.exit_code == 0, result.output
 
-    review_packet = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yml").read_text())
+    review_packet = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yaml").read_text())
     hypertension = next(c for c in review_packet["concepts"] if c["name"] == "Hypertension")
     assert hypertension["review_status"] == "excluded"
     assert hypertension["review_notes"] == "Too broad for this computable guideline"
 
-    artifact = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text())
+    artifact = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text())
     concept_names = [c["name"] for c in artifact["concepts"]]
     assert "Hypertension" not in concept_names
     assert concept_names == ["Blood pressure screening"]
