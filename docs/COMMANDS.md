@@ -206,6 +206,160 @@ rh-skills promote combine <topic> screening-criteria risk-factors <target-name>
 
 Creates `topics/<topic>/computable/<target-name>.yaml`.
 
+### `rh-skills promote plan <topic> [--force]`
+
+Write the extract review packet from normalized sources.
+
+```
+rh-skills promote plan <topic> [--force]
+```
+
+- writes `topics/<topic>/process/plans/extract-plan.yaml` and `extract-plan-readout.md`
+- groups normalized sources by inferred artifact type
+- optionally writes `concepts-plan.yaml` and `concepts-plan-readout.md` when frontmatter concepts are found
+- records `extract_planned` event in `tracking.yaml`
+- refuses to overwrite an existing plan unless `--force` is passed
+
+### `rh-skills promote approve <topic>`
+
+Record reviewer decisions on `extract-plan.yaml` artifacts.
+
+```
+rh-skills promote approve <topic> [OPTIONS]
+```
+
+**Options:**
+- `--artifact NAME` — Artifact name to set decision on (non-interactive)
+- `--decision approved|rejected|needs-revision` — Decision for `--artifact`
+- `--notes TEXT` — Approval notes (used with `--artifact`)
+- `--add-concern TEXT` — Append a concern to the artifact's concerns list (repeatable)
+- `--add-source SLUG` — Add a missing source slug to the artifact's source_files list (repeatable)
+- `--reviewer NAME` — Reviewer name written to plan header
+- `--review-summary TEXT` — Plan-level review summary written to `extract-plan.yaml`
+- `--finalize` — Set plan status to `approved` and record reviewer/timestamp
+
+**Behavior:**
+- Reads `extract-plan.yaml` for the topic
+- Sets `reviewer_decision` on the named artifact (or enters interactive mode if `--artifact` is omitted)
+- `--finalize` seals the plan (`status: approved`) — required before `rh-inf-extract implement` can run
+
+### `rh-skills promote enrich-concepts <topic>`
+
+Record one RH MCP candidate for a concept review entry.
+
+```
+rh-skills promote enrich-concepts <topic> [OPTIONS]
+```
+
+**Options:**
+- `--concept NAME` *(required)* — Concept name to enrich
+- `--type TYPE` — Concept type to disambiguate when the name is ambiguous
+- `--candidate system|code|display[|confidence[|distance]]` — Primary MCP candidate for this call; one per call, make multiple calls to append more
+- `--related-candidate system|code|display[|confidence[|distance]]` — is-a descendant of the `--candidate`; repeatable; requires `--candidate`
+- `--lookup-query TEXT` — Search query used (defaults to concept name)
+- `--lookup-notes TEXT` — Optional notes from the MCP lookup
+- `--reset` — Clear existing `candidate_codes[]` before recording
+
+**Behavior:**
+- Appends the candidate to `concepts-plan.yaml` for the named concept
+- Marks the concept's `lookup_completed: true`
+- Omit `--candidate` (without `--reset`) to mark lookup complete with no results
+- Call once per primary candidate; use `--related-candidate` for is-a descendants
+
+### `rh-skills promote review-concepts <topic>`
+
+Record reviewer decisions for concepts in the concept review packet.
+
+```
+rh-skills promote review-concepts <topic> [OPTIONS]
+```
+
+**Options:**
+- `--concept NAME` — Concept name to record a decision for
+- `--decision approved|exclude` — Reviewer decision
+- `--type TYPE` — Concept type to disambiguate same-name concepts
+- `--code system|code|display` — Approved code. Repeatable. Required when `--decision=approved`
+- `--related system|code|display` — Approved is-a descendant code. Repeatable
+- `--reject-candidate system|code[|display[|reason]]` — Explicitly rejected candidate. Repeatable
+- `--note TEXT` — Review note recorded with this concept
+- `--finalize` — Seal the review packet (`status: approved`). **Does NOT write `concepts.yaml`** — run `write-concepts` during implement for that. Can be used alone or with `--concept`
+- `--reviewer NAME` — Reviewer name recorded at finalize time
+- `--review-summary TEXT` — Summary note recorded at finalize time
+
+**Behavior:**
+- Sets `review_status` on each concept in `concepts-plan.yaml`
+- `--finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml`; run `rh-skills promote write-concepts <topic>` separately during implement
+
+**Examples:**
+```bash
+# Approve one concept:
+rh-skills promote review-concepts diabetes-screening \
+  --concept "HbA1c" --decision approved \
+  --code "http://loinc.org|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood"
+
+# Exclude and finalize on the last concept:
+rh-skills promote review-concepts diabetes-screening \
+  --concept "Other" --decision exclude --note "Out of scope" \
+  --finalize --reviewer "taylor" --review-summary "Initial review"
+
+# Standalone finalize after manual edits:
+rh-skills promote review-concepts diabetes-screening \
+  --finalize --reviewer "taylor" --review-summary "Reviewed manually"
+```
+
+### `rh-skills promote write-concepts <topic>`
+
+Write `topics/<topic>/structured/concepts.yaml` from the approved concept review packet.
+
+```
+rh-skills promote write-concepts <topic>
+```
+
+**Behavior:**
+- Requires concept review to be finalized (`status: approved` in `concepts-plan.yaml`)
+- Derives and writes the L2 terminology artifact `concepts.yaml` from approved concept decisions
+- Registers the artifact in `tracking.yaml`
+- Call this during **implement mode** after the extract plan is approved; it is a **separate step** from `review-concepts --finalize`
+
+### `rh-skills promote concerns <topic>`
+
+List open (unresolved) concerns across extract and formalize plans.
+
+```
+rh-skills promote concerns <topic>
+```
+
+**Behavior:**
+- Scans both `extract-plan.yaml` and `formalize-plan.yaml` (whichever exist)
+- Reports every concern/conflict entry whose resolution field is empty or absent
+- Exit code 0 in all cases; use the output to decide whether to proceed
+- Use `resolve-concern` to record a resolution
+
+### `rh-skills promote resolve-concern <topic>`
+
+Record the resolution for a specific concern entry.
+
+```
+rh-skills promote resolve-concern <topic> [OPTIONS]
+```
+
+**Options:**
+- `--artifact NAME` *(required)* — Name of the artifact containing the concern
+- `--index N` *(required)* — 0-based index of the concern entry within the artifact's concerns list
+- `--resolution TEXT` *(required)* — Resolution text to record
+- `--plan extract|formalize` *(required)* — Which plan file to update
+
+**Example:**
+```bash
+# List open concerns first:
+rh-skills promote concerns diabetes-ccm
+
+# Then resolve by plan/artifact/index:
+rh-skills promote resolve-concern diabetes-ccm \
+  --plan extract --artifact screening-decisions --index 0 \
+  --resolution "ADA 2024 is the primary guideline; USPSTF framing is supplementary."
+```
+
 ### `rh-skills promote formalize-plan <topic> [--force]`
 
 Write the 006 formalize review packet from approved, valid structured inputs.
@@ -214,7 +368,7 @@ Write the 006 formalize review packet from approved, valid structured inputs.
 rh-skills promote formalize-plan <topic> [--force]
 ```
 
-- writes `topics/<topic>/process/plans/formalize-plan.md`
+- writes `topics/<topic>/process/plans/formalize-plan.yaml`
 - selects only extract-approved structured artifacts that still pass validation
 - creates per-type artifacts using the appropriate L2→L3 strategy
 - detects overlapping FHIR resource types across artifacts and flags for review
