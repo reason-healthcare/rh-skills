@@ -114,32 +114,99 @@ writes `topics/<topic>/process/plans/concepts-plan.yaml` and a derived readout
 Review it with:
 
 ```sh
-rh-skills promote enrich-concepts <topic> --concept <name> --body-file <yaml>
-rh-skills promote review-concepts <topic>
+# Step 1: enrich all concepts (no human decision required)
+# One call per primary candidate; --related-candidate for each is-a descendant.
+# Successive calls for the same concept append to candidate_codes[].
+rh-skills promote enrich-concepts <topic> --concept <name> \
+  --candidate "system|code|display[|confidence[|distance]]" \
+  --related-candidate "system|code|display[|confidence[|distance]]"
+# Omit --candidate entirely when MCP returned no results; still call enrich-concepts.
+# ... repeat for every concept ...
+
+# Step 2: record decisions — one call per concept; --finalize on the last
+rh-skills promote review-concepts <topic> \
+  --concept "<name>" --decision approved \
+  --code "system|code|display" \
+  --reject-candidate "system|code[|display[|reason]]" \
+  --note "<rationale>"
+rh-skills promote review-concepts <topic> \
+  --concept "<name>" --decision exclude --note "<reason>" \
+  --finalize --reviewer "<name>" --review-summary "<summary>"
+
+# Standalone finalize (after manually editing concepts-plan.yaml):
+rh-skills promote review-concepts <topic> \
+  --finalize --reviewer "<name>" --review-summary "<summary>"
 ```
 
-The `--body-file` YAML payload schema:
+### decisions-file schema
 
 ```yaml
-lookup_query: <query string used in MCP search>  # optional; defaults to concept name
-candidate_codes:                                  # required; empty list when no candidates found
-  - system: <code system label or URI>
-    code: <candidate code>
-    display: <candidate display text>
-    confidence: <optional confidence label>
-    search_query: <query used in MCP>
-    related_candidates:
-      - system: <same system as parent>
+reviewer: <optional; overridden by --reviewer flag if both provided>
+review_summary: <optional; overridden by --review-summary flag>
+decisions:                   # required; every concept in the packet must appear
+  - name: <concept name>
+    decision: approved | exclude
+    codes:                   # required when decision=approved
+      - system: <code system label or URI>
+        code: <approved code>
+        display: <approved display text>
+    related:                 # optional is-a descendants
+      - system: <same system>
         code: <descendant code>
         display: <descendant display>
-        relationship: is-a
-        confidence: <optional confidence label>
-lookup_notes: <agent notes about the MCP search; required when candidate_codes is empty —
-              record rationale here, e.g. "No SNOMED match found; concept too specific">
+    note: <optional review rationale>
 ```
 
-Always populate `lookup_notes` when `candidate_codes` is empty so the rationale
-is preserved in the review packet for human reviewers.
+### `--candidate` and `--related-candidate` flag format
+
+Both flags use the same pipe-delimited format:
+
+```
+system|code|display[|confidence[|distance]]
+```
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `system` | yes | string | Code system label or URI (e.g. `SNOMED-CT`, `http://loinc.org`) |
+| `code` | yes | string | Candidate code |
+| `display` | yes | string | Candidate display text |
+| `confidence` | no | `high` \| `medium` \| `low` | String label from MCP result |
+| `distance` | no | numeric | Semantic/edit distance — lower = closer match |
+
+`--related-candidate` entries are stored as `related_candidates[]` on the primary candidate
+entry, each with `relationship: is-a` added automatically.
+
+Successive calls for the same concept append to `candidate_codes[]`.
+Omit `--candidate` entirely when MCP returned no results — still call `enrich-concepts`
+to mark the concept as lookup-completed.
+
+Use `--lookup-notes` to record why no candidates were found:
+```sh
+rh-skills promote enrich-concepts <topic> --concept "Rare finding" \
+  --lookup-notes "No SNOMED match found; concept too specific"
+```
+
+Use `--reset` to clear `candidate_codes[]` and start fresh:
+```sh
+rh-skills promote enrich-concepts <topic> --concept <name> --reset
+```
+
+### `--reject-candidate` flag format (`review-concepts`)
+
+```
+system|code[|display[|reason]]
+```
+
+| Field | Required | Type | Notes |
+|-------|----------|------|-------|
+| `system` | yes | string | Code system of the rejected candidate |
+| `code` | yes | string | Code of the rejected candidate |
+| `display` | no | string | Display text; filled from `candidate_codes[]` automatically if omitted |
+| `reason` | no | string | Rejection rationale stored as `rejection_reason` |
+
+Repeatable. Records explicitly rejected candidates in `rejected_candidates[]` on the concept.
+Candidates not mentioned in `--reject-candidate` are silently dropped; this flag is for
+cases where the rejection rationale needs to be preserved for audit.
 
 When review is complete, the CLI writes:
 
