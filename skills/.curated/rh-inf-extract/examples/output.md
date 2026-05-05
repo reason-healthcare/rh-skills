@@ -31,10 +31,10 @@ matches before human approval, for example:
 ```sh
 # One call per primary candidate; --related-candidate for is-a descendants.
 # Successive calls for the same concept append to candidate_codes[].
-rh-skills promote enrich-concepts diabetes-ccm --concept "Diabetes mellitus" \
+rh-skills promote concept enrich diabetes-ccm --concept "Diabetes mellitus" \
   --candidate "SNOMED-CT|73211009|Diabetes mellitus (disorder)|high" \
   --related-candidate "SNOMED-CT|44054006|Diabetes mellitus type 2 (disorder)|high"
-rh-skills promote enrich-concepts diabetes-ccm --concept "HbA1c measurement" \
+rh-skills promote concept enrich diabetes-ccm --concept "HbA1c measurement" \
   --candidate "LOINC|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood|high"
 # ... repeat for every concept ...
 ```
@@ -43,12 +43,12 @@ After the reviewer confirms the batch proposal, apply decisions one concept at a
 adding `--finalize` on the last call:
 
 ```sh
-rh-skills promote review-concepts diabetes-ccm \
+rh-skills promote concept review diabetes-ccm \
   --concept "Diabetes mellitus" --decision approved \
   --code "SNOMED-CT|73211009|Diabetes mellitus (disorder)" \
   --note "Confirmed FSN"
 
-rh-skills promote review-concepts diabetes-ccm \
+rh-skills promote concept review diabetes-ccm \
   --concept "HbA1c measurement" --decision approved \
   --code "LOINC|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood" \
   --note "LOINC confirmed" \
