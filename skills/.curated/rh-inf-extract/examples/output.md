@@ -22,9 +22,9 @@ Proposed artifacts:
 Writing:
 `topics/diabetes-ccm/process/plans/extract-plan.yaml`
 `topics/diabetes-ccm/process/plans/extract-plan-readout.md`
-`topics/diabetes-ccm/process/reviews/concepts-review.yaml`
+`topics/diabetes-ccm/process/plans/concepts-plan.yaml`
 
-Enrich `concepts-review.yaml` with RH MCP candidate codes and descendant `is-a`
+Enrich `concepts-plan.yaml` with RH MCP candidate codes and descendant `is-a`
 matches before human approval, for example:
 
 ```sh

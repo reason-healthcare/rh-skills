@@ -172,7 +172,7 @@ def write_extract_plan(
             "status": concept_review_status,
             "concept_count": 2,
             "lookup_completed": concept_lookup_completed,
-            "review_artifact": f"topics/{topic_name}/process/plans/concepts-review.yaml",
+            "review_artifact": f"topics/{topic_name}/process/plans/concepts-plan.yaml",
             "final_artifact": f"topics/{topic_name}/structured/concepts.yaml",
         },
         "artifacts": artifacts or [],
@@ -458,7 +458,7 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     assert artifact["source_files"]
     assert "evidence_traceability" in artifact["required_sections"]
 
-    concept_review_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yaml"
+    concept_review_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-plan.yaml"
     assert concept_review_path.exists()
     concept_review = YAML(typ="safe").load(concept_review_path.read_text())
     assert concept_review["status"] == "pending-review"
@@ -563,7 +563,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     assert "is-a: SNOMED-CT 59621000 - Essential hypertension (disorder)" in result.output
 
     review_packet = YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yaml").read_text()
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-plan.yaml").read_text()
     )
     review_hypertension = next(c for c in review_packet["concepts"] if c["name"] == "Hypertension")
     assert review_hypertension["codes"][0]["related_candidates"][0]["code"] == "59621000"
@@ -701,7 +701,7 @@ def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
     )
     assert result.exit_code == 0, result.output
 
-    review_packet = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.yaml").read_text())
+    review_packet = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-plan.yaml").read_text())
     hypertension = next(c for c in review_packet["concepts"] if c["name"] == "Hypertension")
     assert hypertension["review_status"] == "excluded"
     assert hypertension["review_notes"] == "Too broad for this computable guideline"
