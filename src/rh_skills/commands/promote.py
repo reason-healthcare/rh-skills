@@ -2192,15 +2192,15 @@ _CONFIDENCE_LABELS = {"high", "medium", "low"}
 
 
 def _parse_candidate_flag(value: str) -> dict:
-    """Parse 'system|code|display[|confidence[|distance]]' into a candidate dict.
+    """Parse 'system|code|display[|distance[|confidence]]' into a candidate dict.
 
-    confidence — string label: high | medium | low
-    distance   — numeric (lower = closer match)
+    distance   — numeric float (lower = closer match); returned by MCP tools
+    confidence — optional string label: high | medium | low
     """
     parts = value.split("|", 4)
     if len(parts) < 3 or not parts[0].strip() or not parts[1].strip():
         raise click.UsageError(
-            f"--candidate value must be 'system|code|display[|confidence[|distance]]', got: {value!r}"
+            f"--candidate value must be 'system|code|display[|distance[|confidence]]', got: {value!r}"
         )
     entry: dict = {
         "system": parts[0].strip(),
@@ -2208,19 +2208,20 @@ def _parse_candidate_flag(value: str) -> dict:
         "display": parts[2].strip(),
     }
     if len(parts) >= 4 and parts[3].strip():
-        confidence = parts[3].strip().lower()
-        if confidence not in _CONFIDENCE_LABELS:
-            raise click.UsageError(
-                f"confidence must be one of {sorted(_CONFIDENCE_LABELS)}, got: {parts[3]!r} in {value!r}"
-            )
-        entry["confidence"] = confidence
-    if len(parts) >= 5 and parts[4].strip():
         try:
-            entry["distance"] = float(parts[4].strip())
+            entry["distance"] = float(parts[3].strip())
         except ValueError:
             raise click.UsageError(
-                f"distance must be a number, got: {parts[4]!r} in {value!r}"
+                f"distance must be a number, got: {parts[3]!r} in {value!r}"
             )
+    if len(parts) >= 5 and parts[4].strip():
+        confidence = parts[4].strip().lower()
+        if confidence not in _CONFIDENCE_LABELS:
+            raise click.UsageError(
+                f"confidence must be one of {sorted(_CONFIDENCE_LABELS)}, "
+                f"got: {parts[4]!r} in {value!r}"
+            )
+        entry["confidence"] = confidence
     return entry
 
 
@@ -2326,7 +2327,7 @@ def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> li
     "--candidate",
     "raw_candidate",
     default=None,
-    metavar="system|code|display[|confidence[|distance]]",
+    metavar="system|code|display[|distance[|confidence]]",
     help="Primary MCP candidate for this call. One per call; make multiple calls to append more candidates. Omit when MCP returned no results.",
 )
 @click.option("--lookup-query", "lookup_query", default=None, metavar="TEXT", help="Search query used. Defaults to concept name.")
