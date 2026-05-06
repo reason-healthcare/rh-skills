@@ -1703,6 +1703,19 @@ def _lock_plan(plan_path: Path):
         lock_fd.close()
 
 
+@contextmanager
+def _lock_concept_review(review_path: Path):
+    """Serialize concurrent concept enrich/review writes via an exclusive file lock."""
+    lock_path = review_path.with_suffix(".lock")
+    lock_fd = lock_path.open("w")
+    try:
+        lock_file(lock_fd)
+        yield
+    finally:
+        unlock_file(lock_fd)
+        lock_fd.close()
+
+
 def _apply_artifact_decision(
     plan: dict, artifact_name: str, decision: str, notes: str = "",
     add_concerns: tuple[str, ...] = (),
@@ -2334,62 +2347,120 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidate, raw_relate
         raise click.UsageError("--related-candidate requires --candidate.")
 
     require_topic(require_tracking(), topic)
-    packet = _load_concept_review_packet(topic)
-    if packet.get("status") == "approved":
-        raise click.UsageError("Concept review is already approved; re-plan if you need to change MCP candidates.")
+    review_path = _concept_review_path(topic)
+    with _lock_concept_review(review_path):
+        packet = _load_concept_review_packet(topic)
+        if packet.get("status") == "approved":
+            raise click.UsageError("Concept review is already approved; re-plan if you need to change MCP candidates.")
 
-    concept = _find_review_concept(packet, concept_name, concept_type)
+        concept = _find_review_concept(packet, concept_name, concept_type)
 
-    if reset:
-        concept["candidate_codes"] = []
-        concept["lookup_completed"] = False
-        if not raw_candidate:
-            # Reset-only call: recompute packet flag and save
-            all_enriched = all(
-                e.get("lookup_completed") is True
-                for e in (packet.get("concepts", []) or [])
+        if reset:
+            concept["candidate_codes"] = []
+            concept["lookup_completed"] = False
+            if not raw_candidate:
+                # Reset-only call: recompute packet flag and save
+                all_enriched = all(
+                    e.get("lookup_completed") is True
+                    for e in (packet.get("concepts", []) or [])
+                )
+                packet["lookup_completed"] = all_enriched
+                _write_concept_review_packet(topic, packet)
+                _sync_plan_concept_review(topic, packet)
+                log_info(f"Reset MCP candidates for '{concept_name}'.")
+                return
+
+        if lookup_query:
+            concept["lookup_query"] = lookup_query
+        elif not concept.get("lookup_query"):
+            concept["lookup_query"] = concept_name
+
+        if raw_candidate:
+            entry = _parse_candidate_flag(raw_candidate)
+            if raw_related_candidates:
+                related = []
+                for r in raw_related_candidates:
+                    r_entry = _parse_candidate_flag(r)
+                    r_entry["relationship"] = "is-a"
+                    related.append(r_entry)
+                entry["related_candidates"] = related
+            existing = concept.get("candidate_codes") or []
+            norm_new = _normalize_candidate_identity(entry)
+            dup_idx = next(
+                (
+                    i
+                    for i, cand in enumerate(existing)
+                    if _normalize_candidate_identity(cand)["system"] == norm_new["system"]
+                    and _normalize_candidate_identity(cand)["code"] == norm_new["code"]
+                ),
+                None,
             )
-            packet["lookup_completed"] = all_enriched
-            _write_concept_review_packet(topic, packet)
-            _sync_plan_concept_review(topic, packet)
-            log_info(f"Reset MCP candidates for '{concept_name}'.")
-            return
+            if dup_idx is not None:
+                existing_cand = existing[dup_idx]
+                # Merge related_candidates (union by system|code)
+                existing_related = existing_cand.get("related_candidates") or []
+                new_related = entry.get("related_candidates") or []
+                if new_related:
+                    existing_keys = {
+                        (_normalize_candidate_identity(r)["system"], _normalize_candidate_identity(r)["code"])
+                        for r in existing_related
+                    }
+                    for r in new_related:
+                        key = (_normalize_candidate_identity(r)["system"], _normalize_candidate_identity(r)["code"])
+                        if key not in existing_keys:
+                            existing_related.append(r)
+                            existing_keys.add(key)
+                    existing_cand["related_candidates"] = existing_related
+                # Replace existing if new entry is strictly better (lower distance wins;
+                # tie: higher confidence wins; tie: keep existing / first-write-wins)
+                _CONF_RANK = {"high": 2, "medium": 1, "low": 0}
+                new_dist = entry.get("distance")
+                old_dist = existing_cand.get("distance")
+                new_conf = _CONF_RANK.get(str(entry.get("confidence", "")).lower(), -1)
+                old_conf = _CONF_RANK.get(str(existing_cand.get("confidence", "")).lower(), -1)
+                new_is_better = False
+                if new_dist is not None and old_dist is not None:
+                    new_is_better = new_dist < old_dist or (new_dist == old_dist and new_conf > old_conf)
+                elif new_dist is not None and old_dist is None:
+                    new_is_better = True
+                elif new_conf > old_conf:
+                    new_is_better = True
+                if new_is_better:
+                    merged_related = existing_cand.get("related_candidates")
+                    existing[dup_idx] = entry
+                    if merged_related:
+                        existing[dup_idx]["related_candidates"] = merged_related
+                    log_info(
+                        f"Replaced duplicate candidate {norm_new['system']}|{norm_new['code']}"
+                        f" with better entry (dist={new_dist}, conf={entry.get('confidence')})."
+                    )
+                else:
+                    log_info(
+                        f"Skipped duplicate candidate {norm_new['system']}|{norm_new['code']}"
+                        " — existing entry retained."
+                    )
+            else:
+                existing.append(entry)
+            concept["candidate_codes"] = existing
 
-    if lookup_query:
-        concept["lookup_query"] = lookup_query
-    elif not concept.get("lookup_query"):
-        concept["lookup_query"] = concept_name
+        concept["lookup_completed"] = True
+        if lookup_notes is not None:
+            concept["lookup_notes"] = lookup_notes
 
-    if raw_candidate:
-        entry = _parse_candidate_flag(raw_candidate)
-        if raw_related_candidates:
-            related = []
-            for r in raw_related_candidates:
-                r_entry = _parse_candidate_flag(r)
-                r_entry["relationship"] = "is-a"
-                related.append(r_entry)
-            entry["related_candidates"] = related
-        existing = concept.get("candidate_codes") or []
-        existing.append(entry)
-        concept["candidate_codes"] = existing
+        all_enriched = all(
+            concept_entry.get("lookup_completed") is True
+            for concept_entry in (packet.get("concepts", []) or [])
+        )
+        packet["lookup_completed"] = all_enriched
+        _write_concept_review_packet(topic, packet)
+        _sync_plan_concept_review(topic, packet)
 
-    concept["lookup_completed"] = True
-    if lookup_notes is not None:
-        concept["lookup_notes"] = lookup_notes
+        remaining = sum(
+            1
+            for concept_entry in (packet.get("concepts", []) or [])
+            if concept_entry.get("lookup_completed") is not True
+        )
 
-    all_enriched = all(
-        concept_entry.get("lookup_completed") is True
-        for concept_entry in (packet.get("concepts", []) or [])
-    )
-    packet["lookup_completed"] = all_enriched
-    _write_concept_review_packet(topic, packet)
-    _sync_plan_concept_review(topic, packet)
-
-    remaining = sum(
-        1
-        for concept_entry in (packet.get("concepts", []) or [])
-        if concept_entry.get("lookup_completed") is not True
-    )
     action = "appended 1 candidate" if raw_candidate else "marked complete (no results)"
     log_info(
         f"Recorded MCP candidates for '{concept_name}'"

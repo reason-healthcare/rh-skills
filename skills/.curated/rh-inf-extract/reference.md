@@ -81,17 +81,53 @@ surface candidate codes before the plan is written.
 
 ### Tool selection
 
-| Concept domain | Preferred tool |
-|----------------|----------------|
-| Unknown / cross-system | `reasonhub-search_all_codesystems` |
-| Lab / observable | `reasonhub-search_loinc` |
-| Clinical finding / procedure / condition | `reasonhub-search_snomed` |
-| Diagnosis / billing | `reasonhub-search_icd10` |
-| Medication / drug | `reasonhub-search_rxnorm` |
+Use the concept `type` to determine which systems to search. Call each tool
+listed in order using the **exact concept name** as the query. Do not filter
+results — record every match as a candidate and let the reviewer decide.
 
-After finding candidate codes, call `reasonhub-codesystem_lookup` to confirm the
-canonical display name. For quantitative LOINC codes, the response includes an
-`EXAMPLE_UCUM_UNITS` property with the recommended unit.
+| Concept type | Tools to call (in order) |
+|---|---|
+| condition / finding / problem | `reasonhub-search_snomed` and `reasonhub-search_icd10` |
+| procedure | `reasonhub-search_snomed` |
+| lab / observable / measure | `reasonhub-search_loinc` and `reasonhub-search_snomed` |
+| medication / drug | `reasonhub-search_rxnorm` and `reasonhub-search_snomed` |
+| guideline-ref | **No MCP lookup.** Document references, not coded concepts. Skip MCP; mark `exclude` at review time. |
+| term | `reasonhub-search_all_codesystems` only (many return no results; exclude if none found) |
+| unknown / other | `reasonhub-search_all_codesystems` and `reasonhub-search_snomed` and `reasonhub-search_icd10` |
+
+For typed concepts (condition, procedure, lab, medication), do **not** add a
+final `reasonhub-search_all_codesystems` sweep — the system-specific tools
+already cover those systems and the extra pass produces only duplicate entries.
+For `term` and `unknown / other`, `reasonhub-search_all_codesystems` is already
+part of the required call set above.
+
+
+Use `top_k=10` (or the maximum available) on every search call. The default
+may return only a single result.
+
+Do not select only the "best" or "top" hit from a tool response. Record every
+result returned by each required tool.
+
+Do not transform MCP score fields. If MCP returns `distance` and/or
+`confidence`, record those values verbatim. Do not compute
+`distance = 1 - similarity` and do not map custom confidence thresholds (for
+example, "0.8+ = high").
+
+Do not de-duplicate candidates across concepts. Within a single concept, the
+CLI automatically deduplicates: if the same `system|code` pair is submitted
+more than once, the CLI keeps the better entry (lower distance wins; tie: higher
+confidence wins; tie: first-write-wins) and merges any `related_candidates[]`
+from both submissions. A warning is printed when a duplicate is skipped or
+replaced.
+
+Do not run `rh-skills promote concept enrich` in parallel or as a bulk
+background script. Execute enrich writes serially, one CLI call at a time.
+
+
+For quantitative LOINC codes, call `reasonhub-codesystem_lookup` to retrieve
+the recommended `EXAMPLE_UCUM_UNITS`. For all other candidates, do **not** call
+`reasonhub-codesystem_lookup` — the canonical display name is already returned
+by the search tools.
 
 ### candidate_codes[] in the review packet
 
@@ -167,7 +203,7 @@ system|code|display[|confidence[|distance]]
 
 | Field | Required | Type | Notes |
 |-------|----------|------|-------|
-| `system` | yes | string | Code system label or URI (e.g. `SNOMED-CT`, `http://loinc.org`) |
+| `system` | yes | string | Code system label or URI (e.g. `SNOMED-CT`, `http://loinc.org`). If MCP returns a UUID, resolve it first — see note below. |
 | `code` | yes | string | Candidate code |
 | `display` | yes | string | Candidate display text |
 | `confidence` | no | `high` \| `medium` \| `low` | String label from MCP result |
@@ -176,15 +212,40 @@ system|code|display[|confidence[|distance]]
 `--related-candidate` entries are stored as `related_candidates[]` on the primary candidate
 entry, each with `relationship: is-a` added automatically.
 
+> **UUID `system` values**: If MCP returns a UUID as the code system identifier, resolve it
+> using the `system_name` field from the **same response** — no extra MCP call needed:
+>
+> | system_name | Canonical FHIR URI |
+> |---|---|
+> | ICD10CM, ICD-10-CM | `http://hl7.org/fhir/sid/icd-10-cm` |
+> | SNOMED, SNOMEDCT, SNOMED-CT | `http://snomed.info/sct` |
+> | LOINC | `http://loinc.org` |
+> | RxNorm, RXNORM | `http://www.nlm.nih.gov/research/umls/rxnorm` |
+>
+> Only call `reasonhub-codesystem_lookup` when `system_name` is absent or not in the table.
+> Never pass a raw UUID as the `system` field — the CLI records it verbatim and downstream
+> FHIR tooling will reject unrecognized system identifiers.
+
 Successive calls for the same concept append to `candidate_codes[]`.
 Omit `--candidate` entirely when MCP returned no results — still call `concept enrich`
 to mark the concept as lookup-completed.
 
-Use `--lookup-notes` to record why no candidates were found:
+Record MCP metadata fields exactly as returned. Do not transform or infer
+`confidence`/`distance` values that were not provided by MCP.
+
+Use `--lookup-notes` to record why no candidates were found **after genuine MCP
+searches returned zero results**:
 ```sh
 rh-skills promote concept enrich <topic> --concept "Rare finding" \
   --lookup-notes "No SNOMED match found; concept too specific"
 ```
+
+> **`--lookup-notes` without `--candidate` marks the concept as
+> `lookup_completed: true` with zero candidates.** This is only appropriate when
+> every required MCP tool for the concept's type was called and all returned no
+> results. Do NOT use `--lookup-notes` as a shortcut to bypass MCP lookups — it
+> produces an empty candidate list that gives the reviewer nothing to evaluate.
+> If MCP tools are not accessible, stop and inform the user instead of deferring.
 
 Use `--reset` to clear `candidate_codes[]` and start fresh:
 ```sh
