@@ -2212,7 +2212,7 @@ def _parse_code_flag(value: str) -> dict:
     parts = value.split("|", 2)
     if len(parts) != 3 or not parts[0].strip() or not parts[1].strip():
         raise click.UsageError(
-            f"--code / --related value must be 'system|code|display', got: {value!r}"
+            f"--code / --related-code value must be 'system|code|display', got: {value!r}"
         )
     return {"system": parts[0].strip(), "code": parts[1].strip(), "display": parts[2].strip()}
 
@@ -2509,7 +2509,7 @@ def _finalize_concept_review(
 @click.option("--decision", default=None, type=click.Choice(["approved", "exclude"]), help="Reviewer decision: approved or exclude.")
 @click.option("--type", "concept_type", default=None, metavar="TYPE", help="Concept type to disambiguate same-name concepts.")
 @click.option("--code", "codes", multiple=True, metavar="system|code|display", help="Approved code in 'system|code|display' format. Repeatable. Required when --decision=approved.")
-@click.option("--related", "related_codes", multiple=True, metavar="system|code|display", help="Approved is-a descendant code. Repeatable.")
+@click.option("--related-code", "related_codes", multiple=True, metavar="system|code|display", help="Approved is-a descendant code. Repeatable.")
 @click.option("--reject-candidate", "reject_candidates", multiple=True, metavar="system|code[|display[|reason]]", help="Explicitly rejected candidate from candidate_codes[]. Repeatable. Format: 'system|code[|display[|rejection reason]]'.")
 @click.option("--note", default="", metavar="TEXT", help="Review note recorded with this concept.")
 @click.option("--finalize", is_flag=True, help="Seal the review packet (status: approved). Does NOT write concepts.yaml — run 'concept write' during implement for that. Can be used alone or with --concept.")

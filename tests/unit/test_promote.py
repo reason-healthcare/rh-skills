@@ -535,7 +535,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
             "--concept", "Hypertension",
             "--decision", "approved",
             "--code", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
-            "--related", "SNOMED-CT|59621000|Essential hypertension (disorder)",
+            "--related-code", "SNOMED-CT|59621000|Essential hypertension (disorder)",
             "--note", "FSN confirmed",
             "--finalize",
             "--reviewer", "test-reviewer",

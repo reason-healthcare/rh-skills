@@ -290,7 +290,7 @@ rh-skills promote concept review <topic> [OPTIONS]
 - `--decision approved|exclude` — Reviewer decision
 - `--type TYPE` — Concept type to disambiguate same-name concepts
 - `--code system|code|display` — Approved code. Repeatable. Required when `--decision=approved`
-- `--related system|code|display` — Approved is-a descendant code. Repeatable
+- `--related-code system|code|display` — Approved is-a descendant code. Repeatable
 - `--reject-candidate system|code[|display[|reason]]` — Explicitly rejected candidate. Repeatable
 - `--note TEXT` — Review note recorded with this concept
 - `--finalize` — Seal the review packet (`status: approved`). **Does NOT write `concepts.yaml`** — run `concept write` during implement for that. Can be used alone or with `--concept`
