@@ -207,10 +207,9 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
   **`concepts-plan.yaml` is the authoritative concept list.** The CLI already
   deduplicates concepts from normalized front matter when it writes this file —
   do NOT re-derive the concept list by reading source body text or source front
-  matter directly. The agent's job is steps 2–4 only:
+  matter directly. The agent's job is steps 2–3 only:
    2. run RH MCP terminology lookup for candidate codes (see HUMAN-IN-THE-LOOP below)
-   3. add descendant `is-a` related candidates for high-confidence matches
-   4. prompt the human to approve, exclude, replace, or mark custom
+   3. prompt the human to approve, exclude, replace, or mark custom
 
 4. **Check the planner output against your analysis from step 2:**
    - **Completeness**: Does the plan capture all domains you identified?
@@ -443,9 +442,6 @@ Key rules:
   whose semantic tag does not match the concept's `type` (e.g. a SNOMED
   qualifier returned for a `procedure` search) is still recorded; the reviewer
   discards it if unwanted.
-- `--related-candidate` is **only** for SNOMED is-a hierarchical descendants
-  of a specific SNOMED candidate. It is **not** used for results from other
-  code systems. ICD-10 results are always top-level `--candidate` entries.
 - Successive calls for the same concept **append** to `candidate_codes[]`.
 - Omit `--candidate` entirely when MCP returned no results — still call to
   mark lookup complete.
@@ -518,9 +514,7 @@ unless all required systems have been searched.
 
 Each result from each system becomes a separate `concept enrich --candidate`
 call. For example, if SNOMED returns 5 results and ICD-10 returns 8 results,
-make 13 separate calls for that concept. Use `--related-candidate` only for
-SNOMED is-a hierarchical descendants — never for results from ICD-10, LOINC,
-or RxNorm (those are always top-level `--candidate` entries).
+make 13 separate calls for that concept.
 Successive calls for the same concept append to `candidate_codes[]`.
 Omit `--candidate` when MCP returned no results — still call to mark lookup complete.
 No human confirmation is needed for this step — it records data, not decisions.
@@ -558,7 +552,7 @@ In a single response, show every pending concept with its MCP candidates
 (`confidence` included) and your proposed decision for each:
 - Proposed decision: `approve` / `exclude`
 - For `approve`: the specific code from `candidate_codes[]` you recommend,
-  any `is-a` descendant codes, and your proposed review note.
+  and your proposed review note.
   **Only propose `approve` when at least one candidate was returned.**
   Do not approve a concept with an empty `candidate_codes[]`.
 - For `exclude`: your proposed exclusion note. Use `exclude` when:

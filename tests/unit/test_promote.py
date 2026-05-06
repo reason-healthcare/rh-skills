@@ -488,13 +488,12 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     result = runner.invoke(promote, ["plan", "my-skill"])
     assert result.exit_code == 0, result.output
 
-    # Enrich Hypertension: primary candidate + one is-a descendant
+    # Enrich Hypertension: primary candidate
     result = runner.invoke(
         promote,
         [
             "concept", "enrich", "my-skill", "--concept", "Hypertension", "--type", "condition",
             "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|high",
-            "--related-candidate", "SNOMED-CT|59621000|Essential hypertension (disorder)|medium",
             "--lookup-query", "Hypertension",
         ],
     )
@@ -527,7 +526,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     )
     assert result.exit_code == 0, result.output
 
-    # Approve Hypertension with related is-a descendant; finalize
+    # Approve Hypertension; finalize
     result = runner.invoke(
         promote,
         [
@@ -535,7 +534,6 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
             "--concept", "Hypertension",
             "--decision", "approved",
             "--code", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
-            "--related-code", "SNOMED-CT|59621000|Essential hypertension (disorder)",
             "--note", "FSN confirmed",
             "--finalize",
             "--reviewer", "test-reviewer",
@@ -549,7 +547,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
         (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-plan.yaml").read_text()
     )
     review_hypertension = next(c for c in review_packet["concepts"] if c["name"] == "Hypertension")
-    assert review_hypertension["codes"][0]["related_candidates"][0]["code"] == "59621000"
+    assert review_hypertension["codes"][0]["code"] == "38341003"
 
     result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
@@ -563,7 +561,6 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     assert plan["concept_review"]["status"] == "approved"
     hypertension = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
     assert hypertension["codes"][0]["code"] == "38341003"
-    assert hypertension["codes"][0]["related"][0]["relationship"] == "is-a"
 
 
 def test_concepts_l2_dedups_primary_codes_but_keeps_related_overlap():

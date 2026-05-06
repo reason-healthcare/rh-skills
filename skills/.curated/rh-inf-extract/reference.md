@@ -145,17 +145,14 @@ writes `topics/<topic>/process/plans/concepts-plan.yaml` and a derived readout
 - deduplicates concepts across normalized sources
 - records source provenance
 - records the MCP lookup step before human approval
-- limits related-concept review to descendant `is-a` concepts
 
 Review it with:
 
 ```sh
 # Step 1: enrich all concepts (no human decision required)
-# One call per primary candidate; --related-candidate for each is-a descendant.
 # Successive calls for the same concept append to candidate_codes[].
 rh-skills promote concept enrich <topic> --concept <name> \
-  --candidate "system|code|display[|confidence[|distance]]" \
-  --related-candidate "system|code|display[|confidence[|distance]]"
+  --candidate "system|code|display[|confidence[|distance]]"
 # Omit --candidate entirely when MCP returned no results; still call concept enrich.
 # ... repeat for every concept ...
 
@@ -186,16 +183,12 @@ decisions:                   # required; every concept in the packet must appear
       - system: <code system label or URI>
         code: <approved code>
         display: <approved display text>
-    related:                 # optional is-a descendants
-      - system: <same system>
-        code: <descendant code>
-        display: <descendant display>
     note: <optional review rationale>
 ```
 
-### `--candidate` and `--related-candidate` flag format
+### `--candidate` flag format
 
-Both flags use the same pipe-delimited format:
+The flag uses a pipe-delimited format:
 
 ```
 system|code|display[|confidence[|distance]]
@@ -208,9 +201,6 @@ system|code|display[|confidence[|distance]]
 | `display` | yes | string | Candidate display text |
 | `confidence` | no | `high` \| `medium` \| `low` | String label from MCP result |
 | `distance` | no | numeric | Semantic/edit distance — lower = closer match |
-
-`--related-candidate` entries are stored as `related_candidates[]` on the primary candidate
-entry, each with `relationship: is-a` added automatically.
 
 > **UUID `system` values**: If MCP returns a UUID as the code system identifier, resolve it
 > using the `system_name` field from the **same response** — no extra MCP call needed:
@@ -273,8 +263,7 @@ When review is complete, the CLI writes:
 
 `topics/<topic>/structured/concepts.yaml`
 
-This L2 terminology artifact preserves approved concept codes and any approved
-descendant relationships for downstream formalization.
+This L2 terminology artifact preserves approved concept codes for downstream formalization.
 
 #### concepts-plan.yaml schema
 
@@ -289,7 +278,6 @@ lookup_completed: <true | false>
 lookup_policy:
   service: reasonhub-mcp
   directive: use-mcp-to-identify-standardized-codes
-  descendant_policy: descendants-only
   approval_order: dedupe-then-mcp-lookup-then-human-approval
 review_artifact: topics/<topic>/process/plans/concepts-plan.yaml
 final_artifact: topics/<topic>/structured/concepts.yaml
@@ -308,23 +296,12 @@ concepts:
         display: <candidate display text>
         confidence: <optional confidence label>
         search_query: <query used in MCP>
-        related_candidates:
-          - system: <code system label or URI>
-            code: <descendant candidate code>
-            display: <descendant display>
-            relationship: is-a
-            confidence: <optional confidence label>
     review_status: <pending-review | approved | excluded>
     review_notes: <optional reviewer notes>
     codes:
       - system: <approved code system label or URI>
         code: <approved code>
         display: <approved display>
-        related:
-          - system: <approved descendant code system label or URI>
-            code: <approved descendant code>
-            display: <approved descendant display>
-            relationship: is-a
 ```
 
 During concept review, a reviewer may also exclude a concept from the final L2
