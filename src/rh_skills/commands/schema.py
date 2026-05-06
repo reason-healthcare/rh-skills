@@ -49,6 +49,7 @@ _DISCOVERY_PLAN_SCHEMA = {
 _SCHEMAS = {
     "discovery-plan": _DISCOVERY_PLAN_SCHEMA,
     "extract-plan": "extract-plan-schema.yaml",
+    "concepts-plan": "concepts-plan-schema.yaml",
     "l2": "l2-schema.yaml",
     "structured": "l2-schema.yaml",
     "l3": "l3-schema.yaml",
@@ -76,6 +77,7 @@ def show(artifact_type, as_json):
     Types:
       discovery-plan   Fields and vocabulary for discovery-plan.yaml
       extract-plan     Fields and vocabulary for extract-plan.yaml
+      concepts-plan    Fields and vocabulary for concepts-plan.yaml
       l2 / structured  Required/optional fields for L2 structured artifacts
       l3 / computable  Required/optional fields for L3 computable artifacts
 
@@ -83,6 +85,7 @@ def show(artifact_type, as_json):
     Examples:
       rh-skills schema show discovery-plan
       rh-skills schema show extract-plan
+      rh-skills schema show concepts-plan
       rh-skills schema show l2
       rh-skills schema show l3
     """
@@ -90,7 +93,7 @@ def show(artifact_type, as_json):
     canonical = _ALIASES.get(key, key)
 
     if canonical not in _SCHEMAS:
-        available = "  ".join(sorted(set(_ALIASES) | {"discovery-plan", "extract-plan", "l2", "l3"}))
+        available = "  ".join(sorted(set(_ALIASES) | {"discovery-plan", "extract-plan", "concepts-plan", "l2", "l3"}))
         raise click.UsageError(
             f"Unknown artifact type: '{artifact_type}'\n"
             f"Available types: {available}"
@@ -149,9 +152,21 @@ def _print_discovery_plan_schema(data: dict) -> None:
     click.echo(f"\nValidate with: {data['validate_command']}")
 
 
+_SCHEMA_LABELS = {
+    "l2": "L2 Structured",
+    "l3": "L3 Computable",
+    "extract-plan": "Extract Plan",
+    "concepts-plan": "Concepts Plan",
+}
+
+
 def _print_artifact_schema(artifact_type: str, data: dict) -> None:
-    label = "L2 Structured" if artifact_type == "l2" else "L3 Computable"
-    click.echo(f"\n{label} artifact schema (schema_version {data.get('schema_version', '?')})\n")
+    label = _SCHEMA_LABELS.get(artifact_type, artifact_type)
+    description = data.get("description", "")
+    header = f"\n{label} artifact schema (schema_version {data.get('schema_version', '?')})\n"
+    if description:
+        header += f"{description.strip()}\n"
+    click.echo(header)
 
     required = data.get("required_fields", [])
     optional = data.get("optional_fields", [])
@@ -205,7 +220,16 @@ def _print_artifact_schema(artifact_type: str, data: dict) -> None:
     if status_values:
         click.echo(f"\nValid status values: {', '.join(status_values)}")
 
-    click.echo(f"\nValidate with: rh-skills validate <topic> {artifact_type} <artifact-name>")
+    review_status_values = data.get("review_status_values", [])
+    if review_status_values:
+        click.echo(f"Valid review_status values (per concept): {', '.join(review_status_values)}")
+
+    _PLAN_HINTS = {
+        "concepts-plan": "rh-skills promote concept review <topic>",
+        "extract-plan": "rh-skills promote approve <topic>",
+    }
+    hint = _PLAN_HINTS.get(artifact_type, f"rh-skills validate <topic> {artifact_type} <artifact-name>")
+    click.echo(f"\nValidate/review with: {hint}")
 
 
 def _columnize(items: list, width: int = 4) -> list[list]:
