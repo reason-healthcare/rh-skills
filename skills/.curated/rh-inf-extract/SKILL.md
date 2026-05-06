@@ -424,7 +424,7 @@ Do not attempt step 4 before step 3 is complete — the CLI will hard-block.
 
 If the plan includes `concept_review`, populate the packet by calling
 `rh-skills promote concept enrich` **once per result, per system searched**:
-`rh-skills promote concept enrich <topic> --concept <name> --candidate "system|code|display[|confidence[|distance]]"`
+`rh-skills promote concept enrich <topic> --concept <name> --candidate "system|code|display[|distance[|confidence]]"`
 
 Key rules:
 - Use `top_k=10` (or the maximum available) on every MCP search call. The default
@@ -441,6 +441,14 @@ Key rules:
 - **Record MCP metadata exactly as returned.** Do not convert similarity to
   distance (`1 - similarity`) and do not invent confidence buckets from numeric
   thresholds (for example, "0.8+ = high"). Use MCP-provided values verbatim.
+  The `--candidate` format is `system|code|display[|distance[|confidence]]`:
+  - `distance` is a **float** (lower = closer match); returned by MCP tools.
+  - `confidence` is an optional **string label** (`high`, `medium`, or `low`) — never a number.
+  - When MCP returns only a numeric distance with no confidence label, pass it in
+    the 4th field: `system|code|display|<distance>`.
+  - **Never put a string label in position 4** — the CLI expects a float there.
+    Do not attempt to fix a format error by inserting extra `|` characters into
+    the system URI or code field — that corrupts the candidate entirely.
   If MCP returns a UUID as the code system identifier, resolve it using the
   `system_name` field from the **same response**: ICD10CM →
   `http://hl7.org/fhir/sid/icd-10-cm`, SNOMED/SNOMEDCT →
@@ -520,6 +528,13 @@ the remaining results from that search are discarded.
 Record MCP metadata exactly as returned. Do not transform similarity to
 distance (`1 - similarity`) and do not map custom confidence thresholds
 (for example, "0.8+ = high") unless MCP already returned that value.
+The `--candidate` format is `system|code|display[|distance[|confidence]]`.
+`distance` is a float (lower = closer match) — returned by MCP tools.
+`confidence` is an optional string label (`high`, `medium`, `low`); place it
+after distance if MCP returned it.
+When MCP returns only a numeric distance with no confidence label, pass it in
+the 4th field: `system|code|display|<distance>`. Do not insert extra `|`
+characters to fix a format error — that corrupts the system URI or code field.
 If MCP returns a UUID as the code system identifier, resolve it using the
 `system_name` field from the **same response** — no extra MCP call needed:
 ICD10CM → `http://hl7.org/fhir/sid/icd-10-cm`, SNOMED/SNOMEDCT →

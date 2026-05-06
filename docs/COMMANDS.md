@@ -265,8 +265,8 @@ rh-skills promote concept enrich <topic> [OPTIONS]
 **Options:**
 - `--concept NAME` *(required)* — Concept name to enrich
 - `--type TYPE` — Concept type to disambiguate when the name is ambiguous
-- `--candidate system|code|display[|confidence[|distance]]` — Primary MCP candidate for this call; one per call, make multiple calls to append more
-- `--related-candidate system|code|display[|confidence[|distance]]` — is-a descendant of the `--candidate`; repeatable; requires `--candidate`
+- `--candidate system|code|display[|distance[|confidence]]` — Primary MCP candidate for this call; one per call, make multiple calls to append more
+- `--related-candidate system|code|display[|distance[|confidence]]` — is-a descendant of the `--candidate`; repeatable; requires `--candidate`
 - `--lookup-query TEXT` — Search query used (defaults to concept name)
 - `--lookup-notes TEXT` — Optional notes from the MCP lookup
 - `--reset` — Clear existing `candidate_codes[]` before recording

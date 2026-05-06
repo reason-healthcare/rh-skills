@@ -493,7 +493,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
         promote,
         [
             "concept", "enrich", "my-skill", "--concept", "Hypertension", "--type", "condition",
-            "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|high",
+            "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
             "--lookup-query", "Hypertension",
         ],
     )
@@ -504,7 +504,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
         promote,
         [
             "concept", "enrich", "my-skill", "--concept", "Blood pressure screening", "--type", "procedure",
-            "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)|high",
+            "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
             "--lookup-query", "Blood pressure screening",
         ],
     )
@@ -786,7 +786,7 @@ def test_review_concepts_reject_candidate_stored_in_packet(tmp_repo):
         [
             "concept", "enrich", "my-skill",
             "--concept", "Hypertension",
-            "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|high",
+            "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
         ],
     )
     runner.invoke(
@@ -794,7 +794,7 @@ def test_review_concepts_reject_candidate_stored_in_packet(tmp_repo):
         [
             "concept", "enrich", "my-skill",
             "--concept", "Hypertension",
-            "--candidate", "ICD-10|I10|Essential (primary) hypertension|medium",
+            "--candidate", "ICD-10|I10|Essential (primary) hypertension",
         ],
     )
     runner.invoke(
@@ -802,7 +802,7 @@ def test_review_concepts_reject_candidate_stored_in_packet(tmp_repo):
         [
             "concept", "enrich", "my-skill",
             "--concept", "Blood pressure screening",
-            "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)|high",
+            "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
         ],
     )
 
@@ -844,7 +844,7 @@ def test_review_concepts_reject_candidate_display_filled_from_enrichment(tmp_rep
         [
             "concept", "enrich", "my-skill",
             "--concept", "Hypertension",
-            "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|high",
+            "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
         ],
     )
     runner.invoke(
@@ -852,7 +852,7 @@ def test_review_concepts_reject_candidate_display_filled_from_enrichment(tmp_rep
         [
             "concept", "enrich", "my-skill",
             "--concept", "Hypertension",
-            "--candidate", "ICD-10|I10|Essential (primary) hypertension|medium",
+            "--candidate", "ICD-10|I10|Essential (primary) hypertension",
         ],
     )
     runner.invoke(
@@ -860,7 +860,7 @@ def test_review_concepts_reject_candidate_display_filled_from_enrichment(tmp_rep
         [
             "concept", "enrich", "my-skill",
             "--concept", "Blood pressure screening",
-            "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)|high",
+            "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
         ],
     )
 

@@ -115,6 +115,13 @@ Do not transform MCP score fields. If MCP returns `distance` and/or
 `distance = 1 - similarity` and do not map custom confidence thresholds (for
 example, "0.8+ = high").
 
+The `--candidate` format is `system|code|display[|distance[|confidence]]`.
+`confidence` is a string label (`high`, `medium`, `low`) — never a number.
+When MCP returns only a numeric distance with no confidence label, pass it in
+the 4th field: `system|code|display|<distance>`. The CLI auto-detects a numeric
+in position 4 and stores it as `distance`. Do not insert extra `|` characters
+to try to fix a format error — that corrupts the system URI or code field.
+
 Do not de-duplicate candidates across concepts. Within a single concept, the
 CLI automatically deduplicates: if the same `system|code` pair is submitted
 more than once, the CLI keeps the better entry (lower distance wins; tie: higher
@@ -154,7 +161,7 @@ Review it with:
 # Step 1: enrich all concepts (no human decision required)
 # Successive calls for the same concept append to candidate_codes[].
 rh-skills promote concept enrich <topic> --concept <name> \
-  --candidate "system|code|display[|confidence[|distance]]"
+  --candidate "system|code|display[|distance[|confidence]]"
 # Omit --candidate entirely when MCP returned no results; still call concept enrich.
 # ... repeat for every concept ...
 
