@@ -120,8 +120,8 @@ confidence wins; tie: first-write-wins) and merges any `related_candidates[]`
 from both submissions. A warning is printed when a duplicate is skipped or
 replaced.
 
-Do not run `rh-skills promote concept enrich` in parallel or as a bulk
-background script. Execute enrich writes serially, one CLI call at a time.
+Do not run `rh-skills promote concept enrich` for different concepts in parallel.
+Execute enrich writes serially, one concept at a time.
 
 
 For quantitative LOINC codes, call `reasonhub-codesystem_lookup` to retrieve

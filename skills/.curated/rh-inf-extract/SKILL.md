@@ -529,13 +529,13 @@ rather than marking concepts as deferred.
 Process one concept at a time end-to-end. For each concept, you MAY dispatch
 all required MCP search calls in parallel (e.g., call RxNorm and SNOMED
 simultaneously for a `medication` concept). Once all search results are back,
-run the `concept enrich` CLI calls for that concept one at a time and wait for
-each to complete before the next. **Never run `concept enrich` calls in
-parallel** — the CLI serializes writes with a file lock, but throughput and
-result ordering are unpredictable under parallel load.
+run `concept enrich` calls for that concept one at a time and wait for each to
+complete before the next. **Never run `concept enrich` calls for different
+concepts in parallel** — the CLI serializes writes with a file lock, but
+throughput and result ordering are unpredictable under parallel load.
 
 **Handling large concept sets (20–50+ concepts)**: Use chunked enrichment —
-divide into groups of 5, enrich each group serially, then verify the
+divide into groups of 10, enrich each group serially, then verify the
 `lookup_completed: true` count before continuing:
 
 ```sh
@@ -543,8 +543,7 @@ grep -c "lookup_completed: true" topics/<topic>/process/plans/concepts-plan.yaml
 ```
 
 Do not pre-collect all MCP results for all concepts before enriching — enrich
-each concept as its MCP results arrive. Do not generate a shell script that
-fires `concept enrich` calls in bulk or parallel.
+each concept as its MCP results arrive.
 
 ### Step 2 — Present the full batch proposal
 
