@@ -418,6 +418,10 @@ If the plan includes `concept_review`, populate the packet by calling
 Key rules:
 - Use `top_k=10` (or the maximum available) on every MCP search call. The default
   may return only 1 result — explicitly request the full candidate set.
+- **After each MCP call, count the results returned.** The number of
+  `--candidate` calls you make for that system must equal that count exactly.
+  If SNOMED returns 8 results, you must make 8 `--candidate` calls — not 1.
+  Making fewer calls than results returned is a **protocol violation**.
 - Each result from each system searched (SNOMED, ICD-10, LOINC, RxNorm) is a
   separate `--candidate` call. A concept with 5 SNOMED results and 8 ICD-10
   results requires 13 calls. **Do not select only the "best", "exact", or
@@ -445,6 +449,12 @@ Key rules:
 - Successive calls for the same concept **append** to `candidate_codes[]`.
 - Omit `--candidate` entirely when MCP returned no results — still call to
   mark lookup complete.
+
+> ⚠ **ANTI-PATTERN — Do NOT do this:**
+> SNOMED returned 8 results → 1 `--candidate` call (top result only) ← **WRONG**
+> ICD-10 returned 5 results → 1 `--candidate` call (top result only) ← **WRONG**
+>
+> **CORRECT:** 8 SNOMED results → 8 calls; 5 ICD-10 results → 5 calls = **13 total `--candidate` calls for that concept**.
 
 **Call `concept enrich` for every concept before presenting any proposal.**
 `concept enrich` only records MCP candidates — it requires no human decision.
@@ -514,7 +524,10 @@ unless all required systems have been searched.
 
 Each result from each system becomes a separate `concept enrich --candidate`
 call. For example, if SNOMED returns 5 results and ICD-10 returns 8 results,
-make 13 separate calls for that concept.
+make 13 separate calls for that concept. **Before making any `--candidate`
+calls for a concept, count the total results returned across all systems.
+Your `--candidate` call count must match that total exactly — if it does
+not, stop and correct before proceeding.**
 Successive calls for the same concept append to `candidate_codes[]`.
 Omit `--candidate` when MCP returned no results — still call to mark lookup complete.
 No human confirmation is needed for this step — it records data, not decisions.

@@ -106,7 +106,9 @@ Use `top_k=10` (or the maximum available) on every search call. The default
 may return only a single result.
 
 Do not select only the "best" or "top" hit from a tool response. Record every
-result returned by each required tool.
+result returned by each required tool. **Count the results from each MCP call.
+The number of `--candidate` calls for that system must equal that count.
+Fewer calls than results returned is a protocol violation.**
 
 Do not transform MCP score fields. If MCP returns `distance` and/or
 `confidence`, record those values verbatim. Do not compute
