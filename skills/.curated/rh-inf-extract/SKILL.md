@@ -371,7 +371,10 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 
      Only after all concerns are cleared proceed to the plan-complete output below.
    - If output is `"No open concerns for topic '<topic>'."`, proceed immediately
-     to the Review & Approval phase below and run `rh-skills promote approve`
+     to the Review & Approval phase below. **If the plan includes `concept_review`,
+     complete concept enrichment (Step 1 of Review & Approval) before calling
+     `rh-skills promote approve --finalize` — finalization is hard-blocked until
+     `concept_review.status: approved`.** Otherwise run `rh-skills promote approve`
      without waiting for user confirmation.
 
 ### After plan mode — output to user
@@ -410,6 +413,14 @@ You can also ask for `rh-skills status show <topic>` at any time.
 After plan mode completes, the plan is in `status: pending-review` and each
 artifact has `reviewer_decision: pending-review`. **Implement mode will refuse
 to run until the plan is approved.**
+
+**When `concept_review` is present, the required order is:**
+1. Enrich all concepts with MCP (Step 1 below) — no human gate, proceed directly
+2. Present batch proposal and get reviewer confirmation (Step 2)
+3. Execute concept decisions via `concept review` (Step 3)
+4. Then run `rh-skills promote approve --finalize` for artifacts
+
+Do not attempt step 4 before step 3 is complete — the CLI will hard-block.
 
 If the plan includes `concept_review`, populate the packet by calling
 `rh-skills promote concept enrich` **once per result, per system searched**:
@@ -469,6 +480,13 @@ enrich all concepts first, then present the full batch proposal, then execute
 after confirmation. Proceed directly — no pre-flight question to the user.**
 
 ### Step 1 — Enrich all concepts (before proposing anything)
+
+Extract the pending concept list with:
+
+```sh
+awk '/^- name:/{name=substr($0,9)} /^  type:/{print name "|" substr($0,9)}' \
+  topics/<topic>/process/plans/concepts-plan.yaml
+```
 
 For each pending concept, read its `type` field from `concepts-plan.yaml`.
 **Use the `type` field as the authoritative domain — do not override it with
@@ -557,6 +575,14 @@ grep -c "lookup_completed: true" topics/<topic>/process/plans/concepts-plan.yaml
 
 Do not pre-collect all MCP results for all concepts before enriching — enrich
 each concept as its MCP results arrive.
+
+**Do not make probe or test MCP calls** before starting enrichment. The MCP
+response format is fully documented above — there is nothing to discover.
+Proceed directly to enriching the first concept.
+
+**Do not skip or defer enrichment because the packet is large.** Packet size
+is not a reason to stop — it is a reason to use chunked enrichment. A 44-concept
+packet requires 4–5 chunks of 10; that is the expected workflow.
 
 ### Step 2 — Present the full batch proposal
 
