@@ -3,17 +3,17 @@
 **Feature Branch**: `010-l2-artifact-catalog`  
 **Created**: 2026-04-17  
 **Status**: Implemented  
-**Input**: Expand L2 Hybrid Artifact Catalog with 4 new artifact types (clinical-frame, decision-table, assessment, policy), restructure structured/ directory to per-artifact subdirectories with generated views, and add a render command for SME-reviewable representations.
+**Input**: Expand L2 Hybrid Artifact Catalog with 5 new artifact types (clinical-frame, decision-table, assessment, policy, terminology), restructure structured/ directory to per-artifact subdirectories with generated views, and add a render command for SME-reviewable representations.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Extract Agent Proposes New Artifact Types (Priority: P1)
 
 A knowledge engineer running the extract skill against clinical guidelines receives
-plan proposals that include clinical-frame, decision-table, assessment, and policy
-artifact types when the source material warrants them. The planner keyword-matches
-source content to the expanded catalog and proposes the correct type with an
-appropriate key question.
+plan proposals that include clinical-frame, decision-table, assessment, policy, and
+terminology artifact types when the source material warrants them. The planner
+keyword-matches source content to the expanded catalog and proposes the correct type
+with an appropriate key question.
 
 **Why this priority**: Without the new artifact profiles in the planner, no downstream
 functionality (derive, render, formalize) can operate on these types.
@@ -29,6 +29,7 @@ correct artifact_type.
 3. **Given** a normalized source containing "prior authorization", "coverage", or "documentation requirement" keywords, **When** the planner runs, **Then** it proposes an artifact with `artifact_type: policy`.
 4. **Given** a normalized source with multiple clinical questions, **When** the planner runs, **Then** it proposes a `clinical-frame` artifact as the first artifact in the plan, containing PICOTS decomposition of each question.
 5. **Given** a source with no keywords matching the new types, **When** the planner runs, **Then** it falls back to the existing 8 types as before (no regression).
+6. **Given** a normalized source containing "terminology", "SNOMED", "LOINC", "ICD", "concept", or "code system" keywords, **When** the planner runs, **Then** it proposes an artifact with `artifact_type: terminology` and a key question about the clinical concept vocabulary.
 
 ---
 
@@ -138,6 +139,7 @@ expected type-specific sections.
 2. **Given** artifact_type `assessment`, **When** derived, **Then** YAML contains `instrument`, `items[]`, and `scoring` sections.
 3. **Given** artifact_type `policy`, **When** derived, **Then** YAML contains `applicability`, `criteria[]`, and `actions` sections.
 4. **Given** artifact_type `clinical-frame`, **When** derived, **Then** YAML contains `frames[]` with PICOTS fields (population, intervention, comparison, outcomes, timing, setting).
+5. **Given** artifact_type `terminology`, **When** derived, **Then** YAML contains a `concepts[]` catalog with concept entries (`name`, `type`, and optional `code`).
 
 ---
 
@@ -153,7 +155,7 @@ expected type-specific sections.
 
 ### Functional Requirements
 
-- **FR-001**: System MUST add `clinical-frame`, `decision-table`, `assessment`, and `policy` to `EXTRACT_ARTIFACT_PROFILES` with appropriate keywords, section names, and key questions.
+- **FR-001**: System MUST add `clinical-frame`, `decision-table`, `assessment`, `policy`, and `terminology` to `EXTRACT_ARTIFACT_PROFILES` with appropriate keywords, section names, and key questions.
 - **FR-002**: System MUST update `_formalize_required_sections()` to map `decision-table` → `actions`, `assessment` → `assessments`, `policy` → `actions`. `clinical-frame` has no L3 section mapping.
 - **FR-003**: System MUST write derived L2 artifacts to `topics/<topic>/structured/<name>/<name>.yaml` (subdirectory structure).
 - **FR-004**: System MUST update tracking.yaml `file` entries to reflect the new subdirectory path format.
@@ -168,6 +170,7 @@ expected type-specific sections.
 - **FR-013**: The `decision-table` section shape MUST include conditions (id, label, values), actions (id, label), and rules (id, when map, then list) following the Shiffman augmented decision table model.
 - **FR-014**: The `assessment` section shape MUST include instrument metadata, items (id, text, type, options), and scoring (method, ranges with interpretations).
 - **FR-015**: The `policy` section shape MUST include applicability, criteria (id, description, requirement_type, rule), and actions (approve/deny/pend with conditions).
+- **FR-015A**: The `terminology` section shape MUST include a `concepts[]` list where each entry has `name`, `type`, and an optional `code` (standardized code reference).
 - **FR-016**: Generated views MUST be overwritten on re-render (idempotent).
 - **FR-017**: The render command MUST fail with a clear error if the artifact does not exist.
 - **FR-018**: All path resolution MUST use the subdirectory structure exclusively (`structured/<name>/<name>.yaml`). No flat-path fallback is provided.
@@ -202,6 +205,7 @@ expected type-specific sections.
 ## Assumptions
 
 - The existing 8 artifact types continue to work unchanged; this is additive.
+- The `terminology` artifact type uses `concepts[]` as its L2 section shape.
 - The L2 schema (`l2-schema.yaml`) does not constrain artifact types — it only validates required metadata fields. No schema file changes are needed for new types.
 - The `clinical-frame` type is a scoping/framing artifact with no direct L3 computable target. It informs but does not participate in `combine`.
 - Mermaid diagram generation is deterministic from the YAML structure (no LLM required for render).

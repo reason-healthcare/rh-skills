@@ -25,7 +25,7 @@ It operates in three modes:
 
 | Mode | Output | CLI Commands Used |
 |------|--------|-------------------|
-| `plan` | `topics/<name>/process/plans/extract-plan.md` | `rh-skills status <name>`, `rh-skills list`, `rh-skills promote plan <name>` |
+| `plan` | `topics/<name>/process/plans/extract-plan.yaml`; `topics/<name>/process/plans/concepts-plan.yaml` (when source concepts present) | `rh-skills status <name>`, `rh-skills list`, `rh-skills promote plan <name>` |
 | `implement` | L2 artifacts in `topics/<name>/structured/` | `rh-skills promote derive`, `rh-skills validate` |
 | `verify` | Validation report for all L2 artifacts | `rh-skills validate <topic> <artifact>` |
 
@@ -60,7 +60,7 @@ before any L2 files are written.
 
 1. **Given** a topic with one or more ingested source artifacts, **When**
    `rh-inf-extract plan` is invoked, **Then**
-   `topics/<name>/process/plans/extract-plan.md` is written as a review packet
+   `topics/<name>/process/plans/extract-plan.yaml` is written as a review packet
    organized around proposed L2 artifacts rather than pipeline stages.
 2. **Given** a proposed L2 artifact is based on several normalized sources,
    **When** the plan is generated, **Then** the artifact records all contributing
@@ -82,6 +82,13 @@ before any L2 files are written.
 6. **Given** a topic has no ingested or normalized source artifacts, **When**
    `rh-inf-extract plan` is invoked, **Then** the skill warns and exits without
    producing a plan.
+7. **Given** normalized source frontmatter contains `concepts[]` entries, **When**
+   `rh-inf-extract plan` is invoked, **Then** `concepts-plan.yaml` is generated
+   alongside `extract-plan.yaml` and the extract plan may not be finalized until
+   `concepts-plan.yaml` has `status: approved`.
+8. **Given** `concepts-plan.yaml` exists with `status: pending-review`, **When**
+   `rh-inf-extract implement` is invoked, **Then** the skill fails with a clear
+   message that concept review must be approved first.
 
 ## Requirements
 
@@ -90,11 +97,14 @@ before any L2 files are written.
 **Plan mode**
 - **FR-001**: `rh-inf-extract plan` MUST analyze ingested topic inputs — at
   minimum tracked source artifacts and normalized source content available from
-  `rh-inf-ingest`, plus `concepts.yaml` if present — and write
-  `topics/<name>/process/plans/extract-plan.md` as a review packet proposing a
-  set of structured (L2) artifacts.
-- **FR-002**: The extract plan MUST use structured Markdown with a YAML front
-  matter block. YAML front matter MUST include: `topic`, `plan_type: extract`,
+  `rh-inf-ingest` — and write `topics/<name>/process/plans/extract-plan.yaml`
+  as a review packet proposing a set of structured (L2) artifacts. When any
+  normalized source frontmatter contains `concepts[]` entries, `rh-skills
+  promote plan` MUST also write
+  `topics/<name>/process/plans/concepts-plan.yaml` aggregating all deduplicated
+  concepts for code lookup and review.
+- **FR-002**: The extract plan MUST be a YAML file (`extract-plan.yaml`). It
+  MUST include: `topic`, `plan_type: extract`,
   `status` (`pending-review | approved | rejected`), `reviewer`,
   `reviewed_at`, and an `artifacts[]` list.
 - **FR-003**: Each `artifacts[]` entry in the plan MUST include:
@@ -124,17 +134,30 @@ before any L2 files are written.
 - **FR-008**: When source evidence materially conflicts, the plan MUST preserve
   both positions, record the conflict explicitly, and identify any preferred
   interpretation with rationale. Conflicts MUST NOT be silently collapsed.
-- **FR-009**: If `extract-plan.md` already exists, the skill MUST warn and stop
+- **FR-009**: If `extract-plan.yaml` already exists, the skill MUST warn and stop
   unless `--force` is passed.
+- **FR-009A**: When `concepts-plan.yaml` is generated, it MUST have
+  `status: pending-review` and include all deduplicated concepts from source
+  frontmatter with their source provenance. The extract plan `status` MUST
+  remain `pending-review` until `concepts-plan.yaml` status is `approved`.
+- **FR-009B**: The reviewer runs `rh-skills promote concept review <topic>` to
+  enrich concepts with MCP-resolved standardized codes and set
+  `status: approved` on the concepts-plan.
+- **FR-009C**: During `rh-inf-extract implement`, after all L2 artifacts are
+  derived, `rh-skills promote concept write <topic>` MUST be called to produce
+  `topics/<topic>/structured/concepts.yaml` from the approved concepts-plan.
 - **FR-010**: Successful `plan` mode MUST append `extract_planned` to
   `tracking.yaml`.
 
 **Implement mode**
 - **FR-011**: `rh-inf-extract implement` MUST NOT proceed without a valid
-  `topics/<name>/process/plans/extract-plan.md`.
+  `topics/<name>/process/plans/extract-plan.yaml`.
 - **FR-012**: `rh-inf-extract implement` MUST fail unless the plan
   `status` is `approved`. It MUST also fail if any artifact intended for
-  implementation has `reviewer_decision` other than `approved`.
+  implementation has `reviewer_decision` other than `approved`. If
+  `concepts-plan.yaml` exists with `status: pending-review`, implement MUST
+  fail with a message directing the reviewer to run
+  `rh-skills promote concept review <topic>`.
 - **FR-013**: `rh-inf-extract implement` MUST call `rh-skills promote derive`
   for each approved artifact using the approved artifact name and the source set
   defined in the plan.

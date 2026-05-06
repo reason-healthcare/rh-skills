@@ -15,20 +15,29 @@ required_fields:
   - description     # human-readable description (≥1 sentence)
   - derived_from    # list of L1 artifact names this was derived from
 
+# Fields listed here generate a warning when absent from any L2 artifact.
+# Only include fields that are meaningful for ALL artifact types.
+# Type-specific fields (concepts, codings) and extract-workflow fields
+# (artifact_type, clinical_question, sections, concerns) are validated
+# separately by _validate_extract_artifact and do not belong here.
 optional_fields:
   - clinical_context   # additional clinical narrative
   - references         # list of reference strings (PMIDs, URLs, guidelines)
   - tags               # list of free-text tags
   - author             # author name or team
-  - codings            # list of {code, system, display} — canonical codes for this artifact
-                       # (e.g. LOINC panel codes for assessment instruments)
-  - artifact_type      # structured artifact strategy, e.g. decision-table | care-pathway
-  - clinical_question  # extraction question answered by this artifact
-  - sections           # artifact-type-specific structured content
-  - concerns           # list of unresolved or resolved source concerns
-  - conflicts          # legacy alias for concerns
-  - review_status      # auxiliary reviewer state for partially reviewed extract outputs
-  - concepts           # deduplicated concept catalog used by terminology-oriented L2 artifacts
+
+# The following fields exist on L2 artifacts but are NOT universally warned
+# because they are either extract-workflow-specific (enforced by extract-plan
+# validation) or only applicable to certain artifact types:
+#
+#   artifact_type      — enforced as error by extract-plan validation
+#   clinical_question  — enforced as error by extract-plan validation
+#   sections           — enforced as error by extract-plan validation
+#   concerns           — enforced by extract-plan validation when concerns listed in plan
+#   conflicts          — legacy alias for concerns; no value in warning about old name
+#   review_status      — auxiliary reviewer state; not universally applicable
+#   codings            — {code, system, display} codes; only for assessment/terminology
+#   concepts           — concept catalog; only for terminology artifact type
                        # Structure:
                        #   concepts:
                        #   - name: <human-readable concept label>  # required
