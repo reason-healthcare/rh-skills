@@ -189,9 +189,14 @@ def _require_concept_review_approved(plan: dict) -> None:
     concept_review = plan.get("concept_review") or {}
     if concept_review and concept_review.get("status") != "approved":
         topic = plan.get("topic", "<topic>")
+        concept_count = concept_review.get("concept_count")
+        count_str = f" ({concept_count} concepts)" if concept_count else ""
         raise click.UsageError(
-            "Concept review is not approved. "
-            f"Run 'rh-skills promote concept review {topic}' before finalizing or implementing extract artifacts."
+            f"Concept review is not approved{count_str} — finalization is blocked. "
+            f"Complete MCP enrichment first: 'rh-skills promote concept enrich {topic} "
+            f"--concept <name> --candidate <system|code|display>', "
+            f"then approve: 'rh-skills promote concept review {topic} "
+            f"--concept <name> --decision approved --code <system|code|display> [--finalize]'."
         )
 
 
