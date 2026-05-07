@@ -144,14 +144,6 @@ lookup_policy_fields:
       Instruction to the agent performing lookup. Currently always
       'use-mcp-to-identify-standardized-codes'.
 
-  descendant_policy:
-    type: string
-    allowed_values: [descendants-only]
-    description: >
-      Controls which is-a descendants to surface. 'descendants-only' means only
-      direct children of the matched concept are proposed as related[] entries.
-      Full subsumption expansion is deferred to L3.
-
   approval_order:
     type: string
     description: >

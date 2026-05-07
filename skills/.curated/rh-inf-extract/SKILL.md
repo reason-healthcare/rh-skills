@@ -426,6 +426,8 @@ If the plan includes `concept_review`, populate the packet by calling
 `rh-skills promote concept enrich` **once per result, per system searched**:
 `rh-skills promote concept enrich <topic> --concept <name> --candidate "system|code|display[|distance[|confidence]]"`
 
+> Run `rh-skills promote concept enrich --help` for the full option reference and worked examples.
+
 Key rules:
 - Use `top_k=10` (or the maximum available) on every MCP search call. The default
   may return only 1 result — explicitly request the full candidate set.
@@ -478,9 +480,11 @@ Key rules:
 **Call `concept enrich` for every concept before presenting any proposal.**
 `concept enrich` only records MCP candidates — it requires no human decision.
 Once all concepts are enriched, present a **single batch proposal** covering
-every pending concept so the reviewer can see the full candidate list and
-confirm or correct. After the reviewer confirms, execute decisions
-one concept at a time via `concept review`. `concepts.yaml` is written during implement mode via `rh-skills promote concept write`.
+every pending concept. Render all candidates in a per-concept Markdown table —
+the reviewer selects the code(s); you do not pre-pick or recommend one. After
+the reviewer confirms, execute decisions one concept at a time via
+`concept review`. `concepts.yaml` is written during implement mode via
+`rh-skills promote concept write`.
 
 **⚠ Do NOT ask the reviewer how they want to proceed or offer workflow options
 (e.g. "Option A — I drive" vs "Option B — you drive"). The workflow is fixed:
@@ -558,6 +562,11 @@ Successive calls for the same concept append to `candidate_codes[]`.
 Omit `--candidate` when MCP returned no results — still call to mark lookup complete.
 No human confirmation is needed for this step — it records data, not decisions.
 
+**Pipe characters in display strings**: If MCP returns a display string containing
+literal `|` characters (this occurs with some LOINC panel names), replace each `|`
+with ` - ` before passing to `--candidate`. The `|` delimiter is used to parse the
+`system|code|display` argument — an unescaped pipe corrupts the code or system field.
+
 **⚠ `--lookup-notes` is NOT a substitute for calling MCP tools.** It is only
 used after you have genuinely called every required system and all returned zero
 results. Using `--lookup-notes` without first calling the required MCP tools is
@@ -594,47 +603,89 @@ packet requires 4–5 chunks of 10; that is the expected workflow.
 
 ### Step 2 — Present the full batch proposal
 
-In a single response, show every pending concept with its MCP candidates
-(`confidence` included) and your proposed decision for each:
-- Proposed decision: `approve` / `exclude`
-- For `approve`: the specific code from `candidate_codes[]` you recommend,
-  and your proposed review note.
-  **Only propose `approve` when at least one candidate was returned.**
-  Do not approve a concept with an empty `candidate_codes[]`.
-- For `exclude`: your proposed exclusion note. Use `exclude` when:
-  - No MCP results were returned after all required systems were searched
-  - The concept is administrative / out-of-scope (e.g. `guideline-ref`, `term`
-    concepts with no clinical codes)
-  - The concept is a duplicate of another concept already being approved
+**⚠ Do NOT pre-select or recommend a single code per concept. Do NOT present
+a list of "Proposed Approvals". Do NOT summarise candidates into one line.**
+The reviewer must see every candidate and make their own selection.
+
+In a single response, render each pending concept as a heading followed by a
+**Markdown table** containing every entry from `candidate_codes[]`. Use exactly
+these columns: `System`, `Code`, `Display`, `Distance`, `Confidence`. Do not
+collapse rows, do not bold a "winner", do not add recommendation text beside
+individual codes.
+
+**Only two pre-filters are permitted before building a table:**
+1. Candidates that are completely unrelated to the concept (wrong body system,
+   wrong clinical domain) — omit those rows and note the count omitted.
+2. If `candidate_codes[]` is empty after all required systems were searched —
+   render the concept as `→ exclude (no candidates)` instead of a table.
+
+**Correct format for a concept with candidates:**
+
+**Nasal congestion** (`condition`)
+
+| System | Code | Display | Distance | Confidence |
+|--------|------|---------|----------|------------|
+| SNOMED-CT | 68235000 | Nasal congestion | 0.05 | high |
+| ICD-10-CM | J34.89 | Other specified disorders of nose | 0.31 | low |
+
+**Correct format for a concept with no candidates:**
+
+**Some Concept** (`condition`) → exclude (no candidates)
+
+For administrative / out-of-scope concepts (`guideline-ref`, `term`, duplicates)
+that need no code at all, render: `→ exclude (<reason>)`.
 
 **⚠ Present all concepts together and wait for the reviewer to confirm or
 correct the entire batch before running any CLI command.**
-Accept any corrections verbatim. Do not record anything until the reviewer
+Accept corrections verbatim — if the reviewer specifies a different code, use
+their exact `system|code` value. Do not record anything until the reviewer
 explicitly approves the full set (or a clearly stated subset).
 
 ### Step 3 — Execute decisions (after batch is confirmed)
 
-Call `concept review` once per concept, adding `--finalize` on the last call.
-`--finalize` seals the review packet only — `concepts.yaml` is written during
-implement mode via `rh-skills promote concept write`.
+> Run `rh-skills promote concept review --help` for the full option reference and worked examples.
+
+`concept review` uses a **two-step per-concept model**:
+1. **Build the code list** — promote and/or reject candidates (leaves `review_status` as `pending-review`).
+2. **Seal the decision** — `--decision` in a separate call.
+
+Add `--finalize` to the last call to seal the review packet.
+`concepts.yaml` is written during implement mode via `rh-skills promote concept write`.
 
 ```sh
+# Step 1 — promote candidate(s) and optionally reject others:
 rh-skills promote concept review <topic> \
-  --concept "Concept A" --decision approved \
-  --code "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)" \
+  --concept "Concept A" \
+  --promote-candidate "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)" \
   --reject-candidate "ICD-10|I10|Essential hypertension|SNOMED preferred over ICD-10" \
   --note "FSN confirmed"
 
-# ... repeat for remaining concepts, --finalize on the last one:
+# Step 2 — seal the decision:
 rh-skills promote concept review <topic> \
-  --concept "Concept B" --decision exclude --note "Out of scope" \
+  --concept "Concept A" --decision approved
+
+# Exclude a concept (single call; no promotion needed):
+rh-skills promote concept review <topic> \
+  --concept "Concept B" --decision exclude --note "Out of scope"
+
+# Skip (defer) a concept — blocks --finalize until resolved:
+rh-skills promote concept review <topic> \
+  --concept "Concept C" --decision skip --note "Need SME input"
+
+# Correct a mistake — reset and re-promote:
+rh-skills promote concept review <topic> --concept "Concept A" --reset-codes
+rh-skills promote concept review <topic> --concept "Concept A" \
+  --promote-candidate "SNOMED-CT|38341003"
+
+# --finalize on the last concept (or standalone after all concepts are sealed):
+rh-skills promote concept review <topic> \
+  --concept "Concept D" --decision exclude --note "Out of scope" \
   --finalize --reviewer "<reviewer-name>" --review-summary "<summary>"
 ```
 
-Use `--reject-candidate "system|code[|display[|reason]]"` (repeatable) to record
-which candidates from `candidate_codes[]` were explicitly considered and rejected.
-It is optional — candidates not mentioned are silently dropped; use it when the
-rejection rationale should be preserved for audit.
+`--promote-candidate "system|code[|display]"` — display is optional and will be auto-filled from `candidate_codes[]` if omitted.
+`--reject-candidate "system|code[|display[|reason]]"` — optional; repeatable; appends to `rejected_candidates[]`. Use it when the rejection rationale should be preserved for audit.
+`--reset-codes` — clears `codes[]` and `rejected_candidates[]`, resets `review_status` to `pending-review`.
 
 **⚠ Concerns must be resolved before approval.** If `rh-skills promote concerns <topic>`
 still shows open concerns at this point, re-run plan mode — do not run
