@@ -1,5 +1,7 @@
 """rh-skills promote — Promote artifacts between lifecycle levels."""
 
+import csv
+import hashlib
 import io
 import sys
 from contextlib import contextmanager
@@ -119,14 +121,66 @@ def _extract_readout_path(topic: str) -> Path:
     return topic_dir(topic) / "process" / "plans" / "extract-plan-readout.md"
 
 
-def _concept_review_path(topic: str) -> Path:
-    return topic_dir(topic) / "process" / "plans" / "concepts-plan.yaml"
+def _concept_review_csv_path(topic: str) -> Path:
+    return topic_dir(topic) / "process" / "plans" / "concepts-review.csv"
 
-def _concept_plan_readout_path(topic: str) -> Path:
-    return topic_dir(topic) / "process" / "plans" / "concepts-plan-readout.md"
+
+def _concept_review_meta_path(topic: str) -> Path:
+    return topic_dir(topic) / "process" / "plans" / "concepts-review-meta.yaml"
+
 
 def _concept_artifact_path(topic: str) -> Path:
     return topic_dir(topic) / "structured" / "concepts.yaml"
+
+
+_CONCEPT_CSV_FIELDNAMES = [
+    "concept_name", "concept_type", "sources", "context", "lookup_query", "lookup_notes",
+    "system", "code", "display", "distance",
+    "confidence (high/medium/low)", "code status (approve/reject)", "remove concept (true/false)", "comment",
+]
+
+
+def _load_csv(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _csv_checksum(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _load_concept_review_meta(topic: str) -> dict:
+    meta_path = _concept_review_meta_path(topic)
+    if not meta_path.exists():
+        raise click.UsageError(
+            f"No concept review found. Run 'rh-skills promote plan {topic}' first."
+        )
+    data = _yaml_safe().load(meta_path.read_text()) or {}
+    if not isinstance(data, dict):
+        raise click.UsageError(f"Concept review meta is invalid: {meta_path}")
+    return data
+
+
+def _write_concept_review_meta(topic: str, meta: dict) -> Path:
+    meta_path = _concept_review_meta_path(topic)
+    meta_path.parent.mkdir(parents=True, exist_ok=True)
+    buf = io.StringIO()
+    _yaml_rt().dump(meta, buf)
+    meta_path.write_text(buf.getvalue())
+    return meta_path
+
 
 def _formalize_plan_path(topic: str) -> Path:
     return topic_dir(topic) / "process" / "plans" / "formalize-plan.yaml"
@@ -187,16 +241,20 @@ def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict
 
 def _require_concept_review_approved(plan: dict) -> None:
     concept_review = plan.get("concept_review") or {}
-    if concept_review and concept_review.get("status") != "approved":
-        topic = plan.get("topic", "<topic>")
-        concept_count = concept_review.get("concept_count")
-        count_str = f" ({concept_count} concepts)" if concept_count else ""
+    if not concept_review:
+        return
+    topic = plan.get("topic", "<topic>")
+    meta_path = _concept_review_meta_path(topic)
+    if meta_path.exists():
+        meta = _yaml_safe().load(meta_path.read_text()) or {}
+        status = meta.get("status", "pending-review")
+    else:
+        status = concept_review.get("status", "pending-review")
+    if status != "approved":
         raise click.UsageError(
-            f"Concept review is not approved{count_str} — finalization is blocked. "
-            f"Complete MCP enrichment first: 'rh-skills promote concept enrich {topic} "
-            f"--concept <name> --candidate <system|code|display>', "
-            f"then approve: 'rh-skills promote concept review {topic} "
-            f"--concept <name> --decision approved --code <system|code|display> [--finalize]'."
+            f"Concept review is not approved — finalization is blocked. "
+            f"Edit topics/{topic}/process/plans/concepts-review.csv then run: "
+            f"'rh-skills promote concept review {topic} --finalize --reviewer <name>'."
         )
 
 
@@ -961,179 +1019,142 @@ def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
                     "type": concept_type,
                     "sources": [],
                     "source_files": [],
+                    "context": "",
                 },
             )
             if record["name"] not in entry["sources"]:
                 entry["sources"].append(record["name"])
             if record["relative_path"] not in entry["source_files"]:
                 entry["source_files"].append(record["relative_path"])
+            if not entry["context"]:
+                ctx = str(concept.get("context") or "").strip()
+                if ctx:
+                    entry["context"] = ctx
     return sorted(
         deduped.values(),
         key=lambda item: (item["name"].casefold(), item["type"].casefold()),
     )
 
 
-def _build_concept_review(topic: str, concepts: list[dict], source: str = "normalized-frontmatter") -> dict | None:
+def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
     if not concepts:
         return None
+    # Collect the deduplicated set of source file paths across all concepts
+    source_files: list[str] = []
+    seen: set[str] = set()
+    for c in concepts:
+        for sf in c.get("source_files") or []:
+            if sf not in seen:
+                source_files.append(sf)
+                seen.add(sf)
     return {
-        "source": source,
+        "source_files": source_files,
         "status": "pending-review",
         "concept_count": len(concepts),
-        "lookup_completed": False,
-        "review_artifact": f"topics/{topic}/process/plans/concepts-plan.yaml",
+        "review_artifact": f"topics/{topic}/process/plans/concepts-review.csv",
         "final_artifact": f"topics/{topic}/structured/concepts.yaml",
     }
 
 
-def _build_concept_review_packet(topic: str, concepts: list[dict], source: str = "normalized-frontmatter") -> dict:
-    return {
+def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, Path]:
+    """Write concepts-review.csv and concepts-review-meta.yaml.
+
+    One row per concept (placeholder — no candidates yet). concept enrich adds
+    candidate rows per concept. Returns (csv_path, meta_path).
+    """
+    csv_path = _concept_review_csv_path(topic)
+    rows = [
+        {
+            "concept_name": c["name"],
+            "concept_type": c["type"],
+            "sources": "; ".join(c.get("sources") or []),
+            "context": c.get("context") or "",
+            "lookup_query": c["name"],
+            "lookup_notes": "",
+            "system": "",
+            "code": "",
+            "display": "",
+            "distance": "",
+            "confidence (high/medium/low)": "",
+            "code status (approve/reject)": "",
+            "remove concept (true/false)": "",
+            "comment": "",
+        }
+        for c in concepts
+    ]
+    _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
+    meta: dict = {
         "topic": topic,
         "status": "pending-review",
-        "concept_count": len(concepts),
         "generated_at": now_iso(),
         "reviewed_at": None,
         "reviewer": "",
-        "review_summary": "",
-        "source": source,
-        "lookup_completed": False,
-        "lookup_policy": {
-            "service": "reasonhub-mcp",
-            "directive": "use-mcp-to-identify-standardized-codes",
-            "approval_order": "dedupe-then-mcp-lookup-then-human-approval",
-        },
-        "review_artifact": f"topics/{topic}/process/plans/concepts-plan.yaml",
+        "csv_checksum": _csv_checksum(csv_path),
         "final_artifact": f"topics/{topic}/structured/concepts.yaml",
-        "concepts": [
-            {
-                "name": concept["name"],
-                "type": concept["type"],
-                "sources": list(concept["sources"]),
-                "source_files": list(concept["source_files"]),
-                "lookup_completed": False,
-                "lookup_query": concept["name"],
-                "candidate_codes": [],
-                "review_status": "pending-review",
-                "review_notes": "",                "codes": [],
-            }
-            for concept in concepts
-        ],
     }
+    meta_path = _write_concept_review_meta(topic, meta)
+    return csv_path, meta_path
 
 
-def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
-    def _codes_for_l2(codes: list[dict]) -> list[dict]:
-        def _related_entries(values: object) -> list[dict]:
-            if not isinstance(values, list):
-                return []
-            deduped_related: list[dict] = []
-            related_keys: set[tuple[str, str, str]] = set()
-            for related in values:
-                if not isinstance(related, dict):
-                    continue
-                system = str(related.get("system") or "").strip()
-                code = str(related.get("code") or "").strip()
-                if not system or not code:
-                    continue
-                relationship = str(related.get("relationship") or "").strip()
-                dedup_key = (system.casefold(), code.casefold(), relationship.casefold())
-                if dedup_key in related_keys:
-                    continue
-                related_keys.add(dedup_key)
-                deduped_related.append(
-                    {
-                        "system": system,
-                        "code": code,
-                        "display": str(related.get("display") or ""),
-                        **({"relationship": relationship} if relationship else {}),
-                    }
-                )
-            return deduped_related
+def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
+    """Build and write concepts.yaml from concepts-review.csv."""
+    csv_path = _concept_review_csv_path(topic)
+    meta = _load_concept_review_meta(topic)
+    csv_rows = _load_csv(csv_path)
 
-        deduped_codes: dict[tuple[str, str], dict] = {}
-        code_order: list[tuple[str, str]] = []
-        for code in codes:
-            if not isinstance(code, dict):
-                continue
-            system = str(code.get("system") or "").strip()
-            code_value = str(code.get("code") or "").strip()
-            if not system or not code_value:
-                continue
-            dedup_key = (system.casefold(), code_value.casefold())
-            related = code.get("related")
-            if not related and code.get("related_candidates"):
-                related = code.get("related_candidates")
-            normalized_related = _related_entries(related)
+    # Collect per-concept metadata, excluded set, and approved codes
+    concept_meta: dict[str, dict] = {}   # name → {type, sources, comment}
+    excluded_concepts: set[str] = set()
+    approved_by_concept: dict[str, list[dict]] = {}
 
-            if dedup_key not in deduped_codes:
-                entry = {
-                    "system": system,
-                    "code": code_value,
-                    "display": str(code.get("display") or ""),
-                }
-                if normalized_related:
-                    entry["related"] = normalized_related
-                deduped_codes[dedup_key] = entry
-                code_order.append(dedup_key)
-                continue
-
-            existing = deduped_codes[dedup_key]
-            if not existing.get("display") and code.get("display"):
-                existing["display"] = str(code.get("display"))
-
-            if normalized_related:
-                merged_related = list(existing.get("related") or [])
-                seen_related = {
-                    (
-                        str(item.get("system") or "").casefold(),
-                        str(item.get("code") or "").casefold(),
-                        str(item.get("relationship") or "").casefold(),
+    for row in csv_rows:
+        name = row.get("concept_name", "").strip()
+        if not name:
+            continue
+        if name not in concept_meta:
+            concept_meta[name] = {
+                "type": row.get("concept_type", "").strip(),
+                "sources": [s.strip() for s in row.get("sources", "").split(";") if s.strip()],
+                "comment": row.get("comment", "").strip(),
+            }
+        if row.get("remove concept (true/false)", "").strip().lower() in ("true", "y", "yes"):
+            excluded_concepts.add(name)
+        if row.get("code status (approve/reject)", "").strip().lower() in ("approve", "y", "yes") and name not in excluded_concepts:
+            approved_by_concept.setdefault(name, [])
+            system = row.get("system", "").strip()
+            code = row.get("code", "").strip()
+            display = row.get("display", "").strip()
+            if system and code:
+                key = (system.casefold(), code.casefold())
+                if not any(
+                    (e["system"].casefold(), e["code"].casefold()) == key
+                    for e in approved_by_concept[name]
+                ):
+                    approved_by_concept[name].append(
+                        {k: v for k, v in {"system": system, "code": code, "display": display}.items() if v}
                     )
-                    for item in merged_related
-                    if isinstance(item, dict)
-                }
-                for related_entry in normalized_related:
-                    related_key = (
-                        str(related_entry.get("system") or "").casefold(),
-                        str(related_entry.get("code") or "").casefold(),
-                        str(related_entry.get("relationship") or "").casefold(),
-                    )
-                    if related_key in seen_related:
-                        continue
-                    merged_related.append(related_entry)
-                    seen_related.add(related_key)
-                if merged_related:
-                    existing["related"] = merged_related
 
-        normalized: list[dict] = []
-        for dedup_key in code_order:
-            normalized.append(dict(deduped_codes[dedup_key]))
-        return normalized
-
-    reviewed_concepts = [
-        concept
-        for concept in (review_packet.get("concepts", []) or [])
-        if concept.get("review_status") != "excluded"
-    ]
-    derived_from = sorted({
-        source
-        for concept in reviewed_concepts
-        for source in (concept.get("sources") or [])
-    })
+    # Build concept rows: all non-excluded concepts, with or without codes
     concept_rows = []
-    for concept in reviewed_concepts:
-        concept_row = {
-            "name": concept.get("name", ""),
-            "type": concept.get("type", ""),
-        }
-        codes = _codes_for_l2(concept.get("codes") or [])
+    for name, info in concept_meta.items():
+        if name in excluded_concepts:
+            continue
+        concept_row: dict = {"name": name, "type": info["type"]}
+        codes = approved_by_concept.get(name, [])
         if codes:
             concept_row["codes"] = codes
-        if concept.get("review_notes"):
-            concept_row["notes"] = concept["review_notes"]
+        if info.get("comment"):
+            concept_row["notes"] = info["comment"]
         concept_rows.append(concept_row)
 
-    return {
+    # derived_from: union of all non-excluded concept sources
+    all_sources: set[str] = set()
+    for name, info in concept_meta.items():
+        if name not in excluded_concepts:
+            all_sources.update(info.get("sources", []))
+    derived_from = sorted(all_sources)
+
+    artifact = {
         "id": "concepts",
         "name": "concepts",
         "title": f"{_human_title(topic)} Concept Catalog",
@@ -1146,7 +1167,7 @@ def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
         ),
         "derived_from": derived_from,
         "artifact_type": "terminology",
-        "review_status": review_packet.get("status", "pending-review"),
+        "review_status": meta.get("status", "pending-review"),
         "sections": {
             "summary": (
                 "Terminology review output derived from topic concept annotations. "
@@ -1155,216 +1176,8 @@ def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
         },
         "concepts": concept_rows,
     }
-
-
-def _cross_concept_code_overlap(concepts: list[dict]) -> list[dict]:
-    """Return codes that appear as candidates in more than one concept.
-
-    Each entry: {"system": ..., "code": ..., "display": ..., "concepts": [...names]}
-    Only candidate_codes[] is scanned — approved codes[] are intentional and expected
-    to overlap.
-    """
-    code_to_concepts: dict[tuple[str, str], dict] = {}
-    for concept in concepts:
-        name = concept.get("name", "")
-        for c in concept.get("candidate_codes") or []:
-            system = str(c.get("system") or "").strip()
-            code = str(c.get("code") or "").strip()
-            if not system or not code:
-                continue
-            key = (system.casefold(), code.casefold())
-            if key not in code_to_concepts:
-                code_to_concepts[key] = {
-                    "system": system,
-                    "code": code,
-                    "display": str(c.get("display") or "").strip(),
-                    "concepts": [],
-                }
-            if name not in code_to_concepts[key]["concepts"]:
-                code_to_concepts[key]["concepts"].append(name)
-    return [
-        entry for entry in code_to_concepts.values()
-        if len(entry["concepts"]) > 1
-    ]
-
-
-def _render_concept_plan_readout(topic: str, packet: dict) -> str:
-    """Return human-friendly markdown readout derived from concepts-plan.yaml."""
-    status = packet.get("status", "pending-review")
-    reviewed_at = packet.get("reviewed_at") or ""
-    reviewer = packet.get("reviewer") or ""
-    review_summary = packet.get("review_summary") or ""
-    concepts = packet.get("concepts", []) or []
-    lookup_completed = packet.get("lookup_completed", False)
-
-    status_icon = "✅ APPROVED" if status == "approved" else "⏳ PENDING REVIEW"
-
-    approved_suffix = ""
-    if status == "approved":
-        approved_suffix = f" — Reviewed: {reviewed_at}" + (f" — Reviewer: {reviewer}" if reviewer else "")
-
-    lines = [
-        "> **Note:** This file is a narrative readout derived from `concepts-plan.yaml`.",
-        "> It is generated by the `rh-inf-extract` skill and should not be edited directly.",
-        "> The structured plan in `concepts-plan.yaml` is the single source of truth.",
-        f"> To enrich and review concepts, run: `rh-skills promote concept enrich {topic} --concept <name> --candidate <system|code|display>` then `rh-skills promote concept review {topic} --concept <name> --decision approved --code <system|code|display>`",
-        "",
-        f"**Status: {status_icon}**" + approved_suffix,
-        "",
-        "# Review Summary",
-        "",
-        f"- Topic: `{topic}`",
-        f"- Deduplicated concepts: {len(concepts)}",
-        f"- MCP lookup completed: `{lookup_completed}`",
-        f"- Final artifact target: `{packet.get('final_artifact', '')}`",
-    ]
-    if review_summary:
-        lines.append(f"- Notes: {review_summary}")
-    if status != "approved":
-        lines.extend([
-            "",
-            "Reviewer action required:",
-            f"  1. Enrich each concept : `rh-skills promote concept enrich {topic} --concept <name> --candidate <system|code|display>`",
-            f"  2. Approve each concept: `rh-skills promote concept review {topic} --concept <name> --decision approved --code <system|code|display>`",
-            f"  3. Finalize packet     : `rh-skills promote concept review {topic} --finalize`",
-            f"  4. Write concepts.yaml : `rh-skills promote concept write {topic}` (during implement)",
-        ])
-    lines.extend(["", "# Concepts", ""])
-
-    lookup_policy = packet.get("lookup_policy") or {}
-    for concept in concepts:
-        review_status = concept.get("review_status", "pending-review")
-        status_icon_c = "✅" if review_status == "approved" else ("🚫" if review_status == "excluded" else ("⏭" if review_status == "skipped" else "⏳"))
-        name = concept.get("name", "unknown")
-        ctype = concept.get("type", "unknown")
-        sources = concept.get("sources", [])
-        enriched = concept.get("lookup_completed", False)
-        candidates = concept.get("candidate_codes") or []
-        codes = concept.get("codes") or []
-        lines.extend([
-            f"## {status_icon_c} {name}",
-            "",
-            f"- Type: `{ctype}`",
-            f"- Sources: {', '.join(sources) if sources else '_none_'}",
-            f"- MCP lookup completed: `{enriched}`",
-            f"- Review status: `{review_status}`",
-        ])
-        if concept.get("lookup_query"):
-            lines.append(f"- Lookup query: `{concept['lookup_query']}`")
-        if concept.get("lookup_notes"):
-            lines.append(f"- Lookup notes: {concept['lookup_notes']}")
-        if candidates:
-            lines.append(f"- MCP candidates: {len(candidates)}")
-            for idx, c in enumerate(candidates, start=1):
-                system = c.get("system") or "[system missing]"
-                code = c.get("code") or "[code missing]"
-                display = c.get("display") or "[display missing]"
-                meta_parts = []
-                if c.get("confidence"):
-                    meta_parts.append(f"confidence: {c['confidence']}")
-                if c.get("distance") is not None:
-                    meta_parts.append(f"distance: {c['distance']}")
-                meta = f" ({', '.join(meta_parts)})" if meta_parts else ""
-                lines.append(f"  {idx}. `{system}` `{code}` — {display}{meta}")
-        elif enriched:
-            lines.append("- MCP candidates: none found")
-        if codes:
-            lines.append("- Approved codes:")
-            for code_entry in codes:
-                system = code_entry.get("system", "")
-                code = code_entry.get("code", "")
-                display = code_entry.get("display", "")
-                lines.append(f"  - `{system}` `{code}` — {display}")
-                for rel in code_entry.get("related") or []:
-                    lines.append(f"    - is-a: `{rel.get('system', '')}` `{rel.get('code', '')}` — {rel.get('display', '')}")
-        if review_status == "excluded" and concept.get("review_notes"):
-            lines.append(f"- Exclusion note: {concept['review_notes']}")
-        lines.append("")
-
-    # Cross-concept candidate overlap
-    overlaps = _cross_concept_code_overlap(concepts)
-    if overlaps:
-        lines.extend(["# Cross-Concept Code Overlap", ""])
-        lines.append(
-            "The following codes appear as MCP candidates in multiple concepts. "
-            "Each concept must be reviewed independently — shared codes are expected "
-            "for related concepts. Use this map to batch your review decisions."
-        )
-        lines.append("")
-        for entry in overlaps:
-            concept_list = ", ".join(f"`{n}`" for n in entry["concepts"])
-            lines.append(
-                f"- `{entry['system']}` `{entry['code']}` "
-                f"— {entry['display'] or '_no display_'}: appears in {concept_list}"
-            )
-        lines.append("")
-
-    lines.extend(["# Lookup Policy", ""])
-    if lookup_policy:
-        lines.extend([
-            f"- Service: `{lookup_policy.get('service', '')}`",
-            f"- Approval order: `{lookup_policy.get('approval_order', '')}`",
-        ])
-    lines.extend([
-        "",
-        "# Implementation Readiness",
-        "",
-    ])
-    if status == "approved":
-        lines.append(f"- Concept plan status: `approved` — ready for extract implementation.")
-    else:
-        pending_enrichment = sum(1 for c in concepts if not c.get("lookup_completed"))
-        pending_review = sum(1 for c in concepts if c.get("review_status") == "pending-review")
-        skipped = sum(1 for c in concepts if c.get("review_status") == "skipped")
-        lines.extend([
-            "- Concept plan must be approved before `rh-skills promote approve --finalize` can run.",
-            f"- Concepts pending MCP enrichment: {pending_enrichment}",
-            f"- Concepts pending human review: {pending_review}",
-            f"- Concepts skipped (deferred): {skipped}",
-        ])
-    lines.append("")
-    return "\n".join(lines)
-
-
-def _write_concept_review_packet(topic: str, packet: dict) -> Path:
-    review_path = _concept_review_path(topic)
-    review_path.parent.mkdir(parents=True, exist_ok=True)
-    buf = io.StringIO()
-    _yaml_rt().dump(packet, buf)
-    review_path.write_text(buf.getvalue())
-    readout_path = _concept_plan_readout_path(topic)
-    readout_path.write_text(_render_concept_plan_readout(topic, packet))
-    return review_path
-
-
-def _sync_plan_concept_review(topic: str, packet: dict) -> None:
-    plan_path = _extract_plan_path(topic)
-    readout_path = _extract_readout_path(topic)
-    if not plan_path.exists():
-        return
-    plan = _yaml_safe().load(plan_path.read_text()) or {}
-    if not isinstance(plan, dict):
-        return
-    concept_review = plan.get("concept_review") or {}
-    if not concept_review:
-        return
-    concept_review["status"] = packet.get("status", concept_review.get("status", "pending-review"))
-    concept_review["concept_count"] = packet.get("concept_count", concept_review.get("concept_count", 0))
-    concept_review["review_artifact"] = packet.get("review_artifact", concept_review.get("review_artifact", ""))
-    concept_review["final_artifact"] = packet.get("final_artifact", concept_review.get("final_artifact", ""))
-    concept_review["lookup_completed"] = packet.get("lookup_completed", concept_review.get("lookup_completed", False))
-    if packet.get("reviewer"):
-        concept_review["reviewer"] = packet["reviewer"]
-    if packet.get("reviewed_at"):
-        concept_review["reviewed_at"] = packet["reviewed_at"]
-    plan["concept_review"] = concept_review
-    _write_plan_and_readout(plan_path, readout_path, plan)
-
-
-def _write_concepts_l2_artifact(topic: str, tracking: dict, review_packet: dict) -> Path:
     artifact_path = _concept_artifact_path(topic)
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
-    artifact = _build_concepts_l2_artifact(topic, review_packet)
     buf = io.StringIO()
     _yaml_rt().dump(artifact, buf)
     artifact_path.write_text(buf.getvalue())
@@ -1378,7 +1191,7 @@ def _write_concepts_l2_artifact(topic: str, tracking: dict, review_packet: dict)
         "file": f"topics/{topic}/structured/concepts.yaml",
         "created_at": now_iso(),
         "checksum": checksum,
-        "derived_from": artifact.get("derived_from", []),
+        "derived_from": derived_from,
         "artifact_type": "terminology",
     }
     if entry is None:
@@ -1389,41 +1202,32 @@ def _write_concepts_l2_artifact(topic: str, tracking: dict, review_packet: dict)
         tracking,
         topic,
         "structured_derived",
-        "Derived concepts terminology artifact from normalized front matter review",
+        "Derived concepts terminology artifact from CSV review",
     )
     save_tracking(tracking)
     return artifact_path
 
 
-def _load_concept_review_packet(topic: str) -> dict:
-    review_path = _concept_review_path(topic)
-    if not review_path.exists():
-            raise click.UsageError(
-                f"No concept review packet found. Run 'rh-skills promote plan {topic}' first."
-            )
-    packet = _yaml_safe().load(review_path.read_text()) or {}
-    if not isinstance(packet, dict):
-        raise click.UsageError(f"Concept review packet is empty or invalid: {review_path}")
-    return packet
-
-
-def _find_review_concept(packet: dict, name: str, concept_type: str | None) -> dict:
-    matches = [
-        concept
-        for concept in (packet.get("concepts", []) or [])
-        if concept.get("name") == name and (concept_type is None or concept.get("type") == concept_type)
-    ]
-    if not matches:
-        raise click.UsageError(
-            f"Concept '{name}'"
-            + (f" ({concept_type})" if concept_type else "")
-            + " not found in concepts-plan.yaml."
-        )
-    if len(matches) > 1:
-        raise click.UsageError(
-            f"Concept name '{name}' is ambiguous in concepts-plan.yaml; re-run with --type."
-        )
-    return matches[0]
+def _sync_plan_concept_review(topic: str, meta: dict) -> None:
+    plan_path = _extract_plan_path(topic)
+    readout_path = _extract_readout_path(topic)
+    if not plan_path.exists():
+        return
+    plan = _yaml_safe().load(plan_path.read_text()) or {}
+    if not isinstance(plan, dict):
+        return
+    concept_review = plan.get("concept_review") or {}
+    if not concept_review:
+        return
+    concept_review["status"] = meta.get("status", concept_review.get("status", "pending-review"))
+    concept_review["review_artifact"] = meta.get("review_artifact", concept_review.get("review_artifact", ""))
+    concept_review["final_artifact"] = meta.get("final_artifact", concept_review.get("final_artifact", ""))
+    if meta.get("reviewer"):
+        concept_review["reviewer"] = meta["reviewer"]
+    if meta.get("reviewed_at"):
+        concept_review["reviewed_at"] = meta["reviewed_at"]
+    plan["concept_review"] = concept_review
+    _write_plan_and_readout(plan_path, readout_path, plan)
 
 
 _EVIDENCE_SUMMARY_FALLBACK = {
@@ -1651,9 +1455,10 @@ def _render_extract_readout(plan: dict) -> str:
         f"- Proposed artifacts: {len(artifacts)}",
     ]
     if concept_review:
+        source_files = concept_review.get('source_files') or []
         lines.append(
             f"- Concept review: `{concept_review.get('status', 'pending-review')}` "
-            f"({concept_review.get('concept_count', 0)} deduplicated concept(s))"
+            f"({concept_review.get('concept_count', 0)} deduplicated concept(s) from {len(source_files)} source(s))"
         )
         lines.append(f"- MCP lookup completed: `{concept_review.get('lookup_completed', False)}`")
     if review_summary:
@@ -1663,10 +1468,12 @@ def _render_extract_readout(plan: dict) -> str:
     lines.append("")
 
     if concept_review:
+        source_files = concept_review.get('source_files') or []
+        source_display = ', '.join(f'`{sf}`' for sf in source_files) if source_files else '_none_'
         lines.extend([
             "# Concept Review",
             "",
-            f"- Source: `{concept_review.get('source', 'normalized-frontmatter')}`",
+            f"- Source files: {source_display}",
             f"- Review artifact: `{concept_review.get('review_artifact', '')}`",
             f"- Final artifact target: `{concept_review.get('final_artifact', '')}`",
             f"- MCP enrichment command: `rh-skills promote concept enrich {topic} --concept <name> --candidate <system|code|display>`",
@@ -2094,12 +1901,9 @@ def plan(topic, force):
     plan = _yaml_safe().load(plan_yaml)
     _extract_readout_path(topic).write_text(_render_extract_readout(plan))
     if frontmatter_concepts:
-        review_path = _write_concept_review_packet(
-            topic,
-            _build_concept_review_packet(topic, frontmatter_concepts),
-        )
-        log_info(f"Created: {review_path}")
-        log_info(f"Created: {_concept_plan_readout_path(topic)}")
+        csv_path, meta_path = _build_concept_review_csvs(topic, frontmatter_concepts)
+        log_info(f"Created: {csv_path}")
+        log_info(f"Created: {meta_path}")
 
     append_topic_event(
         tracking,
@@ -2113,11 +1917,10 @@ def plan(topic, force):
     click.echo("\nNext steps:")
     click.echo(f"  1. Review the readout : cat topics/{topic}/process/plans/extract-plan-readout.md")
     if frontmatter_concepts:
-        click.echo(f"  2. Review concepts    : cat topics/{topic}/process/plans/concepts-plan-readout.md")
-        click.echo(f"  3. Enrich concepts    : rh-skills promote concept enrich {topic} --concept <name> --candidate <system|code|display>")
-        click.echo(f"  4. Review concepts    : rh-skills promote concept review {topic} --concept <name> --decision approved --code <system|code|display>")
-        click.echo(f"  5. Finalize packet    : rh-skills promote concept review {topic} --finalize")
-        click.echo(f"  (concept write writes concepts.yaml during implement)")
+        click.echo(f"  2. Enrich concepts    : rh-skills promote concept enrich {topic} --concept <name> --candidate <system|code|display>")
+        click.echo(f"  3. Edit the CSV       : open topics/{topic}/process/plans/concepts-review.csv")
+        click.echo(f"  4. Finalize review    : rh-skills promote concept review {topic} --finalize --reviewer <name>")
+        click.echo(f"  5. Write concepts.yaml: rh-skills promote concept write {topic}  (during implement)")
         click.echo(f"  6. Approve artifacts  : rh-inf-extract approve {topic}")
         click.echo(f"  7. Run extraction     : rh-inf-extract implement {topic}")
     else:
@@ -2240,6 +2043,15 @@ def approve(topic, artifact_name, decision, notes, add_concerns, add_sources, re
 _CONFIDENCE_LABELS = {"high", "medium", "low"}
 
 
+def _confidence_from_distance(distance: float) -> str:
+    """Infer a confidence label from a numeric distance score (lower = closer match)."""
+    if distance < 0.25:
+        return "high"
+    if distance < 0.50:
+        return "medium"
+    return "low"
+
+
 def _parse_candidate_flag(value: str) -> dict:
     """Parse 'system|code|display[|distance[|confidence]]' into a candidate dict.
 
@@ -2271,6 +2083,8 @@ def _parse_candidate_flag(value: str) -> dict:
                 f"got: {parts[4]!r} in {value!r}"
             )
         entry["confidence"] = confidence
+    elif "distance" in entry:
+        entry["confidence"] = _confidence_from_distance(entry["distance"])
     return entry
 
 
@@ -2382,461 +2196,300 @@ def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> li
 )
 @click.option("--lookup-query", "lookup_query", default=None, metavar="TEXT", help="Search query used. Defaults to concept name.")
 @click.option("--lookup-notes", "lookup_notes", default=None, metavar="TEXT", help="Optional notes from the MCP lookup.")
-@click.option("--reset", "reset", is_flag=True, help="Clear existing candidate_codes[] before recording. Use alone to undo all candidates.")
+@click.option("--reset", "reset", is_flag=True, help="Clear existing candidate rows and restore placeholder. Use alone or before re-adding candidates.")
 def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_query, lookup_notes, reset):
-    """Record RH MCP candidates for a concept review entry.
+    """Record RH MCP candidates for a concept in the concepts-review.csv.
 
     \b
     Non-interactive (AI agent):
-      # One candidate per call (repeat for each result returned by MCP):
+      # Record one candidate:
       rh-skills promote concept enrich <topic> \\
         --concept "Hypertension" \\
         --candidate "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
         --lookup-query "Hypertension"
 
-      # Multiple candidates in a single call (all recorded, same as repeated calls):
+      # Multiple candidates in a single call:
       rh-skills promote concept enrich <topic> \\
         --concept "Hypertension" \\
-        --candidate "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
+        --candidate "SNOMED-CT|38341003|Hypertensive disorder|0.02|high" \\
         --candidate "ICD-10|I10|Essential (primary) hypertension|0.05"
 
-      # Successive calls append; use --reset to start fresh:
-      rh-skills promote concept enrich <topic> --concept "Hypertension" --reset
-      rh-skills promote concept enrich <topic> \\
-        --concept "Hypertension" --candidate "SNOMED-CT|38341003|..."
-
-      # MCP returned no results — still call to mark lookup complete:
+      # MCP returned no results — still call to record lookup notes:
       rh-skills promote concept enrich <topic> --concept "Rare finding" \\
         --lookup-notes "No results found in SNOMED or ICD-10"
+
+      # Start fresh for a concept:
+      rh-skills promote concept enrich <topic> --concept "Hypertension" --reset
     """
-
     require_topic(require_tracking(), topic)
-    review_path = _concept_review_path(topic)
-    with _lock_concept_review(review_path):
-        packet = _load_concept_review_packet(topic)
-        if packet.get("status") == "approved":
-            raise click.UsageError("Concept review is already approved; re-plan if you need to change MCP candidates.")
+    csv_path = _concept_review_csv_path(topic)
+    if not csv_path.exists():
+        raise click.UsageError(
+            f"No concept review CSV found. Run 'rh-skills promote plan {topic}' first."
+        )
+    remaining = 0
+    appended_count = 0
+    with _lock_concept_review(csv_path):
+        meta = _load_concept_review_meta(topic)
+        if meta.get("status") == "approved":
+            raise click.UsageError("Concept review is already approved; re-plan if you need to change candidates.")
 
-        concept = _find_review_concept(packet, concept_name, concept_type)
+        rows = _load_csv(csv_path)
+        concept_row_list = [r for r in rows if r.get("concept_name", "").strip() == concept_name]
+        if not concept_row_list:
+            raise click.UsageError(f"Concept '{concept_name}' not found in concepts-review.csv.")
+
+        first_row = concept_row_list[0]
+        meta_type = first_row.get("concept_type", "")
+        meta_sources = first_row.get("sources", "")
+        effective_lookup_query = lookup_query or first_row.get("lookup_query") or concept_name
 
         if reset:
-            concept["candidate_codes"] = []
-            concept["lookup_completed"] = False
+            placeholder = {
+                "concept_name": concept_name,
+                "concept_type": meta_type,
+                "sources": meta_sources,
+                "context": first_row.get("context", ""),
+                "lookup_query": effective_lookup_query,
+                "lookup_notes": lookup_notes or "",
+                "system": "", "code": "", "display": "",
+                "distance": "", "confidence (high/medium/low)": "",
+                "code status (approve/reject)": "", "remove concept (true/false)": "", "comment": "",
+            }
+            other_rows = [r for r in rows if r.get("concept_name", "").strip() != concept_name]
+            rows = other_rows + [placeholder]
             if not raw_candidates:
-                # Reset-only call: recompute packet flag and save
-                all_enriched = all(
-                    e.get("lookup_completed") is True
-                    for e in (packet.get("concepts", []) or [])
-                )
-                packet["lookup_completed"] = all_enriched
-                _write_concept_review_packet(topic, packet)
-                _sync_plan_concept_review(topic, packet)
-                log_info(f"Reset MCP candidates for '{concept_name}'.")
+                _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
+                meta["csv_checksum"] = _csv_checksum(csv_path)
+                _write_concept_review_meta(topic, meta)
+                log_info(f"Reset candidates for '{concept_name}'.")
                 return
+            concept_row_list = [placeholder]
 
-        if lookup_query:
-            concept["lookup_query"] = lookup_query
-        elif not concept.get("lookup_query"):
-            concept["lookup_query"] = concept_name
+        existing_candidate_rows = [
+            r for r in concept_row_list
+            if r.get("system", "").strip() or r.get("code", "").strip()
+        ]
+        placeholder_rows = [
+            r for r in concept_row_list
+            if not r.get("system", "").strip() and not r.get("code", "").strip()
+        ]
 
-        appended_count = 0
+        _CONF_RANK = {"high": 2, "medium": 1, "low": 0}
         for raw_candidate in raw_candidates:
             entry = _parse_candidate_flag(raw_candidate)
-            existing = concept.get("candidate_codes") or []
             norm_new = _normalize_candidate_identity(entry)
-            dup_idx = next(
+            new_system = norm_new["system"]
+            new_code = norm_new["code"]
+            new_display = norm_new["display"]
+            new_dist = entry.get("distance")
+            new_conf_str = str(entry.get("confidence", "")).lower()
+            if not new_conf_str and entry.get("distance") is not None:
+                new_conf_str = _confidence_from_distance(float(entry["distance"]))
+            new_conf = _CONF_RANK.get(new_conf_str, -1)
+
+            dup_row = next(
                 (
-                    i
-                    for i, cand in enumerate(existing)
-                    if _normalize_candidate_identity(cand)["system"] == norm_new["system"]
-                    and _normalize_candidate_identity(cand)["code"] == norm_new["code"]
+                    r for r in existing_candidate_rows
+                    if r.get("system", "").strip().casefold() == new_system.casefold()
+                    and r.get("code", "").strip().casefold() == new_code.casefold()
                 ),
                 None,
             )
-            if dup_idx is not None:
-                existing_cand = existing[dup_idx]
-                # Merge related_candidates (union by system|code)
-                existing_related = existing_cand.get("related_candidates") or []
-                new_related = entry.get("related_candidates") or []
-                if new_related:
-                    existing_keys = {
-                        (_normalize_candidate_identity(r)["system"], _normalize_candidate_identity(r)["code"])
-                        for r in existing_related
-                    }
-                    for r in new_related:
-                        key = (_normalize_candidate_identity(r)["system"], _normalize_candidate_identity(r)["code"])
-                        if key not in existing_keys:
-                            existing_related.append(r)
-                            existing_keys.add(key)
-                    existing_cand["related_candidates"] = existing_related
-                # Replace existing if new entry is strictly better (lower distance wins;
-                # tie: higher confidence wins; tie: keep existing / first-write-wins)
-                _CONF_RANK = {"high": 2, "medium": 1, "low": 0}
-                new_dist = entry.get("distance")
-                old_dist = existing_cand.get("distance")
-                new_conf = _CONF_RANK.get(str(entry.get("confidence", "")).lower(), -1)
-                old_conf = _CONF_RANK.get(str(existing_cand.get("confidence", "")).lower(), -1)
+            if dup_row is not None:
+                old_dist_str = dup_row.get("distance", "")
+                old_conf = _CONF_RANK.get(dup_row.get("confidence (high/medium/low)", "").lower(), -1)
+                try:
+                    old_dist = float(old_dist_str) if old_dist_str else None
+                    new_dist_f = float(new_dist) if new_dist is not None else None
+                except (ValueError, TypeError):
+                    old_dist = None
+                    new_dist_f = None
                 new_is_better = False
-                if new_dist is not None and old_dist is not None:
-                    new_is_better = new_dist < old_dist or (new_dist == old_dist and new_conf > old_conf)
-                elif new_dist is not None and old_dist is None:
+                if new_dist_f is not None and old_dist is not None:
+                    new_is_better = new_dist_f < old_dist or (new_dist_f == old_dist and new_conf > old_conf)
+                elif new_dist_f is not None and old_dist is None:
                     new_is_better = True
                 elif new_conf > old_conf:
                     new_is_better = True
                 if new_is_better:
-                    merged_related = existing_cand.get("related_candidates")
-                    existing[dup_idx] = entry
-                    if merged_related:
-                        existing[dup_idx]["related_candidates"] = merged_related
-                    log_info(
-                        f"Replaced duplicate candidate {norm_new['system']}|{norm_new['code']}"
-                        f" with better entry (dist={new_dist}, conf={entry.get('confidence')})."
-                    )
+                    dup_row["display"] = new_display or dup_row.get("display", "")
+                    dup_row["distance"] = str(new_dist) if new_dist is not None else ""
+                    dup_row["confidence (high/medium/low)"] = new_conf_str
+                    log_info(f"Updated candidate {new_system}|{new_code} with better entry.")
                 else:
-                    log_info(
-                        f"Skipped duplicate candidate {norm_new['system']}|{norm_new['code']}"
-                        " — existing entry retained."
-                    )
+                    log_info(f"Skipped duplicate {new_system}|{new_code} — existing retained.")
             else:
-                existing.append(entry)
+                new_row: dict = {
+                    "concept_name": concept_name,
+                    "concept_type": meta_type,
+                    "sources": meta_sources,
+                    "context": first_row.get("context", ""),
+                    "lookup_query": effective_lookup_query,
+                    "lookup_notes": (
+                        lookup_notes if lookup_notes is not None
+                        else first_row.get("lookup_notes", "")
+                    ),
+                    "system": new_system,
+                    "code": new_code,
+                    "display": new_display,
+                    "distance": str(new_dist) if new_dist is not None else "",
+                    "confidence (high/medium/low)": new_conf_str,
+                    "code status (approve/reject)": "",
+                    "remove concept (true/false)": "",
+                    "comment": "",
+                }
+                existing_candidate_rows.append(new_row)
                 appended_count += 1
-            concept["candidate_codes"] = existing
 
-        concept["lookup_completed"] = True
-        if lookup_notes is not None:
-            concept["lookup_notes"] = lookup_notes
+        for r in existing_candidate_rows:
+            r["lookup_query"] = effective_lookup_query
+            if lookup_notes is not None:
+                r["lookup_notes"] = lookup_notes
 
-        all_enriched = all(
-            concept_entry.get("lookup_completed") is True
-            for concept_entry in (packet.get("concepts", []) or [])
-        )
-        packet["lookup_completed"] = all_enriched
-        _write_concept_review_packet(topic, packet)
-        _sync_plan_concept_review(topic, packet)
+        if existing_candidate_rows:
+            updated_concept_rows: list[dict] = existing_candidate_rows
+        else:
+            for r in placeholder_rows:
+                r["lookup_query"] = effective_lookup_query
+                if lookup_notes is not None:
+                    r["lookup_notes"] = lookup_notes
+            updated_concept_rows = placeholder_rows
 
+        other_rows = [r for r in rows if r.get("concept_name", "").strip() != concept_name]
+        rows = other_rows + updated_concept_rows
+        _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
+        meta["csv_checksum"] = _csv_checksum(csv_path)
+        _write_concept_review_meta(topic, meta)
+
+        all_concept_names = {r.get("concept_name", "").strip() for r in rows if r.get("concept_name", "").strip()}
         remaining = sum(
-            1
-            for concept_entry in (packet.get("concepts", []) or [])
-            if concept_entry.get("lookup_completed") is not True
+            1 for name in all_concept_names
+            if not any(r.get("system", "").strip() for r in rows if r.get("concept_name", "").strip() == name)
         )
 
     if raw_candidates:
         action = f"appended {appended_count} candidate(s)"
     else:
-        action = "marked complete (no results)"
+        action = "updated lookup metadata"
     log_info(
         f"Recorded MCP candidates for '{concept_name}'"
         + (f" ({concept_type})" if concept_type else "")
-        + f" — {action}; {remaining} concept(s) still pending MCP enrichment."
+        + f" — {action}; {remaining} concept(s) still without candidates."
     )
-
-
-def _apply_single_concept_decision(
-    packet: dict,
-    topic: str,
-    concept_name: str,
-    decision: str | None,
-    promote_candidates: tuple,
-    note: str,
-    concept_type: str | None = None,
-    *,
-    write: bool = True,
-    rejected_candidates: tuple = (),
-    reset_codes: bool = False,
-) -> str:
-    """Apply promote/reject/decision/reset actions to one concept in packet.
-
-    Returns a short summary string for logging. Does not finalize.
-    Raises click.UsageError on invalid input.
-    """
-    concept = _find_review_concept(packet, concept_name, concept_type)
-
-    # --- reset-codes (standalone, clears everything) ---
-    if reset_codes:
-        concept["codes"] = []
-        concept["rejected_candidates"] = []
-        concept["review_status"] = "pending-review"
-        if note:
-            concept["review_notes"] = note
-        if write:
-            _write_concept_review_packet(topic, packet)
-            _sync_plan_concept_review(topic, packet)
-        return f"Reset codes for '{concept_name}' — review_status back to pending-review."
-
-    # --- promote candidates (append to codes[], auto-fill display from candidate_codes[]) ---
-    if promote_candidates:
-        all_candidates = concept.get("candidate_codes") or []
-        existing_codes = concept.get("codes") or []
-        for raw in promote_candidates:
-            parts = raw.split("|", 2)
-            if len(parts) < 2 or not parts[0].strip() or not parts[1].strip():
-                raise click.UsageError(
-                    f"--promote-candidate must be 'system|code[|display]', got: {raw!r}"
-                )
-            system = parts[0].strip()
-            code = parts[1].strip()
-            display = parts[2].strip() if len(parts) >= 3 and parts[2].strip() else ""
-            # Auto-fill display from candidate_codes[] if omitted
-            if not display:
-                for cand in all_candidates:
-                    norm = _normalize_candidate_identity(cand)
-                    if norm["system"] == system and norm["code"] == code:
-                        display = norm["display"]
-                        break
-            entry = {"system": system, "code": code, "display": display}
-            # Dedup by system+code
-            if not any(
-                _normalize_candidate_identity(e)["system"] == system
-                and _normalize_candidate_identity(e)["code"] == code
-                for e in existing_codes
-            ):
-                existing_codes.append(entry)
-        concept["codes"] = existing_codes
-
-    # --- reject candidates (append, not replace) ---
-    if rejected_candidates:
-        all_candidates = concept.get("candidate_codes") or []
-        existing_rejected = concept.get("rejected_candidates") or []
-        parsed_rejections = [_parse_reject_candidate_flag(r) for r in rejected_candidates]
-        for rejection in parsed_rejections:
-            if "display" not in rejection:
-                for cand in all_candidates:
-                    norm = _normalize_candidate_identity(cand)
-                    if norm["system"] == rejection["system"] and norm["code"] == rejection["code"]:
-                        rejection["display"] = norm["display"]
-                        break
-            # Dedup by system+code
-            if not any(
-                e.get("system") == rejection["system"] and e.get("code") == rejection["code"]
-                for e in existing_rejected
-            ):
-                existing_rejected.append(rejection)
-        concept["rejected_candidates"] = existing_rejected
-
-    # --- decision ---
-    if decision == "exclude":
-        concept["codes"] = []
-        concept["review_notes"] = note
-        concept["review_status"] = "excluded"
-        if write:
-            _write_concept_review_packet(topic, packet)
-            _sync_plan_concept_review(topic, packet)
-        return f"Excluded concept '{concept_name}'."
-
-    if decision == "skip":
-        concept["review_notes"] = note
-        concept["review_status"] = "skipped"
-        if write:
-            _write_concept_review_packet(topic, packet)
-            _sync_plan_concept_review(topic, packet)
-        return f"Skipped concept '{concept_name}' — will block finalize until resolved."
-
-    if decision == "approved":
-        codes = concept.get("codes") or []
-        if not codes:
-            raise click.UsageError(
-                f"Cannot approve '{concept_name}': no promoted codes. "
-                "Use --promote-candidate first, then seal with --decision approved."
-            )
-        concept["review_notes"] = note
-        concept["review_status"] = "approved"
-        if write:
-            _write_concept_review_packet(topic, packet)
-            _sync_plan_concept_review(topic, packet)
-        rejected_count = len(rejected_candidates)
-        return (
-            f"Approved concept '{concept_name}' with {len(codes)} code(s)"
-            + (f"; {rejected_count} candidate(s) explicitly rejected" if rejected_count else "")
-            + "."
-        )
-
-    # No decision — promote/reject only (status unchanged unless it was already set)
-    if note:
-        concept["review_notes"] = note
-    if write:
-        _write_concept_review_packet(topic, packet)
-        _sync_plan_concept_review(topic, packet)
-    parts = []
-    if promote_candidates:
-        parts.append(f"promoted {len(promote_candidates)} candidate(s)")
-    if rejected_candidates:
-        parts.append(f"rejected {len(rejected_candidates)} candidate(s)")
-    return f"Updated '{concept_name}': {', '.join(parts)}."
-
-
-def _finalize_concept_review(
-    topic: str,
-    packet: dict,
-    reviewer: str | None,
-    review_summary: str,
-) -> Path:
-    """Seal the packet (mark approved). Does NOT write concepts.yaml — call 'concept write' for that.
-
-    Raises UsageError if any concept is still pending.
-    """
-    pending = [
-        c.get("name", "?")
-        for c in (packet.get("concepts", []) or [])
-        if c.get("review_status") in ("pending-review", "skipped")
-    ]
-    if pending:
-        raise click.UsageError(
-            f"{len(pending)} concept(s) still pending or skipped: {', '.join(pending)}. "
-            "All concepts must have a decision (approved or exclude) before finalizing."
-        )
-    packet["status"] = "approved"
-    packet["reviewed_at"] = now_iso()
-    packet["reviewer"] = reviewer or ""
-    packet["review_summary"] = review_summary
-    _write_concept_review_packet(topic, packet)
-    _sync_plan_concept_review(topic, packet)
-    return _concept_review_path(topic)
 
 
 @concept.command("review")
 @click.argument("topic")
-@click.option("--concept", "concept_name", default=None, metavar="NAME", help="Concept name to act on.")
-@click.option("--type", "concept_type", default=None, metavar="TYPE", help="Concept type to disambiguate same-name concepts.")
-@click.option(
-    "--promote-candidate",
-    "promote_candidates",
-    multiple=True,
-    type=click.STRING,
-    metavar="TEXT",
-    help="Promote an MCP candidate to the approved code list. Format: 'system|code[|display]'. display is auto-filled from candidate_codes[] if omitted. Repeatable. Use as a separate call before --decision approved.",
-)
-@click.option(
-    "--decision",
-    default=None,
-    type=click.Choice(["approved", "exclude", "skip"]),
-    help=(
-        "Seal the decision for this concept. "
-        "'approved' — finalises codes[] as the approved code list (requires at least one promoted code); "
-        "'exclude' — removes concept from the L2 artifact; "
-        "'skip' — defers decision (blocks --finalize until resolved)."
-    ),
-)
-@click.option(
-    "--reject-candidate",
-    "reject_candidates",
-    multiple=True,
-    type=click.STRING,
-    metavar="TEXT",
-    help="Explicitly reject an MCP candidate. Format: 'system|code[|display[|reason]]'. Appends to rejected_candidates[]. Repeatable.",
-)
-@click.option("--reset-codes", "reset_codes", is_flag=True, help="Clear codes[] and rejected_candidates[], resetting review_status to pending-review.")
-@click.option("--note", default="", metavar="TEXT", help="Review note recorded with this concept.")
-@click.option("--finalize", is_flag=True, help="Seal the review packet (status: approved). Does NOT write concepts.yaml — run 'concept write' during implement for that. Can be used alone or with --concept.")
-@click.option("--reviewer", default=None, metavar="NAME", help="Reviewer name recorded at finalize time.")
-@click.option("--review-summary", "review_summary", default="", metavar="TEXT", help="Summary note recorded at finalize time.")
-def review_concepts(topic, concept_name, concept_type, promote_candidates, decision, reject_candidates, reset_codes, note, finalize, reviewer, review_summary):
-    """Record reviewer decisions for concepts in the concept review packet.
+@click.option("--concept", "concept_name", default=None, metavar="NAME", help="Concept name to update.")
+@click.option("--approved", "approved_val", default=None, metavar="y", help="Set approved=y on all candidate rows for the concept.")
+@click.option("--exclude", "exclude", is_flag=True, help="Set exclude=y on the first row for the concept (removes it from concepts.yaml).")
+@click.option("--note", default="", metavar="TEXT", help="Set comment on the first row for the concept.")
+@click.option("--finalize", is_flag=True, help="Seal the review (status: approved). Requires --reviewer.")
+@click.option("--reviewer", default=None, metavar="NAME", help="Reviewer name. Required for --finalize.")
+@click.option("--force", is_flag=True, help="Bypass the checksum unchanged warning during --finalize.")
+def review_concepts(topic, concept_name, approved_val, exclude, note, finalize, reviewer, force):
+    """Update concept decisions in concepts-review.csv, then finalize.
 
     \b
     Non-interactive (AI agent):
-      # Step 1 — promote/reject individual candidates (no decision yet):
-      rh-skills promote concept review <topic> \\
-        --concept "Hypertension" \\
-        --promote-candidate "SNOMED-CT|38341003" \\
-        --reject-candidate "ICD-10|I10||SNOMED preferred"
+      # Approve all candidate rows for a concept:
+      rh-skills promote concept review <topic> --concept "Hypertension" --approved y
 
-      # Step 2 — seal the decision:
-      rh-skills promote concept review <topic> \\
-        --concept "Hypertension" --decision approved --note "Confirmed"
+      # Exclude a concept from concepts.yaml:
+      rh-skills promote concept review <topic> --concept "Rare finding" --exclude
 
-      # Exclude a concept:
-      rh-skills promote concept review <topic> \\
-        --concept "Rare finding" --decision exclude --note "Not applicable"
+      # Add a comment to a concept:
+      rh-skills promote concept review <topic> --concept "Hypertension" --note "Confirmed SNOMED"
 
-      # Skip (defer) a concept:
-      rh-skills promote concept review <topic> \\
-        --concept "TBD concept" --decision skip --note "Need SME input"
+      # Finalize (seal the review):
+      rh-skills promote concept review <topic> --finalize --reviewer "taylor"
 
-      # Correct a mistake — reset and re-promote:
-      rh-skills promote concept review <topic> --concept "Hypertension" --reset-codes
-      rh-skills promote concept review <topic> --concept "Hypertension" \\
-        --promote-candidate "SNOMED-CT|38341003"
-
-      # Finalize (blocks if any concept is pending-review or skipped):
-      rh-skills promote concept review <topic> \\
-        --finalize --reviewer "taylor" --review-summary "All confirmed"
-
-    \b
-    Standalone finalize (after manually editing concepts-plan.yaml):
-      rh-skills promote concept review <topic> \\
-        --finalize --reviewer "taylor" --review-summary "Reviewed manually"
+      # Force-finalize even if CSV is unchanged:
+      rh-skills promote concept review <topic> --finalize --reviewer "taylor" --force
     """
-    # --- validate flag combinations ---
     if not concept_name and not finalize:
         raise click.UsageError(
-            "Provide --concept with one of --promote-candidate, --decision, --reject-candidate, or --reset-codes; "
-            "or use --finalize (standalone)."
+            "Provide --concept with --approved, --exclude, or --note; or use --finalize."
         )
-    if concept_name:
-        has_action = promote_candidates or decision or reject_candidates or reset_codes
-        if not has_action:
-            raise click.UsageError(
-                "--concept requires at least one of --promote-candidate, --decision, --reject-candidate, or --reset-codes."
-            )
-        if promote_candidates and decision:
-            raise click.UsageError(
-                "--promote-candidate and --decision cannot be used in the same call. "
-                "Promote candidates first, then seal with --decision in a separate call."
-            )
-        if reset_codes and (promote_candidates or decision or reject_candidates):
-            raise click.UsageError("--reset-codes must be used alone (no other action flags).")
 
-    tracking = require_tracking()
-    require_topic(tracking, topic)
-
-    packet = _load_concept_review_packet(topic)
-    if packet.get("status") == "approved":
-        raise click.UsageError("Concept review is already approved; re-plan if you need to change decisions.")
-
-    # --- mode: per-concept ---
-    if concept_name:
-        # Require enrichment before per-concept review
-        if packet.get("lookup_completed") is not True:
-            pending_lookup = [
-                c.get("name", "?")
-                for c in (packet.get("concepts", []) or [])
-                if c.get("lookup_completed") is not True
-            ]
-            raise click.UsageError(
-                "Concept review packet is not ready for human approval. "
-                f"Complete RH MCP enrichment first with 'rh-skills promote concept enrich {topic} --concept <name> --candidate <system|code|display>'. "
-                f"Pending: {', '.join(pending_lookup)}"
-            )
-        msg = _apply_single_concept_decision(
-            packet, topic, concept_name, decision, promote_candidates, note, concept_type,
-            write=True, rejected_candidates=reject_candidates, reset_codes=reset_codes,
+    require_topic(require_tracking(), topic)
+    csv_path = _concept_review_csv_path(topic)
+    if not csv_path.exists():
+        raise click.UsageError(
+            f"No concept review CSV found. Run 'rh-skills promote plan {topic}' first."
         )
-        log_info(msg)
 
-    # --- finalize (standalone or appended to per-concept) ---
+    # --- per-concept update ---
+    if concept_name:
+        if not approved_val and not exclude and not note:
+            raise click.UsageError("--concept requires at least one of --approved, --exclude, or --note.")
+        with _lock_concept_review(csv_path):
+            meta = _load_concept_review_meta(topic)
+            if meta.get("status") == "approved":
+                raise click.UsageError("Concept review is already approved.")
+            rows = _load_csv(csv_path)
+            concept_rows = [r for r in rows if r.get("concept_name", "").strip() == concept_name]
+            if not concept_rows:
+                raise click.UsageError(f"Concept '{concept_name}' not found in concepts-review.csv.")
+            if approved_val and approved_val.lower() in ("y", "yes", "approve"):
+                for r in concept_rows:
+                    if r.get("system", "").strip() or r.get("code", "").strip():
+                        r["code status (approve/reject)"] = "approve"
+            if exclude:
+                concept_rows[0]["remove concept (true/false)"] = "true"
+            if note:
+                concept_rows[0]["comment"] = note
+            _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
+            meta["csv_checksum"] = _csv_checksum(csv_path)
+            _write_concept_review_meta(topic, meta)
+        actions = []
+        if approved_val and approved_val.lower() == "y":
+            actions.append("approved")
+        if exclude:
+            actions.append("excluded")
+        if note:
+            actions.append("note set")
+        log_info(f"Updated '{concept_name}': {', '.join(actions)}.")
+
+    # --- finalize ---
     if finalize:
-        # Reload packet to pick up any write from the per-concept step above
-        packet = _load_concept_review_packet(topic)
-        blocking = [
-            c.get("review_status", "pending-review")
-            for c in (packet.get("concepts", []) or [])
-            if c.get("review_status") in ("pending-review", "skipped")
-        ]
-        remaining = len(blocking)
-        if remaining:
-            log_warn(
-                f"--finalize requested but {remaining} concept(s) still pending or skipped. "
-                "Finalize will be skipped until all concepts have a decision."
+        if not reviewer:
+            raise click.UsageError("--reviewer is required for --finalize.")
+        meta = _load_concept_review_meta(topic)
+        if meta.get("status") == "approved":
+            raise click.UsageError("Concept review is already approved.")
+        current_checksum = _csv_checksum(csv_path)
+        if not force and current_checksum == meta.get("csv_checksum"):
+            raise click.UsageError(
+                "CSV is unchanged since it was generated — no human edits detected. "
+                "Edit the CSV (approve or exclude rows) then re-run, or use --force to bypass."
             )
-        else:
-            packet_path = _finalize_concept_review(topic, packet, reviewer, review_summary)
-            log_info(f"Concept review finalized. Run 'rh-skills promote concept write {topic}' during implement to write concepts.yaml. Packet: {packet_path}")
+        rows = _load_csv(csv_path)
+        all_concept_names = {r.get("concept_name", "").strip() for r in rows if r.get("concept_name", "").strip()}
+        all_excluded = all(
+            any(r.get("remove concept (true/false)", "").strip().lower() in ("true", "y", "yes") for r in rows if r.get("concept_name", "").strip() == name)
+            for name in all_concept_names
+        )
+        if all_excluded:
+            log_warn("All concepts are excluded — concepts.yaml will be empty.")
+        meta["status"] = "approved"
+        meta["reviewer"] = reviewer
+        meta["reviewed_at"] = now_iso()
+        meta["csv_checksum"] = current_checksum
+        meta["review_artifact"] = str(csv_path)
+        _write_concept_review_meta(topic, meta)
+        _sync_plan_concept_review(topic, meta)
+        log_info(
+            f"Concept review finalized by '{reviewer}'. "
+            f"Run 'rh-skills promote concept write {topic}' during implement to write concepts.yaml."
+        )
 
 
 @concept.command("write")
 @click.argument("topic")
 def write_concepts(topic):
-    """Write topics/<topic>/structured/concepts.yaml from the approved concept review packet.
+    """Write topics/<topic>/structured/concepts.yaml from the approved concept review CSV.
 
     Requires concept review to be finalized (status: approved).
     Call this during implement mode after the extract plan is approved.
@@ -2844,14 +2497,14 @@ def write_concepts(topic):
     tracking = require_tracking()
     require_topic(tracking, topic)
 
-    packet = _load_concept_review_packet(topic)
-    if packet.get("status") != "approved":
+    meta = _load_concept_review_meta(topic)
+    if meta.get("status") != "approved":
         raise click.UsageError(
-            "Concept review packet is not approved. "
-            f"Run 'rh-skills promote concept review {topic} --finalize' first."
+            "Concept review is not approved. "
+            f"Run 'rh-skills promote concept review {topic} --finalize --reviewer <name>' first."
         )
 
-    artifact_path = _write_concepts_l2_artifact(topic, tracking, packet)
+    artifact_path = _write_concepts_l2_artifact_from_csv(topic, tracking)
     log_info(f"Created: {artifact_path}")
 
 

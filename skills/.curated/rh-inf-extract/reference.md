@@ -34,11 +34,10 @@ review_summary: <free-text notes from reviewer>
 cross_artifact_issues:
   - <issue summary>
 concept_review:                    # present when normalized front matter includes concepts
-  source: normalized-frontmatter
+  source_files:
+    - sources/normalized/<source-slug>.md
   status: <pending-review | approved>
-  concept_count: <int>
-  lookup_completed: <true | false>
-  review_artifact: topics/<topic>/process/plans/concepts-plan.yaml
+  review_artifact: topics/<topic>/process/plans/concepts-review.csv
   final_artifact: topics/<topic>/structured/concepts.yaml
 artifacts:
   - name: <kebab-case>
@@ -125,9 +124,8 @@ to try to fix a format error — that corrupts the system URI or code field.
 Do not de-duplicate candidates across concepts. Within a single concept, the
 CLI automatically deduplicates: if the same `system|code` pair is submitted
 more than once, the CLI keeps the better entry (lower distance wins; tie: higher
-confidence wins; tie: first-write-wins) and merges any `related_candidates[]`
-from both submissions. A warning is printed when a duplicate is skipped or
-replaced.
+confidence wins; tie: first-write-wins) and a warning is printed when a duplicate
+is skipped or replaced.
 
 Do not run `rh-skills promote concept enrich` for different concepts in parallel.
 Execute enrich writes serially, one concept at a time.
@@ -145,183 +143,89 @@ Each `terminology` artifact entry in the plan SHOULD include a
 before approving. Approved codes carry forward into the L3 `value_sets[]`
 section during formalize.
 
-### Concept Review Packet
+### Concept Review CSV
 
-When normalized source front matter contains `concepts[]`, extract planning also
-writes `topics/<topic>/process/plans/concepts-plan.yaml` and a derived readout
-`topics/<topic>/process/plans/concepts-plan-readout.md`. This packet:
+When normalized source front matter contains `concepts[]`, extract planning writes:
+- `topics/<topic>/process/plans/concepts-review.csv` — the single review artifact; edit this file to approve or exclude concepts
+- `topics/<topic>/process/plans/concepts-review-meta.yaml` — finalization metadata only (written by `--finalize`)
 
-- deduplicates concepts across normalized sources
-- records source provenance
-- records the MCP lookup step before human approval
+Concepts are **retained by default**: they appear in `concepts.yaml` unless a row has `exclude: y`.
+Setting `approved: y` on a row includes that specific code in the concept's output.
 
-Review it with:
-
+Review workflow:
 ```sh
-# Step 1: enrich all concepts (no human decision required)
-# Successive calls for the same concept append to candidate_codes[].
+# Enrich candidates (no decision needed):
 rh-skills promote concept enrich <topic> --concept <name> \
   --candidate "system|code|display[|distance[|confidence]]"
-# Omit --candidate entirely when MCP returned no results; still call concept enrich.
+# Omit --candidate when MCP returned no results; still call to record lookup.
 # ... repeat for every concept ...
 
-# Step 2: record decisions — one call per concept; --finalize on the last
-rh-skills promote concept review <topic> \
-  --concept "<name>" --decision approved \
-  --code "system|code|display" \
-  --reject-candidate "system|code[|display[|reason]]" \
-  --note "<rationale>"
-rh-skills promote concept review <topic> \
-  --concept "<name>" --decision exclude --note "<reason>" \
-  --finalize --reviewer "<name>" --review-summary "<summary>"
+# Approve all candidate codes for a concept:
+rh-skills promote concept review <topic> --concept "<name>" --approved y
 
-# Standalone finalize (after manually editing concepts-plan.yaml):
-rh-skills promote concept review <topic> \
-  --finalize --reviewer "<name>" --review-summary "<summary>"
+# Exclude a concept (omit from concepts.yaml):
+rh-skills promote concept review <topic> --concept "<name>" --exclude --note "<reason>"
+
+# Finalize (after CLI-only approvals, --force bypasses checksum unchanged soft-block):
+rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
+
+# Finalize after manual CSV edits only (checksum changed; no --force needed):
+rh-skills promote concept review <topic> --finalize --reviewer "<name>"
 ```
 
-### decisions-file schema
-
-```yaml
-reviewer: <optional; overridden by --reviewer flag if both provided>
-review_summary: <optional; overridden by --review-summary flag>
-decisions:                   # required; every concept in the packet must appear
-  - name: <concept name>
-    decision: approved | exclude
-    codes:                   # required when decision=approved
-      - system: <code system label or URI>
-        code: <approved code>
-        display: <approved display text>
-    note: <optional review rationale>
-```
-
-### `--candidate` flag format
-
-The flag uses a pipe-delimited format:
-
-```
-system|code|display[|distance[|confidence]]
-```
-
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| `system` | yes | string | Code system label or URI (e.g. `SNOMED-CT`, `http://loinc.org`). If MCP returns a UUID, resolve it first — see note below. |
-| `code` | yes | string | Candidate code |
-| `display` | yes | string | Candidate display text |
-| `distance` | no | numeric | Semantic/edit distance — lower = closer match |
-| `confidence` | no | `high` \| `medium` \| `low` | String label from MCP result |
-
-> **UUID `system` values**: If MCP returns a UUID as the code system identifier, resolve it
-> using the `system_name` field from the **same response** — no extra MCP call needed:
->
-> | system_name | Canonical FHIR URI |
-> |---|---|
-> | ICD10CM, ICD-10-CM | `http://hl7.org/fhir/sid/icd-10-cm` |
-> | SNOMED, SNOMEDCT, SNOMED-CT | `http://snomed.info/sct` |
-> | LOINC | `http://loinc.org` |
-> | RxNorm, RXNORM | `http://www.nlm.nih.gov/research/umls/rxnorm` |
->
-> Only call `reasonhub-codesystem_lookup` when `system_name` is absent or not in the table.
-> Never pass a raw UUID as the `system` field — the CLI records it verbatim and downstream
-> FHIR tooling will reject unrecognized system identifiers.
-
-Successive calls for the same concept append to `candidate_codes[]`.
-Omit `--candidate` entirely when MCP returned no results — still call `concept enrich`
-to mark the concept as lookup-completed.
-
-Record MCP metadata fields exactly as returned. Do not transform or infer
-`confidence`/`distance` values that were not provided by MCP.
-
-Use `--lookup-notes` to record why no candidates were found **after genuine MCP
-searches returned zero results**:
+When finalized, run during implement mode:
 ```sh
-rh-skills promote concept enrich <topic> --concept "Rare finding" \
-  --lookup-notes "No SNOMED match found; concept too specific"
+rh-skills promote concept write <topic>
 ```
+This writes `topics/<topic>/structured/concepts.yaml`.
 
-> **`--lookup-notes` without `--candidate` marks the concept as
-> `lookup_completed: true` with zero candidates.** This is only appropriate when
-> every required MCP tool for the concept's type was called and all returned no
-> results. Do NOT use `--lookup-notes` as a shortcut to bypass MCP lookups — it
-> produces an empty candidate list that gives the reviewer nothing to evaluate.
-> If MCP tools are not accessible, stop and inform the user instead of deferring.
+#### concepts-review.csv columns
 
-Use `--reset` to clear `candidate_codes[]` and start fresh:
+| Column | Description |
+|--------|-------------|
+| `concept_name` | Concept name (matches normalized front matter) |
+| `concept_type` | Concept type (condition, procedure, lab, etc.) |
+| `sources` | Source slugs, pipe-delimited |
+| `context` | Up to 10 words before and 10 words after the concept's first appearance in the source body (`before words \| after words`); empty when not found in body text |
+| `lookup_query` | Default MCP query string |
+| `lookup_notes` | Notes when no candidates found |
+| `system` | Code system label or URI (blank on placeholder row) |
+| `code` | Candidate code (blank on placeholder row) |
+| `display` | Candidate display text |
+| `distance` | Semantic distance from MCP (float; lower = closer) |
+| `confidence` | Confidence label from MCP (`high`, `medium`, `low`) |
+| `approved` | Set to `y` to include this code in `concepts.yaml` |
+| `exclude` | Set to `y` on any row to exclude the entire concept |
+| `comment` | Reviewer note |
+
+Use `--lookup-notes` on `concept enrich` to record why no candidates were found after all required MCP searches returned zero results:
 ```sh
-rh-skills promote concept enrich <topic> --concept <name> --reset
+rh-skills promote concept enrich <topic> --concept "<name>" \
+  --lookup-notes "No SNOMED or ICD-10 match found; concept too specific"
 ```
+This writes to the `lookup_notes` column and marks the concept as lookup-complete with zero candidates.
 
-### `--reject-candidate` flag format (`concept review`)
+**Retention semantics:**
+- A row with `exclude: y` → entire concept excluded from `concepts.yaml`
+- A row with `approved: y` → that code included in `concepts.yaml`
+- A concept with no `exclude` and no `approved` rows → retained without codes (default)
 
-```
-system|code[|display[|reason]]
-```
-
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| `system` | yes | string | Code system of the rejected candidate |
-| `code` | yes | string | Code of the rejected candidate |
-| `display` | no | string | Display text; filled from `candidate_codes[]` automatically if omitted |
-| `reason` | no | string | Rejection rationale stored as `rejection_reason` |
-
-Repeatable. Records explicitly rejected candidates in `rejected_candidates[]` on the concept.
-Candidates not mentioned in `--reject-candidate` are silently dropped; this flag is for
-cases where the rejection rationale needs to be preserved for audit.
-
-When review is complete, the CLI writes:
-
-`topics/<topic>/structured/concepts.yaml`
-
-This L2 terminology artifact preserves approved concept codes for downstream formalization.
-
-#### concepts-plan.yaml schema
+#### concepts-review-meta.yaml schema
 
 ```yaml
 topic: <topic-slug>
 status: <pending-review | approved>
 generated_at: <ISO-8601 timestamp>
 reviewed_at: <ISO-8601 timestamp or null>
-review_summary: <optional free text>
-source: normalized-frontmatter
-lookup_completed: <true | false>
-lookup_policy:
-  service: reasonhub-mcp
-  directive: use-mcp-to-identify-standardized-codes
-  approval_order: dedupe-then-mcp-lookup-then-human-approval
-review_artifact: topics/<topic>/process/plans/concepts-plan.yaml
+reviewer: <reviewer name>
+csv_checksum: <SHA-256 of concepts-review.csv>
+review_artifact: topics/<topic>/process/plans/concepts-review.csv
 final_artifact: topics/<topic>/structured/concepts.yaml
-concepts:
-  - name: <concept name>
-    type: <concept type>
-    sources:
-      - <source slug>
-    source_files:
-      - sources/normalized/<source>.md
-    lookup_completed: <true | false>
-    lookup_query: <default MCP query string>
-    candidate_codes:
-      - system: <code system label or URI>
-        code: <candidate code>
-        display: <candidate display text>
-        confidence: <optional confidence label>
-        search_query: <query used in MCP>
-    review_status: <pending-review | approved | excluded>
-    review_notes: <optional reviewer notes>
-    codes:
-      - system: <approved code system label or URI>
-        code: <approved code>
-        display: <approved display>
 ```
-
-During concept review, a reviewer may also exclude a concept from the final L2
-terminology artifact. Excluded concepts remain in `concepts-plan.yaml` with
-their reviewer note for provenance, but are omitted from
-`topics/<topic>/structured/concepts.yaml`.
 
 #### Final L2 terminology concept schema
 
-The resulting terminology-oriented L2 artifact should preserve approved concept
-codings using this shape:
+The resulting L2 artifact (`concepts.yaml`) uses this shape:
 
 ```yaml
 concepts:
@@ -331,15 +235,6 @@ concepts:
       - system: SNOMED-CT
         code: 44169009
         display: Anosmia (finding)
-        related:
-          - system: SNOMED-CT
-            code: 1279831004
-            display: Congenital insensitivity to pain, anosmia, neuropathic arthropathy
-            relationship: is-a
-          - system: SNOMED-CT
-            code: 230502003
-            display: Congenital anosmia (disorder)
-            relationship: is-a
       - system: ICD-10-CM
         code: R43.0
         display: Anosmia

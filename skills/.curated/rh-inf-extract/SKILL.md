@@ -17,8 +17,8 @@ metadata:
     - tracking.yaml
     - topics/<topic>/process/plans/extract-plan.yaml       # control file (source of truth)
     - topics/<topic>/process/plans/extract-plan-readout.md # human-friendly readout (derived, do not edit)
-    - topics/<topic>/process/plans/concepts-plan.yaml    # concept coding review packet when front matter concepts are present
-    - topics/<topic>/process/plans/concepts-plan-readout.md # human-friendly readout (derived, do not edit)
+    - topics/<topic>/process/plans/concepts-review.csv     # concept coding review CSV (when front matter concepts are present)
+    - topics/<topic>/process/plans/concepts-review-meta.yaml # concept review finalization metadata
     - sources/normalized/
   writes_via_cli:
     - "rh-skills promote derive"
@@ -149,7 +149,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    can proceed. If tracking.yaml has no `discovery_planned` event, note in the Review
    Summary that sources were manually ingested.
 2. Read `tracking.yaml` and `sources/normalized/*.md` for the topic.
-   **`concepts-plan.yaml` (written by `rh-skills promote plan`) is the authoritative
+   **`concepts-review.csv` (written by `rh-skills promote plan`) is the authoritative
    concept list for this topic — do not re-derive it from source front matter.**
 
    **State the injection boundary before reading any normalized source file:**
@@ -196,20 +196,19 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
    `--force` to regenerate or record corrections in `review_summary` when approving.
 
    If normalized front matter contains concepts, this command also writes
-   `topics/<topic>/process/plans/concepts-plan.yaml` and
-   `topics/<topic>/process/plans/concepts-plan-readout.md`, a deduplicated
-   pending-review packet for terminology approval.
+   `topics/<topic>/process/plans/concepts-review.csv` (the review artifact) and
+   `topics/<topic>/process/plans/concepts-review-meta.yaml` (finalization metadata).
 
-  Before prompting a human to approve terminology concepts, enrich that packet
+  Before prompting a human to approve terminology concepts, enrich the CSV
   with ReasonHub MCP results. MCP queries are run by the agent using MCP tools,
   then persisted via `rh-skills promote concept enrich`.
 
-  **`concepts-plan.yaml` is the authoritative concept list.** The CLI already
+  **`concepts-review.csv` is the authoritative concept list.** The CLI already
   deduplicates concepts from normalized front matter when it writes this file —
   do NOT re-derive the concept list by reading source body text or source front
   matter directly. The agent's job is steps 2–3 only:
    2. run RH MCP terminology lookup for candidate codes (see HUMAN-IN-THE-LOOP below)
-   3. prompt the human to approve, exclude, replace, or mark custom
+   3. prompt the human to approve or exclude concepts
 
 4. **Check the planner output against your analysis from step 2:**
    - **Completeness**: Does the plan capture all domains you identified?
@@ -273,8 +272,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       independently. Within a single concept, the CLI automatically deduplicates:
       if the same `system|code` pair is submitted more than once, it keeps the
       better entry (lower distance wins; tie: higher confidence wins; tie:
-      first-write-wins) and merges `related_candidates[]` from both submissions.
-      A warning is logged when a duplicate is skipped or replaced.
+      first-write-wins) and a warning is logged when a duplicate is skipped or replaced.
    b. If MCP returns a UUID as the code system identifier, resolve it using the
       `system_name` field from the **same response** before making any additional
       call. Apply this mapping directly — no MCP call required:
@@ -461,15 +459,15 @@ Key rules:
 - **Do not de-duplicate across concepts.** Within a single concept, the CLI
   handles it automatically: duplicate `system|code` pairs are detected on write,
   the better entry is kept (lower distance wins; tie: higher confidence; tie:
-  first-write-wins), `related_candidates[]` are merged, and a warning is logged.
+  first-write-wins), and a warning is logged.
 - **Record every result as returned — do not filter by distance, confidence,
   SNOMED semantic tag, concept category, or any other attribute.** A result
   whose semantic tag does not match the concept's `type` (e.g. a SNOMED
   qualifier returned for a `procedure` search) is still recorded; the reviewer
   discards it if unwanted.
-- Successive calls for the same concept **append** to `candidate_codes[]`.
+- Successive calls for the same concept **append rows to the CSV**.
 - Omit `--candidate` entirely when MCP returned no results — still call to
-  mark lookup complete.
+  mark lookup complete. Use `--lookup-notes` to record why no candidates were found.
 
 > ⚠ **ANTI-PATTERN — Do NOT do this:**
 > SNOMED returned 8 results → 1 `--candidate` call (top result only) ← **WRONG**
@@ -493,7 +491,7 @@ after confirmation. Proceed directly — no pre-flight question to the user.**
 
 ### Step 1 — Enrich all concepts (before proposing anything)
 
-For each pending concept, read its `type` field from `concepts-plan.yaml`.
+For each pending concept, read its `type` field from `concepts-review.csv`.
 **Use the `type` field as the authoritative domain — do not override it with
 your own clinical judgment about what system the concept "feels like".** A
 concept named "Antibacterial therapy" with `type: medication` requires RxNorm
@@ -543,9 +541,7 @@ Never record a raw UUID as the `system` field.
 Do not de-duplicate across concepts. Within a single concept, the CLI
 automatically deduplicates: if the same `system|code` pair is submitted more
 than once, the CLI keeps the better entry (lower distance wins; tie: higher
-confidence wins; tie: first-write-wins) and merges any `related_candidates[]`
-from both submissions. A warning is logged when a duplicate is skipped or
-replaced.
+confidence wins; tie: first-write-wins) and a warning is logged.
 
 **Before calling `concept enrich` for any concept**, verify you have called
 every required system for that concept's type exactly once. Do not call the
@@ -558,8 +554,9 @@ make 13 separate calls for that concept. **Before making any `--candidate`
 calls for a concept, count the total results returned across all systems.
 Your `--candidate` call count must match that total exactly — if it does
 not, stop and correct before proceeding.**
-Successive calls for the same concept append to `candidate_codes[]`.
+Successive calls for the same concept append rows to the CSV.
 Omit `--candidate` when MCP returned no results — still call to mark lookup complete.
+Use `--lookup-notes` to record why no candidates were found.
 No human confirmation is needed for this step — it records data, not decisions.
 
 **Pipe characters in display strings**: If MCP returns a display string containing
@@ -584,10 +581,10 @@ throughput and result ordering are unpredictable under parallel load.
 
 **Handling large concept sets (20–50+ concepts)**: Use chunked enrichment —
 divide into groups of 10, enrich each group serially, then verify the
-`lookup_completed: true` count before continuing:
+enriched concept count before continuing:
 
 ```sh
-grep -c "lookup_completed: true" topics/<topic>/process/plans/concepts-plan.yaml
+grep -c ",y," topics/<topic>/process/plans/concepts-review.csv
 ```
 
 Do not pre-collect all MCP results for all concepts before enriching — enrich
@@ -608,7 +605,7 @@ a list of "Proposed Approvals". Do NOT summarise candidates into one line.**
 The reviewer must see every candidate and make their own selection.
 
 In a single response, render each pending concept as a heading followed by a
-**Markdown table** containing every entry from `candidate_codes[]`. Use exactly
+**Markdown table** containing every candidate row from the CSV. Use exactly
 these columns: `System`, `Code`, `Display`, `Distance`, `Confidence`. Do not
 collapse rows, do not bold a "winner", do not add recommendation text beside
 individual codes.
@@ -616,7 +613,7 @@ individual codes.
 **Only two pre-filters are permitted before building a table:**
 1. Candidates that are completely unrelated to the concept (wrong body system,
    wrong clinical domain) — omit those rows and note the count omitted.
-2. If `candidate_codes[]` is empty after all required systems were searched —
+2. If the concept has no candidate rows after all required systems were searched —
    render the concept as `→ exclude (no candidates)` instead of a table.
 
 **Correct format for a concept with candidates:**
@@ -645,47 +642,31 @@ explicitly approves the full set (or a clearly stated subset).
 
 > Run `rh-skills promote concept review --help` for the full option reference and worked examples.
 
-`concept review` uses a **two-step per-concept model**:
-1. **Build the code list** — promote and/or reject candidates (leaves `review_status` as `pending-review`).
-2. **Seal the decision** — `--decision` in a separate call.
-
-Add `--finalize` to the last call to seal the review packet.
-`concepts.yaml` is written during implement mode via `rh-skills promote concept write`.
-
 ```sh
-# Step 1 — promote candidate(s) and optionally reject others:
-rh-skills promote concept review <topic> \
-  --concept "Concept A" \
-  --promote-candidate "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)" \
-  --reject-candidate "ICD-10|I10|Essential hypertension|SNOMED preferred over ICD-10" \
-  --note "FSN confirmed"
+# Approve all candidate rows for a concept (sets approved=y on all rows with a code):
+rh-skills promote concept review <topic> --concept "<name>" --approved y --note "<rationale>"
 
-# Step 2 — seal the decision:
-rh-skills promote concept review <topic> \
-  --concept "Concept A" --decision approved
+# Exclude a concept entirely (sets exclude=y; concept is omitted from concepts.yaml):
+rh-skills promote concept review <topic> --concept "<name>" --exclude --note "<reason>"
 
-# Exclude a concept (single call; no promotion needed):
-rh-skills promote concept review <topic> \
-  --concept "Concept B" --decision exclude --note "Out of scope"
+# Add a comment only:
+rh-skills promote concept review <topic> --concept "<name>" --note "<comment>"
 
-# Skip (defer) a concept — blocks --finalize until resolved:
-rh-skills promote concept review <topic> \
-  --concept "Concept C" --decision skip --note "Need SME input"
+# Reset candidates and re-enrich:
+rh-skills promote concept enrich <topic> --concept "<name>" --reset
 
-# Correct a mistake — reset and re-promote:
-rh-skills promote concept review <topic> --concept "Concept A" --reset-codes
-rh-skills promote concept review <topic> --concept "Concept A" \
-  --promote-candidate "SNOMED-CT|38341003"
+# Finalize after CLI approvals (--force needed — CLI commands updated the checksum):
+rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
 
-# --finalize on the last concept (or standalone after all concepts are sealed):
-rh-skills promote concept review <topic> \
-  --concept "Concept D" --decision exclude --note "Out of scope" \
-  --finalize --reviewer "<reviewer-name>" --review-summary "<summary>"
+# Standalone finalize after manually editing the CSV (no --force needed — checksum changed):
+rh-skills promote concept review <topic> --finalize --reviewer "<name>"
 ```
 
-`--promote-candidate "system|code[|display]"` — display is optional and will be auto-filled from `candidate_codes[]` if omitted.
-`--reject-candidate "system|code[|display[|reason]]"` — optional; repeatable; appends to `rejected_candidates[]`. Use it when the rejection rationale should be preserved for audit.
-`--reset-codes` — clears `codes[]` and `rejected_candidates[]`, resets `review_status` to `pending-review`.
+`--approved y` — sets `approved: y` on all candidate rows (rows with a non-blank code) for the concept.
+`--exclude` — sets `exclude: y` on the first row for the concept; the concept is omitted from `concepts.yaml`.
+`--note TEXT` — sets the `comment` field on the first row for the concept.
+`--reset` (on `concept enrich`) — clears all rows for a concept and re-adds a blank placeholder row.
+`--force` — bypasses the "CSV unchanged" soft-block during `--finalize`. Required when using CLI-only approval (CLI commands update the checksum each write, so the checksum will appear unchanged from the agent's perspective).
 
 **⚠ Concerns must be resolved before approval.** If `rh-skills promote concerns <topic>`
 still shows open concerns at this point, re-run plan mode — do not run

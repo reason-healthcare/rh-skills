@@ -33,6 +33,34 @@ def source_name_from_path(path: Path) -> str:
     return f"{stem}_{suffix}" if suffix else stem
 
 
+def extract_concept_context(raw_content: str, concept_name: str, window: int = 10) -> str:
+    """Return up to *window* words before and after the first body-text occurrence of concept_name,
+    with the concept itself included in the middle of the snippet.
+
+    Strips the YAML front matter block before searching so boilerplate
+    metadata does not pollute the snippet.  Returns an empty string when the
+    concept is not found in the body.
+
+    Format: "<before words> <concept words> <after words>"
+    """
+    parts = raw_content.split("---\n", 2)
+    body = parts[2] if len(parts) >= 3 else raw_content
+
+    words = re.split(r"\s+", body.strip())
+    concept_words = re.split(r"\s+", concept_name.strip())
+    n = len(concept_words)
+    pattern_words = [re.sub(r"[^\w]", "", w).lower() for w in concept_words]
+
+    for i in range(len(words) - n + 1):
+        segment = [re.sub(r"[^\w]", "", w).lower() for w in words[i : i + n]]
+        if segment == pattern_words:
+            before = " ".join(words[max(0, i - window) : i])
+            middle = " ".join(words[i : i + n])
+            after = " ".join(words[i + n : i + n + window])
+            return " ".join(part for part in [before, middle, after] if part)
+    return ""
+
+
 if sys.platform == "win32":
     import msvcrt
 
