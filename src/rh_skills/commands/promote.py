@@ -1000,7 +1000,6 @@ def _build_concept_review_packet(topic: str, concepts: list[dict], source: str =
         "lookup_policy": {
             "service": "reasonhub-mcp",
             "directive": "use-mcp-to-identify-standardized-codes",
-            "descendant_policy": "descendants-only",
             "approval_order": "dedupe-then-mcp-lookup-then-human-approval",
         },
         "review_artifact": f"topics/{topic}/process/plans/concepts-plan.yaml",
@@ -1158,6 +1157,37 @@ def _build_concepts_l2_artifact(topic: str, review_packet: dict) -> dict:
     }
 
 
+def _cross_concept_code_overlap(concepts: list[dict]) -> list[dict]:
+    """Return codes that appear as candidates in more than one concept.
+
+    Each entry: {"system": ..., "code": ..., "display": ..., "concepts": [...names]}
+    Only candidate_codes[] is scanned — approved codes[] are intentional and expected
+    to overlap.
+    """
+    code_to_concepts: dict[tuple[str, str], dict] = {}
+    for concept in concepts:
+        name = concept.get("name", "")
+        for c in concept.get("candidate_codes") or []:
+            system = str(c.get("system") or "").strip()
+            code = str(c.get("code") or "").strip()
+            if not system or not code:
+                continue
+            key = (system.casefold(), code.casefold())
+            if key not in code_to_concepts:
+                code_to_concepts[key] = {
+                    "system": system,
+                    "code": code,
+                    "display": str(c.get("display") or "").strip(),
+                    "concepts": [],
+                }
+            if name not in code_to_concepts[key]["concepts"]:
+                code_to_concepts[key]["concepts"].append(name)
+    return [
+        entry for entry in code_to_concepts.values()
+        if len(entry["concepts"]) > 1
+    ]
+
+
 def _render_concept_plan_readout(topic: str, packet: dict) -> str:
     """Return human-friendly markdown readout derived from concepts-plan.yaml."""
     status = packet.get("status", "pending-review")
@@ -1204,7 +1234,7 @@ def _render_concept_plan_readout(topic: str, packet: dict) -> str:
     lookup_policy = packet.get("lookup_policy") or {}
     for concept in concepts:
         review_status = concept.get("review_status", "pending-review")
-        status_icon_c = "✅" if review_status == "approved" else ("🚫" if review_status == "excluded" else "⏳")
+        status_icon_c = "✅" if review_status == "approved" else ("🚫" if review_status == "excluded" else ("⏭" if review_status == "skipped" else "⏳"))
         name = concept.get("name", "unknown")
         ctype = concept.get("type", "unknown")
         sources = concept.get("sources", [])
@@ -1251,11 +1281,28 @@ def _render_concept_plan_readout(topic: str, packet: dict) -> str:
             lines.append(f"- Exclusion note: {concept['review_notes']}")
         lines.append("")
 
+    # Cross-concept candidate overlap
+    overlaps = _cross_concept_code_overlap(concepts)
+    if overlaps:
+        lines.extend(["# Cross-Concept Code Overlap", ""])
+        lines.append(
+            "The following codes appear as MCP candidates in multiple concepts. "
+            "Each concept must be reviewed independently — shared codes are expected "
+            "for related concepts. Use this map to batch your review decisions."
+        )
+        lines.append("")
+        for entry in overlaps:
+            concept_list = ", ".join(f"`{n}`" for n in entry["concepts"])
+            lines.append(
+                f"- `{entry['system']}` `{entry['code']}` "
+                f"— {entry['display'] or '_no display_'}: appears in {concept_list}"
+            )
+        lines.append("")
+
     lines.extend(["# Lookup Policy", ""])
     if lookup_policy:
         lines.extend([
             f"- Service: `{lookup_policy.get('service', '')}`",
-            f"- Descendant policy: `{lookup_policy.get('descendant_policy', '')}`",
             f"- Approval order: `{lookup_policy.get('approval_order', '')}`",
         ])
     lines.extend([
@@ -1268,10 +1315,12 @@ def _render_concept_plan_readout(topic: str, packet: dict) -> str:
     else:
         pending_enrichment = sum(1 for c in concepts if not c.get("lookup_completed"))
         pending_review = sum(1 for c in concepts if c.get("review_status") == "pending-review")
+        skipped = sum(1 for c in concepts if c.get("review_status") == "skipped")
         lines.extend([
             "- Concept plan must be approved before `rh-skills promote approve --finalize` can run.",
             f"- Concepts pending MCP enrichment: {pending_enrichment}",
             f"- Concepts pending human review: {pending_review}",
+            f"- Concepts skipped (deferred): {skipped}",
         ])
     lines.append("")
     return "\n".join(lines)
@@ -2327,8 +2376,9 @@ def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> li
     "--candidate",
     "raw_candidates",
     multiple=True,
-    metavar="system|code|display[|distance[|confidence]]",
-    help="MCP candidate to record. Repeatable — pass once per candidate. Omit when MCP returned no results.",
+    type=click.STRING,
+    metavar="TEXT",
+    help="MCP candidate to record. Format: 'system|code|display[|distance[|confidence]]'. Repeatable — pass once per candidate. Omit when MCP returned no results.",
 )
 @click.option("--lookup-query", "lookup_query", default=None, metavar="TEXT", help="Search query used. Defaults to concept name.")
 @click.option("--lookup-notes", "lookup_notes", default=None, metavar="TEXT", help="Optional notes from the MCP lookup.")
@@ -2337,9 +2387,27 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
     """Record RH MCP candidates for a concept review entry.
 
     \b
-    Pass one --candidate flag per result. Multiple flags in a single call are all recorded.
-    Successive calls also append to candidate_codes[]; use --reset to start fresh.
-    Omit --candidate when MCP returned no results (still call to mark lookup complete).
+    Non-interactive (AI agent):
+      # One candidate per call (repeat for each result returned by MCP):
+      rh-skills promote concept enrich <topic> \\
+        --concept "Hypertension" \\
+        --candidate "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
+        --lookup-query "Hypertension"
+
+      # Multiple candidates in a single call (all recorded, same as repeated calls):
+      rh-skills promote concept enrich <topic> \\
+        --concept "Hypertension" \\
+        --candidate "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
+        --candidate "ICD-10|I10|Essential (primary) hypertension|0.05"
+
+      # Successive calls append; use --reset to start fresh:
+      rh-skills promote concept enrich <topic> --concept "Hypertension" --reset
+      rh-skills promote concept enrich <topic> \\
+        --concept "Hypertension" --candidate "SNOMED-CT|38341003|..."
+
+      # MCP returned no results — still call to mark lookup complete:
+      rh-skills promote concept enrich <topic> --concept "Rare finding" \\
+        --lookup-notes "No results found in SNOMED or ICD-10"
     """
 
     require_topic(require_tracking(), topic)
@@ -2467,25 +2535,69 @@ def _apply_single_concept_decision(
     packet: dict,
     topic: str,
     concept_name: str,
-    decision: str,
-    codes: tuple,
+    decision: str | None,
+    promote_candidates: tuple,
     note: str,
     concept_type: str | None = None,
     *,
     write: bool = True,
     rejected_candidates: tuple = (),
+    reset_codes: bool = False,
 ) -> str:
-    """Apply approved/exclude decision to one concept in packet.
+    """Apply promote/reject/decision/reset actions to one concept in packet.
 
     Returns a short summary string for logging. Does not finalize.
     Raises click.UsageError on invalid input.
     """
     concept = _find_review_concept(packet, concept_name, concept_type)
 
-    # Parse and record any explicitly rejected candidates (shared by both decisions)
-    if rejected_candidates:
-        parsed_rejections = [_parse_reject_candidate_flag(r) for r in rejected_candidates]
+    # --- reset-codes (standalone, clears everything) ---
+    if reset_codes:
+        concept["codes"] = []
+        concept["rejected_candidates"] = []
+        concept["review_status"] = "pending-review"
+        if note:
+            concept["review_notes"] = note
+        if write:
+            _write_concept_review_packet(topic, packet)
+            _sync_plan_concept_review(topic, packet)
+        return f"Reset codes for '{concept_name}' — review_status back to pending-review."
+
+    # --- promote candidates (append to codes[], auto-fill display from candidate_codes[]) ---
+    if promote_candidates:
         all_candidates = concept.get("candidate_codes") or []
+        existing_codes = concept.get("codes") or []
+        for raw in promote_candidates:
+            parts = raw.split("|", 2)
+            if len(parts) < 2 or not parts[0].strip() or not parts[1].strip():
+                raise click.UsageError(
+                    f"--promote-candidate must be 'system|code[|display]', got: {raw!r}"
+                )
+            system = parts[0].strip()
+            code = parts[1].strip()
+            display = parts[2].strip() if len(parts) >= 3 and parts[2].strip() else ""
+            # Auto-fill display from candidate_codes[] if omitted
+            if not display:
+                for cand in all_candidates:
+                    norm = _normalize_candidate_identity(cand)
+                    if norm["system"] == system and norm["code"] == code:
+                        display = norm["display"]
+                        break
+            entry = {"system": system, "code": code, "display": display}
+            # Dedup by system+code
+            if not any(
+                _normalize_candidate_identity(e)["system"] == system
+                and _normalize_candidate_identity(e)["code"] == code
+                for e in existing_codes
+            ):
+                existing_codes.append(entry)
+        concept["codes"] = existing_codes
+
+    # --- reject candidates (append, not replace) ---
+    if rejected_candidates:
+        all_candidates = concept.get("candidate_codes") or []
+        existing_rejected = concept.get("rejected_candidates") or []
+        parsed_rejections = [_parse_reject_candidate_flag(r) for r in rejected_candidates]
         for rejection in parsed_rejections:
             if "display" not in rejection:
                 for cand in all_candidates:
@@ -2493,8 +2605,15 @@ def _apply_single_concept_decision(
                     if norm["system"] == rejection["system"] and norm["code"] == rejection["code"]:
                         rejection["display"] = norm["display"]
                         break
-        concept["rejected_candidates"] = parsed_rejections
+            # Dedup by system+code
+            if not any(
+                e.get("system") == rejection["system"] and e.get("code") == rejection["code"]
+                for e in existing_rejected
+            ):
+                existing_rejected.append(rejection)
+        concept["rejected_candidates"] = existing_rejected
 
+    # --- decision ---
     if decision == "exclude":
         concept["codes"] = []
         concept["review_notes"] = note
@@ -2504,25 +2623,45 @@ def _apply_single_concept_decision(
             _sync_plan_concept_review(topic, packet)
         return f"Excluded concept '{concept_name}'."
 
-    # decision == "approved"
-    if not codes:
-        raise click.UsageError(
-            f"--code is required when decision=approved (concept '{concept_name}'). "
-            "Pass at least one 'system|code|display' value."
+    if decision == "skip":
+        concept["review_notes"] = note
+        concept["review_status"] = "skipped"
+        if write:
+            _write_concept_review_packet(topic, packet)
+            _sync_plan_concept_review(topic, packet)
+        return f"Skipped concept '{concept_name}' — will block finalize until resolved."
+
+    if decision == "approved":
+        codes = concept.get("codes") or []
+        if not codes:
+            raise click.UsageError(
+                f"Cannot approve '{concept_name}': no promoted codes. "
+                "Use --promote-candidate first, then seal with --decision approved."
+            )
+        concept["review_notes"] = note
+        concept["review_status"] = "approved"
+        if write:
+            _write_concept_review_packet(topic, packet)
+            _sync_plan_concept_review(topic, packet)
+        rejected_count = len(rejected_candidates)
+        return (
+            f"Approved concept '{concept_name}' with {len(codes)} code(s)"
+            + (f"; {rejected_count} candidate(s) explicitly rejected" if rejected_count else "")
+            + "."
         )
-    parsed_codes = [_parse_code_flag(c) for c in codes]
-    concept["codes"] = parsed_codes
-    concept["review_notes"] = note
-    concept["review_status"] = "approved"
+
+    # No decision — promote/reject only (status unchanged unless it was already set)
+    if note:
+        concept["review_notes"] = note
     if write:
         _write_concept_review_packet(topic, packet)
         _sync_plan_concept_review(topic, packet)
-    rejected_count = len(rejected_candidates)
-    return (
-        f"Approved concept '{concept_name}' with {len(parsed_codes)} code(s)"
-        + (f"; {rejected_count} candidate(s) explicitly rejected" if rejected_count else "")
-        + "."
-    )
+    parts = []
+    if promote_candidates:
+        parts.append(f"promoted {len(promote_candidates)} candidate(s)")
+    if rejected_candidates:
+        parts.append(f"rejected {len(rejected_candidates)} candidate(s)")
+    return f"Updated '{concept_name}': {', '.join(parts)}."
 
 
 def _finalize_concept_review(
@@ -2538,11 +2677,11 @@ def _finalize_concept_review(
     pending = [
         c.get("name", "?")
         for c in (packet.get("concepts", []) or [])
-        if c.get("review_status") == "pending-review"
+        if c.get("review_status") in ("pending-review", "skipped")
     ]
     if pending:
         raise click.UsageError(
-            f"{len(pending)} concept(s) still pending review: {', '.join(pending)}. "
+            f"{len(pending)} concept(s) still pending or skipped: {', '.join(pending)}. "
             "All concepts must have a decision (approved or exclude) before finalizing."
         )
     packet["status"] = "approved"
@@ -2556,39 +2695,96 @@ def _finalize_concept_review(
 
 @concept.command("review")
 @click.argument("topic")
-@click.option("--concept", "concept_name", default=None, metavar="NAME", help="Concept name to record a decision for.")
-@click.option("--decision", default=None, type=click.Choice(["approved", "exclude"]), help="Reviewer decision: approved or exclude.")
+@click.option("--concept", "concept_name", default=None, metavar="NAME", help="Concept name to act on.")
 @click.option("--type", "concept_type", default=None, metavar="TYPE", help="Concept type to disambiguate same-name concepts.")
-@click.option("--code", "codes", multiple=True, metavar="system|code|display", help="Approved code in 'system|code|display' format. Repeatable. Required when --decision=approved.")
-@click.option("--reject-candidate", "reject_candidates", multiple=True, metavar="system|code[|display[|reason]]", help="Explicitly rejected candidate from candidate_codes[]. Repeatable. Format: 'system|code[|display[|rejection reason]]'.")
+@click.option(
+    "--promote-candidate",
+    "promote_candidates",
+    multiple=True,
+    type=click.STRING,
+    metavar="TEXT",
+    help="Promote an MCP candidate to the approved code list. Format: 'system|code[|display]'. display is auto-filled from candidate_codes[] if omitted. Repeatable. Use as a separate call before --decision approved.",
+)
+@click.option(
+    "--decision",
+    default=None,
+    type=click.Choice(["approved", "exclude", "skip"]),
+    help=(
+        "Seal the decision for this concept. "
+        "'approved' — finalises codes[] as the approved code list (requires at least one promoted code); "
+        "'exclude' — removes concept from the L2 artifact; "
+        "'skip' — defers decision (blocks --finalize until resolved)."
+    ),
+)
+@click.option(
+    "--reject-candidate",
+    "reject_candidates",
+    multiple=True,
+    type=click.STRING,
+    metavar="TEXT",
+    help="Explicitly reject an MCP candidate. Format: 'system|code[|display[|reason]]'. Appends to rejected_candidates[]. Repeatable.",
+)
+@click.option("--reset-codes", "reset_codes", is_flag=True, help="Clear codes[] and rejected_candidates[], resetting review_status to pending-review.")
 @click.option("--note", default="", metavar="TEXT", help="Review note recorded with this concept.")
 @click.option("--finalize", is_flag=True, help="Seal the review packet (status: approved). Does NOT write concepts.yaml — run 'concept write' during implement for that. Can be used alone or with --concept.")
 @click.option("--reviewer", default=None, metavar="NAME", help="Reviewer name recorded at finalize time.")
 @click.option("--review-summary", "review_summary", default="", metavar="TEXT", help="Summary note recorded at finalize time.")
-def review_concepts(topic, concept_name, decision, concept_type, codes, reject_candidates, note, finalize, reviewer, review_summary):
+def review_concepts(topic, concept_name, concept_type, promote_candidates, decision, reject_candidates, reset_codes, note, finalize, reviewer, review_summary):
     """Record reviewer decisions for concepts in the concept review packet.
 
     \b
-    1. Per-concept (one call per concept; --finalize on the last):
-       rh-skills promote concept review <topic> \\
-         --concept "Concept" --decision approved \\
-         --code "system|code|display" --note "..."
-       rh-skills promote concept review <topic> \\
-         --concept "Other" --decision exclude --note "..." --finalize \\
-         --reviewer "<name>" --review-summary "<summary>"
+    Non-interactive (AI agent):
+      # Step 1 — promote/reject individual candidates (no decision yet):
+      rh-skills promote concept review <topic> \\
+        --concept "Hypertension" \\
+        --promote-candidate "SNOMED-CT|38341003" \\
+        --reject-candidate "ICD-10|I10||SNOMED preferred"
+
+      # Step 2 — seal the decision:
+      rh-skills promote concept review <topic> \\
+        --concept "Hypertension" --decision approved --note "Confirmed"
+
+      # Exclude a concept:
+      rh-skills promote concept review <topic> \\
+        --concept "Rare finding" --decision exclude --note "Not applicable"
+
+      # Skip (defer) a concept:
+      rh-skills promote concept review <topic> \\
+        --concept "TBD concept" --decision skip --note "Need SME input"
+
+      # Correct a mistake — reset and re-promote:
+      rh-skills promote concept review <topic> --concept "Hypertension" --reset-codes
+      rh-skills promote concept review <topic> --concept "Hypertension" \\
+        --promote-candidate "SNOMED-CT|38341003"
+
+      # Finalize (blocks if any concept is pending-review or skipped):
+      rh-skills promote concept review <topic> \\
+        --finalize --reviewer "taylor" --review-summary "All confirmed"
 
     \b
-    2. Standalone finalize (after manually editing concepts-plan.yaml):
-       rh-skills promote concept review <topic> \\
-         --finalize --reviewer "taylor" --review-summary "Reviewed manually"
+    Standalone finalize (after manually editing concepts-plan.yaml):
+      rh-skills promote concept review <topic> \\
+        --finalize --reviewer "taylor" --review-summary "Reviewed manually"
     """
     # --- validate flag combinations ---
     if not concept_name and not finalize:
         raise click.UsageError(
-            "Provide --concept/--decision or --finalize (standalone)."
+            "Provide --concept with one of --promote-candidate, --decision, --reject-candidate, or --reset-codes; "
+            "or use --finalize (standalone)."
         )
-    if concept_name and not decision:
-        raise click.UsageError("--decision is required when --concept is provided.")
+    if concept_name:
+        has_action = promote_candidates or decision or reject_candidates or reset_codes
+        if not has_action:
+            raise click.UsageError(
+                "--concept requires at least one of --promote-candidate, --decision, --reject-candidate, or --reset-codes."
+            )
+        if promote_candidates and decision:
+            raise click.UsageError(
+                "--promote-candidate and --decision cannot be used in the same call. "
+                "Promote candidates first, then seal with --decision in a separate call."
+            )
+        if reset_codes and (promote_candidates or decision or reject_candidates):
+            raise click.UsageError("--reset-codes must be used alone (no other action flags).")
 
     tracking = require_tracking()
     require_topic(tracking, topic)
@@ -2612,25 +2808,24 @@ def review_concepts(topic, concept_name, decision, concept_type, codes, reject_c
                 f"Pending: {', '.join(pending_lookup)}"
             )
         msg = _apply_single_concept_decision(
-            packet, topic, concept_name, decision, codes, note, concept_type,
-            write=True, rejected_candidates=reject_candidates,
+            packet, topic, concept_name, decision, promote_candidates, note, concept_type,
+            write=True, rejected_candidates=reject_candidates, reset_codes=reset_codes,
         )
         log_info(msg)
 
     # --- finalize (standalone or appended to per-concept) ---
     if finalize:
-        all_reviewed = all(
-            c.get("review_status") != "pending-review"
+        # Reload packet to pick up any write from the per-concept step above
+        packet = _load_concept_review_packet(topic)
+        blocking = [
+            c.get("review_status", "pending-review")
             for c in (packet.get("concepts", []) or [])
-        )
-        remaining = sum(
-            1
-            for c in (packet.get("concepts", []) or [])
-            if c.get("review_status") == "pending-review"
-        )
-        if not all_reviewed:
+            if c.get("review_status") in ("pending-review", "skipped")
+        ]
+        remaining = len(blocking)
+        if remaining:
             log_warn(
-                f"--finalize requested but {remaining} concept(s) still pending review. "
+                f"--finalize requested but {remaining} concept(s) still pending or skipped. "
                 "Finalize will be skipped until all concepts have a decision."
             )
         else:
