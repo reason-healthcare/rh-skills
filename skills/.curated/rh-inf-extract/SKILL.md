@@ -489,13 +489,6 @@ after confirmation. Proceed directly — no pre-flight question to the user.**
 
 ### Step 1 — Enrich all concepts (before proposing anything)
 
-Extract the pending concept list with:
-
-```sh
-awk '/^- name:/{name=substr($0,9)} /^  type:/{print name "|" substr($0,9)}' \
-  topics/<topic>/process/plans/concepts-plan.yaml
-```
-
 For each pending concept, read its `type` field from `concepts-plan.yaml`.
 **Use the `type` field as the authoritative domain — do not override it with
 your own clinical judgment about what system the concept "feels like".** A
@@ -776,6 +769,12 @@ all deterministic writes must go through `rh-skills promote derive`,
    > `--evidence-ref`, or `--concern`, the CLI treats them as **consistency
    > checks** against the body file instead of merge inputs.
 
+   > **⚠ When using `--body-file`, omit `--evidence-ref` and `--concern`.**
+   > These flags perform exact-string consistency checks against the body YAML,
+   > not merges. A mismatch — even one character — causes the derive call to
+   > fail. Pass only `--source`, `--artifact-type`, `--clinical-question`, and
+   > `--required-section` alongside `--body-file`.
+
    ```sh
    # Write your reasoned artifact YAML to a temp file first.
    # Include every required top-level field — the CLI writes this verbatim.
@@ -808,8 +807,6 @@ all deterministic writes must go through `rh-skills promote derive`,
      --artifact-type <artifact-type> \
      --clinical-question "<clinical question>" \
      --required-section <section> \
-     --evidence-ref "<claim_id|statement|source|locator>" \
-     --concern "<issue|source|statement|preferred_source|preferred_rationale>" \
      --body-file /tmp/rh-<artifact-name>.yaml
    ```
 
