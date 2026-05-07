@@ -22,20 +22,24 @@ Proposed artifacts:
 Writing:
 `topics/diabetes-ccm/process/plans/extract-plan.yaml`
 `topics/diabetes-ccm/process/plans/extract-plan-readout.md`
-`topics/diabetes-ccm/process/plans/concepts-plan.yaml`
-`topics/diabetes-ccm/process/plans/concepts-plan-readout.md`
+`topics/diabetes-ccm/process/plans/concepts-review.csv`
+`topics/diabetes-ccm/process/plans/concepts-review-meta.yaml`
 
-Enrich `concepts-plan.yaml` with RH MCP candidate codes and descendant `is-a`
-matches before human approval, for example:
+Enrich `concepts-review.csv` with RH MCP candidate codes
+before human approval, for example:
 
 ```sh
-# One call per primary candidate; --related-candidate for is-a descendants.
-# Successive calls for the same concept append to candidate_codes[].
+# Each result from each system is a separate --candidate call.
+# Successive calls for the same concept append rows to the CSV.
 rh-skills promote concept enrich diabetes-ccm --concept "Diabetes mellitus" \
-  --candidate "SNOMED-CT|73211009|Diabetes mellitus (disorder)|high" \
-  --related-candidate "SNOMED-CT|44054006|Diabetes mellitus type 2 (disorder)|high"
+  --candidate "SNOMED-CT|73211009|Diabetes mellitus (disorder)|0.0|high"
+rh-skills promote concept enrich diabetes-ccm --concept "Diabetes mellitus" \
+  --candidate "ICD-10-CM|E11|Type 2 diabetes mellitus|0.1|high"
 rh-skills promote concept enrich diabetes-ccm --concept "HbA1c measurement" \
-  --candidate "LOINC|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood|high"
+  --candidate "LOINC|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood|0.0|high"
+# When MCP returned no results, omit --candidate but still call to record lookup:
+rh-skills promote concept enrich diabetes-ccm --concept "Some term" \
+  --lookup-notes "No results found in any required system"
 # ... repeat for every concept ...
 ```
 
@@ -44,15 +48,14 @@ adding `--finalize` on the last call:
 
 ```sh
 rh-skills promote concept review diabetes-ccm \
-  --concept "Diabetes mellitus" --decision approved \
-  --code "SNOMED-CT|73211009|Diabetes mellitus (disorder)" \
-  --note "Confirmed FSN"
+  --concept "Diabetes mellitus" --approved y --note "Confirmed FSN"
 
 rh-skills promote concept review diabetes-ccm \
-  --concept "HbA1c measurement" --decision approved \
-  --code "LOINC|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood" \
-  --note "LOINC confirmed" \
-  --finalize --reviewer "agent" --review-summary "All concepts confirmed via RH MCP"
+  --concept "HbA1c measurement" --approved y --note "LOINC confirmed"
+
+# Finalize (--force because CLI commands updated the checksum):
+rh-skills promote concept review diabetes-ccm \
+  --finalize --reviewer "agent" --force
 ```
 
 Then review the extract plan using `rh-skills promote approve diabetes-ccm`, and continue with:

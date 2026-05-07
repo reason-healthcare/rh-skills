@@ -13,6 +13,7 @@ from ruamel.yaml import YAML
 from rh_skills.common import (
     append_root_event,
     ensure_tracking,
+    extract_concept_context,
     locked_update_tracking,
     log_info,
     log_warn,
@@ -740,7 +741,15 @@ def annotate(name, topic, concepts, overwrite):
     fm_data = _y.load(fm_text) if fm_text.strip() else {}
     if fm_data is None:
         fm_data = {}
-    new_fm_concepts = [{"name": c["name"], "type": c["type"]} for c in parsed_concepts]
+    raw_body = body  # captured before frontmatter re-assembly
+    new_fm_concepts = [
+        {k: v for k, v in {
+            "name": c["name"],
+            "type": c["type"],
+            "context": extract_concept_context(raw_body, c["name"]) or None,
+        }.items() if v is not None}
+        for c in parsed_concepts
+    ]
     if overwrite:
         fm_data["concepts"] = new_fm_concepts
     else:
