@@ -886,6 +886,37 @@ def test_review_concepts_reject_candidate_display_filled_from_enrichment(tmp_rep
     assert rejected["display"] == "Essential (primary) hypertension"
 
 
+def test_enrich_multiple_candidates_single_call(tmp_repo):
+    """Multiple --candidate flags in a single enrich call all get recorded."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    result = runner.invoke(
+        promote,
+        [
+            "concept", "enrich", "my-skill",
+            "--concept", "Hypertension", "--type", "condition",
+            "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
+            "--candidate", "ICD-10|I10|Essential (primary) hypertension",
+            "--candidate", "SNOMED-CT|59621000|Essential hypertension (disorder)",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "3 candidate(s)" in result.output
+
+    packet = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-plan.yaml").read_text()
+    )
+    hypertension = next(c for c in packet["concepts"] if c["name"] == "Hypertension")
+    codes = hypertension["candidate_codes"]
+    assert len(codes) == 3
+    assert any(c["code"] == "38341003" for c in codes)
+    assert any(c["code"] == "I10" for c in codes)
+    assert any(c["code"] == "59621000" for c in codes)
+
+
 def test_review_concepts_standalone_finalize_seals_manually_edited_plan(tmp_repo):
     """--finalize alone (no --concept) seals a plan that was edited directly."""
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))

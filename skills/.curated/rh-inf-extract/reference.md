@@ -200,7 +200,7 @@ decisions:                   # required; every concept in the packet must appear
 The flag uses a pipe-delimited format:
 
 ```
-system|code|display[|confidence[|distance]]
+system|code|display[|distance[|confidence]]
 ```
 
 | Field | Required | Type | Notes |
@@ -208,8 +208,8 @@ system|code|display[|confidence[|distance]]
 | `system` | yes | string | Code system label or URI (e.g. `SNOMED-CT`, `http://loinc.org`). If MCP returns a UUID, resolve it first — see note below. |
 | `code` | yes | string | Candidate code |
 | `display` | yes | string | Candidate display text |
-| `confidence` | no | `high` \| `medium` \| `low` | String label from MCP result |
 | `distance` | no | numeric | Semantic/edit distance — lower = closer match |
+| `confidence` | no | `high` \| `medium` \| `low` | String label from MCP result |
 
 > **UUID `system` values**: If MCP returns a UUID as the code system identifier, resolve it
 > using the `system_name` field from the **same response** — no extra MCP call needed:

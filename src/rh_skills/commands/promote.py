@@ -2325,19 +2325,20 @@ def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> li
 @click.option("--type", "concept_type", default=None, metavar="TYPE", help="Concept type when the name is ambiguous.")
 @click.option(
     "--candidate",
-    "raw_candidate",
-    default=None,
+    "raw_candidates",
+    multiple=True,
     metavar="system|code|display[|distance[|confidence]]",
-    help="Primary MCP candidate for this call. One per call; make multiple calls to append more candidates. Omit when MCP returned no results.",
+    help="MCP candidate to record. Repeatable — pass once per candidate. Omit when MCP returned no results.",
 )
 @click.option("--lookup-query", "lookup_query", default=None, metavar="TEXT", help="Search query used. Defaults to concept name.")
 @click.option("--lookup-notes", "lookup_notes", default=None, metavar="TEXT", help="Optional notes from the MCP lookup.")
 @click.option("--reset", "reset", is_flag=True, help="Clear existing candidate_codes[] before recording. Use alone to undo all candidates.")
-def enrich_concepts(topic, concept_name, concept_type, raw_candidate, lookup_query, lookup_notes, reset):
-    """Record one RH MCP candidate for a concept review entry.
+def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_query, lookup_notes, reset):
+    """Record RH MCP candidates for a concept review entry.
 
     \b
-    Call once per candidate. Successive calls append to candidate_codes[]; use --reset to start fresh.
+    Pass one --candidate flag per result. Multiple flags in a single call are all recorded.
+    Successive calls also append to candidate_codes[]; use --reset to start fresh.
     Omit --candidate when MCP returned no results (still call to mark lookup complete).
     """
 
@@ -2353,7 +2354,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidate, lookup_que
         if reset:
             concept["candidate_codes"] = []
             concept["lookup_completed"] = False
-            if not raw_candidate:
+            if not raw_candidates:
                 # Reset-only call: recompute packet flag and save
                 all_enriched = all(
                     e.get("lookup_completed") is True
@@ -2370,7 +2371,8 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidate, lookup_que
         elif not concept.get("lookup_query"):
             concept["lookup_query"] = concept_name
 
-        if raw_candidate:
+        appended_count = 0
+        for raw_candidate in raw_candidates:
             entry = _parse_candidate_flag(raw_candidate)
             existing = concept.get("candidate_codes") or []
             norm_new = _normalize_candidate_identity(entry)
@@ -2429,6 +2431,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidate, lookup_que
                     )
             else:
                 existing.append(entry)
+                appended_count += 1
             concept["candidate_codes"] = existing
 
         concept["lookup_completed"] = True
@@ -2449,7 +2452,10 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidate, lookup_que
             if concept_entry.get("lookup_completed") is not True
         )
 
-    action = "appended 1 candidate" if raw_candidate else "marked complete (no results)"
+    if raw_candidates:
+        action = f"appended {appended_count} candidate(s)"
+    else:
+        action = "marked complete (no results)"
     log_info(
         f"Recorded MCP candidates for '{concept_name}'"
         + (f" ({concept_type})" if concept_type else "")
