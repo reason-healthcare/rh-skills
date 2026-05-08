@@ -112,8 +112,8 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 | `topics/<topic>/process/plans/extract-plan-readout.md` | **Derived**: human-friendly narrative (do not edit directly) |
 | `topics/<topic>/structured/<name>/<name>.yaml` | **L2 artifact**: semi-structured clinical content |
 | `topics/<topic>/structured/<name>/<name>-report.md` | **Rendered report**: Mermaid diagrams for SME review |
-| `topics/<topic>/process/plans/concepts-plan.yaml` | **Review packet**: pending concept coding review (written by `promote plan`). Use `promote concept enrich` to add MCP candidates, then `promote concept review --concept <name> --decision ...` per concept. `promote concept review --finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml` — run `promote concept write <topic>` during implement for that. |
-| `topics/<topic>/process/plans/concepts-plan-readout.md` | **Derived**: human-friendly concept review narrative (do not edit directly) |
+| `topics/<topic>/process/plans/concepts-review.csv` | **Review CSV**: concept coding candidates from MCP lookup; edit `approved (y/n)` column or use `promote concept review --concept <name> --approve-all/--exclude-all` per concept. `promote concept review --finalize` seals the review (`status: approved`) but does **not** write `concepts.yaml` — run `promote concept write <topic>` during implement for that. Custom concepts not extracted from source documents can be added with `promote concept add --concept <name> --type <type>`. |
+| `topics/<topic>/process/plans/concepts-review-meta.yaml` | **Finalization metadata**: written by `--finalize`; records reviewer, timestamp, and CSV checksum. Do not edit directly. |
 | `tracking.yaml` | Records extract_planned, structured_derived events |
 
 ---

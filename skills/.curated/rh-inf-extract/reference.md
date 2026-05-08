@@ -146,14 +146,16 @@ section during formalize.
 ### Concept Review CSV
 
 When normalized source front matter contains `concepts[]`, extract planning writes:
-- `topics/<topic>/process/plans/concepts-review.csv` — the single review artifact; edit this file to approve or exclude concepts
+- `topics/<topic>/process/plans/concepts-review.csv` — the single review artifact; edit this file to approve or exclude individual codes
 - `topics/<topic>/process/plans/concepts-review-meta.yaml` — finalization metadata only (written by `--finalize`)
 
-Concepts are **retained by default**: they appear in `concepts.yaml` unless a row has `exclude: y`.
-Setting `approved: y` on a row includes that specific code in the concept's output.
+All concepts always appear in `concepts.yaml`. A concept gets a `codes` list only if at least one of its rows has `approved (y/n) = y`. Custom concepts not extracted from source documents can be added with `concept add`.
 
 Review workflow:
 ```sh
+# Add a custom concept (not from source documents):
+rh-skills promote concept add <topic> --concept "<name>" --type <type>
+
 # Enrich candidates (no decision needed):
 rh-skills promote concept enrich <topic> --concept <name> \
   --candidate "system|code|display[|distance[|confidence]]"
@@ -161,10 +163,14 @@ rh-skills promote concept enrich <topic> --concept <name> \
 # ... repeat for every concept ...
 
 # Approve all candidate codes for a concept:
-rh-skills promote concept review <topic> --concept "<name>" --approved y
+rh-skills promote concept review <topic> --concept "<name>" --approve-all
 
-# Exclude a concept (omit from concepts.yaml):
-rh-skills promote concept review <topic> --concept "<name>" --exclude --note "<reason>"
+# Exclude all candidate codes for a concept:
+rh-skills promote concept review <topic> --concept "<name>" --exclude-all
+
+# Approve or exclude a specific code by value:
+rh-skills promote concept review <topic> --concept "<name>" \
+  --approve-code <code> --exclude-code <other-code>
 
 # Finalize (after CLI-only approvals, --force bypasses checksum unchanged soft-block):
 rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
@@ -183,19 +189,18 @@ This writes `topics/<topic>/structured/concepts.yaml`.
 
 | Column | Description |
 |--------|-------------|
-| `concept_name` | Concept name (matches normalized front matter) |
+| `concept_name` | Concept name (matches normalized front matter, or custom) |
 | `concept_type` | Concept type (condition, procedure, lab, etc.) |
-| `sources` | Source slugs, pipe-delimited |
-| `context` | Up to 10 words before and 10 words after the concept's first appearance in the source body (`before words \| after words`); empty when not found in body text |
+| `sources` | Semicolon-delimited source slugs; `"custom"` for concepts added via `concept add` |
+| `context` | ~10-word text window from source around first occurrence; empty for custom concepts |
 | `lookup_query` | Default MCP query string |
 | `lookup_notes` | Notes when no candidates found |
 | `system` | Code system label or URI (blank on placeholder row) |
 | `code` | Candidate code (blank on placeholder row) |
 | `display` | Candidate display text |
 | `distance` | Semantic distance from MCP (float; lower = closer) |
-| `confidence` | Confidence label from MCP (`high`, `medium`, `low`) |
-| `approved` | Set to `y` to include this code in `concepts.yaml` |
-| `exclude` | Set to `y` on any row to exclude the entire concept |
+| `confidence (high/medium/low)` | Confidence label from MCP |
+| `approved (y/n)` | Set to `y` to include this code in `concepts.yaml`; `n` to exclude it |
 | `comment` | Reviewer note |
 
 Use `--lookup-notes` on `concept enrich` to record why no candidates were found after all required MCP searches returned zero results:
@@ -205,10 +210,11 @@ rh-skills promote concept enrich <topic> --concept "<name>" \
 ```
 This writes to the `lookup_notes` column and marks the concept as lookup-complete with zero candidates.
 
-**Retention semantics:**
-- A row with `exclude: y` → entire concept excluded from `concepts.yaml`
-- A row with `approved: y` → that code included in `concepts.yaml`
-- A concept with no `exclude` and no `approved` rows → retained without codes (default)
+**Approved semantics:**
+- Every code row (non-empty `system` or `code`) must have `approved (y/n)` set to `y` or `n` before `--finalize` succeeds
+- A concept with at least one `approved (y/n) = y` row → `codes` list written in `concepts.yaml`
+- A concept with no `approved (y/n) = y` rows → appears in `concepts.yaml` without a `codes` key
+- Custom concepts (`sources: custom`) follow the same rules — add codes via `concept enrich`
 
 #### concepts-review-meta.yaml schema
 
@@ -231,6 +237,7 @@ The resulting L2 artifact (`concepts.yaml`) uses this shape:
 concepts:
   - name: Loss of sense of smell
     type: finding
+    context: "reported complete loss of sense of smell after"  # optional; empty for custom concepts
     codes:
       - system: SNOMED-CT
         code: 44169009
@@ -238,6 +245,12 @@ concepts:
       - system: ICD-10-CM
         code: R43.0
         display: Anosmia
+  - name: Frailty           # custom concept — sources: custom, no context
+    type: finding
+    codes:
+      - system: SNOMED-CT
+        code: 248279007
+        display: Frailty (finding)
 ```
 
 ---
