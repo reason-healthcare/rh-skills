@@ -42,21 +42,17 @@ optional_fields:
                        #   concepts:
                        #   - name: <human-readable concept label>  # required
                        #     type: <SNOMED semantic tag, e.g. finding | disorder | procedure | observable entity>  # required
-                       #     codes:                                # required; at least one entry
+                       #     context: <~10-word text window from source around first occurrence>  # optional
+                       #     codes:                                # optional; omitted if no approved code
                        #     - system: <code system, e.g. SNOMED-CT | ICD-10-CM | LOINC | RxNorm>  # required
                        #       code: <code value>                  # required
                        #       display: <canonical display name>   # required
-                       #       related:                            # optional; within-system descendants only
-                       #       - system: <same system as parent>   # required
-                       #         code: <descendant code>           # required
-                       #         display: <canonical display name> # required
-                       #         relationship: is-a                # required; only is-a (SNOMED subsumption) is currently valid
                        # Rules:
-                       #   - Each concept entry is deduplicated by (name, type).
-                       #   - codes[] maps the concept across code systems; each system appears at most once.
-                       #   - related[] is for within-system descendants (is-a children) only.
-                       #     Cross-system mappings belong as sibling codes[] entries, not related[].
-                       #   - relationship must be 'is-a'; cross-system equivalences use ConceptMap, not related[].
+                       #   - Each concept entry is deduplicated by name.
+                       #   - codes[] maps the concept across code systems; each (system, code) pair appears at most once per concept.
+                       #   - context is extracted at ingest annotate time from the first body-text occurrence of the concept name.
+                       #   - Custom concepts (not extracted from source documents) are added via 'concept add'; their
+                       #     sources value is 'custom' (or an explicit label) rather than a source file name.
 
 artifact_types:
   - evidence-summary

@@ -245,18 +245,41 @@ rh-skills promote approve <topic> [OPTIONS]
 
 ### `rh-skills promote concept <subcommand>`
 
-Manage concept coding review for a topic. The three subcommands mirror the
-`approve` / `derive` pattern used for artifact review:
+Manage concept coding review for a topic.
 
-| Subcommand | Parallel | Purpose |
-|---|---|---|
-| `enrich` | *(unique to concepts)* | Record RH MCP code candidates |
-| `review` | `approve` | Human review/approval decisions |
-| `write` | `derive` | Write `concepts.yaml` from approved packet |
+| Subcommand | Purpose |
+|---|---|
+| `add` | Add a custom concept placeholder not extracted from source documents |
+| `enrich` | Record RH MCP code candidates for a concept |
+| `review` | Set approved/excluded decisions per concept or per code; finalize |
+| `write` | Write `concepts.yaml` from the finalized review CSV |
+
+#### `rh-skills promote concept add <topic>`
+
+Add a custom concept placeholder to `concepts-review.csv`.
+
+```
+rh-skills promote concept add <topic> [OPTIONS]
+```
+
+**Options:**
+- `--concept NAME` *(required)* — Concept name to add
+- `--type TYPE` *(required)* — SNOMED semantic tag, e.g. `finding | disorder | procedure`
+
+**Behavior:**
+- Appends a placeholder row with `sources: custom` and empty code columns
+- Raises an error if the concept name already exists (case-insensitive) or if the CSV has not been created yet (`promote plan` must run first)
+- After adding, run `concept enrich` to attach candidate codes
+
+**Example:**
+```bash
+rh-skills promote concept add diabetes-screening \
+  --concept "Frailty" --type finding
+```
 
 #### `rh-skills promote concept enrich <topic>`
 
-Record one RH MCP candidate for a concept review entry.
+Record RH MCP code candidates for a concept in the review CSV.
 
 ```
 rh-skills promote concept enrich <topic> [OPTIONS]
@@ -265,70 +288,75 @@ rh-skills promote concept enrich <topic> [OPTIONS]
 **Options:**
 - `--concept NAME` *(required)* — Concept name to enrich
 - `--type TYPE` — Concept type to disambiguate when the name is ambiguous
-- `--candidate system|code|display[|distance[|confidence]]` — Primary MCP candidate for this call; one per call, make multiple calls to append more
-- `--related-candidate system|code|display[|distance[|confidence]]` — is-a descendant of the `--candidate`; repeatable; requires `--candidate`
+- `--candidate system|code|display[|distance[|confidence]]` — Candidate code to record; repeatable; pass once per candidate
 - `--lookup-query TEXT` — Search query used (defaults to concept name)
-- `--lookup-notes TEXT` — Optional notes from the MCP lookup
-- `--reset` — Clear existing `candidate_codes[]` before recording
+- `--lookup-notes TEXT` — Notes when MCP returned no results
+- `--reset` — Clear existing candidate rows for the concept and restore placeholder
 
 **Behavior:**
-- Appends the candidate to `concepts-plan.yaml` for the named concept
-- Marks the concept's `lookup_completed: true`
-- Omit `--candidate` (without `--reset`) to mark lookup complete with no results
-- Call once per primary candidate; use `--related-candidate` for is-a descendants
+- Appends candidate rows to `concepts-review.csv` for the named concept
+- Omit `--candidate` (without `--reset`) to record lookup metadata with no results
+- Call once per candidate; pass multiple `--candidate` flags in a single call to add several at once
 
 #### `rh-skills promote concept review <topic>`
 
-Record reviewer decisions for concepts in the concept review packet.
+Set `approved (y/n)` on code rows and optionally finalize the review.
 
 ```
 rh-skills promote concept review <topic> [OPTIONS]
 ```
 
 **Options:**
-- `--concept NAME` — Concept name to record a decision for
-- `--decision approved|exclude` — Reviewer decision
-- `--type TYPE` — Concept type to disambiguate same-name concepts
-- `--code system|code|display` — Approved code. Repeatable. Required when `--decision=approved`
-- `--related-code system|code|display` — Approved is-a descendant code. Repeatable
-- `--reject-candidate system|code[|display[|reason]]` — Explicitly rejected candidate. Repeatable
-- `--note TEXT` — Review note recorded with this concept
-- `--finalize` — Seal the review packet (`status: approved`). **Does NOT write `concepts.yaml`** — run `concept write` during implement for that. Can be used alone or with `--concept`
-- `--reviewer NAME` — Reviewer name recorded at finalize time
-- `--review-summary TEXT` — Summary note recorded at finalize time
+- `--concept NAME` — Concept name to update
+- `--approve-all` — Set `approved (y/n) = y` on all candidate rows for the concept
+- `--exclude-all` — Set `approved (y/n) = n` on all candidate rows for the concept
+- `--approve-code CODE` — Set `approved (y/n) = y` on the row matching this code value; repeatable
+- `--exclude-code CODE` — Set `approved (y/n) = n` on the row matching this code value; repeatable
+- `--note TEXT` — Set comment on the first row for the concept
+- `--finalize` — Seal the review (`status: approved`). **Does NOT write `concepts.yaml`** — run `concept write` during implement for that. Can be used alone or with `--concept`
+- `--reviewer NAME` — Reviewer name. Required for `--finalize`
+- `--force` — Bypass the checksum unchanged warning during `--finalize`
 
 **Behavior:**
-- Sets `review_status` on each concept in `concepts-plan.yaml`
+- Updates `approved (y/n)` on code rows in `concepts-review.csv`
 - `--finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml`; run `rh-skills promote concept write <topic>` separately during implement
+- Finalize gate: every code row must have `approved (y/n)` set to `y` or `n` before finalize succeeds
 
 **Examples:**
 ```bash
-# Approve one concept:
+# Approve all candidate rows for a concept:
 rh-skills promote concept review diabetes-screening \
-  --concept "HbA1c" --decision approved \
-  --code "http://loinc.org|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood"
+  --concept "Hypertension" --approve-all
 
-# Exclude and finalize on the last concept:
+# Exclude all candidate rows for a concept:
 rh-skills promote concept review diabetes-screening \
-  --concept "Other" --decision exclude --note "Out of scope" \
-  --finalize --reviewer "taylor" --review-summary "Initial review"
+  --concept "Hypertension" --exclude-all
 
-# Standalone finalize after manual edits:
+# Approve one specific code, exclude another:
 rh-skills promote concept review diabetes-screening \
-  --finalize --reviewer "taylor" --review-summary "Reviewed manually"
+  --concept "Hypertension" --approve-code 38341003 --exclude-code I10
+
+# Approve with a note, then finalize:
+rh-skills promote concept review diabetes-screening \
+  --concept "Last concept" --approve-all --note "FSN confirmed" \
+  --finalize --reviewer "taylor" --force
+
+# Standalone finalize after manual CSV edits:
+rh-skills promote concept review diabetes-screening \
+  --finalize --reviewer "taylor"
 ```
 
 #### `rh-skills promote concept write <topic>`
 
-Write `topics/<topic>/structured/concepts.yaml` from the approved concept review packet.
+Write `topics/<topic>/structured/concepts.yaml` from the finalized concept review CSV.
 
 ```
 rh-skills promote concept write <topic>
 ```
 
 **Behavior:**
-- Requires concept review to be finalized (`status: approved` in `concepts-plan.yaml`)
-- Derives and writes the L2 terminology artifact `concepts.yaml` from approved concept decisions
+- Requires concept review to be finalized (`status: approved` in `concepts-review-meta.yaml`)
+- All concepts appear in `concepts.yaml`; only those with at least one `approved (y/n) = y` row get a `codes` list
 - Registers the artifact in `tracking.yaml`
 - Call this during **implement mode** after the extract plan is approved; it is a **separate step** from `concept review --finalize`
 

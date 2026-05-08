@@ -22,6 +22,7 @@ metadata:
     - sources/normalized/
   writes_via_cli:
     - "rh-skills promote derive"
+    - "rh-skills promote concept add"
     - "rh-skills promote concept review"
     - "rh-skills validate"
     - "rh-skills render"
@@ -208,7 +209,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
   do NOT re-derive the concept list by reading source body text or source front
   matter directly. The agent's job is steps 2–3 only:
    2. run RH MCP terminology lookup for candidate codes (see HUMAN-IN-THE-LOOP below)
-   3. prompt the human to approve or exclude concepts
+   3. prompt the human to approve or reject concepts
 
 4. **Check the planner output against your analysis from step 2:**
    - **Completeness**: Does the plan capture all domains you identified?
@@ -241,7 +242,7 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       | procedure | `reasonhub-search_snomed` |
       | lab / observable / measure | `reasonhub-search_loinc` and `reasonhub-search_snomed` |
       | medication / drug | `reasonhub-search_rxnorm` and `reasonhub-search_snomed` |
-      | guideline-ref | **No MCP lookup.** These are document references, not coded concepts. Skip MCP and mark `exclude` at review time. |
+      | guideline-ref | **No MCP lookup.** These are document references, not coded concepts. Skip MCP; use `--exclude-all` at review time if any placeholder rows exist. |
       | term | `reasonhub-search_all_codesystems` only (administrative/non-clinical concepts; many will return no results) |
       | unknown / other | `reasonhub-search_all_codesystems` and `reasonhub-search_snomed` and `reasonhub-search_icd10` |
 
@@ -504,8 +505,8 @@ that type:
 | procedure | `reasonhub-search_snomed` |
 | lab / observable / measure | `reasonhub-search_loinc` + `reasonhub-search_snomed` |
 | **medication / drug** | **`reasonhub-search_rxnorm` + `reasonhub-search_snomed`** |
-| guideline-ref | **No MCP lookup.** Mark `exclude` — these are document references, not coded concepts. |
-| term | `reasonhub-search_all_codesystems` only (many return no results; exclude if none found) |
+| guideline-ref | **No MCP lookup.** Use `--exclude-all` — these are document references, not coded concepts. |
+| term | `reasonhub-search_all_codesystems` only (many return no results; use `--exclude-all` if none found) |
 | unknown / other | `reasonhub-search_all_codesystems` + `reasonhub-search_snomed` + `reasonhub-search_icd10` |
 
 For typed concepts (condition, procedure, lab, medication), do **not** add a
@@ -614,7 +615,7 @@ individual codes.
 1. Candidates that are completely unrelated to the concept (wrong body system,
    wrong clinical domain) — omit those rows and note the count omitted.
 2. If the concept has no candidate rows after all required systems were searched —
-   render the concept as `→ exclude (no candidates)` instead of a table.
+   render the concept as `→ no codes (all excluded)` instead of a table.
 
 **Correct format for a concept with candidates:**
 
@@ -627,10 +628,10 @@ individual codes.
 
 **Correct format for a concept with no candidates:**
 
-**Some Concept** (`condition`) → exclude (no candidates)
+**Some Concept** (`condition`) → no codes (all excluded)
 
 For administrative / out-of-scope concepts (`guideline-ref`, `term`, duplicates)
-that need no code at all, render: `→ exclude (<reason>)`.
+that need no code at all, render: `→ no codes (<reason>)`.
 
 **⚠ Present all concepts together and wait for the reviewer to confirm or
 correct the entire batch before running any CLI command.**
@@ -643,11 +644,17 @@ explicitly approves the full set (or a clearly stated subset).
 > Run `rh-skills promote concept review --help` for the full option reference and worked examples.
 
 ```sh
-# Approve all candidate rows for a concept (sets approved=y on all rows with a code):
-rh-skills promote concept review <topic> --concept "<name>" --approved y --note "<rationale>"
+# Add a custom concept (not from source documents):
+rh-skills promote concept add <topic> --concept "<name>" --type <type>
 
-# Exclude a concept entirely (sets exclude=y; concept is omitted from concepts.yaml):
-rh-skills promote concept review <topic> --concept "<name>" --exclude --note "<reason>"
+# Approve all candidate rows for a concept (sets approved (y/n) = y on all code rows):
+rh-skills promote concept review <topic> --concept "<name>" --approve-all --note "<rationale>"
+
+# Exclude all candidate rows for a concept (sets approved (y/n) = n on all code rows):
+rh-skills promote concept review <topic> --concept "<name>" --exclude-all --note "<reason>"
+
+# Approve or exclude a specific code:
+rh-skills promote concept review <topic> --concept "<name>" --approve-code <code> --exclude-code <other>
 
 # Add a comment only:
 rh-skills promote concept review <topic> --concept "<name>" --note "<comment>"
@@ -662,8 +669,9 @@ rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
 rh-skills promote concept review <topic> --finalize --reviewer "<name>"
 ```
 
-`--approved y` — sets `approved: y` on all candidate rows (rows with a non-blank code) for the concept.
-`--exclude` — sets `exclude: y` on the first row for the concept; the concept is omitted from `concepts.yaml`.
+`--approve-all` — sets `approved (y/n) = y` on all code rows (rows with a non-blank code) for the concept.
+`--exclude-all` — sets `approved (y/n) = n` on all code rows for the concept.
+`--approve-code CODE` / `--exclude-code CODE` — sets `approved (y/n)` on the single row matching that code value; repeatable.
 `--note TEXT` — sets the `comment` field on the first row for the concept.
 `--reset` (on `concept enrich`) — clears all rows for a concept and re-adds a blank placeholder row.
 `--force` — bypasses the "CSV unchanged" soft-block during `--finalize`. Required when using CLI-only approval (CLI commands update the checksum each write, so the checksum will appear unchanged from the agent's perspective).

@@ -469,7 +469,7 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     hyp_row = next(r for r in rows if r["concept_name"] == "Hypertension")
     assert sorted(hyp_row["sources"].split("; ")) == ["ada-screening-guideline", "uspstf-screening-update"]
     assert hyp_row["system"] == ""
-    assert hyp_row["code status (approve/reject)"] == ""
+    assert hyp_row["approved (y/n)"] == ""
 
     meta = YAML(typ="safe").load(meta_path.read_text())
     assert meta["status"] == "pending-review"
@@ -512,13 +512,13 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     # Approve both concepts
     result = runner.invoke(promote, [
         "concept", "review", "my-skill",
-        "--concept", "Hypertension", "--approved", "y",
+        "--concept", "Hypertension", "--approve-all",
     ])
     assert result.exit_code == 0, result.output
 
     result = runner.invoke(promote, [
         "concept", "review", "my-skill",
-        "--concept", "Blood pressure screening", "--approved", "y",
+        "--concept", "Blood pressure screening", "--approve-all",
     ])
     assert result.exit_code == 0, result.output
 
@@ -551,7 +551,7 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     assert hypertension["codes"][0]["code"] == "38341003"
 
 
-def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
+def test_review_concepts_can_approve_concept_in_final_artifact(tmp_repo):
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     result = runner.invoke(promote, ["plan", "my-skill"])
@@ -567,28 +567,44 @@ def test_review_concepts_can_exclude_concept_from_final_artifact(tmp_repo):
         "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
     ])
 
-    # Approve Blood pressure screening
+    # Approve Blood pressure screening only
     runner.invoke(promote, [
         "concept", "review", "my-skill",
-        "--concept", "Blood pressure screening", "--approved", "y",
+        "--concept", "Blood pressure screening", "--approve-all",
     ])
 
-    # Exclude Hypertension and finalize
+    # Reject Hypertension via CSV directly and finalize
+    import csv as _csv
+    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
+    with open(csv_path) as f:
+        rows = list(_csv.DictReader(f))
+    for r in rows:
+        if r["concept_name"] == "Hypertension" and r["system"]:
+            r["approved (y/n)"] = "n"
+    fieldnames = list(rows[0].keys()) if rows else []
+    with open(csv_path, "w", newline="") as f:
+        writer = _csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
     result = runner.invoke(promote, [
         "concept", "review", "my-skill",
-        "--concept", "Hypertension", "--exclude", "--note", "Too broad",
-        "--finalize", "--reviewer", "reviewer1", "--force",
+        "--finalize", "--reviewer", "reviewer1",
     ])
     assert result.exit_code == 0, result.output
 
-    # Write and verify exclusion
+    # Write and verify — both concepts appear, only Blood pressure screening has codes
     result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text())
     concept_names = [c["name"] for c in artifact["concepts"]]
-    assert "Hypertension" not in concept_names
-    assert concept_names == ["Blood pressure screening"]
+    assert "Hypertension" in concept_names
+    assert "Blood pressure screening" in concept_names
+    bp = next(c for c in artifact["concepts"] if c["name"] == "Blood pressure screening")
+    assert bp["codes"][0]["code"] == "171207006"
+    hyp = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
+    assert "codes" not in hyp
 
 
 def _enrich_two_concepts(tmp_repo, runner):
@@ -617,14 +633,14 @@ def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
     # Approve Hypertension
     result = runner.invoke(promote, [
         "concept", "review", "my-skill",
-        "--concept", "Hypertension", "--approved", "y", "--note", "FSN confirmed",
+        "--concept", "Hypertension", "--approve-all", "--note", "FSN confirmed",
     ])
     assert result.exit_code == 0, result.output
 
-    # Exclude Blood pressure screening and finalize (--force because CLI updated checksum)
+    # Reject Blood pressure screening and finalize (--force because CLI updated checksum)
     result = runner.invoke(promote, [
         "concept", "review", "my-skill",
-        "--concept", "Blood pressure screening", "--exclude",
+        "--concept", "Blood pressure screening", "--exclude-all",
         "--finalize", "--reviewer", "batch-reviewer", "--force",
     ])
     assert result.exit_code == 0, result.output
@@ -644,7 +660,44 @@ def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
     )
     concept_names = [c["name"] for c in artifact["concepts"]]
     assert "Hypertension" in concept_names
-    assert "Blood pressure screening" not in concept_names
+    assert "Blood pressure screening" in concept_names
+    # Blood pressure screening has no approved code → no codes key
+    bp = next(c for c in artifact["concepts"] if c["name"] == "Blood pressure screening")
+    assert "codes" not in bp
+
+
+def test_review_concepts_approve_and_exclude_individual_codes(tmp_repo):
+    """--approve-code and --exclude-code set approved (y/n) on specific code rows only."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    # Enrich Hypertension with two candidates
+    result = runner.invoke(promote, [
+        "concept", "enrich", "my-skill",
+        "--concept", "Hypertension",
+        "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
+        "--candidate", "ICD-10|I10|Essential (primary) hypertension",
+    ])
+    assert result.exit_code == 0, result.output
+
+    # Approve the SNOMED code; exclude the ICD-10 code
+    result = runner.invoke(promote, [
+        "concept", "review", "my-skill",
+        "--concept", "Hypertension",
+        "--approve-code", "38341003",
+        "--exclude-code", "I10",
+    ])
+    assert result.exit_code == 0, result.output
+
+    import csv as _csv
+    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
+    with open(csv_path) as f:
+        rows = list(_csv.DictReader(f))
+    hyp_status = {r["code"]: r["approved (y/n)"] for r in rows if r["concept_name"] == "Hypertension" and r["code"]}
+    assert hyp_status["38341003"] == "y"
+    assert hyp_status["I10"] == "n"
 
 
 def test_enrich_multiple_candidates_single_call(tmp_repo):
@@ -685,16 +738,16 @@ def test_review_concepts_standalone_finalize_seals_manually_edited_csv(tmp_repo)
 
     _enrich_two_concepts(tmp_repo, runner)
 
-    # Manually edit the CSV to approve Hypertension and exclude Blood pressure screening
+    # Manually edit the CSV to approve Hypertension and reject Blood pressure screening
     import csv as _csv
     csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
     with open(csv_path) as f:
         rows = list(_csv.DictReader(f))
     for r in rows:
         if r["concept_name"] == "Hypertension" and r["system"]:
-            r["code status (approve/reject)"] = "approve"
-        elif r["concept_name"] == "Blood pressure screening":
-            r["remove concept (true/false)"] = "true"
+            r["approved (y/n)"] = "y"
+        elif r["concept_name"] == "Blood pressure screening" and r["system"]:
+            r["approved (y/n)"] = "n"
     fieldnames = list(rows[0].keys()) if rows else []
     with open(csv_path, "w", newline="") as f:
         writer = _csv.DictWriter(f, fieldnames=fieldnames)
@@ -715,7 +768,11 @@ def test_review_concepts_standalone_finalize_seals_manually_edited_csv(tmp_repo)
     )
     concept_names = [c["name"] for c in artifact["concepts"]]
     assert "Hypertension" in concept_names
-    assert "Blood pressure screening" not in concept_names
+    assert "Blood pressure screening" in concept_names
+    hyp = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
+    assert hyp["codes"][0]["code"] == "38341003"
+    bp = next(c for c in artifact["concepts"] if c["name"] == "Blood pressure screening")
+    assert "codes" not in bp
 
 
 def test_review_concepts_finalize_requires_reviewer(tmp_repo):
@@ -729,6 +786,31 @@ def test_review_concepts_finalize_requires_reviewer(tmp_repo):
     ])
     assert result.exit_code != 0
     assert "--reviewer is required" in result.output
+
+
+def test_review_concepts_finalize_blocks_when_code_rows_lack_status(tmp_repo):
+    """--finalize raises UsageError when a code row has no approved value."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    _enrich_two_concepts(tmp_repo, runner)
+
+    # Approve only Hypertension; leave Blood pressure screening unenriched/undecided
+    runner.invoke(promote, [
+        "concept", "review", "my-skill",
+        "--concept", "Hypertension", "--approve-all",
+    ])
+
+    # Try to finalize — Blood pressure screening has a code row but no status
+    result = runner.invoke(promote, [
+        "concept", "review", "my-skill",
+        "--finalize", "--reviewer", "reviewer1", "--force",
+    ])
+    assert result.exit_code != 0
+    assert "missing a valid 'approved' value" in result.output
+    assert "Blood pressure screening" in result.output
 
 
 def test_review_concepts_finalize_unchanged_csv_requires_force(tmp_repo):
@@ -785,6 +867,116 @@ def test_review_concepts_concept_with_no_action_flags_errors(tmp_repo):
     ])
     assert result.exit_code != 0
     assert "--concept requires at least one of" in result.output
+
+
+def test_concept_add_creates_placeholder_row(tmp_repo):
+    """concept add appends a placeholder row with sources=custom and empty code columns."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    runner.invoke(promote, ["plan", "my-skill"])
+
+    result = runner.invoke(promote, [
+        "concept", "add", "my-skill",
+        "--concept", "Frailty",
+        "--type", "finding",
+    ])
+    assert result.exit_code == 0, result.output
+    assert "Frailty" in result.output
+
+    import csv as _csv
+    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
+    with open(csv_path) as f:
+        rows = list(_csv.DictReader(f))
+    frailty = next((r for r in rows if r["concept_name"] == "Frailty"), None)
+    assert frailty is not None
+    assert frailty["concept_type"] == "finding"
+    assert frailty["sources"] == "custom"
+    assert frailty["context"] == ""
+    assert frailty["system"] == ""
+    assert frailty["code"] == ""
+
+
+def test_concept_add_errors_if_concept_already_exists(tmp_repo):
+    """concept add raises UsageError when the concept name already exists in CSV."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    runner.invoke(promote, ["plan", "my-skill"])
+
+    result = runner.invoke(promote, [
+        "concept", "add", "my-skill",
+        "--concept", "Hypertension", "--type", "disorder",
+    ])
+    assert result.exit_code != 0
+    assert "already exists" in result.output
+
+
+def test_concept_add_errors_if_csv_not_found(tmp_repo):
+    """concept add raises UsageError before promote plan has run."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    # Intentionally skip promote plan so no CSV exists
+    result = runner.invoke(promote, [
+        "concept", "add", "my-skill",
+        "--concept", "Frailty", "--type", "finding",
+    ])
+    assert result.exit_code != 0
+
+
+def test_concept_add_then_enrich_then_write_roundtrip(tmp_repo):
+    """Full flow: concept add → enrich → review --approve-all → write → appears in concepts.yaml."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    runner.invoke(promote, ["plan", "my-skill"])
+
+    # Add a custom concept
+    result = runner.invoke(promote, [
+        "concept", "add", "my-skill",
+        "--concept", "Frailty", "--type", "finding",
+    ])
+    assert result.exit_code == 0, result.output
+
+    # Enrich it
+    result = runner.invoke(promote, [
+        "concept", "enrich", "my-skill",
+        "--concept", "Frailty",
+        "--candidate", "SNOMED-CT|248279007|Frailty (finding)",
+    ])
+    assert result.exit_code == 0, result.output
+
+    # Also approve the two source concepts so finalize gate passes
+    runner.invoke(promote, [
+        "concept", "enrich", "my-skill", "--concept", "Hypertension",
+        "--candidate", "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)",
+    ])
+    runner.invoke(promote, [
+        "concept", "enrich", "my-skill", "--concept", "Blood pressure screening",
+        "--candidate", "SNOMED-CT|171207006|Blood pressure screening (procedure)",
+    ])
+    runner.invoke(promote, [
+        "concept", "review", "my-skill", "--concept", "Hypertension", "--approve-all",
+    ])
+    runner.invoke(promote, [
+        "concept", "review", "my-skill", "--concept", "Blood pressure screening", "--approve-all",
+    ])
+
+    # Approve Frailty
+    result = runner.invoke(promote, [
+        "concept", "review", "my-skill", "--concept", "Frailty", "--approve-all",
+        "--finalize", "--reviewer", "test-reviewer", "--force",
+    ])
+    assert result.exit_code == 0, result.output
+    assert "finalized" in result.output
+
+    # Write and verify
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    artifact = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text()
+    )
+    frailty = next((c for c in artifact["concepts"] if c["name"] == "Frailty"), None)
+    assert frailty is not None
+    assert frailty["codes"][0]["code"] == "248279007"
 
 
 def test_write_concepts_requires_approved_packet(tmp_repo):

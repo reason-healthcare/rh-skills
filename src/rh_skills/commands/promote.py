@@ -136,7 +136,7 @@ def _concept_artifact_path(topic: str) -> Path:
 _CONCEPT_CSV_FIELDNAMES = [
     "concept_name", "concept_type", "sources", "context", "lookup_query", "lookup_notes",
     "system", "code", "display", "distance",
-    "confidence (high/medium/low)", "code status (approve/reject)", "remove concept (true/false)", "comment",
+    "confidence (high/medium/low)", "approved (y/n)", "comment",
 ]
 
 
@@ -1076,8 +1076,7 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
             "display": "",
             "distance": "",
             "confidence (high/medium/low)": "",
-            "code status (approve/reject)": "",
-            "remove concept (true/false)": "",
+            "approved (y/n)": "",
             "comment": "",
         }
         for c in concepts
@@ -1102,9 +1101,8 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
     meta = _load_concept_review_meta(topic)
     csv_rows = _load_csv(csv_path)
 
-    # Collect per-concept metadata, excluded set, and approved codes
-    concept_meta: dict[str, dict] = {}   # name → {type, sources, comment}
-    excluded_concepts: set[str] = set()
+    # Collect per-concept metadata and approved codes
+    concept_meta: dict[str, dict] = {}   # name → {type, sources, context, comment}
     approved_by_concept: dict[str, list[dict]] = {}
 
     for row in csv_rows:
@@ -1115,11 +1113,10 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
             concept_meta[name] = {
                 "type": row.get("concept_type", "").strip(),
                 "sources": [s.strip() for s in row.get("sources", "").split(";") if s.strip()],
+                "context": row.get("context", "").strip(),
                 "comment": row.get("comment", "").strip(),
             }
-        if row.get("remove concept (true/false)", "").strip().lower() in ("true", "y", "yes"):
-            excluded_concepts.add(name)
-        if row.get("code status (approve/reject)", "").strip().lower() in ("approve", "y", "yes") and name not in excluded_concepts:
+        if row.get("approved (y/n)", "").strip().lower() in ("y", "yes", "approve", "approved"):
             approved_by_concept.setdefault(name, [])
             system = row.get("system", "").strip()
             code = row.get("code", "").strip()
@@ -1134,12 +1131,12 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
                         {k: v for k, v in {"system": system, "code": code, "display": display}.items() if v}
                     )
 
-    # Build concept rows: all non-excluded concepts, with or without codes
+    # Build concept rows
     concept_rows = []
     for name, info in concept_meta.items():
-        if name in excluded_concepts:
-            continue
         concept_row: dict = {"name": name, "type": info["type"]}
+        if info.get("context"):
+            concept_row["context"] = info["context"]
         codes = approved_by_concept.get(name, [])
         if codes:
             concept_row["codes"] = codes
@@ -1147,11 +1144,10 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
             concept_row["notes"] = info["comment"]
         concept_rows.append(concept_row)
 
-    # derived_from: union of all non-excluded concept sources
+    # derived_from: union of all concept sources
     all_sources: set[str] = set()
-    for name, info in concept_meta.items():
-        if name not in excluded_concepts:
-            all_sources.update(info.get("sources", []))
+    for info in concept_meta.values():
+        all_sources.update(info.get("sources", []))
     derived_from = sorted(all_sources)
 
     artifact = {
@@ -2254,7 +2250,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                 "lookup_notes": lookup_notes or "",
                 "system": "", "code": "", "display": "",
                 "distance": "", "confidence (high/medium/low)": "",
-                "code status (approve/reject)": "", "remove concept (true/false)": "", "comment": "",
+                "approved (y/n)": "", "comment": "",
             }
             other_rows = [r for r in rows if r.get("concept_name", "").strip() != concept_name]
             rows = other_rows + [placeholder]
@@ -2335,8 +2331,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                     "display": new_display,
                     "distance": str(new_dist) if new_dist is not None else "",
                     "confidence (high/medium/low)": new_conf_str,
-                    "code status (approve/reject)": "",
-                    "remove concept (true/false)": "",
+                    "approved (y/n)": "",
                     "comment": "",
                 }
                 existing_candidate_rows.append(new_row)
@@ -2379,25 +2374,81 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
     )
 
 
+@concept.command("add")
+@click.argument("topic")
+@click.option("--concept", "concept_name", required=True, metavar="NAME", help="Concept name to add.")
+@click.option("--type", "concept_type", required=True, metavar="TYPE", help="SNOMED semantic tag, e.g. finding | disorder | procedure.")
+def add_concept(topic, concept_name, concept_type):
+    """Add a custom concept placeholder to concepts-review.csv.
+
+    \b
+    Use this to introduce a concept not extracted from source documents.
+    Sources defaults to 'custom'. After adding, run 'concept enrich' to
+    attach candidate codes.
+
+    \b
+    Example:
+      rh-skills promote concept add <topic> --concept "Frailty" --type finding
+    """
+    require_topic(require_tracking(), topic)
+    csv_path = _concept_review_csv_path(topic)
+    if not csv_path.exists():
+        raise click.UsageError(
+            f"No concept review CSV found. Run 'rh-skills promote plan {topic}' first."
+        )
+    with _lock_concept_review(csv_path):
+        meta = _load_concept_review_meta(topic)
+        if meta.get("status") == "approved":
+            raise click.UsageError("Concept review is already approved.")
+        rows = _load_csv(csv_path)
+        existing_names = {r.get("concept_name", "").strip().casefold() for r in rows}
+        if concept_name.strip().casefold() in existing_names:
+            raise click.UsageError(
+                f"Concept '{concept_name}' already exists in concepts-review.csv."
+            )
+        placeholder: dict = {
+            "concept_name": concept_name,
+            "concept_type": concept_type,
+            "sources": "custom",
+            "context": "",
+            "lookup_query": concept_name,
+            "lookup_notes": "",
+            "system": "", "code": "", "display": "",
+            "distance": "", "confidence (high/medium/low)": "",
+            "approved (y/n)": "", "comment": "",
+        }
+        rows.append(placeholder)
+        _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
+        meta["csv_checksum"] = _csv_checksum(csv_path)
+        _write_concept_review_meta(topic, meta)
+    log_info(f"Added custom concept '{concept_name}' (type: {concept_type}).")
+
+
 @concept.command("review")
 @click.argument("topic")
 @click.option("--concept", "concept_name", default=None, metavar="NAME", help="Concept name to update.")
-@click.option("--approved", "approved_val", default=None, metavar="y", help="Set approved=y on all candidate rows for the concept.")
-@click.option("--exclude", "exclude", is_flag=True, help="Set exclude=y on the first row for the concept (removes it from concepts.yaml).")
+@click.option("--approve-all", "approve_all", is_flag=True, help="Set approved=y on all candidate rows for the concept.")
+@click.option("--exclude-all", "exclude_all", is_flag=True, help="Set approved=n on all candidate rows for the concept.")
+@click.option("--approve-code", "approve_codes", multiple=True, metavar="CODE", help="Set approved=y on the row matching this code value.")
+@click.option("--exclude-code", "exclude_codes", multiple=True, metavar="CODE", help="Set approved=n on the row matching this code value.")
 @click.option("--note", default="", metavar="TEXT", help="Set comment on the first row for the concept.")
 @click.option("--finalize", is_flag=True, help="Seal the review (status: approved). Requires --reviewer.")
 @click.option("--reviewer", default=None, metavar="NAME", help="Reviewer name. Required for --finalize.")
 @click.option("--force", is_flag=True, help="Bypass the checksum unchanged warning during --finalize.")
-def review_concepts(topic, concept_name, approved_val, exclude, note, finalize, reviewer, force):
+def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes, exclude_codes, note, finalize, reviewer, force):
     """Update concept decisions in concepts-review.csv, then finalize.
 
     \b
     Non-interactive (AI agent):
       # Approve all candidate rows for a concept:
-      rh-skills promote concept review <topic> --concept "Hypertension" --approved y
+      rh-skills promote concept review <topic> --concept "Hypertension" --approve-all
 
-      # Exclude a concept from concepts.yaml:
-      rh-skills promote concept review <topic> --concept "Rare finding" --exclude
+      # Exclude all candidate rows for a concept:
+      rh-skills promote concept review <topic> --concept "Hypertension" --exclude-all
+
+      # Approve or exclude a specific code:
+      rh-skills promote concept review <topic> --concept "Hypertension" --approve-code 38341003
+      rh-skills promote concept review <topic> --concept "Hypertension" --exclude-code I10
 
       # Add a comment to a concept:
       rh-skills promote concept review <topic> --concept "Hypertension" --note "Confirmed SNOMED"
@@ -2410,7 +2461,7 @@ def review_concepts(topic, concept_name, approved_val, exclude, note, finalize, 
     """
     if not concept_name and not finalize:
         raise click.UsageError(
-            "Provide --concept with --approved, --exclude, or --note; or use --finalize."
+            "Provide --concept with at least one of --approve-all, --exclude-all, --approve-code, --exclude-code, or --note; or use --finalize."
         )
 
     require_topic(require_tracking(), topic)
@@ -2422,8 +2473,8 @@ def review_concepts(topic, concept_name, approved_val, exclude, note, finalize, 
 
     # --- per-concept update ---
     if concept_name:
-        if not approved_val and not exclude and not note:
-            raise click.UsageError("--concept requires at least one of --approved, --exclude, or --note.")
+        if not approve_all and not exclude_all and not approve_codes and not exclude_codes and not note:
+            raise click.UsageError("--concept requires at least one of --approve-all, --exclude-all, --approve-code, --exclude-code, or --note.")
         with _lock_concept_review(csv_path):
             meta = _load_concept_review_meta(topic)
             if meta.get("status") == "approved":
@@ -2432,22 +2483,36 @@ def review_concepts(topic, concept_name, approved_val, exclude, note, finalize, 
             concept_rows = [r for r in rows if r.get("concept_name", "").strip() == concept_name]
             if not concept_rows:
                 raise click.UsageError(f"Concept '{concept_name}' not found in concepts-review.csv.")
-            if approved_val and approved_val.lower() in ("y", "yes", "approve"):
+            if approve_all:
                 for r in concept_rows:
                     if r.get("system", "").strip() or r.get("code", "").strip():
-                        r["code status (approve/reject)"] = "approve"
-            if exclude:
-                concept_rows[0]["remove concept (true/false)"] = "true"
+                        r["approved (y/n)"] = "y"
+            if exclude_all:
+                for r in concept_rows:
+                    if r.get("system", "").strip() or r.get("code", "").strip():
+                        r["approved (y/n)"] = "n"
+            for code_val in approve_codes:
+                for r in concept_rows:
+                    if r.get("code", "").strip() == code_val.strip():
+                        r["approved (y/n)"] = "y"
+            for code_val in exclude_codes:
+                for r in concept_rows:
+                    if r.get("code", "").strip() == code_val.strip():
+                        r["approved (y/n)"] = "n"
             if note:
                 concept_rows[0]["comment"] = note
             _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
             meta["csv_checksum"] = _csv_checksum(csv_path)
             _write_concept_review_meta(topic, meta)
         actions = []
-        if approved_val and approved_val.lower() == "y":
-            actions.append("approved")
-        if exclude:
-            actions.append("excluded")
+        if approve_all:
+            actions.append("approve-all")
+        if exclude_all:
+            actions.append("exclude-all")
+        if approve_codes:
+            actions.append(f"approve-code: {', '.join(approve_codes)}")
+        if exclude_codes:
+            actions.append(f"exclude-code: {', '.join(exclude_codes)}")
         if note:
             actions.append("note set")
         log_info(f"Updated '{concept_name}': {', '.join(actions)}.")
@@ -2466,13 +2531,26 @@ def review_concepts(topic, concept_name, approved_val, exclude, note, finalize, 
                 "Edit the CSV (approve or exclude rows) then re-run, or use --force to bypass."
             )
         rows = _load_csv(csv_path)
-        all_concept_names = {r.get("concept_name", "").strip() for r in rows if r.get("concept_name", "").strip()}
-        all_excluded = all(
-            any(r.get("remove concept (true/false)", "").strip().lower() in ("true", "y", "yes") for r in rows if r.get("concept_name", "").strip() == name)
-            for name in all_concept_names
-        )
-        if all_excluded:
-            log_warn("All concepts are excluded — concepts.yaml will be empty.")
+
+        # Gate: every code row must have a valid approved value
+        _VALID_APPROVED = {"y", "yes", "n", "no", "approve", "approved", "reject", "rejected"}
+        missing_status: list[str] = []
+        for r in rows:
+            n = r.get("concept_name", "").strip()
+            if not n:
+                continue
+            has_code = bool(r.get("system", "").strip() or r.get("code", "").strip())
+            if not has_code:
+                continue
+            status_val = r.get("approved (y/n)", "").strip().lower()
+            if status_val not in _VALID_APPROVED:
+                code_id = r.get("code", "").strip() or r.get("system", "").strip()
+                missing_status.append(f"{n!r} (code: {code_id})")
+        if missing_status:
+            raise click.UsageError(
+                "Cannot finalize: the following code rows are missing a valid 'approved' value "
+                "(must be 'y' or 'n'):\n  " + "\n  ".join(missing_status)
+            )
         meta["status"] = "approved"
         meta["reviewer"] = reviewer
         meta["reviewed_at"] = now_iso()
