@@ -23,6 +23,8 @@ metadata:
   writes_via_cli:
     - "rh-skills promote derive"
     - "rh-skills promote concept add"
+    - "rh-skills promote concept enrich"
+    - "rh-skills promote concept relate"
     - "rh-skills promote concept review"
     - "rh-skills validate"
     - "rh-skills render"
@@ -38,7 +40,7 @@ metadata:
     - tool: reasonhub-search_rxnorm
       when: plan — proposing terminology/value-set artifacts; search medication concepts
     - tool: reasonhub-codesystem_lookup
-      when: plan — resolving canonical display name or UCUM unit for a candidate code
+      when: plan — resolving canonical display name or UCUM unit for a candidate code; review — discovering attribute relationships on a SNOMED concept before semantic expansion
 ---
 
 # rh-inf-extract
@@ -417,7 +419,7 @@ to run until the plan is approved.**
 1. Enrich all concepts with MCP (Step 1 below) — no human gate, proceed directly
 2. Present batch proposal and get reviewer confirmation (Step 2)
 3. Execute concept decisions via `concept review` (Step 3)
-4. Then run `rh-skills promote approve --finalize` for artifacts
+4. Approve artifacts via `rh-skills promote approve` (Step 4 below)
 
 Do not attempt step 4 before step 3 is complete — the CLI will hard-block.
 
@@ -669,14 +671,105 @@ rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
 rh-skills promote concept review <topic> --finalize --reviewer "<name>"
 ```
 
-`--approve-all` — sets `approved (y/n) = y` on all code rows (rows with a non-blank code) for the concept.
-`--exclude-all` — sets `approved (y/n) = n` on all code rows for the concept.
+**Finalize gate**: `--finalize` only checks `candidate` rows — every candidate code row must have `approved (y/n)` set to `y` or `n`. `concept` rows (placeholder header rows with no code, written when the plan is first created) and `related` rows (added via `concept relate`) are both exempt from this gate; unapproved `related` rows are silently omitted from `concepts.yaml`.
+
+`--approve-all` — sets `approved (y/n) = y` on all **candidate** rows (rows with a non-blank code and `row_type: candidate`) for the concept. Does **not** affect `concept` or `related` rows.
+`--exclude-all` — sets `approved (y/n) = n` on all **candidate** rows for the concept. Does not affect `concept` or `related` rows.
 `--approve-code CODE` / `--exclude-code CODE` — sets `approved (y/n)` on the single row matching that code value; repeatable.
 `--note TEXT` — sets the `comment` field on the first row for the concept.
 `--reset` (on `concept enrich`) — clears all rows for a concept and re-adds a blank placeholder row.
 `--force` — bypasses the "CSV unchanged" soft-block during `--finalize`. Required when using CLI-only approval (CLI commands update the checksum each write, so the checksum will appear unchanged from the agent's perspective).
 
-**⚠ Concerns must be resolved before approval.** If `rh-skills promote concerns <topic>`
+### Step 3b — Semantic expansion via `concept relate` (optional)
+
+After `concept enrich` completes and before `--finalize`, the agent MAY perform
+hierarchy traversal for any enriched SNOMED candidate code — **approval of the
+parent candidate is not required before running `concept relate`**. This step is
+optional — run it when:
+- The reviewer requests broader or narrower value set coverage
+- The concept type is `condition`, `disorder`, or `procedure` and any candidate
+  is a high-level SNOMED code that likely has clinically relevant subtypes
+- A candidate has a discoverable clinical attribute (finding site, causative agent,
+  associated morphology) that points to a set of related codes
+- A cross-map equivalent in another system (e.g. ICD-10-CM ↔ SNOMED) would be valuable
+
+**How to run it:**
+
+1. Use SNOMED semantic queries to discover codes that stand in a named
+   relationship to the candidate:
+   - **IS-A hierarchy**: find direct subtypes or supertypes of the candidate code
+   - **Attribute relationships**: look up the candidate's SNOMED attribute
+     relationships (finding site, causative agent, associated morphology, etc.)
+     and find other codes sharing those attributes
+   - **Non-SNOMED candidates**: find the SNOMED equivalent first via semantic
+     search, then apply the above. Use `--basis cross-map` and `--relation
+     same_as` or `possibly_equivalent_to` for the bridge codes found
+
+   **These queries may return large or truncated sets. The goal is discovering
+   which codes stand in a meaningful semantic relationship to the candidate —
+   not producing an exhaustive expansion. Select a representative, clinically
+   meaningful subset to record via `concept relate`. The resulting
+   `related_codes[]` in `concepts.yaml` is a curated relational annotation,
+   not a complete ValueSet.**
+
+   **Do not add a related code that is already a primary candidate row for the
+   same concept.** If the code was already surfaced by the enrich step and is
+   visible to the reviewer in the batch proposal, recording it again as a
+   `related` row is redundant — the reviewer can approve or exclude it there.
+   The CLI will warn if this occurs but will still write the row.
+
+2. For each related code found, call `concept relate`:
+   ```sh
+   rh-skills promote concept relate <topic> \
+     --concept "<name>" \
+     --source-code <candidate-code> \
+     --source-description "<display of the source candidate>" \
+     --candidate "system|code|display[|distance[|confidence]]" \
+     --relation <relation> \
+     --basis <basis> \
+     --method mcp
+   ```
+   `--source-description` is optional but recommended when MCP is the source —
+   pass the display name of the source candidate so reviewers can read the
+   related row without having to cross-reference the enrich table.
+   When MCP is the source (`--method mcp`), include the `distance` and
+   `confidence` fields exactly as returned — same rules as `concept enrich`:
+   `distance` is a float (lower = closer), `confidence` is an optional string
+   label (`high`, `medium`, `low`). If MCP returns only a numeric distance with
+   no label, pass it in position 4; the CLI will derive the label automatically.
+   Do not transform or omit these values.
+   Valid `--relation` values: `is_a` | `has_subtype` | `associated_with` |
+   `finding_site` | `causative_agent` | `due_to` | `has_interpretation` |
+   `method` | `procedure_site` | `same_as` | `possibly_equivalent_to` |
+   `narrower_than` | `broader_than`
+
+   Valid `--basis` values: `snomed-hierarchy` | `snomed-rf2-map` |
+   `snomed-refset` | `cross-map` | `asserted`
+
+3. Present a batch table of all related code rows to the reviewer — same format
+   as Step 2. Include columns: `Source Code`, `Source Description`, `System`, `Code`, `Display`,
+   `Relation`, `Basis`. Wait for confirmation before executing decisions.
+
+4. Execute approvals/exclusions for related rows using `--approve-code` /
+   `--exclude-code` (not `--approve-all` / `--exclude-all` — those skip related rows):
+   ```sh
+   rh-skills promote concept review <topic> --concept "<name>" --approve-code <related-code>
+   rh-skills promote concept review <topic> --concept "<name>" --exclude-code <related-code>
+   ```
+
+Approved `related` rows are written as `related_codes[]` nested under their
+parent code entry in `concepts.yaml` during `concept write`.
+
+### Step 4 — Approve artifacts
+
+Artifact approval is distinct from terminology/concept approval. Steps 1–3 handle
+terminology codes in `concepts-review.csv`; this step records decisions on the
+structured artifacts proposed in `extract-plan.yaml`.
+
+**⚠ Concepts must be finalized before artifact approval.** Complete Steps 1–3
+above before running `rh-skills promote approve --finalize`.
+
+**⚠ Concerns must be resolved before artifact approval.** If `rh-skills promote concerns <topic>`
 still shows open concerns at this point, re-run plan mode — do not run
 `rh-skills promote approve` while concerns remain open.
 
