@@ -162,13 +162,27 @@ rh-skills promote concept enrich <topic> --concept <name> \
 # Omit --candidate when MCP returned no results; still call to record lookup.
 # ... repeat for every concept ...
 
-# Approve all candidate codes for a concept:
+# Add a related code (semantic expansion of an approved candidate):
+rh-skills promote concept relate <topic> \
+  --concept "<name>" \
+  --source-code <candidate-code> \
+  --candidate "system|code|display" \
+  --relation <relation> \
+  --basis <basis> \
+  --method <method>
+# --relation: is_a | has_subtype | associated_with | finding_site | causative_agent |
+#             due_to | has_interpretation | method | procedure_site |
+#             same_as | possibly_equivalent_to | narrower_than | broader_than
+# --basis:    snomed-hierarchy | snomed-rf2-map | snomed-refset | cross-map | asserted
+# --method:   mcp | manual
+
+# Approve all candidate codes for a concept (does not affect related rows):
 rh-skills promote concept review <topic> --concept "<name>" --approve-all
 
-# Exclude all candidate codes for a concept:
+# Exclude all candidate codes for a concept (does not affect related rows):
 rh-skills promote concept review <topic> --concept "<name>" --exclude-all
 
-# Approve or exclude a specific code by value:
+# Approve or exclude a specific code by value (works for both candidate and related rows):
 rh-skills promote concept review <topic> --concept "<name>" \
   --approve-code <code> --exclude-code <other-code>
 
@@ -202,6 +216,11 @@ This writes `topics/<topic>/structured/concepts.yaml`.
 | `confidence (high/medium/low)` | Confidence label from MCP |
 | `approved (y/n)` | Set to `y` to include this code in `concepts.yaml`; `n` to exclude it |
 | `comment` | Reviewer note |
+| `row_type` | `candidate` (default) or `related`; discriminates candidate codes from semantic expansion rows |
+| `relation` | SNOMED CT relationship type for `related` rows: `is_a` \| `has_subtype` \| `associated_with` \| `finding_site` \| `causative_agent` \| `due_to` \| `has_interpretation` \| `method` \| `procedure_site` \| `same_as` \| `possibly_equivalent_to` \| `narrower_than` \| `broader_than` |
+| `relation_basis` | Terminological evidence for `related` rows: `snomed-hierarchy` \| `snomed-rf2-map` \| `snomed-refset` \| `cross-map` \| `asserted` |
+| `method` | How the code was discovered — applies to all rows: `mcp` (set automatically by `concept enrich` and `concept relate --method mcp`) \| `manual` (set automatically by `concept add`; also used with `concept relate --method manual`) |
+| `source_code` | Code value of the `candidate` row this `related` row expands from (blank on candidate rows) |
 
 Use `--lookup-notes` on `concept enrich` to record why no candidates were found after all required MCP searches returned zero results:
 ```sh
@@ -211,10 +230,12 @@ rh-skills promote concept enrich <topic> --concept "<name>" \
 This writes to the `lookup_notes` column and marks the concept as lookup-complete with zero candidates.
 
 **Approved semantics:**
-- Every code row (non-empty `system` or `code`) must have `approved (y/n)` set to `y` or `n` before `--finalize` succeeds
-- A concept with at least one `approved (y/n) = y` row → `codes` list written in `concepts.yaml`
-- A concept with no `approved (y/n) = y` rows → appears in `concepts.yaml` without a `codes` key
-- Custom concepts (`sources: custom`) follow the same rules — add codes via `concept enrich`
+- Every `candidate` code row (non-empty `system` or `code`) must have `approved (y/n)` set to `y` or `n` before `--finalize` succeeds; `related` rows are exempt from this gate
+- A concept with at least one `approved (y/n) = y` candidate row → `codes` list written in `concepts.yaml`
+- A concept with no `approved (y/n) = y` candidate rows → appears in `concepts.yaml` without a `codes` key
+- `related` rows with `approved (y/n) = y` → written as `related_codes[]` nested under the parent code entry in `concepts.yaml`; unapproved related rows are silently omitted
+- `--approve-all` / `--exclude-all` only affect `candidate` rows; use `--approve-code` / `--exclude-code` to approve individual `related` rows
+- Custom concepts (`sources: custom`) follow the same rules — add codes via `concept enrich`, related codes via `concept relate`
 
 #### concepts-review-meta.yaml schema
 
@@ -242,15 +263,25 @@ concepts:
       - system: SNOMED-CT
         code: 44169009
         display: Anosmia (finding)
+        method: mcp                                # present on all approved codes
+        related_codes:                             # optional; only present if related rows were approved
+          - system: SNOMED-CT
+            code: 44169009
+            display: Loss of smell (finding)
+            relation: same_as
+            relation_basis: snomed-rf2-map
+            method: mcp
       - system: ICD-10-CM
         code: R43.0
         display: Anosmia
+        method: mcp
   - name: Frailty           # custom concept — sources: custom, no context
     type: finding
     codes:
       - system: SNOMED-CT
         code: 248279007
         display: Frailty (finding)
+        method: manual
 ```
 
 ---
