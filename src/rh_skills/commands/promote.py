@@ -1240,7 +1240,7 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
     append_topic_event(
         tracking,
         topic,
-        "structured_derived",
+        "concepts_written",
         "Derived concepts terminology artifact from CSV review",
     )
     save_tracking(tracking)
@@ -2081,7 +2081,6 @@ def approve(topic, artifact_name, decision, notes, add_concerns, add_sources, re
 
 _CONFIDENCE_LABELS = {"high", "medium", "low"}
 
-
 def _confidence_from_distance(distance: float) -> str:
     """Infer a confidence label from a numeric distance score (lower = closer match)."""
     if distance < 0.25:
@@ -2481,9 +2480,9 @@ def add_concept(topic, concept_name, concept_type):
 @click.option(
     "--relation", "relation", required=True,
     type=click.Choice([
-        "is_a", "has_subtype", "associated_with", "finding_site", "causative_agent",
-        "due_to", "has_interpretation", "method", "procedure_site",
-        "same_as", "possibly_equivalent_to", "narrower_than", "broader_than",
+        "is_a", "has_subtype", "associated_with",
+        "due_to", "has_interpretation", "method",
+        "same_as", "possibly_equivalent_to", "narrower_than",
     ]),
     metavar="REL",
     help="SNOMED CT relationship type.",
@@ -2574,13 +2573,15 @@ def relate_concept(topic, concept_name, source_code, raw_candidate, relation, re
                 f"Available candidate codes: {', '.join(sorted(candidate_codes)) or 'none'}."
             )
 
-        # Deduplicate by system+code+source_code within related rows
+        # Deduplicate: same source_code+system+code as a related row under this concept
+        # (the same related code may appear under different source candidates, but not twice
+        # under the same source candidate)
         dup = next(
             (
                 r for r in rows
                 if r.get("concept_name", "").strip() == concept_name
                 and r.get("row_type", "").strip().lower() == "related"
-                and r.get("source_code", "").strip() == source_code.strip()
+                and r.get("source_code", "").strip().casefold() == source_code.strip().casefold()
                 and r.get("system", "").strip().casefold() == rel_system.casefold()
                 and r.get("code", "").strip().casefold() == rel_code.casefold()
             ),
@@ -2588,11 +2589,11 @@ def relate_concept(topic, concept_name, source_code, raw_candidate, relation, re
         )
         if dup is not None:
             raise click.UsageError(
-                f"Related code '{rel_system}|{rel_code}' already exists for concept '{concept_name}' "
-                f"under source code '{source_code}'."
+                f"Related code '{rel_system}|{rel_code}' is already recorded for concept '{concept_name}' "
+                f"under source candidate '{source_code}' — cannot add the same related code twice for the same candidate."
             )
 
-        # Warn if the related code is already a primary candidate for this concept
+        # Reject if the related code is already a primary candidate for this concept
         already_candidate = next(
             (
                 r for r in rows
@@ -2604,10 +2605,9 @@ def relate_concept(topic, concept_name, source_code, raw_candidate, relation, re
             None,
         )
         if already_candidate is not None:
-            log_warn(
+            raise click.UsageError(
                 f"Related code '{rel_system}|{rel_code}' is already a primary candidate for "
-                f"concept '{concept_name}' — adding as related anyway, but consider whether "
-                f"this is intentional."
+                f"concept '{concept_name}' — do not add primary candidates as related rows."
             )
 
         first_concept_row = next(
@@ -2788,6 +2788,14 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
         meta["review_artifact"] = str(csv_path)
         _write_concept_review_meta(topic, meta)
         _sync_plan_concept_review(topic, meta)
+        tracking = require_tracking()
+        append_topic_event(
+            tracking,
+            topic,
+            "concept_review_approved",
+            f"Concept review finalized by '{reviewer}'",
+        )
+        save_tracking(tracking)
         log_info(
             f"Concept review finalized by '{reviewer}'. "
             f"Run 'rh-skills promote concept write {topic}' during implement to write concepts.yaml."

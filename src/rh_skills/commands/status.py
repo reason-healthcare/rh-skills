@@ -46,6 +46,11 @@ def _has_discovery_plan(topic: str) -> bool:
     return plan_path.exists()
 
 
+def _has_concepts_yaml(topic: str) -> bool:
+    """Return True if concepts.yaml has been written for this topic."""
+    return (repo_root() / "topics" / topic / "structured" / "concepts.yaml").exists()
+
+
 def _next_step_options(sources: int, structured: int, computable: int, topic: str) -> list[tuple[str, str | None]]:
     """Return ordered list of (description, exact_command) options based on lifecycle state."""
     if sources == 0:
@@ -68,11 +73,13 @@ def _next_step_options(sources: int, structured: int, computable: int, topic: st
             ("Re-run ingest if sources need refreshing", f"rh-inf-ingest implement {topic}"),
         ]
     if computable == 0:
-        return [
-            ("Formalize structured artifacts into a computable format (L3)", f"rh-inf-formalize plan {topic}"),
-            ("Run extract-stage verification for existing structured artifacts", f"rh-inf-extract verify {topic}"),
-            ("Check whether any source files have changed since ingest", f"rh-skills status check-changes {topic}"),
-        ]
+        options: list[tuple[str, str | None]] = []
+        if not _has_concepts_yaml(topic):
+            options.append(("Write concepts.yaml from approved concept review", f"rh-skills promote concept write {topic}"))
+        options.append(("Formalize structured artifacts into a computable format (L3)", f"rh-inf-formalize plan {topic}"))
+        options.append(("Run extract-stage verification for existing structured artifacts", f"rh-inf-extract verify {topic}"))
+        options.append(("Check whether any source files have changed since ingest", f"rh-skills status check-changes {topic}"))
+        return options
     return [
         ("No immediate action required — this topic already has computable artifacts", None),
         ("Run unified verification for this topic", f"rh-inf-verify verify {topic}"),

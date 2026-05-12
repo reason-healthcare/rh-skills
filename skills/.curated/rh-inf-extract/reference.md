@@ -131,10 +131,16 @@ Do not run `rh-skills promote concept enrich` for different concepts in parallel
 Execute enrich writes serially, one concept at a time.
 
 
-For quantitative LOINC codes, call `reasonhub-codesystem_lookup` to retrieve
-the recommended `EXAMPLE_UCUM_UNITS`. For all other candidates, do **not** call
-`reasonhub-codesystem_lookup` — the canonical display name is already returned
-by the search tools.
+Before recording any candidate row, call `reasonhub-codesystem_lookup` for that
+code using a best-guess system and use lookup as the normalization gate:
+- if lookup fails because the system is wrong, correct and retry
+- if lookup cannot be resolved to a valid code/system pair, skip that result
+- if lookup confirms `inactive: true`, do not record that candidate
+- if lookup confirms the concept is active, use lookup `system` and `display`
+  as authoritative values in `--candidate`
+
+For quantitative LOINC codes, use the same lookup response to retrieve
+recommended `EXAMPLE_UCUM_UNITS` when needed.
 
 ### candidate_codes[] in the review packet
 
@@ -170,9 +176,9 @@ rh-skills promote concept relate <topic> \
   --relation <relation> \
   --basis <basis> \
   --method <method>
-# --relation: is_a | has_subtype | associated_with | finding_site | causative_agent |
-#             due_to | has_interpretation | method | procedure_site |
-#             same_as | possibly_equivalent_to | narrower_than | broader_than
+# --relation: is_a | has_subtype | associated_with |
+#             due_to | has_interpretation | method |
+#             same_as | possibly_equivalent_to | narrower_than
 # --basis:    snomed-hierarchy | snomed-rf2-map | snomed-refset | cross-map | asserted
 # --method:   mcp | manual
 
@@ -217,7 +223,7 @@ This writes `topics/<topic>/structured/concepts.yaml`.
 | `approved (y/n)` | Set to `y` to include this code in `concepts.yaml`; `n` to exclude it |
 | `comment` | Reviewer note |
 | `row_type` | `candidate` (default) or `related`; discriminates candidate codes from semantic expansion rows |
-| `relation` | SNOMED CT relationship type for `related` rows: `is_a` \| `has_subtype` \| `associated_with` \| `finding_site` \| `causative_agent` \| `due_to` \| `has_interpretation` \| `method` \| `procedure_site` \| `same_as` \| `possibly_equivalent_to` \| `narrower_than` \| `broader_than` |
+| `relation` | SNOMED CT relationship type for `related` rows: `is_a` \| `has_subtype` \| `associated_with` \| `due_to` \| `has_interpretation` \| `method` \| `same_as` \| `possibly_equivalent_to` \| `narrower_than` |
 | `relation_basis` | Terminological evidence for `related` rows: `snomed-hierarchy` \| `snomed-rf2-map` \| `snomed-refset` \| `cross-map` \| `asserted` |
 | `method` | How the code was discovered — applies to all rows: `mcp` (set automatically by `concept enrich` and `concept relate --method mcp`) \| `manual` (set automatically by `concept add`; also used with `concept relate --method manual`) |
 | `source_code` | Code value of the `candidate` row this `related` row expands from (blank on candidate rows) |
@@ -248,7 +254,13 @@ reviewer: <reviewer name>
 csv_checksum: <SHA-256 of concepts-review.csv>
 review_artifact: topics/<topic>/process/plans/concepts-review.csv
 final_artifact: topics/<topic>/structured/concepts.yaml
+relate_status: <pending | complete>   # set by agent after Step 3b; --finalize blocks if pending
 ```
+
+`relate_status` lifecycle:
+- Written as `pending` when the plan is first created (by `rh-skills promote plan`).
+- Set to `complete` by the agent after Step 3b finishes for all concepts; agent appends a `concept_relate_complete` tracking event.
+- `--finalize` on `concept review` is hard-blocked while `relate_status: pending` — there is no waiver path.
 
 #### Final L2 terminology concept schema
 
