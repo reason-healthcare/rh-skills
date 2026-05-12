@@ -126,10 +126,10 @@ concept_entry_fields:
                          display:         display name (optional)
                          relation:        SNOMED CT relationship type; one of:
                                           is_a | has_subtype | associated_with |
-                                          finding_site | causative_agent | due_to |
-                                          has_interpretation | method | procedure_site |
+                                           due_to |
+                                          has_interpretation | method |
                                           same_as | possibly_equivalent_to |
-                                          narrower_than | broader_than
+                                          narrower_than
                          relation_basis:  terminological evidence; one of:
                                           snomed-hierarchy | snomed-rf2-map |
                                           snomed-refset | cross-map | asserted

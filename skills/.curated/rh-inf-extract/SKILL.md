@@ -149,6 +149,10 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
 
 ### Steps
 
+Related-code guidance is handled after candidate enrichment in Review & Approval,
+Step 3b (`concept relate`). Plan-mode steps below focus on search, lookup,
+and candidate recording.
+
 1. Run `rh-skills status show <topic>`. A positive `L1 (sources)` count means extract
    can proceed. If tracking.yaml has no `discovery_planned` event, note in the Review
    Summary that sources were manually ingested.
@@ -210,9 +214,9 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
   **`concepts-review.csv` is the authoritative concept list.** The CLI already
   deduplicates concepts from normalized front matter when it writes this file —
   do NOT re-derive the concept list by reading source body text or source front
-  matter directly. The agent's job is steps 2–3 only:
-   2. run RH MCP terminology lookup for candidate codes (see HUMAN-IN-THE-LOOP below)
-   3. prompt the human to approve or reject concepts
+  matter directly. In this phase, the agent's job is:
+   1. run RH MCP terminology lookup for candidate codes (see HUMAN-IN-THE-LOOP below)
+   2. prompt the human to approve or reject concepts
 
 4. **Check the planner output against your analysis from step 2:**
    - **Completeness**: Does the plan capture all domains you identified?
@@ -277,67 +281,31 @@ Both are written by `rh-skills promote plan <topic>`. Plan mode also appends
       if the same `system|code` pair is submitted more than once, it keeps the
       better entry (lower distance wins; tie: higher confidence wins; tie:
       first-write-wins) and a warning is logged when a duplicate is skipped or replaced.
-   b. If MCP returns a UUID as the code system identifier, resolve it using the
-      `system_name` field from the **same response** before making any additional
-      call. Apply this mapping directly — no MCP call required:
+   b. Before recording any search result, run `reasonhub-codesystem_lookup` for
+      that `code` in its candidate code system and use the lookup response as
+      the normalization gate.
 
-      | system_name (as returned by MCP) | Canonical FHIR URI |
-      |---|---|
-      | ICD10CM, ICD-10-CM | `http://hl7.org/fhir/sid/icd-10-cm` |
-      | SNOMED, SNOMEDCT, SNOMED-CT | `http://snomed.info/sct` |
-      | LOINC | `http://loinc.org` |
-      | RxNorm, RXNORM | `http://www.nlm.nih.gov/research/umls/rxnorm` |
+      For each candidate result:
+      - call `reasonhub-codesystem_lookup(code=<code>, system=<best system hint>)`
+      - if lookup fails because the system hint is wrong, correct the system and retry
+      - if lookup cannot be resolved to a valid code/system pair, skip the result
+      - if lookup confirms the concept is inactive, do not record it as a candidate
+      - if lookup succeeds and the concept is active, use lookup `display` as the
+        candidate display value (lookup display is authoritative) and lookup `system` as the candidate system value (lookup system is authoritative)
 
-      Only call `reasonhub-codesystem_lookup` when (a) `system_name` is absent
-      or not in the table above, or (b) you need the recommended UCUM unit for
-      a quantitative LOINC code. Never record a raw UUID as the `system` field
-      — FHIR tooling will reject unrecognized system identifiers.
-   c. Record **all** candidate codes from every system searched in the
+      Never record a raw UUID as `system` and never record a candidate confirmed
+      inactive by lookup.
+  c. Record every active, lookup-validated candidate from every system searched in the
       artifact's `candidate_codes[]` field in the review packet. Include `code`,
       `system`, `display`, `search_query`, `confidence`, and `distance` for each
-      entry. Do not filter or omit results — the reviewer evaluates and approves
-      or removes codes before implement. **Do not discard results based on
-      distance, confidence level, SNOMED semantic tag, concept category, or any
-      other attribute.** A SNOMED qualifier, attribute, or observable that appears
+    entry. Apply the lookup gate from step (b) first.
+    **Do not discard active results based on distance, confidence level,
+    SNOMED semantic tag, concept category, or other relevance attributes.**
+    A SNOMED qualifier, attribute, or observable that appears
       in a search result for a `procedure` concept is still recorded as a
       candidate — the reviewer decides whether it belongs.
 
-   For each proposed `assessment` artifact, resolve LOINC codes using the
-   reasonhub MCP tools. **This is required, not optional.** If the source
-   text names LOINC codes, treat them as unverified hints only — they must
-   be confirmed via MCP before being written to any artifact. **Never copy
-   codes from the source text into `candidate_codes[]` or the derived artifact.**
-   a. Call `reasonhub-search_loinc` using the full instrument name as the query
-      (e.g., "PHQ-9 Patient Health Questionnaire depression screening panel").
-      Use `top_k=50` so that panel, total-score, and individual item codes for
-      the same instrument often appear in a single response — check whether all
-      scored items are already present before making per-item searches.
-   b. For the top panel result and the total-score code, call
-      `reasonhub-codesystem_lookup` to confirm the canonical display name and
-      verify the `panel-parent` property links items back to the panel.
-   c. For any **scored item not already found** in step (a), call
-      `reasonhub-search_loinc` using the item text as the query. Confirm the top
-      result with `reasonhub-codesystem_lookup`. Prefer codes whose `panel-parent`
-      property matches the panel code found in step (a). Record a `loinc_code`
-      for each item. Minimise calls — if a broad step (a) search already returned
-      all items, skip individual per-item searches entirely.
-   d. Record all candidate codes in the artifact's `candidate_codes[]` field in the
-      review packet, tagged with `use: panel`, `use: total-score`, or
-      `use: item-<n>` to distinguish their role.
-   e. After `derive`, write approved codes into the L2 artifact:
-      - Top-level `codings[]` list: panel code and total-score code, each with
-        `code`, `system` (`http://loinc.org`), and `display`.
-      - Per-item: add a `loinc_code` field alongside `id`, `text`, and `type`
-        for each item in `sections.items[]`. This enables downstream
-        formalize mode to populate `Questionnaire.item[].code` in the FHIR resource.
-      - **If no code is found** for the panel, total-score, or any individual item
-        (MCP returned results but no confident match), omit the field for that
-        element **and** add a `notes` entry in the Review Summary (and in the
-        artifact's `review_notes[]` if present) explicitly stating which code could
-        not be resolved and why (e.g., no confident match in LOINC, instrument is
-        not in LOINC, search returned no `panel-parent` match). Do not silently
-        leave the field absent.
-
+  
    **If any MCP tool call fails or returns `user cancelled`**, stop immediately
    — do not retry the same tool and do not try alternative tools as a fallback.
    For `terminology` artifacts, omit `candidate_codes[]`, note the deferral in
@@ -431,53 +399,15 @@ If the plan includes `concept_review`, populate the packet by calling
 > Run `rh-skills promote concept enrich --help` for the full option reference and worked examples.
 
 Key rules:
-- Use `top_k=10` (or the maximum available) on every MCP search call. The default
+- Use `top_k=10` on every MCP search call. The default
   may return only 1 result — explicitly request the full candidate set.
-- **After each MCP call, count the results returned.** The number of
-  `--candidate` calls you make for that system must equal that count exactly.
-  If SNOMED returns 8 results, you must make 8 `--candidate` calls — not 1.
-  Making fewer calls than results returned is a **protocol violation**.
-- Each result from each system searched (SNOMED, ICD-10, LOINC, RxNorm) is a
-  separate `--candidate` call. A concept with 5 SNOMED results and 8 ICD-10
-  results requires 13 calls. **Do not select only the "best", "exact", or
-  "top" result per system** — a distance-0 hit does not mean the remaining
-  results from that search are omitted.
-- **Record MCP metadata exactly as returned.** Do not convert similarity to
-  distance (`1 - similarity`) and do not invent confidence buckets from numeric
-  thresholds (for example, "0.8+ = high"). Use MCP-provided values verbatim.
-  The `--candidate` format is `system|code|display[|distance[|confidence]]`:
-  - `distance` is a **float** (lower = closer match); returned by MCP tools.
-  - `confidence` is an optional **string label** (`high`, `medium`, or `low`) — never a number.
-  - When MCP returns only a numeric distance with no confidence label, pass it in
-    the 4th field: `system|code|display|<distance>`.
-  - **Never put a string label in position 4** — the CLI expects a float there.
-    Do not attempt to fix a format error by inserting extra `|` characters into
-    the system URI or code field — that corrupts the candidate entirely.
-  If MCP returns a UUID as the code system identifier, resolve it using the
-  `system_name` field from the **same response**: ICD10CM →
-  `http://hl7.org/fhir/sid/icd-10-cm`, SNOMED/SNOMEDCT →
-  `http://snomed.info/sct`, LOINC → `http://loinc.org`, RxNorm →
-  `http://www.nlm.nih.gov/research/umls/rxnorm`. Only call
-  `reasonhub-codesystem_lookup` when `system_name` is absent or not in that
-  table. Never record a raw UUID as the `system` field.
-- **Do not de-duplicate across concepts.** Within a single concept, the CLI
-  handles it automatically: duplicate `system|code` pairs are detected on write,
-  the better entry is kept (lower distance wins; tie: higher confidence; tie:
-  first-write-wins), and a warning is logged.
-- **Record every result as returned — do not filter by distance, confidence,
-  SNOMED semantic tag, concept category, or any other attribute.** A result
-  whose semantic tag does not match the concept's `type` (e.g. a SNOMED
-  qualifier returned for a `procedure` search) is still recorded; the reviewer
-  discards it if unwanted.
-- Successive calls for the same concept **append rows to the CSV**.
-- Omit `--candidate` entirely when MCP returned no results — still call to
-  mark lookup complete. Use `--lookup-notes` to record why no candidates were found.
+- Make one `--candidate` call per returned result. Do not keep only the top hit.
+- Run lookup normalization before recording: retry on system mismatch, skip unresolved or inactive, and use lookup `system` + `display` as authoritative.
+- Record MCP metadata exactly as returned; do not transform `distance` / `confidence`.
+- Do not de-duplicate across concepts; within a concept, CLI de-dup behavior applies.
 
-> ⚠ **ANTI-PATTERN — Do NOT do this:**
-> SNOMED returned 8 results → 1 `--candidate` call (top result only) ← **WRONG**
-> ICD-10 returned 5 results → 1 `--candidate` call (top result only) ← **WRONG**
->
-> **CORRECT:** 8 SNOMED results → 8 calls; 5 ICD-10 results → 5 calls = **13 total `--candidate` calls for that concept**.
+Detailed mechanics, examples, and edge cases are defined in Step 1 below and
+`reference.md` (Terminology Resolution).
 
 **Call `concept enrich` for every concept before presenting any proposal.**
 `concept enrich` only records MCP candidates — it requires no human decision.
@@ -534,13 +464,10 @@ after distance if MCP returned it.
 When MCP returns only a numeric distance with no confidence label, pass it in
 the 4th field: `system|code|display|<distance>`. Do not insert extra `|`
 characters to fix a format error — that corrupts the system URI or code field.
-If MCP returns a UUID as the code system identifier, resolve it using the
-`system_name` field from the **same response** — no extra MCP call needed:
-ICD10CM → `http://hl7.org/fhir/sid/icd-10-cm`, SNOMED/SNOMEDCT →
-`http://snomed.info/sct`, LOINC → `http://loinc.org`, RxNorm →
-`http://www.nlm.nih.gov/research/umls/rxnorm`. Only call
-`reasonhub-codesystem_lookup` when `system_name` is absent or unrecognized.
-Never record a raw UUID as the `system` field.
+Apply the same lookup normalization gate defined in Plan mode Step 5b:
+lookup each candidate before `--candidate`, retry on system mismatch, and
+record only active lookup-validated rows using lookup `system` + `display`.
+For detailed mechanics, see `reference.md` (Terminology Resolution).
 
 Do not de-duplicate across concepts. Within a single concept, the CLI
 automatically deduplicates: if the same `system|code` pair is submitted more
@@ -681,18 +608,24 @@ rh-skills promote concept review <topic> --finalize --reviewer "<name>"
 `--reset` (on `concept enrich`) — clears all rows for a concept and re-adds a blank placeholder row.
 `--force` — bypasses the "CSV unchanged" soft-block during `--finalize`. Required when using CLI-only approval (CLI commands update the checksum each write, so the checksum will appear unchanged from the agent's perspective).
 
-### Step 3b — Semantic expansion via `concept relate` (optional)
+### Step 3b — Semantic expansion via `concept relate` (required)
 
-After `concept enrich` completes and before `--finalize`, the agent MAY perform
-hierarchy traversal for any enriched SNOMED candidate code — **approval of the
-parent candidate is not required before running `concept relate`**. This step is
-optional — run it when:
-- The reviewer requests broader or narrower value set coverage
-- The concept type is `condition`, `disorder`, or `procedure` and any candidate
-  is a high-level SNOMED code that likely has clinically relevant subtypes
-- A candidate has a discoverable clinical attribute (finding site, causative agent,
-  associated morphology) that points to a set of related codes
-- A cross-map equivalent in another system (e.g. ICD-10-CM ↔ SNOMED) would be valuable
+After `concept enrich` completes and before `--finalize`, the agent MUST perform
+hierarchy traversal for every enriched concept that has at least one approved or
+pending SNOMED candidate code. **Approval of the parent candidate is not required
+before running `concept relate`.**
+
+**This step is unconditionally required for every concept that has at least one SNOMED candidate code.** `--finalize` is blocked while `concepts-review-meta.yaml` has `relate_status: pending`. There is no waiver path — if semantic expansion yields no results for a concept, record that outcome via `concept relate` with `--lookup-notes` and proceed.
+
+For each concept that has at least one SNOMED candidate, run `concept relate`
+using one or more of these methods:
+- IS-A hierarchy traversal
+- Cross-map bridge relationships
+- Attribute-based relationships
+
+For concepts with no SNOMED candidates at all (e.g. `guideline-ref`, `term` with no coded results), there is nothing to expand — Step 3b is complete for that concept by definition. Record a `--lookup-notes` entry documenting why no expansion was performed and proceed.
+
+After completing Step 3b for all concepts, set `relate_status: complete` in `concepts-review-meta.yaml` and append a `concept_relate_complete` tracking event (description: "Step 3b complete — N concepts related").
 
 **How to run it:**
 
@@ -706,6 +639,10 @@ optional — run it when:
      search, then apply the above. Use `--basis cross-map` and `--relation
      same_as` or `possibly_equivalent_to` for the bridge codes found
 
+   For SNOMED semantic expansion queries used by this step, include active-only
+   filtering (`inactive=false`). Do not record related rows for codes confirmed
+   inactive.
+
    **These queries may return large or truncated sets. The goal is discovering
    which codes stand in a meaningful semantic relationship to the candidate —
    not producing an exhaustive expansion. Select a representative, clinically
@@ -714,10 +651,9 @@ optional — run it when:
    not a complete ValueSet.**
 
    **Do not add a related code that is already a primary candidate row for the
-   same concept.** If the code was already surfaced by the enrich step and is
-   visible to the reviewer in the batch proposal, recording it again as a
-   `related` row is redundant — the reviewer can approve or exclude it there.
-   The CLI will warn if this occurs but will still write the row.
+   same concept** — the CLI will reject it with an error. A related code may
+   not be added twice under the same source candidate; the CLI will reject any
+   such duplicate.
 
 2. For each related code found, call `concept relate`:
    ```sh
@@ -740,9 +676,9 @@ optional — run it when:
    no label, pass it in position 4; the CLI will derive the label automatically.
    Do not transform or omit these values.
    Valid `--relation` values: `is_a` | `has_subtype` | `associated_with` |
-   `finding_site` | `causative_agent` | `due_to` | `has_interpretation` |
-   `method` | `procedure_site` | `same_as` | `possibly_equivalent_to` |
-   `narrower_than` | `broader_than`
+   | `due_to` | `has_interpretation` |
+   `method` | `same_as` | `possibly_equivalent_to` |
+   `narrower_than`
 
    Valid `--basis` values: `snomed-hierarchy` | `snomed-rf2-map` |
    `snomed-refset` | `cross-map` | `asserted`
