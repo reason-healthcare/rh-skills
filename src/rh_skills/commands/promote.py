@@ -799,7 +799,10 @@ def _validate_body_file_consistency(
         )
 
     if clinical_question and body.get("clinical_question") and body["clinical_question"] != clinical_question:
-        raise click.UsageError("--clinical-question does not match --body-file clinical_question")
+        raise click.UsageError(
+            f"--clinical-question does not match --body-file clinical_question: "
+            f"flag='{clinical_question}', body-file='{body['clinical_question']}'"
+        )
 
     if required_sections:
         sections = body.get("sections")
@@ -2858,6 +2861,90 @@ def formalize_plan(topic, force):
     click.echo(f"  1. Review the readout : cat topics/{topic}/process/plans/formalize-plan-readout.md")
     click.echo(f"  2. Approve the target : edit topics/{topic}/process/plans/formalize-plan.yaml")
     click.echo(f"  3. Run formalization  : rh-inf-formalize implement {topic}")
+
+
+@promote.command("body-init")
+@click.argument("topic")
+@click.argument("name")
+@click.option("--output", default=None,
+              help="Output path; defaults to topics/<topic>/process/tmp/<name>.yaml")
+@click.option("--force", is_flag=True, help="Overwrite existing file")
+def body_init(topic, name, output, force):
+    """Write a pre-populated body-file scaffold from extract-plan.yaml.
+
+    Reads artifact_type, derived_from, clinical_question, and required_sections
+    from the approved plan artifact and writes a structurally correct YAML scaffold
+    to topics/<topic>/process/tmp/<name>.yaml (or --output).
+    Fill in clinical content, then pass the file to 'rh-skills promote derive --body-file'.
+    """
+    tracking = require_tracking()
+    require_topic(tracking, topic)
+
+    plan = _load_extract_plan(topic)
+
+    artifact_entry = next(
+        (a for a in (plan.get("artifacts") or []) if a.get("name") == name),
+        None,
+    )
+    if artifact_entry is None:
+        available = ", ".join(
+            a.get("name", "?") for a in (plan.get("artifacts") or [])
+        )
+        raise click.UsageError(
+            f"Artifact '{name}' not found in extract-plan.yaml."
+            + (f" Available: {available}" if available else "")
+        )
+
+    artifact_type = artifact_entry.get("artifact_type") or "evidence-summary"
+
+    # Convert plan source_files (paths like sources/normalized/<slug>.md) → bare slugs
+    source_files = artifact_entry.get("source_files") or []
+    sources: tuple[str, ...] = tuple(Path(sf).stem for sf in source_files)
+
+    key_questions = artifact_entry.get("key_questions") or []
+    clinical_question = key_questions[0] if key_questions else ""
+
+    required_sections: tuple[str, ...] = tuple(artifact_entry.get("required_sections") or [])
+
+    # Convert plan concerns (list of dicts with 'issue') to concern-flag strings
+    # so the scaffold's sections.concerns block is pre-populated
+    plan_concerns = artifact_entry.get("concerns") or []
+    concern_strings: tuple[str, ...] = tuple(
+        f"{c['issue']}|{sources[0] if sources else ''}|<stub: position>"
+        for c in plan_concerns
+        if isinstance(c, dict) and c.get("issue")
+    )
+
+    scaffold = _build_stub_l2_artifact(
+        artifact_name=name,
+        source=sources,
+        artifact_type=artifact_type,
+        clinical_question=clinical_question,
+        required_sections=required_sections,
+        evidence_refs=(),
+        concerns=concern_strings,
+    )
+
+    if output:
+        out_path = Path(output)
+    else:
+        out_path = topic_dir(topic) / "process" / "tmp" / f"{name}.yaml"
+
+    if out_path.exists() and not force:
+        raise click.UsageError(
+            f"{out_path} already exists. Use --force to overwrite."
+        )
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(scaffold)
+    log_info(f"Created: {out_path}")
+
+    source_flags = " ".join(f"--source {s}" for s in sources)
+    click.echo(f"\nFill in clinical content, then run:")
+    click.echo(f"  rh-skills promote derive {topic} {name} \\")
+    click.echo(f"    {source_flags} \\")
+    click.echo(f"    --artifact-type {artifact_type} \\")
+    click.echo(f"    --body-file {out_path}")
 
 
 @promote.command()

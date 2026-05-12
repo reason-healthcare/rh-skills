@@ -21,6 +21,7 @@ metadata:
     - topics/<topic>/process/plans/concepts-review-meta.yaml # concept review finalization metadata
     - sources/normalized/
   writes_via_cli:
+    - "rh-skills promote body-init"
     - "rh-skills promote derive"
     - "rh-skills promote concept add"
     - "rh-skills promote concept enrich"
@@ -908,40 +909,37 @@ all deterministic writes must go through `rh-skills promote derive`,
    > fail. Pass only `--source`, `--artifact-type`, `--clinical-question`, and
    > `--required-section` alongside `--body-file`.
 
-   ```sh
-   # Write your reasoned artifact YAML to a temp file first.
-   # Include every required top-level field — the CLI writes this verbatim.
-   cat > /tmp/rh-<artifact-name>.yaml << 'EOF'
-   id: <artifact-name>
-   name: <artifact-name>
-   title: <Human Readable Title>
-   version: "1.0.0"
-   status: draft
-   domain: <clinical domain>
-   description: <2-4 sentence description>
-   derived_from:
-     - <source-name>   # must exactly match source_files[] from the approved plan
-   artifact_type: <artifact-type>
-   clinical_question: "<clinical question>"
-   sections:
-     summary: "<clinical question>"
-     # ... type-specific sections (see reference.md Type-Specific Section Shapes) ...
-     evidence_traceability:
-       - claim_id: <id>
-         statement: "<text>"
-         evidence:
-           - source: <source-name>
-             locator: "<section/page/heading>"
-   EOF
+   **Use `body-init` to generate the scaffold — do not write the body file yourself.**
+   `rh-skills promote body-init` reads `artifact_type`, `derived_from`,
+   `clinical_question`, and `required_sections` from the approved plan and writes a
+   structurally correct scaffold to `topics/<topic>/process/tmp/<name>.yaml`.
+   Your job is to fill in the clinical content, then run `derive --body-file`.
 
-   # Then derive, passing the file:
+   ```sh
+   # Step 1 — generate the scaffold from the approved plan:
+   rh-skills promote body-init <topic> <artifact-name>
+
+   # Step 2 — open the file and fill in clinical content:
+   #   topics/<topic>/process/tmp/<artifact-name>.yaml
+   #   Replace all <stub: ...> placeholders with reasoned clinical content.
+
+   # Step 3 — derive using the filled-in file:
    rh-skills promote derive <topic> <artifact-name> \
      --source <source-name> \
      --artifact-type <artifact-type> \
      --clinical-question "<clinical question>" \
-     --required-section <section> \
-     --body-file /tmp/rh-<artifact-name>.yaml
+     --body-file topics/<topic>/process/tmp/<artifact-name>.yaml
    ```
+
+   `body-init` prints the exact `derive` command to run (including `--source` flags)
+   so you do not need to reconstruct it from the plan. Use `--force` to regenerate
+   if the scaffold already exists.
+
+   > **⚠ Consistency-check mismatch**: If `derive` fails with
+   > `--clinical-question does not match --body-file clinical_question: flag='...' body-file='...'`,
+   > the error shows both values. Compare them carefully — a single character
+   > difference (punctuation, trailing space, case) causes this error. Regenerate
+   > the scaffold with `body-init --force` and re-fill the clinical content.
 
    Without `--body-file`, the CLI produces a scaffold with `<stub: ...>`
    placeholders that will **fail** validation.
