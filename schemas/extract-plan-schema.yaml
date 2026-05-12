@@ -130,8 +130,8 @@ artifact_fields:
       - eligibility-criteria   # FHIR: PlanDefinition applicability condition
       - risk-factors            # FHIR: RiskAssessment / ClinicalImpression
       - evidence-summary        # FHIR: Evidence / EvidenceVariable
-      - decision-table          # FHIR: PlanDefinition with decision rules
-      - care-pathway            # FHIR: PlanDefinition with workflow steps
+      - decision-table          # FHIR: PlanDefinition (eca-rule) — action.trigger-based event logic
+      - care-pathway            # FHIR: PlanDefinition (clinical-protocol) — action.action[] nesting for workflow steps
       - terminology             # FHIR: ValueSet / ConceptMap
       - measure                 # FHIR: Measure
       - assessment              # FHIR: Questionnaire
@@ -220,7 +220,8 @@ artifact_fields:
       - evidence_traceability # always include
       - criteria              # eligibility-criteria, policy
       - factors               # risk-factors
-      - actions               # decision-table, care-pathway, policy
+      - actions               # decision-table, policy (ECA action recommendations)
+      - steps                 # care-pathway (hierarchical workflow nodes; NOT ECA triggers)
       - concerns              # include when source disagreements must be documented
       - recommendations       # evidence-summary
 
