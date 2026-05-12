@@ -17,6 +17,7 @@ from rh_skills.common import (
     log_info,
     log_warn,
     now_iso,
+    repo_root,
     require_topic,
     require_tracking,
     save_tracking,
@@ -394,8 +395,14 @@ def formalize(topic, artifact, dry_run, force):
         )
         sys.exit(2)
 
-    # Load L2 YAML content
-    l2_file = td / "structured" / f"{artifact}.yaml"
+    # Load L2 YAML content — prefer the registered file path from tracking
+    _artifact_file = artifact_entry.get("file")
+    if _artifact_file:
+        l2_file = Path(_artifact_file) if Path(_artifact_file).is_absolute() else (repo_root() / _artifact_file)
+        if not l2_file.exists():
+            l2_file = td / "structured" / f"{artifact}.yaml"
+    else:
+        l2_file = td / "structured" / f"{artifact}.yaml"
     l2_content = ""
     l2_data: dict = {}
     if l2_file.exists():
