@@ -1245,6 +1245,122 @@ def test_decision_table_stub_supports_event_condition_action_shape(tmp_repo, mon
     assert "event: event-001" in content
 
 
+# ── body-init mode ─────────────────────────────────────────────────────────────
+
+def _write_plan_for_body_init(tmp_repo, topic_name="my-skill"):
+    """Set up a topic with an approved extract-plan.yaml containing one artifact."""
+    setup_topic_with_normalized_sources(tmp_repo, topic_name, source_names=("ada-guidelines",))
+    plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "extract-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    plan = {
+        "topic": topic_name,
+        "plan_type": "extract",
+        "status": "approved",
+        "artifacts": [
+            {
+                "name": "screening-criteria",
+                "artifact_type": "decision-table",
+                "source_files": ["sources/normalized/ada-guidelines.md"],
+                "key_questions": ["Who should be screened for diabetes?"],
+                "required_sections": ["summary", "events", "conditions", "actions", "rules", "evidence_traceability"],
+                "concerns": [{"issue": "Threshold ambiguity: ADA vs USPSTF"}],
+                "reviewer_decision": "approved",
+                "approval_notes": "",
+            }
+        ],
+    }
+    import io as _io
+    buf = _io.StringIO()
+    y.dump(plan, buf)
+    plan_path.write_text(buf.getvalue())
+
+
+def test_body_init_writes_scaffold_to_default_tmp_path(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    assert result.exit_code == 0, result.output
+    out = tmp_repo / "topics" / "my-skill" / "process" / "tmp" / "screening-criteria.yaml"
+    assert out.exists()
+    content = out.read_text()
+    assert "decision-table" in content
+    assert "ada-guidelines" in content
+    assert "Who should be screened for diabetes?" in content
+
+
+def test_body_init_scaffold_contains_required_sections(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    runner = CliRunner()
+    runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    content = (
+        tmp_repo / "topics" / "my-skill" / "process" / "tmp" / "screening-criteria.yaml"
+    ).read_text()
+    for section in ("summary", "events", "conditions", "actions", "rules", "evidence_traceability"):
+        assert section in content, f"Missing section: {section}"
+
+
+def test_body_init_scaffold_contains_concern_stub(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    runner = CliRunner()
+    runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    content = (
+        tmp_repo / "topics" / "my-skill" / "process" / "tmp" / "screening-criteria.yaml"
+    ).read_text()
+    assert "Threshold ambiguity" in content
+
+
+def test_body_init_custom_output_path(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    custom = tmp_repo / "my-body.yaml"
+    runner = CliRunner()
+    result = runner.invoke(promote, ["body-init", "my-skill", "screening-criteria", "--output", str(custom)])
+    assert result.exit_code == 0, result.output
+    assert custom.exists()
+
+
+def test_body_init_fails_if_file_exists_without_force(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    runner = CliRunner()
+    runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    result = runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    assert result.exit_code == 2
+    assert "already exists" in result.output
+
+
+def test_body_init_force_overwrites_existing_file(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    runner = CliRunner()
+    runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    result = runner.invoke(promote, ["body-init", "my-skill", "screening-criteria", "--force"])
+    assert result.exit_code == 0, result.output
+
+
+def test_body_init_fails_if_artifact_not_in_plan(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, ["body-init", "my-skill", "nonexistent"])
+    assert result.exit_code == 2
+    assert "nonexistent" in result.output
+
+
+def test_body_init_fails_if_no_plan(tmp_repo):
+    setup_topic_with_normalized_sources(tmp_repo, "my-skill", source_names=("ada-guidelines",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    assert result.exit_code == 2
+
+
+def test_body_init_prints_derive_command(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    assert "promote derive" in result.output
+    assert "--body-file" in result.output
+    assert "screening-criteria" in result.output
+
+
 def test_approved_extract_artifacts_rejects_unapproved_plan(tmp_repo):
     setup_topic_with_source(tmp_repo)
     write_extract_plan(
