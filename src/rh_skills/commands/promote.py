@@ -2990,18 +2990,16 @@ def body_init(topic, name, output, force):
     out_path.write_text(scaffold)
     log_info(f"Created: {out_path}")
 
-    source_flags = " ".join(f"--source {s}" for s in sources)
     click.echo(f"\nFill in clinical content, then run:")
     click.echo(f"  rh-skills promote derive {topic} {name} \\")
-    click.echo(f"    {source_flags} \\")
-    click.echo(f"    --artifact-type {artifact_type} \\")
     click.echo(f"    --body-file {out_path}")
+    click.echo(f"\nNote: artifact_type and derived_from are read from the body file. Do not change id or name.")
 
 
 @promote.command()
 @click.argument("topic")
 @click.argument("name")
-@click.option("--source", required=True, multiple=True, help="L1 source name (can repeat)")
+@click.option("--source", required=False, multiple=True, help="L1 source name (can repeat). Optional when --body-file is provided — derived_from is read from the body file.")
 @click.option("--count", default=1, help="Number of L2 artifacts to generate")
 @click.option("--artifact-type", default=None, help="Extract artifact type for richer L2 output")
 @click.option("--clinical-question", default=None, help="Clinical question answered by this artifact")
@@ -3032,6 +3030,19 @@ def derive(
     """Promote L1 source(s) to L2 structured artifact(s)."""
     tracking = require_tracking()
     require_topic(tracking, topic)
+
+    # Resolve effective sources: --source flags take precedence; fall back to
+    # derived_from in the body file so the agent doesn't have to repeat provenance.
+    if not source and body_file:
+        _body_preview = _load_body_file(body_file)
+        body_derived = _body_preview.get("derived_from") or []
+        if not body_derived:
+            raise click.UsageError(
+                "--source is required when --body-file does not contain a non-empty derived_from list"
+            )
+        source = tuple(body_derived)
+    elif not source:
+        raise click.UsageError("--source is required when --body-file is not provided")
 
     # Validate each source exists in tracking; support both `name` and `id` keys.
     registered_sources = {s.get("name") or s.get("id", "") for s in tracking.get("sources", [])}

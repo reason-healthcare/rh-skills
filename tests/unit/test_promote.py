@@ -1203,6 +1203,99 @@ sections:
     assert "--body-file derived_from does not match --source values" in result.output
 
 
+def test_derive_body_file_without_source_flags_uses_derived_from(tmp_repo, monkeypatch):
+    """--source is optional when --body-file has derived_from; sources are validated against tracking."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Agent-generated content.
+derived_from:
+  - ada-guidelines
+artifact_type: decision-table
+clinical_question: Who should be screened?
+sections:
+  summary: Agent-generated content.
+""")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--body-file", str(body_file),
+    ])
+    assert result.exit_code == 0, result.output
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
+    assert artifact_path.exists()
+    # derived_from in tracking should come from the body file
+    from ruamel.yaml import YAML as _YAML
+    tracking = _YAML(typ="safe").load((tmp_repo / "tracking.yaml").read_text())
+    structured = next(t for t in tracking["topics"] if t["name"] == "my-skill")["structured"]
+    entry = next(a for a in structured if a["name"] == "screening-criteria")
+    assert entry["derived_from"] == ["ada-guidelines"]
+
+
+def test_derive_body_file_without_source_flags_validates_against_tracking(tmp_repo, monkeypatch):
+    """If derived_from in body file names a source not in tracking.yaml, derive fails."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Agent-generated content.
+derived_from:
+  - nonexistent-source
+artifact_type: decision-table
+sections:
+  summary: content
+""")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--body-file", str(body_file),
+    ])
+    assert result.exit_code == 2
+    assert "not found in tracking.yaml" in result.output
+
+
+def test_derive_body_file_without_derived_from_requires_source_flag(tmp_repo, monkeypatch):
+    """If body file has no derived_from and --source is omitted, derive fails with a clear error."""
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Agent-generated content.
+artifact_type: decision-table
+sections:
+  summary: content
+""")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "screening-criteria",
+        "--body-file", str(body_file),
+    ])
+    assert result.exit_code == 2
+    assert "derived_from" in result.output
+
+
 def test_derive_offline_mode_writes_stub_scaffold(tmp_repo, monkeypatch):
     """Offline mode: no RH_STUB_RESPONSE → scaffold with <stub: ...> placeholders."""
     monkeypatch.setenv("LLM_PROVIDER", "stub")
@@ -1364,6 +1457,11 @@ def test_body_init_prints_derive_command(tmp_repo):
     assert "promote derive" in result.output
     assert "--body-file" in result.output
     assert "screening-criteria" in result.output
+    # --artifact-type must NOT appear: body file is the authority; the flag would
+    # pin the original value and break validation if the agent refines the type.
+    assert "--artifact-type" not in result.output
+    # Guidance note about which fields must not be edited
+    assert "derived_from" in result.output
 
 
 def test_approved_extract_artifacts_rejects_unapproved_plan(tmp_repo):
