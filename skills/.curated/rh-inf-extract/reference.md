@@ -3,6 +3,13 @@
 Companion reference for `SKILL.md`. Load on demand for detailed schema and
 validation guidance.
 
+## Entry Points
+
+- Planning terminology artifacts: use **Terminology Resolution (Plan Mode)** for tool matrix, lookup gate, and candidate recording rules.
+- Reviewing `concepts-review.csv`: use **Concept Review CSV** quick-reference commands, then column definitions if needed.
+- Finalizing concept review: run the **Before Finalize checklist** in the review workflow section.
+- Verifying output shape: use extract-plan and concepts schema sections below.
+
 ---
 
 ## Plan Files
@@ -157,6 +164,20 @@ When normalized source front matter contains `concepts[]`, extract planning writ
 
 All concepts always appear in `concepts.yaml`. A concept gets a `codes` list only if at least one of its rows has `approved (y/n) = y`. Custom concepts not extracted from source documents can be added with `concept add`.
 
+#### Quick Reference
+
+| Goal | Command |
+|------|---------|
+| Add custom concept | `rh-skills promote concept add <topic> --concept "<name>" --type <type>` |
+| Record MCP candidates | `rh-skills promote concept enrich <topic> --concept <name> --candidate "system\|code\|display[...]"` |
+| Add related code | `rh-skills promote concept relate <topic> --concept "<name>" --source-code <code> --candidate "system\|code\|display" --relation <type> --basis <basis> --method <method>` |
+| Approve all candidate codes | `rh-skills promote concept review <topic> --concept "<name>" --approve-all` |
+| Exclude all candidate codes | `rh-skills promote concept review <topic> --concept "<name>" --exclude-all` |
+| Approve/exclude specific code | `rh-skills promote concept review <topic> --concept "<name>" --approve-code <code> --exclude-code <other-code>` |
+| Record no-match reason | `rh-skills promote concept enrich <topic> --concept "<name>" --lookup-notes "reason"` |
+| Finalize review | `rh-skills promote concept review <topic> --finalize --reviewer "<name>"` |
+| Write concepts artifact | `rh-skills promote concept write <topic>` |
+
 Review workflow:
 ```sh
 # Add a custom concept (not from source documents):
@@ -191,6 +212,11 @@ rh-skills promote concept review <topic> --concept "<name>" --exclude-all
 # Approve or exclude a specific code by value (works for both candidate and related rows):
 rh-skills promote concept review <topic> --concept "<name>" \
   --approve-code <code> --exclude-code <other-code>
+
+# Before finalize checklist:
+# 1) Every candidate row has approved (y/n) set to y or n
+# 2) Concepts that should emit codes have at least one approved candidate row
+# 3) Any related row that should be emitted is explicitly approved
 
 # Finalize (after CLI-only approvals, --force bypasses checksum unchanged soft-block):
 rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
