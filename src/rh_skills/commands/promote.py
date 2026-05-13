@@ -137,7 +137,7 @@ _CONCEPT_CSV_FIELDNAMES = [
     "concept_name", "concept_type", "sources", "context", "lookup_query", "lookup_notes",
     "system", "code", "display", "distance",
     "confidence (high/medium/low)", "approved (y/n)", "comment",
-    "row_type", "relation", "relation_basis", "method", "source_code", "source_description",
+    "row_type", "relation", "method", "source_code", "source_description",
 ]
 
 
@@ -1084,9 +1084,9 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
             "comment": "",
             "row_type": "concept",
             "relation": "",
-            "relation_basis": "",
             "method": "",
             "source_code": "",
+            "source_description": "",
         }
         for c in concepts
     ]
@@ -1149,9 +1149,6 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
                     relation = row.get("relation", "").strip()
                     if relation:
                         rel_entry["relation"] = relation
-                    relation_basis = row.get("relation_basis", "").strip()
-                    if relation_basis:
-                        rel_entry["relation_basis"] = relation_basis
                     method = row.get("method", "").strip()
                     if method:
                         rel_entry["method"] = method
@@ -2081,6 +2078,31 @@ def approve(topic, artifact_name, decision, notes, add_concerns, add_sources, re
 
 _CONFIDENCE_LABELS = {"high", "medium", "low"}
 
+
+def _validate_system_uri(system: str, context: str = "--candidate") -> None:
+    """Raise UsageError if system is not a URI (must start with http:// or https://).
+
+    Use the system URI returned by reasonhub-codesystem_lookup — never pass
+    short names like 'SNOMED-CT', 'LOINC', 'ICD-10', or 'RxNorm'.
+    """
+    if not (system.startswith("http://") or system.startswith("https://")):
+        raise click.UsageError(
+            f"{context}: system must be a canonical URI (e.g. 'http://snomed.info/sct'), "
+            f"got: {system!r}. Use the system URI returned by reasonhub-codesystem_lookup."
+        )
+
+
+_EXTRACT_BASE_ONTOLOGY_RELATIONS = {
+    "is_a",
+    "finding_site",
+    "associated_morphology",
+    "causative_agent",
+}
+_EXTRACT_CONDITIONAL_ONTOLOGY_RELATIONS = {"due_to"}
+_EXTRACT_ALLOWED_ONTOLOGY_RELATIONS = (
+    _EXTRACT_BASE_ONTOLOGY_RELATIONS | _EXTRACT_CONDITIONAL_ONTOLOGY_RELATIONS
+)
+
 def _confidence_from_distance(distance: float) -> str:
     """Infer a confidence label from a numeric distance score (lower = closer match)."""
     if distance < 0.25:
@@ -2101,8 +2123,10 @@ def _parse_candidate_flag(value: str) -> dict:
         raise click.UsageError(
             f"--candidate value must be 'system|code|display[|distance[|confidence]]', got: {value!r}"
         )
+    system = parts[0].strip()
+    _validate_system_uri(system)
     entry: dict = {
-        "system": parts[0].strip(),
+        "system": system,
         "code": parts[1].strip(),
         "display": parts[2].strip(),
     }
@@ -2243,14 +2267,14 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
       # Record one candidate:
       rh-skills promote concept enrich <topic> \\
         --concept "Hypertension" \\
-        --candidate "SNOMED-CT|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
+        --candidate "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
         --lookup-query "Hypertension"
 
       # Multiple candidates in a single call:
       rh-skills promote concept enrich <topic> \\
         --concept "Hypertension" \\
-        --candidate "SNOMED-CT|38341003|Hypertensive disorder|0.02|high" \\
-        --candidate "ICD-10|I10|Essential (primary) hypertension|0.05"
+        --candidate "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
+        --candidate "http://hl7.org/fhir/sid/icd-10-cm|I10|Essential (primary) hypertension|0.05"
 
       # MCP returned no results — still call to record lookup notes:
       rh-skills promote concept enrich <topic> --concept "Rare finding" \\
@@ -2293,8 +2317,8 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                 "system": "", "code": "", "display": "",
                 "distance": "", "confidence (high/medium/low)": "",
                 "approved (y/n)": "", "comment": "",
-                "row_type": "concept", "relation": "", "relation_basis": "",
-                "method": "mcp", "source_code": "",
+                "row_type": "concept", "relation": "",
+                "method": "mcp", "source_code": "", "source_description": "",
             }
             other_rows = [r for r in rows if r.get("concept_name", "").strip() != concept_name]
             rows = other_rows + [placeholder]
@@ -2377,8 +2401,8 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                     "confidence (high/medium/low)": new_conf_str,
                     "approved (y/n)": "",
                     "comment": "",
-                    "row_type": "candidate", "relation": "", "relation_basis": "",
-                    "method": "mcp", "source_code": "",
+                    "row_type": "candidate", "relation": "",
+                    "method": "mcp", "source_code": "", "source_description": "",
                 }
                 existing_candidate_rows.append(new_row)
                 appended_count += 1
@@ -2462,8 +2486,8 @@ def add_concept(topic, concept_name, concept_type):
             "system": "", "code": "", "display": "",
             "distance": "", "confidence (high/medium/low)": "",
             "approved (y/n)": "", "comment": "",
-            "row_type": "concept", "relation": "", "relation_basis": "",
-            "method": "manual", "source_code": "",
+            "row_type": "concept", "relation": "",
+            "method": "manual", "source_code": "", "source_description": "",
         }
         rows.append(placeholder)
         _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
@@ -2480,18 +2504,14 @@ def add_concept(topic, concept_name, concept_type):
 @click.option(
     "--relation", "relation", required=True,
     type=click.Choice([
-        "is_a", "has_subtype", "associated_with",
-        "due_to", "has_interpretation", "method",
-        "same_as", "possibly_equivalent_to", "narrower_than",
+        "is_a",
+        "finding_site",
+        "associated_morphology",
+        "causative_agent",
+        "due_to",
     ]),
     metavar="REL",
-    help="SNOMED CT relationship type.",
-)
-@click.option(
-    "--basis", "relation_basis", required=True,
-    type=click.Choice(["snomed-hierarchy", "snomed-rf2-map", "snomed-refset", "cross-map", "asserted"]),
-    metavar="BASIS",
-    help="Terminological evidence for the relation.",
+    help="Ontology-native relationship predicate allowed in extract-stage review.",
 )
 @click.option(
     "--method", "method", required=True,
@@ -2500,7 +2520,15 @@ def add_concept(topic, concept_name, concept_type):
     help="How the relation was discovered.",
 )
 @click.option("--source-description", "source_description", default="", metavar="TEXT", help="Optional human-readable description of the source candidate this relation expands from.")
-def relate_concept(topic, concept_name, source_code, raw_candidate, relation, relation_basis, method, source_description):
+def relate_concept(
+    topic,
+    concept_name,
+    source_code,
+    raw_candidate,
+    relation,
+    method,
+    source_description,
+):
     """Add a related code row under a candidate code in concepts-review.csv.
 
     \b
@@ -2513,9 +2541,8 @@ def relate_concept(topic, concept_name, source_code, raw_candidate, relation, re
       rh-skills promote concept relate <topic> \\
         --concept "Diabetes mellitus" \\
         --source-code 73211009 \\
-        --candidate "SNOMED-CT|44054006|Type 2 diabetes mellitus (disorder)" \\
+        --candidate "http://snomed.info/sct|44054006|Type 2 diabetes mellitus (disorder)" \\
         --relation is_a \\
-        --basis snomed-hierarchy \\
         --method mcp
     """
     require_topic(require_tracking(), topic)
@@ -2529,6 +2556,7 @@ def relate_concept(topic, concept_name, source_code, raw_candidate, relation, re
     if len(parts) < 2:
         raise click.UsageError("--candidate must be in format 'system|code[|display[|distance[|confidence]]]]'.")
     rel_system = parts[0].strip()
+    _validate_system_uri(rel_system, "--candidate (relate)")
     rel_code = parts[1].strip()
     rel_display = parts[2].strip() if len(parts) > 2 else ""
     if not rel_system or not rel_code:
@@ -2552,6 +2580,13 @@ def relate_concept(topic, concept_name, source_code, raw_candidate, relation, re
         rel_confidence = confidence
     elif rel_distance is not None:
         rel_confidence = _confidence_from_distance(rel_distance)
+
+    relation = relation.strip().lower()
+    if relation not in _EXTRACT_ALLOWED_ONTOLOGY_RELATIONS:
+        raise click.UsageError(
+            f"Unsupported extract-stage relation '{relation}'. "
+            f"Allowed: {sorted(_EXTRACT_ALLOWED_ONTOLOGY_RELATIONS)}"
+        )
 
     with _lock_concept_review(csv_path):
         meta = _load_concept_review_meta(topic)
@@ -2632,7 +2667,6 @@ def relate_concept(topic, concept_name, source_code, raw_candidate, relation, re
             "comment": "",
             "row_type": "related",
             "relation": relation,
-            "relation_basis": relation_basis,
             "method": method,
             "source_code": source_code.strip(),
             "source_description": source_description.strip() if source_description else "",
@@ -2643,7 +2677,7 @@ def relate_concept(topic, concept_name, source_code, raw_candidate, relation, re
         _write_concept_review_meta(topic, meta)
 
     log_info(
-        f"Added related code {rel_system}|{rel_code} ({relation} via {relation_basis}/{method}) "
+        f"Added related code {rel_system}|{rel_code} ({relation} via {method}) "
         f"under '{concept_name}' \u2192 source code '{source_code}'."
     )
 
@@ -2752,13 +2786,9 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
         meta = _load_concept_review_meta(topic)
         if meta.get("status") == "approved":
             raise click.UsageError("Concept review is already approved.")
-        current_checksum = _csv_checksum(csv_path)
-        if not force and current_checksum == meta.get("csv_checksum"):
-            raise click.UsageError(
-                "CSV is unchanged since it was generated — no human edits detected. "
-                "Edit the CSV (approve or exclude rows) then re-run, or use --force to bypass."
-            )
         rows = _load_csv(csv_path)
+
+        invalid_related_rows: list[str] = []
 
         # Gate: every code row must have a valid approved value
         _VALID_APPROVED = {"y", "yes", "n", "no", "approve", "approved", "reject", "rejected"}
@@ -2771,6 +2801,13 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
             if not has_code:
                 continue
             if r.get("row_type", "").strip().lower() == "related":
+                approved_val = r.get("approved (y/n)", "").strip().lower()
+                if approved_val in ("y", "yes", "approve", "approved"):
+                    relation = r.get("relation", "").strip().lower()
+                    if relation not in _EXTRACT_ALLOWED_ONTOLOGY_RELATIONS:
+                        invalid_related_rows.append(
+                            f"{n!r} (code: {r.get('code', '').strip() or '?'}, relation: {relation or '<empty>'})"
+                        )
                 continue
             status_val = r.get("approved (y/n)", "").strip().lower()
             if status_val not in _VALID_APPROVED:
@@ -2781,10 +2818,16 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
                 "Cannot finalize: the following code rows are missing a valid 'approved' value "
                 "(must be 'y' or 'n'):\n  " + "\n  ".join(missing_status)
             )
+        if invalid_related_rows:
+            raise click.UsageError(
+                "Cannot finalize: approved related rows must use extract-stage ontology policy "
+                "(allowed ontology predicates only):\n  "
+                + "\n  ".join(invalid_related_rows)
+            )
         meta["status"] = "approved"
         meta["reviewer"] = reviewer
         meta["reviewed_at"] = now_iso()
-        meta["csv_checksum"] = current_checksum
+        meta["csv_checksum"] = _csv_checksum(csv_path)
         meta["review_artifact"] = str(csv_path)
         _write_concept_review_meta(topic, meta)
         _sync_plan_concept_review(topic, meta)

@@ -149,6 +149,28 @@ code using a best-guess system and use lookup as the normalization gate:
 For quantitative LOINC codes, use the same lookup response to retrieve
 recommended `EXAMPLE_UCUM_UNITS` when needed.
 
+### Extract-Stage Ontology Relationship Policy (Related Rows)
+
+Related rows in `concepts-review.csv` are extract-stage scope annotations, not broad ontology expansion.
+Only ontology-native predicates are allowed in this phase.
+
+Default allowed predicates:
+- `is_a`
+- `finding_site`
+- `associated_morphology`
+- `causative_agent`
+
+Conditionally allowed:
+- `due_to` only when topic-defining for the guideline question (reviewer-policy judgment; no extra CSV fields required)
+
+Excluded by default in extract stage:
+- workflow-local directional labels (`narrower_than`, `broader_than`)
+- generic similarity/proximity labels
+- broad association predicates that do not clarify concept scope for this topic
+
+Do not invent relationship labels. If terminology cannot deterministically support a predicate,
+do not emit a related row.
+
 ### candidate_codes[] in the review packet
 
 Each `terminology` artifact entry in the plan SHOULD include a
@@ -195,12 +217,8 @@ rh-skills promote concept relate <topic> \
   --source-code <candidate-code> \
   --candidate "system|code|display" \
   --relation <relation> \
-  --basis <basis> \
   --method <method>
-# --relation: is_a | has_subtype | associated_with |
-#             due_to | has_interpretation | method |
-#             same_as | possibly_equivalent_to | narrower_than
-# --basis:    snomed-hierarchy | snomed-rf2-map | snomed-refset | cross-map | asserted
+# --relation: is_a | finding_site | associated_morphology | causative_agent | due_to
 # --method:   mcp | manual
 
 # Approve all candidate codes for a concept (does not affect related rows):
@@ -249,8 +267,7 @@ This writes `topics/<topic>/structured/concepts.yaml`.
 | `approved (y/n)` | Set to `y` to include this code in `concepts.yaml`; `n` to exclude it |
 | `comment` | Reviewer note |
 | `row_type` | `candidate` (default) or `related`; discriminates candidate codes from semantic expansion rows |
-| `relation` | SNOMED CT relationship type for `related` rows: `is_a` \| `has_subtype` \| `associated_with` \| `due_to` \| `has_interpretation` \| `method` \| `same_as` \| `possibly_equivalent_to` \| `narrower_than` |
-| `relation_basis` | Terminological evidence for `related` rows: `snomed-hierarchy` \| `snomed-rf2-map` \| `snomed-refset` \| `cross-map` \| `asserted` |
+| `relation` | Ontology-native predicate for `related` rows: `is_a` \| `finding_site` \| `associated_morphology` \| `causative_agent` \| `due_to` |
 | `method` | How the code was discovered — applies to all rows: `mcp` (set automatically by `concept enrich` and `concept relate --method mcp`) \| `manual` (set automatically by `concept add`; also used with `concept relate --method manual`) |
 | `source_code` | Code value of the `candidate` row this `related` row expands from (blank on candidate rows) |
 
@@ -265,6 +282,7 @@ This writes to the `lookup_notes` column and marks the concept as lookup-complet
 - A concept with at least one `approved (y/n) = y` candidate row → `codes` list written in `concepts.yaml`
 - A concept with no `approved (y/n) = y` candidate rows → appears in `concepts.yaml` without a `codes` key
 - `related` rows with `approved (y/n) = y` → written as `related_codes[]` nested under the parent code entry in `concepts.yaml`; unapproved related rows are silently omitted
+- approved `related` rows must satisfy extract-stage ontology policy: allowed ontology predicate set only
 - `--approve-all` / `--exclude-all` only affect `candidate` rows; use `--approve-code` / `--exclude-code` to approve individual `related` rows
 - Custom concepts (`sources: custom`) follow the same rules — add codes via `concept enrich`, related codes via `concept relate`
 
@@ -297,16 +315,15 @@ concepts:
     type: finding
     context: "reported complete loss of sense of smell after"  # optional; empty for custom concepts
     codes:
-      - system: SNOMED-CT
+      - system: http://snomed.info/sct
         code: 44169009
         display: Anosmia (finding)
-          - system: SNOMED-CT
+          - system: http://snomed.info/sct
             code: 44169009
             display: Loss of smell (finding)
-            relation: same_as
-            relation_basis: snomed-rf2-map
+            relation: is_a
             method: mcp
-      - system: ICD-10-CM
+      - system: http://hl7.org/fhir/sid/icd-10-cm
         method: mcp
         display: Frailty (finding)
 ---
