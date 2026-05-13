@@ -234,7 +234,6 @@ rh-skills promote concept enrich <topic> --concept "<name>" \
   --lookup-notes "No SNOMED or ICD-10 match found; concept too specific"
 ```
 This writes to the `lookup_notes` column and marks the concept as lookup-complete with zero candidates.
-
 **Approved semantics:**
 - Every `candidate` code row (non-empty `system` or `code`) must have `approved (y/n)` set to `y` or `n` before `--finalize` succeeds; `related` rows are exempt from this gate
 - A concept with at least one `approved (y/n) = y` candidate row → `codes` list written in `concepts.yaml`
@@ -275,8 +274,6 @@ concepts:
       - system: SNOMED-CT
         code: 44169009
         display: Anosmia (finding)
-        method: mcp                                # present on all approved codes
-        related_codes:                             # optional; only present if related rows were approved
           - system: SNOMED-CT
             code: 44169009
             display: Loss of smell (finding)
@@ -284,18 +281,8 @@ concepts:
             relation_basis: snomed-rf2-map
             method: mcp
       - system: ICD-10-CM
-        code: R43.0
-        display: Anosmia
         method: mcp
-  - name: Frailty           # custom concept — sources: custom, no context
-    type: finding
-    codes:
-      - system: SNOMED-CT
-        code: 248279007
         display: Frailty (finding)
-        method: manual
-```
-
 ---
 
 ## Hybrid Artifact Catalog
