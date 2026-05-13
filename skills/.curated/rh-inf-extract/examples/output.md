@@ -32,11 +32,11 @@ before human approval, for example:
 # Each result from each system is a separate --candidate call.
 # Successive calls for the same concept append rows to the CSV.
 rh-skills promote concept enrich diabetes-ccm --concept "Diabetes mellitus" \
-  --candidate "SNOMED-CT|73211009|Diabetes mellitus (disorder)|0.0|high"
+  --candidate "http://snomed.info/sct|73211009|Diabetes mellitus (disorder)|0.0|high"
 rh-skills promote concept enrich diabetes-ccm --concept "Diabetes mellitus" \
-  --candidate "ICD-10-CM|E11|Type 2 diabetes mellitus|0.1|high"
+  --candidate "http://hl7.org/fhir/sid/icd-10-cm|E11|Type 2 diabetes mellitus|0.1|high"
 rh-skills promote concept enrich diabetes-ccm --concept "HbA1c measurement" \
-  --candidate "LOINC|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood|0.0|high"
+  --candidate "http://loinc.org|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood|0.0|high"
 # When MCP returned no results, omit --candidate but still call to record lookup:
 rh-skills promote concept enrich diabetes-ccm --concept "Some term" \
   --lookup-notes "No results found in any required system"

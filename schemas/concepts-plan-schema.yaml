@@ -125,14 +125,9 @@ concept_entry_fields:
                          code:            code value
                          display:         display name (optional)
                          relation:        SNOMED CT relationship type; one of:
-                                          is_a | has_subtype | associated_with |
-                                           due_to |
-                                          has_interpretation | method |
-                                          same_as | possibly_equivalent_to |
-                                          narrower_than
-                         relation_basis:  terminological evidence; one of:
-                                          snomed-hierarchy | snomed-rf2-map |
-                                          snomed-refset | cross-map | asserted
+                                          is_a | finding_site |
+                                          associated_morphology | causative_agent |
+                                          due_to
                          method:          discovery method (applies to all code entries);
                                           one of: mcp | manual
       Cross-system equivalences belong as related_codes[] under the source code entry,

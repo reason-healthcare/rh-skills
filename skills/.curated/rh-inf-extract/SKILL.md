@@ -348,6 +348,7 @@ Populate each count from the actual plan state. List rejected/needs-revision art
 ```
 
 **Next line rules** (pick the first that applies):
+- If `concept_review` is present and `concept_review.status` is `pending-review` → `"Run MCP lookup/enrichment for concept candidates in concepts-review.csv, then review and approve or reject pending artifacts, then implement: rh-inf-extract implement <topic>"`
 - Any artifact is `pending-review` → `"Approve or reject pending artifacts, then implement: rh-inf-extract implement <topic>"`
 - Any artifact is `rejected` → `"Implement <N> approved artifact(s); re-plan rejected: <name1>, <name2>"`
 - Any artifact is `needs-revision` → `"Address revisions on <name(s)>, re-approve, then implement"`
@@ -541,8 +542,8 @@ individual codes.
 
 | System | Code | Display | Distance | Confidence |
 |--------|------|---------|----------|------------|
-| SNOMED-CT | 68235000 | Nasal congestion | 0.05 | high |
-| ICD-10-CM | J34.89 | Other specified disorders of nose | 0.31 | low |
+| http://snomed.info/sct | 68235000 | Nasal congestion | 0.05 | high |
+| http://hl7.org/fhir/sid/icd-10-cm | J34.89 | Other specified disorders of nose | 0.31 | low |
 
 **Correct format for a concept with no candidates:**
 
@@ -579,64 +580,49 @@ rh-skills promote concept review <topic> --concept "<name>" --note "<comment>"
 
 # Reset candidates and re-enrich:
 rh-skills promote concept enrich <topic> --concept "<name>" --reset
-
-# Finalize after CLI approvals (--force needed — CLI commands updated the checksum):
-rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
-
-# Standalone finalize after manually editing the CSV (no --force needed — checksum changed):
-rh-skills promote concept review <topic> --finalize --reviewer "<name>"
 ```
-
-**Finalize gate**: `--finalize` only checks `candidate` rows — every candidate code row must have `approved (y/n)` set to `y` or `n`. `concept` rows (placeholder header rows with no code, written when the plan is first created) and `related` rows (added via `concept relate`) are both exempt from this gate; unapproved `related` rows are silently omitted from `concepts.yaml`.
 
 `--approve-all` — sets `approved (y/n) = y` on all **candidate** rows (rows with a non-blank code and `row_type: candidate`) for the concept. Does **not** affect `concept` or `related` rows.
 `--exclude-all` — sets `approved (y/n) = n` on all **candidate** rows for the concept. Does not affect `concept` or `related` rows.
 `--approve-code CODE` / `--exclude-code CODE` — sets `approved (y/n)` on the single row matching that code value; repeatable.
 `--note TEXT` — sets the `comment` field on the first row for the concept.
 `--reset` (on `concept enrich`) — clears all rows for a concept and re-adds a blank placeholder row.
-`--force` — bypasses the "CSV unchanged" soft-block during `--finalize`. Required when using CLI-only approval (CLI commands update the checksum each write, so the checksum will appear unchanged from the agent's perspective).
 
-### Step 3b — Semantic expansion via `concept relate` (required)
+### Step 3b — Related codes via ontology-native predicates (policy-driven)
 
-After `concept enrich` completes and before `--finalize`, the agent MUST perform
-hierarchy traversal for every enriched concept that has at least one approved or
-pending SNOMED candidate code. **Approval of the parent candidate is not required
-before running `concept relate`.**
+Related rows are optional scope clarifications, not broad semantic expansion.
+Use `concept relate` only when a related row improves extract-stage concept scope
+for downstream artifact design.
 
-**This step is unconditionally required for every concept that has at least one SNOMED candidate code.** `--finalize` is blocked while `concepts-review-meta.yaml` has `relate_status: pending`. There is no waiver path — if semantic expansion yields no results for a concept, record that outcome via `concept relate` with `--lookup-notes` and proceed.
+Allowed predicates in this phase:
+- `is_a`
+- `finding_site`
+- `associated_morphology`
+- `causative_agent`
+- `due_to` (reviewer-policy use only when topic-defining)
 
-For each concept that has at least one SNOMED candidate, run `concept relate`
-using one or more of these methods:
-- IS-A hierarchy traversal
-- Cross-map bridge relationships
-- Attribute-based relationships
+If terminology does not deterministically support a
+predicate, do not add a related row.
 
-For concepts with no SNOMED candidates at all (e.g. `guideline-ref`, `term` with no coded results), there is nothing to expand — Step 3b is complete for that concept by definition. Record a `--lookup-notes` entry documenting why no expansion was performed and proceed.
-
-After completing Step 3b for all concepts, set `relate_status: complete` in `concepts-review-meta.yaml` and append a `concept_relate_complete` tracking event (description: "Step 3b complete — N concepts related").
+Finalize is **not** gated on semantic exhaustiveness. Concept review can finalize
+with a narrow, policy-driven related set.
 
 **How to run it:**
 
 1. Use SNOMED semantic queries to discover codes that stand in a named
    relationship to the candidate:
-   - **IS-A hierarchy**: find direct subtypes or supertypes of the candidate code
-   - **Attribute relationships**: look up the candidate's SNOMED attribute
-     relationships (finding site, causative agent, associated morphology, etc.)
-     and find other codes sharing those attributes
-   - **Non-SNOMED candidates**: find the SNOMED equivalent first via semantic
-     search, then apply the above. Use `--basis cross-map` and `--relation
-     same_as` or `possibly_equivalent_to` for the bridge codes found
+   - **IS-A hierarchy**: find direct subtypes (and only deeper descendants when clinically necessary)
+   - **Attribute relationships**: use ontology-native attributes that clarify extract-stage scope
+     (`finding_site`, `associated_morphology`, `causative_agent`, and topic-defining `due_to`)
+   - **Non-SNOMED candidates**: map to a SNOMED anchor first, then apply allowed ontology predicates
 
-   For SNOMED semantic expansion queries used by this step, include active-only
-   filtering (`inactive=false`). Do not record related rows for codes confirmed
-   inactive.
+  For SNOMED semantic expansion queries used by this step, include active-only
+  filtering (`inactive=false`). Do not record related rows for codes confirmed
+  inactive.
 
-   **These queries may return large or truncated sets. The goal is discovering
-   which codes stand in a meaningful semantic relationship to the candidate —
-   not producing an exhaustive expansion. Select a representative, clinically
-   meaningful subset to record via `concept relate`. The resulting
-   `related_codes[]` in `concepts.yaml` is a curated relational annotation,
-   not a complete ValueSet.**
+  **Bound hierarchy traversal explicitly:** for `is_a`, prefer direct descendants;
+  include deeper traversal only when clinically necessary and note the bound in
+  reviewer comments if needed. This step is not a complete ontology expansion.
 
    **Do not add a related code that is already a primary candidate row for the
    same concept** — the CLI will reject it with an error. A related code may
@@ -651,8 +637,7 @@ After completing Step 3b for all concepts, set `relate_status: complete` in `con
      --source-description "<display of the source candidate>" \
      --candidate "system|code|display[|distance[|confidence]]" \
      --relation <relation> \
-     --basis <basis> \
-     --method mcp
+    --method mcp
    ```
    `--source-description` is optional but recommended when MCP is the source —
    pass the display name of the source candidate so reviewers can read the
@@ -663,17 +648,12 @@ After completing Step 3b for all concepts, set `relate_status: complete` in `con
    label (`high`, `medium`, `low`). If MCP returns only a numeric distance with
    no label, pass it in position 4; the CLI will derive the label automatically.
    Do not transform or omit these values.
-   Valid `--relation` values: `is_a` | `has_subtype` | `associated_with` |
-   | `due_to` | `has_interpretation` |
-   `method` | `same_as` | `possibly_equivalent_to` |
-   `narrower_than`
-
-   Valid `--basis` values: `snomed-hierarchy` | `snomed-rf2-map` |
-   `snomed-refset` | `cross-map` | `asserted`
+  Valid `--relation` values: `is_a` | `finding_site` |
+  `associated_morphology` | `causative_agent` | `due_to`
 
 3. Present a batch table of all related code rows to the reviewer — same format
    as Step 2. Include columns: `Source Code`, `Source Description`, `System`, `Code`, `Display`,
-   `Relation`, `Basis`. Wait for confirmation before executing decisions.
+  `Relation`. Wait for confirmation before executing decisions.
 
 4. Execute approvals/exclusions for related rows using `--approve-code` /
    `--exclude-code` (not `--approve-all` / `--exclude-all` — those skip related rows):
@@ -683,7 +663,43 @@ After completing Step 3b for all concepts, set `relate_status: complete` in `con
    ```
 
 Approved `related` rows are written as `related_codes[]` nested under their
-parent code entry in `concepts.yaml` during `concept write`.
+parent code entry in `concepts.yaml` during `concept write` only when they
+meet extract-stage ontology policy (allowed ontology predicate set).
+
+**⚠ HUMAN-IN-THE-LOOP: Reviewer-proposed related codes — pause before finalizing.**
+
+After the agent's ontology-driven related code proposals have been executed,
+**always pause and ask the reviewer** whether they have additional related codes
+to add before finalizing. Present this prompt verbatim:
+
+> "I've completed related-code proposals from ontology queries. Before I finalize
+> concept review, do you have any related codes you'd like to add for any concept?
+> If so, provide: concept name, source candidate code, related system|code|display,
+> relation type (`is_a` | `finding_site` | `associated_morphology` | `causative_agent`
+> | `due_to`), and method (`mcp` | `manual`)."
+
+- If the reviewer provides additional codes: record each via `concept relate` (same
+  format as Step 3b above), then pause again to confirm the reviewer is done before
+  proceeding.
+- If the reviewer confirms no additions (or says nothing needs adding): proceed
+  directly to Step 3c.
+
+Do **not** skip this pause or assume the reviewer has nothing to add.
+
+### Step 3c — Finalize concept review
+
+Run `--finalize` only after all candidate approvals (Step 3) **and** all
+related-code decisions (Step 3b) are complete.
+
+```sh
+rh-skills promote concept review <topic> --finalize --reviewer "<name>"
+```
+
+**Finalize gate**: `--finalize` requires every `candidate` row to have
+`approved (y/n)` set to `y` or `n`. `concept` rows (no code) remain exempt.
+`related` rows remain exempt from approval completeness, but any **approved**
+related row must satisfy extract-stage ontology policy: allowed ontology
+predicate set only. Unapproved `related` rows are omitted from `concepts.yaml`.
 
 ### Step 4 — Approve artifacts
 
