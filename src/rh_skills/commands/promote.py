@@ -1002,7 +1002,7 @@ def _normalized_source_records(tracking: dict, topic: str) -> list[dict]:
 
 def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
     """Return deduplicated concepts aggregated from normalized front matter."""
-    deduped: dict[tuple[str, str, str | None], dict] = {}
+    deduped: dict[tuple[str, str], dict] = {}
     for record in source_records:
         frontmatter = _parse_markdown_frontmatter(record["path"])
         concepts = frontmatter.get("concepts") or []
@@ -1015,20 +1015,30 @@ def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
             concept_type = str(concept.get("type") or "").strip()
             if not name or not concept_type:
                 continue
-            role: str | None = concept.get("role") or None
-            # Dedup key includes role — same concept with different roles → separate rows
-            key = (name.casefold(), concept_type.casefold(), role)
+            # Normalize role to a list
+            raw_role = concept.get("role")
+            if raw_role is None:
+                role_list: list[str] = []
+            elif isinstance(raw_role, list):
+                role_list = [str(r).strip() for r in raw_role if r]
+            else:
+                role_list = [str(raw_role).strip()]
+            # Dedup by (name, type) — roles are unioned across sources
+            key = (name.casefold(), concept_type.casefold())
             entry = deduped.setdefault(
                 key,
                 {
                     "name": name,
                     "type": concept_type,
-                    "role": role,
+                    "role": [],
                     "sources": [],
                     "source_files": [],
                     "context": "",
                 },
             )
+            for r in role_list:
+                if r not in entry["role"]:
+                    entry["role"].append(r)
             if record["name"] not in entry["sources"]:
                 entry["sources"].append(record["name"])
             if record["relative_path"] not in entry["source_files"]:
@@ -1039,7 +1049,7 @@ def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
                     entry["context"] = ctx
     return sorted(
         deduped.values(),
-        key=lambda item: (item["name"].casefold(), item["type"].casefold(), item.get("role") or ""),
+        key=lambda item: (item["name"].casefold(), item["type"].casefold()),
     )
 
 
@@ -1074,7 +1084,7 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
         {
             "concept_name": c["name"],
             "concept_type": c["type"],
-            "role": c.get("role") or "",
+            "role": ";".join(c.get("role") or []),
             "sources": "; ".join(c.get("sources") or []),
             "context": c.get("context") or "",
             "lookup_query": c["name"],
@@ -1123,9 +1133,11 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
         if row_type == "related":
             continue  # related_codes rows are no longer written to L2 output
         if name not in concept_meta:
+            role_raw = row.get("role", "").strip()
+            role_val: list[str] = [r.strip() for r in role_raw.split(";") if r.strip()]
             concept_meta[name] = {
                 "type": row.get("concept_type", "").strip(),
-                "role": row.get("role", "").strip() or None,
+                "role": role_val,
                 "sources": [s.strip() for s in row.get("sources", "").split(";") if s.strip()],
                 "context": row.get("context", "").strip(),
                 "comment": row.get("comment", "").strip(),
@@ -1153,7 +1165,7 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
     for name, info in concept_meta.items():
         concept_row: dict = {"name": name, "type": info["type"]}
         if info.get("role"):
-            concept_row["role"] = info["role"]
+            concept_row["role"] = info["role"]  # list[str]
         if info.get("context"):
             concept_row["context"] = info["context"]
         codes = approved_by_concept.get(name, [])

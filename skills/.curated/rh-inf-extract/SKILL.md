@@ -210,9 +210,9 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
 
   **`concepts-review.csv` is the authoritative concept list.** The CLI already
   deduplicates concepts from normalized front matter when it writes this file —
-  deduplication is by **(name, role)** pair: the same concept name annotated with
-  two different roles produces two separate rows (and eventually two separate ValueSets
-  at L3). Do NOT re-derive the concept list by reading source body text or source front
+  deduplication is by **(name, type)** pair; roles from all sources are unioned
+  into a single `role` column (semicolon-separated when multiple). Do NOT
+  re-derive the concept list by reading source body text or source front
   matter directly. In this phase, the agent's job is:
    1. run RH MCP terminology lookup for candidate codes (see HUMAN-IN-THE-LOOP below)
    2. prompt the human to approve or reject concepts
@@ -559,8 +559,9 @@ these columns: `System`, `Code`, `Display`, `Distance`, `Confidence`. Do not
 collapse rows, do not bold a "winner", do not add recommendation text beside
 individual codes.
 
-Include the concept's **role** (from the `role` column in `concepts-review.csv`) in the heading when it is set. Format:
+Include the concept's **role(s)** (from the `role` column in `concepts-review.csv`) in the heading when set. The column may contain a single role or multiple semicolon-separated roles; display all of them. Format:
 **Nasal congestion** (`finding` · `inclusion-criterion`)
+**Nasal congestion** (`finding` · `inclusion-criterion` · `comorbidity`)
 If no role is set, omit it: **Nasal congestion** (`finding`)
 
 **Only two pre-filters are permitted before building a table:**
