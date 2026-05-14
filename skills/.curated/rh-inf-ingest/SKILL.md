@@ -332,9 +332,9 @@ Read `sources/normalized/<name>.md`. Identify clinical concepts and, for each, d
 | `adverse-event` | Known side effect, harm, or safety signal associated with an intervention |
 | `other` | Does not fit any above role; reviewer should confirm or reassign |
 
-If a concept's role cannot be determined from context, omit `--role` for that concept (omitting `--role` entirely or for all concepts is fine — role is optional).
+**Supplying `--role` is expected for every concept.** Use `other` when the role is genuinely unclear — do not omit `--role`. Only omit `--role` entirely (for all concepts in a call) when the source provides no clinical context at all (e.g. a bare terminology crosswalk table with no prose).
 
-**Same concept, multiple roles**: If the source uses the same concept in two distinct roles (e.g. `Hypertension` as both `inclusion-criterion` and `comorbidity`), annotate it twice — once per `--concept`/`--role` pair.
+**A concept may have more than one role.** Supply multiple roles as a comma-separated list within a single `--role` value (e.g. `--role "inclusion-criterion,comorbidity"`). Each role is stored as a list item on the concept entry. Do not collapse two roles into one word.
 
 Identify these clinical concept categories:
 - Clinical conditions, medications, procedures, lab tests, demographics
@@ -346,11 +346,11 @@ Then call:
 ```sh
 rh-skills ingest annotate <name> --topic <topic> \
   --concept "<name>:<type>" --role <role> \
-  --concept "<name>:<type>" --role <role> \
-  ...
+  --concept "<name>:<type>" --role "<role1>,<role2>" \
+  --concept "<name>:<type>" --role <role>
 ```
 
-`--role` count must match `--concept` count, or be omitted entirely. If some concepts have a clear role and others do not, run separate `annotate` calls (one for roled concepts, one for unroled).
+Every `--concept` must have a matching `--role`. The `--role` count must equal the `--concept` count.
 
 Annotation guidance:
 - Prioritize clinically meaningful concepts when present: conditions

@@ -310,9 +310,11 @@ def _validate_topic_frontmatter_concepts(topic: str) -> tuple[bool, list[str]]:
                 errors.append(f"{normalized_rel}: concept #{index} missing type")
             role = concept.get("role")
             if role is not None:
-                if role not in _ANNOTATE_ROLE_VOCAB:
+                roles_to_check = role if isinstance(role, list) else [role]
+                invalid = [r for r in roles_to_check if r not in _ANNOTATE_ROLE_VOCAB]
+                if invalid:
                     errors.append(
-                        f"{normalized_rel}: concept #{index} has invalid role '{role}'. "
+                        f"{normalized_rel}: concept #{index} has invalid role value(s) {invalid}. "
                         f"Allowed: {', '.join(sorted(_ANNOTATE_ROLE_VOCAB))}"
                     )
 
@@ -720,9 +722,12 @@ def classify(name, topic, source_type, evidence_level, tags):
               help="Concept in 'canonical-name:type' format. Repeatable.")
 @click.option("--role", "roles", multiple=True,
               help=(
-                  "Role for the parallel --concept entry. Repeatable. "
+                  "Role(s) for the parallel --concept entry. Repeatable. "
+                  "Multiple roles for one concept: comma-separate within a single value "
+                  "(e.g. --role 'inclusion-criterion,comorbidity'). "
                   "Allowed: inclusion-criterion | exclusion-criterion | "
-                  "intervention | comorbidity | observation | comparator. "
+                  "intervention | comorbidity | observation | comparator | "
+                  "risk-factor | outcome | adverse-event | other. "
                   "Omit entirely to leave all roles unset."
               ))
 @click.option("--overwrite", is_flag=True, default=False,
@@ -742,7 +747,13 @@ def annotate(name, topic, concepts, roles, overwrite):
             f"--role count ({len(roles)}) must match --concept count ({len(concepts)}) "
             "or be omitted entirely."
         )
-    invalid_roles = [r for r in roles if r not in _ANNOTATE_ROLE_VOCAB]
+    # Parse each --role value as comma-separated tokens
+    parsed_role_lists: list[list[str]] = [
+        [r.strip() for r in role_str.split(",") if r.strip()]
+        for role_str in roles
+    ]
+    all_role_tokens = [t for tokens in parsed_role_lists for t in tokens]
+    invalid_roles = [r for r in all_role_tokens if r not in _ANNOTATE_ROLE_VOCAB]
     if invalid_roles:
         raise click.UsageError(
             f"Invalid role value(s): {', '.join(invalid_roles)}. "
@@ -759,14 +770,14 @@ def annotate(name, topic, concepts, roles, overwrite):
     # Parse concepts
     parsed_concepts = []
     for i, c in enumerate(concepts):
-        role = roles[i] if roles else None
+        role_list = parsed_role_lists[i] if roles else []
         if ":" in c:
             cname, ctype = c.split(":", 1)
             entry = {"name": cname.strip(), "type": ctype.strip()}
         else:
             entry = {"name": c.strip(), "type": "term"}
-        if role:
-            entry["role"] = role
+        if role_list:
+            entry["role"] = role_list
         parsed_concepts.append(entry)
 
     # Update normalized.md frontmatter
