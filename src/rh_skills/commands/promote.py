@@ -134,10 +134,10 @@ def _concept_artifact_path(topic: str) -> Path:
 
 
 _CONCEPT_CSV_FIELDNAMES = [
-    "concept_name", "concept_type", "sources", "context", "lookup_query", "lookup_notes",
+    "concept_name", "concept_type", "role", "sources", "context", "lookup_query", "lookup_notes",
     "system", "code", "display", "distance",
     "confidence (high/medium/low)", "approved (y/n)", "comment",
-    "row_type", "relation", "method", "source_code", "source_description",
+    "row_type", "method",
 ]
 
 
@@ -1002,7 +1002,7 @@ def _normalized_source_records(tracking: dict, topic: str) -> list[dict]:
 
 def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
     """Return deduplicated concepts aggregated from normalized front matter."""
-    deduped: dict[tuple[str, str], dict] = {}
+    deduped: dict[tuple[str, str, str | None], dict] = {}
     for record in source_records:
         frontmatter = _parse_markdown_frontmatter(record["path"])
         concepts = frontmatter.get("concepts") or []
@@ -1015,12 +1015,15 @@ def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
             concept_type = str(concept.get("type") or "").strip()
             if not name or not concept_type:
                 continue
-            key = (name.casefold(), concept_type.casefold())
+            role: str | None = concept.get("role") or None
+            # Dedup key includes role — same concept with different roles → separate rows
+            key = (name.casefold(), concept_type.casefold(), role)
             entry = deduped.setdefault(
                 key,
                 {
                     "name": name,
                     "type": concept_type,
+                    "role": role,
                     "sources": [],
                     "source_files": [],
                     "context": "",
@@ -1036,7 +1039,7 @@ def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
                     entry["context"] = ctx
     return sorted(
         deduped.values(),
-        key=lambda item: (item["name"].casefold(), item["type"].casefold()),
+        key=lambda item: (item["name"].casefold(), item["type"].casefold(), item.get("role") or ""),
     )
 
 
@@ -1071,6 +1074,7 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
         {
             "concept_name": c["name"],
             "concept_type": c["type"],
+            "role": c.get("role") or "",
             "sources": "; ".join(c.get("sources") or []),
             "context": c.get("context") or "",
             "lookup_query": c["name"],
@@ -1083,10 +1087,7 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
             "approved (y/n)": "",
             "comment": "",
             "row_type": "concept",
-            "relation": "",
             "method": "",
-            "source_code": "",
-            "source_description": "",
         }
         for c in concepts
     ]
@@ -1111,19 +1112,20 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
     csv_rows = _load_csv(csv_path)
 
     # Collect per-concept metadata and approved codes
-    concept_meta: dict[str, dict] = {}   # name → {type, sources, context, comment}
+    concept_meta: dict[str, dict] = {}   # name → {type, role, sources, context, comment}
     approved_by_concept: dict[str, list[dict]] = {}
-    approved_related: dict[tuple[str, str], list[dict]] = {}  # (concept_name, source_code) → related entries
 
     for row in csv_rows:
         name = row.get("concept_name", "").strip()
         if not name:
             continue
         row_type = row.get("row_type", "").strip().lower()
-        is_related = row_type == "related"
+        if row_type == "related":
+            continue  # related_codes rows are no longer written to L2 output
         if name not in concept_meta:
             concept_meta[name] = {
                 "type": row.get("concept_type", "").strip(),
+                "role": row.get("role", "").strip() or None,
                 "sources": [s.strip() for s in row.get("sources", "").split(";") if s.strip()],
                 "context": row.get("context", "").strip(),
                 "comment": row.get("comment", "").strip(),
@@ -1134,51 +1136,28 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
             display = row.get("display", "").strip()
             if not system or not code:
                 continue
-            if is_related:
-                source_code = row.get("source_code", "").strip()
-                rel_key = (name, source_code)
-                approved_related.setdefault(rel_key, [])
-                dup_key = (system.casefold(), code.casefold())
-                if not any(
-                    (e["system"].casefold(), e["code"].casefold()) == dup_key
-                    for e in approved_related[rel_key]
-                ):
-                    rel_entry: dict = {"system": system, "code": code}
-                    if display:
-                        rel_entry["display"] = display
-                    relation = row.get("relation", "").strip()
-                    if relation:
-                        rel_entry["relation"] = relation
-                    method = row.get("method", "").strip()
-                    if method:
-                        rel_entry["method"] = method
-                    approved_related[rel_key].append(rel_entry)
-            else:
-                approved_by_concept.setdefault(name, [])
-                cand_key = (system.casefold(), code.casefold())
-                if not any(
-                    (e["system"].casefold(), e["code"].casefold()) == cand_key
-                    for e in approved_by_concept[name]
-                ):
-                    cand_entry: dict = {k: v for k, v in {"system": system, "code": code, "display": display}.items() if v}
-                    cand_method = row.get("method", "").strip()
-                    if cand_method:
-                        cand_entry["method"] = cand_method
-                    approved_by_concept[name].append(cand_entry)
+            approved_by_concept.setdefault(name, [])
+            cand_key = (system.casefold(), code.casefold())
+            if not any(
+                (e["system"].casefold(), e["code"].casefold()) == cand_key
+                for e in approved_by_concept[name]
+            ):
+                cand_entry: dict = {k: v for k, v in {"system": system, "code": code, "display": display}.items() if v}
+                cand_method = row.get("method", "").strip()
+                if cand_method:
+                    cand_entry["method"] = cand_method
+                approved_by_concept[name].append(cand_entry)
 
     # Build concept rows
     concept_rows = []
     for name, info in concept_meta.items():
         concept_row: dict = {"name": name, "type": info["type"]}
+        if info.get("role"):
+            concept_row["role"] = info["role"]
         if info.get("context"):
             concept_row["context"] = info["context"]
         codes = approved_by_concept.get(name, [])
         if codes:
-            for code_entry in codes:
-                rel_key = (name, code_entry.get("code", ""))
-                related_entries = approved_related.get(rel_key, [])
-                if related_entries:
-                    code_entry["related_codes"] = related_entries
             concept_row["codes"] = codes
         if info.get("comment"):
             concept_row["notes"] = info["comment"]
@@ -2310,6 +2289,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
             placeholder = {
                 "concept_name": concept_name,
                 "concept_type": meta_type,
+                "role": first_row.get("role", ""),
                 "sources": meta_sources,
                 "context": first_row.get("context", ""),
                 "lookup_query": effective_lookup_query,
@@ -2317,8 +2297,8 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                 "system": "", "code": "", "display": "",
                 "distance": "", "confidence (high/medium/low)": "",
                 "approved (y/n)": "", "comment": "",
-                "row_type": "concept", "relation": "",
-                "method": "mcp", "source_code": "", "source_description": "",
+                "row_type": "concept",
+                "method": "mcp",
             }
             other_rows = [r for r in rows if r.get("concept_name", "").strip() != concept_name]
             rows = other_rows + [placeholder]
@@ -2387,6 +2367,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                 new_row: dict = {
                     "concept_name": concept_name,
                     "concept_type": meta_type,
+                    "role": first_row.get("role", ""),
                     "sources": meta_sources,
                     "context": first_row.get("context", ""),
                     "lookup_query": effective_lookup_query,
@@ -2401,8 +2382,8 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                     "confidence (high/medium/low)": new_conf_str,
                     "approved (y/n)": "",
                     "comment": "",
-                    "row_type": "candidate", "relation": "",
-                    "method": "mcp", "source_code": "", "source_description": "",
+                    "row_type": "candidate",
+                    "method": "mcp",
                 }
                 existing_candidate_rows.append(new_row)
                 appended_count += 1
@@ -2479,6 +2460,7 @@ def add_concept(topic, concept_name, concept_type):
         placeholder: dict = {
             "concept_name": concept_name,
             "concept_type": concept_type,
+            "role": "",
             "sources": "custom",
             "context": "",
             "lookup_query": concept_name,
@@ -2486,200 +2468,14 @@ def add_concept(topic, concept_name, concept_type):
             "system": "", "code": "", "display": "",
             "distance": "", "confidence (high/medium/low)": "",
             "approved (y/n)": "", "comment": "",
-            "row_type": "concept", "relation": "",
-            "method": "manual", "source_code": "", "source_description": "",
+            "row_type": "concept",
+            "method": "manual",
         }
         rows.append(placeholder)
         _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
         meta["csv_checksum"] = _csv_checksum(csv_path)
         _write_concept_review_meta(topic, meta)
     log_info(f"Added custom concept '{concept_name}' (type: {concept_type}).")
-
-
-@concept.command("relate")
-@click.argument("topic")
-@click.option("--concept", "concept_name", required=True, metavar="NAME", help="Concept name.")
-@click.option("--source-code", "source_code", required=True, metavar="CODE", help="Code value of the candidate row this relation expands from.")
-@click.option("--candidate", "raw_candidate", required=True, metavar="TEXT", help="Related candidate. Format: 'system|code|display[|distance[|confidence]]'.")
-@click.option(
-    "--relation", "relation", required=True,
-    type=click.Choice([
-        "is_a",
-        "finding_site",
-        "associated_morphology",
-        "causative_agent",
-        "due_to",
-    ]),
-    metavar="REL",
-    help="Ontology-native relationship predicate allowed in extract-stage review.",
-)
-@click.option(
-    "--method", "method", required=True,
-    type=click.Choice(["mcp", "manual"]),
-    metavar="METHOD",
-    help="How the relation was discovered.",
-)
-@click.option("--source-description", "source_description", default="", metavar="TEXT", help="Optional human-readable description of the source candidate this relation expands from.")
-def relate_concept(
-    topic,
-    concept_name,
-    source_code,
-    raw_candidate,
-    relation,
-    method,
-    source_description,
-):
-    """Add a related code row under a candidate code in concepts-review.csv.
-
-    \b
-    Related codes record semantic expansion (e.g. SNOMED subtypes, cross-maps)
-    linked to a specific candidate code. Approved related codes are written as
-    related_codes[] nested under their parent code in concepts.yaml.
-
-    \b
-    Example:
-      rh-skills promote concept relate <topic> \\
-        --concept "Diabetes mellitus" \\
-        --source-code 73211009 \\
-        --candidate "http://snomed.info/sct|44054006|Type 2 diabetes mellitus (disorder)" \\
-        --relation is_a \\
-        --method mcp
-    """
-    require_topic(require_tracking(), topic)
-    csv_path = _concept_review_csv_path(topic)
-    if not csv_path.exists():
-        raise click.UsageError(
-            f"No concept review CSV found. Run 'rh-skills promote plan {topic}' first."
-        )
-
-    parts = raw_candidate.split("|", 4)
-    if len(parts) < 2:
-        raise click.UsageError("--candidate must be in format 'system|code[|display[|distance[|confidence]]]]'.")
-    rel_system = parts[0].strip()
-    _validate_system_uri(rel_system, "--candidate (relate)")
-    rel_code = parts[1].strip()
-    rel_display = parts[2].strip() if len(parts) > 2 else ""
-    if not rel_system or not rel_code:
-        raise click.UsageError("--candidate must have non-empty system and code values.")
-    rel_distance: float | None = None
-    rel_confidence: str = ""
-    if len(parts) >= 4 and parts[3].strip():
-        try:
-            rel_distance = float(parts[3].strip())
-        except ValueError:
-            raise click.UsageError(
-                f"distance must be a number, got: {parts[3]!r} in {raw_candidate!r}"
-            )
-    if len(parts) >= 5 and parts[4].strip():
-        confidence = parts[4].strip().lower()
-        if confidence not in _CONFIDENCE_LABELS:
-            raise click.UsageError(
-                f"confidence must be one of {sorted(_CONFIDENCE_LABELS)}, "
-                f"got: {parts[4]!r} in {raw_candidate!r}"
-            )
-        rel_confidence = confidence
-    elif rel_distance is not None:
-        rel_confidence = _confidence_from_distance(rel_distance)
-
-    relation = relation.strip().lower()
-    if relation not in _EXTRACT_ALLOWED_ONTOLOGY_RELATIONS:
-        raise click.UsageError(
-            f"Unsupported extract-stage relation '{relation}'. "
-            f"Allowed: {sorted(_EXTRACT_ALLOWED_ONTOLOGY_RELATIONS)}"
-        )
-
-    with _lock_concept_review(csv_path):
-        meta = _load_concept_review_meta(topic)
-        if meta.get("status") == "approved":
-            raise click.UsageError("Concept review is already approved.")
-        rows = _load_csv(csv_path)
-
-        # Validate source_code exists as a candidate row for this concept
-        candidate_codes = {
-            r.get("code", "").strip()
-            for r in rows
-            if r.get("concept_name", "").strip() == concept_name
-            and r.get("row_type", "").strip().lower() in ("candidate", "")
-            and r.get("code", "").strip()
-        }
-        if source_code.strip() not in candidate_codes:
-            raise click.UsageError(
-                f"Source code '{source_code}' not found as a candidate row for concept '{concept_name}'. "
-                f"Available candidate codes: {', '.join(sorted(candidate_codes)) or 'none'}."
-            )
-
-        # Deduplicate: same source_code+system+code as a related row under this concept
-        # (the same related code may appear under different source candidates, but not twice
-        # under the same source candidate)
-        dup = next(
-            (
-                r for r in rows
-                if r.get("concept_name", "").strip() == concept_name
-                and r.get("row_type", "").strip().lower() == "related"
-                and r.get("source_code", "").strip().casefold() == source_code.strip().casefold()
-                and r.get("system", "").strip().casefold() == rel_system.casefold()
-                and r.get("code", "").strip().casefold() == rel_code.casefold()
-            ),
-            None,
-        )
-        if dup is not None:
-            raise click.UsageError(
-                f"Related code '{rel_system}|{rel_code}' is already recorded for concept '{concept_name}' "
-                f"under source candidate '{source_code}' — cannot add the same related code twice for the same candidate."
-            )
-
-        # Reject if the related code is already a primary candidate for this concept
-        already_candidate = next(
-            (
-                r for r in rows
-                if r.get("concept_name", "").strip() == concept_name
-                and r.get("row_type", "").strip().lower() in ("candidate", "concept", "")
-                and r.get("code", "").strip().casefold() == rel_code.casefold()
-                and r.get("system", "").strip().casefold() == rel_system.casefold()
-            ),
-            None,
-        )
-        if already_candidate is not None:
-            raise click.UsageError(
-                f"Related code '{rel_system}|{rel_code}' is already a primary candidate for "
-                f"concept '{concept_name}' — do not add primary candidates as related rows."
-            )
-
-        first_concept_row = next(
-            (r for r in rows if r.get("concept_name", "").strip() == concept_name), None
-        )
-        meta_type = first_concept_row.get("concept_type", "") if first_concept_row else ""
-        meta_sources = first_concept_row.get("sources", "") if first_concept_row else ""
-
-        new_row: dict = {
-            "concept_name": concept_name,
-            "concept_type": meta_type,
-            "sources": meta_sources,
-            "context": "",
-            "lookup_query": "",
-            "lookup_notes": "",
-            "system": rel_system,
-            "code": rel_code,
-            "display": rel_display,
-            "distance": str(rel_distance) if rel_distance is not None else "",
-            "confidence (high/medium/low)": rel_confidence,
-            "approved (y/n)": "",
-            "comment": "",
-            "row_type": "related",
-            "relation": relation,
-            "method": method,
-            "source_code": source_code.strip(),
-            "source_description": source_description.strip() if source_description else "",
-        }
-        rows.append(new_row)
-        _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
-        meta["csv_checksum"] = _csv_checksum(csv_path)
-        _write_concept_review_meta(topic, meta)
-
-    log_info(
-        f"Added related code {rel_system}|{rel_code} ({relation} via {method}) "
-        f"under '{concept_name}' \u2192 source code '{source_code}'."
-    )
 
 
 @concept.command("review")

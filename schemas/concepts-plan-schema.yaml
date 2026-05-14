@@ -110,28 +110,17 @@ concept_entry_fields:
       structure as codes[] but are not yet approved. Clear after approval.
 
   codes:
-    type: list   # list of {system, code, display, related_codes[]?} mappings
+    type: list   # list of {system, code, display, related[]?} mappings
     required: false
     description: >
       Reviewer-approved codes for this concept. These are written verbatim into
       concepts.yaml when the plan is finalized via 'concept write'. Each entry:
-        system:        code system URI or short name (SNOMED-CT | ICD-10-CM | LOINC | RxNorm)
-        code:          code value
-        display:       canonical display name
-        related_codes: optional list of semantically related codes anchored to this
-                       specific code (e.g. SNOMED subtypes, cross-map equivalents).
-                       Each related entry:
-                         system:          code system
-                         code:            code value
-                         display:         display name (optional)
-                         relation:        SNOMED CT relationship type; one of:
-                                          is_a | finding_site |
-                                          associated_morphology | causative_agent |
-                                          due_to
-                         method:          discovery method (applies to all code entries);
-                                          one of: mcp | manual
-      Cross-system equivalences belong as related_codes[] under the source code entry,
-      NOT as sibling codes[] entries, unless they represent independent approved codes.
+        system:   code system URI or short name (SNOMED-CT | ICD-10-CM | LOINC | RxNorm)
+        code:     code value
+        display:  canonical display name
+        related:  optional list of within-system is-a descendants
+                  [{system, code, display, relationship: is-a}]
+      Cross-system equivalences belong as sibling codes[] entries, NOT related[].
 
   review_notes:
     type: string

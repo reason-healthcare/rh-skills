@@ -59,6 +59,19 @@ _META_NAME_MAP = {
 _sanitize_source_stem = sanitize_source_stem
 _source_name_from_path = source_name_from_path
 
+_ANNOTATE_ROLE_VOCAB = {
+    "inclusion-criterion",
+    "exclusion-criterion",
+    "intervention",
+    "comparator",
+    "comorbidity",
+    "observation",
+    "risk-factor",
+    "outcome",
+    "adverse-event",
+    "other",
+}
+
 
 class _HTMLMetaParser(HTMLParser):
     """Extracts <title>, <meta>, and <script type="application/ld+json"> from HTML."""
@@ -295,6 +308,13 @@ def _validate_topic_frontmatter_concepts(topic: str) -> tuple[bool, list[str]]:
                 errors.append(f"{normalized_rel}: concept #{index} missing name")
             if not concept.get("type"):
                 errors.append(f"{normalized_rel}: concept #{index} missing type")
+            role = concept.get("role")
+            if role is not None:
+                if role not in _ANNOTATE_ROLE_VOCAB:
+                    errors.append(
+                        f"{normalized_rel}: concept #{index} has invalid role '{role}'. "
+                        f"Allowed: {', '.join(sorted(_ANNOTATE_ROLE_VOCAB))}"
+                    )
 
     return not errors, errors
 
@@ -698,9 +718,16 @@ def classify(name, topic, source_type, evidence_level, tags):
 @click.option("--topic", required=True, help="Topic slug")
 @click.option("--concept", "concepts", multiple=True,
               help="Concept in 'canonical-name:type' format. Repeatable.")
+@click.option("--role", "roles", multiple=True,
+              help=(
+                  "Role for the parallel --concept entry. Repeatable. "
+                  "Allowed: inclusion-criterion | exclusion-criterion | "
+                  "intervention | comorbidity | observation | comparator. "
+                  "Omit entirely to leave all roles unset."
+              ))
 @click.option("--overwrite", is_flag=True, default=False,
               help="Replace existing concepts instead of appending (default: append).")
-def annotate(name, topic, concepts, overwrite):
+def annotate(name, topic, concepts, roles, overwrite):
     """Add concept annotations to normalized.md front matter.
 
     By default, new concepts are appended to any already present. Pass
@@ -708,6 +735,19 @@ def annotate(name, topic, concepts, overwrite):
     """
     from ruamel.yaml import YAML as _YAML
     import io
+
+    # Validate role/concept alignment
+    if roles and len(roles) != len(concepts):
+        raise click.UsageError(
+            f"--role count ({len(roles)}) must match --concept count ({len(concepts)}) "
+            "or be omitted entirely."
+        )
+    invalid_roles = [r for r in roles if r not in _ANNOTATE_ROLE_VOCAB]
+    if invalid_roles:
+        raise click.UsageError(
+            f"Invalid role value(s): {', '.join(invalid_roles)}. "
+            f"Allowed: {', '.join(sorted(_ANNOTATE_ROLE_VOCAB))}"
+        )
 
     normalized_md = sources_root() / "normalized" / f"{name}.md"
     if not normalized_md.exists():
@@ -718,12 +758,16 @@ def annotate(name, topic, concepts, overwrite):
 
     # Parse concepts
     parsed_concepts = []
-    for c in concepts:
+    for i, c in enumerate(concepts):
+        role = roles[i] if roles else None
         if ":" in c:
             cname, ctype = c.split(":", 1)
-            parsed_concepts.append({"name": cname.strip(), "type": ctype.strip()})
+            entry = {"name": cname.strip(), "type": ctype.strip()}
         else:
-            parsed_concepts.append({"name": c.strip(), "type": "term"})
+            entry = {"name": c.strip(), "type": "term"}
+        if role:
+            entry["role"] = role
+        parsed_concepts.append(entry)
 
     # Update normalized.md frontmatter
     raw = normalized_md.read_text()
@@ -746,6 +790,7 @@ def annotate(name, topic, concepts, overwrite):
         {k: v for k, v in {
             "name": c["name"],
             "type": c["type"],
+            "role": c.get("role") or None,
             "context": extract_concept_context(raw_body, c["name"]) or None,
         }.items() if v is not None}
         for c in parsed_concepts
