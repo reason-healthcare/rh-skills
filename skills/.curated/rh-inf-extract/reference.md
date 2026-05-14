@@ -192,7 +192,6 @@ All concepts always appear in `concepts.yaml`. A concept gets a `codes` list onl
 |------|---------|
 | Add custom concept | `rh-skills promote concept add <topic> --concept "<name>" --type <type>` |
 | Record MCP candidates | `rh-skills promote concept enrich <topic> --concept <name> --candidate "system\|code\|display[...]"` |
-| Add related code | `rh-skills promote concept relate <topic> --concept "<name>" --source-code <code> --candidate "system\|code\|display" --relation <type> --basis <basis> --method <method>` |
 | Approve all candidate codes | `rh-skills promote concept review <topic> --concept "<name>" --approve-all` |
 | Exclude all candidate codes | `rh-skills promote concept review <topic> --concept "<name>" --exclude-all` |
 | Approve/exclude specific code | `rh-skills promote concept review <topic> --concept "<name>" --approve-code <code> --exclude-code <other-code>` |
@@ -210,16 +209,6 @@ rh-skills promote concept enrich <topic> --concept <name> \
   --candidate "system|code|display[|distance[|confidence]]"
 # Omit --candidate when MCP returned no results; still call to record lookup.
 # ... repeat for every concept ...
-
-# Add a related code (semantic expansion of an approved candidate):
-rh-skills promote concept relate <topic> \
-  --concept "<name>" \
-  --source-code <candidate-code> \
-  --candidate "system|code|display" \
-  --relation <relation> \
-  --method <method>
-# --relation: is_a | finding_site | associated_morphology | causative_agent | due_to
-# --method:   mcp | manual
 
 # Approve all candidate codes for a concept (does not affect related rows):
 rh-skills promote concept review <topic> --concept "<name>" --approve-all
@@ -255,6 +244,7 @@ This writes `topics/<topic>/structured/concepts.yaml`.
 |--------|-------------|
 | `concept_name` | Concept name (matches normalized front matter, or custom) |
 | `concept_type` | Concept type (condition, procedure, lab, etc.) |
+| `role` | Clinical role in this topic context: `inclusion-criterion` \| `exclusion-criterion` \| `intervention` \| `comparator` \| `comorbidity` \| `observation` \| `risk-factor` \| `outcome` \| `adverse-event` \| `other`; blank when not set |
 | `sources` | Semicolon-delimited source slugs; `"custom"` for concepts added via `concept add` |
 | `context` | ~10-word text window from source around first occurrence; empty for custom concepts |
 | `lookup_query` | Default MCP query string |
@@ -268,8 +258,7 @@ This writes `topics/<topic>/structured/concepts.yaml`.
 | `comment` | Reviewer note |
 | `row_type` | `candidate` (default) or `related`; discriminates candidate codes from semantic expansion rows |
 | `relation` | Ontology-native predicate for `related` rows: `is_a` \| `finding_site` \| `associated_morphology` \| `causative_agent` \| `due_to` |
-| `method` | How the code was discovered — applies to all rows: `mcp` (set automatically by `concept enrich` and `concept relate --method mcp`) \| `manual` (set automatically by `concept add`; also used with `concept relate --method manual`) |
-| `source_code` | Code value of the `candidate` row this `related` row expands from (blank on candidate rows) |
+| `method` | How the code was discovered: `mcp` (set automatically by `concept enrich`) \| `manual` (set automatically by `concept add`) |
 
 Use `--lookup-notes` on `concept enrich` to record why no candidates were found after all required MCP searches returned zero results:
 ```sh
@@ -277,14 +266,13 @@ rh-skills promote concept enrich <topic> --concept "<name>" \
   --lookup-notes "No SNOMED or ICD-10 match found; concept too specific"
 ```
 This writes to the `lookup_notes` column and marks the concept as lookup-complete with zero candidates.
+
 **Approved semantics:**
-- Every `candidate` code row (non-empty `system` or `code`) must have `approved (y/n)` set to `y` or `n` before `--finalize` succeeds; `related` rows are exempt from this gate
+- Every `candidate` code row (non-empty `system` or `code`) must have `approved (y/n)` set to `y` or `n` before `--finalize` succeeds
 - A concept with at least one `approved (y/n) = y` candidate row → `codes` list written in `concepts.yaml`
 - A concept with no `approved (y/n) = y` candidate rows → appears in `concepts.yaml` without a `codes` key
-- `related` rows with `approved (y/n) = y` → written as `related_codes[]` nested under the parent code entry in `concepts.yaml`; unapproved related rows are silently omitted
-- approved `related` rows must satisfy extract-stage ontology policy: allowed ontology predicate set only
 - `--approve-all` / `--exclude-all` only affect `candidate` rows; use `--approve-code` / `--exclude-code` to approve individual `related` rows
-- Custom concepts (`sources: custom`) follow the same rules — add codes via `concept enrich`, related codes via `concept relate`
+- Custom concepts (`sources: custom`) follow the same rules — add codes via `concept enrich`
 
 #### concepts-review-meta.yaml schema
 
@@ -297,13 +285,7 @@ reviewer: <reviewer name>
 csv_checksum: <SHA-256 of concepts-review.csv>
 review_artifact: topics/<topic>/process/plans/concepts-review.csv
 final_artifact: topics/<topic>/structured/concepts.yaml
-relate_status: <pending | complete>   # set by agent after Step 3b; --finalize blocks if pending
 ```
-
-`relate_status` lifecycle:
-- Written as `pending` when the plan is first created (by `rh-skills promote plan`).
-- Set to `complete` by the agent after Step 3b finishes for all concepts; agent appends a `concept_relate_complete` tracking event.
-- `--finalize` on `concept review` is hard-blocked while `relate_status: pending` — there is no waiver path.
 
 #### Final L2 terminology concept schema
 
@@ -313,19 +295,23 @@ The resulting L2 artifact (`concepts.yaml`) uses this shape:
 concepts:
   - name: Loss of sense of smell
     type: finding
+    role: observation
     context: "reported complete loss of sense of smell after"  # optional; empty for custom concepts
     codes:
       - system: http://snomed.info/sct
         code: 44169009
         display: Anosmia (finding)
-          - system: http://snomed.info/sct
-            code: 44169009
-            display: Loss of smell (finding)
-            relation: is_a
-            method: mcp
       - system: http://hl7.org/fhir/sid/icd-10-cm
-        method: mcp
+        code: R43.0
+        display: Anosmia
+  - name: Frailty           # custom concept — sources: custom, no context
+    type: finding
+    codes:
+      - system: http://snomed.info/sct
+        code: 248279007
         display: Frailty (finding)
+```
+
 ---
 
 ## Hybrid Artifact Catalog

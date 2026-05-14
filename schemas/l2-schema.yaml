@@ -42,17 +42,23 @@ optional_fields:
                        #   concepts:
                        #   - name: <human-readable concept label>  # required
                        #     type: <SNOMED semantic tag, e.g. finding | disorder | procedure | observable entity>  # required
+                       #     role: <optional clinical role>        # optional; one of:
+                       #           inclusion-criterion | exclusion-criterion | intervention |
+                       #           comparator | comorbidity | observation |
+                       #           risk-factor | outcome | adverse-event | other
                        #     context: <~10-word text window from source around first occurrence>  # optional
                        #     codes:                                # optional; omitted if no approved code
-                       #     - system: <code system, e.g. SNOMED-CT | ICD-10-CM | LOINC | RxNorm>  # required
+                       #     - system: <code system URI, e.g. http://snomed.info/sct | http://hl7.org/fhir/sid/icd-10-cm>  # required
                        #       code: <code value>                  # required
                        #       display: <canonical display name>   # required
                        # Rules:
-                       #   - Each concept entry is deduplicated by name.
+                       #   - Each concept entry is deduplicated by (name, role). The same concept name
+                       #     with different roles produces separate entries and separate ValueSets at L3.
                        #   - codes[] maps the concept across code systems; each (system, code) pair appears at most once per concept.
                        #   - context is extracted at ingest annotate time from the first body-text occurrence of the concept name.
                        #   - Custom concepts (not extracted from source documents) are added via 'concept add'; their
                        #     sources value is 'custom' (or an explicit label) rather than a source file name.
+                       #   - related_codes[] is NOT written at L2; ECL-based expansion moves to L3 formalization.
 
 artifact_types:
   - evidence-summary
