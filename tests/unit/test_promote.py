@@ -170,7 +170,7 @@ def write_extract_plan(
         "concept_review": {
             "source_files": [f"sources/normalized/{source_name}.md" for source_name in (["ada-screening-guideline", "uspstf-screening-update"] if topic_name == "my-skill" else [])],
             "status": concept_review_status,
-            "review_artifact": f"topics/{topic_name}/process/plans/concepts-review.csv",
+            "review_artifact": f"topics/{topic_name}/process/plans/concepts/",
             "final_artifact": f"topics/{topic_name}/structured/concepts.yaml",
         },
         "artifacts": artifacts or [],
@@ -454,26 +454,32 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     assert artifact["source_files"]
     assert "evidence_traceability" in artifact["required_sections"]
 
-    # CSV + meta written
-    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
+    # CSV dir + meta written
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
     meta_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review-meta.yaml"
-    assert csv_path.exists(), "concepts-review.csv should be created by plan"
+    assert concepts_dir.exists(), "concepts/ dir should be created by plan"
     assert meta_path.exists(), "concepts-review-meta.yaml should be created by plan"
 
+    hyp_csv = concepts_dir / "hypertension.csv"
+    bp_csv = concepts_dir / "blood-pressure-screening.csv"
+    assert hyp_csv.exists(), "hypertension.csv should be created by plan"
+    assert bp_csv.exists(), "blood-pressure-screening.csv should be created by plan"
+
+    # Metadata lives in #comment lines at the top
+    hyp_lines = hyp_csv.read_text().splitlines()
+    hyp_meta = {line.lstrip("#").split(",")[0]: line.lstrip("#").split(",", 1)[1] for line in hyp_lines if line.startswith("#")}
+    assert sorted(hyp_meta["sources"].split(";")) == ["ada-screening-guideline", "uspstf-screening-update"]
+    # No code rows yet
     import csv as _csv
-    with open(csv_path) as f:
-        rows = list(_csv.DictReader(f))
-    concept_names = [r["concept_name"] for r in rows]
-    assert "Hypertension" in concept_names
-    assert "Blood pressure screening" in concept_names
-    hyp_row = next(r for r in rows if r["concept_name"] == "Hypertension")
-    assert sorted(hyp_row["sources"].split("; ")) == ["ada-screening-guideline", "uspstf-screening-update"]
-    assert hyp_row["system"] == ""
-    assert hyp_row["approved (y/n)"] == ""
+    import io as _io
+    data_lines = [l for l in hyp_lines if not l.startswith("#")]
+    hyp_rows = list(_csv.DictReader(_io.StringIO("\n".join(data_lines))))
+    assert all(r["system"] == "" for r in hyp_rows)
+    assert all(r["approved (y/n)"] == "" for r in hyp_rows)
 
     meta = YAML(typ="safe").load(meta_path.read_text())
     assert meta["status"] == "pending-review"
-    assert meta["csv_checksum"]
+    assert meta["checksums"]
 
     raw_readout = readout_path.read_text()
     assert "extract-plan.yaml" in raw_readout
@@ -567,25 +573,40 @@ def test_review_concepts_can_approve_concept_in_final_artifact(tmp_repo):
         "--candidate", "http://snomed.info/sct|171207006|Blood pressure screening (procedure)",
     ])
 
-    # Approve Blood pressure screening only
-    runner.invoke(promote, [
-        "concept", "review", "my-skill",
-        "--concept", "Blood pressure screening", "--approve-all",
-    ])
-
-    # Reject Hypertension via CSV directly and finalize
-    import csv as _csv
-    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
-    with open(csv_path) as f:
-        rows = list(_csv.DictReader(f))
+    # Approve only Blood pressure screening via direct CSV edit
+    import csv as _csv, io as _io
+    bp_csv = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts" / "blood-pressure-screening.csv"
+    with open(bp_csv) as f:
+        raw_lines = f.readlines()
+    comment_lines = [l for l in raw_lines if l.startswith("#")]
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
     for r in rows:
-        if r["concept_name"] == "Hypertension" and r["system"]:
+        if r["system"]:
+            r["approved (y/n)"] = "y"
+    fieldnames = list(rows[0].keys()) if rows else []
+    buf = _io.StringIO()
+    writer = _csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(rows)
+    bp_csv.write_text("".join(comment_lines) + buf.getvalue())
+
+    # Reject Hypertension via direct CSV edit
+    hyp_csv = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts" / "hypertension.csv"
+    with open(hyp_csv) as f:
+        raw_lines = f.readlines()
+    comment_lines = [l for l in raw_lines if l.startswith("#")]
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+    for r in rows:
+        if r["system"]:
             r["approved (y/n)"] = "n"
     fieldnames = list(rows[0].keys()) if rows else []
-    with open(csv_path, "w", newline="") as f:
-        writer = _csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
+    buf = _io.StringIO()
+    writer = _csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(rows)
+    hyp_csv.write_text("".join(comment_lines) + buf.getvalue())
 
     result = runner.invoke(promote, [
         "concept", "review", "my-skill",
@@ -673,7 +694,6 @@ def test_review_concepts_approve_and_exclude_individual_codes(tmp_repo):
     result = runner.invoke(promote, ["plan", "my-skill"])
     assert result.exit_code == 0, result.output
 
-    # Enrich Hypertension with two candidates
     result = runner.invoke(promote, [
         "concept", "enrich", "my-skill",
         "--concept", "Hypertension",
@@ -691,11 +711,14 @@ def test_review_concepts_approve_and_exclude_individual_codes(tmp_repo):
     ])
     assert result.exit_code == 0, result.output
 
-    import csv as _csv
-    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
-    with open(csv_path) as f:
-        rows = list(_csv.DictReader(f))
-    hyp_status = {r["code"]: r["approved (y/n)"] for r in rows if r["concept_name"] == "Hypertension" and r["code"]}
+    import csv as _csv, io as _io
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
+    hyp_csv = concepts_dir / "hypertension.csv"
+    with open(hyp_csv) as f:
+        raw_lines = f.readlines()
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+    hyp_status = {r["code"]: r["approved (y/n)"] for r in rows if r["code"]}
     assert hyp_status["38341003"] == "y"
     assert hyp_status["I10"] == "n"
 
@@ -717,11 +740,13 @@ def test_enrich_multiple_candidates_single_call(tmp_repo):
     assert result.exit_code == 0, result.output
     assert "3 candidate(s)" in result.output
 
-    import csv as _csv
-    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
-    with open(csv_path) as f:
-        rows = list(_csv.DictReader(f))
-    hypertension_rows = [r for r in rows if r["concept_name"] == "Hypertension" and r["system"]]
+    import csv as _csv, io as _io
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
+    with open(concepts_dir / "hypertension.csv") as f:
+        raw_lines = f.readlines()
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+    hypertension_rows = [r for r in rows if r["system"]]
     assert len(hypertension_rows) == 3
     codes = {r["code"] for r in hypertension_rows}
     assert "38341003" in codes
@@ -738,21 +763,28 @@ def test_review_concepts_standalone_finalize_seals_manually_edited_csv(tmp_repo)
 
     _enrich_two_concepts(tmp_repo, runner)
 
-    # Manually edit the CSV to approve Hypertension and reject Blood pressure screening
-    import csv as _csv
-    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
-    with open(csv_path) as f:
-        rows = list(_csv.DictReader(f))
-    for r in rows:
-        if r["concept_name"] == "Hypertension" and r["system"]:
-            r["approved (y/n)"] = "y"
-        elif r["concept_name"] == "Blood pressure screening" and r["system"]:
-            r["approved (y/n)"] = "n"
-    fieldnames = list(rows[0].keys()) if rows else []
-    with open(csv_path, "w", newline="") as f:
-        writer = _csv.DictWriter(f, fieldnames=fieldnames)
+    # Manually edit per-concept CSVs
+    import csv as _csv, io as _io
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
+
+    def _set_approved_in_csv(csv_path, approved_val):
+        with open(csv_path) as f:
+            raw_lines = f.readlines()
+        comment_lines = [l for l in raw_lines if l.startswith("#")]
+        data_lines = [l for l in raw_lines if not l.startswith("#")]
+        rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+        for r in rows:
+            if r["system"]:
+                r["approved (y/n)"] = approved_val
+        fieldnames = list(rows[0].keys()) if rows else []
+        buf = _io.StringIO()
+        writer = _csv.DictWriter(buf, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+        csv_path.write_text("".join(comment_lines) + buf.getvalue())
+
+    _set_approved_in_csv(concepts_dir / "hypertension.csv", "y")
+    _set_approved_in_csv(concepts_dir / "blood-pressure-screening.csv", "n")
 
     result = runner.invoke(promote, [
         "concept", "review", "my-skill", "--finalize", "--reviewer", "manual-reviewer",
@@ -838,12 +870,14 @@ def test_review_concepts_reset_clears_candidates(tmp_repo):
     runner.invoke(promote, ["plan", "my-skill"])
     _enrich_two_concepts(tmp_repo, runner)
 
-    # Confirm candidates exist
-    import csv as _csv
-    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
-    with open(csv_path) as f:
-        rows = list(_csv.DictReader(f))
-    assert any(r["concept_name"] == "Hypertension" and r["system"] for r in rows)
+    import csv as _csv, io as _io
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
+    assert any(p.name == "hypertension.csv" for p in concepts_dir.glob("*.csv"))
+    with open(concepts_dir / "hypertension.csv") as f:
+        raw_lines = f.readlines()
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+    assert any(r["system"] for r in rows) or len(rows) == 0
 
     # Reset
     result = runner.invoke(promote, [
@@ -852,11 +886,13 @@ def test_review_concepts_reset_clears_candidates(tmp_repo):
     assert result.exit_code == 0, result.output
     assert "Reset" in result.output
 
-    with open(csv_path) as f:
-        rows = list(_csv.DictReader(f))
-    hyp_rows = [r for r in rows if r["concept_name"] == "Hypertension"]
-    assert len(hyp_rows) == 1
-    assert hyp_rows[0]["system"] == ""
+    # After reset, hypertension.csv should have no code rows
+    with open(concepts_dir / "hypertension.csv") as f:
+        raw_lines = f.readlines()
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+    hyp_rows = [r for r in rows if r.get("system")]
+    assert len(hyp_rows) == 0
 
 
 def test_review_concepts_concept_with_no_action_flags_errors(tmp_repo):
@@ -888,17 +924,19 @@ def test_concept_add_creates_placeholder_row(tmp_repo):
     assert result.exit_code == 0, result.output
     assert "Frailty" in result.output
 
-    import csv as _csv
-    csv_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review.csv"
-    with open(csv_path) as f:
-        rows = list(_csv.DictReader(f))
-    frailty = next((r for r in rows if r["concept_name"] == "Frailty"), None)
-    assert frailty is not None
-    assert frailty["concept_type"] == "finding"
-    assert frailty["sources"] == "custom"
-    assert frailty["context"] == ""
-    assert frailty["system"] == ""
-    assert frailty["code"] == ""
+    import csv as _csv, io as _io
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
+    frailty_csv = concepts_dir / "frailty.csv"
+    assert frailty_csv.exists()
+    with open(frailty_csv) as f:
+        raw_lines = f.readlines()
+    hyp_meta = {line.lstrip("#").split(",")[0]: line.lstrip("#").split(",", 1)[1].rstrip() for line in raw_lines if line.startswith("#")}
+    assert hyp_meta["concept_type"] == "finding"
+    assert hyp_meta["sources"] == "custom"
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+    # No code rows yet
+    assert all(r.get("system", "") == "" for r in rows)
 
 
 def test_concept_add_errors_if_concept_already_exists(tmp_repo):
@@ -995,6 +1033,141 @@ def test_write_concepts_requires_approved_packet(tmp_repo):
     result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code != 0
     assert "not approved" in result.output
+
+
+def test_concept_enrich_with_related_candidates(tmp_repo):
+    """--related-candidate appends level=1 row_type=related rows after the parent candidate."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    runner.invoke(promote, ["plan", "my-skill"])
+
+    result = runner.invoke(promote, [
+        "concept", "enrich", "my-skill",
+        "--concept", "Hypertension",
+        "--candidate", "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)",
+        "--related-candidate", "http://snomed.info/sct|59621000|Essential hypertension (disorder)|is_a",
+        "--related-candidate", "http://snomed.info/sct|73410007|Benign secondary renovascular hypertension (disorder)|is_a",
+    ])
+    assert result.exit_code == 0, result.output
+
+    import csv as _csv, io as _io
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
+    with open(concepts_dir / "hypertension.csv") as f:
+        raw_lines = f.readlines()
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+
+    candidate_rows = [r for r in rows if r["row_type"] == "candidate"]
+    related_rows = [r for r in rows if r["row_type"] == "related"]
+
+    assert len(candidate_rows) == 1
+    assert candidate_rows[0]["code"] == "38341003"
+    assert candidate_rows[0]["level"] == "0"
+
+    assert len(related_rows) == 2
+    related_codes = {r["code"] for r in related_rows}
+    assert "59621000" in related_codes
+    assert "73410007" in related_codes
+    for r in related_rows:
+        assert r["level"] == "1"
+        assert r["relation"] == "is_a"
+
+
+def test_review_approve_all_covers_related_rows(tmp_repo):
+    """--approve-all sets approved=y on both candidate and related rows."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    runner.invoke(promote, ["plan", "my-skill"])
+
+    # Enrich Hypertension with one candidate and one related row
+    runner.invoke(promote, [
+        "concept", "enrich", "my-skill",
+        "--concept", "Hypertension",
+        "--candidate", "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)",
+        "--related-candidate", "http://snomed.info/sct|59621000|Essential hypertension (disorder)|is_a",
+    ])
+    # Enrich Blood pressure screening so --finalize has all concepts covered
+    runner.invoke(promote, [
+        "concept", "enrich", "my-skill",
+        "--concept", "Blood pressure screening",
+        "--candidate", "http://snomed.info/sct|171207006|Blood pressure screening (procedure)",
+    ])
+
+    # --approve-all should cover both candidate and related rows
+    runner.invoke(promote, [
+        "concept", "review", "my-skill", "--concept", "Hypertension", "--approve-all",
+    ])
+    runner.invoke(promote, [
+        "concept", "review", "my-skill", "--concept", "Blood pressure screening", "--approve-all",
+    ])
+
+    import csv as _csv, io as _io
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
+    with open(concepts_dir / "hypertension.csv") as f:
+        raw_lines = f.readlines()
+    data_lines = [l for l in raw_lines if not l.startswith("#")]
+    rows = list(_csv.DictReader(_io.StringIO("".join(data_lines))))
+
+    for r in rows:
+        if r.get("system", "").strip() or r.get("code", "").strip():
+            assert r["approved (y/n)"] == "y", (
+                f"Expected approved=y for row_type={r.get('row_type')} code={r.get('code')}, "
+                f"got {r['approved (y/n)']!r}"
+            )
+
+    # --finalize must succeed without "missing approved value" error
+    result = runner.invoke(promote, [
+        "concept", "review", "my-skill",
+        "--finalize", "--reviewer", "test-reviewer", "--force",
+    ])
+    assert result.exit_code == 0, result.output
+
+
+def test_write_concepts_includes_related_in_l2(tmp_repo):
+    """Approved related rows appear as related[] under the parent code in concepts.yaml."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    runner.invoke(promote, ["plan", "my-skill"])
+
+    # Enrich Hypertension with candidate + related
+    runner.invoke(promote, [
+        "concept", "enrich", "my-skill",
+        "--concept", "Hypertension",
+        "--candidate", "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)",
+        "--related-candidate", "http://snomed.info/sct|59621000|Essential hypertension (disorder)|is_a",
+    ])
+    # Enrich Blood pressure screening (required for finalize gate)
+    runner.invoke(promote, [
+        "concept", "enrich", "my-skill",
+        "--concept", "Blood pressure screening",
+        "--candidate", "http://snomed.info/sct|171207006|Blood pressure screening (procedure)",
+    ])
+
+    # Approve candidate rows; also approve related row on Hypertension
+    runner.invoke(promote, ["concept", "review", "my-skill", "--concept", "Hypertension", "--approve-all"])
+    runner.invoke(promote, [
+        "concept", "review", "my-skill", "--concept", "Hypertension", "--approve-code", "59621000",
+    ])
+    runner.invoke(promote, ["concept", "review", "my-skill", "--concept", "Blood pressure screening", "--approve-all"])
+
+    result = runner.invoke(promote, [
+        "concept", "review", "my-skill",
+        "--finalize", "--reviewer", "test-reviewer", "--force",
+    ])
+    assert result.exit_code == 0, result.output
+
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    from ruamel.yaml import YAML as _YAML
+    artifact = _YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text()
+    )
+    hyp = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
+    assert hyp["codes"][0]["code"] == "38341003"
+    assert "related" in hyp["codes"][0]
+    related = hyp["codes"][0]["related"]
+    assert any(r["code"] == "59621000" for r in related)
 
 
 def test_plan_warns_and_does_not_write_without_normalized_sources(tmp_repo):

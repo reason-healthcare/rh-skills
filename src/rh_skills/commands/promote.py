@@ -125,6 +125,15 @@ def _concept_review_csv_path(topic: str) -> Path:
     return topic_dir(topic) / "process" / "plans" / "concepts-review.csv"
 
 
+def _concepts_csv_dir(topic: str) -> Path:
+    return topic_dir(topic) / "process" / "plans" / "concepts"
+
+
+def _concept_csv_path(topic: str, concept_name: str) -> Path:
+    slug = _slugify(concept_name)
+    return _concepts_csv_dir(topic) / f"{slug}.csv"
+
+
 def _concept_review_meta_path(topic: str) -> Path:
     return topic_dir(topic) / "process" / "plans" / "concepts-review-meta.yaml"
 
@@ -139,6 +148,44 @@ _CONCEPT_CSV_FIELDNAMES = [
     "confidence (high/medium/low)", "approved (y/n)", "comment",
     "row_type", "method",
 ]
+
+# Per-concept CSV columns (one file per concept; metadata in #comment lines at the top)
+_CONCEPT_CODE_CSV_FIELDNAMES = [
+    "level",
+    "system", "code", "display", "distance",
+    "confidence (high/medium/low)", "approved (y/n)", "comment",
+    "row_type", "method", "relation",
+]
+
+
+def _write_concept_csv(path: Path, meta_dict: dict, rows: list[dict]) -> None:
+    """Write a per-concept CSV: #key,value comment lines, then standard header + rows."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as f:
+        for key, value in meta_dict.items():
+            f.write(f"#{key},{value}\n")
+        writer = csv.DictWriter(f, fieldnames=_CONCEPT_CODE_CSV_FIELDNAMES, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _load_concept_csv(path: Path) -> tuple[dict, list[dict]]:
+    """Load a per-concept CSV.  Returns (meta_dict, rows).  Returns ({}, []) if missing."""
+    if not path.exists():
+        return {}, []
+    meta_dict: dict = {}
+    data_lines: list[str] = []
+    with path.open(newline="", encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("#"):
+                stripped = line.lstrip("#").rstrip("\n")
+                idx = stripped.find(",")
+                if idx >= 0:
+                    meta_dict[stripped[:idx]] = stripped[idx + 1:]
+            else:
+                data_lines.append(line)
+    reader = csv.DictReader(io.StringIO("".join(data_lines)))
+    return meta_dict, list(reader)
 
 
 def _load_csv(path: Path) -> list[dict]:
@@ -254,7 +301,7 @@ def _require_concept_review_approved(plan: dict) -> None:
     if status != "approved":
         raise click.UsageError(
             f"Concept review is not approved — finalization is blocked. "
-            f"Edit topics/{topic}/process/plans/concepts-review.csv then run: "
+            f"Edit CSVs in topics/{topic}/process/plans/concepts/ then run: "
             f"'rh-skills promote concept review {topic} --finalize --reviewer <name>'."
         )
 
@@ -1068,86 +1115,112 @@ def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
         "source_files": source_files,
         "status": "pending-review",
         "concept_count": len(concepts),
-        "review_artifact": f"topics/{topic}/process/plans/concepts-review.csv",
+        "review_artifact": f"topics/{topic}/process/plans/concepts/",
         "final_artifact": f"topics/{topic}/structured/concepts.yaml",
     }
 
 
 def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, Path]:
-    """Write concepts-review.csv and concepts-review-meta.yaml.
+    """Write one per-concept CSV and concepts-review-meta.yaml.
 
-    One row per concept (placeholder — no candidates yet). concept enrich adds
-    candidate rows per concept. Returns (csv_path, meta_path).
+    Each concept gets its own CSV under process/plans/concepts/<slug>.csv with
+    #key,value metadata comment lines at the top and no code rows yet.
+    concept enrich adds candidate rows. Returns (concepts_dir, meta_path).
     """
-    csv_path = _concept_review_csv_path(topic)
-    rows = [
-        {
+    checksums: dict = {}
+    for c in concepts:
+        meta_dict = {
             "concept_name": c["name"],
             "concept_type": c["type"],
             "role": ";".join(c.get("role") or []),
-            "sources": "; ".join(c.get("sources") or []),
+            "sources": ";".join(c.get("sources") or []),
             "context": c.get("context") or "",
             "lookup_query": c["name"],
             "lookup_notes": "",
-            "system": "",
-            "code": "",
-            "display": "",
-            "distance": "",
-            "confidence (high/medium/low)": "",
-            "approved (y/n)": "",
-            "comment": "",
-            "row_type": "concept",
-            "method": "",
         }
-        for c in concepts
-    ]
-    _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
+        csv_path = _concept_csv_path(topic, c["name"])
+        _write_concept_csv(csv_path, meta_dict, [])
+        checksums[_slugify(c["name"])] = _csv_checksum(csv_path)
+    concepts_dir = _concepts_csv_dir(topic)
     meta: dict = {
         "topic": topic,
         "status": "pending-review",
         "generated_at": now_iso(),
         "reviewed_at": None,
         "reviewer": "",
-        "csv_checksum": _csv_checksum(csv_path),
+        "checksums": checksums,
         "final_artifact": f"topics/{topic}/structured/concepts.yaml",
     }
     meta_path = _write_concept_review_meta(topic, meta)
-    return csv_path, meta_path
+    return concepts_dir, meta_path
 
 
 def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
-    """Build and write concepts.yaml from concepts-review.csv."""
-    csv_path = _concept_review_csv_path(topic)
+    """Build and write concepts.yaml from per-concept CSVs."""
+    concepts_dir = _concepts_csv_dir(topic)
     meta = _load_concept_review_meta(topic)
-    csv_rows = _load_csv(csv_path)
 
-    # Collect per-concept metadata and approved codes
+    # Collect concept data from each per-concept CSV (sorted for determinism)
+    concept_order: list[str] = []
     concept_meta: dict[str, dict] = {}   # name → {type, role, sources, context, comment}
     approved_by_concept: dict[str, list[dict]] = {}
 
-    for row in csv_rows:
-        name = row.get("concept_name", "").strip()
+    for csv_path in sorted(concepts_dir.glob("*.csv")):
+        csv_meta, rows = _load_concept_csv(csv_path)
+        name = csv_meta.get("concept_name", "").strip()
         if not name:
             continue
-        row_type = row.get("row_type", "").strip().lower()
-        if row_type == "related":
-            continue  # related_codes rows are no longer written to L2 output
-        if name not in concept_meta:
-            role_raw = row.get("role", "").strip()
-            role_val: list[str] = [r.strip() for r in role_raw.split(";") if r.strip()]
-            concept_meta[name] = {
-                "type": row.get("concept_type", "").strip(),
-                "role": role_val,
-                "sources": [s.strip() for s in row.get("sources", "").split(";") if s.strip()],
-                "context": row.get("context", "").strip(),
-                "comment": row.get("comment", "").strip(),
-            }
-        if row.get("approved (y/n)", "").strip().lower() in ("y", "yes", "approve", "approved"):
+
+        role_raw = csv_meta.get("role", "").strip()
+        role_val: list[str] = [r.strip() for r in role_raw.split(";") if r.strip()]
+        sources_raw = csv_meta.get("sources", "").strip()
+        concept_meta[name] = {
+            "type": csv_meta.get("concept_type", "").strip(),
+            "role": role_val,
+            "sources": [s.strip() for s in sources_raw.split(";") if s.strip()],
+            "context": csv_meta.get("context", "").strip(),
+            "comment": csv_meta.get("comment", "").strip(),
+        }
+        concept_order.append(name)
+
+        # Collect approved candidate rows and their related rows
+        current_parent_code: str = ""
+        current_parent_approved: bool = False
+        pending_related: list[dict] = []
+
+        for row in rows:
+            row_type = row.get("row_type", "").strip().lower()
+            level = row.get("level", "0").strip()
+            is_approved = row.get("approved (y/n)", "").strip().lower() in (
+                "y", "yes", "approve", "approved"
+            )
             system = row.get("system", "").strip()
             code = row.get("code", "").strip()
             display = row.get("display", "").strip()
-            if not system or not code:
+
+            if row_type == "related" or level == "1":
+                # Attach to current parent if parent was approved
+                if current_parent_approved and is_approved and system and code:
+                    rel_entry: dict = {k: v for k, v in {"system": system, "code": code, "display": display}.items() if v}
+                    relation = row.get("relation", "").strip()
+                    if relation:
+                        rel_entry["relation"] = relation
+                    pending_related.append(rel_entry)
                 continue
+
+            # Flush pending_related onto the previous parent
+            if current_parent_code and pending_related:
+                for entry in approved_by_concept.get(name, []):
+                    if entry.get("_key") == current_parent_code:
+                        entry.setdefault("related", []).extend(pending_related)
+                        break
+            pending_related = []
+            current_parent_code = system.casefold() + "|" + code.casefold() if system and code else ""
+            current_parent_approved = False
+
+            if not is_approved or not system or not code:
+                continue
+
             approved_by_concept.setdefault(name, [])
             cand_key = (system.casefold(), code.casefold())
             if not any(
@@ -1158,19 +1231,36 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
                 cand_method = row.get("method", "").strip()
                 if cand_method:
                     cand_entry["method"] = cand_method
+                cand_entry["_key"] = current_parent_code
                 approved_by_concept[name].append(cand_entry)
+                current_parent_approved = True
+            else:
+                current_parent_approved = True
+
+        # Flush remaining pending_related
+        if current_parent_code and pending_related:
+            for entry in approved_by_concept.get(name, []):
+                if entry.get("_key") == current_parent_code:
+                    entry.setdefault("related", []).extend(pending_related)
+                    break
 
     # Build concept rows
     concept_rows = []
-    for name, info in concept_meta.items():
+    for name in concept_order:
+        info = concept_meta[name]
         concept_row: dict = {"name": name, "type": info["type"]}
         if info.get("role"):
-            concept_row["role"] = info["role"]  # list[str]
+            concept_row["role"] = info["role"]
         if info.get("context"):
             concept_row["context"] = info["context"]
-        codes = approved_by_concept.get(name, [])
-        if codes:
-            concept_row["codes"] = codes
+        codes_raw = approved_by_concept.get(name, [])
+        if codes_raw:
+            # Strip internal _key before writing
+            codes_clean = []
+            for entry in codes_raw:
+                clean = {k: v for k, v in entry.items() if k != "_key"}
+                codes_clean.append(clean)
+            concept_row["codes"] = codes_clean
         if info.get("comment"):
             concept_row["notes"] = info["comment"]
         concept_rows.append(concept_row)
@@ -1928,8 +2018,8 @@ def plan(topic, force):
     plan = _yaml_safe().load(plan_yaml)
     _extract_readout_path(topic).write_text(_render_extract_readout(plan))
     if frontmatter_concepts:
-        csv_path, meta_path = _build_concept_review_csvs(topic, frontmatter_concepts)
-        log_info(f"Created: {csv_path}")
+        concepts_dir, meta_path = _build_concept_review_csvs(topic, frontmatter_concepts)
+        log_info(f"Created: {concepts_dir}")
         log_info(f"Created: {meta_path}")
 
     append_topic_event(
@@ -1945,7 +2035,7 @@ def plan(topic, force):
     click.echo(f"  1. Review the readout : cat topics/{topic}/process/plans/extract-plan-readout.md")
     if frontmatter_concepts:
         click.echo(f"  2. Enrich concepts    : rh-skills promote concept enrich {topic} --concept <name> --candidate <system|code|display>")
-        click.echo(f"  3. Edit the CSV       : open topics/{topic}/process/plans/concepts-review.csv")
+        click.echo(f"  3. Edit the CSVs      : open topics/{topic}/process/plans/concepts/")
         click.echo(f"  4. Finalize review    : rh-skills promote concept review {topic} --finalize --reviewer <name>")
         click.echo(f"  5. Write concepts.yaml: rh-skills promote concept write {topic}  (during implement)")
         click.echo(f"  6. Approve artifacts  : rh-inf-extract approve {topic}")
@@ -2245,13 +2335,25 @@ def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> li
     multiple=True,
     type=click.STRING,
     metavar="TEXT",
-    help="MCP candidate to record. Format: 'system|code|display[|distance[|confidence]]'. Repeatable — pass once per candidate. Omit when MCP returned no results.",
+    help="MCP candidate to record. Format: 'system|code|display[|distance[|confidence]]'. Repeatable.",
+)
+@click.option(
+    "--related-candidate",
+    "raw_related_candidates",
+    multiple=True,
+    type=click.STRING,
+    metavar="TEXT",
+    help=(
+        "Related code for the most-recently listed --candidate. "
+        "Format: 'system|code|display|relation' where relation is an ontology predicate "
+        "(e.g. is_a, finding_site, associated_morphology, causative_agent, due_to). Repeatable."
+    ),
 )
 @click.option("--lookup-query", "lookup_query", default=None, metavar="TEXT", help="Search query used. Defaults to concept name.")
 @click.option("--lookup-notes", "lookup_notes", default=None, metavar="TEXT", help="Optional notes from the MCP lookup.")
 @click.option("--reset", "reset", is_flag=True, help="Clear existing candidate rows and restore placeholder. Use alone or before re-adding candidates.")
-def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_query, lookup_notes, reset):
-    """Record RH MCP candidates for a concept in the concepts-review.csv.
+def enrich_concepts(topic, concept_name, concept_type, raw_candidates, raw_related_candidates, lookup_query, lookup_notes, reset):
+    """Record RH MCP candidates for a concept in its per-concept CSV.
 
     \b
     Non-interactive (AI agent):
@@ -2261,11 +2363,12 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
         --candidate "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
         --lookup-query "Hypertension"
 
-      # Multiple candidates in a single call:
+      # Candidate with related codes:
       rh-skills promote concept enrich <topic> \\
         --concept "Hypertension" \\
-        --candidate "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
-        --candidate "http://hl7.org/fhir/sid/icd-10-cm|I10|Essential (primary) hypertension|0.05"
+        --candidate "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)" \\
+        --related-candidate "http://snomed.info/sct|59621000|Essential hypertension (disorder)|is_a" \\
+        --related-candidate "http://snomed.info/sct|73410007|Benign secondary renovascular hypertension (disorder)|is_a"
 
       # MCP returned no results — still call to record lookup notes:
       rh-skills promote concept enrich <topic> --concept "Rare finding" \\
@@ -2275,10 +2378,10 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
       rh-skills promote concept enrich <topic> --concept "Hypertension" --reset
     """
     require_topic(require_tracking(), topic)
-    csv_path = _concept_review_csv_path(topic)
+    csv_path = _concept_csv_path(topic, concept_name)
     if not csv_path.exists():
         raise click.UsageError(
-            f"No concept review CSV found. Run 'rh-skills promote plan {topic}' first."
+            f"No concept CSV found for '{concept_name}'. Run 'rh-skills promote plan {topic}' first."
         )
     remaining = 0
     appended_count = 0
@@ -2287,51 +2390,49 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
         if meta.get("status") == "approved":
             raise click.UsageError("Concept review is already approved; re-plan if you need to change candidates.")
 
-        rows = _load_csv(csv_path)
-        concept_row_list = [r for r in rows if r.get("concept_name", "").strip() == concept_name]
-        if not concept_row_list:
-            raise click.UsageError(f"Concept '{concept_name}' not found in concepts-review.csv.")
-
-        first_row = concept_row_list[0]
-        meta_type = first_row.get("concept_type", "")
-        meta_sources = first_row.get("sources", "")
-        effective_lookup_query = lookup_query or first_row.get("lookup_query") or concept_name
+        csv_meta, rows = _load_concept_csv(csv_path)
+        effective_lookup_query = lookup_query or csv_meta.get("lookup_query") or concept_name
 
         if reset:
-            placeholder = {
-                "concept_name": concept_name,
-                "concept_type": meta_type,
-                "role": first_row.get("role", ""),
-                "sources": meta_sources,
-                "context": first_row.get("context", ""),
-                "lookup_query": effective_lookup_query,
-                "lookup_notes": lookup_notes or "",
-                "system": "", "code": "", "display": "",
-                "distance": "", "confidence (high/medium/low)": "",
-                "approved (y/n)": "", "comment": "",
-                "row_type": "concept",
-                "method": "mcp",
-            }
-            other_rows = [r for r in rows if r.get("concept_name", "").strip() != concept_name]
-            rows = other_rows + [placeholder]
             if not raw_candidates:
-                _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
-                meta["csv_checksum"] = _csv_checksum(csv_path)
+                csv_meta["lookup_query"] = effective_lookup_query
+                if lookup_notes is not None:
+                    csv_meta["lookup_notes"] = lookup_notes
+                _write_concept_csv(csv_path, csv_meta, [])
+                checksums = meta.get("checksums") or {}
+                checksums[_slugify(concept_name)] = _csv_checksum(csv_path)
+                meta["checksums"] = checksums
                 _write_concept_review_meta(topic, meta)
                 log_info(f"Reset candidates for '{concept_name}'.")
                 return
-            concept_row_list = [placeholder]
+            rows = []
 
         existing_candidate_rows = [
-            r for r in concept_row_list
-            if r.get("system", "").strip() or r.get("code", "").strip()
+            r for r in rows
+            if r.get("row_type", "").strip().lower() in ("candidate", "")
+            and (r.get("system", "").strip() or r.get("code", "").strip())
         ]
-        placeholder_rows = [
-            r for r in concept_row_list
-            if not r.get("system", "").strip() and not r.get("code", "").strip()
-        ]
+        # Related rows are keyed by the code they belong to — we rebuild them below
+        existing_related_by_parent: dict[str, list[dict]] = {}
+        for r in rows:
+            if r.get("row_type", "").strip().lower() == "related":
+                # Find the preceding candidate row to associate with
+                # by scanning rows in order — just rebuild the map from existing data
+                pass
+        # Rebuild existing_related_by_parent from row order
+        current_parent_key: str = ""
+        for r in rows:
+            rt = r.get("row_type", "").strip().lower()
+            if rt in ("candidate", "") and (r.get("system", "").strip() or r.get("code", "").strip()):
+                current_parent_key = (
+                    r.get("system", "").strip().casefold() + "|" + r.get("code", "").strip().casefold()
+                )
+            elif rt == "related":
+                if current_parent_key:
+                    existing_related_by_parent.setdefault(current_parent_key, []).append(r)
 
         _CONF_RANK = {"high": 2, "medium": 1, "low": 0}
+        last_appended_key: str = ""
         for raw_candidate in raw_candidates:
             entry = _parse_candidate_flag(raw_candidate)
             norm_new = _normalize_candidate_identity(entry)
@@ -2343,6 +2444,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
             if not new_conf_str and entry.get("distance") is not None:
                 new_conf_str = _confidence_from_distance(float(entry["distance"]))
             new_conf = _CONF_RANK.get(new_conf_str, -1)
+            parent_key = new_system.casefold() + "|" + new_code.casefold()
 
             dup_row = next(
                 (
@@ -2377,16 +2479,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                     log_info(f"Skipped duplicate {new_system}|{new_code} — existing retained.")
             else:
                 new_row: dict = {
-                    "concept_name": concept_name,
-                    "concept_type": meta_type,
-                    "role": first_row.get("role", ""),
-                    "sources": meta_sources,
-                    "context": first_row.get("context", ""),
-                    "lookup_query": effective_lookup_query,
-                    "lookup_notes": (
-                        lookup_notes if lookup_notes is not None
-                        else first_row.get("lookup_notes", "")
-                    ),
+                    "level": "0",
                     "system": new_system,
                     "code": new_code,
                     "display": new_display,
@@ -2396,34 +2489,100 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
                     "comment": "",
                     "row_type": "candidate",
                     "method": "mcp",
+                    "relation": "",
                 }
                 existing_candidate_rows.append(new_row)
                 appended_count += 1
+            last_appended_key = parent_key
 
-        for r in existing_candidate_rows:
-            r["lookup_query"] = effective_lookup_query
-            if lookup_notes is not None:
-                r["lookup_notes"] = lookup_notes
+        # Process --related-candidate flags; they attach to last_appended_key
+        if raw_related_candidates and not last_appended_key and existing_candidate_rows:
+            last_candidate = existing_candidate_rows[-1]
+            last_appended_key = (
+                last_candidate.get("system", "").strip().casefold()
+                + "|"
+                + last_candidate.get("code", "").strip().casefold()
+            )
+        # Guard: when adding related rows without a same-call --candidate, the parent
+        # candidate must already have a y/n review decision.
+        if raw_related_candidates and not raw_candidates and last_appended_key:
+            parent_row = next(
+                (
+                    r for r in existing_candidate_rows
+                    if r.get("system", "").strip().casefold() + "|" + r.get("code", "").strip().casefold()
+                    == last_appended_key
+                ),
+                None,
+            )
+            if parent_row is not None:
+                approved_val = parent_row.get("approved (y/n)", "").strip().lower()
+                code_id = parent_row.get("code", "").strip() or parent_row.get("system", "").strip()
+                if not approved_val:
+                    raise click.UsageError(
+                        f"Cannot add related candidates: the parent candidate '{code_id}' has not been reviewed yet "
+                        f"('approved (y/n)' is empty). "
+                        f"Run 'rh-skills promote concept review {topic} --concept \"{concept_name}\" "
+                        f"--approve-code {code_id}' (or --exclude-code) before running expansion."
+                    )
+                if approved_val not in ("y", "yes", "approve", "approved"):
+                    raise click.UsageError(
+                        f"Cannot add related candidates: the parent candidate '{code_id}' is excluded "
+                        f"('approved (y/n)' = '{approved_val}'). "
+                        f"Related codes can only be added to approved candidates."
+                    )
+        for raw_rel in raw_related_candidates:
+            parts = raw_rel.split("|")
+            rel_system = parts[0].strip() if len(parts) > 0 else ""
+            rel_code = parts[1].strip() if len(parts) > 1 else ""
+            rel_display = parts[2].strip() if len(parts) > 2 else ""
+            rel_relation = parts[3].strip() if len(parts) > 3 else "is_a"
+            if not rel_system or not rel_code:
+                continue
+            rel_row: dict = {
+                "level": "1",
+                "system": rel_system,
+                "code": rel_code,
+                "display": rel_display,
+                "distance": "",
+                "confidence (high/medium/low)": "",
+                "approved (y/n)": "",
+                "comment": "",
+                "row_type": "related",
+                "method": "mcp",
+                "relation": rel_relation,
+            }
+            existing_related_by_parent.setdefault(last_appended_key, []).append(rel_row)
 
-        if existing_candidate_rows:
-            updated_concept_rows: list[dict] = existing_candidate_rows
-        else:
-            for r in placeholder_rows:
-                r["lookup_query"] = effective_lookup_query
-                if lookup_notes is not None:
-                    r["lookup_notes"] = lookup_notes
-            updated_concept_rows = placeholder_rows
+        # Update lookup metadata on csv_meta
+        csv_meta["lookup_query"] = effective_lookup_query
+        if lookup_notes is not None:
+            csv_meta["lookup_notes"] = lookup_notes
 
-        other_rows = [r for r in rows if r.get("concept_name", "").strip() != concept_name]
-        rows = other_rows + updated_concept_rows
-        _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
-        meta["csv_checksum"] = _csv_checksum(csv_path)
+        # Rebuild rows: interleave candidate rows with their related rows
+        updated_rows: list[dict] = []
+        for cand_row in existing_candidate_rows:
+            updated_rows.append(cand_row)
+            parent_key = (
+                cand_row.get("system", "").strip().casefold()
+                + "|"
+                + cand_row.get("code", "").strip().casefold()
+            )
+            for rel_row in existing_related_by_parent.get(parent_key, []):
+                updated_rows.append(rel_row)
+
+        _write_concept_csv(csv_path, csv_meta, updated_rows)
+        checksums = meta.get("checksums") or {}
+        checksums[_slugify(concept_name)] = _csv_checksum(csv_path)
+        meta["checksums"] = checksums
         _write_concept_review_meta(topic, meta)
 
-        all_concept_names = {r.get("concept_name", "").strip() for r in rows if r.get("concept_name", "").strip()}
+        concepts_dir = _concepts_csv_dir(topic)
         remaining = sum(
-            1 for name in all_concept_names
-            if not any(r.get("system", "").strip() for r in rows if r.get("concept_name", "").strip() == name)
+            1 for p in concepts_dir.glob("*.csv")
+            if not any(
+                r.get("system", "").strip()
+                for r in _load_concept_csv(p)[1]
+            )
         )
 
     if raw_candidates:
@@ -2442,7 +2601,7 @@ def enrich_concepts(topic, concept_name, concept_type, raw_candidates, lookup_qu
 @click.option("--concept", "concept_name", required=True, metavar="NAME", help="Concept name to add.")
 @click.option("--type", "concept_type", required=True, metavar="TYPE", help="SNOMED semantic tag, e.g. finding | disorder | procedure.")
 def add_concept(topic, concept_name, concept_type):
-    """Add a custom concept placeholder to concepts-review.csv.
+    """Add a custom concept placeholder CSV.
 
     \b
     Use this to introduce a concept not extracted from source documents.
@@ -2454,22 +2613,23 @@ def add_concept(topic, concept_name, concept_type):
       rh-skills promote concept add <topic> --concept "Frailty" --type finding
     """
     require_topic(require_tracking(), topic)
-    csv_path = _concept_review_csv_path(topic)
-    if not csv_path.exists():
+    meta = _load_concept_review_meta(topic)
+    if meta.get("status") == "approved":
+        raise click.UsageError("Concept review is already approved.")
+    # Check for duplicates across all per-concept CSVs
+    concepts_dir = _concepts_csv_dir(topic)
+    if not concepts_dir.exists():
         raise click.UsageError(
-            f"No concept review CSV found. Run 'rh-skills promote plan {topic}' first."
+            f"No concept CSVs found. Run 'rh-skills promote plan {topic}' first."
         )
+    existing_slugs = {p.stem for p in concepts_dir.glob("*.csv")}
+    if _slugify(concept_name) in existing_slugs:
+        raise click.UsageError(
+            f"Concept '{concept_name}' already exists in the concept CSVs."
+        )
+    csv_path = _concept_csv_path(topic, concept_name)
     with _lock_concept_review(csv_path):
-        meta = _load_concept_review_meta(topic)
-        if meta.get("status") == "approved":
-            raise click.UsageError("Concept review is already approved.")
-        rows = _load_csv(csv_path)
-        existing_names = {r.get("concept_name", "").strip().casefold() for r in rows}
-        if concept_name.strip().casefold() in existing_names:
-            raise click.UsageError(
-                f"Concept '{concept_name}' already exists in concepts-review.csv."
-            )
-        placeholder: dict = {
+        csv_meta = {
             "concept_name": concept_name,
             "concept_type": concept_type,
             "role": "",
@@ -2477,15 +2637,11 @@ def add_concept(topic, concept_name, concept_type):
             "context": "",
             "lookup_query": concept_name,
             "lookup_notes": "",
-            "system": "", "code": "", "display": "",
-            "distance": "", "confidence (high/medium/low)": "",
-            "approved (y/n)": "", "comment": "",
-            "row_type": "concept",
-            "method": "manual",
         }
-        rows.append(placeholder)
-        _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
-        meta["csv_checksum"] = _csv_checksum(csv_path)
+        _write_concept_csv(csv_path, csv_meta, [])
+        checksums = meta.get("checksums") or {}
+        checksums[_slugify(concept_name)] = _csv_checksum(csv_path)
+        meta["checksums"] = checksums
         _write_concept_review_meta(topic, meta)
     log_info(f"Added custom concept '{concept_name}' (type: {concept_type}).")
 
@@ -2493,8 +2649,8 @@ def add_concept(topic, concept_name, concept_type):
 @concept.command("review")
 @click.argument("topic")
 @click.option("--concept", "concept_name", default=None, metavar="NAME", help="Concept name to update.")
-@click.option("--approve-all", "approve_all", is_flag=True, help="Set approved=y on all candidate rows for the concept.")
-@click.option("--exclude-all", "exclude_all", is_flag=True, help="Set approved=n on all candidate rows for the concept.")
+@click.option("--approve-all", "approve_all", is_flag=True, help="Set approved=y on all candidate and related rows for the concept.")
+@click.option("--exclude-all", "exclude_all", is_flag=True, help="Set approved=n on all candidate and related rows for the concept.")
 @click.option("--approve-code", "approve_codes", multiple=True, metavar="CODE", help="Set approved=y on the row matching this code value.")
 @click.option("--exclude-code", "exclude_codes", multiple=True, metavar="CODE", help="Set approved=n on the row matching this code value.")
 @click.option("--note", default="", metavar="TEXT", help="Set comment on the first row for the concept.")
@@ -2531,48 +2687,49 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
         )
 
     require_topic(require_tracking(), topic)
-    csv_path = _concept_review_csv_path(topic)
-    if not csv_path.exists():
+    concepts_dir = _concepts_csv_dir(topic)
+    if not concepts_dir.exists():
         raise click.UsageError(
-            f"No concept review CSV found. Run 'rh-skills promote plan {topic}' first."
+            f"No concept CSVs found. Run 'rh-skills promote plan {topic}' first."
         )
 
     # --- per-concept update ---
     if concept_name:
         if not approve_all and not exclude_all and not approve_codes and not exclude_codes and not note:
             raise click.UsageError("--concept requires at least one of --approve-all, --exclude-all, --approve-code, --exclude-code, or --note.")
+        csv_path = _concept_csv_path(topic, concept_name)
+        if not csv_path.exists():
+            raise click.UsageError(f"Concept '{concept_name}' not found.")
         with _lock_concept_review(csv_path):
             meta = _load_concept_review_meta(topic)
             if meta.get("status") == "approved":
                 raise click.UsageError("Concept review is already approved.")
-            rows = _load_csv(csv_path)
-            concept_rows = [r for r in rows if r.get("concept_name", "").strip() == concept_name]
-            if not concept_rows:
-                raise click.UsageError(f"Concept '{concept_name}' not found in concepts-review.csv.")
+            csv_meta, rows = _load_concept_csv(csv_path)
             if approve_all:
-                for r in concept_rows:
-                    if r.get("row_type", "").strip().lower() != "related" and (
-                        r.get("system", "").strip() or r.get("code", "").strip()
-                    ):
+                for r in rows:
+                    if r.get("system", "").strip() or r.get("code", "").strip():
                         r["approved (y/n)"] = "y"
             if exclude_all:
-                for r in concept_rows:
-                    if r.get("row_type", "").strip().lower() != "related" and (
-                        r.get("system", "").strip() or r.get("code", "").strip()
-                    ):
+                for r in rows:
+                    if r.get("system", "").strip() or r.get("code", "").strip():
                         r["approved (y/n)"] = "n"
             for code_val in approve_codes:
-                for r in concept_rows:
+                for r in rows:
                     if r.get("code", "").strip() == code_val.strip():
                         r["approved (y/n)"] = "y"
             for code_val in exclude_codes:
-                for r in concept_rows:
+                for r in rows:
                     if r.get("code", "").strip() == code_val.strip():
                         r["approved (y/n)"] = "n"
             if note:
-                concept_rows[0]["comment"] = note
-            _write_csv(csv_path, rows, _CONCEPT_CSV_FIELDNAMES)
-            meta["csv_checksum"] = _csv_checksum(csv_path)
+                if rows:
+                    rows[0]["comment"] = note
+                else:
+                    csv_meta["comment"] = note
+            _write_concept_csv(csv_path, csv_meta, rows)
+            checksums = meta.get("checksums") or {}
+            checksums[_slugify(concept_name)] = _csv_checksum(csv_path)
+            meta["checksums"] = checksums
             _write_concept_review_meta(topic, meta)
         actions = []
         if approve_all:
@@ -2594,33 +2751,33 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
         meta = _load_concept_review_meta(topic)
         if meta.get("status") == "approved":
             raise click.UsageError("Concept review is already approved.")
-        rows = _load_csv(csv_path)
 
         invalid_related_rows: list[str] = []
-
-        # Gate: every code row must have a valid approved value
         _VALID_APPROVED = {"y", "yes", "n", "no", "approve", "approved", "reject", "rejected"}
         missing_status: list[str] = []
-        for r in rows:
-            n = r.get("concept_name", "").strip()
-            if not n:
-                continue
-            has_code = bool(r.get("system", "").strip() or r.get("code", "").strip())
-            if not has_code:
-                continue
-            if r.get("row_type", "").strip().lower() == "related":
-                approved_val = r.get("approved (y/n)", "").strip().lower()
-                if approved_val in ("y", "yes", "approve", "approved"):
-                    relation = r.get("relation", "").strip().lower()
-                    if relation not in _EXTRACT_ALLOWED_ONTOLOGY_RELATIONS:
-                        invalid_related_rows.append(
-                            f"{n!r} (code: {r.get('code', '').strip() or '?'}, relation: {relation or '<empty>'})"
-                        )
-                continue
-            status_val = r.get("approved (y/n)", "").strip().lower()
-            if status_val not in _VALID_APPROVED:
-                code_id = r.get("code", "").strip() or r.get("system", "").strip()
-                missing_status.append(f"{n!r} (code: {code_id})")
+
+        all_csv_paths = sorted(concepts_dir.glob("*.csv"))
+        for csv_path in all_csv_paths:
+            csv_meta, rows = _load_concept_csv(csv_path)
+            n = csv_meta.get("concept_name", csv_path.stem)
+            for r in rows:
+                has_code = bool(r.get("system", "").strip() or r.get("code", "").strip())
+                if not has_code:
+                    continue
+                if r.get("row_type", "").strip().lower() == "related":
+                    approved_val = r.get("approved (y/n)", "").strip().lower()
+                    if approved_val in ("y", "yes", "approve", "approved"):
+                        relation = r.get("relation", "").strip().lower()
+                        if relation not in _EXTRACT_ALLOWED_ONTOLOGY_RELATIONS:
+                            invalid_related_rows.append(
+                                f"{n!r} (code: {r.get('code', '').strip() or '?'}, relation: {relation or '<empty>'})"
+                            )
+                status_val = r.get("approved (y/n)", "").strip().lower()
+                if status_val not in _VALID_APPROVED:
+                    code_id = r.get("code", "").strip() or r.get("system", "").strip()
+                    row_label = "related" if r.get("row_type", "").strip().lower() == "related" else "candidate"
+                    missing_status.append(f"{n!r} ({row_label} code: {code_id})")
+
         if missing_status:
             raise click.UsageError(
                 "Cannot finalize: the following code rows are missing a valid 'approved' value "
@@ -2632,11 +2789,14 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
                 "(allowed ontology predicates only):\n  "
                 + "\n  ".join(invalid_related_rows)
             )
+        checksums: dict = {}
+        for csv_path in all_csv_paths:
+            checksums[csv_path.stem] = _csv_checksum(csv_path)
         meta["status"] = "approved"
         meta["reviewer"] = reviewer
         meta["reviewed_at"] = now_iso()
-        meta["csv_checksum"] = _csv_checksum(csv_path)
-        meta["review_artifact"] = str(csv_path)
+        meta["checksums"] = checksums
+        meta["review_artifact"] = f"topics/{topic}/process/plans/concepts/"
         _write_concept_review_meta(topic, meta)
         _sync_plan_concept_review(topic, meta)
         tracking = require_tracking()

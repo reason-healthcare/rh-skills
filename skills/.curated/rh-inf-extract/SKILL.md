@@ -17,14 +17,14 @@ metadata:
     - tracking.yaml
     - topics/<topic>/process/plans/extract-plan.yaml       # control file (source of truth)
     - topics/<topic>/process/plans/extract-plan-readout.md # human-friendly readout (derived, do not edit)
-    - topics/<topic>/process/plans/concepts-review.csv     # concept coding review CSV (when front matter concepts are present)
+    - topics/<topic>/process/plans/concepts/               # per-concept coding review CSVs, one per concept (when front matter concepts are present)
     - topics/<topic>/process/plans/concepts-review-meta.yaml # concept review finalization metadata
     - sources/normalized/
   writes_via_cli:
     - "rh-skills promote body-init"
     - "rh-skills promote derive"
     - "rh-skills promote concept add"
-    - "rh-skills promote concept enrich"
+    - "rh-skills promote concept enrich"  # accepts --related-candidate to record expansion codes as level=1 rows
     - "rh-skills promote concept review"
     - "rh-skills validate"
     - "rh-skills render"
@@ -40,7 +40,9 @@ metadata:
     - tool: reasonhub-search_rxnorm
       when: plan — proposing terminology/value-set artifacts; search medication concepts
     - tool: reasonhub-codesystem_lookup
-      when: plan — resolving canonical display name or UCUM unit for a candidate code; review — discovering attribute relationships on a SNOMED concept before semantic expansion
+      when: plan — resolving canonical display name or UCUM unit for a candidate code; review — discovering attribute relationships on a SNOMED concept before semantic expansion; anchor expansion — confirming anchor concept is active and reading its numeric attribute typeIds
+    - tool: reasonhub-semantic-snomed
+      when: concept review — optional SNOMED anchor expansion; build IS-A / attribute-based ValueSet filter and expand related codes from the approved anchor concept
 ---
 
 # rh-inf-extract
@@ -154,7 +156,7 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    can proceed. If tracking.yaml has no `discovery_planned` event, note in the Review
    Summary that sources were manually ingested.
 2. Read `tracking.yaml` and `sources/normalized/*.md` for the topic.
-   **`concepts-review.csv` (written by `rh-skills promote plan`) is the authoritative
+   **The per-concept CSVs under `topics/<topic>/process/plans/concepts/` (written by `rh-skills promote plan`) are the authoritative
    concept list for this topic — do not re-derive it from source front matter.**
 
    **State the injection boundary before reading any normalized source file:**
@@ -201,15 +203,15 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    `--force` to regenerate or record corrections in `review_summary` when approving.
 
    If normalized front matter contains concepts, this command also writes
-   `topics/<topic>/process/plans/concepts-review.csv` (the review artifact) and
+   one CSV per concept under `topics/<topic>/process/plans/concepts/` (the review artifacts) and
    `topics/<topic>/process/plans/concepts-review-meta.yaml` (finalization metadata).
 
   Before prompting a human to approve terminology concepts, enrich the CSV
   with ReasonHub MCP results. MCP queries are run by the agent using MCP tools,
   then persisted via `rh-skills promote concept enrich`.
 
-  **`concepts-review.csv` is the authoritative concept list.** The CLI already
-  deduplicates concepts from normalized front matter when it writes this file —
+  **The per-concept CSVs under `concepts/` are the authoritative concept list.** The CLI already
+  deduplicates concepts from normalized front matter when it writes these files —
   deduplication is by **(name, type)** pair; roles from all sources are unioned
   into a single `role` column (semicolon-separated when multiple). Do NOT
   re-derive the concept list by reading source body text or source front
@@ -405,10 +407,14 @@ to run until the plan is approved.**
 **When `concept_review` is present, the required order is:**
 1. Enrich all concepts with MCP (Step 1 below) — no human gate, proceed directly
 2. Present batch proposal and get reviewer confirmation (Step 2)
-3. Execute concept decisions via `concept review` (Step 3)
-4. Approve artifacts via `rh-skills promote approve` (Step 4 below)
+3. Execute concept decisions via `concept review` (Step 3) — mark y/n on all level-0 candidate rows
+4. Run SNOMED anchor expansion (Step 3.5, optional) — **requires level-0 y/n to already be set**
+5. Mark y/n on the returned level-1 related rows via `concept review`
+6. Finalize with `concept review --finalize` — **requires ALL rows (level-0 and level-1) to have y/n**
+7. Approve artifacts via `rh-skills promote approve` (Step 4 below)
 
-Do not attempt step 4 before step 3 is complete — the CLI will hard-block.
+Do not attempt step 7 before step 6 is complete — the CLI will hard-block.
+Do not run expansion (step 4) before level-0 y/n decisions are recorded — the CLI will hard-block.
 
 If the plan includes `concept_review`, populate the packet by calling
 `rh-skills promote concept enrich` **once per result, per system searched**:
@@ -443,7 +449,7 @@ after confirmation. Proceed directly — no pre-flight question to the user.**
 
 ### Step 1 — Enrich all concepts (before proposing anything)
 
-For each pending concept, read its `type` field from `concepts-review.csv`.
+For each pending concept, read its `type` field from its CSV under `topics/<topic>/process/plans/concepts/`.
 **Use the `type` field as the authoritative domain — do not override it with
 your own clinical judgment about what system the concept "feels like".** A
 concept named "Antibacterial therapy" with `type: medication` requires RxNorm
@@ -533,7 +539,7 @@ divide into groups of 10, enrich each group serially, then verify the
 enriched concept count before continuing:
 
 ```sh
-grep -c ",y," topics/<topic>/process/plans/concepts-review.csv
+grep -rc ",y," topics/<topic>/process/plans/concepts/
 ```
 
 Do not pre-collect all MCP results for all concepts before enriching — enrich
@@ -559,7 +565,7 @@ these columns: `System`, `Code`, `Display`, `Distance`, `Confidence`. Do not
 collapse rows, do not bold a "winner", do not add recommendation text beside
 individual codes.
 
-Include the concept's **role(s)** (from the `role` column in `concepts-review.csv`) in the heading when set. The column may contain a single role or multiple semicolon-separated roles; display all of them. Format:
+Include the concept's **role(s)** (from the `role` column in the concept's CSV) in the heading when set. The column may contain a single role or multiple semicolon-separated roles; display all of them. Format:
 **Nasal congestion** (`finding` · `inclusion-criterion`)
 **Nasal congestion** (`finding` · `inclusion-criterion` · `comorbidity`)
 If no role is set, omit it: **Nasal congestion** (`finding`)
@@ -619,7 +625,71 @@ rh-skills promote concept enrich <topic> --concept "<name>" --reset
 rh-skills promote concept review <topic> --finalize --reviewer "<name>"
 ```
 
-**Finalize gate**: `--finalize` only checks `candidate` rows — every candidate code row must have `approved (y/n)` set to `y` or `n`. `concept` rows (placeholder header rows with no code, written when the plan is first created) are exempt from this gate.
+### Step 3.5 — SNOMED Anchor Expansion (optional)
+
+**Pre-condition**: All level-0 candidate rows must have a y/n decision recorded before expansion is offered. The CLI enforces this: attempting `--related-candidate` on a concept whose parent candidate has an empty `approved (y/n)` will error.
+
+After all level-0 decisions are recorded, **always** offer expansion to the reviewer:
+
+> "Would you like to run SNOMED anchor expansion to add related codes for any
+> of the approved concepts? This is optional and can be skipped."
+
+If the reviewer declines, or if MCP is unavailable, proceed directly to Step 4.
+If no concept has any approved SNOMED code, skip this prompt entirely and proceed.
+
+**When the reviewer says yes:**
+
+#### Anchor selection (agent-driven)
+
+For each concept with at least one approved `level=0` SNOMED row:
+- Select the approved SNOMED code with the lowest `distance` value.
+- Tie-break: pick the one with the richer `codesystem_lookup` attribute set
+  (more numeric property typeIds returned by `reasonhub-codesystem_lookup`).
+- State the selection before running:
+  > "I'll use `<code> | <display>` as the anchor for **<concept name>**.
+  > You can tell me to use a different code instead."
+- If the reviewer redirects, re-run from attribute discovery with the new anchor.
+- If a concept has no approved SNOMED rows, skip it silently.
+
+#### Expansion workflow (per concept)
+
+1. `reasonhub-codesystem_lookup(<anchor_code>, "http://snomed.info/sct")` — confirm the anchor is active and read its numeric attribute typeIds.
+2. Select an expansion pattern by concept type:
+
+   | Concept type | Primary pattern | Relation label |
+   |---|---|---|
+   | condition / finding | IS-A subtypes + `42752001` due-to complications | `is_a` / `due_to` |
+   | procedure | IS-A subtypes | `is_a` |
+   | finding (sparse IS-A) | `363698007` finding-site siblings as fallback | `finding_site` |
+
+   Prefer IS-A first. Only add an attribute-based filter if IS-A alone produces
+   fewer than 3 clinically relevant results.
+
+3. Run expansion using the **`reasonhub-semantic-snomed` skill workflow**.
+   That skill owns all fallback and error-handling mechanics — do not duplicate
+   them here.
+4. Apply distance gate (0.7) and clinical plausibility filter; call
+   `reasonhub-codesystem_lookup` to confirm `inactive: false` for each passing code.
+5. Present a table per concept — columns: `Code`, `Display`, `Relation`.
+   Label partial results explicitly. Wait for reviewer confirmation before
+   recording anything.
+6. For each reviewer-confirmed code, record it:
+   ```sh
+   rh-skills promote concept enrich <topic> \
+     --concept "<name>" \
+     --related-candidate "http://snomed.info/sct|<code>|<display>|<relation>"
+   ```
+   One call per confirmed code. The CLI records each as a `level=1 row_type=related`
+   row in the per-concept CSV, nested after the anchor candidate row.
+
+7. After recording all expansion codes, present the related rows to the reviewer and mark y/n:
+   ```sh
+   rh-skills promote concept review <topic> --concept "<name>" --approve-code <code>
+   rh-skills promote concept review <topic> --concept "<name>" --exclude-code <code>
+   ```
+   All related rows must have y/n set before `--finalize` will succeed.
+
+**Finalize gate**: `--finalize` iterates all per-concept CSVs in the `concepts/` directory and checks **every row with a non-blank code** for an `approved (y/n)` value — this includes both `level=0 row_type=candidate` rows and `level=1 row_type=related` rows. `concept` rows (placeholder header rows with no code, written when the plan is first created) are the only rows exempt. All candidate and related rows must have y/n before `--finalize` will succeed.
 
 `--approve-all` — sets `approved (y/n) = y` on all **candidate** rows (rows with a non-blank code and `row_type: candidate`) for the concept. Does **not** affect `concept` rows.
 `--exclude-all` — sets `approved (y/n) = n` on all **candidate** rows for the concept. Does not affect `concept` rows.
@@ -630,7 +700,7 @@ rh-skills promote concept review <topic> --finalize --reviewer "<name>"
 ### Step 4 — Approve artifacts
 
 Artifact approval is distinct from terminology/concept approval. Steps 1–3 handle
-terminology codes in `concepts-review.csv`; this step records decisions on the
+terminology codes in the per-concept CSVs under `concepts/`; this step records decisions on the
 structured artifacts proposed in `extract-plan.yaml`.
 
 **⚠ Concepts must be finalized before artifact approval.** Complete Steps 1–3
