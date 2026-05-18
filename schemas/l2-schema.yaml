@@ -52,15 +52,18 @@ optional_fields:
                        #       code: <code value>                  # required
                        #       display: <canonical display name>   # required
                        # Rules:
-                       #   - Each concept entry is deduplicated by (name, role). The same concept name
-                       #     with different roles produces separate entries and separate ValueSets at L3.
+                       #   - Each concept entry is deduplicated by (name, type). The same concept name
+                       #     with a different type produces separate entries. Roles from all sources are
+                       #     unioned into a single role field (semicolon-separated when multiple).
                        #   - codes[] maps the concept across code systems; each (system, code) pair appears at most once per concept.
                        #   - context is extracted at ingest annotate time from the first body-text occurrence of the concept name.
-                       #   - Custom concepts (not extracted from source documents) are added via 'concept add'; their
-                       #     sources value is 'custom' (or an explicit label) rather than a source file name.
+                       #   - Custom concepts (not extracted from source documents) are added via
+                       #     'concept enrich --source custom'; their sources value is 'custom'.
                        #   - related_codes[] is NOT written at L2; ECL-based expansion moves to L3 formalization.
 
 artifact_types:
+  - eligibility-criteria
+  - risk-factors
   - evidence-summary
   - decision-table
   - care-pathway
@@ -68,6 +71,7 @@ artifact_types:
   - measure
   - assessment
   - policy
+  - custom
 
 # ── Care-pathway vs. decision-table disambiguation ───────────────────────────
 #

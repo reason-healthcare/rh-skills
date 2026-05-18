@@ -143,14 +143,14 @@ rh-skills promote derive diabetes-ccm screening-decisions \
   --required-section actions \
   --required-section rules \
   --required-section evidence_traceability \
-  --evidence-ref "c1|Elevated risk warrants annual screening|ada-2024-guideline|Section 2" \
-  --concern "Interval language differs between ADA and USPSTF|ada-2024-guideline|Annual screening|ada-2024-guideline|More explicit for chronic care workflows" \
   --body-file /tmp/rh-screening-decisions.yaml
 ```
 
-In `--body-file` mode, the YAML is authoritative. Optional flags like
-`--clinical-question`, `--required-section`, `--evidence-ref`, and `--concern`
-act as consistency checks only; they are not merged into the artifact.
+In `--body-file` mode, the YAML is authoritative. Omit `--evidence-ref` and
+`--concern` — the body file already contains those structures and passing them
+as flags triggers exact-string consistency checks that will fail on any character
+difference. Pass only `--source`, `--artifact-type`, `--clinical-question`, and
+`--required-section` alongside `--body-file`.
 
 Then validating:
 

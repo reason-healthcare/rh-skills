@@ -89,9 +89,34 @@ top_level_fields:
       First enrich with `rh-skills promote concept enrich <topic> ...`, then
       review with `rh-skills promote concept review <topic>`. The packet
       signals that ReasonHub MCP must be used to identify standardized codes
-      before human approval, and that only descendant is-a concepts should be
-      proposed as related approvals. The extract plan must not be finalized
-      while this review remains pending.
+      before human approval. The extract plan must not be finalized while this
+      review remains pending.
+    sub_fields:
+      source_files:
+        type: list
+        description: Normalized source files from which concepts were aggregated.
+      status:
+        type: string
+        allowed_values: [pending-review, approved]
+        description: Review gate. Extract plan cannot be finalized until approved.
+      review_artifacts:
+        type: string
+        description: >
+          Directory containing one CSV per concept:
+          topics/<topic>/process/plans/concepts/
+          Each CSV file is named <concept-slug>.csv and holds candidate codes,
+          reviewer decisions (include/exclude), related rows, and expansion rows.
+      finalization_metadata:
+        type: string
+        description: >
+          topics/<topic>/process/plans/concepts-review-meta.yaml — written by
+          `concept review --finalize`; records reviewer, timestamp, and per-CSV
+          checksums. Do not edit directly.
+      final_artifact:
+        type: string
+        description: >
+          topics/<topic>/structured/concepts.yaml — written during implement
+          mode by `rh-skills promote concept write <topic>`.
 
   artifacts:
     type: list            # list of artifact entries; see artifact_fields below
