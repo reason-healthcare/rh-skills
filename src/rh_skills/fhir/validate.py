@@ -161,7 +161,7 @@ def validate_resource(resource: dict) -> list[str]:
         errors.extend(checker(resource))
 
     # Scan for MCP-UNREACHABLE placeholders anywhere in the resource
-    resource_json = json.dumps(resource)
+    resource_json = json.dumps(resource, ensure_ascii=False)
     mcp_matches = _MCP_UNREACHABLE_RE.findall(resource_json)
     if mcp_matches:
         errors.append(

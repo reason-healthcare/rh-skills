@@ -154,7 +154,7 @@ def test(topic, fixture, mode):
     }
 
     with open(result_file, "w") as f:
-        json.dump(result_data, f, indent=2)
+        json.dump(result_data, f, indent=2, ensure_ascii=False)
 
     click.echo(f"\nResults: {passed} passed, {failed} failed, {errored} errored")
     click.echo(f"Report: {result_file}")

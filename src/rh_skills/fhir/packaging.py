@@ -159,7 +159,7 @@ def build_package(
         has_cql=bool(cql_files),
         package_id=package_id,
     )
-    (output_dir / "package.json").write_text(json.dumps(pkg, indent=2) + "\n")
+    (output_dir / "package.json").write_text(json.dumps(pkg, indent=2, ensure_ascii=False) + "\n")
 
     # Generate ImplementationGuide
     resource_fnames = [f.name for f in json_files]
@@ -175,7 +175,7 @@ def build_package(
     )
     resolved_id = ig_id or topic_slug
     ig_fname = f"ImplementationGuide-{resolved_id}.json"
-    (output_dir / ig_fname).write_text(json.dumps(ig, indent=2) + "\n")
+    (output_dir / ig_fname).write_text(json.dumps(ig, indent=2, ensure_ascii=False) + "\n")
 
     return {
         "package_name": pkg["name"],

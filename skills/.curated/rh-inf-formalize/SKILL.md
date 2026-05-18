@@ -69,9 +69,15 @@ read-only.
 | `measure` | measure | Measure | Library (CQL) |
 | `assessment` | assessment | Questionnaire | — |
 | `policy` | policy | PlanDefinition (eca-rule) | Questionnaire (DTR), Library (CQL) |
+| `eligibility-criteria` | eligibility-criteria | EvidenceVariable | ValueSet |
+| `risk-factors` | risk-factors | EvidenceVariable | ValueSet |
+| `custom` | generic (named fallback) | PlanDefinition | — |
 
-For unknown `artifact_type` values, fall back to a generic PlanDefinition
-strategy with a warning.
+For unknown `artifact_type` values (i.e., anything not in the table above),
+fall back to a generic PlanDefinition strategy with a warning.
+
+`custom` artifacts produce a PlanDefinition stub and a warning — the reviewer
+must specify the correct L3 target in `formalize-plan.yaml` before implement.
 
 ## Guiding Principles
 
@@ -137,6 +143,8 @@ If the mode is unrecognized, print the table above and exit.
    `implementation_target: true`, or if the target artifact has
    `reviewer_decision` other than `approved`.
 
+   To approve the plan interactively: `rh-skills promote formalize-approve <topic>`
+
 If any check fails, exit immediately with a clear error. Do not do partial work.
 
 ---
@@ -179,6 +187,34 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
      concerns are cleared proceed to the plan-complete output below.
    - If output is `"No open concerns for topic '<topic>'."`: proceed directly to
      the plan-complete output below.
+
+8. Prompt the user to review and approve using the interactive CLI:
+
+   ```sh
+   rh-skills promote formalize-approve <topic>
+   ```
+
+   This walks through each pending artifact (showing strategy, L3 targets, input
+   artifacts, and rationale), collects `approved / rejected / needs-revision`
+   decisions, handles `implementation_target` assignment, and finalizes the plan.
+
+   **Non-interactive / agent usage:**
+   ```sh
+   # Approve, designate as implementation target, and finalize in one call:
+   rh-skills promote formalize-approve <topic> \
+     --artifact <name> --decision approved --set-target --finalize [--reviewer "<name>"]
+
+   # Approve additional artifacts without changing the target:
+   rh-skills promote formalize-approve <topic> \
+     --artifact <other-name> --decision approved
+
+   # Finalize separately after all artifacts are decided:
+   rh-skills promote formalize-approve <topic> --finalize [--reviewer "<name>"]
+   ```
+
+   The `--set-target` flag clears `implementation_target` on all other artifacts
+   and sets it to `true` on the named one. `--finalize` blocks with an error if
+   no artifact has `implementation_target: true`.
 
 ### What to capture per artifact
 

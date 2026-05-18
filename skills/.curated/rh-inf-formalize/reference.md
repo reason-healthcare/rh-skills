@@ -50,6 +50,13 @@ artifacts:
 | `measure` | `measure` | Measure, Library (CQL) |
 | `assessment` | `assessment` | Questionnaire |
 | `policy` | `policy` | PlanDefinition (eca-rule), Questionnaire (DTR), Library (CQL) |
+| `eligibility-criteria` | `eligibility-criteria` | EvidenceVariable, ValueSet |
+| `risk-factors` | `risk-factors` | EvidenceVariable, ValueSet |
+| `custom` | generic (named fallback) | PlanDefinition |
+
+`custom` artifacts require reviewer direction before implement. The
+`formalize-plan.yaml` reviewer must override `l3_targets` with the
+correct FHIR resource types for the specific use case.
 
 Body sections, in order:
 1. `Review Summary`
@@ -78,6 +85,9 @@ Each L2 artifact type maps to specific FHIR resources via the strategy table:
 | `measure` | `Measure-<id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
 | `assessment` | `Questionnaire-<id>.json` |
 | `policy` | `PlanDefinition-<id>.json`, `Questionnaire-<id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
+| `eligibility-criteria` | `EvidenceVariable-<id>.json`, `ValueSet-<id>.json` |
+| `risk-factors` | `EvidenceVariable-<id>.json`, `ValueSet-<id>.json` |
+| `custom` | `PlanDefinition-<id>.json` (stub — reviewer must specify) |
 
 All files are written to `topics/<topic>/computable/` by `rh-skills formalize`.
 `rh-skills package` bundles them into a FHIR NPM package at `topics/<topic>/package/`.
@@ -118,7 +128,7 @@ entry with a `rating` value. Each EvidenceVariable must define its role (e.g.,
 population, intervention, outcome) via characteristic criteria.
 
 **decision-table**: PlanDefinition `action[].condition[]` must include at
-least one `expression` with `language: text/cql`. The companion Library must
+least one `expression` with `language: text/cql-identifier`. The companion Library must
 contain CQL with `context Patient` and `using FHIR version '4.0.1'`.
 
 **care-pathway**: PlanDefinition `action[]` entries must form a sequence via
@@ -165,6 +175,16 @@ Full business rules are in `docs/FORMALIZE_STRATEGIES.md`; summaries below.
 | `sections.decision_table[]` rows | **PlanDefinition** (type: `eca-rule`). Each row → one `action[]` entry with `condition[].expression` (CQL). |
 | CQL expressions | **Library** with CQL source. Each condition/action → named CQL define. |
 
+**CQL expression language rule** — applies to all CQL strategies:
+- `language: "text/cql-identifier"` — value is the **name of a `define`** in the referenced Library (e.g. `"Has Active Diabetes"`). Use this in `condition[].expression`, `criteria`, and any `action[].dynamicValue[].expression`.
+- `language: "text/cql"` — value is **literal inline CQL**. Do not use this when the expression is a reference to a named Library define.
+- `language: "text/fhirpath"` — value is a FHIRPath expression; not CQL.
+
+Nearly all PlanDefinition and Measure expression references point to a named
+Library define and must use `text/cql-identifier`. The only legitimate use of
+`text/cql` in a resource is the Library `content[].contentType` MIME type
+for the attached CQL source bytes.
+
 **MCP**: Search for coded concepts in conditions/actions.
 **CQL**: Required. Generate compilable CQL with `context Patient` and `using FHIR version '4.0.1'`.
 
@@ -184,6 +204,24 @@ Full business rules are in `docs/FORMALIZE_STRATEGIES.md`; summaries below.
 |----------|-------------|
 | `sections.value_sets[]` | One **ValueSet** per named set. `compose.include[]` with system + codes resolved via MCP. |
 | `sections.concept_mappings[]` | **ConceptMap** with `group[].element[].target[]` mappings. |
+
+**Note on concepts.role**: L2 concepts now carry a single `role` field that
+may contain semicolon-separated values (e.g.
+`inclusion-criterion;exclusion-criterion`). The old rule of one entry per
+`(name, role)` pair no longer applies — deduplication is now by `(name, type)`.
+Do NOT create separate ValueSets per role value. Group concepts into ValueSets
+by clinical domain (code system, body system, or named set from sections).
+
+**Note on code system URIs**: L2 `concepts[].codes[].system` values are full
+URIs (`http://snomed.info/sct`, `http://loinc.org`,
+`http://hl7.org/fhir/sid/icd-10-cm`, `http://www.nlm.nih.gov/research/umls/rxnorm`).
+Use these directly in ValueSet `compose.include[].system`.
+
+**Note on ECL expansion**: `related_codes[]` is no longer written to L2
+artifacts. Any hierarchical expansion (e.g. all IS-A subtypes of a SNOMED
+concept) must be performed here at L3 using `reasonhub-valueset_expand`
+with a filter. Approved `candidate_codes[]` from the extract plan remain
+the authoritative starting set; use MCP expansion to extend, not replace.
 
 **MCP**: Primary strategy. Use `reasonhub-search_*` → `codesystem_lookup` → `valueset_expand` for hierarchical sets.
 **CQL**: Not applicable.
@@ -218,6 +256,49 @@ Full business rules are in `docs/FORMALIZE_STRATEGIES.md`; summaries below.
 
 **MCP**: Search for CPT/HCPCS codes for procedures, ICD-10 for conditions.
 **CQL**: Required for pre-population logic and eligibility expressions.
+
+### eligibility-criteria → Population Characteristics
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `sections.inclusion_criteria[]` + `sections.exclusion_criteria[]` | **EvidenceVariable** with `characteristic[]`. Each criterion → one characteristic entry. Set `exclude: true` for exclusion criteria. |
+| `concepts[]` with `role: inclusion-criterion` or `role: exclusion-criterion` | One **ValueSet** per coded concept group. Use `compose.include[]` with `system` + `concept[]` resolved via MCP. |
+
+**Note on concepts.role**: L2 concepts now use a single `role` field that may
+contain semicolon-separated values (e.g. `inclusion-criterion;exclusion-criterion`).
+Do NOT create separate ValueSets per role value — group by coded concept domain.
+
+**Note on code system URIs**: L2 `concepts[].codes[].system` values are now full
+URIs (e.g. `http://snomed.info/sct`, `http://hl7.org/fhir/sid/icd-10-cm`). Use
+these directly in ValueSet `compose.include[].system` — do not map short names.
+
+**Note on ECL expansion**: `related_codes[]` is no longer written to L2. Any
+hierarchical expansion (e.g. all IS-A subtypes of a SNOMED concept) must be
+performed here at L3 using `reasonhub-valueset_expand` with a filter.
+
+**MCP**: Use `reasonhub-search_snomed` and `reasonhub-search_icd10` for condition
+criteria. Use `reasonhub-valueset_expand` for hierarchical set expansion.
+**CQL**: Not required (criteria are structural).
+
+### risk-factors → Risk Factor Profile
+
+| L2 Input | FHIR Output |
+|----------|-------------|
+| `concepts[]` with `role: risk-factor` or similar | **EvidenceVariable** with `characteristic[]`. Each risk factor concept → one characteristic entry with coded definition. |
+| Coded concept groups | One **ValueSet** per risk factor domain. Use `compose.include[]` resolved via MCP. |
+
+**Note on concepts.role**: Same multi-value role rule as `eligibility-criteria`
+above. `role` may contain semicolon-separated values; group by concept domain,
+not by individual role value.
+
+**Note on code system URIs**: Same as `eligibility-criteria` — use full URIs.
+
+**Note on ECL expansion**: `related_codes[]` is not at L2. Run
+`reasonhub-valueset_expand` here for any hierarchical expansion.
+
+**MCP**: Use `reasonhub-search_snomed` and `reasonhub-search_icd10` for condition
+and finding codes. Use `reasonhub-valueset_expand` for subtypes.
+**CQL**: Not required.
 
 ---
 

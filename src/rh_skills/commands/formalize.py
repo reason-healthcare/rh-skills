@@ -72,7 +72,7 @@ def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
     content = [c for c in resource.get("content", []) if c.get("contentType") != "text/cql"]
     content.append({"contentType": "text/cql", "data": b64})
     resource["content"] = content
-    library_path.write_text(json.dumps(resource, indent=2) + "\n")
+    library_path.write_text(json.dumps(resource, indent=2, ensure_ascii=False) + "\n")
     return True
 
 
@@ -114,6 +114,24 @@ STRATEGY_REGISTRY: dict[str, dict] = {
         "supporting": ["Questionnaire"],
         "description": "PlanDefinition (eca-rule) + Questionnaire (DTR)",
     },
+    # Added in L2 schema update — new artifact types
+    "eligibility-criteria": {
+        "primary": "EvidenceVariable",
+        "supporting": ["ValueSet"],
+        "description": "EvidenceVariable (population characteristics) + ValueSet",
+    },
+    "risk-factors": {
+        "primary": "EvidenceVariable",
+        "supporting": ["ValueSet"],
+        "description": "EvidenceVariable (risk factor characteristics) + ValueSet",
+    },
+    # custom is intentionally a named fallback so it produces a warning
+    # without silently routing through GENERIC_STRATEGY
+    "custom": {
+        "primary": "PlanDefinition",
+        "supporting": [],
+        "description": "generic PlanDefinition (custom — reviewer must specify target)",
+    },
 }
 
 GENERIC_STRATEGY = {
@@ -124,9 +142,14 @@ GENERIC_STRATEGY = {
 
 
 def _get_strategy(artifact_type: str) -> tuple[dict, bool]:
-    """Return (strategy_dict, is_fallback)."""
+    """Return (strategy_dict, is_fallback).
+
+    ``custom`` is in the registry but treated as a named fallback so callers
+    can distinguish it from a genuinely unknown type.
+    """
     if artifact_type in STRATEGY_REGISTRY:
-        return STRATEGY_REGISTRY[artifact_type], False
+        is_named_fallback = artifact_type == "custom"
+        return STRATEGY_REGISTRY[artifact_type], is_named_fallback
     return GENERIC_STRATEGY, True
 
 
@@ -279,7 +302,7 @@ def _build_stub_resources(
                         "title": cond.get("label") or cond.get("id"),
                         "condition": [{
                             "kind": "applicability",
-                            "expression": {"language": "text/cql", "expression": cql_name},
+                            "expression": {"language": "text/cql-identifier", "expression": cql_name},
                         }],
                     })
                 primary_resource["action"] = actions
@@ -291,8 +314,8 @@ def _build_stub_resources(
         primary_resource["scoring"] = {"coding": [{"code": "proportion"}]}
         primary_resource["group"] = [{
             "population": [
-                {"code": {"coding": [{"code": "numerator"}]}, "criteria": {"language": "text/cql", "expression": "Numerator"}},
-                {"code": {"coding": [{"code": "denominator"}]}, "criteria": {"language": "text/cql", "expression": "Denominator"}},
+                {"code": {"coding": [{"code": "numerator"}]}, "criteria": {"language": "text/cql-identifier", "expression": "Numerator"}},
+                {"code": {"coding": [{"code": "denominator"}]}, "criteria": {"language": "text/cql-identifier", "expression": "Denominator"}},
             ],
         }]
         # Populate Measure.library with the canonical URL of the companion Library
@@ -305,6 +328,9 @@ def _build_stub_resources(
         primary_resource["compose"] = {"include": [{"system": "http://snomed.info/sct", "concept": [{"code": "TODO:PLACEHOLDER"}]}]}
     elif primary == "Evidence":
         primary_resource["certainty"] = [{"rating": {"coding": [{"code": "moderate"}]}}]
+    elif primary == "EvidenceVariable":
+        # Used by eligibility-criteria and risk-factors strategies
+        primary_resource["characteristic"] = [{"description": "Stub characteristic — replace with coded criteria"}]
 
     resources.append(primary_resource)
 
@@ -370,7 +396,13 @@ def formalize(topic, artifact, dry_run, force):
 
     # Select strategy
     strategy, is_fallback = _get_strategy(artifact_type)
-    if is_fallback:
+    if artifact_type == "custom":
+        log_warn(
+            f"Artifact type 'custom' has no prescribed FHIR target. "
+            "A generic PlanDefinition stub will be produced. "
+            "Reviewer must specify the correct L3 target in formalize-plan.yaml."
+        )
+    elif is_fallback:
         log_warn(
             f"Unknown artifact type '{artifact_type}'; "
             "falling back to generic pathway-package strategy"
@@ -471,7 +503,7 @@ def formalize(topic, artifact, dry_run, force):
             continue
 
         try:
-            fpath.write_text(json.dumps(resource, indent=2) + "\n")
+            fpath.write_text(json.dumps(resource, indent=2, ensure_ascii=False) + "\n")
             rel_path = f"topics/{topic}/computable/{fname}"
             written_files.append(rel_path)
             checksums[rel_path] = sha256_file(fpath)

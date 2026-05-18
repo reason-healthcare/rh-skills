@@ -229,12 +229,120 @@ def _entrez_search_fetch(
     except click.ClickException as e:
         raise click.ClickException(f"NCBI efetch failed: {e.format_message()}") from e
 
-    results = _parse_pubmed_xml(r2.text, db=db)
+    if db == "pmc":
+        results = _parse_pmc_jats_xml(r2.text)
+    else:
+        results = _parse_pubmed_xml(r2.text, db=db)
     results = results[:max_results]
 
     # Attach total_found to first result for caller convenience
     if results:
         results[0]["_total_found"] = total_found
+
+    return results
+
+
+def _parse_pmc_jats_xml(xml_text: str) -> list[dict]:
+    """Parse PMC efetch JATS XML into standardised result dicts.
+
+    PMC efetch returns articles in JATS/NLM XML format (pmc-articleset),
+    which is entirely different from the PubMed MedlineCitation structure.
+    """
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return []
+
+    results = []
+
+    for article in root.findall(".//article"):
+        front = article.find("front")
+        if front is None:
+            continue
+
+        meta = front.find("article-meta")
+        jmeta = front.find("journal-meta")
+        if meta is None:
+            continue
+
+        # IDs
+        pmcid, pmid, doi = "", "", None
+        for id_el in meta.findall("article-id"):
+            id_type = id_el.get("pub-id-type", "")
+            text = (id_el.text or "").strip()
+            if id_type == "pmcid":
+                pmcid = text if text.startswith("PMC") else f"PMC{text}"
+            elif id_type == "pmid":
+                pmid = text
+            elif id_type == "doi":
+                doi = text
+
+        # Title (may contain inline markup)
+        title_el = meta.find(".//title-group/article-title")
+        title = "".join(title_el.itertext()).strip() if title_el is not None else ""
+
+        # Journal
+        journal = ""
+        if jmeta is not None:
+            jt_el = jmeta.find(".//journal-title")
+            journal = jt_el.text.strip() if jt_el is not None and jt_el.text else ""
+
+        # Authors
+        authors = []
+        for contrib in meta.findall(".//contrib-group/contrib[@contrib-type='author']"):
+            collective = contrib.findtext("collab")
+            if collective:
+                authors.append(collective.strip())
+                continue
+            surname = (contrib.findtext("name/surname") or "").strip()
+            given = (contrib.findtext("name/given-names") or "").strip()
+            if surname and given:
+                initials = "".join(p[0] for p in given.split() if p)
+                authors.append(f"{surname} {initials}")
+            elif surname:
+                authors.append(surname)
+
+        # Year — prefer epub/pmc-release, fall back to any pub-date
+        pub_year = ""
+        for pub_type in ("epub", "pmc-release", "ppub", ""):
+            selector = (
+                f".//pub-date[@pub-type='{pub_type}']/year"
+                if pub_type
+                else ".//pub-date/year"
+            )
+            el = meta.find(selector)
+            if el is not None and el.text:
+                pub_year = el.text.strip()[:4]
+                break
+
+        # Abstract (first 200 chars)
+        abstract = ""
+        abstract_el = meta.find(".//abstract")
+        if abstract_el is not None:
+            abstract = " ".join(abstract_el.itertext()).strip()[:200]
+
+        url = f"https://pmc.ncbi.nlm.nih.gov/articles/{pmcid}/" if pmcid else ""
+        if not url and pmid:
+            url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
+
+        results.append({
+            "id": pmcid or pmid,
+            "pmid": pmid or None,
+            "nct_id": None,
+            "title": title,
+            "url": url,
+            "year": pub_year,
+            "journal": journal,
+            "authors": authors,
+            "doi": doi,
+            "open_access": True,  # all PMC articles are open access
+            "pmcid": pmcid or None,
+            "abstract_snippet": abstract,
+            "status": None,
+            "phase": None,
+            "conditions": [],
+            "interventions": [],
+        })
 
     return results
 
