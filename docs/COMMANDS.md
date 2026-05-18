@@ -254,29 +254,6 @@ Manage concept coding review for a topic.
 | `review` | Set approved/excluded decisions per concept or per code; finalize |
 | `write` | Write `concepts.yaml` from the finalized review CSV |
 
-#### `rh-skills promote concept add <topic>`
-
-Add a custom concept placeholder to `concepts-review.csv`.
-
-```
-rh-skills promote concept add <topic> [OPTIONS]
-```
-
-**Options:**
-- `--concept NAME` *(required)* — Concept name to add
-- `--type TYPE` *(required)* — SNOMED semantic tag, e.g. `finding | disorder | procedure`
-
-**Behavior:**
-- Appends a placeholder row with `sources: custom` and empty code columns
-- Raises an error if the concept name already exists (case-insensitive) or if the CSV has not been created yet (`promote plan` must run first)
-- After adding, run `concept enrich` to attach candidate codes
-
-**Example:**
-```bash
-rh-skills promote concept add diabetes-screening \
-  --concept "Frailty" --type finding
-```
-
 #### `rh-skills promote concept enrich <topic>`
 
 Record RH MCP code candidates for a concept in the review CSV.
@@ -285,8 +262,8 @@ Record RH MCP code candidates for a concept in the review CSV.
 rh-skills promote concept enrich <topic> [OPTIONS]
 ```
 
-**Options:**
-- `--concept NAME` *(required)* — Concept name to enrich
+**Arguments:**
+- `CONCEPT` *(required)* — Concept name to enrich
 - `--type TYPE` — Concept type to disambiguate when the name is ambiguous
 - `--candidate system|code|display[|distance[|confidence]]` — Candidate code to record; repeatable; pass once per candidate
 - `--lookup-query TEXT` — Search query used (defaults to concept name)
@@ -306,39 +283,51 @@ Set `approved (y/n)` on code rows and optionally finalize the review.
 rh-skills promote concept review <topic> [OPTIONS]
 ```
 
-**Options:**
-- `--concept NAME` — Concept name to update
-- `--approve-all` — Set `approved (y/n) = y` on all candidate rows for the concept
-- `--exclude-all` — Set `approved (y/n) = n` on all candidate rows for the concept
-- `--approve-code CODE` — Set `approved (y/n) = y` on the row matching this code value; repeatable
-- `--exclude-code CODE` — Set `approved (y/n) = n` on the row matching this code value; repeatable
-- `--note TEXT` — Set comment on the first row for the concept
-- `--finalize` — Seal the review (`status: approved`). **Does NOT write `concepts.yaml`** — run `concept write` during implement for that. Can be used alone or with `--concept`
+**Arguments:**
+- `CONCEPT` *(optional)* — Concept name to update
+- `--approve-all` — Set `include/exclude = include` on all **candidate** rows for the concept (does not affect related or expansion rows)
+- `--exclude-all` — Set `include/exclude = exclude` on all **candidate** rows for the concept
+- `--approve-code CODE` — Set `include/exclude = include` on the **candidate** row matching this code; repeatable
+- `--exclude-code CODE` — Set `include/exclude = exclude` on the **candidate** row matching this code; repeatable
+- `--approve-related PARENT|RELATED` — Set `include/exclude = include` on the related row identified by the parent code and related code pair; repeatable
+- `--exclude-related PARENT|RELATED` — Set `include/exclude = exclude` on the matching related row; repeatable
+- `--approve-expansion SYSTEM|EXPRESSION` — Set `include/exclude = include` on the expansion row identified by system + expression; repeatable
+- `--exclude-expansion SYSTEM|EXPRESSION` — Set `include/exclude = exclude` on the matching expansion row; repeatable
+- `--note TEXT` — Set comment on the first **candidate** row for the concept
+- `--finalize` — Seal the review (`status: approved`). **Does NOT write `concepts.yaml`** — run `concept write` during implement for that. Can be used alone or with a `CONCEPT` argument
 - `--reviewer NAME` — Reviewer name. Required for `--finalize`
 - `--force` — Bypass the checksum unchanged warning during `--finalize`
 
 **Behavior:**
-- Updates `approved (y/n)` on code rows in `concepts-review.csv`
+- Updates `include/exclude` on code rows in the per-concept CSVs under `topics/<topic>/process/plans/concepts/`
 - `--finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml`; run `rh-skills promote concept write <topic>` separately during implement
-- Finalize gate: every code row must have `approved (y/n)` set to `y` or `n` before finalize succeeds
+- Finalize gate: every **candidate** row must have `include/exclude` set to `include` or `exclude` before finalize succeeds; related and expansion rows may remain blank
 
 **Examples:**
 ```bash
 # Approve all candidate rows for a concept:
 rh-skills promote concept review diabetes-screening \
-  --concept "Hypertension" --approve-all
+  "Hypertension" --approve-all
 
 # Exclude all candidate rows for a concept:
 rh-skills promote concept review diabetes-screening \
-  --concept "Hypertension" --exclude-all
+  "Hypertension" --exclude-all
 
-# Approve one specific code, exclude another:
+# Approve one specific candidate code, exclude another:
 rh-skills promote concept review diabetes-screening \
-  --concept "Hypertension" --approve-code 38341003 --exclude-code I10
+  "Hypertension" --approve-code 38341003 --exclude-code I10
+
+# Approve a specific related row (PARENT_CODE|RELATED_CODE):
+rh-skills promote concept review diabetes-screening \
+  "Hypertension" --approve-related "38341003|59621000"
+
+# Approve a specific expansion row (SYSTEM|EXPRESSION):
+rh-skills promote concept review diabetes-screening \
+  "Hypertension" --approve-expansion "http://snomed.info/sct|<<38341003"
 
 # Approve with a note, then finalize:
 rh-skills promote concept review diabetes-screening \
-  --concept "Last concept" --approve-all --note "FSN confirmed" \
+  "Last concept" --approve-all --note "FSN confirmed" \
   --finalize --reviewer "taylor" --force
 
 # Standalone finalize after manual CSV edits:

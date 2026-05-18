@@ -122,6 +122,16 @@ concept_entry_fields:
                   [{system, code, display, relationship: is-a}]
       Cross-system equivalences belong as sibling codes[] entries, NOT related[].
 
+  expansions:
+    type: list   # list of {system, filter, rationale?} mappings
+    required: false
+    description: >
+      Reviewer-included expansion rules for this concept (intentional valueset
+      definitions). Written into concepts.yaml alongside codes[]. Each entry:
+        system:    code system URI (e.g. http://snomed.info/sct)
+        filter:    expansion filter expression (e.g. "is_a 38341003")
+        rationale: optional reviewer rationale string
+
   review_notes:
     type: string
     required: false
