@@ -2,7 +2,11 @@
 name: "rh-inf-extract"
 description: >
   Reviewer-gated extraction skill for deriving L2 structured artifacts from
-  ingested normalized sources. Modes: plan · implement · verify.
+  ingested normalized sources. Runs MCP terminology enrichment, presents batch
+  proposals for human review, records decisions via concept review CLI, and
+  writes finalized concepts.yaml and extract-plan.yaml.
+  Supported modes: plan · implement · verify.
+  Use when the user asks to extract structured artifacts from sources for a topic.
 compatibility: "rh-skills >= 0.1.0"
 context_files:
   - reference.md
@@ -23,9 +27,9 @@ metadata:
   writes_via_cli:
     - "rh-skills promote body-init"
     - "rh-skills promote derive"
-    - "rh-skills promote concept add"
-    - "rh-skills promote concept enrich"  # accepts --related-candidate to record expansion codes as level=1 rows
+    - "rh-skills promote concept enrich"  # --source custom creates custom concept; --related-candidate format: PARENT_CODE|system|code|display[|relation]
     - "rh-skills promote concept review"
+    - "rh-skills promote concept write"
     - "rh-skills validate"
     - "rh-skills render"
   uses_mcp:
@@ -407,26 +411,26 @@ to run until the plan is approved.**
 **When `concept_review` is present, the required order is:**
 1. Enrich all concepts with MCP (Step 1 below) — no human gate, proceed directly
 2. Present batch proposal and get reviewer confirmation (Step 2)
-3. Execute concept decisions via `concept review` (Step 3) — mark y/n on all level-0 candidate rows
-4. Run SNOMED anchor expansion (Step 3.5, optional) — **requires level-0 y/n to already be set**
-5. Mark y/n on the returned level-1 related rows via `concept review`
-6. Finalize with `concept review --finalize` — **requires ALL rows (level-0 and level-1) to have y/n**
+3. Execute concept decisions via `concept review` (Step 3) — set `include/exclude` on all candidate rows
+4. Run SNOMED anchor expansion (Step 3.5, optional)
+5. Optionally set `include/exclude` on related rows via `--approve-related` / `--exclude-related`
+6. Finalize with `concept review --finalize` — only candidate rows must have a decision
 7. Approve artifacts via `rh-skills promote approve` (Step 4 below)
 
 Do not attempt step 7 before step 6 is complete — the CLI will hard-block.
-Do not run expansion (step 4) before level-0 y/n decisions are recorded — the CLI will hard-block.
 
 If the plan includes `concept_review`, populate the packet by calling
 `rh-skills promote concept enrich` **once per result, per system searched**:
-`rh-skills promote concept enrich <topic> --concept <name> --candidate "system|code|display[|distance[|confidence]]"`
+`rh-skills promote concept enrich <topic> <name> --candidate "system|code|display[|distance[|confidence]]"`
 
 > Run `rh-skills promote concept enrich --help` for the full option reference and worked examples.
 
 Key rules:
 - Use `top_k=10` on every MCP search call. The default
   may return only 1 result — explicitly request the full candidate set.
-- Make one `--candidate` call per returned result. Do not keep only the top hit.
-- Run lookup normalization before recording: retry on system mismatch, skip unresolved or inactive, and use lookup `system` + `display` as authoritative.
+- Record every returned result — do not keep only the top hit. Pass multiple `--candidate` flags in a single call to batch plain candidates efficiently.
+- **`--related-candidate` format**: `PARENT_CODE|system|code|display[|relation]` — records an individual code as a `row_type=related` row attached to a specific parent candidate.
+- **`--expansion` format** (on `concept enrich`): `system|relation|code[|rationale]` — records an intentional expansion rule (e.g. `is_a|38341003`) as an `expansion` row. The `expansion` CSV column stores `relation|code`. Expansion rows represent intentional ValueSet definitions, not individual codes. Approved/excluded via `--approve-expansion` / `--exclude-expansion` on `concept review` using `SYSTEM|RELATION|CODE` as the key.
 - Record MCP metadata exactly as returned; do not transform `distance` / `confidence`.
 - Do not de-duplicate across concepts; within a concept, CLI de-dup behavior applies.
 
@@ -503,12 +507,9 @@ every required system for that concept's type exactly once. Do not call the
 same system twice for the same concept. Do not mark a concept as lookup-complete
 unless all required systems have been searched.
 
-Each result from each system becomes a separate `concept enrich --candidate`
-call. For example, if SNOMED returns 5 results and ICD-10 returns 8 results,
-make 13 separate calls for that concept. **Before making any `--candidate`
-calls for a concept, count the total results returned across all systems.
-Your `--candidate` call count must match that total exactly — if it does
-not, stop and correct before proceeding.**
+Multiple `--candidate` flags may be passed in a single call — they all append to the same concept CSV. For plain candidates (no `--related-candidate` in the same call), batch all results from one or more systems into a single invocation. **`--related-candidate` format**: `PARENT_CODE|system|code|display[|relation]` — the parent code is embedded as the first field, so each `--related-candidate` flag explicitly identifies its parent. Multiple `--related-candidate` flags with different parent codes can safely coexist in a single call.
+
+**Before making any `--candidate` calls for a concept, count the total results returned across all systems. Your total recorded `--candidate` entries must match that count exactly — if they do not, stop and correct before proceeding.**
 Successive calls for the same concept append rows to the CSV.
 Omit `--candidate` when MCP returned no results — still call to mark lookup complete.
 Use `--lookup-notes` to record why no candidates were found.
@@ -604,38 +605,54 @@ explicitly approves the full set (or a clearly stated subset).
 
 ```sh
 # Add a custom concept (not from source documents):
-rh-skills promote concept add <topic> --concept "<name>" --type <type>
+rh-skills promote concept enrich <topic> "<name>" --source custom --type <type>
 
-# Approve all candidate rows for a concept (sets approved (y/n) = y on all code rows):
-rh-skills promote concept review <topic> --concept "<name>" --approve-all --note "<rationale>"
+# Approve all candidate rows for a concept (does NOT affect related or expansion rows):
+rh-skills promote concept review <topic> "<name>" --approve-all --note "<rationale>"
 
-# Exclude all candidate rows for a concept (sets approved (y/n) = n on all code rows):
-rh-skills promote concept review <topic> --concept "<name>" --exclude-all --note "<reason>"
+# Exclude all candidate rows for a concept (does NOT affect related or expansion rows):
+rh-skills promote concept review <topic> "<name>" --exclude-all --note "<reason>"
 
-# Approve or exclude a specific code:
-rh-skills promote concept review <topic> --concept "<name>" --approve-code <code> --exclude-code <other>
+# Approve or exclude a specific candidate code:
+rh-skills promote concept review <topic> "<name>" --approve-code <code> --exclude-code <other>
+
+# Approve or exclude a specific related row (PARENT_CODE|RELATED_CODE):
+rh-skills promote concept review <topic> "<name>" --approve-related "<parent>|<related>"
+rh-skills promote concept review <topic> "<name>" --exclude-related "<parent>|<related>"
+
+# Approve or exclude a specific expansion row (SYSTEM|RELATION|CODE is the key):
+rh-skills promote concept review <topic> "<name>" --approve-expansion "<system>|<relation>|<code>"
+rh-skills promote concept review <topic> "<name>" --exclude-expansion "<system>|<relation>|<code>"
+
+# Record an intentional expansion rule (relation|code, e.g. all IS-A subtypes of a code):
+rh-skills promote concept enrich <topic> "<name>" \
+  --expansion "http://snomed.info/sct|is_a|38341003|All subtypes of hypertension"
 
 # Add a comment only:
-rh-skills promote concept review <topic> --concept "<name>" --note "<comment>"
+rh-skills promote concept review <topic> "<name>" --note "<comment>"
 
 # Reset candidates and re-enrich:
-rh-skills promote concept enrich <topic> --concept "<name>" --reset
-
-# Finalize:
-rh-skills promote concept review <topic> --finalize --reviewer "<name>"
+rh-skills promote concept enrich <topic> "<name>" --reset
 ```
+
+> **⚠ Do NOT run `--finalize` yet.** After all candidate decisions are recorded,
+> always offer Step 3.5 (expansion) to the reviewer before finalizing.
+> Proceed to Step 3.5 now.
 
 ### Step 3.5 — SNOMED Anchor Expansion (optional)
 
-**Pre-condition**: All level-0 candidate rows must have a y/n decision recorded before expansion is offered. The CLI enforces this: attempting `--related-candidate` on a concept whose parent candidate has an empty `approved (y/n)` will error.
+**This step requires the `reasonhub-semantic-snomed` skill. If that skill is not
+available in your current context, skip this step entirely and proceed to Step 4.
+Do not attempt to approximate the expansion workflow with other tools or MCP calls.**
 
-After all level-0 decisions are recorded, **always** offer expansion to the reviewer:
+If the skill is available and at least one concept has an approved SNOMED code,
+offer expansion to the reviewer:
 
 > "Would you like to run SNOMED anchor expansion to add related codes for any
 > of the approved concepts? This is optional and can be skipped."
 
-If the reviewer declines, or if MCP is unavailable, proceed directly to Step 4.
-If no concept has any approved SNOMED code, skip this prompt entirely and proceed.
+If the reviewer declines, proceed directly to Step 4.
+If no concept has any approved SNOMED code, skip this step entirely and proceed.
 
 **When the reviewer says yes:**
 
@@ -673,28 +690,47 @@ For each concept with at least one approved `level=0` SNOMED row:
 5. Present a table per concept — columns: `Code`, `Display`, `Relation`.
    Label partial results explicitly. Wait for reviewer confirmation before
    recording anything.
-6. For each reviewer-confirmed code, record it:
+6. Record all confirmed codes **in a single `concept enrich` call** per concept. **Always include both `--related-candidate` flags and the `--expansion` rule together** — they are required as a pair when the agent runs an anchor expansion:
    ```sh
-   rh-skills promote concept enrich <topic> \
-     --concept "<name>" \
-     --related-candidate "http://snomed.info/sct|<code>|<display>|<relation>"
+   rh-skills promote concept enrich <topic> "<name>" \
+     --related-candidate "<parent_code>|http://snomed.info/sct|<code1>|<display1>|<relation>" \
+     --related-candidate "<parent_code>|http://snomed.info/sct|<code2>|<display2>|<relation>" \
+     --expansion "http://snomed.info/sct|<relation>|<parent_code>|IS-A subtypes of <display>"
    ```
-   One call per confirmed code. The CLI records each as a `level=1 row_type=related`
-   row in the per-concept CSV, nested after the anchor candidate row.
+   The CLI records each `--related-candidate` as a `row_type=related` row with an explicit `related_code` field pointing back to the anchor. The `--expansion` flag records the intentional rule that produced these codes — recording one without the other is incomplete.
 
-7. After recording all expansion codes, present the related rows to the reviewer and mark y/n:
+   **Exception**: if the reviewer explicitly requests only the intentional rule with no concrete codes, use `--expansion` alone without any `--related-candidate` flags. This is a reviewer-directed choice, not an agent default.
+
+   **Do not issue one call per code** — batch all confirmed codes for a concept into one call.
+
+7. After recording, present the rows to the reviewer and optionally approve or exclude:
    ```sh
-   rh-skills promote concept review <topic> --concept "<name>" --approve-code <code>
-   rh-skills promote concept review <topic> --concept "<name>" --exclude-code <code>
+   # For individual related rows (identified by PARENT_CODE|RELATED_CODE):
+   rh-skills promote concept review <topic> "<name>" --approve-related "<parent_code>|<code>"
+   rh-skills promote concept review <topic> "<name>" --exclude-related "<parent_code>|<code>"
+
+   # For expansion rows (identified by SYSTEM|RELATION|CODE):
+   rh-skills promote concept review <topic> "<name>" --approve-expansion "http://snomed.info/sct|is_a|38341003"
+   rh-skills promote concept review <topic> "<name>" --exclude-expansion "http://snomed.info/sct|is_a|38341003"
    ```
-   All related rows must have y/n set before `--finalize` will succeed.
+   Both row types are optional — `--finalize` does not require them to have a decision.
 
-**Finalize gate**: `--finalize` iterates all per-concept CSVs in the `concepts/` directory and checks **every row with a non-blank code** for an `approved (y/n)` value — this includes both `level=0 row_type=candidate` rows and `level=1 row_type=related` rows. `concept` rows (placeholder header rows with no code, written when the plan is first created) are the only rows exempt. All candidate and related rows must have y/n before `--finalize` will succeed.
+Once the reviewer has confirmed all expansion decisions (or declined expansion entirely), run finalize:
 
-`--approve-all` — sets `approved (y/n) = y` on all **candidate** rows (rows with a non-blank code and `row_type: candidate`) for the concept. Does **not** affect `concept` rows.
-`--exclude-all` — sets `approved (y/n) = n` on all **candidate** rows for the concept. Does not affect `concept` rows.
-`--approve-code CODE` / `--exclude-code CODE` — sets `approved (y/n)` on the single row matching that code value; repeatable.
-`--note TEXT` — sets the `comment` field on the first row for the concept.
+```sh
+rh-skills promote concept review <topic> --finalize --reviewer "<name>"
+# If CLI commands updated the CSV checksum, add --force:
+rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
+```
+
+**Finalize gate**: `--finalize` iterates all per-concept CSVs in the `concepts/` directory and checks every `row_type=candidate` row for an `include/exclude` decision. `row_type=related` rows (expansion results from Step 3.5) and expansion rows are **skipped** by the gate — they may remain blank without blocking finalize. Only candidate rows must have `include/exclude` set to `include` or `exclude`.
+
+`--approve-all` — sets `include/exclude = include` on all **candidate** rows (rows with a non-blank code and `row_type: candidate`) for the concept. Does **not** affect `related` or expansion rows.
+`--exclude-all` — sets `include/exclude = exclude` on all **candidate** rows for the concept. Does not affect `related` or expansion rows.
+`--approve-code CODE` / `--exclude-code CODE` — sets `include/exclude` on the single **candidate** row matching that code value; repeatable. Does not affect related rows.
+`--approve-related "PARENT|RELATED"` / `--exclude-related "PARENT|RELATED"` — sets `include/exclude` on the specific related row identified by the parent code and related code pair.
+`--approve-expansion "SYSTEM|RELATION|CODE"` / `--exclude-expansion "SYSTEM|RELATION|CODE"` — sets `include/exclude` on the specific expansion row identified by system + relation + code.
+`--note TEXT` — sets the `comments` field on the first **candidate** row for the concept.
 `--reset` (on `concept enrich`) — clears all rows for a concept and re-adds a blank placeholder row.
 
 ### Step 4 — Approve artifacts

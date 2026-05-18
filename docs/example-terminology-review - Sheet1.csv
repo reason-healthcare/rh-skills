@@ -1,0 +1,23 @@
+concept_name,Hypertension,,,,,,,,
+concept_type,condition,,,,,,,,
+role,inclusion-criterion,,,,,,,,
+sources,ada-guidelines-2024,,,,,,,,
+context,Primary hypertension for population inclusion,,,,,,,,
+lookup_query,Hypertension,,,,,,,,
+lookup_notes,,,,,,,,,
+,,,,,,,,,
+Instructions:,"You can approve expansions or individual codes. Approving an expansion is in intentional valueset, whereas individual codes are extensional rules.",,,,,,,,
+,The expansions are shown naturally in the individual codes table as of {date} with version {version},,,,,,,,
+,"If you choose to include an expansion and individual codes, both rules will apply, however the resulting set will be deduplicated.",,,,,,,,
+,,,,,,,,,
+Expansions:,,,,,,,,,
+include/exclude,system,expansion,rationale,,,,,,
+include,http://snomed.info/sct,is_a 38341003,Hierarchy appears clinically close; review pregnancy-related concepts.,,,,,,
+,,,,,,,,,
+Individual Codes:,,,,,,,,,
+include/exclude,system,code,display,distance,confidence,row_type,relation,related_code,comments
+include,http://snomed.info/sct,38341003,Hypertensive disorder systemic arterial (disorder),0.02,high,candidate,,,Confirmed SNOMED anchor
+,http://snomed.info/sct,59621000,Essential hypertension (disorder),,,related,is_a,38341003,
+,http://snomed.info/sct,73410007,Benign secondary renovascular hypertension (disorder),,,related,is_a,38341003,Too specific
+include,http://hl7.org/fhir/sid/icd-10-cm,I10,Essential (primary) hypertension,0.15,high,candidate,,,
+exclude,http://hl7.org/fhir/sid/icd-10-cm,I11.9,Hypertensive heart disease without heart failure,0.42,medium,related,is_a,I10,Excludes complication codes

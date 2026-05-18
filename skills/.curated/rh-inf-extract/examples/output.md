@@ -22,23 +22,21 @@ Proposed artifacts:
 Writing:
 `topics/diabetes-ccm/process/plans/extract-plan.yaml`
 `topics/diabetes-ccm/process/plans/extract-plan-readout.md`
-`topics/diabetes-ccm/process/plans/concepts-review.csv`
+`topics/diabetes-ccm/process/plans/concepts/`
 `topics/diabetes-ccm/process/plans/concepts-review-meta.yaml`
 
 Enrich `concepts-review.csv` with RH MCP candidate codes
 before human approval, for example:
 
 ```sh
-# Each result from each system is a separate --candidate call.
-# Successive calls for the same concept append rows to the CSV.
-rh-skills promote concept enrich diabetes-ccm --concept "Diabetes mellitus" \
-  --candidate "http://snomed.info/sct|73211009|Diabetes mellitus (disorder)|0.0|high"
-rh-skills promote concept enrich diabetes-ccm --concept "Diabetes mellitus" \
+# Multiple --candidate flags in a single call batch all results for a concept efficiently.
+rh-skills promote concept enrich diabetes-ccm "Diabetes mellitus" \
+  --candidate "http://snomed.info/sct|73211009|Diabetes mellitus (disorder)|0.0|high" \
   --candidate "http://hl7.org/fhir/sid/icd-10-cm|E11|Type 2 diabetes mellitus|0.1|high"
-rh-skills promote concept enrich diabetes-ccm --concept "HbA1c measurement" \
+rh-skills promote concept enrich diabetes-ccm "HbA1c measurement" \
   --candidate "http://loinc.org|4548-4|Hemoglobin A1c/Hemoglobin.total in Blood|0.0|high"
 # When MCP returned no results, omit --candidate but still call to record lookup:
-rh-skills promote concept enrich diabetes-ccm --concept "Some term" \
+rh-skills promote concept enrich diabetes-ccm "Some term" \
   --lookup-notes "No results found in any required system"
 # ... repeat for every concept ...
 ```
@@ -48,10 +46,10 @@ adding `--finalize` on the last call:
 
 ```sh
 rh-skills promote concept review diabetes-ccm \
-  --concept "Diabetes mellitus" --approved y --note "Confirmed FSN"
+  "Diabetes mellitus" --approve-all --note "Confirmed FSN"
 
 rh-skills promote concept review diabetes-ccm \
-  --concept "HbA1c measurement" --approved y --note "LOINC confirmed"
+  "HbA1c measurement" --approve-all --note "LOINC confirmed"
 
 # Finalize (--force because CLI commands updated the checksum):
 rh-skills promote concept review diabetes-ccm \

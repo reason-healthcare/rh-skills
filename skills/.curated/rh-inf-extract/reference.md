@@ -190,40 +190,58 @@ All concepts always appear in `concepts.yaml`. A concept gets a `codes` list onl
 
 | Goal | Command |
 |------|---------|
-| Add custom concept | `rh-skills promote concept add <topic> --concept "<name>" --type <type>` |
-| Record MCP candidates | `rh-skills promote concept enrich <topic> --concept <name> --candidate "system\|code\|display[...]"` |
-| Approve all candidate codes | `rh-skills promote concept review <topic> --concept "<name>" --approve-all` |
-| Exclude all candidate codes | `rh-skills promote concept review <topic> --concept "<name>" --exclude-all` |
-| Approve/exclude specific code | `rh-skills promote concept review <topic> --concept "<name>" --approve-code <code> --exclude-code <other-code>` |
-| Record no-match reason | `rh-skills promote concept enrich <topic> --concept "<name>" --lookup-notes "reason"` |
+| Add custom concept | `rh-skills promote concept enrich <topic> "<name>" --source custom --type <type>` |
+| Record MCP candidates | `rh-skills promote concept enrich <topic> <name> --candidate "system\|code\|display[...]"` |
+| Approve all candidate codes | `rh-skills promote concept review <topic> "<name>" --approve-all` |
+| Exclude all candidate codes | `rh-skills promote concept review <topic> "<name>" --exclude-all` |
+| Approve/exclude specific candidate code | `rh-skills promote concept review <topic> "<name>" --approve-code <code> --exclude-code <other-code>` |
+| Approve/exclude a specific related row | `rh-skills promote concept review <topic> "<name>" --approve-related "<parent>\|<related>"` |
+| Approve/exclude a specific expansion row | `rh-skills promote concept review <topic> "<name>" --approve-expansion "<system>\|<relation>\|<code>"` |
+| Record intentional expansion rule | `rh-skills promote concept enrich <topic> "<name>" --expansion "system\|relation\|code[\|rationale]"` |
+| Record no-match reason | `rh-skills promote concept enrich <topic> "<name>" --lookup-notes "reason"` |
 | Finalize review | `rh-skills promote concept review <topic> --finalize --reviewer "<name>"` |
 | Write concepts artifact | `rh-skills promote concept write <topic>` |
 
 Review workflow:
 ```sh
 # Add a custom concept (not from source documents):
-rh-skills promote concept add <topic> --concept "<name>" --type <type>
+rh-skills promote concept enrich <topic> "<name>" --source custom --type <type>
 
 # Enrich candidates (no decision needed):
-rh-skills promote concept enrich <topic> --concept <name> \
+rh-skills promote concept enrich <topic> <name> \
   --candidate "system|code|display[|distance[|confidence]]"
 # Omit --candidate when MCP returned no results; still call to record lookup.
 # ... repeat for every concept ...
 
-# Approve all candidate codes for a concept (does not affect related rows):
-rh-skills promote concept review <topic> --concept "<name>" --approve-all
+# Approve all candidate codes for a concept (does NOT affect related or expansion rows):
+rh-skills promote concept review <topic> "<name>" --approve-all
 
-# Exclude all candidate codes for a concept (does not affect related rows):
-rh-skills promote concept review <topic> --concept "<name>" --exclude-all
+# Exclude all candidate codes for a concept (does NOT affect related or expansion rows):
+rh-skills promote concept review <topic> "<name>" --exclude-all
 
-# Approve or exclude a specific code by value (works for both candidate and related rows):
-rh-skills promote concept review <topic> --concept "<name>" \
+# Approve or exclude a specific candidate code:
+rh-skills promote concept review <topic> "<name>" \
   --approve-code <code> --exclude-code <other-code>
 
+# Approve or exclude a specific related row (PARENT_CODE|RELATED_CODE):
+rh-skills promote concept review <topic> "<name>" --approve-related "<parent>|<related>"
+rh-skills promote concept review <topic> "<name>" --exclude-related "<parent>|<related>"
+
+# Approve or exclude a specific expansion row (SYSTEM|RELATION|CODE as recorded):
+rh-skills promote concept review <topic> "<name>" --approve-expansion "<system>|<relation>|<code>"
+rh-skills promote concept review <topic> "<name>" --exclude-expansion "<system>|<relation>|<code>"
+
+# Record related codes + expansion rule in ONE call per concept (both required for agent-driven anchor expansion):
+rh-skills promote concept enrich <topic> "<name>" \
+  --related-candidate "<parent>|http://snomed.info/sct|<code1>|<display1>|<relation>" \
+  --related-candidate "<parent>|http://snomed.info/sct|<code2>|<display2>|<relation>" \
+  --expansion "http://snomed.info/sct|<relation>|<parent>|IS-A subtypes of <display>"
+# Exception: if the reviewer explicitly requests only the rule (no concrete codes), use --expansion alone.
+
 # Before finalize checklist:
-# 1) Every candidate row has approved (y/n) set to y or n
-# 2) Concepts that should emit codes have at least one approved candidate row
-# 3) Any related row that should be emitted is explicitly approved
+# 1) Every candidate row has include/exclude set to include or exclude
+# 2) Concepts that should emit codes have at least one include candidate row
+# 3) Related and expansion rows are optional — may remain blank
 
 # Finalize (after CLI-only approvals, --force bypasses checksum unchanged soft-block):
 rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
@@ -238,14 +256,16 @@ rh-skills promote concept write <topic>
 ```
 This writes `topics/<topic>/structured/concepts.yaml`.
 
-#### concepts-review.csv columns
+#### Per-concept CSV columns
+
+Each concept has its own CSV under `topics/<topic>/process/plans/concepts/<concept-slug>.csv`.
 
 | Column | Description |
 |--------|-------------|
 | `concept_name` | Concept name (matches normalized front matter, or custom) |
 | `concept_type` | Concept type (condition, procedure, lab, etc.) |
 | `role` | Clinical role in this topic context: `inclusion-criterion` \| `exclusion-criterion` \| `intervention` \| `comparator` \| `comorbidity` \| `observation` \| `risk-factor` \| `outcome` \| `adverse-event` \| `other`; blank when not set |
-| `sources` | Semicolon-delimited source slugs; `"custom"` for concepts added via `concept add` |
+| `sources` | Semicolon-delimited source slugs; `"custom"` for concepts added via `--source custom` |
 | `context` | ~10-word text window from source around first occurrence; empty for custom concepts |
 | `lookup_query` | Default MCP query string |
 | `lookup_notes` | Notes when no candidates found |
@@ -254,24 +274,25 @@ This writes `topics/<topic>/structured/concepts.yaml`.
 | `display` | Candidate display text |
 | `distance` | Semantic distance from MCP (float; lower = closer) |
 | `confidence (high/medium/low)` | Confidence label from MCP |
-| `approved (y/n)` | Set to `y` to include this code in `concepts.yaml`; `n` to exclude it |
-| `comment` | Reviewer note |
-| `row_type` | `candidate` (default) or `related`; discriminates candidate codes from semantic expansion rows |
+| `include/exclude` | Set to `include` to emit this code in `concepts.yaml`; `exclude` to omit it |
+| `comments` | Reviewer note |
+| `row_type` | `candidate` (default), `related`, or `expansion`; discriminates candidate codes from semantic expansion rows |
 | `relation` | Ontology-native predicate for `related` rows: `is_a` \| `finding_site` \| `associated_morphology` \| `causative_agent` \| `due_to` |
-| `method` | How the code was discovered: `mcp` (set automatically by `concept enrich`) \| `manual` (set automatically by `concept add`) |
+| `method` | How the code was discovered: `mcp` (set automatically by `concept enrich`) \| `custom` (set automatically by `--source custom`) |
 
 Use `--lookup-notes` on `concept enrich` to record why no candidates were found after all required MCP searches returned zero results:
 ```sh
-rh-skills promote concept enrich <topic> --concept "<name>" \
+rh-skills promote concept enrich <topic> "<name>" \
   --lookup-notes "No SNOMED or ICD-10 match found; concept too specific"
 ```
 This writes to the `lookup_notes` column and marks the concept as lookup-complete with zero candidates.
 
-**Approved semantics:**
-- Every `candidate` code row (non-empty `system` or `code`) must have `approved (y/n)` set to `y` or `n` before `--finalize` succeeds
-- A concept with at least one `approved (y/n) = y` candidate row → `codes` list written in `concepts.yaml`
-- A concept with no `approved (y/n) = y` candidate rows → appears in `concepts.yaml` without a `codes` key
-- `--approve-all` / `--exclude-all` only affect `candidate` rows; use `--approve-code` / `--exclude-code` to approve individual `related` rows
+**Decision semantics:**
+- Every `candidate` row (non-empty `system` or `code`) must have `include/exclude` set to `include` or `exclude` before `--finalize` succeeds
+- `related` and `expansion` rows are optional — `--finalize` does not require them to have a decision
+- A concept with at least one `include/exclude = include` candidate row → `codes` list written in `concepts.yaml`
+- A concept with no `include` candidate rows → appears in `concepts.yaml` without a `codes` key
+- `--approve-all` / `--exclude-all` only affect `candidate` rows; use `--approve-related` / `--exclude-related` to decide individual `related` rows
 - Custom concepts (`sources: custom`) follow the same rules — add codes via `concept enrich`
 
 #### concepts-review-meta.yaml schema
@@ -282,8 +303,8 @@ status: <pending-review | approved>
 generated_at: <ISO-8601 timestamp>
 reviewed_at: <ISO-8601 timestamp or null>
 reviewer: <reviewer name>
-csv_checksum: <SHA-256 of concepts-review.csv>
-review_artifact: topics/<topic>/process/plans/concepts-review.csv
+csv_checksum: <SHA-256 of per-concept CSVs>
+review_artifact: topics/<topic>/process/plans/concepts/
 final_artifact: topics/<topic>/structured/concepts.yaml
 ```
 
