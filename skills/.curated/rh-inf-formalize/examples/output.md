@@ -4,13 +4,13 @@
 
 ```text
 $ rh-inf-formalize plan diabetes-ccm
-Loaded 3 approved structured inputs from extract-plan.md
+Loaded 3 approved structured inputs from extract-plan.yaml
   screening-decisions (decision-table)
   care-pathway (care-pathway)
   lab-value-sets (terminology)
 ⚠ Overlap detected: decision-table + care-pathway → PlanDefinition
   Default: separate resources (eca-rule vs clinical-protocol)
-Wrote topics/diabetes-ccm/process/plans/formalize-plan.md
+Wrote topics/diabetes-ccm/process/plans/formalize-plan.yaml
   3 artifacts proposed (1 per L2 type)
 ```
 
@@ -35,8 +35,8 @@ Processing artifact 3/3: lab-value-sets (terminology)
 
 Packaging:
   Running: rh-skills package diabetes-ccm
-  ✓ package.json
-  ✓ ImplementationGuide-diabetes-ccm.json
+  ✓ process/package-workspace/packager.toml
+  ✓ process/package-workspace/ImplementationGuide.json
   6 resources bundled
 ```
 

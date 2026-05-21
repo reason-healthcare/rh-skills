@@ -9,11 +9,7 @@ validation guidance.
 
 Canonical plan file:
 
-`topics/<topic>/process/plans/formalize-plan.md`
-
-Framework compatibility naming:
-
-`topics/<topic>/process/plans/rh-inf-formalize-plan.md`
+`topics/<topic>/process/plans/formalize-plan.yaml`
 
 Required frontmatter:
 
@@ -90,7 +86,9 @@ Each L2 artifact type maps to specific FHIR resources via the strategy table:
 | `custom` | `PlanDefinition-<id>.json` (stub — reviewer must specify) |
 
 All files are written to `topics/<topic>/computable/` by `rh-skills formalize`.
-`rh-skills package` bundles them into a FHIR NPM package at `topics/<topic>/package/`.
+`rh-skills package` stages a package workspace under `topics/<topic>/process/`
+and builds distribution artifacts from there. `computable/` remains the
+canonical L3 artifact directory.
 
 Only one artifact can set `implementation_target: true` per plan.
 
@@ -336,7 +334,7 @@ Common reference patterns:
 - PlanDefinition → ValueSet: `action[].input[].type` code binding
 - PlanDefinition → ActivityDefinition: `action[].definitionCanonical`
 
-The actual base URL is set by `rh-skills package` at bundling time.
+The actual base URL is set by `rh-skills formalize-config`.
 
 ---
 

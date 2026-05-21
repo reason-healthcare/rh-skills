@@ -493,7 +493,7 @@ When multiple strategies produce resources that reference each other:
 - A Measure references its Library via `library[]`.
 - Use canonical URLs in the form
   `http://example.org/fhir/<ResourceType>/<id>` for cross-references.
-  The actual base URL is set during `rh-skills package`.
+  The actual base URL is set via `rh-skills formalize-config`.
 
 **`sub_pathway_reference` (care-pathway → ECA rule)**: When a care-pathway step
 carries `sub_pathway_reference: <eca-artifact-id>`, the formalized
