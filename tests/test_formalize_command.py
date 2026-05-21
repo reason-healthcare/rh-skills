@@ -187,10 +187,11 @@ class TestUnknownTypeFallback:
 
 
 class TestStrategyRegistry:
-    def test_all_seven_types_registered(self):
+    def test_all_supported_types_registered(self):
         expected = {
             "evidence-summary", "decision-table", "care-pathway",
             "terminology", "measure", "assessment", "policy",
+            "eligibility-criteria", "risk-factors", "custom",
         }
         assert set(STRATEGY_REGISTRY.keys()) == expected
 

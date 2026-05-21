@@ -3476,6 +3476,7 @@ def formalize_approve(
     plan = _load_formalize_plan(topic)
     _interactive_formalize_approve(plan, plan_path, readout_path, topic, reviewer)
 
+@promote.command("body-init")
 @click.argument("topic")
 @click.argument("name")
 @click.option("--output", default=None,

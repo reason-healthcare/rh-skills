@@ -119,6 +119,70 @@ def make_valid_formalize_l3(tmp_repo, skill="my-skill", artifact="test-l3"):
     }))
 
 
+def write_tracking_with_computable(
+    tmp_repo,
+    topic="my-skill",
+    artifact="test-l3",
+    *,
+    converged_from=None,
+    strategy="assessment",
+):
+    y = YAML()
+    y.default_flow_style = False
+    tracking = {
+        "schema_version": "1.0",
+        "sources": [],
+        "topics": [{
+            "name": topic,
+            "structured": [],
+            "computable": [{
+                "name": artifact,
+                "files": [f"topics/{topic}/computable/Questionnaire-{artifact}.json"],
+                "checksums": {},
+                "converged_from": converged_from or ["screening-criteria"],
+                "strategy": strategy,
+            }],
+            "events": [],
+        }],
+    }
+    with open(tmp_repo / "tracking.yaml", "w") as f:
+        y.dump(tracking, f)
+
+
+def write_formalize_plan_yaml(
+    tmp_repo,
+    topic="my-skill",
+    artifact="test-l3",
+    *,
+    reviewer_decision="approved",
+    implementation_target=True,
+):
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "formalize-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    plan = {
+        "topic": topic,
+        "plan_type": "formalize",
+        "status": "approved",
+        "reviewer": "Tester",
+        "reviewed_at": "2026-04-14T00:00:00Z",
+        "artifacts": [{
+            "name": artifact,
+            "artifact_type": "assessment",
+            "strategy": "assessment",
+            "input_artifacts": ["screening-criteria"],
+            "l3_targets": ["Questionnaire"],
+            "required_sections": [],
+            "reviewer_decision": reviewer_decision,
+            "implementation_target": implementation_target,
+        }],
+    }
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+    return plan_path
+
+
 # ── L2 validation tests ────────────────────────────────────────────────────────
 
 def test_validate_valid_l2_exits_0(tmp_repo):
@@ -267,12 +331,24 @@ def test_validate_extract_artifact_fails_missing_concerns_when_plan_requires_the
 
 
 def test_validate_formalize_artifact_checks_approved_plan_requirements(tmp_repo):
-    """Valid Questionnaire FHIR JSON passes l3 validation (plan check no longer applies)."""
+    """Valid Questionnaire FHIR JSON passes l3 validation with YAML formalize plan checks."""
+    write_tracking_with_computable(tmp_repo)
+    write_formalize_plan_yaml(tmp_repo)
     make_valid_formalize_l3(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
     assert result.exit_code == 0, result.output
     assert "VALID" in result.output
+
+
+def test_validate_formalize_artifact_reads_yaml_plan_and_flags_input_mismatch(tmp_repo):
+    write_tracking_with_computable(tmp_repo, converged_from=["different-input"])
+    write_formalize_plan_yaml(tmp_repo)
+    make_valid_formalize_l3(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
+    assert result.exit_code == 1
+    assert "approved formalize plan inputs" in result.output
 
 
 def test_validate_formalize_artifact_fails_when_converged_inputs_mismatch(tmp_repo):
