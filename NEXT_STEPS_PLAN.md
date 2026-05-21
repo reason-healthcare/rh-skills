@@ -17,14 +17,16 @@ This plan is based on the current repository state as of 2026-05-21 and the foll
 - Do not add real LLM provider support yet.
 - Do not take on broad "fix failing tests" cleanup unrelated to the touched work.
 
-## Confirmed Current State
+## Current State
 
-### What already exists
+### What now exists
 
-- `rh-skills formalize <topic> <artifact>` exists in [src/rh_skills/commands/formalize.py](/Users/taylorkingston/projects/rh-skills/src/rh_skills/commands/formalize.py:369).
-- `rh-skills cql validate` and `rh-skills cql translate` exist in [src/rh_skills/commands/cql.py](/Users/taylorkingston/projects/rh-skills/src/rh_skills/commands/cql.py:35).
-- `rh-skills package <topic>` exists in [src/rh_skills/commands/package.py](/Users/taylorkingston/projects/rh-skills/src/rh_skills/commands/package.py:20), but it currently generates `package.json` and `ImplementationGuide` itself instead of using `rh package`.
-- The repo already tracks packaging and computable lifecycle events in `tracking.yaml`.
+- `rh-skills formalize <topic> <artifact>` exists in [src/rh_skills/commands/formalize.py](/Users/taylorkingston/projects/rh-skills/src/rh_skills/commands/formalize.py:392) and now respects an approved `formalize-plan.yaml` target when one exists.
+- `rh-skills cql validate`, `translate`, and executable fixture-driven `test` exist in [src/rh_skills/commands/cql.py](/Users/taylorkingston/projects/rh-skills/src/rh_skills/commands/cql.py:60).
+- `rh-skills fhirpath parse` and `eval` now exist in [src/rh_skills/commands/fhirpath.py](/Users/taylorkingston/projects/rh-skills/src/rh_skills/commands/fhirpath.py:28).
+- `rh-skills package <topic>` now stages a package workspace from `computable/` and wraps `rh package check/build/pack` via [src/rh_skills/commands/package.py](/Users/taylorkingston/projects/rh-skills/src/rh_skills/commands/package.py:48).
+- The repo tracks packaging and computable lifecycle events in `tracking.yaml`.
+- A fresh end-to-end statin topic orchestration flow now exists as [tests/integration/test_statin_primary_prevention_flow.py](/Users/taylorkingston/projects/rh-skills/tests/integration/test_statin_primary_prevention_flow.py:1).
 
 ### What `rh` supports right now
 
@@ -43,15 +45,14 @@ Most importantly:
 - `rh package check <DIR>` validates source before build.
 - `rh package pack <DIR>` produces a `.tgz` from an expanded package output.
 
-### Gaps and mismatches
+### Remaining gaps and mismatches
 
-- The current `rh-skills package` implementation does not generate or use `packager.toml`.
-- `rh-skills cql test` is still placeholder behavior and does not run executable evaluation yet.
 - `formalize` still relies on stub LLM behavior only; that is acceptable for this slice, but it limits realistic automation.
-- `validate` still references `formalize-plan.md` in code paths that should now align with `formalize-plan.yaml`.
 - The current design has treated `package/` as a durable artifact directory, but the cleaner model is for `computable/` to remain the only canonical home for L3 artifacts.
 - `rh package` still needs a source directory and build output directory, but those should be treated as packaging internals rather than a second persistent L3 store.
-- The example tracking file also suggests a possible follow-up cleanup need: repeated `computable` entries can accumulate on reruns.
+- The repo still has stale docs and specs that refer to `formalize-plan.md`, `package/`, and `cql test` as eval-pending; those are intentionally deferred for now.
+- Real `rh package check/build` behavior still needs live validation against the actual `rh` runtime, not only subprocess-mocked tests.
+- ReasonHub spec-context access failed in this session due an MCP transport/session issue, so spec verification had to stay local for this pass.
 
 ## Scope For This Slice
 
@@ -63,12 +64,30 @@ Most importantly:
 - Finish the practical CQL iteration loop by making `rh-skills cql test` actually execute tests through `rh`.
 - Align formalize/validate behavior enough to support the package workflow cleanly.
 - Add one new end-to-end topic fixture that exercises the intended path.
+- Add a lightweight FHIRPath wrapper to complete the iterative logic-authoring loop.
 
 ### Out of scope
 
 - Docs refresh across `README.md`, `docs/`, and `specs/`.
 - Broad cleanup of pre-existing failing tests unrelated to touched code.
 - Real LLM provider integrations.
+
+## Completion Summary
+
+- Completed: packaging wrapper around `rh package`
+- Completed: deterministic `packager.toml` workspace generation
+- Completed: `formalize-plan.yaml` validation alignment
+- Completed: formalize implementation-target gating
+- Completed: computable tracking deduplication on rerun
+- Completed: executable `rh-skills cql test`
+- Completed: lightweight `rh-skills fhirpath` wrapper
+- Completed: fresh end-to-end statin topic integration flow
+
+## Remaining Work
+
+- Validate the generated package workspace against the real `rh package` runtime end to end, without mocks.
+- Decide whether to preserve package build outputs under `process/` or clean them up automatically after successful packaging.
+- Refresh docs/specs once implementation behavior settles.
 
 ## Proposed Implementation Plan
 
