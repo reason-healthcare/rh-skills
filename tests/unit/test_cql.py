@@ -1,4 +1,4 @@
-"""Tests for rh-skills cql commands (validate/translate via rh; test eval pending)."""
+"""Tests for rh-skills cql commands (validate/translate/test via rh)."""
 from __future__ import annotations
 
 import json
@@ -119,10 +119,37 @@ def test_test_no_fixtures_exits_nonzero(tmp_path, monkeypatch):
     assert result.exit_code != 0
 
 
-def test_test_eval_pending_lists_cases(tmp_path, monkeypatch):
+def test_test_runs_eval_and_reports_pass(tmp_path, monkeypatch):
     monkeypatch.chdir(_make_topic(tmp_path))
     _make_fixture(tmp_path, "TestLib", "case-001-basic", {"IsAdult": True})
-    result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="true\n", stderr="")
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
     assert result.exit_code == 0
-    assert "eval pending" in result.output.lower()
+    cmd = mock_run.call_args[0][0]
+    assert cmd[1:3] == ["cql", "eval"]
+    assert "PASS IsAdult" in result.output
     assert "case-001-basic" in result.output
+
+
+def test_test_reports_expression_mismatch(tmp_path, monkeypatch):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-001-basic", {"IsAdult": True})
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="false\n", stderr="")
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code != 0
+    assert "expected true, got false" in result.output.lower()
+
+
+def test_test_reports_eval_failure(tmp_path, monkeypatch):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-001-basic", {"IsAdult": True})
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="compile error")
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code != 0
+    assert "compile error" in result.output
