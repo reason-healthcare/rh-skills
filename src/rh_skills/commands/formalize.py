@@ -221,6 +221,33 @@ def _patch_measure_library_references(resources: list[dict]) -> None:
             resource["library"] = library_urls
 
 
+def _load_approved_formalize_target(topic: str) -> dict | None:
+    """Return the approved implementation target from formalize-plan.yaml if present."""
+    plan_path = topic_dir(topic) / "process" / "plans" / "formalize-plan.yaml"
+    if not plan_path.exists():
+        return None
+
+    data = YAML(typ="safe").load(plan_path.read_text()) or {}
+    if data.get("status") != "approved":
+        raise click.UsageError(
+            "formalize-plan.yaml is not approved. Review and approve the plan before formalizing."
+        )
+
+    artifacts = data.get("artifacts") or []
+    targets = [entry for entry in artifacts if entry.get("implementation_target") is True]
+    if len(targets) != 1:
+        raise click.UsageError(
+            "formalize-plan.yaml must mark exactly one artifact as implementation_target: true."
+        )
+
+    target = targets[0]
+    if target.get("reviewer_decision") != "approved":
+        raise click.UsageError(
+            "formalize-plan.yaml target is not approved for implementation."
+        )
+    return target
+
+
 def _parse_llm_response(raw: str) -> list[dict]:
     """Parse LLM response into list of FHIR resource dicts.
 
@@ -427,6 +454,13 @@ def formalize(topic, artifact, dry_run, force):
         )
         sys.exit(2)
 
+    approved_target = _load_approved_formalize_target(topic)
+    if approved_target is not None and approved_target.get("name") != artifact:
+        raise click.UsageError(
+            f"Artifact '{artifact}' is not the approved implementation target in formalize-plan.yaml. "
+            f"Target: '{approved_target.get('name', '<unknown>')}'."
+        )
+
     # Load L2 YAML content — prefer the registered file path from tracking
     _artifact_file = artifact_entry.get("file")
     if _artifact_file:
@@ -547,14 +581,18 @@ def formalize(topic, artifact, dry_run, force):
 
     # Update tracking
     timestamp = now_iso()
-    topic_entry.setdefault("computable", []).append({
+    new_entry = {
         "name": artifact,
         "files": written_files,
         "created_at": timestamp,
         "checksums": checksums,
         "converged_from": [artifact],
         "strategy": artifact_type if not is_fallback else "generic",
-    })
+    }
+    existing_entries = topic_entry.get("computable", []) or []
+    topic_entry["computable"] = [
+        entry for entry in existing_entries if entry.get("name") != artifact
+    ] + [new_entry]
 
     resource_count = len(written_files)
     strategy_label = artifact_type if not is_fallback else "generic"

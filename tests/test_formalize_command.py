@@ -57,6 +57,21 @@ def formalize_topic(tmp_repo):
     os.environ.pop("LLM_PROVIDER", None)
 
 
+def _write_formalize_plan(topic_dir: Path, *, artifact_name: str, status: str = "approved", reviewer_decision: str = "approved"):
+    plans_dir = topic_dir / "process" / "plans"
+    plans_dir.mkdir(parents=True, exist_ok=True)
+    (plans_dir / "formalize-plan.yaml").write_text(
+        "topic: test-topic\n"
+        "plan_type: formalize\n"
+        f"status: {status}\n"
+        "artifacts:\n"
+        f"  - name: {artifact_name}\n"
+        "    strategy: decision-table\n"
+        "    implementation_target: true\n"
+        f"    reviewer_decision: {reviewer_decision}\n"
+    )
+
+
 class TestFormalizeCommand:
     def test_dry_run(self, formalize_topic):
         runner = CliRunner()
@@ -136,6 +151,28 @@ class TestFormalizeCommand:
         # Third run with force — should succeed
         result3 = runner.invoke(formalize, ["test-topic", "test-rules", "--force"])
         assert result3.exit_code == 0
+
+        tracking = load_tracking(formalize_topic)
+        topic = next(t for t in tracking["topics"] if t["name"] == "test-topic")
+        assert len(topic["computable"]) == 1
+
+    def test_respects_approved_formalize_plan_target(self, formalize_topic):
+        topic_dir = formalize_topic / "topics" / "test-topic"
+        _write_formalize_plan(topic_dir, artifact_name="different-artifact")
+
+        runner = CliRunner()
+        result = runner.invoke(formalize, ["test-topic", "test-rules"])
+        assert result.exit_code != 0
+        assert "approved implementation target" in result.output.lower()
+
+    def test_rejects_unapproved_formalize_plan(self, formalize_topic):
+        topic_dir = formalize_topic / "topics" / "test-topic"
+        _write_formalize_plan(topic_dir, artifact_name="test-rules", status="pending-review")
+
+        runner = CliRunner()
+        result = runner.invoke(formalize, ["test-topic", "test-rules"])
+        assert result.exit_code != 0
+        assert "not approved" in result.output.lower()
 
 
 class TestUnknownTypeFallback:
