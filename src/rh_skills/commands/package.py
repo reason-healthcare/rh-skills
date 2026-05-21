@@ -1,37 +1,65 @@
-"""rh-skills package — Bundle FHIR resources into a FHIR NPM package."""
+"""rh-skills package — Build distribution packages from computable artifacts."""
 
+from __future__ import annotations
+
+import shutil
+import subprocess
 import sys
+from pathlib import Path
 
 import click
 
 from rh_skills.commands.formalize_config import load_formalize_config
 from rh_skills.common import (
     append_topic_event,
-    log_info,
-    now_iso,
+    config_value,
     require_topic,
     require_tracking,
     save_tracking,
     topic_dir,
 )
-from rh_skills.fhir.packaging import build_package
+from rh_skills.fhir.packaging import infer_package_id, prepare_package_workspace
+
+
+def _resolve_rh_binary() -> str:
+    """Return the path to the ``rh`` binary or raise with install guidance."""
+    path = config_value("RH_CLI_PATH")
+    if path:
+        return path
+    found = shutil.which("rh")
+    if found:
+        return found
+    raise click.ClickException(
+        "The `rh` CLI binary was not found.\n"
+        "Install it with:\n"
+        "  cargo install --path /path/to/rh/apps/rh-cli\n"
+        "Or set RH_CLI_PATH in your environment or .rh-skills.toml:\n"
+        "  [cql]\n"
+        "  rh_cli_path = \"/path/to/rh\""
+    )
+
+
+def _run_rh_command(args: list[str]) -> subprocess.CompletedProcess[str]:
+    """Run an ``rh`` subprocess and capture combined output for reporting."""
+    return subprocess.run(
+        args,
+        capture_output=True,
+        text=True,
+    )
 
 
 @click.command("package")
 @click.argument("topic")
-@click.option("--dry-run", is_flag=True, help="Print package manifest without writing files")
-@click.option("--output-dir", type=click.Path(), default=None, help="Override output directory")
-def package(topic, dry_run, output_dir):
-    """Bundle formalized FHIR resources into a FHIR NPM package.
-
-    Collects all FHIR JSON + CQL from topics/<topic>/computable/,
-    generates package.json and ImplementationGuide, and writes
-    everything to topics/<topic>/package/.
-    """
+@click.option("--dry-run", is_flag=True, help="Print the planned package workspace and rh commands")
+@click.option("--check-only", is_flag=True, help="Run `rh package check` but do not build")
+@click.option("--pack", "pack_tgz", is_flag=True, help="Run `rh package pack` after a successful build")
+@click.option("--output-dir", type=click.Path(), default=None, help="Override build output directory")
+@click.option("--workspace-dir", type=click.Path(), default=None, help="Override package workspace directory")
+def package(topic, dry_run, check_only, pack_tgz, output_dir, workspace_dir):
+    """Build a FHIR distribution package from topics/<topic>/computable/."""
     tracking = require_tracking()
     topic_entry = require_topic(tracking, topic)
 
-    # Check that computable resources exist
     computable = topic_entry.get("computable", [])
     if not computable:
         click.echo("Error: No computable entries found in tracking for this topic", err=True)
@@ -39,12 +67,10 @@ def package(topic, dry_run, output_dir):
 
     td = topic_dir(topic)
     computable_dir = td / "computable"
-
     if not computable_dir.exists():
         click.echo(f"Error: Computable directory not found: {computable_dir}", err=True)
         sys.exit(2)
 
-    # Load formalize config — warn and use defaults if missing
     cfg = load_formalize_config(td)
     if cfg is None:
         click.echo(
@@ -61,57 +87,93 @@ def package(topic, dry_run, output_dir):
             "version": "0.1.0",
         }
 
-    # Determine output directory
-    if output_dir:
-        pkg_dir = type(td)(output_dir)
+    if workspace_dir:
+        pkg_workspace = Path(workspace_dir)
     else:
-        pkg_dir = td / "package"
+        pkg_workspace = td / "process" / "package-workspace"
 
-    if dry_run:
-        from rh_skills.fhir.packaging import (
-            collect_computable_files,
-            generate_package_json,
-        )
-        json_files, cql_files = collect_computable_files(computable_dir)
-        pkg = generate_package_json(
-            topic,
-            version=cfg["version"],
-            has_cql=bool(cql_files),
-            package_id=f"@reason/{cfg['id']}",
-        )
-        click.echo(f"--- DRY RUN: package '{topic}' ---")
-        click.echo(f"  Package: {pkg['name']} v{pkg['version']}")
-        click.echo(f"  Resources: {len(json_files)} FHIR JSON + {len(cql_files)} CQL")
-        click.echo(f"  Dependencies: {', '.join(f'{k}@{v}' for k, v in pkg['dependencies'].items())}")
-        click.echo(f"  Output: {pkg_dir}")
-        return
+    if output_dir:
+        build_dir = Path(output_dir)
+    else:
+        build_dir = td / "process" / "package-output"
 
-    click.echo(f"Packaging '{topic}' as FHIR package...")
-
-    result = build_package(
+    resolved_package_id = infer_package_id(cfg["id"])
+    staged = prepare_package_workspace(
         computable_dir,
-        pkg_dir,
+        pkg_workspace,
         topic,
         version=cfg["version"],
         name=cfg["name"],
         ig_id=cfg["id"],
         canonical=cfg["canonical"],
         status=cfg["status"],
-        package_id=f"@reason/{cfg['id']}",
+        package_id=resolved_package_id,
     )
 
-    if "error" in result:
-        click.echo(f"Error: {result['error']}", err=True)
+    if "error" in staged:
+        click.echo(f"Error: {staged['error']}", err=True)
         sys.exit(2)
 
-    # Update tracking
+    rh = _resolve_rh_binary()
+    check_cmd = [rh, "package", "check", str(pkg_workspace)]
+    build_cmd = [rh, "package", "build", str(pkg_workspace), "--out", str(build_dir)]
+    pack_cmd = [rh, "package", "pack", str(build_dir)]
+
+    if dry_run:
+        click.echo(f"--- DRY RUN: package '{topic}' ---")
+        click.echo(f"  Package: {staged['package_name']} v{staged['version']}")
+        click.echo(f"  Resources: {staged['json_count']} FHIR JSON + {staged['cql_count']} CQL")
+        click.echo(f"  Canonical L3 source: {computable_dir}")
+        click.echo(f"  Workspace: {pkg_workspace}")
+        click.echo(f"  Build output: {build_dir}")
+        click.echo(f"  Check command: {' '.join(check_cmd)}")
+        if not check_only:
+            click.echo(f"  Build command: {' '.join(build_cmd)}")
+        if pack_tgz and not check_only:
+            click.echo(f"  Pack command: {' '.join(pack_cmd)}")
+        return
+
+    click.echo(f"Preparing package workspace from {computable_dir}...")
+
+    check_result = _run_rh_command(check_cmd)
+    if check_result.stdout:
+        click.echo(check_result.stdout.rstrip())
+    if check_result.returncode != 0:
+        if check_result.stderr:
+            click.echo(check_result.stderr.rstrip(), err=True)
+        sys.exit(check_result.returncode)
+
+    if check_only:
+        click.echo("Package source check passed.")
+        return
+
+    build_result = _run_rh_command(build_cmd)
+    if build_result.stdout:
+        click.echo(build_result.stdout.rstrip())
+    if build_result.returncode != 0:
+        if build_result.stderr:
+            click.echo(build_result.stderr.rstrip(), err=True)
+        sys.exit(build_result.returncode)
+
+    if pack_tgz:
+        pack_result = _run_rh_command(pack_cmd)
+        if pack_result.stdout:
+            click.echo(pack_result.stdout.rstrip())
+        if pack_result.returncode != 0:
+            if pack_result.stderr:
+                click.echo(pack_result.stderr.rstrip(), err=True)
+            sys.exit(pack_result.returncode)
+
     append_topic_event(
-        tracking, topic, "package_created",
-        f"Packaged '{topic}' → {result['package_name']} v{result['version']} ({result['json_count'] + result['cql_count']} resources)",
+        tracking,
+        topic,
+        "package_created",
+        f"Packaged '{topic}' → {staged['package_name']} v{staged['version']} ({staged['json_count'] + staged['cql_count']} resources)",
     )
     save_tracking(tracking)
 
-    click.echo(f"\n  package: {result['package_name']} v{result['version']}")
-    click.echo(f"  resources: {result['json_count']} FHIR JSON + {result['cql_count']} CQL")
-    click.echo(f"\nWrote package to {pkg_dir}")
+    click.echo(f"\n  package: {staged['package_name']} v{staged['version']}")
+    click.echo(f"  resources: {staged['json_count']} FHIR JSON + {staged['cql_count']} CQL")
+    click.echo(f"  workspace: {pkg_workspace}")
+    click.echo(f"  build output: {build_dir}")
     click.echo("Event: package_created")

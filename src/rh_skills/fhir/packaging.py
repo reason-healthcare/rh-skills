@@ -1,8 +1,8 @@
-"""FHIR NPM package builder.
+"""FHIR package workspace preparation helpers.
 
-Generates ``package.json``, ``ImplementationGuide`` resource JSON, and
-collects FHIR JSON + CQL files from a computable directory into a
-distributable FHIR package.
+Stages computable FHIR JSON + CQL into a package source workspace suitable for
+``rh package check/build/pack`` while keeping ``computable/`` as the canonical
+L3 artifact directory.
 """
 
 from __future__ import annotations
@@ -11,68 +11,69 @@ import json
 import shutil
 from pathlib import Path
 
+FHIR_VERSION = "4.0.1"
+DEFAULT_LICENSE = "CC0-1.0"
+DEFAULT_DEPENDENCIES: dict[str, str] = {
+    "hl7.fhir.r4.core": FHIR_VERSION,
+    "hl7.fhir.us.core": "6.1.0",
+    "hl7.fhir.uv.crmi": "1.0.0",
+}
 
-def generate_package_json(
-    topic_slug: str,
-    version: str = "0.1.0",
+
+def build_dependency_map(
+    *,
     has_cql: bool = False,
     extra_dependencies: dict[str, str] | None = None,
-    package_id: str | None = None,
-) -> dict:
-    """Build a FHIR NPM package.json dict.
-
-    Args:
-        topic_slug: Topic identifier (kebab-case).
-        version: SemVer package version.
-        has_cql: Whether CQL files are present (adds cql dependency).
-        extra_dependencies: Additional IG dependencies to include.
-        package_id: Override the NPM package name (default: @reason/<topic_slug>).
-    """
-    pkg_name = package_id or f"@reason/{topic_slug}"
-    deps: dict[str, str] = {
-        "hl7.fhir.r4.core": "4.0.1",
-        "hl7.fhir.us.core": "6.1.0",
-        "hl7.fhir.uv.crmi": "1.0.0",
-    }
+) -> dict[str, str]:
+    """Return the package dependency map for a staged workspace."""
+    deps = dict(DEFAULT_DEPENDENCIES)
     if has_cql:
         deps["hl7.fhir.uv.cql"] = "2.0.0"
     if extra_dependencies:
         deps.update(extra_dependencies)
+    return deps
 
-    return {
-        "name": pkg_name,
-        "version": version,
-        "type": "fhir.ig",
-        "fhirVersions": ["4.0.1"],
-        "dependencies": deps,
-    }
+
+def infer_package_id(topic_slug: str) -> str:
+    """Return a FHIR package id for the topic.
+
+    The ``rh package`` workflow expects an unscoped package id rather than an
+    npm-style ``@scope/name`` identifier.
+    """
+    return f"reason.{topic_slug}"
+
+
+def dependency_uri(package_id: str, version: str) -> str:
+    """Return a dependency URI for ImplementationGuide.dependsOn entries."""
+    if package_id == "hl7.fhir.r4.core":
+        return f"http://hl7.org/fhir/{version}"
+    return f"https://packages.fhir.org/{package_id}/{version}"
+
+
+def dependency_ref_id(package_id: str) -> str:
+    """Return a compact id for ImplementationGuide.dependsOn entries."""
+    return "".join(ch for ch in package_id if ch.isalnum())
 
 
 def generate_implementation_guide(
     topic_slug: str,
     resource_files: list[str],
+    *,
     version: str = "0.1.0",
     name: str | None = None,
     ig_id: str | None = None,
     canonical: str = "http://example.org/fhir",
     status: str = "draft",
     package_id: str | None = None,
+    dependencies: dict[str, str] | None = None,
 ) -> dict:
-    """Build a FHIR ImplementationGuide resource dict.
-
-    Args:
-        topic_slug: Topic identifier (kebab-case) — used as fallback for id/name.
-        resource_files: Filenames of FHIR JSON resources (e.g.,
-            ``["PlanDefinition-sepsis.json", "Library-sepsis.json"]``).
-        version: Package version string.
-    """
+    """Build the root ImplementationGuide resource for a package workspace."""
     resolved_id = ig_id or topic_slug
     resolved_name = name or "".join(word.capitalize() for word in topic_slug.split("-"))
-    resolved_pkg_id = package_id or f"@reason/{resolved_id}"
+    resolved_pkg_id = package_id or infer_package_id(resolved_id)
 
     resources = []
     for fname in resource_files:
-        # Derive reference from filename: PlanDefinition-sepsis.json → PlanDefinition/sepsis
         stem = fname.rsplit(".", 1)[0] if "." in fname else fname
         parts = stem.split("-", 1)
         if len(parts) == 2:
@@ -84,103 +85,150 @@ def generate_implementation_guide(
             "name": stem,
         })
 
+    depends_on = []
+    for dep_id, dep_version in (dependencies or {}).items():
+        depends_on.append({
+            "id": dependency_ref_id(dep_id),
+            "packageId": dep_id,
+            "uri": dependency_uri(dep_id, dep_version),
+            "version": dep_version,
+        })
+
     return {
         "resourceType": "ImplementationGuide",
         "id": resolved_id,
-        "url": f"{canonical}/ImplementationGuide/{resolved_id}",
+        "url": f"{canonical}/ImplementationGuide/{resolved_pkg_id}",
         "version": version,
         "name": resolved_name,
         "title": topic_slug.replace("-", " ").title(),
         "status": status,
         "packageId": resolved_pkg_id,
-        "fhirVersion": ["4.0.1"],
+        "fhirVersion": [FHIR_VERSION],
+        "dependsOn": depends_on,
         "definition": {
             "resource": resources,
         },
     }
 
 
-def collect_computable_files(computable_dir: Path) -> tuple[list[Path], list[Path]]:
-    """Collect FHIR JSON and CQL files from a computable directory.
+def generate_packager_toml(
+    *,
+    package_id: str,
+    version: str,
+    canonical: str,
+    status: str,
+    dependencies: dict[str, str],
+    fhir_version: str = FHIR_VERSION,
+    license_name: str = DEFAULT_LICENSE,
+) -> str:
+    """Return deterministic packager.toml content."""
+    lines = [
+        "# packager.toml — rh package configuration",
+        f'id = "{package_id}"',
+        f'version = "{version}"',
+        f'canonical = "{canonical}"',
+        f'fhir_version = "{fhir_version}"',
+        f'license = "{license_name}"',
+        f'status = "{status}"',
+        "",
+        "[dependencies]",
+    ]
+    for dep_id, dep_version in dependencies.items():
+        lines.append(f'"{dep_id}" = "{dep_version}"')
+    lines.extend(
+        [
+            "",
+            "[hooks]",
+            "before_build = []",
+            "after_build  = []",
+            "before_pack  = []",
+            "after_pack   = []",
+            "",
+        ]
+    )
+    return "\n".join(lines)
 
-    Returns:
-        Tuple of (json_files, cql_files).
-    """
+
+def collect_computable_files(computable_dir: Path) -> tuple[list[Path], list[Path]]:
+    """Collect FHIR JSON and CQL files from a computable directory."""
     json_files = sorted(computable_dir.glob("*.json"))
     cql_files = sorted(computable_dir.glob("*.cql"))
     return json_files, cql_files
 
 
-def build_package(
+def prepare_package_workspace(
     computable_dir: Path,
-    output_dir: Path,
+    workspace_dir: Path,
     topic_slug: str,
+    *,
     version: str = "0.1.0",
     name: str | None = None,
     ig_id: str | None = None,
     canonical: str = "http://example.org/fhir",
     status: str = "draft",
     package_id: str | None = None,
+    extra_dependencies: dict[str, str] | None = None,
 ) -> dict:
-    """Build a FHIR package from computable directory contents.
-
-    Creates ``output_dir`` with package.json, IG resource, and all
-    FHIR JSON + CQL files copied from ``computable_dir``.
-
-    Args:
-        computable_dir: Source directory with FHIR JSON + CQL.
-        output_dir: Target package directory.
-        topic_slug: Topic identifier (kebab-case).
-        version: Package version string.
-        name: PascalCase IG name (default: derived from topic_slug).
-        ig_id: IG resource id (default: topic_slug).
-        canonical: Base canonical URL.
-        status: FHIR publication status.
-        package_id: NPM package name override.
-
-    Returns:
-        Summary dict with counts and package metadata.
-    """
+    """Stage a package source workspace for ``rh package`` commands."""
     json_files, cql_files = collect_computable_files(computable_dir)
-
     if not json_files and not cql_files:
         return {"error": "No FHIR JSON or CQL files found in computable directory"}
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if workspace_dir.exists():
+        shutil.rmtree(workspace_dir)
 
-    # Copy resource files
-    for f in json_files + cql_files:
-        shutil.copy2(f, output_dir / f.name)
+    input_dir = workspace_dir / "input"
+    examples_dir = input_dir / "examples"
+    cql_dir = input_dir / "cql"
+    for path in (
+        examples_dir,
+        cql_dir,
+        input_dir / "fsh",
+        input_dir / "docs",
+        input_dir / "narrative",
+    ):
+        path.mkdir(parents=True, exist_ok=True)
 
-    # Generate package.json
-    pkg = generate_package_json(
-        topic_slug,
-        version=version,
+    for resource_file in json_files:
+        shutil.copy2(resource_file, examples_dir / resource_file.name)
+    for cql_file in cql_files:
+        shutil.copy2(cql_file, cql_dir / cql_file.name)
+
+    resolved_package_id = package_id or infer_package_id(topic_slug)
+    dependencies = build_dependency_map(
         has_cql=bool(cql_files),
-        package_id=package_id,
+        extra_dependencies=extra_dependencies,
     )
-    (output_dir / "package.json").write_text(json.dumps(pkg, indent=2, ensure_ascii=False) + "\n")
+    packager_text = generate_packager_toml(
+        package_id=resolved_package_id,
+        version=version,
+        canonical=canonical,
+        status=status,
+        dependencies=dependencies,
+    )
+    (workspace_dir / "packager.toml").write_text(packager_text)
 
-    # Generate ImplementationGuide
-    resource_fnames = [f.name for f in json_files]
     ig = generate_implementation_guide(
         topic_slug,
-        resource_fnames,
+        [resource_file.name for resource_file in json_files],
         version=version,
         name=name,
         ig_id=ig_id,
         canonical=canonical,
         status=status,
-        package_id=package_id,
+        package_id=resolved_package_id,
+        dependencies=dependencies,
     )
-    resolved_id = ig_id or topic_slug
-    ig_fname = f"ImplementationGuide-{resolved_id}.json"
-    (output_dir / ig_fname).write_text(json.dumps(ig, indent=2, ensure_ascii=False) + "\n")
+    (workspace_dir / "ImplementationGuide.json").write_text(
+        json.dumps(ig, indent=2, ensure_ascii=False) + "\n"
+    )
 
     return {
-        "package_name": pkg["name"],
+        "workspace_dir": workspace_dir,
+        "package_name": resolved_package_id,
         "version": version,
         "json_count": len(json_files),
         "cql_count": len(cql_files),
-        "total_files": len(json_files) + len(cql_files) + 2,  # +package.json +IG
+        "examples_dir": examples_dir,
+        "cql_dir": cql_dir,
     }

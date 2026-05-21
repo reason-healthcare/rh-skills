@@ -1,40 +1,55 @@
-"""Tests for FHIR package builder."""
+"""Tests for FHIR package workspace preparation."""
+
+from __future__ import annotations
 
 import json
-from pathlib import Path
+import tomllib
+
 from rh_skills.fhir.packaging import (
-    generate_package_json,
-    generate_implementation_guide,
+    build_dependency_map,
     collect_computable_files,
-    build_package,
+    generate_implementation_guide,
+    generate_packager_toml,
+    infer_package_id,
+    prepare_package_workspace,
 )
 
 
-class TestGeneratePackageJson:
+class TestInferPackageId:
+    def test_uses_unscoped_reason_prefix(self):
+        assert infer_package_id("sepsis-bundle") == "reason.sepsis-bundle"
+
+
+class TestBuildDependencyMap:
     def test_basic(self):
-        pkg = generate_package_json("sepsis-bundle")
-        assert pkg["name"] == "@reason/sepsis-bundle"
-        assert pkg["version"] == "0.1.0"
-        assert pkg["type"] == "fhir.ig"
-        assert "4.0.1" in pkg["fhirVersions"]
-        assert "hl7.fhir.us.core" in pkg["dependencies"]
-        assert "hl7.fhir.uv.crmi" in pkg["dependencies"]
+        deps = build_dependency_map()
+        assert deps["hl7.fhir.r4.core"] == "4.0.1"
+        assert "hl7.fhir.us.core" in deps
+        assert "hl7.fhir.uv.crmi" in deps
 
     def test_with_cql(self):
-        pkg = generate_package_json("my-topic", has_cql=True)
-        assert "hl7.fhir.uv.cql" in pkg["dependencies"]
-
-    def test_without_cql(self):
-        pkg = generate_package_json("my-topic", has_cql=False)
-        assert "hl7.fhir.uv.cql" not in pkg["dependencies"]
-
-    def test_custom_version(self):
-        pkg = generate_package_json("my-topic", version="2.0.0")
-        assert pkg["version"] == "2.0.0"
+        deps = build_dependency_map(has_cql=True)
+        assert deps["hl7.fhir.uv.cql"] == "2.0.0"
 
     def test_extra_dependencies(self):
-        pkg = generate_package_json("my-topic", extra_dependencies={"custom.ig": "1.0.0"})
-        assert "custom.ig" in pkg["dependencies"]
+        deps = build_dependency_map(extra_dependencies={"custom.ig": "1.0.0"})
+        assert deps["custom.ig"] == "1.0.0"
+
+
+class TestGeneratePackagerToml:
+    def test_parses_as_toml(self):
+        content = generate_packager_toml(
+            package_id="reason.test-topic",
+            version="2.0.0",
+            canonical="https://example.org/fhir",
+            status="draft",
+            dependencies=build_dependency_map(has_cql=True),
+        )
+        data = tomllib.loads(content)
+        assert data["id"] == "reason.test-topic"
+        assert data["version"] == "2.0.0"
+        assert data["canonical"] == "https://example.org/fhir"
+        assert data["dependencies"]["hl7.fhir.uv.cql"] == "2.0.0"
 
 
 class TestGenerateImplementationGuide:
@@ -42,17 +57,22 @@ class TestGenerateImplementationGuide:
         ig = generate_implementation_guide(
             "sepsis-bundle",
             ["PlanDefinition-sepsis.json", "Library-sepsis.json"],
+            package_id="reason.sepsis-bundle",
+            dependencies=build_dependency_map(has_cql=True),
         )
         assert ig["resourceType"] == "ImplementationGuide"
         assert ig["id"] == "sepsis-bundle"
-        assert ig["packageId"] == "@reason/sepsis-bundle"
+        assert ig["packageId"] == "reason.sepsis-bundle"
         assert len(ig["definition"]["resource"]) == 2
         assert ig["fhirVersion"] == ["4.0.1"]
+        assert any(d["packageId"] == "hl7.fhir.r4.core" for d in ig["dependsOn"])
 
     def test_resource_references(self):
         ig = generate_implementation_guide(
             "test",
             ["PlanDefinition-sepsis.json"],
+            package_id="reason.test",
+            dependencies=build_dependency_map(),
         )
         ref = ig["definition"]["resource"][0]["reference"]["reference"]
         assert ref == "PlanDefinition/sepsis"
@@ -77,31 +97,44 @@ class TestCollectComputableFiles:
         assert cql_files == []
 
 
-class TestBuildPackage:
-    def test_full_build(self, tmp_path):
+class TestPreparePackageWorkspace:
+    def test_full_workspace(self, tmp_path):
         comp_dir = tmp_path / "computable"
         comp_dir.mkdir()
         (comp_dir / "PlanDefinition-test.json").write_text(json.dumps({"resourceType": "PlanDefinition"}))
         (comp_dir / "TestLogic.cql").write_text("library TestLogic version '1.0.0'")
 
-        out_dir = tmp_path / "package"
-        result = build_package(comp_dir, out_dir, "test-topic")
+        workspace_dir = tmp_path / "workspace"
+        result = prepare_package_workspace(comp_dir, workspace_dir, "test-topic")
 
-        assert result["package_name"] == "@reason/test-topic"
+        assert result["package_name"] == "reason.test-topic"
         assert result["json_count"] == 1
         assert result["cql_count"] == 1
-        assert (out_dir / "package.json").exists()
-        assert (out_dir / "ImplementationGuide-test-topic.json").exists()
-        assert (out_dir / "PlanDefinition-test.json").exists()
-        assert (out_dir / "TestLogic.cql").exists()
+        assert (workspace_dir / "packager.toml").exists()
+        assert (workspace_dir / "ImplementationGuide.json").exists()
+        assert (workspace_dir / "input" / "examples" / "PlanDefinition-test.json").exists()
+        assert (workspace_dir / "input" / "cql" / "TestLogic.cql").exists()
 
-        pkg = json.loads((out_dir / "package.json").read_text())
-        assert pkg["name"] == "@reason/test-topic"
-        assert "hl7.fhir.uv.cql" in pkg["dependencies"]  # CQL present
+        ig = json.loads((workspace_dir / "ImplementationGuide.json").read_text())
+        assert ig["packageId"] == "reason.test-topic"
+
+        packager = tomllib.loads((workspace_dir / "packager.toml").read_text())
+        assert packager["dependencies"]["hl7.fhir.uv.cql"] == "2.0.0"
+
+    def test_workspace_rewrites_existing_directory(self, tmp_path):
+        comp_dir = tmp_path / "computable"
+        comp_dir.mkdir()
+        (comp_dir / "PlanDefinition-test.json").write_text(json.dumps({"resourceType": "PlanDefinition"}))
+        workspace_dir = tmp_path / "workspace"
+        workspace_dir.mkdir()
+        (workspace_dir / "old.txt").write_text("stale")
+
+        prepare_package_workspace(comp_dir, workspace_dir, "test-topic")
+        assert not (workspace_dir / "old.txt").exists()
 
     def test_empty_computable(self, tmp_path):
         comp_dir = tmp_path / "computable"
         comp_dir.mkdir()
-        out_dir = tmp_path / "package"
-        result = build_package(comp_dir, out_dir, "empty-topic")
+        workspace_dir = tmp_path / "workspace"
+        result = prepare_package_workspace(comp_dir, workspace_dir, "empty-topic")
         assert "error" in result
