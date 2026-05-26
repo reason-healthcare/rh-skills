@@ -53,7 +53,7 @@ def _run_rh_command(args: list[str]) -> subprocess.CompletedProcess[str]:
 @click.option("--dry-run", is_flag=True, help="Print the planned package workspace and rh commands")
 @click.option("--check-only", is_flag=True, help="Run `rh package check` but do not build")
 @click.option("--pack", "pack_tgz", is_flag=True, help="Run `rh package pack` after a successful build")
-@click.option("--output-dir", type=click.Path(), default=None, help="Override build output directory")
+@click.option("--output-dir", type=click.Path(), default=None, help="Override build output directory (default: <workspace>/output)")
 @click.option("--workspace-dir", type=click.Path(), default=None, help="Override package workspace directory")
 def package(topic, dry_run, check_only, pack_tgz, output_dir, workspace_dir):
     """Build a FHIR distribution package from topics/<topic>/computable/."""
@@ -92,10 +92,8 @@ def package(topic, dry_run, check_only, pack_tgz, output_dir, workspace_dir):
     else:
         pkg_workspace = td / "process" / "package-workspace"
 
-    if output_dir:
-        build_dir = Path(output_dir)
-    else:
-        build_dir = td / "process" / "package-output"
+    build_dir = Path(output_dir) if output_dir else (pkg_workspace / "output")
+    output_mode = "overridden (--output-dir)" if output_dir else "defaulted (<workspace>/output)"
 
     resolved_package_id = infer_package_id(cfg["id"])
     staged = prepare_package_workspace(
@@ -116,7 +114,9 @@ def package(topic, dry_run, check_only, pack_tgz, output_dir, workspace_dir):
 
     rh = _resolve_rh_binary()
     check_cmd = [rh, "package", "check", str(pkg_workspace)]
-    build_cmd = [rh, "package", "build", str(pkg_workspace), "--out", str(build_dir)]
+    build_cmd = [rh, "package", "build", str(pkg_workspace)]
+    if output_dir:
+        build_cmd.extend(["--out", str(build_dir)])
     pack_cmd = [rh, "package", "pack", str(build_dir)]
 
     if dry_run:
@@ -125,7 +125,7 @@ def package(topic, dry_run, check_only, pack_tgz, output_dir, workspace_dir):
         click.echo(f"  Resources: {staged['json_count']} FHIR JSON + {staged['cql_count']} CQL")
         click.echo(f"  Canonical L3 source: {computable_dir}")
         click.echo(f"  Workspace: {pkg_workspace}")
-        click.echo(f"  Build output: {build_dir}")
+        click.echo(f"  Build output: {build_dir} [{output_mode}]")
         click.echo(f"  Check command: {' '.join(check_cmd)}")
         if not check_only:
             click.echo(f"  Build command: {' '.join(build_cmd)}")

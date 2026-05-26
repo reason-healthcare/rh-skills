@@ -102,12 +102,13 @@ Most importantly:
 - Completed: executable `rh-skills cql test`
 - Completed: lightweight `rh-skills fhirpath` wrapper
 - Completed: fresh end-to-end statin topic integration flow for the decision-table/CQL/package path
-- Not yet completed: terminology formalization proven through `ValueSet` outputs
+- Completed: terminology formalization proven through `ValueSet` outputs (including multi-`value_sets[]` → multiple `ValueSet-*.json` behavior)
 - Not yet completed: terminology included in the fresh end-to-end topic path
 
 ## Remaining Work
 
-- [ ] Formalize at least one approved `terminology` artifact into concrete `ValueSet` JSON output and verify the output shape.
+- [x] Formalize at least one approved `terminology` artifact into concrete `ValueSet` JSON output and verify the output shape.
+- [ ] Build template-driven scripts to convert YAML to FHIR JSON.
 - [ ] Prove terminology wiring in an end-to-end topic so `ValueSet` resources are generated alongside the other computable artifacts that reference them.
 - [ ] Validate the generated package workspace against the real `rh package` runtime end to end, without mocks.
 - [ ] Decide whether to preserve package build outputs under `process/` or clean them up automatically after successful packaging.
@@ -196,7 +197,7 @@ Make `rh-skills cql` genuinely useful for repeated author-review-test cycles.
 
 ## Phase 4: Formalize Terminology To ValueSets
 
-Status: Pending
+Status: Partially complete
 
 ### Objective
 
@@ -222,8 +223,8 @@ Close the missing terminology gap by proving that L2 `terminology` artifacts are
 
 ### Notes
 
-- The repo already has terminology strategy registration and stub `ValueSet` generation support in `formalize.py`, plus render/validation support for `value_sets`.
-- What is still missing from the plan is an explicit commitment to prove this path with real topic-level outputs and mark it complete once those outputs exist.
+- The terminology path is now explicitly wired through extract (`concepts[]` + `sections.value_sets[].concept_refs[]`) and formalize emits multiple `ValueSet` resources when multiple value set manifest rows are present.
+- Remaining work is topic-level end-to-end proof that includes terminology in the fresh fixture flow.
 
 ## Phase 5: Add A Fresh End-to-End Fixture Topic
 
@@ -316,7 +317,7 @@ Add or update targeted tests only for the code we touch in this slice.
 
 ## Order Of Execution
 
-1. Formalize at least one terminology artifact to `ValueSet` output and cover it with tests.
+1. ✅ Formalize at least one terminology artifact to `ValueSet` output.
 2. Extend the fresh end-to-end topic fixture so it includes terminology, not only decision logic and packaging.
 3. Validate the generated package workspace against the real `rh package` runtime.
 4. Decide packaging-output retention behavior.

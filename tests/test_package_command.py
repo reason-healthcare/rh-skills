@@ -69,6 +69,10 @@ class TestPackageCommand:
         assert "Canonical L3 source" in result.output
         assert "package-workspace" in result.output
         assert "package check" in result.output
+        assert "Build output:" in result.output
+        assert "[defaulted (<workspace>/output)]" in result.output
+        assert "package build" in result.output
+        assert "--out" not in result.output
 
     def test_basic_package_runs_rh_pipeline_and_updates_tracking(self, packagable_topic, monkeypatch):
         calls = []
@@ -93,14 +97,7 @@ class TestPackageCommand:
 
         assert calls == [
             ["/fake/rh", "package", "check", str(workspace_dir)],
-            [
-                "/fake/rh",
-                "package",
-                "build",
-                str(workspace_dir),
-                "--out",
-                str(packagable_topic / "topics" / "test-topic" / "process" / "package-output"),
-            ],
+            ["/fake/rh", "package", "build", str(workspace_dir)],
         ]
 
         tracking = load_tracking(packagable_topic)
@@ -142,6 +139,38 @@ class TestPackageCommand:
             ["package", "build"],
             ["package", "pack"],
         ]
+        workspace_dir = packagable_topic / "topics" / "test-topic" / "process" / "package-workspace"
+        assert calls[2] == ["/fake/rh", "package", "pack", str(workspace_dir / "output")]
+
+    def test_output_dir_override_passes_out_to_build_and_pack(self, packagable_topic, monkeypatch):
+        calls = []
+
+        def fake_run(args):
+            calls.append(args)
+            return _ok()
+
+        monkeypatch.setattr("rh_skills.commands.package._resolve_rh_binary", lambda: "/fake/rh")
+        monkeypatch.setattr("rh_skills.commands.package._run_rh_command", fake_run)
+
+        runner = CliRunner()
+        result = runner.invoke(package, ["test-topic", "--pack", "--output-dir", "/tmp/pkg-out"])
+        assert result.exit_code == 0, result.output
+
+        workspace_dir = packagable_topic / "topics" / "test-topic" / "process" / "package-workspace"
+        assert calls == [
+            ["/fake/rh", "package", "check", str(workspace_dir)],
+            ["/fake/rh", "package", "build", str(workspace_dir), "--out", "/tmp/pkg-out"],
+            ["/fake/rh", "package", "pack", "/tmp/pkg-out"],
+        ]
+
+    def test_dry_run_with_output_dir_shows_override_and_out(self, packagable_topic, monkeypatch):
+        monkeypatch.setattr("rh_skills.commands.package._resolve_rh_binary", lambda: "/fake/rh")
+        runner = CliRunner()
+        result = runner.invoke(package, ["test-topic", "--dry-run", "--output-dir", "/tmp/pkg-out"])
+        assert result.exit_code == 0
+        assert "Build output: /tmp/pkg-out [overridden (--output-dir)]" in result.output
+        assert "Build command: /fake/rh package build" in result.output
+        assert "--out /tmp/pkg-out" in result.output
 
     def test_no_computable_resources(self, tmp_repo):
         make_tracking(tmp_repo, topics=[{
