@@ -92,6 +92,7 @@ class TestPackageCommand:
         workspace_dir = packagable_topic / "topics" / "test-topic" / "process" / "package-workspace"
         assert (workspace_dir / "packager.toml").exists()
         assert (workspace_dir / "ImplementationGuide.json").exists()
+        assert (workspace_dir / "input" / "resources" / "ImplementationGuide.json").exists()
         assert (workspace_dir / "input" / "examples" / "PlanDefinition-test-rules.json").exists()
         assert (workspace_dir / "input" / "cql" / "TestRulesLogic.cql").exists()
 

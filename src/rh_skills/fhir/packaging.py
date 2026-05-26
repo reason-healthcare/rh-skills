@@ -178,9 +178,11 @@ def prepare_package_workspace(
         shutil.rmtree(workspace_dir)
 
     input_dir = workspace_dir / "input"
+    resources_dir = input_dir / "resources"
     examples_dir = input_dir / "examples"
     cql_dir = input_dir / "cql"
     for path in (
+        resources_dir,
         examples_dir,
         cql_dir,
         input_dir / "fsh",
@@ -219,9 +221,9 @@ def prepare_package_workspace(
         package_id=resolved_package_id,
         dependencies=dependencies,
     )
-    (workspace_dir / "ImplementationGuide.json").write_text(
-        json.dumps(ig, indent=2, ensure_ascii=False) + "\n"
-    )
+    ig_text = json.dumps(ig, indent=2, ensure_ascii=False) + "\n"
+    (workspace_dir / "ImplementationGuide.json").write_text(ig_text)
+    (resources_dir / "ImplementationGuide.json").write_text(ig_text)
 
     return {
         "workspace_dir": workspace_dir,

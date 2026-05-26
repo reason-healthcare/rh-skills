@@ -112,6 +112,7 @@ class TestPreparePackageWorkspace:
         assert result["cql_count"] == 1
         assert (workspace_dir / "packager.toml").exists()
         assert (workspace_dir / "ImplementationGuide.json").exists()
+        assert (workspace_dir / "input" / "resources" / "ImplementationGuide.json").exists()
         assert (workspace_dir / "input" / "examples" / "PlanDefinition-test.json").exists()
         assert (workspace_dir / "input" / "cql" / "TestLogic.cql").exists()
 
