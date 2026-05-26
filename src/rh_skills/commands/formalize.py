@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 import click
@@ -282,6 +283,167 @@ def _condition_label_to_cql_name(label: str) -> str:
     return "".join(w.capitalize() for w in words if w)
 
 
+def _pascal_from_kebab(value: str) -> str:
+    return "".join(w.capitalize() for w in to_kebab_case(value).split("-") if w)
+
+
+def _normalize_legacy_system(system: str) -> str:
+    normalized = (system or "").strip().lower()
+    aliases = {
+        "snomed ct": "http://snomed.info/sct",
+        "snomed": "http://snomed.info/sct",
+        "loinc": "http://loinc.org",
+        "icd-10-cm": "http://hl7.org/fhir/sid/icd-10-cm",
+        "icd10-cm": "http://hl7.org/fhir/sid/icd-10-cm",
+        "rxnorm": "http://www.nlm.nih.gov/research/umls/rxnorm",
+    }
+    return aliases.get(normalized, system)
+
+
+def _group_value_set_codings(codings: list[dict]) -> list[dict]:
+    grouped: dict[str, dict] = {}
+    seen: set[tuple[str, str]] = set()
+    for coding in codings:
+        system = (coding.get("system") or "").strip()
+        code = (coding.get("code") or "").strip()
+        if not system or not code:
+            continue
+        key = (system.casefold(), code.casefold())
+        if key in seen:
+            continue
+        seen.add(key)
+        include = grouped.setdefault(system, {"system": system, "concept": []})
+        concept_entry = {"code": code}
+        display = (coding.get("display") or "").strip()
+        if display:
+            concept_entry["display"] = display
+        include["concept"].append(concept_entry)
+    return list(grouped.values())
+
+
+def _build_terminology_stub_resources(
+    artifact_name: str,
+    cfg: dict,
+    l2_data: dict | None = None,
+) -> list[dict]:
+    today = today_date()
+    canonical = cfg["canonical"]
+    version = cfg["version"]
+    status = cfg["status"]
+    sections = (l2_data or {}).get("sections") or {}
+    value_sets = sections.get("value_sets") or []
+    concepts = (l2_data or {}).get("concepts") or []
+    concept_index = {
+        str(c.get("id", "")).strip(): c
+        for c in concepts
+        if isinstance(c, dict) and str(c.get("id", "")).strip()
+    }
+
+    resources: list[dict] = []
+    used_ids: defaultdict[str, int] = defaultdict(int)
+
+    if not isinstance(value_sets, list) or not value_sets:
+        value_sets = [{"id": artifact_name, "name": artifact_name}]
+
+    for idx, value_set in enumerate(value_sets, start=1):
+        if not isinstance(value_set, dict):
+            continue
+        raw_id = str(value_set.get("id") or value_set.get("name") or f"{artifact_name}-{idx}")
+        base_vs_id = to_kebab_case(raw_id) or to_kebab_case(f"{artifact_name}-{idx}")
+        used_ids[base_vs_id] += 1
+        vs_id = base_vs_id if used_ids[base_vs_id] == 1 else f"{base_vs_id}-{used_ids[base_vs_id]}"
+        vs_name = str(value_set.get("name") or value_set.get("title") or raw_id).strip()
+
+        codings: list[dict] = []
+
+        default_system = _normalize_legacy_system(str(value_set.get("system") or "").strip())
+        for entry in value_set.get("codes") or []:
+            if isinstance(entry, dict):
+                codings.append({
+                    "system": _normalize_legacy_system(str(entry.get("system") or default_system)),
+                    "code": str(entry.get("code") or ""),
+                    "display": str(entry.get("display") or ""),
+                })
+            elif isinstance(entry, str):
+                codings.append({"system": default_system, "code": entry, "display": ""})
+
+        for concept_ref in value_set.get("concept_refs") or []:
+            concept = concept_index.get(str(concept_ref).strip())
+            if not isinstance(concept, dict):
+                continue
+            for entry in concept.get("codes") or []:
+                if isinstance(entry, dict):
+                    codings.append({
+                        "system": _normalize_legacy_system(str(entry.get("system") or "")),
+                        "code": str(entry.get("code") or ""),
+                        "display": str(entry.get("display") or ""),
+                    })
+            for expansion in concept.get("expansions") or []:
+                if isinstance(expansion, dict):
+                    codings.append({
+                        "system": _normalize_legacy_system(str(expansion.get("system") or default_system)),
+                        "code": str(expansion.get("code") or ""),
+                        "display": "",
+                    })
+
+        for concept in value_set.get("concepts") or []:
+            if not isinstance(concept, dict):
+                continue
+            system = _normalize_legacy_system(str(concept.get("system") or default_system))
+            code = str(concept.get("code") or "").strip()
+            display = str(concept.get("display") or concept.get("term") or "").strip()
+            if code:
+                codings.append({"system": system, "code": code, "display": display})
+            elif display:
+                codings.append({
+                    "system": system or "http://snomed.info/sct",
+                    "code": "TODO:MCP-UNREACHABLE",
+                    "display": display,
+                })
+
+        includes = _group_value_set_codings(codings)
+        if not includes:
+            includes = [{
+                "system": "http://snomed.info/sct",
+                "concept": [{"code": "TODO:MCP-UNREACHABLE"}],
+            }]
+
+        resources.append({
+            "resourceType": "ValueSet",
+            "id": vs_id,
+            "url": f"{canonical}/ValueSet/{vs_id}",
+            "version": version,
+            "status": status,
+            "date": today,
+            "name": _pascal_from_kebab(vs_id),
+            "title": vs_name or artifact_name.replace("-", " ").title(),
+            "compose": {"include": includes},
+        })
+
+    concept_maps = sections.get("concept_maps") or sections.get("concept_mappings") or []
+    if isinstance(concept_maps, list):
+        for idx, concept_map in enumerate(concept_maps, start=1):
+            if not isinstance(concept_map, dict):
+                continue
+            raw_id = str(concept_map.get("id") or concept_map.get("name") or f"{artifact_name}-concept-map-{idx}")
+            cm_id = to_kebab_case(raw_id) or to_kebab_case(f"{artifact_name}-concept-map-{idx}")
+            source_system = str(concept_map.get("source_system") or "http://example.org/source")
+            target_system = str(concept_map.get("target_system") or "http://example.org/target")
+            resources.append({
+                "resourceType": "ConceptMap",
+                "id": cm_id,
+                "url": f"{canonical}/ConceptMap/{cm_id}",
+                "version": version,
+                "status": status,
+                "date": today,
+                "name": _pascal_from_kebab(cm_id),
+                "title": str(concept_map.get("name") or raw_id).replace("-", " ").title(),
+                "group": [{"source": source_system, "target": target_system, "element": []}],
+            })
+
+    return resources
+
+
 def _build_stub_resources(
     artifact_name: str,
     artifact_type: str,
@@ -299,6 +461,9 @@ def _build_stub_resources(
     version = cfg["version"]
     status = cfg["status"]
 
+    if artifact_type == "terminology":
+        return _build_terminology_stub_resources(artifact_name, cfg, l2_data)
+
     resources = []
 
     # Primary resource
@@ -309,7 +474,7 @@ def _build_stub_resources(
         "version": version,
         "status": status,
         "date": today,
-        "name": "".join(w.capitalize() for w in resource_id.split("-")),
+        "name": _pascal_from_kebab(resource_id),
         "title": artifact_name.replace("-", " ").title(),
     }
 
@@ -371,7 +536,7 @@ def _build_stub_resources(
             "version": version,
             "status": status,
             "date": today,
-            "name": "".join(w.capitalize() for w in sup_id.split("-")),
+            "name": _pascal_from_kebab(sup_id),
             "title": f"{artifact_name} {sup_type}".replace("-", " ").title(),
         }
         # Required fields for stubs

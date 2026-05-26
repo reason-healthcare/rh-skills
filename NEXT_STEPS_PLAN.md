@@ -54,6 +54,26 @@ Most importantly:
 - Real `rh package check/build` behavior still needs live validation against the actual `rh` runtime, not only subprocess-mocked tests.
 - ReasonHub spec-context access failed in this session due an MCP transport/session issue, so spec verification had to stay local for this pass.
 
+## Tracking Consistency Policy
+
+- `tracking.yaml.events[]` and `topic.events[]` are append-only run history.
+- `--force` may overwrite files or regenerate plan/config artifacts, but it must not delete or rewrite historical tracking events.
+- Artifact index arrays such as `topic.structured[]` and `topic.computable[]` are current-state registries, not run-history logs.
+- For current-state registries, the preferred policy is one row per artifact `name`, replaced on rerun rather than duplicated.
+- New work should align toward:
+  - appending a fresh event for each successful run
+  - keeping a single latest artifact row per artifact name
+- Older commands that still append duplicate artifact rows should be treated as legacy inconsistency to clean up deliberately, not as the standard to copy forward.
+
+### Current pattern in this repo
+
+- `promote plan` and `promote formalize-plan` already overwrite plan files with `--force` while still appending new events.
+- `formalize` already follows the desired model:
+  - file overwrite is allowed with `--force`
+  - a new `computable_converged` event is appended per run
+  - the latest `computable[]` row replaces the prior row for the same artifact name
+- `derive` and deprecated `combine` still append duplicate artifact rows and should be treated as inconsistent legacy behavior, not precedent.
+
 ## Scope For This Slice
 
 ### In scope
@@ -78,20 +98,27 @@ Most importantly:
 - Completed: deterministic `packager.toml` workspace generation
 - Completed: `formalize-plan.yaml` validation alignment
 - Completed: formalize implementation-target gating
-- Completed: computable tracking deduplication on rerun
+- Completed: computable tracking deduplication on rerun as an implementation of the single-latest artifact-row policy
 - Completed: executable `rh-skills cql test`
 - Completed: lightweight `rh-skills fhirpath` wrapper
-- Completed: fresh end-to-end statin topic integration flow
+- Completed: fresh end-to-end statin topic integration flow for the decision-table/CQL/package path
+- Not yet completed: terminology formalization proven through `ValueSet` outputs
+- Not yet completed: terminology included in the fresh end-to-end topic path
 
 ## Remaining Work
 
-- Validate the generated package workspace against the real `rh package` runtime end to end, without mocks.
-- Decide whether to preserve package build outputs under `process/` or clean them up automatically after successful packaging.
-- Refresh docs/specs once implementation behavior settles.
+- [ ] Formalize at least one approved `terminology` artifact into concrete `ValueSet` JSON output and verify the output shape.
+- [ ] Prove terminology wiring in an end-to-end topic so `ValueSet` resources are generated alongside the other computable artifacts that reference them.
+- [ ] Validate the generated package workspace against the real `rh package` runtime end to end, without mocks.
+- [ ] Decide whether to preserve package build outputs under `process/` or clean them up automatically after successful packaging.
+- [ ] If tracking consistency work expands beyond `formalize`, align `derive` and deprecated `combine` with the append-only-events and single-latest-artifact-row policy.
+- [ ] Refresh docs/specs once implementation behavior settles.
 
 ## Proposed Implementation Plan
 
 ## Phase 1: Rework Packaging Around `rh package`
+
+Status: Complete
 
 ### Objective
 
@@ -128,6 +155,8 @@ Keep `rh-skills package <topic>` as the user-facing command, but evolve it to:
 
 ## Phase 2: Align Formalize and Validation With The New Packaging Path
 
+Status: Complete for this slice
+
 ### Objective
 
 Make sure the computable outputs and validation flow are compatible with the package wrapper.
@@ -141,10 +170,13 @@ Make sure the computable outputs and validation flow are compatible with the pac
 ### Specific follow-ups
 
 - Decide whether `formalize` itself should refuse to run unless the approved YAML formalize plan names the artifact as the implementation target.
-- Prevent or at least detect duplicate `topic["computable"]` entries when rerunning the same artifact with `--force`.
+- Keep `formalize` aligned with the tracking policy: append run-history events, but keep a single latest `topic["computable"]` row per artifact name.
+- If tracking consistency cleanup broadens later, apply the same policy deliberately to `derive` and deprecated `combine` rather than treating duplicate rows as acceptable precedent.
 - Preserve the current "no real LLM provider yet" constraint and continue using stub-based generation where necessary.
 
 ## Phase 3: Finish The CQL Iteration Loop
+
+Status: Complete for this slice
 
 ### Objective
 
@@ -160,10 +192,40 @@ Make `rh-skills cql` genuinely useful for repeated author-review-test cycles.
 ### Notes
 
 - `validate` and `translate` already exist and should remain the backbone of the loop.
-- FHIRPath authoring does not necessarily need a new `rh-skills` wrapper in this slice; agents can call `rh fhirpath ...` directly while the repo stabilizes the package and CQL flows first.
-- If a lightweight wrapper becomes useful later, it should follow the same pattern as `cql.py`: deterministic path resolution and actionable failure output.
+- The lightweight `rh-skills fhirpath` wrapper is now in place, so FHIRPath no longer needs to stay as a direct-only `rh` escape hatch for this slice.
 
-## Phase 4: Add A Fresh End-to-End Fixture Topic
+## Phase 4: Formalize Terminology To ValueSets
+
+Status: Pending
+
+### Objective
+
+Close the missing terminology gap by proving that L2 `terminology` artifacts are actually carried through to L3 `ValueSet` resources, not just planned in strategy docs.
+
+### Deliverables
+
+- Formalize at least one approved `terminology` artifact into `ValueSet-*.json` output under `topics/<topic>/computable/`.
+- Preserve the companion `ConceptMap` output where the artifact defines mappings, but treat `ValueSet` generation as the non-optional proof point.
+- Verify that downstream artifacts can reference the produced `ValueSet` canonicals rather than leaving terminology implicit in narrative or structured YAML only.
+- Add or update focused tests so the terminology path is covered by repo automation, not just by documentation and eval scenarios.
+
+### Extract-side design
+
+- Keep `concepts[]` as the authoritative reviewed terminology catalog.
+- Add stable `concepts[].id` values so terminology references are durable.
+- Emit a thin `sections.value_sets[]` manifest from extract where each entry:
+  - names the future `ValueSet`
+  - points to one or more reviewed concepts via `concept_refs[]`
+- For the first pass, create one `value_sets[]` entry per concept.
+- Only emit `concepts[]` and `value_sets[]` entries for approved concepts with approved codes and/or approved expansions.
+- Do not duplicate approved `codes[]` and `expansions[]` into `value_sets[]`; formalize should resolve them by following `concept_refs[]`.
+
+### Notes
+
+- The repo already has terminology strategy registration and stub `ValueSet` generation support in `formalize.py`, plus render/validation support for `value_sets`.
+- What is still missing from the plan is an explicit commitment to prove this path with real topic-level outputs and mark it complete once those outputs exist.
+
+## Phase 5: Add A Fresh End-to-End Fixture Topic
 
 ### Objective
 
@@ -180,11 +242,17 @@ This topic is a good fit because it can naturally exercise:
 - a measure with companion CQL,
 - package generation.
 
+Current status:
+
+- The statin topic already proves the decision-table/CQL/package path.
+- It does not yet prove terminology formalization to `ValueSet`, so this phase should now be treated as partially complete until terminology is included.
+
 ### Fixture expectations
 
 Create a minimal but realistic topic that includes:
 
 - `structured/` inputs authored specifically for this repo
+- at least one approved `terminology` artifact that becomes `ValueSet-*.json`
 - at least one CQL-backed artifact
 - `computable/` outputs generated through the repo workflow
 - packaging inputs/outputs only as wrapper internals around `rh package`
@@ -197,14 +265,15 @@ The new topic should support the following sequence:
 1. `rh-skills formalize-config <topic>`
 2. `rh-skills promote formalize-plan <topic>` and approval steps
 3. `rh-skills formalize <topic> <artifact>`
-4. `rh-skills cql validate <topic> <library>`
-5. `rh-skills cql translate <topic> <library>`
-6. `rh-skills cql test <topic> <library>`
-7. `rh-skills package <topic> --check-only`
-8. `rh-skills package <topic>`
-9. optional `rh-skills package <topic> --pack`
+4. confirm `ValueSet-*.json` exists for the terminology artifact
+5. `rh-skills cql validate <topic> <library>`
+6. `rh-skills cql translate <topic> <library>`
+7. `rh-skills cql test <topic> <library>`
+8. `rh-skills package <topic> --check-only`
+9. `rh-skills package <topic>`
+10. optional `rh-skills package <topic> --pack`
 
-## Phase 5: Focused Test Coverage For New Work
+## Phase 6: Focused Test Coverage For New Work
 
 ### Objective
 
@@ -217,8 +286,9 @@ Add or update targeted tests only for the code we touch in this slice.
 - `rh` subprocess invocation arguments
 - `check/build/pack` flows
 - `cql test` real fixture execution behavior
+- terminology `ValueSet` formalization behavior
 - YAML formalize-plan validation path
-- duplicate computable-entry handling if implemented
+- tracking policy conformance where touched: append-only events plus single-latest artifact rows
 
 ### Constraints
 
@@ -246,21 +316,22 @@ Add or update targeted tests only for the code we touch in this slice.
 
 ## Order Of Execution
 
-1. Rework packaging to use `rh package` and generate `packager.toml`.
-2. Align validation with `formalize-plan.yaml`.
-3. Implement real `cql test` execution.
-4. Create the fresh end-to-end topic fixture.
-5. Add focused tests around the touched areas.
+1. Formalize at least one terminology artifact to `ValueSet` output and cover it with tests.
+2. Extend the fresh end-to-end topic fixture so it includes terminology, not only decision logic and packaging.
+3. Validate the generated package workspace against the real `rh package` runtime.
+4. Decide packaging-output retention behavior.
+5. Refresh docs/specs once implementation behavior is stable.
 
-This order reduces rework because the fixture topic should exercise the real wrapper-based packaging flow rather than the current in-repo package builder.
+This order reduces rework because the missing terminology proof point should be closed before the end-to-end fixture is treated as fully complete.
 
 ## Risks To Watch
 
 - `rh package` source layout may impose metadata requirements beyond what `formalize-config.yaml` currently captures.
 - Existing packaging tests assume self-generated `package.json` and IG behavior; they will need to be rewritten around subprocess orchestration.
 - The repo currently has mixed assumptions about `.md` vs `.yaml` formalize plans; code changes here should be localized and deliberate to avoid accidental contract churn.
-- Repeated formalize runs may keep inflating tracking entries if deduplication is not handled.
+- The repo still has mixed tracking-row behavior across commands, so future work needs to enforce the append-only-events / single-latest-artifact-row policy consistently instead of copying legacy duplicate-row behavior.
 - `uv` execution in this environment has already shown instability, so verification should not rely entirely on one local runner path.
+- The current statin integration test can give a false sense of completeness because it does not yet exercise terminology formalization or `ValueSet` references.
 
 ## Done Criteria For This Slice
 
@@ -268,5 +339,6 @@ This order reduces rework because the fixture topic should exercise the real wra
 - A generated `packager.toml` exists in a deterministic packaging workspace while `computable/` remains the sole canonical L3 artifact directory.
 - `rh-skills cql test` performs actual executable case testing.
 - `validate` no longer depends on the stale `formalize-plan.md` path.
-- One newly created end-to-end topic proves the workflow from structured input through package build.
+- At least one approved terminology artifact is formalized to `ValueSet` JSON and covered by tests.
+- One newly created end-to-end topic proves the workflow from structured input through terminology/value-set generation and package build.
 - New targeted tests exist for the touched code paths, without expanding scope into repo-wide test cleanup.

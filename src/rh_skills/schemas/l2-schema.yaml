@@ -40,7 +40,8 @@ optional_fields:
 #   concepts           — concept catalog; only for terminology artifact type
                        # Structure:
                        #   concepts:
-                       #   - name: <human-readable concept label>  # required
+                       #   - id: <stable concept identifier, kebab-case> # required
+                       #     name: <human-readable concept label>  # required
                        #     type: <SNOMED semantic tag, e.g. finding | disorder | procedure | observable entity>  # required
                        #     role: <optional clinical role>        # optional; one of:
                        #           inclusion-criterion | exclusion-criterion | intervention |
@@ -60,6 +61,11 @@ optional_fields:
                        #   - Custom concepts (not extracted from source documents) are added via
                        #     'concept enrich --source custom'; their sources value is 'custom'.
                        #   - related_codes[] is NOT written at L2; ECL-based expansion moves to L3 formalization.
+                       #
+                       #   terminology sections:
+                       #   sections.value_sets[] is a thin manifest of computable ValueSets.
+                       #   It references reviewed concepts by concepts[].id rather than duplicating
+                       #   approved codes or expansions inline.
 
 artifact_types:
   - eligibility-criteria

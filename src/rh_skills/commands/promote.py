@@ -139,7 +139,7 @@ def _concept_review_meta_path(topic: str) -> Path:
 
 
 def _concept_artifact_path(topic: str) -> Path:
-    return topic_dir(topic) / "structured" / "concepts.yaml"
+    return topic_dir(topic) / "structured" / "concepts" / "concepts.yaml"
 
 
 _CONCEPT_CSV_FIELDNAMES = [
@@ -489,6 +489,56 @@ def _approved_extract_artifacts(topic: str, *, strict: bool = True) -> list[dict
     return approved
 
 
+def _approved_concepts_formalize_artifact(
+    topic: str,
+    tracked_structured: dict[str, dict],
+    approved_extract_names: set[str],
+) -> dict | None:
+    """Return the legacy concept-review terminology artifact when it should formalize.
+
+    `concept write` produces a valid L2 terminology artifact at
+    `structured/concepts/concepts.yaml`, but that artifact is derived from the
+    approved concept review rather than from an explicit extract-plan artifact
+    row. New extract plans should include an explicit `concepts` terminology
+    artifact; this fallback preserves compatibility for older plans.
+    """
+    if "concepts" in approved_extract_names:
+        return None
+
+    tracked_entry = tracked_structured.get("concepts")
+    if tracked_entry is None:
+        return None
+
+    meta_path = _concept_review_meta_path(topic)
+    if not meta_path.exists():
+        return None
+
+    meta = _yaml_safe().load(meta_path.read_text()) or {}
+    if not isinstance(meta, dict) or meta.get("status") != "approved":
+        return None
+
+    source_files = meta.get("source_files") or []
+    if not isinstance(source_files, list):
+        source_files = []
+
+    return {
+        "name": "concepts",
+        "artifact_type": "terminology",
+        "source_files": source_files,
+        "rationale": (
+            "Formalizable terminology package derived from the approved "
+            "concept review output."
+        ),
+        "key_questions": [
+            "What codes and terminology define the reviewed clinical concepts?",
+        ],
+        "required_sections": ["summary", "value_sets"],
+        "concerns": [],
+        "reviewer_decision": "approved",
+        "approval_notes": "Auto-included from approved concept review output.",
+    }
+
+
 def _require_concept_review_approved(plan: dict) -> None:
     concept_review = plan.get("concept_review") or {}
     if not concept_review:
@@ -583,10 +633,23 @@ def _eligible_formalize_inputs(topic: str) -> tuple[list[dict], list[str]]:
     topic_entry = require_topic(tracking, topic)
     tracked_structured = {artifact["name"]: artifact for artifact in topic_entry.get("structured", [])}
     approved_extract = _approved_extract_artifacts(topic, strict=False)
+    approved_extract_names = {
+        artifact.get("name")
+        for artifact in approved_extract
+        if artifact.get("name")
+    }
+    concepts_artifact = _approved_concepts_formalize_artifact(
+        topic,
+        tracked_structured,
+        approved_extract_names,
+    )
+    candidate_inputs = list(approved_extract)
+    if concepts_artifact is not None:
+        candidate_inputs.append(concepts_artifact)
 
     eligible: list[dict] = []
     blocked: list[str] = []
-    for artifact in approved_extract:
+    for artifact in candidate_inputs:
         name = artifact.get("name")
         if not name:
             blocked.append("<unnamed-artifact> (missing name)")
@@ -647,6 +710,15 @@ _L3_TARGET_MAP: dict[str, dict] = {
 }
 
 
+def _formalize_candidate_name(topic: str, strategy: str, inputs: list[dict]) -> str:
+    """Return the formalize-plan artifact name for a strategy/input set."""
+    if strategy == "terminology" and len(inputs) == 1:
+        input_name = inputs[0].get("name")
+        if input_name:
+            return input_name
+    return f"{topic}-{strategy}"
+
+
 def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
     required_sections = []
     artifact_types = {artifact.get("artifact_type") for artifact in artifacts}
@@ -684,7 +756,7 @@ def _build_formalize_artifacts(topic: str, eligible_inputs: list[dict]) -> list[
         artifact_type = strategy if strategy in _L3_TARGET_MAP else "pathway-package"
 
         candidate = {
-            "name": f"{topic}-{strategy}",
+            "name": _formalize_candidate_name(topic, strategy, eligible_inputs),
             "artifact_type": artifact_type,
             "strategy": strategy,
             "l3_targets": l3_targets,
@@ -728,7 +800,7 @@ def _build_formalize_artifacts(topic: str, eligible_inputs: list[dict]) -> list[
                 )
 
         candidate = {
-            "name": f"{topic}-{atype}",
+            "name": _formalize_candidate_name(topic, atype, inputs),
             "artifact_type": artifact_type,
             "strategy": atype,
             "l3_targets": l3_targets,
@@ -1318,7 +1390,31 @@ def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
         "status": "pending-review",
         "concept_count": len(concepts),
         "review_artifact": f"topics/{topic}/process/plans/concepts/",
-        "final_artifact": f"topics/{topic}/structured/concepts.yaml",
+        "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
+    }
+
+
+def _build_concepts_extract_artifact_entry(concept_review: dict) -> dict:
+    """Return the explicit extract-plan row for the concept-review terminology package."""
+    source_files = concept_review.get("source_files") or []
+    source_count = len(source_files)
+    return {
+        "name": "concepts",
+        "artifact_type": "terminology",
+        "custom_artifact_type": None,
+        "source_files": source_files,
+        "purpose": "Defines the reviewed terminology package for downstream ValueSet and ConceptMap formalization.",
+        "rationale": (
+            f"Packages {source_count} normalized source(s) worth of reviewed concept coding "
+            "into an explicit L2 terminology artifact."
+        ),
+        "key_questions": [
+            "What reviewed codes and terminology define the clinical concepts for this topic?",
+        ],
+        "required_sections": ["summary", "value_sets"],
+        "concerns": [],
+        "reviewer_decision": "pending-review",
+        "approval_notes": "Materialized by `rh-skills promote concept write` after concept review finalization.",
     }
 
 
@@ -1344,6 +1440,14 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
         _write_concept_csv(csv_path, meta_dict, [])
         checksums[_slugify(c["name"])] = _csv_checksum(csv_path)
     concepts_dir = _concepts_csv_dir(topic)
+    source_files: list[str] = []
+    seen_sources: set[str] = set()
+    for concept in concepts:
+        for source_file in concept.get("source_files") or []:
+            if source_file not in seen_sources:
+                source_files.append(source_file)
+                seen_sources.add(source_file)
+
     meta: dict = {
         "topic": topic,
         "status": "pending-review",
@@ -1351,7 +1455,8 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
         "reviewed_at": None,
         "reviewer": "",
         "checksums": checksums,
-        "final_artifact": f"topics/{topic}/structured/concepts.yaml",
+        "source_files": source_files,
+        "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
     }
     meta_path = _write_concept_review_meta(topic, meta)
     return concepts_dir, meta_path
@@ -1448,11 +1553,18 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
                 approved_by_concept[name].append(cand_entry)
                 parent_entries[code.casefold()] = cand_entry
 
-    # Build concept rows
+    # Build concept rows and a thin value-set manifest that references them.
+    #
+    # concepts[] remains the authoritative terminology catalog: approved codes,
+    # approved expansions, roles, and source context live there. sections.value_sets[]
+    # declares which computable ValueSets should be emitted without duplicating
+    # the code content in a second structure.
     concept_rows = []
+    value_set_rows = []
     for name in concept_order:
         info = concept_meta[name]
-        concept_row: dict = {"name": name, "type": info["type"]}
+        concept_id = _slugify(name)
+        concept_row: dict = {"id": concept_id, "name": name, "type": info["type"]}
         if info.get("role"):
             concept_row["role"] = info["role"]
         if info.get("context"):
@@ -1467,7 +1579,15 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
             concept_row["codes"] = codes_clean
         if name in expansions_by_concept:
             concept_row["expansions"] = expansions_by_concept[name]
+        has_approved_content = bool(concept_row.get("codes")) or bool(concept_row.get("expansions"))
+        if not has_approved_content:
+            continue
         concept_rows.append(concept_row)
+        value_set_rows.append({
+            "id": concept_id,
+            "name": name,
+            "concept_refs": [concept_id],
+        })
 
     # derived_from: union of all concept sources
     all_sources: set[str] = set()
@@ -1494,6 +1614,7 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
                 "Terminology review output derived from topic concept annotations. "
                 "Each concept was deduplicated across sources before human review."
             ),
+            "value_sets": value_set_rows,
         },
         "concepts": concept_rows,
     }
@@ -1509,7 +1630,7 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
     entry = next((item for item in structured if item.get("name") == "concepts"), None)
     payload = {
         "name": "concepts",
-        "file": f"topics/{topic}/structured/concepts.yaml",
+        "file": f"topics/{topic}/structured/concepts/concepts.yaml",
         "created_at": now_iso(),
         "checksum": checksum,
         "derived_from": derived_from,
@@ -2215,6 +2336,8 @@ def plan(topic, force):
         artifacts.append(_build_plan_artifact_entry(group, concerns=concerns))
     frontmatter_concepts = _collect_frontmatter_concepts(source_records)
     concept_review = _build_concept_review(topic, frontmatter_concepts)
+    if concept_review:
+        artifacts.append(_build_concepts_extract_artifact_entry(concept_review))
 
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     plan_yaml = _render_extract_plan(topic, artifacts, concept_review)
@@ -3164,7 +3287,7 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
 @concept.command("write")
 @click.argument("topic")
 def write_concepts(topic):
-    """Write topics/<topic>/structured/concepts.yaml from the approved concept review CSV.
+    """Write topics/<topic>/structured/concepts/concepts.yaml from the approved concept review CSV.
 
     Requires concept review to be finalized (status: approved).
     Call this during implement mode after the extract plan is approved.
@@ -3509,6 +3632,11 @@ def body_init(topic, name, output, force):
         )
 
     artifact_type = artifact_entry.get("artifact_type") or "evidence-summary"
+    if artifact_entry.get("name") == "concepts" and artifact_type == "terminology":
+        raise click.UsageError(
+            "Artifact 'concepts' is the explicit terminology package from concept review. "
+            f"Use 'rh-skills promote concept write {topic}' instead of body-init/derive."
+        )
 
     # Convert plan source_files (paths like sources/normalized/<slug>.md) → bare slugs
     source_files = artifact_entry.get("source_files") or []

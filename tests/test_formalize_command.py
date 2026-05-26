@@ -174,7 +174,6 @@ class TestFormalizeCommand:
         assert result.exit_code != 0
         assert "not approved" in result.output.lower()
 
-
 class TestUnknownTypeFallback:
     def test_unknown_type_falls_back(self, tmp_repo):
         """FR-009: Unknown artifact_type falls back to generic strategy."""

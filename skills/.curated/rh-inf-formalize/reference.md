@@ -54,6 +54,15 @@ artifacts:
 `formalize-plan.yaml` reviewer must override `l3_targets` with the
 correct FHIR resource types for the specific use case.
 
+Terminology expectation:
+- New topics should carry terminology through the approved extract artifact row
+  named `concepts`.
+- That row is materialized by `rh-skills promote concept write <topic>` to
+  `topics/<topic>/structured/concepts/concepts.yaml`.
+- Legacy topics without that explicit extract row may still rely on a
+  compatibility fallback during formalize planning, but that is not the
+  preferred contract.
+
 Body sections, in order:
 1. `Review Summary`
 2. `Proposed Artifacts`
@@ -200,6 +209,7 @@ for the attached CQL source bytes.
 
 | L2 Input | FHIR Output |
 |----------|-------------|
+| explicit extract artifact `concepts` → `topics/<topic>/structured/concepts/concepts.yaml` | The standard terminology package input for formalization. |
 | `sections.value_sets[]` | One **ValueSet** per named set. `compose.include[]` with system + codes resolved via MCP. |
 | `sections.concept_mappings[]` | **ConceptMap** with `group[].element[].target[]` mappings. |
 

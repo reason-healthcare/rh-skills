@@ -86,6 +86,39 @@ concerns: []
 """)
 
 
+def make_valid_concepts_extract_l2(tmp_repo, skill="my-skill"):
+    td = tmp_repo / "topics" / skill / "structured" / "concepts"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "concepts.yaml").write_text("""\
+id: concepts
+name: concepts
+title: "Concept Catalog"
+version: "1.0.0"
+status: draft
+domain: terminology
+description: |
+  Deduplicated concept catalog derived from topic concept annotations.
+derived_from:
+  - source-l1
+artifact_type: terminology
+sections:
+  summary: "Reviewed terminology package."
+  value_sets:
+    - id: hypertension
+      name: Hypertension
+      concept_refs:
+        - hypertension
+concepts:
+  - id: hypertension
+    name: Hypertension
+    type: disorder
+    codes:
+      - system: http://snomed.info/sct
+        code: "38341003"
+        display: Hypertensive disorder, systemic arterial (disorder)
+""")
+
+
 def make_invalid_l2(tmp_repo, skill="my-skill", artifact="bad-artifact"):
     td = tmp_repo / "topics" / skill / "structured" / artifact
     td.mkdir(parents=True, exist_ok=True)
@@ -223,6 +256,17 @@ def test_validate_unknown_artifact_exits_2(tmp_repo):
     assert result.exit_code == 2
 
 
+def test_value_sets_section_accepts_concept_refs():
+    from rh_skills.commands.validate import _validate_required_section_completeness
+
+    errors = _validate_required_section_completeness(
+        "value_sets",
+        [{"id": "hypertension", "name": "Hypertension", "concept_refs": ["hypertension"]}],
+        emit=False,
+    )
+    assert errors == 0
+
+
 def test_validate_invalid_level_exits_2(tmp_repo):
     (tmp_repo / "topics" / "my-skill").mkdir(parents=True, exist_ok=True)
     runner = CliRunner()
@@ -284,6 +328,24 @@ def test_validate_extract_artifact_checks_plan_requirements(tmp_repo):
     make_valid_extract_l2(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "VALID" in result.output
+
+
+def test_validate_concepts_extract_artifact_allows_missing_clinical_question(tmp_repo):
+    write_extract_plan(tmp_repo, artifact="concepts")
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
+    plan = YAML().load(plan_path.read_text())
+    plan["artifacts"][0]["artifact_type"] = "terminology"
+    plan["artifacts"][0]["required_sections"] = ["summary", "value_sets"]
+    y = YAML()
+    y.default_flow_style = False
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+
+    make_valid_concepts_extract_l2(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "concepts"])
     assert result.exit_code == 0, result.output
     assert "VALID" in result.output
 

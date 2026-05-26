@@ -48,7 +48,7 @@ def _has_discovery_plan(topic: str) -> bool:
 
 def _has_concepts_yaml(topic: str) -> bool:
     """Return True if concepts.yaml has been written for this topic."""
-    return (repo_root() / "topics" / topic / "structured" / "concepts.yaml").exists()
+    return (repo_root() / "topics" / topic / "structured" / "concepts" / "concepts.yaml").exists()
 
 
 def _next_step_options(sources: int, structured: int, computable: int, topic: str) -> list[tuple[str, str | None]]:

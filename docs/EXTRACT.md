@@ -140,7 +140,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 ### Validation Rules
 
 Post-derive validation checks:
-1. Required top-level fields: id, name, title, version, status, domain, description, derived_from[], artifact_type, clinical_question
+1. Required top-level fields: id, name, title, version, status, domain, description, derived_from[], artifact_type, clinical_question (`topics/<topic>/structured/concepts/concepts.yaml` is the exception and does not require `clinical_question`)
 2. Type-specific required sections (e.g., decision-table MUST have events, conditions, actions, rules)
 3. Evidence traceability: claims have evidence[] entries
 4. Conflict records present when extract-plan listed unresolved concerns

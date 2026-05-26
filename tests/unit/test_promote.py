@@ -171,7 +171,7 @@ def write_extract_plan(
             "source_files": [f"sources/normalized/{source_name}.md" for source_name in (["ada-screening-guideline", "uspstf-screening-update"] if topic_name == "my-skill" else [])],
             "status": concept_review_status,
             "review_artifact": f"topics/{topic_name}/process/plans/concepts/",
-            "final_artifact": f"topics/{topic_name}/structured/concepts.yaml",
+            "final_artifact": f"topics/{topic_name}/structured/concepts/concepts.yaml",
         },
         "artifacts": artifacts or [],
     }
@@ -541,14 +541,27 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml"
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml"
     assert artifact_path.exists()
     artifact = YAML(typ="safe").load(artifact_path.read_text())
     assert artifact["artifact_type"] == "terminology"
     plan = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text())
     assert plan["concept_review"]["status"] == "approved"
     hypertension = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
+    assert hypertension["id"] == "hypertension"
     assert hypertension["codes"][0]["code"] == "38341003"
+    assert artifact["sections"]["value_sets"] == [
+        {
+            "id": "blood-pressure-screening",
+            "name": "Blood pressure screening",
+            "concept_refs": ["blood-pressure-screening"],
+        },
+        {
+            "id": "hypertension",
+            "name": "Hypertension",
+            "concept_refs": ["hypertension"],
+        },
+    ]
 
 
 def test_review_concepts_can_approve_concept_in_final_artifact(tmp_repo):
@@ -589,18 +602,23 @@ def test_review_concepts_can_approve_concept_in_final_artifact(tmp_repo):
     ])
     assert result.exit_code == 0, result.output
 
-    # Write and verify — both concepts appear, only Blood pressure screening has codes
+    # Write and verify — only approved concepts appear
     result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
-    artifact = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text())
+    artifact = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text())
     concept_names = [c["name"] for c in artifact["concepts"]]
-    assert "Hypertension" in concept_names
     assert "Blood pressure screening" in concept_names
+    assert "Hypertension" not in concept_names
     bp = next(c for c in artifact["concepts"] if c["name"] == "Blood pressure screening")
     assert bp["codes"][0]["code"] == "171207006"
-    hyp = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
-    assert "codes" not in hyp
+    assert artifact["sections"]["value_sets"] == [
+        {
+            "id": "blood-pressure-screening",
+            "name": "Blood pressure screening",
+            "concept_refs": ["blood-pressure-screening"],
+        },
+    ]
 
 
 def _enrich_two_concepts(tmp_repo, runner):
@@ -652,14 +670,11 @@ def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text()
+        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text()
     )
     concept_names = [c["name"] for c in artifact["concepts"]]
     assert "Hypertension" in concept_names
-    assert "Blood pressure screening" in concept_names
-    # Blood pressure screening has no approved code → no codes key
-    bp = next(c for c in artifact["concepts"] if c["name"] == "Blood pressure screening")
-    assert "codes" not in bp
+    assert "Blood pressure screening" not in concept_names
 
 
 def test_review_concepts_approve_and_exclude_individual_codes(tmp_repo):
@@ -753,15 +768,13 @@ def test_review_concepts_standalone_finalize_seals_manually_edited_csv(tmp_repo)
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text()
+        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text()
     )
     concept_names = [c["name"] for c in artifact["concepts"]]
     assert "Hypertension" in concept_names
-    assert "Blood pressure screening" in concept_names
+    assert "Blood pressure screening" not in concept_names
     hyp = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
     assert hyp["codes"][0]["code"] == "38341003"
-    bp = next(c for c in artifact["concepts"] if c["name"] == "Blood pressure screening")
-    assert "codes" not in bp
 
 
 def test_review_concepts_finalize_requires_reviewer(tmp_repo):
@@ -2334,6 +2347,22 @@ class TestBuildFormalizeArtifacts:
         # Only first artifact is implementation_target
         targets = [a for a in result if a["implementation_target"]]
         assert len(targets) == 1
+
+    def test_single_terminology_preserves_concepts_name(self):
+        from rh_skills.commands.promote import _build_formalize_artifacts
+        result = _build_formalize_artifacts("test-topic", [
+            {"name": "concepts", "artifact_type": "terminology"},
+        ])
+        assert result[0]["name"] == "concepts"
+
+    def test_multi_type_terminology_preserves_concepts_name(self):
+        from rh_skills.commands.promote import _build_formalize_artifacts
+        result = _build_formalize_artifacts("test-topic", [
+            {"name": "decision-a", "artifact_type": "decision-table"},
+            {"name": "concepts", "artifact_type": "terminology"},
+        ])
+        terminology = next(a for a in result if a["strategy"] == "terminology")
+        assert terminology["name"] == "concepts"
 
     def test_overlap_detection_flagged_in_rationale(self):
         from rh_skills.commands.promote import _build_formalize_artifacts
