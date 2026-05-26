@@ -12,7 +12,7 @@ and **how the conversion works** (mapping rules, decisions, MCP usage).
 | L2 Type | L3 FHIR Target | Primary Resource | Supporting Resources |
 |---------|----------------|------------------|---------------------|
 | `evidence-summary` | Evidence package | Evidence | EvidenceVariable, Citation |
-| `decision-table` | ECA rule set | PlanDefinition (type: eca-rule) | Library (CQL expressions) |
+| `decision-table` | ECA rule set | PlanDefinition (type: eca-rule) | ActivityDefinition, Library (CQL expressions) |
 | `care-pathway` | Clinical protocol | PlanDefinition (type: clinical-protocol) | ActivityDefinition |
 | `terminology` | Value set bundle | ValueSet | ConceptMap |
 | `measure` | Quality measure | Measure | Library (CQL population logic) |

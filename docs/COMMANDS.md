@@ -434,7 +434,7 @@ rh-skills formalize <topic> <artifact> [--strategy TYPE] [--dry-run]
 | L2 Type | Primary Output | Supporting Output |
 |---------|---------------|-------------------|
 | evidence-summary | Evidence.json | EvidenceVariable.json, Citation.json |
-| decision-table | PlanDefinition.json | Library.json, .cql |
+| decision-table | PlanDefinition.json | ActivityDefinition.json, Library.json, .cql |
 | care-pathway | PlanDefinition.json | ActivityDefinition.json |
 | terminology | ValueSet.json | ConceptMap.json |
 | measure | Measure.json | Library.json, .cql |

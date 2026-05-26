@@ -679,8 +679,8 @@ _L3_TARGET_MAP: dict[str, dict] = {
     },
     "decision-table": {
         "primary": "PlanDefinition",
-        "supporting": ["Library"],
-        "l3_targets": ["PlanDefinition (eca-rule)", "Library (CQL)"],
+        "supporting": ["ActivityDefinition", "Library"],
+        "l3_targets": ["PlanDefinition (eca-rule)", "ActivityDefinition", "Library (CQL)"],
     },
     "care-pathway": {
         "primary": "PlanDefinition",

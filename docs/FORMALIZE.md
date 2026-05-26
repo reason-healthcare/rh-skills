@@ -22,7 +22,7 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 | L2 Type | Primary FHIR Resource | Supporting | Required Sections |
 |---------|----------------------|-----------|-------------------|
 | evidence-summary | Evidence | EvidenceVariable, Citation | evidence |
-| decision-table | PlanDefinition (eca-rule) | Library (CQL) | actions, libraries |
+| decision-table | PlanDefinition (eca-rule) | ActivityDefinition, Library (CQL) | actions, libraries |
 | care-pathway | PlanDefinition (clinical-protocol) | ActivityDefinition | pathways, actions |
 | terminology | ValueSet | ConceptMap | value_sets |
 | measure | Measure | Library (CQL) | measures, libraries |
