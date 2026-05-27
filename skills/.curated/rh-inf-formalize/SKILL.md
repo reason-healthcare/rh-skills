@@ -66,7 +66,7 @@ artifact row named `concepts`, materialized at
 | L2 Type | Strategy | Primary Resource | Supporting Resources |
 |---------|----------|------------------|---------------------|
 | `evidence-summary` | evidence-summary | Evidence | EvidenceVariable, Citation |
-| `decision-table` | decision-table | PlanDefinition (eca-rule) | Library (CQL) |
+| `decision-table` | decision-table | PlanDefinition (eca-rule) | ActivityDefinition, Library (CQL) |
 | `care-pathway` | care-pathway | PlanDefinition (clinical-protocol) | ActivityDefinition |
 | `terminology` | terminology | ValueSet | ConceptMap |
 | `measure` | measure | Measure | Library (CQL) |

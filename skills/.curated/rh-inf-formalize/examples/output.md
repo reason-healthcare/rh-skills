@@ -21,6 +21,7 @@ $ rh-inf-formalize implement diabetes-ccm
 Processing artifact 1/3: screening-decisions (decision-table)
   Running: rh-skills formalize diabetes-ccm screening-decisions
   ✓ PlanDefinition-screening-decisions.json
+  ✓ ActivityDefinition-recommend-action.json
   ✓ Library-screening-decisions.json
   ✓ ScreeningDecisions.cql
 
@@ -46,6 +47,7 @@ Packaging:
 $ rh-inf-formalize verify diabetes-ccm
 Checking decision-table artifact (screening-decisions):
   ✓ PlanDefinition has action[] with conditions
+  ✓ ActivityDefinition outputs are referenced by definitionCanonical
   ✓ Library has type and content
   ✓ CQL syntactically valid
   ✓ converged_from matches approved plan inputs

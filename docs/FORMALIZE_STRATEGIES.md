@@ -108,9 +108,9 @@ sections:
 ```yaml
 artifact_type: decision-table
 sections:
-  events: [...]       # trigger definitions for when the table applies
-  conditions: [...]   # decision conditions with thresholds
-  actions: [...]      # resulting actions per condition branch
+  events: [...]       # recommendation-scoped triggers for when a rule applies
+  conditions: [...]   # local decision conditions with thresholds
+  actions: [...]      # resulting recommendation actions per condition branch
   rules: [...]        # event → condition → action mappings
   exceptions: [...]   # override / exclusion rules
 ```
@@ -127,6 +127,13 @@ sections:
 
 ### Conversion Rules
 
+Phase 1 modeling guidance:
+- Prefer recommendation-scoped triggers such as `preoperative-planning-initiated`
+  over pathway phases such as `planning`.
+- Keep downstream recommendation rules local to the recommendation being
+  evaluated; do not restate earlier pathway progression unless clinically
+  required.
+
 1. **Conditions → action.condition (applicability).** Each entry in
    `sections.conditions[]` becomes a `PlanDefinition.action.condition` with
    `kind: applicability`. Simple threshold conditions (e.g., "A1C ≥ 6.5%")
@@ -140,10 +147,12 @@ sections:
 
 2. **Rules → nested action structure.** Each `sections.rules[]` entry
    (condition→action mapping) becomes one top-level `PlanDefinition.action`.
-   The rule's condition set maps to `action.condition[]` and the resulting
-   actions map to `action.action[]` (nested children). Multi-branch rules
-   (if/else-if/else) produce sibling actions at the same nesting level, each
-   with mutually exclusive applicability conditions.
+   The rule's condition set maps to `action.condition[]`, its trigger comes
+   from `event`, and the resulting actions map to `action.action[]` (nested
+   children) that reference generated `ActivityDefinition` resources via
+   `definitionCanonical`. Multi-branch rules (if/else-if/else) produce sibling
+   actions at the same nesting level, each with mutually exclusive
+   applicability conditions.
 
 3. **Inline vs. Library expressions.** Use inline FHIRPath when:
    - The condition is a single comparison or simple boolean (≤ 2 clauses)

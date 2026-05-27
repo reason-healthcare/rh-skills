@@ -99,7 +99,7 @@ Two formalize strategies produce a `.cql` source file alongside the FHIR JSON:
 
 | Strategy | CQL Library | Supporting FHIR Resource |
 |----------|-------------|--------------------------|
-| `decision-table` | Library (CQL) | PlanDefinition (eca-rule) |
+| `decision-table` | Library (CQL) | PlanDefinition (eca-rule), ActivityDefinition |
 | `measure` | Library (CQL) | Measure |
 
 `rh-skills formalize` writes a `.cql` scaffold to `topics/<topic>/computable/<Library>.cql`. The **`rh-inf-cql` skill** is responsible for authoring, reviewing, and validating the CQL content after the scaffold is generated. The FHIR JSON wrapper (Library.json, Measure.json) remains `rh-inf-formalize`'s responsibility.

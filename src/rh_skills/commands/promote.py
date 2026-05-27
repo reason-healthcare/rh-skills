@@ -43,7 +43,7 @@ EXTRACT_ARTIFACT_PROFILES = (
                       "threshold", "diagnostic", "criteria", "eligibility", "screen",
                       "exclusion", "contraind", "avoid"),
         "section": ["events", "conditions", "actions", "rules"],
-        "key_question": "What event triggers, conditions, eligibility, exclusions, and actions form the decision logic?",
+        "key_question": "What recommendation-scoped triggers, local conditions, and actions form the decision logic?",
     },
     {
         "artifact_type": "care-pathway",
@@ -1185,10 +1185,10 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
     "frames": [{"id": "frame-001", "population": "<stub: population>", "intervention": "<stub: intervention>",
                 "comparison": "<stub: comparison>", "outcomes": ["<stub: outcome>"], "timing": "<stub: timing>", "setting": "<stub: setting>"}],
     # decision-table sections (includes absorbed eligibility/exclusion as conditions)
-    "events": [{"id": "event-001", "label": "<stub: triggering event>", "description": "<stub: event description>"}],
+    "events": [{"id": "event-001", "label": "<stub: recommendation trigger>", "description": "<stub: evaluation moment for this recommendation>"}],
     "conditions": [{"id": "cond-001", "label": "<stub: condition>", "values": ["Yes", "No"]}],
-    "rules": [{"id": "rule-001", "event": "event-001", "when": {"cond-001": "Yes"}, "then": ["approve"]},
-              {"id": "rule-002", "event": "event-001", "when": {"cond-001": "No"}, "then": ["deny"]}],
+    "rules": [{"id": "rule-001", "event": "event-001", "when": {"cond-001": "Yes"}, "then": ["recommend-action"]},
+              {"id": "rule-002", "event": "event-001", "when": {"cond-001": "No"}, "then": ["do-not-perform-action"]}],
     # care-pathway sections
     "steps": [{"step": 1, "description": "<stub: step>", "actor": "<stub: actor>", "next": 2}],
     "triggers": [{"id": "trigger-001", "description": "<stub: trigger event>"}],
@@ -1220,7 +1220,21 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
     """
     if section_name == "actions":
         if artifact_type == "decision-table":
-            return [{"id": "approve", "label": "Approve"}, {"id": "deny", "label": "Deny"}]
+            return [
+                {
+                    "id": "recommend-action",
+                    "label": "<stub: recommended action>",
+                    "description": "<stub: what should be done when the rule applies>",
+                    "kind": "ServiceRequest",
+                },
+                {
+                    "id": "do-not-perform-action",
+                    "label": "<stub: action to avoid or withhold>",
+                    "description": "<stub: what should not be done when the rule applies>",
+                    "kind": "ServiceRequest",
+                    "do_not_perform": True,
+                },
+            ]
         if artifact_type == "care-pathway":
             return [{"id": "act-001", "label": "<stub: activity>", "type": "clinical"}]
         # policy (and any other type)
@@ -1727,7 +1741,7 @@ _CONCERN_ALIGNMENT_ASPECTS: dict[str, str] = {
     "eligibility-criteria": "inclusion/exclusion thresholds, age bands, and population definitions",
     "risk-factors": "risk factor definitions, magnitude estimates, and effect direction",
     "evidence-summary": "evidence grades, recommendation strength, and outcome measures",
-    "decision-table": "event triggers, condition thresholds, action triggers, and decision criteria",
+    "decision-table": "recommendation triggers, local applicability conditions, recommendation actions, and decision criteria",
     "care-pathway": "step sequencing, timing windows, and actor responsibilities",
     "terminology": "code coverage, concept boundaries, and preferred terms",
     "measure": "population definitions, scoring logic, and measurement period",

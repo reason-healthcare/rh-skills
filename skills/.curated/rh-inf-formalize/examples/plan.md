@@ -16,10 +16,11 @@ artifacts:
     strategy: decision-table
     l3_targets:
       - PlanDefinition
+      - ActivityDefinition
       - Library
     input_artifacts:
       - screening-decisions
-    rationale: "L2 type decision-table → PlanDefinition (ECA rules) + Library (CQL). ⚠ Overlaps care-pathway on PlanDefinition."
+    rationale: "L2 type decision-table → PlanDefinition (ECA rules) + ActivityDefinition + Library (CQL). ⚠ Overlaps care-pathway on PlanDefinition."
     required_sections:
       - actions
       - libraries
@@ -70,7 +71,7 @@ artifacts:
 ## diabetes-ccm-decision-table
 
 - Strategy: `decision-table`
-- L3 targets: PlanDefinition (ECA rules), Library (CQL)
+- L3 targets: PlanDefinition (ECA rules), ActivityDefinition, Library (CQL)
 - Input: screening-decisions
 - Required sections: actions, libraries
 - Implementation target: `yes`

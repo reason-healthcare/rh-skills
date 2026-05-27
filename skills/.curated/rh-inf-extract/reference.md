@@ -457,7 +457,7 @@ sections:
   summary: <string>
   events:
     - id: e1
-      label: <triggering clinical or workflow event>
+      label: <recommendation-scoped evaluation trigger>
   conditions:
     - id: c1
       label: <condition name>
@@ -488,6 +488,13 @@ sections:
 evaluation, the condition values that must hold, and the actions that follow.
 If every rule shares the same trigger, keep the event reference explicit on each
 rule for now; de-duplication can happen later during formalization.
+
+Phase 1 guidance for a single decision-table artifact:
+- keep one artifact if needed, but make each `event` a recommendation-scoped
+  evaluation moment rather than a broad pathway phase
+- keep `when` values local to the recommendation being evaluated
+- do not restate prior pathway progression in downstream rules unless that
+  prerequisite is clinically required by the recommendation itself
 
 #### care-pathway
 

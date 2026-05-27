@@ -40,7 +40,7 @@ artifacts:
 | `artifact_type` | `strategy` | `l3_targets` |
 |-----------------|------------|-------------|
 | `evidence-summary` | `evidence-summary` | Evidence, EvidenceVariable, Citation |
-| `decision-table` | `decision-table` | PlanDefinition (eca-rule), Library (CQL) |
+| `decision-table` | `decision-table` | PlanDefinition (eca-rule), ActivityDefinition, Library (CQL) |
 | `care-pathway` | `care-pathway` | PlanDefinition (clinical-protocol), ActivityDefinition |
 | `terminology` | `terminology` | ValueSet, ConceptMap |
 | `measure` | `measure` | Measure, Library (CQL) |
@@ -84,7 +84,7 @@ Each L2 artifact type maps to specific FHIR resources via the strategy table:
 | Strategy | Output Files |
 |----------|-------------|
 | `evidence-summary` | `Evidence-<id>.json`, `EvidenceVariable-<id>.json`, `Citation-<id>.json` |
-| `decision-table` | `PlanDefinition-<id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
+| `decision-table` | `PlanDefinition-<id>.json`, `ActivityDefinition-<action-id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
 | `care-pathway` | `PlanDefinition-<id>.json`, `ActivityDefinition-<id>.json` |
 | `terminology` | `ValueSet-<id>.json`, `ConceptMap-<id>.json` |
 | `measure` | `Measure-<id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
@@ -135,8 +135,10 @@ entry with a `rating` value. Each EvidenceVariable must define its role (e.g.,
 population, intervention, outcome) via characteristic criteria.
 
 **decision-table**: PlanDefinition `action[].condition[]` must include at
-least one `expression` with `language: text/cql-identifier`. The companion Library must
-contain CQL with `context Patient` and `using FHIR version '4.0.1'`.
+least one `expression` with `language: text/cql-identifier`. At least one
+generated `ActivityDefinition` should be referenced by
+`action[].definitionCanonical` directly or from nested child actions. The
+companion Library must contain CQL with `context Patient` and `using FHIR version '4.0.1'`.
 
 **care-pathway**: PlanDefinition `action[]` entries must form a sequence via
 `relatedAction[]` with `relationship: before-start`. At least one
@@ -177,9 +179,16 @@ Full business rules are in `docs/FORMALIZE_STRATEGIES.md`; summaries below.
 
 ### decision-table → ECA Rule Set
 
+Phase 1 guidance for a single decision-table artifact:
+- keep one artifact if needed, but treat it as a bundle of recommendation-scoped rules
+- prefer recommendation-scoped triggers over broad pathway phases
+- keep rule applicability local to the recommendation being evaluated
+- let `actions[]` carry enough detail to generate usable `ActivityDefinition` outputs
+
 | L2 Input | FHIR Output |
 |----------|-------------|
-| `sections.decision_table[]` rows | **PlanDefinition** (type: `eca-rule`). Each row → one `action[]` entry with `condition[].expression` (CQL). |
+| `sections.rules[]` | **PlanDefinition** (type: `eca-rule`). Each rule → one top-level `action[]` entry with trigger, applicability conditions, and nested child actions. |
+| `sections.actions[]` | One **ActivityDefinition** per action, referenced from PlanDefinition via `definitionCanonical`. |
 | CQL expressions | **Library** with CQL source. Each condition/action → named CQL define. |
 
 **CQL expression language rule** — applies to all CQL strategies:
