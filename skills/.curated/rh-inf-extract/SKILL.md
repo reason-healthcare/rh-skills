@@ -853,6 +853,54 @@ rh-skills promote approve <topic> \
 all deterministic writes must go through `rh-skills promote derive`,
 `rh-skills promote concept write`, and `rh-skills validate`.
 
+If the user asks to re-run only one existing non-terminology artifact, treat
+that as an **artifact-only rerun**, not a full-topic implement. In that mode:
+- do **not** run `rh-skills promote concept write <topic>` unless the artifact
+  being refreshed is the terminology artifact itself
+- regenerate only the requested artifact with `rh-skills promote derive ... --force`
+- validate and render only that artifact
+- leave existing terminology review/output untouched
+
+Never use `derive --force` for the explicit `concepts` terminology artifact.
+If terminology itself needs to be refreshed, keep the review packet and run:
+
+```sh
+rh-skills promote concept write <topic>
+```
+
+### Artifact-only rerun
+
+Use this path when the user wants to refresh one structured artifact without
+re-running terminology work or the rest of the topic.
+
+1. Confirm the requested artifact is already approved in `extract-plan.yaml`.
+2. If the artifact is `concepts` / `terminology`, do not call `derive`. Follow
+   the terminology flow and refresh it with `rh-skills promote concept write
+   <topic>`. Otherwise skip terminology entirely.
+3. Rebuild the body file for that artifact only.
+4. Re-derive in place:
+
+```sh
+rh-skills promote derive <topic> <artifact-name> \
+  --source <source-name> \
+  --artifact-type <artifact-type> \
+  --clinical-question "<clinical question>" \
+  --body-file topics/<topic>/process/tmp/<artifact-name>.yaml \
+  --force
+```
+
+5. Validate only that artifact:
+
+```sh
+rh-skills validate <topic> <artifact-name>
+```
+
+6. Render only that artifact:
+
+```sh
+rh-skills render <topic> <artifact-name>
+```
+
 ### Steps
 
 1. Read and validate `topics/<topic>/process/plans/extract-plan.yaml`.
@@ -860,7 +908,7 @@ all deterministic writes must go through `rh-skills promote derive`,
    artifact that is NOT `rejected` or `needs-revision` has `reviewer_decision`
    other than `approved`. (`rejected` and `needs-revision` artifacts are
    silently skipped — do not error on them.)
-   If the plan includes `concept_review` with `status: approved`, write
+   For full-topic implement only: if the plan includes `concept_review` with `status: approved`, write
    `topics/<topic>/structured/concepts/concepts.yaml` first before processing
    other artifacts:
    ```sh
@@ -958,6 +1006,19 @@ all deterministic writes must go through `rh-skills promote derive`,
    rh-skills validate <topic> <artifact-name>
    ```
 
+   If you are re-running only one approved non-terminology artifact, use the
+   artifact-only rerun path above:
+
+   ```sh
+   rh-skills promote derive <topic> <artifact-name> ... --force
+   ```
+
+   In that case, leave terminology as-is unless the terminology artifact itself
+   changed. If terminology changed, refresh it with `rh-skills promote concept
+   write <topic>` rather than `derive --force`. Do not re-run concept
+   lookup/review/write just because another artifact was refreshed; validate
+   only the artifact you re-derived.
+
 5. After successful validation, render a human-readable view of each artifact:
 
    ```sh
@@ -1041,7 +1102,7 @@ Emit this status block as the **last thing** in your response (no text after):
 **What would you like to do next?**
 
 A) Plan formalization (next stage): `rh-inf-formalize plan <topic>`
-B) Re-run extraction on a failed artifact: `rh-inf-extract implement <topic>`
+B) Re-run one failed non-terminology artifact only: `rh-skills promote derive <topic> <artifact-name> ... --force`
 C) Check overall topic status: `rh-skills status show <topic>`
 
 You can also ask for `rh-skills status show <topic>` at any time.

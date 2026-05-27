@@ -21,6 +21,7 @@ reviewer: <string>
 reviewed_at: <ISO-8601 or null>
 artifacts:
   - name: <kebab-case target name>
+    source_artifact: <single L2 artifact name used with rh-skills formalize>
     artifact_type: <L2 type: evidence-summary | decision-table | care-pathway | terminology | measure | assessment | policy>
     strategy: <matching L2 type or "mixed" for multi-type convergence>
     l3_targets:
@@ -100,6 +101,11 @@ and builds distribution artifacts from there. `computable/` remains the
 canonical L3 artifact directory.
 
 Only one artifact can set `implementation_target: true` per plan.
+
+`name` is the formalization job label in the plan. `source_artifact` is the
+actual L2 artifact name to pass to `rh-skills formalize <topic> <artifact>`.
+For backward compatibility, older plans may omit `source_artifact`; in that
+case the CLI falls back to `name`.
 
 ---
 

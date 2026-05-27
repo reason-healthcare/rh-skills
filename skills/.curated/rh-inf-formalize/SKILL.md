@@ -289,18 +289,18 @@ FHIR files directly.
       authoritative starting set, augmented by MCP search only where the plan
       set is incomplete.
 5. Run the formalize command for each approved L2 artifact. The `<artifact-name>`
-   argument **must be the L2 artifact's `name` field** (the kebab-case identifier
-   in the YAML, e.g. `phq9-instrument`) — not the formalize-plan target display
-   name and not the FHIR resource type:
+   argument **must be the plan entry's `source_artifact` value**. That should
+   match the L2 artifact's `name` field (the kebab-case identifier in the YAML,
+   e.g. `phq9-instrument`) — not the formalize-plan job `name` and not the FHIR
+   resource type:
 
    ```sh
    rh-skills formalize <topic> <l2-artifact-name>
    ```
 
-   > **Naming rule**: the formalize-plan may label a target `phq9-screening-assessment`
-   > for readability, but if the input L2 artifact's `name:` field is `phq9-instrument`,
-   > pass `phq9-instrument` to `rh-skills formalize`. The display name is not a
-   > valid CLI argument.
+   > **Naming rule**: if the formalize plan says `name: phq9-screening-assessment`
+   > and `source_artifact: phq9-instrument`, pass `phq9-instrument` to
+   > `rh-skills formalize`. The job `name` is not a valid CLI argument.
 
    > **Multi-artifact plans**: Formalize ALL artifacts whose `reviewer_decision`
    > is `approved`, not only the one marked `implementation_target: true`. The

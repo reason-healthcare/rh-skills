@@ -202,6 +202,7 @@ def write_formalize_plan_yaml(
         "reviewed_at": "2026-04-14T00:00:00Z",
         "artifacts": [{
             "name": artifact,
+            "source_artifact": "screening-criteria",
             "artifact_type": "assessment",
             "strategy": "assessment",
             "input_artifacts": ["screening-criteria"],
@@ -224,6 +225,15 @@ def test_validate_valid_l2_exits_0(tmp_repo):
     result = runner.invoke(validate, ["my-skill", "l2", "test-artifact"])
     assert result.exit_code == 0
     assert "VALID" in result.output
+
+
+def test_validate_formalize_artifact_matches_source_artifact(tmp_repo):
+    make_valid_l3(tmp_repo, artifact="screening-criteria")
+    write_tracking_with_computable(tmp_repo, artifact="screening-criteria")
+    write_formalize_plan_yaml(tmp_repo, artifact="synthetic-target-name")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "l3", "screening-criteria"])
+    assert result.exit_code == 0
 
 
 def test_validate_invalid_l2_exits_1(tmp_repo):

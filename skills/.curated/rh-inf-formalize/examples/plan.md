@@ -10,8 +10,9 @@ plan_type: formalize
 status: pending-review
 reviewer: ""
 reviewed_at: null
-artifacts:
+  artifacts:
   - name: diabetes-ccm-decision-table
+    source_artifact: screening-decisions
     artifact_type: decision-table
     strategy: decision-table
     l3_targets:
@@ -28,6 +29,7 @@ artifacts:
     reviewer_decision: pending-review
     approval_notes: ""
   - name: diabetes-ccm-care-pathway
+    source_artifact: care-pathway
     artifact_type: care-pathway
     strategy: care-pathway
     l3_targets:
@@ -43,6 +45,7 @@ artifacts:
     reviewer_decision: pending-review
     approval_notes: ""
   - name: diabetes-ccm-terminology
+    source_artifact: lab-value-sets
     artifact_type: terminology
     strategy: terminology
     l3_targets:
@@ -71,6 +74,7 @@ artifacts:
 ## diabetes-ccm-decision-table
 
 - Strategy: `decision-table`
+- Source artifact: `screening-decisions`
 - L3 targets: PlanDefinition (ECA rules), ActivityDefinition, Library (CQL)
 - Input: screening-decisions
 - Required sections: actions, libraries
@@ -79,6 +83,7 @@ artifacts:
 ## diabetes-ccm-care-pathway
 
 - Strategy: `care-pathway`
+- Source artifact: `care-pathway`
 - L3 targets: PlanDefinition (clinical-protocol), ActivityDefinition
 - Input: care-pathway
 - Required sections: pathways, actions
@@ -86,6 +91,7 @@ artifacts:
 ## diabetes-ccm-terminology
 
 - Strategy: `terminology`
+- Source artifact: `lab-value-sets`
 - L3 targets: ValueSet, ConceptMap
 - Input: lab-value-sets
 - Required sections: value_sets

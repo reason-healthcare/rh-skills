@@ -184,6 +184,35 @@ regenerate them.
 
 ---
 
+## Artifact-Only Rerun
+
+**Invocation:** refresh only `screening-decisions` without rewriting terminology
+
+```sh
+rh-skills promote derive diabetes-ccm screening-decisions \
+  --source ada-2024-guideline \
+  --source uspstf-screening \
+  --artifact-type decision-table \
+  --clinical-question "Who should be screened and at what interval?" \
+  --required-section summary \
+  --required-section events \
+  --required-section conditions \
+  --required-section actions \
+  --required-section rules \
+  --required-section evidence_traceability \
+  --body-file /tmp/rh-screening-decisions.yaml \
+  --force
+rh-skills validate diabetes-ccm screening-decisions
+rh-skills render diabetes-ccm screening-decisions
+```
+
+In this rerun mode:
+- do not call `rh-skills promote concept write diabetes-ccm`
+- do not repeat concept lookup or concept review
+- leave `topics/diabetes-ccm/structured/concepts/concepts.yaml` unchanged
+
+---
+
 ## Verify Mode
 
 **Invocation:** `rh-inf-extract verify diabetes-ccm`

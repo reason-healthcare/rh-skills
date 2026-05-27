@@ -731,6 +731,24 @@ def _load_approved_formalize_target(topic: str) -> dict | None:
     return target
 
 
+def _approved_target_source_artifact(target: dict) -> str | None:
+    """Return the L2 artifact name that should be passed to `rh-skills formalize`.
+
+    Backward compatibility:
+    - Prefer explicit `source_artifact` on the plan entry.
+    - Fall back to the legacy `name` field.
+    """
+    if not isinstance(target, dict):
+        return None
+    source_artifact = target.get("source_artifact")
+    if source_artifact:
+        return str(source_artifact)
+    legacy_name = target.get("name")
+    if legacy_name:
+        return str(legacy_name)
+    return None
+
+
 def _parse_llm_response(raw: str) -> list[dict]:
     """Parse LLM response into list of FHIR resource dicts.
 
@@ -1109,10 +1127,11 @@ def formalize(topic, artifact, dry_run, force):
         sys.exit(2)
 
     approved_target = _load_approved_formalize_target(topic)
-    if approved_target is not None and approved_target.get("name") != artifact:
+    approved_source = _approved_target_source_artifact(approved_target) if approved_target is not None else None
+    if approved_target is not None and approved_source != artifact:
         raise click.UsageError(
             f"Artifact '{artifact}' is not the approved implementation target in formalize-plan.yaml. "
-            f"Target: '{approved_target.get('name', '<unknown>')}'."
+            f"Target source_artifact: '{approved_source or '<unknown>'}'."
         )
 
     # Load L2 YAML content — prefer the registered file path from tracking
@@ -1240,7 +1259,7 @@ def formalize(topic, artifact, dry_run, force):
         "files": written_files,
         "created_at": timestamp,
         "checksums": checksums,
-        "converged_from": [artifact],
+        "converged_from": (approved_target.get("input_artifacts") or [artifact]) if approved_target else [artifact],
         "strategy": artifact_type if not is_fallback else "generic",
     }
     existing_entries = topic_entry.get("computable", []) or []
