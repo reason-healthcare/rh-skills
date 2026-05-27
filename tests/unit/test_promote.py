@@ -339,6 +339,79 @@ def test_derive_dry_run_does_not_create_file(tmp_repo, monkeypatch):
     assert "DRY RUN" in result.output
 
 
+def test_derive_existing_artifact_requires_force(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+
+    first = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    assert first.exit_code == 0, first.output
+
+    second = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    assert second.exit_code == 2
+    assert "Use --force to overwrite only this artifact" in second.output
+
+
+def test_derive_force_overwrites_existing_artifact_without_duplicate_tracking(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv("RH_STUB_RESPONSE", """\
+id: criteria
+name: criteria
+title: Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: First version.
+derived_from:
+  - ada-guidelines
+sections:
+  summary: First summary.
+""")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+
+    first = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    assert first.exit_code == 0, first.output
+
+    monkeypatch.setenv("RH_STUB_RESPONSE", """\
+id: criteria
+name: criteria
+title: Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Second version.
+derived_from:
+  - ada-guidelines
+sections:
+  summary: Updated summary.
+""")
+    second = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines", "--force"])
+    assert second.exit_code == 0, second.output
+
+    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml"
+    data = load_yaml(artifact_path)
+    assert data["description"] == "Second version."
+    assert data["sections"]["summary"] == "Updated summary."
+
+    tracking = YAML(typ="safe").load((tmp_repo / "tracking.yaml").read_text())
+    topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
+    entries = [a for a in topic["structured"] if a["name"] == "criteria"]
+    assert len(entries) == 1
+    assert entries[0]["artifact_type"] == "evidence-summary"
+    assert topic["events"][-1]["description"] == "Re-derived criteria from ada-guidelines"
+
+
+def test_derive_blocks_overwriting_concepts_terminology_artifact(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+
+    result = runner.invoke(promote, ["derive", "my-skill", "concepts", "--source", "ada-guidelines", "--force"])
+    assert result.exit_code == 2
+    assert "Use 'rh-skills promote concept write my-skill' instead of derive --force." in result.output
+
+
 def test_derive_fails_exit_2_if_source_not_found(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
@@ -2331,6 +2404,7 @@ class TestBuildFormalizeArtifacts:
             {"name": "a1", "artifact_type": "decision-table"},
         ])
         assert len(result) == 1
+        assert result[0]["source_artifact"] == "a1"
         assert result[0]["strategy"] == "decision-table"
         assert result[0]["implementation_target"] is True
 
@@ -2354,6 +2428,7 @@ class TestBuildFormalizeArtifacts:
             {"name": "concepts", "artifact_type": "terminology"},
         ])
         assert result[0]["name"] == "concepts"
+        assert result[0]["source_artifact"] == "concepts"
 
     def test_multi_type_terminology_preserves_concepts_name(self):
         from rh_skills.commands.promote import _build_formalize_artifacts

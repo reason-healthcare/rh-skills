@@ -10,7 +10,7 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 
 | Command | Purpose | Writes To |
 |---------|---------|-----------|
-| `rh-skills promote formalize-plan <topic>` | Generate review packet with per-type strategies | `process/plans/formalize-plan.md` |
+| `rh-skills promote formalize-plan <topic>` | Generate review packet with per-type strategies | `process/plans/formalize-plan.yaml` |
 | `rh-skills formalize <topic> <artifact>` | Generate FHIR JSON + CQL from approved L2 artifact | `computable/*.json`, `*.cql` |
 | `rh-skills package <topic>` | Bundle into FHIR NPM package | `package/` |
 | `rh-skills validate <topic> l3 <artifact>` | Verify type-specific structural completeness | (read-only) |
@@ -43,13 +43,14 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
    ├─ Reads approved L2 artifacts from extract-plan.yaml
    ├─ Maps each artifact_type → strategy via _L3_TARGET_MAP
    ├─ Detects overlapping FHIR resource types (multi-type topics)
-   ├─ Writes formalize-plan.md with per-artifact strategy proposals
+   ├─ Writes formalize-plan.yaml with per-artifact strategy proposals
    └─ Event: formalize_planned
 
 2. APPROVE: Reviewer sets status: approved + reviewer_decision: approved
 
 3. IMPLEMENT: rh-skills formalize <topic> <artifact> (per artifact)
    ├─ Loads formalize-config.yaml (exits 2 if missing)
+   ├─ Matches <artifact> against the approved plan entry's source_artifact
    ├─ Looks up strategy in STRATEGY_REGISTRY
    ├─ Builds type-specific LLM system prompt
    ├─ Invokes LLM → raw FHIR JSON

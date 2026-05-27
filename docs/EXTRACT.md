@@ -83,6 +83,12 @@ Decision-table extraction guidance:
    │   │   ├─ Schema: required fields, type-specific sections
    │   │   ├─ Evidence traceability: claims have evidence entries
    │   │   └─ Conflict records: present when plan listed concerns
+
+Artifact-level rerun guidance:
+- Use `rh-skills promote derive <topic> <name> --force ...` to re-run only one non-terminology structured artifact in place.
+- This path refreshes that artifact and its tracking entry only; it does not require re-running terminology lookup, concept review, or `concept write` when the terminology package is unchanged.
+- Do not use this path for the explicit `concepts` terminology artifact; refresh that package with `rh-skills promote concept write <topic>`.
+- After an artifact-only rerun, validate just that artifact with `rh-skills validate <topic> <name>`.
    │   ├─ Render: rh-skills render <topic> structured <name>
    │   │   └─ Generate report.md + Mermaid diagrams (`decision-table` requires `events`, `conditions`, `actions`, and `rules`)
    │   └─ Report ✓ or ✗ per artifact

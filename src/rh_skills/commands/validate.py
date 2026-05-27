@@ -341,10 +341,17 @@ def _validate_formalize_artifact(
         return 0, 0
 
     artifacts = plan.get("artifacts", []) or []
+
+    def _matches_artifact(entry: dict) -> bool:
+        return (
+            entry.get("name") == artifact
+            or entry.get("source_artifact") == artifact
+        )
+
     target_entry = next(
         (
             entry for entry in artifacts
-            if entry.get("name") == artifact and entry.get("implementation_target") is True
+            if _matches_artifact(entry) and entry.get("implementation_target") is True
         ),
         None,
     )

@@ -644,6 +644,24 @@ Multiple `--evidence-ref` flags can be passed for a single artifact.
 
 ---
 
+## Artifact-Only Reruns
+
+Use:
+
+```sh
+rh-skills promote derive <topic> <artifact-name> ... --force
+```
+
+when you need to refresh one structured artifact without re-running the whole
+extract workflow.
+
+This overwrites only that artifact file and refreshes its tracking entry. If
+terminology is unchanged, leave concept lookup, concept review, and
+`rh-skills promote concept write <topic>` untouched; validate only the artifact
+you re-derived.
+
+---
+
 ## Validation Rules
 
 `rh-skills validate <topic> <artifact-name>` should fail when:

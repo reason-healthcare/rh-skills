@@ -184,7 +184,7 @@ Derive and combine artifacts.
 Create a structured (L2) artifact scaffold.
 
 ```
-rh-skills promote derive <topic> <name>
+rh-skills promote derive <topic> <name> [--force]
 ```
 
 Creates `topics/<topic>/structured/<name>.yaml` with schema-valid YAML scaffold.
@@ -192,6 +192,14 @@ When `--body-file` is provided, the YAML body is written verbatim and must
 already contain all required L2 fields. In that mode, repeated content flags
 such as `--clinical-question`, `--required-section`, `--evidence-ref`, and
 `--concern` are treated as consistency checks rather than merge inputs.
+
+Use `--force` to re-derive only a non-terminology artifact in place. This
+overwrites the existing `structured/<name>/<name>.yaml` file and refreshes its
+tracking entry without re-running terminology review/write. The explicit
+terminology package `concepts` is not re-derived with this command; use
+`rh-skills promote concept write <topic>` instead. When terminology has not
+changed, leave `concept review` / `concept write` as-is and validate only the
+artifact you re-ran.
 
 ### `rh-skills promote combine <topic> <sources…> <target>`
 
@@ -424,6 +432,7 @@ rh-skills formalize <topic> <artifact> [--strategy TYPE] [--dry-run]
 
 **Behavior:**
 - Reads the approved formalize-plan for the artifact's strategy and l3_targets
+- Matches `<artifact>` to the approved plan entry's `source_artifact` field
 - Applies the type-specific conversion strategy from SKILL.md/reference.md
 - Writes FHIR JSON resources to `topics/<topic>/computable/`
 - Writes CQL libraries as `.cql` files alongside the JSON

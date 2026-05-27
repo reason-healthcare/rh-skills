@@ -719,6 +719,14 @@ def _formalize_candidate_name(topic: str, strategy: str, inputs: list[dict]) -> 
     return f"{topic}-{strategy}"
 
 
+def _formalize_source_artifact(inputs: list[dict]) -> str | None:
+    """Return the CLI artifact name used to run formalize for this plan entry."""
+    if len(inputs) == 1:
+        name = inputs[0].get("name")
+        return str(name) if name else None
+    return None
+
+
 def _formalize_required_sections(artifacts: list[dict]) -> list[str]:
     required_sections = []
     artifact_types = {artifact.get("artifact_type") for artifact in artifacts}
@@ -757,6 +765,7 @@ def _build_formalize_artifacts(topic: str, eligible_inputs: list[dict]) -> list[
 
         candidate = {
             "name": _formalize_candidate_name(topic, strategy, eligible_inputs),
+            "source_artifact": _formalize_source_artifact(eligible_inputs),
             "artifact_type": artifact_type,
             "strategy": strategy,
             "l3_targets": l3_targets,
@@ -801,6 +810,7 @@ def _build_formalize_artifacts(topic: str, eligible_inputs: list[dict]) -> list[
 
         candidate = {
             "name": _formalize_candidate_name(topic, atype, inputs),
+            "source_artifact": _formalize_source_artifact(inputs),
             "artifact_type": artifact_type,
             "strategy": atype,
             "l3_targets": l3_targets,
@@ -895,6 +905,7 @@ def _render_formalize_readout(topic: str, plan: dict, blocked_inputs: list[str])
         lines.extend([
             f"## {decision_icon} {artifact.get('name', 'unknown')}",
             "",
+            f"- Source artifact: `{artifact.get('source_artifact') or '_review required_'}`",
             f"- Type: `{artifact.get('artifact_type', 'unknown')}`",
             f"- Strategy: `{strategy}`",
             f"- L3 FHIR targets: {', '.join(l3_targets) if l3_targets else '_none specified_'}",
@@ -3717,6 +3728,7 @@ def body_init(topic, name, output, force):
               help="Deprecated alias for --concern.")
 @click.option("--body-file", default=None, type=click.Path(exists=True, readable=True),
               help="Path to a YAML file containing the complete artifact body; repeated content flags become consistency checks")
+@click.option("--force", is_flag=True, help="Overwrite an existing structured artifact and refresh its tracking entry")
 @click.option("--dry-run", is_flag=True, help="Print what would be created without doing it")
 def derive(
     topic,
@@ -3729,6 +3741,7 @@ def derive(
     evidence_refs,
     concerns,
     body_file,
+    force,
     dry_run,
 ):
     """Promote L1 source(s) to L2 structured artifact(s)."""
@@ -3799,6 +3812,13 @@ Rules:
             or (body_data.get("artifact_type") if body_data is not None else None)
             or "evidence-summary"
         )
+
+        if artifact_name == "concepts":
+            raise click.UsageError(
+                "Artifact 'concepts' is the explicit terminology package from concept review. "
+                f"Use 'rh-skills promote concept write {topic}' instead of derive --force."
+            )
+
         user_prompt = (
             f"Source L1 artifact name: {', '.join(source)}\n"
             f"Generate L2 artifact: {artifact_name}\n"
@@ -3824,6 +3844,11 @@ Rules:
         l2_file = td / "structured" / artifact_name / f"{artifact_name}.yaml"
         l2_file.parent.mkdir(parents=True, exist_ok=True)
 
+        if l2_file.exists() and not force:
+            raise click.UsageError(
+                f"{l2_file} already exists. Use --force to overwrite only this artifact."
+            )
+
         if body_file:
             # Agent-provided artifact body — read file directly, skip LLM and scaffold.
             body_text = Path(body_file).read_text()
@@ -3848,15 +3873,29 @@ Rules:
         timestamp = now_iso()
         checksum = sha256_file(l2_file)
         topic_entry = require_topic(tracking, topic)
-        topic_entry.setdefault("structured", []).append({
+        structured_entries = topic_entry.setdefault("structured", [])
+        record = {
             "name": artifact_name,
             "file": f"topics/{topic}/structured/{artifact_name}/{artifact_name}.yaml",
             "created_at": timestamp,
             "checksum": checksum,
             "derived_from": list(source),
             "artifact_type": effective_artifact_type,
-        })
-        append_topic_event(tracking, topic, "structured_derived", f"Derived {artifact_name} from {', '.join(source)}")
+        }
+        replaced = False
+        for idx, entry in enumerate(structured_entries):
+            if entry.get("name") == artifact_name:
+                structured_entries[idx] = record
+                replaced = True
+                break
+        if not replaced:
+            structured_entries.append(record)
+        event_desc = (
+            f"Re-derived {artifact_name} from {', '.join(source)}"
+            if replaced else
+            f"Derived {artifact_name} from {', '.join(source)}"
+        )
+        append_topic_event(tracking, topic, "structured_derived", event_desc)
         save_tracking(tracking)
 
         log_info(f"Created: {l2_file}")
