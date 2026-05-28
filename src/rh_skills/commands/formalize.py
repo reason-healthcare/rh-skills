@@ -193,6 +193,20 @@ Each resource in the array MUST have:
 - "name": PascalCase machine name
 - "title": human-readable title
 
+Titles and names MUST be specific to the source artifact's clinical intent.
+Do NOT use generic placeholders such as "Decision Table Plan",
+"Care Pathway Plan", "Assessment Questionnaire", "Library", or
+"<ResourceType> Artifact". Prefer the source artifact's metadata.title,
+title, or display when present.
+
+Each resource title should include its FHIR artifact type while remaining
+semantically detailed for that specific artifact. For example, prefer
+"Community-Acquired Pneumonia Triage PlanDefinition" over
+"Decision Table Plan", and "Community-Acquired Pneumonia Triage
+ActivityDefinition" over "Activity Definition". Companion resources may add
+a precise type-specific qualifier when clinically appropriate, but they should
+still name the actual FHIR resource type explicitly.
+
 For CQL: If the artifact contains structured logic (decision rules, measure populations), \
 generate a companion CQL library with compilable expressions. Use 'library <Name> version "{version}"', \
 'using FHIR version "4.0.1"', 'include FHIRHelpers version "4.0.1"', 'context Patient'. \

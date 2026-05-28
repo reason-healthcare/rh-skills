@@ -11,6 +11,7 @@ description: >
 compatibility: "rh-skills >= 0.1.0"
 context_files:
   - reference.md
+  - decision-table-guide.md
   - examples/plan.md
   - examples/output.md
 metadata:
