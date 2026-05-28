@@ -225,6 +225,21 @@ def _validate_extract_artifact(
             emit=emit,
         )
         errors += 1
+    
+    # Run artifact-type-specific validation
+    artifact_type = artifact_data.get("artifact_type")
+    if artifact_type == "decision-table":
+        from rh_skills.validators.decision_table import validate_decision_table
+        
+        def emit_callback(level, msg):
+            if level == "ERROR":
+                _report_error(msg, emit=emit)
+            elif level == "WARN":
+                _report_warn(msg, emit=emit)
+        
+        dt_errors, dt_warnings = validate_decision_table(artifact_data, emit_callback=emit_callback)
+        errors += dt_errors
+        warnings += dt_warnings
 
     return errors, warnings
 
