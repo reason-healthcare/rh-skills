@@ -476,3 +476,23 @@ class TestRhCqlSkillContract:
         assert "FHIRHelpers" in body, (
             "SKILL.md must document the FHIRHelpers-agnostic behavior of rh-inf-cql"
         )
+
+    def test_skill_md_requires_retrieve_based_decision_table_logic(self):
+        """Decision-table authoring guidance must prefer ValueSet-backed retrieves."""
+        if not self.SKILL_PATH.exists():
+            pytest.skip("rh-inf-cql skill not implemented")
+        body = skill_body(self.SKILL_PATH)
+        assert '[Condition: "' in body or '[Observation: "' in body, (
+            "rh-inf-cql SKILL.md must show retrieve-based decision-table logic "
+            "using ValueSet-backed FHIR retrieves"
+        )
+
+    def test_skill_md_rejects_parameter_only_decision_table_as_finished_output(self):
+        """Decision-table scaffolds must not be presented as acceptable end-state CQL."""
+        if not self.SKILL_PATH.exists():
+            pytest.skip("rh-inf-cql skill not implemented")
+        body = skill_body(self.SKILL_PATH)
+        assert "Parameter-only decision-table libraries are scaffold artifacts" in body, (
+            "rh-inf-cql SKILL.md must explicitly reject parameter-only decision-table "
+            "libraries as acceptable finished authoring"
+        )
