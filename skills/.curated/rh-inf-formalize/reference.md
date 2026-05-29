@@ -145,10 +145,24 @@ least one `expression` with `language: text/cql-identifier`. At least one
 generated `ActivityDefinition` should be referenced by
 `action[].definitionCanonical` directly or from nested child actions. The
 companion Library must contain CQL with `context Patient` and `using FHIR version '4.0.1'`.
+Any PlanDefinition that carries CQL-backed condition logic must also declare
+that companion Library in `library[]`, including recommendation-scoped child
+PlanDefinitions when decision-table scaffolding splits logic across multiple
+plans.
 
-**care-pathway**: PlanDefinition `action[]` entries must form a sequence via
-`relatedAction[]` with `relationship: before-start`. At least one
-ActivityDefinition must be referenced via `definitionCanonical`.
+**care-pathway**: PlanDefinition generates a pathway resource and, when the
+care-pathway hierarchy supports it, one or more strategy PlanDefinitions
+derived from the same L2 `steps[]` structure. L2 steps remain pathway nodes,
+not FHIR-specific artifacts. Formalize may promote some nodes into separate
+strategy PlanDefinitions when they represent meaningful grouped sub-workflows
+and the paired decision table provides aligned phase/event structure. A single
+umbrella pathway step is usually longitudinal orchestration, while child phases
+or other grouped nodes may be promoted if useful. When a paired decision table
+defines `pathway_phases[]`, promoted nodes should mirror that phase model in
+id, order, and meaning. At least one ActivityDefinition or recommendation
+PlanDefinition must be referenced from the derived child actions. No action may
+have both `definitionCanonical` and child `action[]` (branching/executable
+separation enforced).
 
 **terminology**: Every ValueSet `compose.include[].concept[].code` must pass
 `reasonhub-codesystem_verify_code` against its declared `system`. ConceptMap
@@ -197,6 +211,10 @@ Phase 1 guidance for a single decision-table artifact:
 | `sections.actions[]` | One **ActivityDefinition** per action, referenced from PlanDefinition via `definitionCanonical`. |
 | CQL expressions | **Library** with CQL source. Each condition/action → named CQL define. |
 
+If formalize emits recommendation-scoped child PlanDefinitions, each child that
+contains `condition[].expression` entries must also include the same
+`library[]` reference as the parent decision-table PlanDefinition.
+
 **CQL expression language rule** — applies to all CQL strategies:
 - `language: "text/cql-identifier"` — value is the **name of a `define`** in the referenced Library (e.g. `"Has Active Diabetes"`). Use this in `condition[].expression`, `criteria`, and any `action[].dynamicValue[].expression`.
 - `language: "text/cql"` — value is **literal inline CQL**. Do not use this when the expression is a reference to a named Library define.
@@ -214,8 +232,48 @@ for the attached CQL source bytes.
 
 | L2 Input | FHIR Output |
 |----------|-------------|
-| `sections.steps[]` | **PlanDefinition** (type: `clinical-protocol`). Each step → one `action[]`. Step transitions → `relatedAction[]` with `relationship: before-start`. |
-| Step activities | **ActivityDefinition** per reusable activity. Referenced via `action[].definitionCanonical`. |
+| `sections.steps[]` | **PlanDefinition** (type: `clinical-protocol`) plus optional derived **Strategy PlanDefinitions**. Parent/child step hierarchy comes from `parent_id`. L2 `steps[]` remain pathway nodes; formalize may promote a subset of clinically meaningful grouped nodes into strategies when the related decision-table has aligned phase/event information. |
+| Step activities | **ActivityDefinition** per reusable activity. Referenced via child `action[].definitionCanonical`. |
+
+**Structure**: Care pathways always generate a pathway PlanDefinition. They may
+also generate strategy PlanDefinitions when hierarchical pathway steps and
+related decision-table phase/event alignment are both present. Otherwise,
+formalize falls back to the flat pathway PlanDefinition only. Phase sequencing
+uses `relatedAction[]` with `relationship: after-end` on sibling phase actions.
+
+**Key Patterns**:
+- One PlanDefinition per pathway at minimum
+- Optional strategy PlanDefinitions only when supported by aligned input structure
+- Nested `action[]` for phase → child-step hierarchy
+- No action has both `definitionCanonical` and child `action[]` (branch OR execute, never both)
+- Substeps reference decision table recommendation PlanDefinitions via canonical URLs
+
+**Example Structure**:
+```json
+{
+  "resourceType": "PlanDefinition",
+  "id": "crs-pathway",
+  "type": {"coding": [{"code": "clinical-protocol"}]},
+  "action": [
+    {
+      "id": "assessment-phase",
+      "title": "Assessment",
+      "action": [
+        {
+          "id": "assessment-phase-e1",
+          "definitionCanonical": ".../PlanDefinition/crs-surgical-management-e1"
+        }
+      ]
+    },
+    {
+      "id": "planning-phase",
+      "title": "Planning",
+      "relatedAction": [{"actionId": "assessment-phase", "relationship": "after-end"}],
+      "action": [...]
+    }
+  ]
+}
+```
 
 **MCP**: Search for coded activities (procedures, medications).
 **CQL**: Not required (pathway logic is structural, not expression-based).

@@ -67,6 +67,30 @@ conflicts:
 - The set of `derived_from[]` should match the approved artifact source set from the review packet.
 - Duplicate source names are not allowed.
 
+## Decision Table Phase Support
+
+For `decision-table` artifacts supporting three-tier CPG architecture:
+
+```yaml
+sections:
+  pathway_phases:  # optional
+    - id: assessment
+      name: Assessment Phase
+      trigger: surgery_considered  # CQL expression or "always"
+  
+  rules:
+    - id: avoid-antibacterial
+      phase: assessment  # optional; references pathway_phases[].id
+      event: assessment-complete
+      when: {...}
+      then: [...]
+```
+
+**Validation rules**:
+- If `pathway_phases` present AND rule has `phase`, validate phase exists in `pathway_phases[].id`
+- If `pathway_phases` present, warn if rules missing `phase` assignments
+- `phase` and `event` are independent: event triggers evaluation, phase groups organizationally
+
 ## Validation Implications
 
 `rh-inf-extract verify` should fail an artifact when:
@@ -75,3 +99,4 @@ conflicts:
 - required sections declared by the approved plan are absent
 - claim/evidence references are missing where required
 - conflict records are absent despite unresolved conflicts in the plan
+- (decision-table) rule references unknown phase when `pathway_phases` present

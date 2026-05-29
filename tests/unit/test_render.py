@@ -93,6 +93,15 @@ def test_render_decision_table_shows_event_column_when_present(tmp_repo):
             "conditions": [
                 {"id": "c1", "label": "High risk", "values": ["Yes", "No"]},
             ],
+            "data_elements": [
+                {
+                    "id": "de1",
+                    "condition_id": "c1",
+                    "label": "High-risk clinical profile",
+                    "description": "Review the risk factors defined by the guideline.",
+                    "data_type": "history",
+                },
+            ],
             "actions": [
                 {"id": "a1", "label": "Order test"},
             ],
@@ -107,8 +116,10 @@ def test_render_decision_table_shows_event_column_when_present(tmp_repo):
     artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "good-dt"
     content = (artifact_dir / "good-dt-report.md").read_text()
     assert "Decision Table" in content
+    assert "## Features And Data Elements" in content
     assert "## Rules" in content
     assert "Screening encounter" in content
+    assert "High-risk clinical profile" in content
     assert "| Event Pattern | c1 High risk | Actions |" in content
     assert "| ev1 Screening encounter | Yes | a1 Order test |" in content
     assert "Order test" in content
@@ -259,6 +270,11 @@ def _make_complete_binary_table():
                 {"id": "c2", "label": "Condition B", "values": ["yes", "no"]},
                 {"id": "c3", "label": "Condition C", "values": ["yes", "no"]},
             ],
+            "data_elements": [
+                {"id": "de1", "condition_id": "c1", "label": "Condition A feature"},
+                {"id": "de2", "condition_id": "c2", "label": "Condition B feature"},
+                {"id": "de3", "condition_id": "c3", "label": "Condition C feature"},
+            ],
             "actions": [
                 {"id": "a1", "label": "Action 1"},
                 {"id": "a2", "label": "Action 2"},
@@ -317,6 +333,13 @@ def test_render_decision_table_shows_full_long_labels(tmp_repo):
                     "id": "c1",
                     "label": "Significant or persistent purulent nasal discharge",
                     "values": ["yes", "no"],
+                },
+            ],
+            "data_elements": [
+                {
+                    "id": "de1",
+                    "condition_id": "c1",
+                    "label": "Purulent nasal discharge",
                 },
             ],
             "actions": [{"id": "a1", "label": "Consider prolonged oral antibiotic therapy"}],

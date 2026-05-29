@@ -53,7 +53,9 @@ class ConditionHoister:
         })
         
         for rule in rules:
-            rule_id = rule['rule_id']  # Use correct L2 schema field
+            rule_id = rule.get('id')
+            if not rule_id:
+                continue
             event_id = rule.get('event')
             when_clause = rule.get('when', {})
             
@@ -191,6 +193,10 @@ class ConditionHoister:
         
         if condition and condition.get('population_context', False):
             return True
+
+        topic_tokens = [token for token in self.topic_id.split('-') if token]
+        topic_phrase = " ".join(topic_tokens)
+        topic_acronym = "".join(token[0] for token in topic_tokens if token)
         
         # Heuristic: condition ID contains "has-<topic>-dx" pattern
         # Example: has-crs-dx, has-diabetes-dx, has-hypertension-dx
@@ -198,13 +204,25 @@ class ConditionHoister:
             topic_fragment = condition_id.replace('has-', '').replace('-dx', '')
             if topic_fragment in self.topic_id:
                 return True
-        
+            if topic_acronym and topic_fragment == topic_acronym:
+                return True
+            topic_compact = "".join(topic_tokens)
+            if topic_fragment and topic_compact:
+                idx = 0
+                for char in topic_compact:
+                    if idx < len(topic_fragment) and char == topic_fragment[idx]:
+                        idx += 1
+                if idx == len(topic_fragment):
+                    return True
+
         # Heuristic: condition description mentions "diagnosis of <topic>"
         if condition:
             description = condition.get('description', '').lower()
-            if 'diagnosis' in description and self.topic_id.replace('-', ' ') in description:
+            if 'diagnosis' in description and topic_phrase in description:
                 return True
-        
+            if 'diagnosis' in description and topic_acronym and topic_acronym in description:
+                return True
+
         return False
 
     def generate_hoisting_report(self, decision_table: Dict[str, Any]) -> str:

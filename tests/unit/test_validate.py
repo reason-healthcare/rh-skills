@@ -45,7 +45,7 @@ def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, 
             "source_files": ["sources/normalized/source-l1.md"],
             "rationale": "Primary criteria artifact",
             "key_questions": ["Who qualifies?"],
-            "required_sections": ["summary", "evidence_traceability"],
+            "required_sections": ["summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"],
             "concerns": concerns or [],
             "reviewer_decision": "approved",
             "approval_notes": "Proceed",
@@ -82,6 +82,36 @@ sections:
       evidence:
         - source: source-l1
           locator: "Section 2"
+  events:
+    - id: screening-due
+      label: Screening Due
+      trigger_type: named-event
+  conditions:
+    - id: at_risk
+      label: At Risk
+      description: Patient is at risk
+      values:
+        - Yes
+        - No
+  data_elements:
+    - id: risk-status
+      condition_id: at_risk
+      label: Risk status
+      description: Review demographics, history, and risk factors used by the guideline.
+      data_type: history
+  actions:
+    - id: order-screening
+      label: Order Screening
+      kind: ServiceRequest
+  rules:
+    - id: screen-adults
+      event: screening-due
+      when:
+        at_risk: Yes
+      then:
+        - order-screening
+      action: Order screening
+      rationale: Evidence supports screening
 concerns: []
 """)
 
@@ -234,6 +264,155 @@ def test_validate_formalize_artifact_matches_source_artifact(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l3", "screening-criteria"])
     assert result.exit_code == 0
+
+
+def test_validate_l3_decision_table_skips_intermediate_section_checks_for_deterministic_builder(tmp_repo):
+    topic = "my-skill"
+    artifact = "decision-table"
+    computable_dir = tmp_repo / "topics" / topic / "computable"
+    computable_dir.mkdir(parents=True, exist_ok=True)
+    import json
+    (computable_dir / "PlanDefinition-decision-table-event-verify.json").write_text(json.dumps({
+        "resourceType": "PlanDefinition",
+        "id": "decision-table-event-verify",
+        "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/plan-definition-type", "code": "eca-rule"}]},
+        "status": "draft",
+        "action": [{"id": "rule-verify", "title": "Verify diagnosis"}],
+    }))
+    (computable_dir / "ActivityDefinition-action-verify.json").write_text(json.dumps({
+        "resourceType": "ActivityDefinition",
+        "id": "action-verify",
+        "kind": "ServiceRequest",
+        "status": "draft",
+    }))
+    (computable_dir / "Library-my-skill.json").write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "my-skill",
+        "status": "draft",
+        "type": {"text": "logic-library"},
+    }))
+
+    y = YAML()
+    tracking = {
+        "schema_version": "1.0",
+        "sources": [],
+        "topics": [{
+            "name": topic,
+            "structured": [],
+            "computable": [{
+                "name": artifact,
+                "files": [
+                    f"topics/{topic}/computable/PlanDefinition-decision-table-event-verify.json",
+                    f"topics/{topic}/computable/ActivityDefinition-action-verify.json",
+                    f"topics/{topic}/computable/Library-my-skill.json",
+                ],
+                "checksums": {},
+                "converged_from": ["decision-table"],
+                "strategy": "decision-table",
+            }],
+            "events": [],
+        }],
+    }
+    with open(tmp_repo / "tracking.yaml", "w") as f:
+        y.dump(tracking, f)
+
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "formalize-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan = {
+        "topic": topic,
+        "plan_type": "formalize",
+        "status": "approved",
+        "reviewer": "Tester",
+        "reviewed_at": "2026-04-14T00:00:00Z",
+        "artifacts": [{
+            "name": artifact,
+            "source_artifact": artifact,
+            "artifact_type": "decision-table",
+            "strategy": "decision-table",
+            "input_artifacts": [artifact],
+            "l3_targets": ["PlanDefinition (eca-rule)", "ActivityDefinition", "Library (CQL)"],
+            "required_sections": ["actions", "libraries"],
+            "reviewer_decision": "approved",
+            "implementation_target": True,
+        }],
+    }
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+
+    runner = CliRunner()
+    result = runner.invoke(validate, [topic, "l3", artifact])
+    assert result.exit_code == 0, result.output
+    assert "MISSING required formalize section" not in result.output
+
+
+def test_validate_l3_uses_tracked_computable_files_over_stale_name_matches(tmp_repo):
+    topic = "my-skill"
+    artifact = "care-pathway"
+    computable_dir = tmp_repo / "topics" / topic / "computable"
+    computable_dir.mkdir(parents=True, exist_ok=True)
+    import json
+    valid_path = computable_dir / "PlanDefinition-care-pathway.json"
+    valid_path.write_text(json.dumps({
+        "resourceType": "PlanDefinition",
+        "id": "care-pathway",
+        "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/plan-definition-type", "code": "clinical-protocol"}]},
+        "status": "draft",
+        "action": [{"id": "assessment", "title": "Assessment"}],
+    }))
+    stale_path = computable_dir / "PlanDefinition-care-pathway-old-strategy.json"
+    stale_path.write_text(json.dumps({
+        "resourceType": "PlanDefinition",
+        "id": "care-pathway-old-strategy",
+        "status": "draft",
+    }))
+
+    y = YAML()
+    tracking = {
+        "schema_version": "1.0",
+        "sources": [],
+        "topics": [{
+            "name": topic,
+            "structured": [],
+            "computable": [{
+                "name": artifact,
+                "files": [f"topics/{topic}/computable/{valid_path.name}"],
+                "checksums": {},
+                "converged_from": ["care-pathway"],
+                "strategy": "care-pathway",
+            }],
+            "events": [],
+        }],
+    }
+    with open(tmp_repo / "tracking.yaml", "w") as f:
+        y.dump(tracking, f)
+
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "formalize-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan = {
+        "topic": topic,
+        "plan_type": "formalize",
+        "status": "approved",
+        "reviewer": "Tester",
+        "reviewed_at": "2026-04-14T00:00:00Z",
+        "artifacts": [{
+            "name": artifact,
+            "source_artifact": artifact,
+            "artifact_type": "care-pathway",
+            "strategy": "care-pathway",
+            "input_artifacts": [artifact],
+            "l3_targets": ["PlanDefinition (clinical-protocol)"],
+            "required_sections": ["pathways", "actions"],
+            "reviewer_decision": "approved",
+            "implementation_target": False,
+        }],
+    }
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+
+    runner = CliRunner()
+    result = runner.invoke(validate, [topic, "l3", artifact])
+    assert result.exit_code == 0, result.output
+    assert stale_path.name not in result.output
 
 
 def test_validate_invalid_l2_exits_1(tmp_repo):
@@ -493,6 +672,378 @@ concerns: []
     assert "UNRESOLVED stub" in result.output
     assert "sections.criteria[0].description" in result.output
     assert "re-derive" in result.output
+
+
+def test_validate_decision_table_rejects_legacy_top_level_pathway_phases(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with legacy fields"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Who should be screened?"
+pathway_phases:
+  - id: screening
+    label: Screening
+sections:
+  summary: "Adults at risk should be screened."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Screen adults at risk"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: screening-due
+      label: Screening Due
+      trigger_type: named-event
+  conditions:
+    - id: at_risk
+      label: At Risk
+      values:
+        - Yes
+        - No
+  data_elements:
+    - id: risk-status
+      condition_id: at_risk
+      label: Risk status
+      description: Review demographics, history, and risk factors used by the guideline.
+      data_type: history
+  actions:
+    - id: order-screening
+      label: Order Screening
+      kind: ServiceRequest
+  rules:
+    - id: screen-adults
+      event: screening-due
+      when:
+        at_risk: Yes
+      then:
+        - order-screening
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "top-level 'pathway_phases'" in result.output
+
+
+def test_validate_decision_table_rejects_condition_derivation(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with unsupported derived composite condition"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Who should be screened?"
+sections:
+  summary: "Adults at risk should be screened."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Screen adults at risk"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: screening-due
+      label: Screening Due
+      trigger_type: named-event
+  conditions:
+    - id: symptom-threshold-met
+      label: Symptom threshold met
+      values: [Yes, No]
+    - id: duration-threshold-met
+      label: Duration threshold met
+      values: [Yes, No]
+    - id: objective-evidence-documented
+      label: Objective evidence documented
+      values: [Yes, No]
+    - id: criteria-confirmed
+      label: Criteria confirmed
+      values: [Yes, No]
+      derivation:
+        operator: all-of
+        inputs:
+          - symptom-threshold-met
+          - duration-threshold-met
+          - objective-evidence-documented
+  data_elements:
+    - id: symptom-threshold
+      condition_id: symptom-threshold-met
+      label: Symptom threshold
+    - id: duration-threshold
+      condition_id: duration-threshold-met
+      label: Duration threshold
+    - id: objective-evidence
+      condition_id: objective-evidence-documented
+      label: Objective evidence
+    - id: criteria-confirmed-question
+      condition_id: criteria-confirmed
+      label: Criteria confirmed
+  actions:
+    - id: order-screening
+      label: Order Screening
+      kind: ServiceRequest
+  rules:
+    - id: screen-adults
+      event: screening-due
+      when:
+        criteria-confirmed: Yes
+      then:
+        - order-screening
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "uses unsupported 'derivation'" in result.output
+
+
+def test_validate_decision_table_allows_composite_condition_with_supporting_data_elements(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with composite condition and supporting data elements"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Who should be screened?"
+sections:
+  summary: "Adults at risk should be screened."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Screen adults at risk"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: screening-due
+      label: Screening Due
+      trigger_type: named-event
+  conditions:
+    - id: crs-diagnostic-criteria-confirmed
+      label: CRS diagnostic criteria confirmed
+      values: [Yes, No]
+  data_elements:
+    - id: qualifying-symptoms
+      condition_id: crs-diagnostic-criteria-confirmed
+      label: Qualifying CRS symptoms
+    - id: symptom-duration
+      condition_id: crs-diagnostic-criteria-confirmed
+      label: Symptom duration
+    - id: objective-inflammation
+      condition_id: crs-diagnostic-criteria-confirmed
+      label: Objective inflammation evidence
+  actions:
+    - id: order-screening
+      label: Order Screening
+      kind: ServiceRequest
+  rules:
+    - id: screen-adults
+      event: screening-due
+      when:
+        crs-diagnostic-criteria-confirmed: Yes
+      then:
+        - order-screening
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_decision_table_allows_event_driven_rule_without_when(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with unconditional event-driven rule"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "What should happen during verification?"
+sections:
+  summary: "Verification should occur during the event."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform verification during the event"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: verification
+      label: Verification
+      trigger_type: named-event
+  conditions:
+    - id: criteria-confirmed
+      label: Criteria confirmed
+      values: [Yes, No]
+  data_elements:
+    - id: qualifying-symptoms
+      condition_id: criteria-confirmed
+      label: Qualifying symptoms
+  actions:
+    - id: review-evidence
+      label: Review evidence
+      kind: ServiceRequest
+  rules:
+    - id: verify
+      event: verification
+      then:
+        - review-evidence
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_decision_table_action_relationship_fields(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with explicit action relationships"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How is candidacy assessed?"
+sections:
+  summary: "Use staged assessment."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform staged assessment"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: assessment
+      label: Assessment
+      trigger_type: named-event
+  conditions:
+    - id: diagnosis-verified
+      label: Diagnosis verified
+      values: [Yes, No]
+    - id: candidacy-appropriate
+      label: Surgical candidacy appropriate
+      values: [Yes, No]
+  data_elements:
+    - id: dx-support
+      condition_id: diagnosis-verified
+      label: Diagnostic support
+    - id: candidacy-support
+      condition_id: candidacy-appropriate
+      label: Candidacy support
+  actions:
+    - id: assess-candidacy
+      label: Assess candidacy
+      kind: ServiceRequest
+      produces_conditions: [candidacy-appropriate]
+    - id: administer-snot-22
+      label: Administer SNOT-22
+      kind: assessment
+      parent_action_id: assess-candidacy
+      assessment_artifact: snot-22
+  rules:
+    - id: assess
+      event: assessment
+      when:
+        diagnosis-verified: Yes
+      then:
+        - assess-candidacy
+        - administer-snot-22
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_care_pathway_rejects_nested_substeps(tmp_repo):
+    write_extract_plan(tmp_repo, artifact="care-artifact")
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
+    plan = YAML().load(plan_path.read_text())
+    plan["artifacts"][0]["artifact_type"] = "care-pathway"
+    plan["artifacts"][0]["required_sections"] = ["summary", "evidence_traceability", "steps", "transitions"]
+    y = YAML()
+    y.default_flow_style = False
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with legacy nested substeps"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: phase-1
+      label: Phase 1
+      description: First phase
+      actor: clinician
+      substeps:
+        - id: s1
+          description: Legacy nested step
+  transitions:
+    - from_id: phase-1
+      to_id: phase-1
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 1
+    assert "legacy nested 'substeps'" in result.output
 
 
 def test_collect_stub_paths_finds_nested_stubs():

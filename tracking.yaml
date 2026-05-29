@@ -32,28 +32,71 @@ topics:
   - name: crs-pathway
     files:
     - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway.json
-    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-assessment-phase-strategy.json
-    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-planning-phase-strategy.json
-    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-operative-phase-strategy.json
-    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-follow-up-phase-strategy.json
     - topics/chronic-rhinosinusitis/computable/Library-chronic-rhinosinusitis.json
-    created_at: '2026-05-29T10:54:26Z'
+    created_at: '2026-05-29T13:03:16Z'
     checksums:
       topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway.json: 
-        c169beb78748372d9cc7092566573687c6cbb94449789c2e3fd5c9e317d71114
-      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-assessment-phase-strategy.json: 
-        a98b2fa01b7afe3c69b999f04cc993bb3ae98824a59535da4615f0c649f5332a
-      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-planning-phase-strategy.json: 
-        7fabe97fcb570ab0935cc2baa14b7e12bfd2d500f01f7a4eefad278c9342110b
-      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-operative-phase-strategy.json: 
-        dfdb15d442a3d7c18d7b612b233b70f6827ac3e07f860a9e6cf87def2ddfb700
-      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-follow-up-phase-strategy.json: 
-        42b1af0052de443eb3ac1a624eb25545f5004769bdf4151a0a5937c244305a52
+        5a3f8203253c984507b5b84a36c63cb3eece69cae7c12d623d9033473e4b3698
       topics/chronic-rhinosinusitis/computable/Library-chronic-rhinosinusitis.json: 
         048f8d5ae10b637968225fb1599bc6372e352c38a2fed81264cd8f9fd7357f22
     converged_from:
     - crs-pathway
     strategy: care-pathway
+  - name: crs-surgical-management
+    files:
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crsevaluationencounter.json
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crssurgicaldecisionpoint.json
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crssurgicalplanning.json
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crsoperativeapproach.json
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crspostoperativefollowup.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-avoid-antibacterial-therapy.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-offer-sinus-surgery.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-continue-nonsurgical-management.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-perform-standard-sinus-surgery.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-perform-full-exposure-surgery.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-verify-diagnosis-and-candidacy.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-counsel-surgical-candidate.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-obtain-ct-imaging.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-educate-postoperative-care.json
+    - topics/chronic-rhinosinusitis/computable/ActivityDefinition-comprehensive-outcome-assessment.json
+    - topics/chronic-rhinosinusitis/computable/Library-chronic-rhinosinusitis.json
+    created_at: '2026-05-29T13:48:26Z'
+    checksums:
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crsevaluationencounter.json: 
+        fef1ac7181cdb568581d97b1618e528c640066010adeb5bed94e4cec702ec2e7
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crssurgicaldecisionpoint.json: 
+        fdb858ee02107817857744f55e880c01cdaced61ee213a2a26d1075d876acbd0
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crssurgicalplanning.json: 
+        0539bebcd0462af9d23e6e8abf6c757d69f2f5315c38f34a151e7007581cfa98
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crsoperativeapproach.json: 
+        bd4fa58337a997fad950ffe73bb469ba2a26bff743cb55b56a35986ae0672c49
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crspostoperativefollowup.json: 
+        3006d213f029e635c9c7ca56799d0b233b93e21d52f13b7f6f3197a7e76c00e8
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-avoid-antibacterial-therapy.json: 
+        08a56cf5fdbbc6d6500411400047389ee664ed2d2cdde9ddb96ded80b86c18ca
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-offer-sinus-surgery.json: 
+        597085d04d5aa22d8ad2854dbd9d48e991321742a37cf407d30e6f8c1d1ae505
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-continue-nonsurgical-management.json: 
+        01e02d9329fe6d23c760e331c1b49c8af6a0dcc8f71cc0455dcb3eeb25a90e91
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-perform-standard-sinus-surgery.json: 
+        b02ba7c94f61867bed2ce3a11a185499a34f9ac820d1c13155e148d4623b8781
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-perform-full-exposure-surgery.json: 
+        891d48d26ab51dbe4166e1471b6a78ca156912334fcc4f03fab476780233a755
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-verify-diagnosis-and-candidacy.json: 
+        1e45bc148b9b80457c2982edacf7a8b1892dbed8e623621a152bed0f26c90b4d
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-counsel-surgical-candidate.json: 
+        65289fdeaaca76eb932503baf188f5ae9c8954288b8d176ed563fe74b4676808
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-obtain-ct-imaging.json: 
+        3017511c34f2cfb9d6c9780295b8f5a11d48d8dafab4ab121ccf6c36d27a59df
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-educate-postoperative-care.json: 
+        5b248587f788bc739a2528ba68c7af1e3c114214da7e54ada5b5ee5f70d786cb
+      topics/chronic-rhinosinusitis/computable/ActivityDefinition-comprehensive-outcome-assessment.json: 
+        925ad738fe9ae230f260498410148a240ebc2a3784ccacf05dd27928d5786057
+      topics/chronic-rhinosinusitis/computable/Library-chronic-rhinosinusitis.json: 
+        73028cb696fd42899dfa14a12661b30e215ee482ce02acf3ab5c0e2b9dfde0c5
+    converged_from:
+    - crs-surgical-management
+    strategy: decision-table
   events:
   - timestamp: '2026-05-28T00:00:00Z'
     type: created
@@ -78,6 +121,58 @@ topics:
     type: computable_converged
     description: Formalized 'crs-pathway' using care-pathway strategy → 6 
       resources
+  - timestamp: '2026-05-29T12:28:21Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 15 resources
+  - timestamp: '2026-05-29T12:28:29Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 1 resources
+  - timestamp: '2026-05-29T12:32:48Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 16 resources
+  - timestamp: '2026-05-29T12:34:49Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 16 resources
+  - timestamp: '2026-05-29T12:35:23Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 16 resources
+  - timestamp: '2026-05-29T12:35:58Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 16 resources
+  - timestamp: '2026-05-29T12:59:59Z'
+    type: computable_converged
+    description: Formalized 'crs-pathway' using care-pathway strategy → 2 
+      resources
+  - timestamp: '2026-05-29T13:01:29Z'
+    type: computable_converged
+    description: Formalized 'crs-pathway' using care-pathway strategy → 2 
+      resources
+  - timestamp: '2026-05-29T13:03:15Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 16 resources
+  - timestamp: '2026-05-29T13:03:16Z'
+    type: computable_converged
+    description: Formalized 'crs-pathway' using care-pathway strategy → 2 
+      resources
+  - timestamp: '2026-05-29T13:03:53Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 16 resources
+  - timestamp: '2026-05-29T13:46:57Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 16 resources
+  - timestamp: '2026-05-29T13:48:26Z'
+    type: computable_converged
+    description: Formalized 'crs-surgical-management' using decision-table 
+      strategy → 16 resources
 events:
 - timestamp: '2026-04-05T21:40:51Z'
   type: topic_created

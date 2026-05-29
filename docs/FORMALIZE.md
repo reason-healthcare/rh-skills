@@ -47,10 +47,16 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
    └─ Event: formalize_planned
 
 2. APPROVE: Reviewer sets status: approved + reviewer_decision: approved
+   - `implementation_target: true` marks the plan's primary artifact for
+     reviewer focus and packaging priority.
+   - It is advisory, not exclusive. Other artifacts with
+     `reviewer_decision: approved` may still be formalized and validated.
 
 3. IMPLEMENT: rh-skills formalize <topic> <artifact> (per artifact)
    ├─ Loads formalize-config.yaml (exits 2 if missing)
-   ├─ Matches <artifact> against the approved plan entry's source_artifact
+   ├─ Matches <artifact> against an approved plan entry's source_artifact
+   ├─ Warns if the artifact is not the plan's primary implementation target,
+   │  but does not block formalization for that reason alone
    ├─ Looks up strategy in STRATEGY_REGISTRY
    ├─ Builds type-specific LLM system prompt
    ├─ Invokes LLM → raw FHIR JSON
@@ -63,6 +69,8 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 
 4. VERIFY: rh-inf-formalize verify (invokes rh-skills validate)
    ├─ Plan consistency: strategy match, input_artifacts match
+   ├─ Deterministic builder outputs (`decision-table`, `care-pathway`) skip
+   │  stale intermediate-section checks and validate at the generated FHIR level
    ├─ L3 target coverage: every l3_targets[] has a file
    ├─ Per-type structural checks (see table above)
    ├─ MCP-UNREACHABLE placeholder detection

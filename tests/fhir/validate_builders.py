@@ -82,7 +82,7 @@ def test_decision_table_formalization():
             ],
             'rules': [
                 {
-                    'rule_id': 'r1',
+                    'id': 'r1',
                     'event': 'screening-decision',
                     'when': {'age-45-plus': True},
                     'then': ['recommend-screening'],
@@ -90,7 +90,7 @@ def test_decision_table_formalization():
                     'evidence': {'source_locator': 'ADA Guidelines 2024, Recommendation 2.1'}
                 },
                 {
-                    'rule_id': 'r2',
+                    'id': 'r2',
                     'event': 'screening-decision',
                     'when': {'has-risk-factors': True},
                     'then': ['recommend-screening'],
@@ -98,7 +98,7 @@ def test_decision_table_formalization():
                     'evidence': {'source_locator': 'ADA Guidelines 2024, Recommendation 2.2'}
                 },
                 {
-                    'rule_id': 'r3',
+                    'id': 'r3',
                     'event': 'screening-decision',
                     'when': {'age-45-plus': False, 'has-risk-factors': False},
                     'then': ['no-screening'],
@@ -106,7 +106,7 @@ def test_decision_table_formalization():
                     'evidence': {'source_locator': 'ADA Guidelines 2024, Recommendation 2.3'}
                 },
                 {
-                    'rule_id': 'r4',
+                    'id': 'r4',
                     'event': 'screening-method',
                     'when': {'fasting-feasible': True},
                     'then': ['fasting-glucose'],
@@ -114,7 +114,7 @@ def test_decision_table_formalization():
                     'evidence': {'source_locator': 'ADA Guidelines 2024, Recommendation 2.4'}
                 },
                 {
-                    'rule_id': 'r5',
+                    'id': 'r5',
                     'event': 'screening-method',
                     'when': {'fasting-feasible': False},
                     'then': ['a1c-test'],
@@ -179,24 +179,26 @@ def test_care_pathway_formalization():
                 {
                     'id': 'assessment',
                     'code': 'Risk Assessment',
+                    'actor': 'nurse',
                     'description': 'Assess patient diabetes risk factors',
                     'substeps': [
                         {
                             'id': 'screening-decision',
                             'code': 'Screening Decision',
-                            'event_ref': 'screening-decision'
+                            'event': 'screening-decision'
                         }
                     ]
                 },
                 {
                     'id': 'testing',
                     'code': 'Laboratory Testing',
+                    'actor': 'lab',
                     'description': 'Perform diabetes screening tests',
                     'substeps': [
                         {
                             'id': 'screening-method',
                             'code': 'Select Screening Method',
-                            'event_ref': 'screening-method'
+                            'event': 'screening-method'
                         }
                     ]
                 }

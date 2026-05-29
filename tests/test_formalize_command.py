@@ -114,6 +114,30 @@ class TestFormalizeCommand:
             "CQL authoring is delegated to `rh-inf-cql` (author mode)"
         )
 
+    def test_decision_table_can_use_llm_provider(self, formalize_topic, monkeypatch):
+        monkeypatch.setenv("LLM_PROVIDER", "openai")
+        monkeypatch.setattr(
+            "rh_skills.commands.formalize._invoke_llm",
+            lambda _system, _user: json.dumps([
+                {
+                    "resourceType": "PlanDefinition",
+                    "id": "llm-generated-rules",
+                    "url": "http://example.org/fhir/PlanDefinition/llm-generated-rules",
+                    "version": "0.1.0",
+                    "status": "draft",
+                    "date": "2026-06-01",
+                    "name": "LlmGeneratedRules",
+                    "title": "LLM Generated Rules PlanDefinition",
+                }
+            ]),
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(formalize, ["test-topic", "test-rules", "--force"])
+        assert result.exit_code == 0, result.output
+        assert "Using deterministic CPG-on-FHIR builders" not in result.output
+        assert (formalize_topic / "topics" / "test-topic" / "computable" / "PlanDefinition-llm-generated-rules.json").exists()
+
     def test_tracking_updated(self, formalize_topic):
         runner = CliRunner()
         result = runner.invoke(formalize, ["test-topic", "test-rules"])
@@ -164,14 +188,14 @@ class TestFormalizeCommand:
         topic = next(t for t in tracking["topics"] if t["name"] == "test-topic")
         assert len(topic["computable"]) == 1
 
-    def test_respects_approved_formalize_plan_target(self, formalize_topic):
+    def test_non_target_artifact_is_not_blocked_by_approved_formalize_plan_target(self, formalize_topic):
         topic_dir = formalize_topic / "topics" / "test-topic"
         _write_formalize_plan(topic_dir, artifact_name="different-artifact", source_artifact="different-artifact")
 
         runner = CliRunner()
         result = runner.invoke(formalize, ["test-topic", "test-rules"])
-        assert result.exit_code != 0
-        assert "approved implementation target" in result.output.lower()
+        assert result.exit_code == 0, result.output
+        assert "not the approved implementation target" in result.output.lower()
 
     def test_matches_approved_target_by_source_artifact(self, formalize_topic):
         topic_dir = formalize_topic / "topics" / "test-topic"
@@ -316,6 +340,814 @@ class TestCqlEmbedding:
             assert len(cql_items) == 1, "Expected one text/cql content item"
             decoded = base64.b64decode(cql_items[0]["data"])
             assert decoded == cql_source
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+
+class TestDeterministicFormalizeRegression:
+    def _make_measure_topic(self, tmp_repo):
+        topic_dir = tmp_repo / "topics" / "test-measure"
+        structured_dir = topic_dir / "structured"
+        computable_dir = topic_dir / "computable"
+        structured_dir.mkdir(parents=True)
+        computable_dir.mkdir(parents=True)
+
+        y = YAML()
+        y.default_flow_style = False
+        with open(structured_dir / "test-measure.yaml", "w") as f:
+            y.dump({
+                "metadata": {"id": "test-measure", "title": "Test Measure"},
+                "populations": [{"id": "ip", "type": "initial-population"}],
+            }, f)
+
+        make_tracking(tmp_repo, topics=[{
+            "name": "test-measure",
+            "structured": [{
+                "name": "test-measure",
+                "artifact_type": "measure",
+                "status": "approved",
+                "file": "topics/test-measure/structured/test-measure.yaml",
+            }],
+            "computable": [],
+            "events": [],
+        }])
+
+        process_dir = topic_dir / "process"
+        process_dir.mkdir(parents=True, exist_ok=True)
+        (process_dir / "formalize-config.yaml").write_text(
+            "name: TestMeasure\nid: test-measure\ncanonical: http://example.org/fhir\nstatus: draft\nversion: 0.1.0\n"
+        )
+
+        return computable_dir
+
+    def _write_topic_config(self, topic_dir: Path, topic: str):
+        process_dir = topic_dir / "process"
+        process_dir.mkdir(parents=True, exist_ok=True)
+        (process_dir / "formalize-config.yaml").write_text(
+            f"name: {''.join(w.capitalize() for w in topic.split('-'))}\n"
+            f"id: {topic}\n"
+            "canonical: http://example.org/fhir\n"
+            "status: active\n"
+            "version: 2.1.0\n"
+        )
+
+    def test_stub_mode_builds_structured_decision_table_scaffolds(self, tmp_repo):
+        topic = "det-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+version: 9.9.9
+sections:
+  events:
+    - id: intake
+      label: Intake started
+    - id: review
+      label: Review started
+  conditions:
+    - id: severe
+      label: Severe symptoms
+      values: [true, false]
+  actions:
+    - id: order-ct
+      label: Order sinus CT
+      type: diagnostic-test
+      do_not_perform: true
+    - id: counsel
+      label: Counsel patient
+      type: communication
+      intent: proposal
+  rules:
+    - id: r1
+      event: intake
+      when: {severe: true}
+      then: [order-ct]
+    - id: r2
+      event: review
+      when: {severe: false}
+      then: [counsel]
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [{"name": "dt", "artifact_type": "decision-table", "status": "approved"}],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "dt"])
+            assert result.exit_code == 0, result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in result.output
+
+            computable = topic_dir / "computable"
+            assert (computable / "PlanDefinition-dt.json").exists()
+            assert (computable / "PlanDefinition-dt-intake.json").exists()
+            assert (computable / "PlanDefinition-dt-review.json").exists()
+            assert (computable / "Library-dt-logic.json").exists()
+            activity = json.loads((computable / "ActivityDefinition-order-ct.json").read_text())
+            assert activity["kind"] == "ServiceRequest"
+            assert activity["doNotPerform"] is True
+            assert activity["status"] == "active"
+            assert activity["version"] == "2.1.0"
+            assert activity["code"]["coding"][0]["system"] == "http://reasonhealth.io/fhir/CodeSystem/activity-kind"
+            plan = json.loads((computable / "PlanDefinition-dt.json").read_text())
+            child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
+            assert len(plan["action"]) == 2
+            assert plan["library"][0].endswith("/Library/dt-logic")
+            assert plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
+            assert child_plan["library"][0].endswith("/Library/dt-logic")
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_decision_table_assessment_action_links_questionnaire(self, tmp_repo):
+        topic = "assessment-link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: intake
+      label: Intake
+      trigger_type: named-event
+  conditions:
+    - id: burden
+      label: Quality of life burden documented
+      values: [Yes, No]
+  data_elements:
+    - id: snot-22
+      condition_id: burden
+      label: SNOT-22 score
+      data_type: patient-reported
+  actions:
+    - id: assess-surgical-candidacy
+      label: Assess surgical candidacy
+      kind: ServiceRequest
+    - id: complete-qol-assessment
+      label: Complete quality of life assessment
+      kind: assessment
+      parent_action_id: assess-surgical-candidacy
+      assessment_artifact: qol-assessment
+      produces_conditions: [burden]
+  rules:
+    - id: r1
+      event: intake
+      then: [assess-surgical-candidacy, complete-qol-assessment]
+"""
+        )
+        (structured_dir / "qol-assessment.yaml").write_text(
+            """\
+artifact_type: assessment
+title: Sinonasal Outcome Test 22
+description: Questionnaire for sinonasal symptom burden.
+sections:
+  items:
+    - id: q1
+      text: How severe is nasal obstruction?
+      type: ordinal
+      options:
+        - label: None
+          value: 0
+        - label: Severe
+          value: 5
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "dt", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "qol-assessment", "artifact_type": "assessment", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "dt"])
+            assert result.exit_code == 0, result.output
+
+            computable = topic_dir / "computable"
+            activity = json.loads((computable / "ActivityDefinition-complete-qol-assessment.json").read_text())
+            questionnaire = json.loads((computable / "Questionnaire-qol-assessment.json").read_text())
+            child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
+            assert activity["kind"] == "Task"
+            assert activity["meta"]["profile"][0] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity"
+            assert activity["profile"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
+            assert activity["code"]["coding"][0]["system"] == "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs"
+            assert activity["code"]["coding"][0]["code"] == "collect-information"
+            assert any(
+                dv.get("path") == "input"
+                and "Questionnaire/qol-assessment" in dv.get("expression", {}).get("expression", "")
+                for dv in activity.get("dynamicValue", [])
+            )
+            assert activity["relatedArtifact"][0]["resource"].endswith("/Questionnaire/qol-assessment")
+            assert questionnaire["resourceType"] == "Questionnaire"
+            assert questionnaire["item"][0]["linkId"] == "q1"
+            assert child_plan["action"][0]["action"][0]["id"] == "assess-surgical-candidacy"
+            assert child_plan["action"][0]["action"][0]["action"][0]["id"] == "complete-qol-assessment"
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_builds_flat_care_pathway_scaffold_from_steps(self, tmp_repo):
+        topic = "link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: intake
+      label: Intake started
+      trigger_type: named-event
+    - id: assessment
+      label: Assessment complete
+      trigger_type: named-event
+  conditions:
+    - id: severe
+      label: Severe symptoms
+      values: [Yes, No]
+  actions:
+    - id: order-ct
+      label: Order sinus CT
+      kind: order
+  rules:
+    - id: r1
+      event: intake
+      phase: planning
+      when: {severe: Yes}
+      then: [order-ct]
+    - id: r2
+      event: assessment
+      phase: execution
+      when: {severe: true}
+      then: [order-ct]
+"""
+        )
+        (structured_dir / "path.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [dt]
+sections:
+  steps:
+    - id: planning
+      label: Planning
+      description: Initial planning phase
+    - id: execution
+      label: Execution
+      description: Execution phase
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "dt", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "path", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "path"])
+            assert result.exit_code == 0, result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in result.output
+            pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
+            assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
+            assert (topic_dir / "computable" / "PlanDefinition-path-execution.json").exists()
+
+            planning = pathway["action"][0]
+            assert planning["id"] == "planning"
+            assert planning["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
+            execution = pathway["action"][1]
+            assert execution["id"] == "execution"
+            assert execution["definitionCanonical"].endswith("/PlanDefinition/dt-assessment")
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_keeps_unlinked_care_pathway_nodes_as_scaffold_actions(self, tmp_repo):
+        topic = "optional-link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: intake
+      label: Intake started
+    - id: assessment
+      label: Assessment complete
+    - id: planning
+      label: Planning event
+  conditions:
+    - id: severe
+      label: Severe symptoms
+      values: [Yes, No]
+  actions:
+    - id: order-ct
+      label: Order sinus CT
+      kind: order
+  rules:
+    - id: r1
+      event: intake
+      phase: phase1
+      when: {severe: Yes}
+      then: [order-ct]
+    - id: r2
+      event: assessment
+      when: {severe: Yes}
+      then: [order-ct]
+    - id: r3
+      event: planning
+      phase: phase2
+      when: {severe: true}
+      then: [order-ct]
+"""
+        )
+        (structured_dir / "path.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [dt]
+sections:
+  steps:
+    - id: phase1
+      label: Phase 1
+      description: First phase (has rule.phase linking)
+    - id: phase2
+      label: Phase 2
+      description: Second phase (has rule.phase linking)
+    - id: phase3
+      label: Phase 3
+      description: Third phase (no rule.phase linking)
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "dt", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "path", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "path"])
+            assert result.exit_code == 0, result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in result.output
+            pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
+            assert [action["id"] for action in pathway["action"]] == ["phase1", "phase2", "phase3"]
+            assert pathway["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
+            assert pathway["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-planning")
+            assert pathway["action"][2]["definitionCanonical"].endswith("/ActivityDefinition/path-activity")
+            assert (topic_dir / "computable" / "PlanDefinition-path-phase1.json").exists()
+            assert (topic_dir / "computable" / "PlanDefinition-path-phase2.json").exists()
+            assert (topic_dir / "computable" / "PlanDefinition-path-phase3.json").exists()
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_builds_hierarchical_care_pathway_scaffold_from_parent_id(self, tmp_repo):
+        topic = "hierarchical-pathway-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: verify-diagnosis
+      label: Verify diagnosis
+      phase: assessment
+    - id: assess-candidacy
+      label: Assess candidacy
+      phase: planning
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: order-ct
+      label: Order sinus CT
+      kind: ServiceRequest
+  rules:
+    - id: r1
+      event: verify-diagnosis
+      phase: assessment
+      when: {confirmed: Yes}
+      then: [order-ct]
+    - id: r2
+      event: assess-candidacy
+      phase: planning
+      when: {confirmed: Yes}
+      then: [order-ct]
+"""
+        )
+        (structured_dir / "path.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [dt]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+      description: Overall CRS surgical pathway
+    - id: assessment
+      label: Assessment
+      description: Verify diagnosis and baseline status
+      parent_id: crs-pathway
+    - id: planning
+      label: Planning
+      description: Assess candidacy and plan next steps
+      parent_id: crs-pathway
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "dt", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "path", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "path"])
+            assert result.exit_code == 0, result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in result.output
+            assert "enabling strategy PlanDefinition generation" not in result.output
+
+            pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
+            assert [a["id"] for a in pathway["action"]] == ["crs-pathway"]
+            assert [a["id"] for a in pathway["action"][0]["action"]] == ["assessment", "planning"]
+            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
+            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert (topic_dir / "computable" / "PlanDefinition-path-assessment.json").exists()
+            assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_hierarchical_root_does_not_require_phase_alignment(self, tmp_repo):
+        topic = "hierarchical-root-alignment-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  pathway_phases:
+    - id: assessment
+      label: Assessment
+    - id: planning
+      label: Planning
+  events:
+    - id: verify-diagnosis
+      label: Verify diagnosis
+      phase: assessment
+    - id: assess-candidacy
+      label: Assess candidacy
+      phase: planning
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: order-ct
+      label: Order sinus CT
+      kind: ServiceRequest
+  rules:
+    - id: r1
+      event: verify-diagnosis
+      phase: assessment
+      when: {confirmed: Yes}
+      then: [order-ct]
+    - id: r2
+      event: assess-candidacy
+      phase: planning
+      when: {confirmed: Yes}
+      then: [order-ct]
+"""
+        )
+        (structured_dir / "path.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [dt]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+      description: Overall CRS surgical pathway
+    - id: assessment
+      label: Assessment
+      description: Verify diagnosis and baseline status
+      parent_id: crs-pathway
+    - id: planning
+      label: Planning
+      description: Assess candidacy and plan next steps
+      parent_id: crs-pathway
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "dt", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "path", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "path"])
+            assert result.exit_code == 0, result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in result.output
+            assert "Phase 'crs-pathway' defined in care-pathway but not in decision-table phases" not in result.output
+            assert "Phase 'crs-pathway' has no mapped events" not in result.output
+            pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
+            assert [a["id"] for a in pathway["action"]] == ["crs-pathway"]
+            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
+            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert (topic_dir / "computable" / "PlanDefinition-path-assessment.json").exists()
+            assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_generic_artifact_names_expand_to_semantic_computable_ids(self, tmp_repo):
+        topic = "generic-naming-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "decision-table.yaml").write_text(
+            """\
+id: decision-table
+name: decision-table
+title: Chronic Rhinosinusitis Surgical Management Decision Table
+artifact_type: decision-table
+sections:
+  events:
+    - id: verify-diagnosis
+      label: Verify diagnosis
+      phase: assessment
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: order-ct
+      label: Order sinus CT
+      kind: ServiceRequest
+  rules:
+    - id: r1
+      event: verify-diagnosis
+      phase: assessment
+      when: {confirmed: Yes}
+      then: [order-ct]
+"""
+        )
+        (structured_dir / "care-pathway.yaml").write_text(
+            """\
+id: care-pathway
+name: care-pathway
+title: Chronic Rhinosinusitis Surgical Management Care Pathway
+artifact_type: care-pathway
+metadata:
+  derived_from: [decision-table]
+sections:
+  steps:
+    - id: crs-journey
+      label: CRS journey
+      description: Overall CRS journey
+    - id: assessment
+      label: Assessment
+      description: Verify diagnosis
+      parent_id: crs-journey
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "decision-table", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "care-pathway", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            dt_result = runner.invoke(formalize, [topic, "decision-table"])
+            assert dt_result.exit_code == 0, dt_result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in dt_result.output
+            cp_result = runner.invoke(formalize, [topic, "care-pathway"])
+            assert cp_result.exit_code == 0, cp_result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in cp_result.output
+
+            computable = topic_dir / "computable"
+            assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-recommendation.json").exists()
+            assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-recommendation-verify-diagnosis.json").exists()
+            assert (computable / "Library-chronic-rhinosinusitis-surgical-management-recommendation-logic.json").exists()
+            assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol.json").exists()
+            assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol-assessment.json").exists()
+            assert (computable / "ActivityDefinition-chronic-rhinosinusitis-surgical-management-protocol-activity.json").exists()
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_hierarchical_care_pathway_keeps_root_and_children_without_strategy_files(self, tmp_repo):
+        topic = "hierarchical-fallback-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: verify-diagnosis
+      label: Verify diagnosis
+    - id: assess-candidacy
+      label: Assess candidacy
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: order-ct
+      label: Order sinus CT
+      kind: ServiceRequest
+  rules:
+    - id: r1
+      event: verify-diagnosis
+      when: {confirmed: Yes}
+      then: [order-ct]
+    - id: r2
+      event: assess-candidacy
+      when: {confirmed: Yes}
+      then: [order-ct]
+"""
+        )
+        (structured_dir / "path.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [dt]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+      description: Overall CRS surgical pathway
+    - id: assessment
+      label: Assessment
+      description: Verify diagnosis and baseline status
+      parent_id: crs-pathway
+    - id: planning
+      label: Planning
+      description: Assess candidacy and plan next steps
+      parent_id: crs-pathway
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "dt", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "path", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "path"])
+            assert result.exit_code == 0, result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in result.output
+
+            pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
+            assert [a["id"] for a in pathway["action"]] == ["crs-pathway"]
+            assert [a["id"] for a in pathway["action"][0]["action"]] == ["assessment", "planning"]
+            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/ActivityDefinition/path-activity")
+            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/ActivityDefinition/path-activity")
+            assert (topic_dir / "computable" / "PlanDefinition-path-assessment.json").exists()
+            assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
+            assert not (topic_dir / "computable" / "PlanDefinition-path-crs-pathway.json").exists()
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_formalize_prefers_packager_toml_canonical(self, tmp_repo):
+        topic = "canonical-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events: [{id: intake, label: Intake, trigger_type: named-event}]
+  conditions: [{id: severe, label: Severe, values: [Yes, No]}]
+  actions: [{id: order-ct, label: Order CT, kind: order}]
+  rules: [{id: r1, event: intake, when: {severe: Yes}, then: [order-ct]}]
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        workspace = topic_dir / "process" / "package-workspace"
+        workspace.mkdir(parents=True, exist_ok=True)
+        (workspace / "packager.toml").write_text(
+            'id = "reason.canonical-topic"\nversion = "1.0.0"\ncanonical = "https://packager.example/fhir"\nstatus = "active"\n'
+        )
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [{"name": "dt", "artifact_type": "decision-table", "status": "approved"}],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "dt"])
+            assert result.exit_code == 0, result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in result.output
+            pd = json.loads((topic_dir / "computable" / "PlanDefinition-dt.json").read_text())
+            assert pd["url"].startswith("https://packager.example/fhir/")
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_non_pathway_artifacts_keep_non_deterministic_stub_path(self, tmp_repo):
+        topic = "measure-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+        (structured_dir / "measure.yaml").write_text(
+            "artifact_type: measure\nsections: {}\n"
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [{"name": "measure", "artifact_type": "measure", "status": "approved"}],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "measure"])
+            assert result.exit_code == 0, result.output
+            assert "Using deterministic CPG-on-FHIR builders" not in result.output
+            assert (topic_dir / "computable" / "Measure-measure.json").exists()
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 

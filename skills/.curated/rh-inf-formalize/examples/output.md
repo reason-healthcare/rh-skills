@@ -10,6 +10,7 @@ Loaded 3 approved structured inputs from extract-plan.yaml
   lab-value-sets (terminology)
 ⚠ Overlap detected: decision-table + care-pathway → PlanDefinition
   Default: separate resources (eca-rule vs clinical-protocol)
+  Care-pathway phases mirror decision-table.pathway_phases[] when present
 Wrote topics/diabetes-ccm/process/plans/formalize-plan.yaml
   3 artifacts proposed (1 per L2 type)
 ```
@@ -53,6 +54,7 @@ Checking decision-table artifact (screening-decisions):
   ✓ converged_from matches approved plan inputs
 
 Checking care-pathway artifact (care-pathway):
+  ✓ Top-level phases align with decision-table.pathway_phases[]
   ✓ PlanDefinition has action[] with relatedAction
   ✓ ActivityDefinition has kind and code
   ✓ converged_from matches approved plan inputs

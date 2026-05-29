@@ -81,6 +81,8 @@ Allowed alternatives:
 - CQL version: `1.5.3` | FHIR model: `4.0.1` | Translator: standard defaults (signatureLevel none, enableAnnotations false)
 - Engine: `rh` — does NOT auto-inject FHIRHelpers; fixture tests are executed through `rh-skills cql test` / `rh cql eval`
 
+Parameter-only decision-table libraries are scaffold artifacts and are not acceptable finished authoring outputs.
+
 **Anti-patterns that cause silent failures or runtime errors:**
 
 | ❌ Wrong | ✓ Correct | Why |

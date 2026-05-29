@@ -46,7 +46,7 @@ def test_basic_functionality():
     print("has-crs-dx:", classifications.get('has-crs-dx'))
     assert classifications.get('has-crs-dx') == 'pathway-context', f"Expected pathway-context, got {classifications.get('has-crs-dx')}"
     print("  ✓ Correctly classified as pathway-context (matches has-<topic>-dx pattern)\n")
-    
+
     print("failed-medical-therapy:", classifications.get('failed-medical-therapy'))
     # Used in planning phase only (e2), not across multiple phases
     # Since only used in e2 (which has planning phase), and used by multiple rules for that event

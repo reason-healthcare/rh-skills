@@ -2,11 +2,14 @@
 
 Generates Recommendation PlanDefinitions (eca-rule) and ActivityDefinitions
 from L2 decision table artifacts following CPG-on-FHIR patterns.
+
+Supports state-based action trees with prerequisite hoisting.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 from .base import FHIRBuilder
 from .condition_hoister import ConditionHoister
+from .action_tree import hoist_shared_prerequisites
 
 
 class DecisionTableBuilder(FHIRBuilder):
@@ -18,7 +21,17 @@ class DecisionTableBuilder(FHIRBuilder):
     - Registers conditions with ConditionMerger for topic-level Library
     """
 
-    def __init__(self, topic_id: str, artifact_id: str, condition_merger=None):
+    def __init__(
+        self,
+        topic_id: str,
+        artifact_id: str,
+        condition_merger=None,
+        *,
+        library_id: str | None = None,
+        base_url: str = "http://fhir.org/guides/reasonhealth",
+        version: str = "1.0.0",
+        status: str = "draft",
+    ):
         """Initialize builder.
         
         Args:
@@ -26,7 +39,7 @@ class DecisionTableBuilder(FHIRBuilder):
             artifact_id: Decision table artifact identifier
             condition_merger: Optional ConditionMerger for topic-level deduplication
         """
-        super().__init__(topic_id)
+        super().__init__(topic_id, base_url, library_id=library_id, version=version, status=status)
         self.artifact_id = artifact_id
         self.condition_merger = condition_merger
         self.hoister = ConditionHoister(topic_id)
@@ -107,6 +120,9 @@ class DecisionTableBuilder(FHIRBuilder):
     ) -> Dict[str, Any]:
         """Build single Recommendation PlanDefinition for an event.
         
+        Uses state-based action tree with unmet/met branches and prerequisite hoisting
+        to avoid duplicating shared conditions across sibling actions.
+        
         Args:
             event: Event dictionary from L2 artifact
             rules: Rules for this event
@@ -116,20 +132,40 @@ class DecisionTableBuilder(FHIRBuilder):
         Returns:
             PlanDefinition resource (eca-rule type)
         """
-        event_id = event['id']
+        from .action_tree import detect_workflow_state_groups, build_unmet_met_branches
         
-        # Get recommendation-level conditions (pre-requisites for all rules)
-        rec_conditions = self.hoister.get_recommendation_conditions(classifications, event_id)
+        event_id = event['id']
         
         # Build PlanDefinition ID
         pd_id = event.get('fhir_plan_definition_id', f"{self.artifact_id}-{event_id}")
         
-        # Build actions (one or more per rule, based on then[] array)
-        actions = []
-        for rule in rules:
-            # Each rule can have multiple actions in its then[] array
-            rule_actions = self._build_actions_from_rule(rule, classifications)
-            actions.extend(rule_actions)
+        # Check if we have composite states available
+        composite_states = decision_table.get('_composite_states', [])
+        
+        # Detect if this event has a state-based workflow pattern
+        state_groups = detect_workflow_state_groups(rules, composite_states) if composite_states else {}
+        
+        # Build actions - either state-based or flat
+        if state_groups:
+            # Use unmet/met state branch pattern
+            state_name = list(state_groups.keys())[0]
+            state_group = state_groups[state_name]
+            
+            # Build action function for unmet/met branches (captures self, classifications, decision_table)
+            def build_action(rule):
+                return self._build_simple_action_from_rule(rule)
+            
+            actions = build_unmet_met_branches(
+                state_name=state_name,
+                unmet_rules=state_group['unmet_rules'],
+                met_rules=state_group['met_rules'],
+                build_action_fn=build_action
+            )
+        else:
+            # Fall back to flat actions with standard hoisting
+            actions = self._build_state_based_actions(rules, classifications, decision_table)
+            # Hoist shared prerequisites among sibling actions
+            actions = hoist_shared_prerequisites(actions)
         
         # Build PlanDefinition
         plan_definition = {
@@ -139,30 +175,20 @@ class DecisionTableBuilder(FHIRBuilder):
                 "profile": ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"]
             },
             "url": self.build_canonical_url("PlanDefinition", pd_id),
-            "version": decision_table.get('version', '1.0.0'),
+            "version": decision_table.get('version', self.version),
             "name": self._to_pascal_case(pd_id),
-            "title": event.get('code', event_id),
+            "title": event.get('label', event_id),
             "type": {
                 "coding": [{
                     "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
                     "code": "eca-rule"
                 }]
             },
-            "status": "draft",
-            "description": event.get('description', f"Recommendation for {event.get('code', event_id)}"),
-            "library": [self.build_canonical_url("Library", self.topic_id)],
+            "status": self.status,
+            "description": event.get('description', f"Recommendation for {event.get('label', event_id)}"),
+            "library": [self.build_canonical_url("Library", self.library_id)],
             "action": actions
         }
-        
-        # Add recommendation-level conditions (if any)
-        if rec_conditions:
-            plan_definition["goal"] = [{
-                "description": {"text": "Pre-requisites for this recommendation"},
-                "condition": [
-                    self.build_condition_element(cond_id)
-                    for cond_id in rec_conditions
-                ]
-            }]
         
         # Add source reference
         plan_definition["relatedArtifact"] = [{
@@ -172,6 +198,240 @@ class DecisionTableBuilder(FHIRBuilder):
         }]
         
         return plan_definition
+    
+    def _extract_shared_prerequisites(self, rules: List[Dict[str, Any]]) -> Dict[str, str]:
+        """Extract conditions that are shared across ALL rules with the SAME value.
+        
+        Args:
+            rules: List of rules for this event
+            
+        Returns:
+            Dictionary of condition_id -> value for truly shared prerequisites
+        """
+        if not rules:
+            return {}
+        
+        # Build set of (condition_id, value) tuples for each rule
+        rule_conditions = []
+        for rule in rules:
+            when_clause = rule.get('when', {})
+            if not when_clause or not isinstance(when_clause, dict):
+                # Rule with empty when clause - can't have shared prerequisites
+                return {}
+            
+            rule_cond_set = set((cond_id, value) for cond_id, value in when_clause.items())
+            rule_conditions.append(rule_cond_set)
+        
+        if not rule_conditions:
+            return {}
+        
+        # Find intersection - conditions present with same value in ALL rules
+        shared_cond_tuples = rule_conditions[0].intersection(*rule_conditions[1:])
+        
+        # Convert back to dict
+        return dict(shared_cond_tuples)
+    
+    def _build_state_based_actions(
+        self,
+        rules: List[Dict[str, Any]],
+        classifications: Dict[str, Any],
+        decision_table: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Build state-based action tree from rules.
+        
+        Builds actions directly from rules with their when conditions,
+        then applies prerequisite hoisting to remove duplicates.
+        
+        Args:
+            rules: Rules for a single event
+            classifications: Condition classifications
+            decision_table: Full decision table for context
+            
+        Returns:
+            List of actions with state-based branching
+        """
+        actions = []
+        
+        # Build one action per rule with full when conditions
+        for rule in rules:
+            action = self._build_simple_action_from_rule(rule)
+            actions.append(action)
+        
+        # Prerequisite hoisting will remove shared conditions
+        # (done at the caller level in _build_recommendation_for_event)
+        
+        return actions
+    
+    def _build_simple_action_from_rule(self, rule: Dict[str, Any]) -> Dict[str, Any]:
+        """Build action directly from rule with all its when conditions.
+        
+        Args:
+            rule: L2 rule dictionary
+            
+        Returns:
+            PlanDefinition.action structure
+        """
+        rule_id = rule.get('id')
+        if not rule_id:
+            rule_id = 'rule'
+        then_actions = rule.get('then', [])
+        when_conditions = rule.get('when', {})
+        
+        # Build action structure
+        action = {
+            "id": rule_id,
+            "title": rule.get('name', rule_id),
+            "description": rule.get('rationale', '')
+        }
+        
+        # Add ALL when conditions from the rule
+        if when_conditions and isinstance(when_conditions, dict):
+            conditions = []
+            for cond_id, value in when_conditions.items():
+                conditions.append(self.build_condition_element(cond_id, value))
+            
+            if conditions:
+                action["condition"] = conditions
+        
+        # Handle then[] array
+        if then_actions and isinstance(then_actions, list):
+            if len(then_actions) == 1:
+                # Single action - add definitionCanonical directly
+                action["definitionCanonical"] = self.build_canonical_url(
+                    "ActivityDefinition", then_actions[0]
+                )
+            else:
+                # Multiple actions - create child action[] WITHOUT definitionCanonical on parent
+                # This follows the rule: action may branch OR be executable, but not both
+                child_actions = []
+                for action_ref in then_actions:
+                    child_actions.append({
+                        "id": f"{rule_id}-{action_ref}",
+                        "title": str(action_ref).replace('-', ' ').title(),
+                        "definitionCanonical": self.build_canonical_url(
+                            "ActivityDefinition", action_ref
+                        )
+                    })
+                action["action"] = child_actions
+        
+        # Add documentation if present
+        if rule.get('evidence'):
+            action["documentation"] = [{
+                "type": "documentation",
+                "label": rule['evidence'].get('source_locator', 'Evidence')
+            }]
+        
+        return action
+    
+    def _group_rules_by_state(self, rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Group rules by their workflow state (when clause).
+        
+        Args:
+            rules: List of rules for a single event
+            
+        Returns:
+            List of state groups with shared when conditions
+        """
+        state_groups = []
+        state_counter = 0
+        
+        for rule in rules:
+            when_clause = rule.get('when', {})
+            
+            # Normalize empty when to empty dict
+            if not when_clause or not isinstance(when_clause, dict):
+                when_clause = {}
+            
+            # Find existing group with same when clause
+            found_group = None
+            for group in state_groups:
+                if group['when_conditions'] == when_clause:
+                    found_group = group
+                    break
+            
+            if found_group:
+                found_group['rules'].append(rule)
+            else:
+                state_counter += 1
+                state_groups.append({
+                    'state_id': state_counter,
+                    'when_conditions': when_clause,
+                    'rules': [rule]
+                })
+        
+        return state_groups
+    
+    def _build_action_from_rule(
+        self,
+        rule: Dict[str, Any],
+        classifications: Dict[str, Any],
+        shared_when_conditions: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """Build single action from a rule.
+        
+        Args:
+            rule: L2 rule dictionary
+            classifications: Condition classifications
+            shared_when_conditions: When conditions already handled by parent
+            
+        Returns:
+            PlanDefinition.action structure
+        """
+        rule_id = rule.get('id')
+        if not rule_id:
+            rule_id = 'rule'
+        then_actions = rule.get('then', [])
+        when_conditions = rule.get('when', {})
+        
+        # Build action structure
+        action = {
+            "id": rule_id,
+            "title": rule.get('name', rule_id),
+            "description": rule.get('rationale', '')
+        }
+        
+        # Add when conditions directly from the rule (incremental ones will be handled by hoisting later)
+        if when_conditions and isinstance(when_conditions, dict):
+            conditions = []
+            for cond_id, value in when_conditions.items():
+                # Skip shared conditions (already on parent)
+                if cond_id in shared_when_conditions and shared_when_conditions[cond_id] == value:
+                    continue
+                
+                conditions.append(self.build_condition_element(cond_id, value))
+            
+            if conditions:
+                action["condition"] = conditions
+        
+        # Handle then[] array
+        if then_actions and isinstance(then_actions, list):
+            if len(then_actions) == 1:
+                # Single action - add definitionCanonical directly
+                action["definitionCanonical"] = self.build_canonical_url(
+                    "ActivityDefinition", then_actions[0]
+                )
+            else:
+                # Multiple actions - create child action[] WITHOUT definitionCanonical on parent
+                # This follows the rule: action may branch OR be executable, but not both
+                child_actions = []
+                for action_ref in then_actions:
+                    child_actions.append({
+                        "id": f"{rule_id}-{action_ref}",
+                        "title": str(action_ref).replace('-', ' ').title(),
+                        "definitionCanonical": self.build_canonical_url(
+                            "ActivityDefinition", action_ref
+                        )
+                    })
+                action["action"] = child_actions
+        
+        # Add documentation if present
+        if rule.get('evidence'):
+            action["documentation"] = [{
+                "type": "documentation",
+                "label": rule['evidence'].get('source_locator', 'Evidence')
+            }]
+        
+        return action
 
     def _build_actions_from_rule(self, rule: Dict[str, Any], classifications: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Build PlanDefinition.action entries from a rule's then[] array.
@@ -183,7 +443,9 @@ class DecisionTableBuilder(FHIRBuilder):
         Returns:
             List of PlanDefinition.action structures (one per action in then[])
         """
-        rule_id = rule['rule_id']  # Use correct L2 schema field
+        rule_id = rule.get('id')
+        if not rule_id:
+            rule_id = 'rule'
         then_actions = rule['then']  # L2 schema: array of action IDs
         
         # Get action-level conditions (branch criteria)
@@ -248,16 +510,19 @@ class DecisionTableBuilder(FHIRBuilder):
         """
         action_id = action['id']
         
-        # Map L2 action_type to FHIR request resource type
-        action_type = action.get('type', 'task')
+        # Map L2 action type to FHIR request resource type
+        action_type = str(action.get('kind') or '').strip().lower()
         kind_mapping = {
             'order': 'ServiceRequest',
-            'assessment': 'Observation',
+            'assessment': 'ServiceRequest',
+            'diagnostic-test': 'ServiceRequest',
             'task': 'Task',
-            'communication': 'Communication',
-            'procedure': 'Procedure'
+            'communication': 'CommunicationRequest',
+            'procedure': 'Procedure',
+            'medication': 'MedicationRequest',
         }
-        kind = kind_mapping.get(action_type, 'Task')
+        kind = kind_mapping.get(action_type, 'ServiceRequest')
+        title = action.get('label') or action.get('code') or action_id
         
         activity_definition = {
             "resourceType": "ActivityDefinition",
@@ -266,16 +531,18 @@ class DecisionTableBuilder(FHIRBuilder):
                 "profile": ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-computableactivity"]
             },
             "url": self.build_canonical_url("ActivityDefinition", action_id),
-            "version": decision_table.get('version', '1.0.0'),
+            "version": decision_table.get('version', self.version),
             "name": self._to_pascal_case(action_id),
-            "title": action.get('code', action_id),
-            "status": "draft",
-            "description": action.get('description', ''),
+            "title": title,
+            "status": self.status,
+            "description": action.get('description', title),
             "kind": kind
         }
         
-        # Add intent
-        if kind == 'ServiceRequest':
-            activity_definition["intent"] = "proposal"
+        if action.get("do_not_perform") is True:
+            activity_definition["doNotPerform"] = True
+
+        if kind in {"ServiceRequest", "CommunicationRequest", "MedicationRequest"}:
+            activity_definition["intent"] = str(action.get("intent") or "proposal")
         
         return activity_definition

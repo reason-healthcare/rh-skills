@@ -63,16 +63,18 @@ workspace:
         sections:
           steps:
             - id: step-1
-              name: "Pre-discharge medication optimization"
+              label: "Pre-discharge medication optimization"
               description: "Optimize GDMT: ACEi/ARB/ARNI, beta-blocker, MRA, SGLT2i"
-              activities:
-                - "Titrate ACEi/ARB to target dose or max tolerated"
-                - "Start/titrate beta-blocker if hemodynamically stable"
+              substeps:
+                - id: optimize-medication
+                  label: "Optimize GDMT"
+                  description: "Titrate ACEi/ARB to target dose or max tolerated and start/titrate beta-blocker if hemodynamically stable"
+                  event: med-optimization
             - id: step-2
-              name: "Discharge education"
+              label: "Discharge education"
               description: "Educate patient on daily weight, sodium restriction, medication adherence"
             - id: step-3
-              name: "Follow-up scheduling"
+              label: "Follow-up scheduling"
               description: "Schedule cardiology follow-up within 7 days of discharge"
           transitions:
             - from: step-1

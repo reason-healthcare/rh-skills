@@ -183,7 +183,7 @@ class TestDecisionTableConditionStub:
 
     def _make_decision_table_artifact(self, structured_dir: Path, artifact: str, conditions: list):
         rows = "\n".join(
-            f"    - id: {c['id']}\n      label: {c['label']}\n      values:\n        - 'yes'\n        - 'no'"
+            f"    - id: {c['id']}\n      label: {c['label']}\n      values:\n        - 'Yes'\n        - 'No'"
             for c in conditions
         )
         content = f"""\
@@ -197,16 +197,18 @@ sections:
   events:
     - id: ev1
       label: Screening encounter
+      trigger_type: named-event
   conditions:
 {rows}
   actions:
     - id: a1
       label: Refer to specialist
+      kind: communication
   rules:
     - id: r1
       event: ev1
       when:
-        {conditions[0]['id']}: 'yes'
+        {conditions[0]['id']}: 'Yes'
       then:
         - a1
 """
@@ -241,7 +243,6 @@ sections:
         actions = plan_json.get("action", [])
         assert len(actions) == 1, f"Expected 1 action (one per rule), got {len(actions)}: {actions}"
         assert actions[0]["id"] == "r1"
-        assert actions[0]["trigger"][0]["name"] == "ev1"
         expressions = [c["expression"]["expression"] for c in actions[0].get("condition", [])]
         assert "FacialWeaknessPresent" in expressions, f"Missing CQL define for c1; got {expressions}"
         assert actions[0]["action"][0]["definitionCanonical"] == "http://example.org/fhir/ActivityDefinition/a1"
@@ -251,7 +252,7 @@ sections:
         activity_json = json.loads(activity_files[0].read_text())
         assert activity_json["id"] == "a1"
         assert activity_json["title"] == "Refer to specialist"
-        assert activity_json["kind"] == "ServiceRequest"
+        assert activity_json["kind"] == "CommunicationRequest"
 
     def test_decision_table_without_conditions_falls_back_to_generic_action(self, tmp_repo):
         """If L2 artifact has no conditions, fall back to generic stub action."""
@@ -327,7 +328,7 @@ sections:
         result = runner.invoke(formalize, [topic, artifact], catch_exceptions=False)
         assert result.exit_code == 0, result.output
 
-        plan_json = json.loads((computable_dir / "PlanDefinition-negative-decision.json").read_text())
+        plan_json = json.loads((computable_dir / "PlanDefinition-negative-decision-ev1.json").read_text())
         condition = plan_json["action"][0]["condition"][0]["expression"]
         assert condition["language"] == "text/cql-expression"
         assert condition["expression"] == "not PurulentDischargePresent"

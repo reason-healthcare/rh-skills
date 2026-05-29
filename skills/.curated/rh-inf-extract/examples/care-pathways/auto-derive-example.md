@@ -176,54 +176,47 @@ sections:
     diabetes-foot-care-decisions decision table.
   
   steps:
-    - step: 1
-      id: screening
-      code: "Annual Foot Screening"
+    - id: screening
+      label: "Annual Foot Screening"
       description: "Assess diabetic foot risk"
-      order: 1
       actor: "Clinician"
-      next: 2
       substeps:
-        - substep: "1.1"
+        - id: screening-decision
+          label: "Screening Decision"
           description: "Annual Foot Examination"
           event: "e1-annual-screen"
     
-    - step: 2
-      id: classification
-      code: "Risk Classification"
+    - id: classification
+      label: "Risk Classification"
       description: "Stratify patients by ulcer/amputation risk"
-      order: 2
       actor: "Clinician"
-      next: 3
       substeps:
-        - substep: "2.1"
+        - id: risk-assessment
+          label: "Risk Stratification Decision"
           description: "Risk Stratification Decision"
           event: "e2-risk-assessment"
     
-    - step: 3
-      id: intervention
-      code: "Prevention Interventions"
+    - id: intervention
+      label: "Prevention Interventions"
       description: "Targeted interventions based on risk level"
-      order: 3
       actor: "Clinician"
-      next: 4
       substeps:
-        - substep: "3.1"
+        - id: education
+          label: "Patient Education Decision"
           description: "Patient Education Decision"
           event: "e3-education"
-        - substep: "3.2"
+        - id: podiatry-referral
+          label: "Podiatry Referral Decision"
           description: "Podiatry Referral Decision"
           event: "e4-podiatry-referral"
     
-    - step: 4
-      id: monitoring
-      code: "Ongoing Monitoring"
+    - id: monitoring
+      label: "Ongoing Monitoring"
       description: "Follow-up schedule based on risk tier"
-      order: 4
       actor: "Clinician"
-      next: null
       substeps:
-        - substep: "4.1"
+        - id: followup-scheduling
+          label: "Follow-Up Scheduling Decision"
           description: "Follow-Up Scheduling Decision"
           event: "e5-schedule-followup"
 ```

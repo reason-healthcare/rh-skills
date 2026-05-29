@@ -1,15 +1,42 @@
 """
-Decision table validation
+Decision table validation.
 
-Validates decision-table artifacts for:
-- Condition coverage and reuse patterns
-- Event sequencing consistency
-- Pre-requisite condition detection
-- Evidence traceability completeness
-- FHIR mapping completeness
+Canonical L2 contract (no legacy aliases):
+- sections.pathway_phases (when present) is the only supported phase model location
+- events may use trigger_type and phase (no phase_order)
+- conditions.values[] use explicit "Yes"/"No" values
+- every condition is backed by one or more sections.data_elements[] entries
+- actions use kind (intent optional)
+- rules use phase (optional), not pathway_phase, and must reference event/then;
+  when is optional for unconditional event-driven rules
 """
 
 from typing import Dict, List, Tuple, Any, Set
+
+
+def _check_fhir_field_leakage(data: dict, path: str = "") -> List[str]:
+    """Recursively check for FHIR-specific fields at L2 level."""
+    fhir_fields = []
+    
+    if isinstance(data, dict):
+        for key, value in data.items():
+            current_path = f"{path}.{key}" if path else key
+            
+            # Check for forbidden field names
+            if key.startswith("fhir_"):
+                fhir_fields.append(current_path)
+            elif key in ("rule_id", "event_id", "pathway_phase", "phase_order"):
+                fhir_fields.append(f"{current_path} (use '{key.replace('_id', '')}' instead)")
+            
+            # Recurse into nested structures
+            fhir_fields.extend(_check_fhir_field_leakage(value, current_path))
+    
+    elif isinstance(data, list):
+        for idx, item in enumerate(data):
+            current_path = f"{path}[{idx}]"
+            fhir_fields.extend(_check_fhir_field_leakage(item, current_path))
+    
+    return fhir_fields
 
 
 def validate_decision_table(
@@ -37,12 +64,27 @@ def validate_decision_table(
         if emit_callback:
             emit_callback("WARN", msg)
         warnings += 1
+
+    def _is_allowed_condition_value(value: Any) -> bool:
+        return isinstance(value, str) and value.strip() in {"Yes", "No"}
+
+    # Check for FHIR field leakage (L2 should be FHIR-agnostic)
+    fhir_leaks = _check_fhir_field_leakage(artifact_data)
+    for leak in fhir_leaks:
+        if "rule_id" in leak or "event_id" in leak:
+            report_error(f"  L2 schema violation: forbidden field '{leak}' — remove FHIR-specific naming")
+        else:
+            report_error(f"  L2 schema violation: FHIR-specific field '{leak}' — remove from L2 artifact")
     
     sections = artifact_data.get("sections", {})
+    top_level_phases = artifact_data.get("pathway_phases")
+    if top_level_phases is not None:
+        report_error("  decision-table: legacy top-level 'pathway_phases' is not supported — move to sections.pathway_phases")
     
     # Validate required sections exist
     events = sections.get("events", [])
     conditions = sections.get("conditions", [])
+    data_elements = sections.get("data_elements", [])
     actions = sections.get("actions", [])
     rules = sections.get("rules", [])
     pathway_phases = sections.get("pathway_phases")
@@ -53,6 +95,9 @@ def validate_decision_table(
     
     if not conditions or len(conditions) == 0:
         report_warn("  decision-table: conditions section is empty (no conditional logic?)")
+    elif not data_elements or len(data_elements) == 0:
+        report_error("  decision-table: data_elements section is empty (each condition needs supporting data elements)")
+        return errors, warnings
     
     if not actions or len(actions) == 0:
         report_error("  decision-table: actions section is empty")
@@ -68,6 +113,7 @@ def validate_decision_table(
     action_ids = {a["id"] for a in actions if isinstance(a, dict) and "id" in a}
     
     # Validate pathway_phases if present
+    phase_ids: Set[str] = set()
     if pathway_phases:
         if not isinstance(pathway_phases, list) or len(pathway_phases) == 0:
             report_error("  decision-table: pathway_phases present but empty or invalid")
@@ -90,31 +136,129 @@ def validate_decision_table(
                 if not isinstance(event, dict):
                     continue
                 if not event.get("phase"):
-                    report_warn(
+                    report_error(
                         f"  decision-table: event '{event.get('id')}' has no phase assignment "
                         f"(pathway_phases present but event.phase missing)"
                     )
+
+    # Validate event contract
+    for idx, event in enumerate(events, start=1):
+        if not isinstance(event, dict):
+            report_error(f"  decision-table: event #{idx} is not a dict")
+            continue
+        event_id = event.get("id", f"#{idx}")
+        if event.get("phase_order") is not None:
+            report_error(f"  decision-table: event '{event_id}' uses legacy 'phase_order' — remove it")
+
+    # Validate condition contract
+    for idx, condition in enumerate(conditions, start=1):
+        if not isinstance(condition, dict):
+            report_error(f"  decision-table: condition #{idx} is not a dict")
+            continue
+        cond_id = condition.get("id", f"#{idx}")
+        values = condition.get("values")
+        if not isinstance(values, list) or not values:
+            report_error(f"  decision-table: condition '{cond_id}' missing required values[]")
+            continue
+        if not all(_is_allowed_condition_value(v) for v in values):
+            report_error(
+                f"  decision-table: condition '{cond_id}' values[] must use canonical Yes/No values"
+            )
+
+        if condition.get("derivation") is not None:
+            report_error(
+                f"  decision-table: condition '{cond_id}' uses unsupported 'derivation' — list decomposed criteria explicitly in rules.when{{}}"
+            )
+
+    # Validate data element contract
+    condition_data_map: Dict[str, int] = {}
+    for idx, data_element in enumerate(data_elements, start=1):
+        if not isinstance(data_element, dict):
+            report_error(f"  decision-table: data element #{idx} is not a dict")
+            continue
+        data_element_id = data_element.get("id", f"#{idx}")
+        condition_id = data_element.get("condition_id")
+        if not condition_id:
+            report_error(f"  decision-table: data element '{data_element_id}' missing required condition_id")
+        elif condition_id not in condition_ids:
+            report_error(
+                f"  decision-table: data element '{data_element_id}' references unknown condition '{condition_id}'"
+            )
+        else:
+            condition_data_map[condition_id] = condition_data_map.get(condition_id, 0) + 1
+        if not data_element.get("label"):
+            report_error(f"  decision-table: data element '{data_element_id}' missing required label")
+
+    for cond_id in condition_ids:
+        if condition_data_map.get(cond_id, 0) == 0:
+            report_error(
+                f"  decision-table: condition '{cond_id}' has no corresponding data_elements entry"
+            )
+
+    # Validate action contract
+    for idx, action in enumerate(actions, start=1):
+        if not isinstance(action, dict):
+            report_error(f"  decision-table: action #{idx} is not a dict")
+            continue
+        action_id = action.get("id", f"#{idx}")
+        if action.get("type") is not None:
+            report_error(f"  decision-table: action '{action_id}' uses forbidden 'type' — use canonical 'kind'")
+        if not action.get("kind"):
+            report_error(f"  decision-table: action '{action_id}' missing required 'kind' field")
+        parent_action_id = action.get("parent_action_id")
+        if parent_action_id:
+            if parent_action_id == action_id:
+                report_error(f"  decision-table: action '{action_id}' cannot parent itself")
+            elif parent_action_id not in action_ids:
+                report_error(
+                    f"  decision-table: action '{action_id}' references unknown parent_action_id '{parent_action_id}'"
+                )
+        produces_conditions = action.get("produces_conditions")
+        if produces_conditions is not None:
+            if not isinstance(produces_conditions, list) or not produces_conditions:
+                report_error(
+                    f"  decision-table: action '{action_id}' produces_conditions must be a non-empty list when present"
+                )
+            else:
+                for cond_id in produces_conditions:
+                    if cond_id not in condition_ids:
+                        report_error(
+                            f"  decision-table: action '{action_id}' references unknown produced condition '{cond_id}'"
+                        )
+        assessment_artifact = action.get("assessment_artifact")
+        if assessment_artifact is not None and not isinstance(assessment_artifact, str):
+            report_error(
+                f"  decision-table: action '{action_id}' assessment_artifact must be a string when present"
+            )
     
     # Validate rules reference valid events, conditions, actions
     condition_usage: Dict[str, int] = {}  # Track how often each condition is used
+    rules_with_phase = 0  # Track how many rules have phase assignments
     
     for idx, rule in enumerate(rules, start=1):
         if not isinstance(rule, dict):
             report_error(f"  decision-table: rule #{idx} is not a dict")
             continue
         
-        rule_id = rule.get("id", f"#{idx}")
+        # Check for required 'id' field
+        rule_id = rule.get("id")
+        if not rule_id:
+            report_error(f"  decision-table: rule #{idx} missing required 'id' field")
+            rule_id = f"#{idx}"
         
-        # Check event reference
+        # Check event reference (required)
         event = rule.get("event")
         if not event:
-            report_error(f"  decision-table: rule '{rule_id}' missing event field")
+            report_error(f"  decision-table: rule '{rule_id}' missing required 'event' field")
         elif event not in event_ids:
             report_error(f"  decision-table: rule '{rule_id}' references unknown event '{event}'")
         
-        # Check conditions (when clause)
-        when_clause = rule.get("when", {})
+        # Check optional 'when' clause
+        when_clause = rule.get("when")
+        if when_clause is None:
+            when_clause = {}
         if isinstance(when_clause, dict):
+            # Empty dict {} is valid for unconditional rules (always applies)
             for cond_id in when_clause.keys():
                 if cond_id not in condition_ids:
                     report_error(
@@ -123,16 +267,42 @@ def validate_decision_table(
                 else:
                     condition_usage[cond_id] = condition_usage.get(cond_id, 0) + 1
         
-        # Check action reference
-        action = rule.get("action")
-        if not action:
-            report_error(f"  decision-table: rule '{rule_id}' missing action field")
-        elif action not in action_ids:
-            report_error(f"  decision-table: rule '{rule_id}' references unknown action '{action}'")
+        # Check required 'then' clause
+        then_clause = rule.get("then")
+        if not then_clause:
+            report_error(f"  decision-table: rule '{rule_id}' missing required 'then' field")
+        elif isinstance(then_clause, list):
+            for action_ref in then_clause:
+                if action_ref not in action_ids:
+                    report_error(f"  decision-table: rule '{rule_id}' references unknown action '{action_ref}'")
         
-        # Check rationale (evidence traceability)
+        # Check recommended 'action' field (singular display label)
+        if not rule.get("action"):
+            report_warn(f"  decision-table: rule '{rule_id}' missing recommended 'action' field (singular label)")
+        
+        # Check recommended 'rationale' field (evidence traceability)
         if not rule.get("rationale"):
-            report_warn(f"  decision-table: rule '{rule_id}' missing rationale field")
+            report_warn(f"  decision-table: rule '{rule_id}' missing recommended 'rationale' field")
+        
+        # Check 'phase' field if pathway_phases present
+        if rule.get("pathway_phase") is not None:
+            report_error(
+                f"  decision-table: rule '{rule_id}' uses legacy 'pathway_phase' — use 'phase'"
+            )
+        rule_phase = rule.get("phase")
+        if rule_phase:
+            rules_with_phase += 1
+            if phase_ids and rule_phase not in phase_ids:
+                report_error(
+                    f"  decision-table: rule '{rule_id}' references unknown phase '{rule_phase}' "
+                    f"(not in pathway_phases)"
+                )
+        elif phase_ids:
+            # pathway_phases defined but this rule has no phase assignment
+            report_warn(
+                f"  decision-table: rule '{rule_id}' has no phase assignment "
+                f"(pathway_phases present but rule.phase missing)"
+            )
     
     # Check for orphaned conditions (defined but never used)
     for cond_id in condition_ids:
@@ -158,26 +328,5 @@ def validate_decision_table(
                 )
             else:
                 condition_descriptions[desc] = cond_id
-    
-    # Check FHIR mapping completeness
-    fhir_mapping = artifact_data.get("fhir_mapping", {})
-    if not fhir_mapping:
-        report_warn("  decision-table: fhir_mapping section missing")
-    else:
-        required_fhir_fields = ["profile", "plan_definition_type", "library", "subject"]
-        for field in required_fhir_fields:
-            if not fhir_mapping.get(field):
-                report_warn(f"  decision-table: fhir_mapping.{field} missing")
-    
-    # Check actions have FHIR activity definition IDs
-    for action in actions:
-        if not isinstance(action, dict):
-            continue
-        action_id = action.get("id")
-        if not action.get("fhir_activity_definition"):
-            report_warn(
-                f"  decision-table: action '{action_id}' missing fhir_activity_definition "
-                f"(required for formalization)"
-            )
     
     return errors, warnings

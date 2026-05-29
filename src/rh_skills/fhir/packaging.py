@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tomllib
 from pathlib import Path
 
 FHIR_VERSION = "4.0.1"
@@ -18,6 +19,21 @@ DEFAULT_DEPENDENCIES: dict[str, str] = {
     "hl7.fhir.us.core": "6.1.0",
     "hl7.fhir.uv.crmi": "1.0.0",
 }
+
+
+def load_packager_toml(path: Path) -> dict[str, str]:
+    """Load packager.toml metadata or return an empty mapping."""
+    if not path.exists():
+        return {}
+    data = tomllib.loads(path.read_text())
+    if not isinstance(data, dict):
+        return {}
+    out: dict[str, str] = {}
+    for key in ("id", "version", "canonical", "status"):
+        value = data.get(key)
+        if isinstance(value, str) and value.strip():
+            out[key] = value.strip()
+    return out
 
 
 def build_dependency_map(
@@ -35,10 +51,15 @@ def build_dependency_map(
 
 
 def infer_package_id(topic_slug: str) -> str:
-    """Return a FHIR package id for the topic.
-
-    The ``rh package`` workflow expects an unscoped package id rather than an
-    npm-style ``@scope/name`` identifier.
+    """Return a FHIR package id for the topic with the 'reason.' prefix.
+    
+    The package ID is used for NPM-style package distribution and should be
+    globally unique. We prefix all reason-healthcare packages with 'reason.'
+    to namespace them consistently.
+    
+    Note: This is different from ImplementationGuide.id, which is a simple
+    resource identifier without the prefix. The formalize-config.id field
+    maps to IG.id, while this function generates IG.packageId.
     """
     return f"reason.{topic_slug}"
 
@@ -67,10 +88,16 @@ def generate_implementation_guide(
     package_id: str | None = None,
     dependencies: dict[str, str] | None = None,
 ) -> dict:
-    """Build the root ImplementationGuide resource for a package workspace."""
+    """Build the root ImplementationGuide resource for a package workspace.
+    
+    Note on identity fields:
+    - ig_id (→ IG.id): Simple resource identifier, used in canonical URL
+    - package_id (→ IG.packageId): NPM package name, globally unique with 'reason.' prefix
+    - The canonical URL uses ig_id (not package_id) per FHIR spec
+    """
     resolved_id = ig_id or topic_slug
     resolved_name = name or "".join(word.capitalize() for word in topic_slug.split("-"))
-    resolved_pkg_id = package_id or infer_package_id(resolved_id)
+    resolved_pkg_id = package_id or infer_package_id(topic_slug)
 
     resources = []
     for fname in resource_files:
@@ -96,8 +123,8 @@ def generate_implementation_guide(
 
     return {
         "resourceType": "ImplementationGuide",
-        "id": resolved_id,
-        "url": f"{canonical}/ImplementationGuide/{resolved_pkg_id}",
+        "id": resolved_id,  # Simple identifier (unprefixed)
+        "url": f"{canonical}/ImplementationGuide/{resolved_id}",  # URL uses id, not packageId
         "version": version,
         "name": resolved_name,
         "title": topic_slug.replace("-", " ").title(),

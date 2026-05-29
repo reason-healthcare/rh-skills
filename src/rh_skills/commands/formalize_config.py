@@ -49,13 +49,17 @@ def save_formalize_config(td: Path, cfg: dict) -> None:
 
 
 def suggest_defaults(topic: str, existing: dict | None = None) -> dict:
-    """Return suggested default values for config fields."""
+    """Return suggested default values for config fields.
+    
+    The 'id' field becomes the ImplementationGuide.id (simple identifier).
+    The package ID (IG.packageId) is automatically derived by adding 'reason.' prefix.
+    """
     slug = to_kebab_case(topic)
     name = "".join(w.capitalize() for w in slug.split("-"))
     ex = existing or {}
     return {
         "name": ex.get("name") or name,
-        "id": ex.get("id") or slug,
+        "id": ex.get("id") or slug,  # Simple ID, no prefix (used for IG.id)
         "canonical": ex.get("canonical") or "http://example.org/fhir",
         "status": ex.get("status") or "draft",
         "version": ex.get("version") or "0.1.0",

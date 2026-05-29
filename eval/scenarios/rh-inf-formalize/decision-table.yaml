@@ -93,18 +93,24 @@ workspace:
                 cond-001: "Yes"
               then:
                 - act-001
+              action: "Order blood cultures and serum lactate"
+              rationale: "qSOFA ≥2 indicates likely sepsis; obtain diagnostic workup per Surviving Sepsis Campaign guidelines"
             - id: rule-002
               event: event-001
               when:
                 cond-002: "Yes"
               then:
                 - act-002
+              action: "Initiate SIRS screening pathway"
+              rationale: "Temperature and heart rate criteria meet SIRS definition; advance to full screening protocol"
             - id: rule-003
               event: event-001
               when:
                 cond-003: "Yes"
               then:
                 - act-003
+              action: "Administer IV fluids 30 mL/kg"
+              rationale: "Serum lactate ≥2 mmol/L indicates tissue hypoperfusion; initiate early goal-directed therapy per SSC bundle"
 
 prompt: |
   Use the rh-inf-formalize skill for the topic `sepsis-screening`.

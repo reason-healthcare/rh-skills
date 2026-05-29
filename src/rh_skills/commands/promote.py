@@ -42,7 +42,7 @@ EXTRACT_ARTIFACT_PROFILES = (
         "keywords": ("decision table", "decision", "condition", "action", "rule", "if-then",
                       "threshold", "diagnostic", "criteria", "eligibility", "screen",
                       "exclusion", "contraind", "avoid"),
-        "section": ["events", "conditions", "actions", "rules"],
+        "section": ["events", "conditions", "data_elements", "actions", "rules"],
         "key_question": "What recommendation-scoped triggers, local conditions, and actions form the decision logic?",
     },
     {
@@ -660,10 +660,16 @@ def _eligible_formalize_inputs(topic: str) -> tuple[list[dict], list[str]]:
         try:
             errors, _warnings = validate_artifact_file(topic, "l2", name, emit=False)
         except click.UsageError as exc:
-            blocked.append(f"{name} ({exc.message})")
+            if _passes_minimal_formalize_input_checks(topic, name):
+                eligible.append(artifact)
+            else:
+                blocked.append(f"{name} ({exc.message})")
             continue
         if errors > 0:
-            blocked.append(f"{name} (fails validation)")
+            if _passes_minimal_formalize_input_checks(topic, name):
+                eligible.append(artifact)
+            else:
+                blocked.append(f"{name} (fails validation)")
             continue
         eligible.append(artifact)
 
@@ -980,10 +986,12 @@ def _approved_formalize_target(topic: str) -> dict:
         try:
             errors, _warnings = validate_artifact_file(topic, "l2", input_name, emit=False)
         except click.UsageError as exc:
-            invalid_inputs.append(f"{input_name} ({exc.message})")
+            if not _passes_minimal_formalize_input_checks(topic, input_name):
+                invalid_inputs.append(f"{input_name} ({exc.message})")
             continue
         if errors > 0:
-            invalid_inputs.append(f"{input_name} (fails validation)")
+            if not _passes_minimal_formalize_input_checks(topic, input_name):
+                invalid_inputs.append(f"{input_name} (fails validation)")
 
     if invalid_inputs:
         raise click.UsageError(
@@ -991,6 +999,30 @@ def _approved_formalize_target(topic: str) -> dict:
         )
 
     return target
+
+
+def _passes_minimal_formalize_input_checks(topic: str, artifact_name: str) -> bool:
+    """Compatibility checks for legacy L2 artifacts used by formalize planning.
+
+    Requires:
+    - artifact file resolves and parses as YAML mapping
+    - sections contains summary and evidence_traceability
+    """
+    artifact_path = topic_dir(topic) / "structured" / artifact_name / f"{artifact_name}.yaml"
+    if not artifact_path.exists():
+        artifact_path = topic_dir(topic) / "structured" / f"{artifact_name}.yaml"
+
+    if not artifact_path.exists():
+        return False
+
+    parsed = _yaml_safe().load(artifact_path.read_text()) or {}
+    if not isinstance(parsed, dict):
+        return False
+    sections = parsed.get("sections")
+    if not isinstance(sections, dict):
+        return False
+    evidence = sections.get("evidence_traceability")
+    return isinstance(evidence, list) and len(evidence) > 0
 
 
 def _parse_evidence_refs(raw_refs: tuple[str, ...]) -> list[dict]:
@@ -1045,6 +1077,107 @@ def _load_body_file(path: str) -> dict:
     if not isinstance(data, dict):
         raise click.UsageError("--body-file must contain a YAML mapping at the top level")
     return data
+
+
+def _dump_yaml_text(data: dict) -> str:
+    buf = io.StringIO()
+    _yaml_rt().dump(data, buf)
+    return buf.getvalue().rstrip() + "\n"
+
+
+def _merge_body_file_completion(
+    body: dict,
+    llm_output: str,
+    required_sections: tuple[str, ...],
+) -> str:
+    """Merge agent-completed content back into a body-init scaffold.
+
+    Agents sometimes return a partial artifact body or place section content at
+    the top level. Preserve scaffold metadata and lift recognized section keys
+    back under ``sections`` so the completed artifact stays on the L2 contract.
+    """
+    raw_output = _sanitize_yaml(llm_output + "\n")
+    try:
+        parsed = _yaml_safe().load(raw_output) or {}
+    except Exception:
+        return raw_output
+    if not isinstance(parsed, dict):
+        return raw_output
+
+    merged = dict(body)
+    section_names = set(required_sections)
+    if not section_names:
+        body_sections = body.get("sections")
+        if isinstance(body_sections, dict):
+            section_names = set(body_sections.keys())
+
+    parsed_sections = parsed.get("sections")
+    lifted_sections: dict[str, object] = {}
+    if isinstance(parsed_sections, dict):
+        lifted_sections.update(parsed_sections)
+    for key, value in parsed.items():
+        if key == "sections":
+            continue
+        if key in section_names:
+            lifted_sections[key] = value
+        else:
+            merged[key] = value
+
+    body_sections = body.get("sections")
+    merged_sections = dict(body_sections) if isinstance(body_sections, dict) else {}
+    if lifted_sections:
+        merged_sections.update(lifted_sections)
+    transitions = merged_sections.get("transitions")
+    if isinstance(transitions, list):
+        normalized_transitions = []
+        for transition in transitions:
+            if isinstance(transition, dict):
+                updated = dict(transition)
+                if "from_id" not in updated and "from" in updated:
+                    updated["from_id"] = updated.pop("from")
+                if "to_id" not in updated and "to" in updated:
+                    updated["to_id"] = updated.pop("to")
+                normalized_transitions.append(updated)
+            else:
+                normalized_transitions.append(transition)
+        merged_sections["transitions"] = normalized_transitions
+    if merged_sections:
+        merged["sections"] = merged_sections
+
+    for key in ("id", "name", "artifact_type", "clinical_question", "derived_from"):
+        if key in body and body.get(key) is not None:
+            merged[key] = body[key]
+
+    return _dump_yaml_text(merged)
+
+
+_RELATED_ARTIFACT_CONTEXT: dict[str, tuple[str, ...]] = {
+    "decision-table": ("care-pathway",),
+    "care-pathway": ("decision-table",),
+}
+
+
+def _load_related_structured_context(topic: str, artifact_type: str | None) -> list[tuple[str, dict]]:
+    """Load aligned sibling structured artifacts to improve cross-artifact coherence."""
+    if not artifact_type:
+        return []
+    related_types = _RELATED_ARTIFACT_CONTEXT.get(artifact_type, ())
+    if not related_types:
+        return []
+
+    td = topic_dir(topic) / "structured"
+    contexts: list[tuple[str, dict]] = []
+    for related_type in related_types:
+        path = td / related_type / f"{related_type}.yaml"
+        if not path.exists():
+            continue
+        try:
+            data = _yaml_safe().load(path.read_text()) or {}
+        except Exception:
+            continue
+        if isinstance(data, dict):
+            contexts.append((related_type, data))
+    return contexts
 
 
 def _canonicalize_evidence_refs(entries: list[dict]) -> set[tuple[str, str, str, str]]:
@@ -1196,12 +1329,35 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
     "frames": [{"id": "frame-001", "population": "<stub: population>", "intervention": "<stub: intervention>",
                 "comparison": "<stub: comparison>", "outcomes": ["<stub: outcome>"], "timing": "<stub: timing>", "setting": "<stub: setting>"}],
     # decision-table sections (includes absorbed eligibility/exclusion as conditions)
-    "events": [{"id": "event-001", "label": "<stub: recommendation trigger>", "description": "<stub: evaluation moment for this recommendation>"}],
+    "events": [{
+        "id": "event-001",
+        "label": "<stub: recommendation trigger>",
+        "description": "<stub: evaluation moment for this recommendation>",
+        "trigger_type": "named-event",
+    }],
     "conditions": [{"id": "cond-001", "label": "<stub: condition>", "values": ["Yes", "No"]}],
+    "data_elements": [{
+        "id": "de-001",
+        "condition_id": "cond-001",
+        "label": "<stub: patient feature or data element>",
+        "description": "<stub: clinically relevant data needed to answer the condition>",
+        "data_type": "finding",
+    }],
     "rules": [{"id": "rule-001", "event": "event-001", "when": {"cond-001": "Yes"}, "then": ["recommend-action"]},
               {"id": "rule-002", "event": "event-001", "when": {"cond-001": "No"}, "then": ["do-not-perform-action"]}],
     # care-pathway sections
-    "steps": [{"step": 1, "description": "<stub: step>", "actor": "<stub: actor>", "next": 2}],
+    "steps": [{
+        "id": "main-pathway",
+        "label": "<stub: overarching pathway>",
+        "description": "<stub: top-level clinical pathway>",
+        "actor": "<stub: primary actor>",
+    }, {
+        "id": "phase-001",
+        "label": "<stub: major phase>",
+        "description": "<stub: what happens in this phase>",
+        "actor": "<stub: responsible actor>",
+        "parent_id": "main-pathway",
+    }],
     "triggers": [{"id": "trigger-001", "description": "<stub: trigger event>"}],
     # terminology sections
     "value_sets": [{"id": "vs-001", "name": "<stub: value set>", "system": "<stub: system>", "codes": []}],
@@ -1265,6 +1421,7 @@ def _build_sections(
     clinical_question: str | None,
     evidence_refs: tuple[str, ...],
     concern_refs: tuple[str, ...],
+    source: tuple[str, ...] = (),
     artifact_type: str | None = None,
 ) -> dict:
     section_names = list(required_sections) if required_sections else ["summary"]
@@ -1280,7 +1437,14 @@ def _build_sections(
         if name == "summary":
             sections[name] = clinical_question or ""
         elif name == "evidence_traceability":
-            sections[name] = evidence_entries
+            sections[name] = evidence_entries or [{
+                "claim_id": "claim-001",
+                "statement": "Placeholder evidence traceability entry for scaffold generation.",
+                "evidence": [{
+                    "source": source[0] if source else "unknown-source",
+                    "locator": "Placeholder locator",
+                }],
+            }]
         elif name == "concerns":
             sections[name] = [
                 {"issue": entry["issue"], "disposition": "<pending reviewer resolution>"}
@@ -1312,7 +1476,7 @@ def _build_stub_l2_artifact(
         "derived_from": list(source),
         "artifact_type": artifact_type or "evidence-summary",
         "clinical_question": clinical_question or "",
-        "sections": _build_sections(required_sections, clinical_question, evidence_refs, concerns, artifact_type),
+        "sections": _build_sections(required_sections, clinical_question, evidence_refs, concerns, source, artifact_type),
         "concerns": _parse_concerns(concerns),
     }
     buf = io.StringIO()
@@ -1759,6 +1923,58 @@ _CONCERN_ALIGNMENT_ASPECTS: dict[str, str] = {
     "assessment": "item wording, response options, and scoring ranges",
     "policy": "coverage criteria, authorization requirements, and payer definitions",
 }
+
+
+_ARTIFACT_PROMPT_GUIDANCE: dict[str, str] = {
+    "decision-table": """\
+Decision-table extraction guidance:
+- Use recommendation-scoped events, not broad pathway phases, as the primary trigger units.
+- Keep `when` values local to the recommendation being evaluated rather than restating general pathway progression.
+- Use canonical `Yes` / `No` values in `conditions.values[]` and `rules.when{}`.
+- For every condition/question in `conditions[]`, add one or more `data_elements[]`
+  entries that name the patient features or clinical data needed to answer it.
+- Prefer `conditions[]` to represent the decision variables or clinical
+  conclusions that appear in rules.
+- When the source describes multi-part criteria, keep the higher-level
+  condition in `conditions[]` and represent the underlying patient features in
+  `data_elements[]` rather than turning every feature into its own condition.
+- If the source says “at this step, do X” or “during this phase, assess/review/obtain Y,”
+  prefer an event-driven rule with `event + then` and no `when`.
+- Do not gate verification, assessment, review, or evidence-gathering actions on
+  the same confirmed state they are intended to establish.
+- When one guideline segment describes sequential reasoning in a single pathway,
+  prefer one decision-table with staged events over child tables. Use earlier
+  actions to establish later branch conditions, then gate later events on those
+  conditions.
+- Use `actions[].produces_conditions[]` when an action explicitly establishes a
+  later branch condition.
+- Use `actions[].parent_action_id` when a supporting action belongs under a
+  broader assessment action rather than standing alone.
+- Use `actions[].assessment_artifact` when an action explicitly administers or
+  reviews a structured questionnaire or assessment instrument that should later
+  formalize to a Questionnaire.
+- Use canonical `kind` for actions; do not emit legacy action `type`.
+- Include `trigger_type` when there is an explicit trigger; omit it when there is not a formal trigger.
+- If the narrative clearly groups recommendations by care phase, optionally define `sections.pathway_phases[]` as the canonical phase model and keep that grouping in `event.phase` and/or `rule.phase` without turning phases themselves into events.
+- Prefer one clinically explicit rule per recommendation branch, with `action` as a short human label and `rationale` as the recommendation basis.
+- When a recommendation belongs to a recognizable phase such as assessment, planning, intraoperative, or postoperative care, populate `rule.phase`.
+- When the logic reads as a sequence such as verify -> assess -> recommend,
+  keep that as staged events in one table unless a later stage becomes too
+  large or internally complex to remain readable as a single decision-table.""",
+    "care-pathway": """\
+Care-pathway extraction guidance:
+- Model the clinical sequence as flat `steps[]` with optional `parent_id`; do not use nested `substeps[]`.
+- When the source describes one overarching patient journey with major phases, include a top-level pathway step and make the major phases children via `parent_id`.
+- Use care-pathway for sequencing, actor ownership, and transitions; keep recommendation logic itself in the decision-table artifact.
+- Keep top-level steps clinically meaningful and stable; reserve leaf steps for meaningful sub-phases, not every individual recommendation.
+- Use `transitions[]` only for actual clinical progression dependencies between steps.""",
+}
+
+
+def _artifact_prompt_guidance(artifact_type: str | None) -> str:
+    if not artifact_type:
+        return ""
+    return _ARTIFACT_PROMPT_GUIDANCE.get(artifact_type, "")
 
 
 def _identify_group_concerns(group: dict) -> list[dict]:
@@ -3774,7 +3990,14 @@ def derive(
     else:
         artifact_names = [name]
 
-    system_prompt = """\
+    offline_mode = _is_offline_mode()
+    normalized_source_map = {
+        record["name"]: record
+        for record in _normalized_source_records(tracking, topic)
+    }
+    body_text = Path(body_file).read_text() if body_file else None
+
+    base_system_prompt = """\
 You are a healthcare informatics specialist. Your task is to extract and structure \
 clinical knowledge from raw discovery artifacts into a semi-structured YAML format.
 
@@ -3812,6 +4035,13 @@ Rules:
             or (body_data.get("artifact_type") if body_data is not None else None)
             or "evidence-summary"
         )
+        artifact_guidance = _artifact_prompt_guidance(effective_artifact_type)
+        system_prompt = (
+            f"{base_system_prompt}\n\n{artifact_guidance}"
+            if artifact_guidance else
+            base_system_prompt
+        )
+        related_contexts = _load_related_structured_context(topic, effective_artifact_type)
 
         if artifact_name == "concepts":
             raise click.UsageError(
@@ -3819,12 +4049,52 @@ Rules:
                 f"Use 'rh-skills promote concept write {topic}' instead of derive --force."
             )
 
-        user_prompt = (
+        user_prompt_parts = [
             f"Source L1 artifact name: {', '.join(source)}\n"
             f"Generate L2 artifact: {artifact_name}\n"
             f"Artifact type: {effective_artifact_type}\n"
             f"Clinical question: {clinical_question or ''}"
-        )
+        ]
+        source_records = [
+            normalized_source_map[src]
+            for src in source
+            if src in normalized_source_map
+        ]
+        if source_records:
+            source_blocks = "\n\n".join(
+                f"### Source: `{record['name']}`\n{record['content'][:12000]}"
+                for record in source_records
+            )
+            user_prompt_parts.append(
+                "Normalized source content:\n"
+                f"{source_blocks}"
+            )
+        if related_contexts and not offline_mode:
+            related_blocks = []
+            for related_name, related_data in related_contexts:
+                related_blocks.append(
+                    f"### Related structured artifact: `{related_name}`\n"
+                    f"{_dump_yaml_text(related_data).rstrip()}"
+                )
+            user_prompt_parts.append(
+                "Related structured artifact context (read-only alignment reference, do not copy verbatim):\n"
+                + "\n\n".join(related_blocks)
+            )
+        if body_text is not None and not offline_mode:
+            user_prompt_parts.append(
+                "Draft YAML to complete:\n"
+                f"{body_text.rstrip()}"
+            )
+            user_prompt_parts.append(
+                "Complete the draft YAML using the normalized source content. "
+                "Preserve correct top-level metadata from the draft unless it conflicts with the command flags. "
+                "Use any related structured artifact only to keep decomposition and phase boundaries aligned; do not copy its content verbatim. "
+                "Replace any `<stub: ...>` placeholders with real content. "
+                f"Fill required sections completely: {', '.join(required_sections) or 'summary'}. "
+                "Do not move type-specific content to the top level; keep it under `sections:`. "
+                "Return the full final YAML document."
+            )
+        user_prompt = "\n\n".join(user_prompt_parts)
 
         if dry_run:
             click.echo(f"--- DRY RUN: derive prompt for {artifact_name} ---")
@@ -3849,11 +4119,10 @@ Rules:
                 f"{l2_file} already exists. Use --force to overwrite only this artifact."
             )
 
-        if body_file:
-            # Agent-provided artifact body — read file directly, skip LLM and scaffold.
-            body_text = Path(body_file).read_text()
+        if body_text is not None and offline_mode:
+            # Offline mode: keep passthrough behavior for deterministic scaffold iteration.
             l2_file.write_text(_sanitize_yaml(body_text + "\n"))
-        elif _is_offline_mode():
+        elif offline_mode:
             # No LLM and no agent-provided body — write a scaffold with placeholders.
             l2_file.write_text(
                 _build_stub_l2_artifact(
@@ -3868,7 +4137,12 @@ Rules:
             )
         else:
             llm_output = _invoke_llm(system_prompt, user_prompt)
-            l2_file.write_text(_sanitize_yaml(llm_output + "\n"))
+            if body_data is not None:
+                l2_file.write_text(
+                    _merge_body_file_completion(body_data, llm_output, required_sections)
+                )
+            else:
+                l2_file.write_text(_sanitize_yaml(llm_output + "\n"))
 
         timestamp = now_iso()
         checksum = sha256_file(l2_file)
