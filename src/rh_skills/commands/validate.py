@@ -389,39 +389,64 @@ def _validate_formalize_artifact(
         )
         errors += 1
 
+    # Determine if this artifact uses deterministic builders (decision-table, care-pathway)
+    # These artifact types generate FHIR directly without L3 intermediate format
+    artifact_type = target_entry.get("type") or artifact_data.get("artifact_type")
+    uses_deterministic_builders = artifact_type in ("decision-table", "care-pathway")
+    
     expected_inputs = target_entry.get("input_artifacts", []) or []
     actual_inputs = artifact_data.get("converged_from") or []
-    if not actual_inputs:
-        _report_error("  MISSING formalize field: converged_from", emit=emit)
-        errors += 1
-    elif expected_inputs != actual_inputs:
-        _report_error(
-            "  converged_from does not match approved formalize plan inputs: "
-            f"expected {expected_inputs}, got {actual_inputs}",
-            emit=emit,
-        )
-        errors += 1
-
-    # Strategy match check
-    plan_strategy = target_entry.get("strategy", "")
-    actual_strategy = artifact_data.get("strategy", "")
-    if plan_strategy and actual_strategy and plan_strategy != actual_strategy:
-        _report_error(
-            f"  strategy mismatch: plan says '{plan_strategy}', tracking says '{actual_strategy}'",
-            emit=emit,
-        )
-        errors += 1
-
-    for section_name in target_entry.get("required_sections", []) or []:
-        if section_name not in artifact_data:
-            _report_error(f"  MISSING required formalize section: {section_name}", emit=emit)
+    
+    if not uses_deterministic_builders:
+        # Only validate converged_from for non-deterministic artifacts
+        if not actual_inputs:
+            _report_error("  MISSING formalize field: converged_from", emit=emit)
             errors += 1
-            continue
-        errors += _validate_required_section_completeness(
-            section_name,
-            artifact_data.get(section_name),
-            emit=emit,
-        )
+        elif expected_inputs != actual_inputs:
+            _report_error(
+                "  converged_from does not match approved formalize plan inputs: "
+                f"expected {expected_inputs}, got {actual_inputs}",
+                emit=emit,
+            )
+            errors += 1
+
+    # Strategy match check (skip for deterministic builders)
+    if not uses_deterministic_builders:
+        plan_strategy = target_entry.get("strategy", "")
+        actual_strategy = artifact_data.get("strategy", "")
+        if plan_strategy and actual_strategy and plan_strategy != actual_strategy:
+            _report_error(
+                f"  strategy mismatch: plan says '{plan_strategy}', tracking says '{actual_strategy}'",
+                emit=emit,
+            )
+            errors += 1
+
+    # Determine if this artifact uses deterministic builders (decision-table, care-pathway)
+    # These artifact types generate FHIR directly without L3 intermediate format
+    artifact_type = target_entry.get("type") or artifact_data.get("artifact_type")
+    uses_deterministic_builders = artifact_type in ("decision-table", "care-pathway")
+    
+    if not uses_deterministic_builders:
+        # Only validate L3 intermediate sections for non-deterministic artifacts
+        for section_name in target_entry.get("required_sections", []) or []:
+            if section_name not in artifact_data:
+                _report_error(f"  MISSING required formalize section: {section_name}", emit=emit)
+                errors += 1
+                continue
+            errors += _validate_required_section_completeness(
+                section_name,
+                artifact_data.get(section_name),
+                emit=emit,
+            )
+    else:
+        # For deterministic builders, artifact_data is empty (no L3 intermediate)
+        # Validation happens at FHIR resource level only
+        if target_entry.get("required_sections"):
+            _report_warn(
+                f"  Skipping L3 intermediate section checks for {artifact_type} (uses deterministic FHIR builders)",
+                emit=emit,
+            )
+            warnings += 1
 
     # L3 FHIR JSON file validation
     fhir_errors, fhir_warnings = _validate_fhir_json_files(

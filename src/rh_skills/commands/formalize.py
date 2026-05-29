@@ -7,6 +7,7 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 import click
 from ruamel.yaml import YAML
@@ -1077,6 +1078,57 @@ def _build_stub_resources(
     return resources
 
 
+# ── Deterministic Builders (CPG-on-FHIR) ──────────────────────────────────────
+
+def _build_with_deterministic_builders(
+    artifact: str,
+    artifact_type: str,
+    topic: str,
+    l2_data: dict,
+    merger: Any  # ConditionMerger instance
+) -> list[dict]:
+    """Build FHIR resources using deterministic CPG builders.
+    
+    Args:
+        artifact: Artifact name
+        artifact_type: L2 artifact type (decision-table or care-pathway)
+        topic: Topic ID
+        l2_data: Parsed L2 artifact data
+        merger: ConditionMerger instance for topic-level deduplication
+        
+    Returns:
+        List of FHIR resource dictionaries
+    """
+    from rh_skills.fhir.builders import (
+        DecisionTableBuilder,
+        CarePathwayBuilder
+    )
+    
+    resources = []
+    
+    if artifact_type == "decision-table":
+        builder = DecisionTableBuilder(topic, artifact, merger)
+        result = builder.build_all_resources(l2_data)
+        resources.extend(result.get('PlanDefinition', []))
+        resources.extend(result.get('ActivityDefinition', []))
+        
+    elif artifact_type == "care-pathway":
+        # Check if auto-generated from decision table
+        metadata = l2_data.get('metadata', {})
+        decision_table_id = None
+        decision_table_data = None
+        
+        if metadata.get('auto_generated') and metadata.get('derived_from'):
+            decision_table_id = metadata['derived_from'][0]
+            # TODO: Load decision table data if available
+        
+        builder = CarePathwayBuilder(topic, artifact, decision_table_id)
+        result = builder.build_all_resources(l2_data, decision_table_data)
+        resources.extend(result.get('PlanDefinition', []))
+    
+    return resources
+
+
 # ── Click Command ──────────────────────────────────────────────────────────────
 
 @click.command("formalize")
@@ -1177,17 +1229,48 @@ def formalize(topic, artifact, dry_run, force):
     )
 
     click.echo(f"Formalizing '{artifact}' using {strategy['description']} strategy...")
-
-    llm_output = _invoke_llm(system_prompt, user_prompt)
-
-    # Parse response
-    if llm_output == "Stub response":
-        resources = _build_stub_resources(artifact, artifact_type, strategy, topic, cfg, l2_data)
+    
+    # Use deterministic builders for decision-table and care-pathway
+    if artifact_type in ("decision-table", "care-pathway"):
+        from rh_skills.fhir.builders import ConditionMerger, CQLGenerator
+        merger = ConditionMerger(topic)
+        click.echo(f"Using deterministic CPG-on-FHIR builders...")
+        resources = _build_with_deterministic_builders(artifact, artifact_type, topic, l2_data, merger)
+        
+        # Generate Library resource with CQL content
+        cql_gen = CQLGenerator(topic, version=cfg.get("version", "1.0.0"))
+        conditions = merger.get_merged_conditions()
+        
+        library_metadata = {
+            "title": l2_data.get("title", f"{topic.replace('-', ' ').title()} Clinical Logic"),
+            "description": f"CQL logic library for {topic} topic. Contains condition definitions from decision tables.",
+            "author": l2_data.get("author")
+        }
+        
+        library_resource = cql_gen.generate_library(conditions, library_metadata)
+        resources.append(library_resource)
+        
+        click.echo(f"Generated Library resource with {len(conditions)} condition definitions")
     else:
-        resources = _parse_llm_response(llm_output)
-        if not resources:
-            click.echo("Error: Failed to parse LLM response as FHIR JSON", err=True)
-            sys.exit(2)
+        # Use LLM for other artifact types
+        system_prompt = _build_system_prompt(artifact_type, strategy, cfg)
+        user_prompt = (
+            f"Artifact name: {artifact}\n"
+            f"Artifact type: {artifact_type}\n"
+            f"Topic: {topic}\n"
+            f"Date: {today_date()}\n\n"
+            f"L2 Content:\n{l2_content}"
+        )
+        llm_output = _invoke_llm(system_prompt, user_prompt)
+        
+        # Parse response
+        if llm_output == "Stub response":
+            resources = _build_stub_resources(artifact, artifact_type, strategy, topic, cfg, l2_data)
+        else:
+            resources = _parse_llm_response(llm_output)
+            if not resources:
+                click.echo("Error: Failed to parse LLM response as FHIR JSON", err=True)
+                sys.exit(2)
 
     # Ensure Measure.library references companion Library resources
     _patch_measure_library_references(resources)
