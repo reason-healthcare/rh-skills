@@ -116,13 +116,26 @@
 **Step 1**: Read normalized guideline (L1) thoroughly  
 **Step 2**: Identify guideline structure type (see above)  
 **Step 3**: Extract events using type-specific heuristics  
-**Step 4**: Extract conditions from event contexts  
-**Step 5**: Identify condition reuse opportunities  
-**Step 6**: Extract actions from recommendation outcomes  
+**Step 4**: Extract ALL actions from guideline recommendations (conditional AND unconditional)  
+**Step 5**: Extract conditions from event contexts  
+**Step 6**: Identify condition reuse opportunities  
 **Step 7**: Build rules mapping events → conditions → actions  
 **Step 8**: Add evidence traceability for each rule  
 **Step 9**: Add pathway phase metadata (if temporal workflow)  
 **Step 10**: Validate extraction completeness  
+
+### Completeness Checklist
+
+Before finalizing extraction, verify:
+
+- [ ] **ALL Key Action Statements extracted** (not just conditional ones)
+- [ ] **Unconditional recommendations captured** as rules with `when: {}`
+- [ ] **Every action** has corresponding entry in `actions` section
+- [ ] **Every rule** references valid action IDs in `then: [...]`
+- [ ] **Every guideline "should/shall" statement** appears as an action
+- [ ] **Evidence traceability** present for all rules
+- [ ] **Pathway phases** defined (if workflow guideline)
+- [ ] **No duplicate conditions** (check for semantic equivalence)
 
 ---
 
@@ -520,13 +533,44 @@ rules:
 
 **Actions** are the outcomes or recommendations to be executed.
 
+### Critical Extraction Rule
+
+**EXTRACT EVERY GUIDELINE RECOMMENDATION AS AN ACTION** — even if it has no conditions.
+
+- **Conditional recommendations** → actions with `when: {condition: value}`
+- **Unconditional recommendations** → actions with `when: {}` (triggered/always-applicable)
+- **Don't skip** recommendations that "should always be done" — those are triggered actions
+
 ### Extraction Strategy
 
 1. **Extract from "then" clauses** in recommendations
 2. **Map to FHIR resource types** (ServiceRequest, Procedure, MedicationRequest, CommunicationRequest, etc.)
 3. **Derive fhir_activity_definition ID** from action name
+4. **Include ALL guideline recommendations** — if guideline says "surgeon should X", create an action for X
 
-### Example
+### Example: Conditional Action
+
+**Guideline text** (synthetic):
+> "When diabetes is confirmed, initiate metformin therapy."
+
+**Extraction**:
+```yaml
+actions:
+  - id: initiate-metformin
+    name: "initiate-metformin"
+    type: "MedicationRequest"
+    description: "Initiate metformin therapy"
+    details: "Start metformin 500mg twice daily with meals"
+    fhir_activity_definition: "diabetes-initiate-metformin"
+
+rules:
+  - rule_id: r1
+    event: e1
+    when: {diabetes-confirmed: "true"}
+    then: [initiate-metformin]
+```
+
+### Example: Unconditional Action (Triggered)
 
 **Guideline text** (synthetic):
 > "Obtain CT imaging for surgical planning."
@@ -540,7 +584,27 @@ actions:
     description: "Obtain CT imaging"
     details: "Fine-cut CT for surgical planning and anatomy definition"
     fhir_activity_definition: "surgical-ct-imaging"
+
+rules:
+  - rule_id: r1
+    event: e1
+    when: {}  # No conditions = always perform
+    then: [obtain-ct-imaging]
+    decision_type: "triggered"
 ```
+
+### Common Action Types
+
+| Guideline Language | Action Type | FHIR Type |
+|-------------------|-------------|-----------|
+| "offer surgery" | Recommendation | ServiceRequest |
+| "perform procedure" | Intervention | Procedure |
+| "prescribe medication" | Prescription | MedicationRequest |
+| "counsel patient" | Communication | CommunicationRequest |
+| "assess/evaluate" | Assessment | Observation/Assessment |
+| "verify diagnosis" | Diagnostic | DiagnosticReport |
+| "educate patient" | Education | CommunicationRequest |
+| "refer to specialist" | Referral | ServiceRequest |
 
 ---
 
@@ -698,6 +762,54 @@ conditions:
 ```yaml
 conditions:
   - id: diagnosis-established
+```
+
+---
+
+### ❌ Anti-Pattern 4: Skipping Unconditional Actions
+
+**Problem**: Omitting recommendations because they "don't have conditions"
+
+**Example** (incomplete extraction):
+```yaml
+# Guideline says:
+# "Obtain CT imaging for surgical planning."
+# "If polyps present, perform extensive surgery."
+
+# ❌ WRONG: Only extracted the conditional action
+actions:
+  - id: perform-extensive-surgery
+    type: "Procedure"
+
+rules:
+  - rule_id: r1
+    when: {polyps-present: "true"}
+    then: [perform-extensive-surgery]
+```
+
+**Fix**: Extract ALL guideline recommendations — unconditional ones use `when: {}`
+```yaml
+# ✅ CORRECT: Both actions extracted
+actions:
+  - id: obtain-ct-imaging
+    type: "ServiceRequest"
+    description: "Obtain CT imaging for surgical planning"
+  - id: perform-extensive-surgery
+    type: "Procedure"
+    description: "Perform extensive sinus surgery"
+
+rules:
+  - rule_id: r1
+    event: e1
+    when: {}  # Always perform
+    then: [obtain-ct-imaging]
+    decision_type: "triggered"
+    
+  - rule_id: r2
+    event: e1
+    when: {polyps-present: "true"}
+    then: [perform-extensive-surgery]
+    decision_type: "branching"
 ```
 
 ---

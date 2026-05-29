@@ -4,7 +4,7 @@ description: >
   Reviewer-gated formalization skill for converging approved L2 structured
   artifacts into L3 FHIR computable resources. Uses type-specific strategies
   to map each L2 artifact type to its correct FHIR R4 targets.
-  Modes: plan · implement · verify.
+  Modes: plan, implement, verify
 compatibility: "rh-skills >= 0.1.0"
 context_files:
   - reference.md
@@ -233,7 +233,7 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
 - required computable sections
 - unresolved overlap or modeling notes
 - whether the artifact is the single implementation target
-- reviewer decision placeholder
+- reviewer approval status
 
 ### After plan mode — output to user
 
@@ -434,7 +434,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 
    Report each missing field as an error (not a warning).
 
-5. **MCP-UNREACHABLE placeholder detection** — scan all FHIR JSON files for
+5. **Unresolved code placeholder detection** — scan all FHIR JSON files for
    the literal string `TODO:MCP-UNREACHABLE`. Each occurrence indicates a code
    that the LLM could not resolve via reasonhub MCP tools. Report each as a
    warning with the file path and field location. If the count exceeds 3 per

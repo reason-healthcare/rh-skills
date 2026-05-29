@@ -5,7 +5,7 @@ description: >
   in sources/ to Markdown, infers and initializes topics, classifies each source
   (using discovery-plan.yaml as optional enrichment when present), and annotates
   with concept metadata in normalized front matter for downstream extraction.
-  Modes: plan · implement · verify.
+  Modes: plan, implement, verify
 compatibility: "rh-skills >= 0.1.0"
 context_files:
   - reference.md

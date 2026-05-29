@@ -127,7 +127,7 @@ case the CLI falls back to `name`.
 | EvidenceVariable | `characteristic[]` with at least one entry |
 
 Additional checks:
-- MCP-UNREACHABLE placeholders (`TODO:MCP-UNREACHABLE`) are flagged as errors
+- Unresolved code placeholders (`TODO:MCP-UNREACHABLE`) are flagged as errors
 - `converged_from[]` in tracking must match the approved `input_artifacts[]`
 - `strategy` in tracking must match the plan's `strategy` field
 
