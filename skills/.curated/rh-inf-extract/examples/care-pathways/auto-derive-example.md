@@ -186,8 +186,7 @@ sections:
       substeps:
         - substep: "1.1"
           description: "Annual Foot Examination"
-          event_id: e1-annual-screen
-          fhir_plan_definition_id: "DiabetesFootScreening"
+          event: "e1-annual-screen"
     
     - step: 2
       id: classification
@@ -199,8 +198,7 @@ sections:
       substeps:
         - substep: "2.1"
           description: "Risk Stratification Decision"
-          event_id: e2-risk-assessment
-          fhir_plan_definition_id: "DiabetesFootRiskAssessment"
+          event: "e2-risk-assessment"
     
     - step: 3
       id: intervention
@@ -212,12 +210,10 @@ sections:
       substeps:
         - substep: "3.1"
           description: "Patient Education Decision"
-          event_id: e3-education
-          fhir_plan_definition_id: "DiabetesFootEducation"
+          event: "e3-education"
         - substep: "3.2"
           description: "Podiatry Referral Decision"
-          event_id: e4-podiatry-referral
-          fhir_plan_definition_id: "DiabetesPodiatryReferral"
+          event: "e4-podiatry-referral"
     
     - step: 4
       id: monitoring
@@ -229,8 +225,7 @@ sections:
       substeps:
         - substep: "4.1"
           description: "Follow-Up Scheduling Decision"
-          event_id: e5-schedule-followup
-          fhir_plan_definition_id: "DiabetesFootFollowUp"
+          event: "e5-schedule-followup"
 ```
 
 ---
