@@ -37,18 +37,18 @@ topics:
     - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-operative-phase-strategy.json
     - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-follow-up-phase-strategy.json
     - topics/chronic-rhinosinusitis/computable/Library-chronic-rhinosinusitis.json
-    created_at: '2026-05-29T02:57:09Z'
+    created_at: '2026-05-29T10:54:26Z'
     checksums:
       topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway.json: 
         c169beb78748372d9cc7092566573687c6cbb94449789c2e3fd5c9e317d71114
       topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-assessment-phase-strategy.json: 
-        9bcf19fa5218400898da785856d174ea519d0582b38b6d934a24070a3943becd
+        a98b2fa01b7afe3c69b999f04cc993bb3ae98824a59535da4615f0c649f5332a
       topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-planning-phase-strategy.json: 
-        8830cb59c2e23a7324e945aaf8ec08e6396b78048c3f398ab2e0d5561a7b5220
+        7fabe97fcb570ab0935cc2baa14b7e12bfd2d500f01f7a4eefad278c9342110b
       topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-operative-phase-strategy.json: 
-        d862ff2195980f620d0024fa6fbfa4fe59089405e02d0ad22882781210c9cbfa
+        dfdb15d442a3d7c18d7b612b233b70f6827ac3e07f860a9e6cf87def2ddfb700
       topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-follow-up-phase-strategy.json: 
-        fe09f9b1458753b3c1b0c51bf07628c8b10e1ab502b48e8024d92a023a11cf5e
+        42b1af0052de443eb3ac1a624eb25545f5004769bdf4151a0a5937c244305a52
       topics/chronic-rhinosinusitis/computable/Library-chronic-rhinosinusitis.json: 
         048f8d5ae10b637968225fb1599bc6372e352c38a2fed81264cd8f9fd7357f22
     converged_from:
@@ -59,6 +59,22 @@ topics:
     type: created
     description: CRS topic for testing
   - timestamp: '2026-05-29T02:57:09Z'
+    type: computable_converged
+    description: Formalized 'crs-pathway' using care-pathway strategy → 6 
+      resources
+  - timestamp: '2026-05-29T10:44:43Z'
+    type: computable_converged
+    description: Formalized 'crs-pathway' using care-pathway strategy → 6 
+      resources
+  - timestamp: '2026-05-29T10:49:19Z'
+    type: computable_converged
+    description: Formalized 'crs-pathway' using care-pathway strategy → 6 
+      resources
+  - timestamp: '2026-05-29T10:53:55Z'
+    type: computable_converged
+    description: Formalized 'crs-pathway' using care-pathway strategy → 6 
+      resources
+  - timestamp: '2026-05-29T10:54:26Z'
     type: computable_converged
     description: Formalized 'crs-pathway' using care-pathway strategy → 6 
       resources

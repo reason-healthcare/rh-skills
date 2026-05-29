@@ -86,7 +86,16 @@ class CarePathwayBuilder(FHIRBuilder):
         """
         metadata = care_pathway.get('metadata', {})
         sections = care_pathway.get('sections', {})
-        phases = sections.get('steps', [])  # Pathway phases
+        phases = sections.get('steps', [])
+        
+        if not phases:
+            raise ValueError(
+                f"Care pathway artifact is missing required 'sections.steps' field. "
+                f"Found sections keys: {list(sections.keys()) if sections else 'NO SECTIONS'}. "
+                f"Top-level keys: {list(care_pathway.keys())}. "
+                f"Expected L2 structure: {{sections: {{steps: [{{id, code, description, substeps}}]}}}}. "
+                f"If this artifact was extracted, check decision-table-guide.md or care-pathway extraction guidance."
+            )
         
         # Build pathway ID
         pathway_id = self.artifact_id
@@ -103,6 +112,15 @@ class CarePathwayBuilder(FHIRBuilder):
                 "text": topic_display
             }
         })
+        
+        # Validate phases have required 'id' field
+        if phases and not all('id' in phase for phase in phases):
+            missing_ids = [i for i, phase in enumerate(phases) if 'id' not in phase]
+            raise ValueError(
+                f"Care pathway phases at indices {missing_ids} are missing required 'id' field. "
+                f"Expected structure: {{id: 'phase-id', code: 'Phase Title', description: '...', substeps: []}}. "
+                f"Phase keys found: {[list(phases[i].keys()) for i in missing_ids[:3]]}"
+            )
         
         # Build actions (one per phase/strategy)
         actions = []
@@ -183,6 +201,13 @@ class CarePathwayBuilder(FHIRBuilder):
         sections = care_pathway.get('sections', {})
         phases = sections.get('steps', [])
         
+        if not phases:
+            raise ValueError(
+                f"Care pathway artifact is missing required 'sections.steps' field. "
+                f"Found sections keys: {list(sections.keys()) if sections else 'NO SECTIONS'}. "
+                f"Expected L2 structure: {{sections: {{steps: [{{id, code, description, substeps}}]}}}}."
+            )
+        
         strategy_pds = []
         
         for phase in phases:
@@ -220,25 +245,62 @@ class CarePathwayBuilder(FHIRBuilder):
         # Get substeps (events) for this phase
         substeps = phase.get('substeps', [])
         
+        # Validate substeps have required L2 fields (not FHIR fields!)
+        if substeps and not decision_table:
+            for idx, substep in enumerate(substeps):
+                if 'event' not in substep:
+                    raise ValueError(
+                        f"Phase '{phase_id}' substep at index {idx} is missing required 'event' field. "
+                        f"Substep keys found: {list(substep.keys())}. "
+                        f"Expected L2 schema: {{substep: '1.1', description: '...', event: 'e1'}}. "
+                        f"L2 is FHIR-agnostic - use event references, not fhir_definition_canonical."
+                    )
+        
+        # If no substeps but decision_table provided, derive from events in this phase
+        if not substeps and decision_table:
+            events = decision_table.get('sections', {}).get('events', [])
+            # Filter events that belong to this phase
+            phase_events = [e for e in events if e.get('phase') == phase_id]
+            # Convert events to substep format
+            substeps = []
+            for event in phase_events:
+                event_id = event.get('id', '')
+                substeps.append({
+                    'id': event_id,
+                    'event_ref': event_id,
+                    'code': event.get('label', event_id),
+                    'description': event.get('description', ''),
+                    # Will construct canonical URL in action building below
+                })
+        
         # Build actions (references to Recommendation PlanDefinitions)
+        # Construct FHIR canonical URLs from L2 event references
         actions = []
+        
+        # Determine source decision table for event resolution
+        source_decision_table = care_pathway.get('decision_table') or self.decision_table_id
+        
         for substep in substeps:
-            # Get canonical URL for the referenced PlanDefinition
-            # If explicit canonical provided, use it; otherwise construct from event_ref/id
-            canonical_url = substep.get('fhir_definition_canonical')
+            # L2 uses 'event' field to reference decision table events
+            # Formalize constructs FHIR canonical URLs from these L2 references
+            event_id = substep.get('event')
+            substep_decision_table = substep.get('decision_table') or source_decision_table
             
-            if canonical_url:
-                # Extract ID from canonical URL for action.id
-                # e.g., "http://example.org/.../PlanDefinition/CRSEvaluationEncounter" -> "CRSEvaluationEncounter"
-                action_id = canonical_url.split('/')[-1]
+            if not event_id:
+                raise ValueError(
+                    f"Phase '{phase_id}' substep is missing 'event' field. "
+                    f"Substep: {substep}. L2 requires event references, not FHIR URLs."
+                )
+            
+            # Construct PlanDefinition ID from decision table + event
+            if substep_decision_table:
+                action_id = f"{substep_decision_table}-{event_id}"
             else:
-                # Fallback: construct from event_ref or id (for auto-generated pathways)
-                event_id = substep.get('event_ref') or substep.get('id') or substep.get('substep')
-                if self.decision_table_id:
-                    action_id = f"{self.decision_table_id}-{event_id}"
-                else:
-                    action_id = event_id
-                canonical_url = self.build_canonical_url("PlanDefinition", action_id)
+                # Fallback: just use event ID (may not resolve correctly)
+                action_id = event_id
+            
+            # Build FHIR canonical URL
+            canonical_url = self.build_canonical_url("PlanDefinition", action_id)
             
             action = {
                 "id": action_id,
