@@ -29,8 +29,8 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 | Type | SME Question | L3 FHIR Target | Key Sections |
 |------|-------------|-----------------|--------------|
 | **evidence-summary** | What does the evidence say? | Evidence, EvidenceVariable, Citation | summary_points, risk_factors, evidence_traceability |
-| **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), ActivityDefinition, Library (CQL) | events, conditions, actions, rules, exceptions |
-| **care-pathway** | In what order do things happen? | PlanDefinition (clinical-protocol), ActivityDefinition | triggers, steps (ordered with actor + next-step) |
+| **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), ActivityDefinition, Library (CQL) | events, conditions, actions, rules, evidence_traceability |
+| **care-pathway** | In what order do things happen? | PlanDefinition (clinical-protocol), ActivityDefinition | steps (flat model with optional `parent_id`, `actor`, `applicability_condition`), transitions |
 | **terminology** | What codes define the concepts? | ValueSet, ConceptMap | value_sets, concept_maps |
 | **measure** | How do we know it's working? | Measure, Library (CQL) | populations, scoring, improvement_notation |
 | **assessment** | What do we ask the patient? | Questionnaire | instrument, items (questions), scoring |
@@ -42,6 +42,50 @@ Decision-table extraction guidance:
 - Use recommendation-scoped triggers such as `preoperative-planning-initiated`, not broad pathway phases such as `planning`.
 - Keep downstream rules local to the recommendation being evaluated; do not restate prior pathway progression unless it is clinically required.
 - If the source is primarily sequencing or phase ownership, prefer `care-pathway` over `decision-table`.
+- Use canonical `Yes`/`No` condition values in `conditions.values[]` and `rules.when{}`.
+- Every decision condition should have one or more supporting
+  `data_elements[]` entries that name the patient features or clinical data
+  needed to answer it.
+- Prefer `conditions[]` to represent the decision variables or clinical
+  conclusions that actually appear in `rules.when{}`.
+- When the source describes multi-part criteria, keep the higher-level
+  condition in `conditions[]` and express the underlying patient features in
+  `data_elements[]`. For example, `established-crs-diagnostic-criteria-confirmed`
+  can be one condition, while `decreased sense of smell`, `symptom duration >=
+  12 weeks`, and `objective inflammation evidence` appear as data elements.
+- If the source says “at this step, do X” or “during this phase, assess/review/obtain Y,”
+  prefer an event-driven rule with `event + then` and no `when`.
+- Do not gate verification, assessment, review, or evidence-gathering actions on
+  the same confirmed state they are intended to establish.
+- When the source describes sequential clinical reasoning in one pathway,
+  prefer one decision-table with staged events over child tables. Use early
+  actions to establish later branch conditions, then gate later events on those
+  conditions.
+- Use `actions[].produces_conditions[]` when an action explicitly establishes a
+  later branch condition.
+- Use `actions[].parent_action_id` when a supporting action belongs under a
+  broader assessment action rather than standing alone.
+- Use `actions[].assessment_artifact` when a named questionnaire or assessment
+  instrument is explicitly administered or reviewed as part of a broader
+  assessment and should later formalize to a Questionnaire.
+- A common staged pattern is:
+  - `event + then` for verification work
+  - later `event + when + then` for broader assessment work once verification succeeds
+  - additional assessment actions at that same assessment event when the source
+    explicitly calls for them, such as questionnaire administration or review
+  - a later recommendation event gated by the final assessment conclusion
+- Only split into multiple decision-table artifacts when a later stage has its
+  own substantial internal branching and becomes too large or unreadable as a
+  single staged table.
+- Do not invent composite `derivation` helper syntax.
+- If the narrative clearly groups recommendations by care phase, use optional `sections.pathway_phases[]` as the canonical phase model and reference it from `event.phase` and `rule.phase`.
+- Do not use legacy fields (`pathway_phase`, top-level `pathway_phases`, `phase_order`, nested `substeps`, action `type`).
+
+Care-pathway extraction guidance:
+- Keep `steps[]` flat and express hierarchy with `parent_id`.
+- When the source describes one overarching patient journey with major phases, create a top-level pathway step and make the major phases its children.
+- Treat every `steps[]` entry as a pathway node first. When present, an overall journey step is longitudinal orchestration, and its child phases are candidate groupings that downstream formalize may promote into separate strategy artifacts if the related decision logic supports it.
+- Keep recommendation logic in the decision-table artifact; use care-pathway for sequencing, actor ownership, and phase transitions.
 
 ---
 

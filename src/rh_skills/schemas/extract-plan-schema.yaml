@@ -89,9 +89,34 @@ top_level_fields:
       First enrich with `rh-skills promote concept enrich <topic> ...`, then
       review with `rh-skills promote concept review <topic>`. The packet
       signals that ReasonHub MCP must be used to identify standardized codes
-      before human approval, and that only descendant is-a concepts should be
-      proposed as related approvals. The extract plan must not be finalized
-      while this review remains pending.
+      before human approval. The extract plan must not be finalized while this
+      review remains pending.
+    sub_fields:
+      source_files:
+        type: list
+        description: Normalized source files from which concepts were aggregated.
+      status:
+        type: string
+        allowed_values: [pending-review, approved]
+        description: Review gate. Extract plan cannot be finalized until approved.
+      review_artifacts:
+        type: string
+        description: >
+          Directory containing one CSV per concept:
+          topics/<topic>/process/plans/concepts/
+          Each CSV file is named <concept-slug>.csv and holds candidate codes,
+          reviewer decisions (include/exclude), related rows, and expansion rows.
+      finalization_metadata:
+        type: string
+        description: >
+          topics/<topic>/process/plans/concepts-review-meta.yaml — written by
+          `concept review --finalize`; records reviewer, timestamp, and per-CSV
+          checksums. Do not edit directly.
+      final_artifact:
+        type: string
+        description: >
+          topics/<topic>/structured/concepts.yaml — written during implement
+          mode by `rh-skills promote concept write <topic>`.
 
   artifacts:
     type: list            # list of artifact entries; see artifact_fields below
@@ -224,6 +249,11 @@ artifact_fields:
       - steps                 # care-pathway (hierarchical workflow nodes; NOT ECA triggers)
       - concerns              # include when source disagreements must be documented
       - recommendations       # evidence-summary
+      - events                # decision-table (clinical decision points)
+      - conditions            # decision-table (clinical criteria for rules)
+      - rules                 # decision-table (event + conditions → actions mapping)
+      - pathway_phases        # decision-table (optional; for temporal workflows only)
+      - phases                # care-pathway (workflow phases with substeps)
 
   concerns:
     type: list            # list of concern entries; see concern_entry_fields
@@ -297,3 +327,84 @@ concern_entry_fields:
 #   All artifacts decided → reviewer may finalize plan to 'approved'
 #   Any artifact rejected → plan may be finalized as 'rejected'
 #   Any artifact needs-revision → plan remains pending-review until revised
+
+# ── Decision Table Artifact Type ──────────────────────────────────────────────
+
+decision_table_guidance:
+  description: >
+    Decision tables encode event-driven clinical decision logic (when X, then Y).
+    Use when guideline contains conditional recommendations tied to clinical
+    decision points or workflow phases.
+  
+  required_sections:
+    - summary
+    - evidence_traceability
+    - events                # Clinical decision points or workflow milestones
+    - conditions            # Clinical criteria from "when" clauses
+    - actions               # Recommendations from "then" clauses
+    - rules                 # Event + conditions → actions mapping
+  
+  optional_sections:
+    - pathway_phases        # Only for temporal/procedural guidelines with clear workflow sequence
+                           # When present, enables auto-derivation of care-pathway artifact
+    - concerns             # Source disagreements or unresolved issues
+  
+  validation_requirements:
+    - Every rule must have a rationale field with source recommendation locator
+    - Conditions should be defined once and reused across rules (avoid duplication)
+    - Events must have unique IDs and descriptions
+    - Actions must map to FHIR resource types (ServiceRequest, Procedure, etc.)
+  
+  pathway_phases_usage:
+    when_to_include: >
+      Only for procedural/workflow guidelines with temporal sequence
+      (assessment → planning → execution → follow-up).
+      Enables auto-derivation via `rh-skills derive pathway`.
+    when_to_omit: >
+      Diagnostic guidelines (hierarchical decision trees), screening guidelines
+      (conditional risk-based testing), treatment optimization (iterative cycles).
+    structure:
+      - id: phase-1
+        name: Assessment
+        order: 1
+        description: Initial patient evaluation
+  
+  extraction_guidance: >
+    See decision-table-guide.md for comprehensive extraction heuristics covering
+    4 guideline structure types (procedural/workflow, diagnostic, screening,
+    treatment optimization).
+
+# ── Care Pathway Artifact Type ───────────────────────────────────────────────
+
+care_pathway_guidance:
+  description: >
+    Care pathways encode workflow sequences (phases → steps → substeps).
+    Use ONLY when no decision-table artifact with pathway_phases exists.
+  
+  required_sections:
+    - summary
+    - evidence_traceability
+    - phases                # Workflow phases containing steps
+  
+  optional_sections:
+    - concerns
+  
+  auto_derivation_preferred:
+    condition: >
+      If a decision-table artifact with pathway_phases metadata exists for
+      the same clinical workflow, DO NOT manually extract a care-pathway.
+    command: >
+      rh-skills derive pathway --from-decision-table <decision-table-id>
+    metadata:
+      - derived_from: [decision-table-id]
+      - auto_generated: true
+  
+  manual_extraction_when:
+    - No decision table exists for the workflow
+    - Guideline describes workflow without decision logic
+    - Decision table lacks pathway_phases metadata (non-temporal guidelines)
+  
+  structure_requirements:
+    - Phases must have sequential order
+    - Steps reference specific clinical activities
+    - Substeps may reference decision-table events when pathway is auto-derived

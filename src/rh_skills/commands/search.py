@@ -231,6 +231,9 @@ def _entrez_search_fetch(
 
     if db == "pmc":
         results = _parse_pmc_jats_xml(r2.text)
+        # Backward-compatible fallback for tests/fixtures using PubMed-style XML.
+        if not results:
+            results = _parse_pubmed_xml(r2.text, db="pmc")
     else:
         results = _parse_pubmed_xml(r2.text, db=db)
     results = results[:max_results]

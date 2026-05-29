@@ -9,7 +9,6 @@ import click
 from pathlib import Path
 from ruamel.yaml import YAML
 from typing import Dict, List, Any
-from datetime import datetime
 
 yaml = YAML()
 yaml.preserve_quotes = True
@@ -161,15 +160,6 @@ def derive_pathway(from_decision_table: str, pathway_id: str, force: bool):
         "derived_from": [from_decision_table],
         "artifact_type": "care-pathway",
         "clinical_question": f"How should the {dt_data.get('domain', 'clinical')} workflow be organized across care phases?",
-        "fhir_mapping": {
-            "profile": "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-pathwaydefinition",
-            "plan_definition_type": "clinical-protocol",
-            "library": from_decision_table,
-            "subject": "Patient",
-            "auto_generated": True,
-            "source_artifact": from_decision_table,
-            "generation_timestamp": datetime.utcnow().isoformat() + "Z",
-        },
         "sections": {
             "summary": (
                 f"This pathway organizes the {dt_data.get('domain', 'clinical')} care continuum "
@@ -182,28 +172,25 @@ def derive_pathway(from_decision_table: str, pathway_id: str, force: bool):
     
     # Build steps from phases
     steps = []
-    for phase_idx, phase in enumerate(pathway_phases, start=1):
+    for phase in pathway_phases:
         phase_id = phase["id"]
         phase_events = events_by_phase.get(phase_id, [])
         
         # Build substeps from events
         substeps = []
-        for event_idx, event in enumerate(phase_events, start=1):
+        for event in phase_events:
             substeps.append({
-                "substep": f"{phase_idx}.{event_idx}",
-                "description": event.get("label", event.get("description", event["id"])),
-                "event_id": event["id"],
-                "fhir_plan_definition_id": event.get("fhir_plan_definition_id"),
+                "id": event["id"],
+                "label": event.get("label", event["id"]),
+                "description": event.get("description", event.get("label", event["id"])),
+                "event": event["id"],
             })
         
         steps.append({
-            "step": phase_idx,
             "id": phase_id,
-            "code": phase.get("label", phase_id),
+            "label": phase.get("label", phase_id),
             "description": phase.get("description", ""),
-            "order": phase.get("order", phase_idx),
             "actor": "Clinician",
-            "next": phase_idx + 1 if phase_idx < len(pathway_phases) else None,
             "substeps": substeps,
         })
     

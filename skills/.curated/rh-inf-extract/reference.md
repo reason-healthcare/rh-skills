@@ -194,6 +194,35 @@ When normalized source front matter contains `concepts[]`, extract planning writ
 
 The explicit extract artifact row named `concepts` is the reviewer-facing terminology package. `rh-skills promote concept write <topic>` materializes that row to `topics/<topic>/structured/concepts/concepts.yaml`. Only concepts with at least one approved candidate code or approved expansion are emitted into the final artifact. Custom concepts not extracted from source documents can be added with `concept add`.
 
+### Care-pathway structure
+
+Care-pathway artifacts use a phased shape. When the source describes one
+overarching patient journey with major phases, express that hierarchy with a
+top-level pathway step and `parent_id` links:
+
+```yaml
+artifact_type: care-pathway
+sections:
+  steps:
+    - id: diabetic-foot-pathway
+      label: Diabetic Foot Pathway
+      actor: clinician
+      description: Overall diabetic foot screening and follow-up pathway
+    - id: screening
+      label: Annual Foot Screening
+      actor: clinician
+      description: Assess diabetic foot risk
+      parent_id: diabetic-foot-pathway
+    - id: screening-decision
+      label: Screening Decision
+      description: Decide whether to proceed with testing
+      parent_id: screening
+      applicability_condition: screening due
+```
+
+Use flat `steps[]`, keep `actor` when known, and express hierarchy with
+`parent_id`. Do not use nested `substeps[]`.
+
 #### Quick Reference
 
 | Goal | Command |
@@ -447,30 +476,47 @@ sections:
 Includes eligibility conditions and exclusion conditions alongside explicit
 event-condition-action clinical decision logic.
 
-> **Flat sections — no wrapper key.** `events`, `conditions`, `actions`, and
-> `rules` go directly under `sections:`. Do NOT nest them under a
+> **Flat sections — no wrapper key.** `events`, `conditions`, `data_elements`,
+> `actions`, and `rules` go directly under `sections:`. Do NOT nest them under a
 > `decision_table:` wrapper (e.g., `sections.decision_table.conditions` is
 > wrong; use `sections.conditions`).
 
 ```yaml
 sections:
   summary: <string>
+  pathway_phases:                     # optional canonical phase model when narrative is phase-organized
+    - id: assessment
+      label: <phase label>
+      description: <phase description>
   events:
     - id: e1
       label: <recommendation-scoped evaluation trigger>
+      trigger_type: named-event         # optional when there is no formal trigger
+      phase: assessment                 # optional grouping field
   conditions:
     - id: c1
       label: <condition name>
+      description: <condition description>
       values:
-        - <possible value>            # quote values starting with > or <: ">75 years"
+        - Yes
+        - No
+  data_elements:
+    - id: de1
+      condition_id: c1
+      label: <patient feature or data element>
+      description: <what data should be reviewed or collected>
+      data_type: <symptom|diagnosis|imaging|history|patient-reported|finding|procedure|assessment|other>
   actions:
     - id: a1
       label: <action name>
+      kind: <ServiceRequest|CommunicationRequest|MedicationRequest|Procedure|Task>
+      intent: <optional intent label>
   rules:
     - id: r1
       event: e1
+      phase: assessment                 # optional grouping field
       when:
-        c1: <value or "N/A" for irrelevant>
+        c1: Yes
       then:
         - a1
   evidence_traceability:
@@ -489,12 +535,63 @@ evaluation, the condition values that must hold, and the actions that follow.
 If every rule shares the same trigger, keep the event reference explicit on each
 rule for now; de-duplication can happen later during formalization.
 
+No legacy aliases are supported (`pathway_phase`, top-level `pathway_phases`,
+action `type`, `phase_order`, `rule_id`, `event_id`).
+
+Every condition should have one or more corresponding
+`data_elements[]` entries that make the underlying data requirements explicit.
+Prefer `conditions[]` to represent the decision variables or clinical
+conclusions that appear in rules. When the source describes multi-part
+diagnostic or eligibility criteria, keep the higher-level condition in
+`conditions[]` and use `data_elements[]` to capture the underlying patient
+features or clinical data used to determine that condition. Do not invent
+composite `derivation` structures.
+
+If the source says “at this step, do X” or “during this phase, assess/review/obtain Y,”
+prefer an event-driven rule with `event + then` and no `when`.
+
+Do not gate verification, assessment, review, or evidence-gathering actions on
+the same confirmed state they are intended to establish.
+
+When the source describes sequential clinical reasoning in one pathway, prefer
+one decision-table with staged events over child tables. Use early actions to
+establish later branch conditions, then gate later events on those conditions.
+
+Use `actions[].produces_conditions[]` when an action explicitly establishes a
+later branch condition.
+
+Use `actions[].parent_action_id` when a supporting action belongs under a
+broader assessment action rather than standing alone.
+
+Use `actions[].assessment_artifact` when a named questionnaire or assessment
+instrument is explicitly administered or reviewed as part of a broader
+assessment and should later formalize to a Questionnaire.
+
 Phase 1 guidance for a single decision-table artifact:
 - keep one artifact if needed, but make each `event` a recommendation-scoped
   evaluation moment rather than a broad pathway phase
 - keep `when` values local to the recommendation being evaluated
+- when the source describes a routine workflow-step action, prefer `event + then`
+  with no `when`
 - do not restate prior pathway progression in downstream rules unless that
   prerequisite is clinically required by the recommendation itself
+- do not make a confirmed state the prerequisite for an action whose purpose is
+  to verify, assess, review, or obtain the evidence for that state
+- when the guideline reads as a sequence such as:
+  - verify diagnosis
+  - when verified, assess candidacy
+  - when appropriate, recommend treatment
+  represent that as staged events in one table rather than nested tables
+- additional sub-steps of a broader assessment can appear as separate actions
+  at the same staged assessment event when the source explicitly calls for
+  them, such as administering or reviewing a validated questionnaire
+- when the source states multi-part diagnostic, eligibility, or verification
+  criteria, keep the high-level decision variable in `conditions[]`, add
+  corresponding `data_elements[]` entries for the patient features that
+  determine it, and reference the high-level condition id in `rules.when{}`
+- when the narrative clearly groups recommendations by care phase, define
+  `sections.pathway_phases[]` as the canonical phase model and keep
+  `event.phase` / `rule.phase` aligned to those phase ids
 
 #### care-pathway
 
@@ -504,19 +601,36 @@ process steps (normalize, classify, etc.) and NOT rh-skills workflow steps.
 
 ```yaml
 sections:
-  triggers:
-    - id: trigger-1
-      description: <clinical event that initiates the pathway, e.g. "new diagnosis of Bell's palsy">
   steps:
-    - step: 1
-      description: <clinical action, e.g. "Assess severity using House-Brackmann scale">
-      actor: <clinician role or patient, e.g. "neurologist" or "patient">
-      next: 2
-    - step: 2
-      description: <next clinical action, e.g. "Initiate corticosteroid therapy within 72 hours of onset">
-      actor: <clinician role>
-      next: 3
+    - id: bells-palsy-pathway
+      label: Bell's palsy pathway
+      description: Overall outpatient Bell's palsy care pathway
+      actor: neurologist
+    - id: assess-severity
+      label: Assess severity
+      description: Assess severity using House-Brackmann scale
+      actor: neurologist
+      parent_id: bells-palsy-pathway
+    - id: initiate-therapy
+      label: Initiate corticosteroids
+      description: Initiate corticosteroid therapy within 72 hours of onset
+      actor: neurologist
+      parent_id: assess-severity
+      applicability_condition: diagnosis confirmed
+  transitions:
+    - from_id: assess-severity
+      to_id: initiate-therapy
+      description: Proceed after confirming diagnosis and indication
 ```
+
+When the source describes a single overarching clinical pathway with major
+phases, include a top-level pathway step and make the major phases children via
+`parent_id`. Treat every step as a pathway node first. The top-level step, when
+present, is the overall longitudinal journey, and its child phases are
+candidate clinical groupings that downstream formalize may promote into
+separate strategy artifacts when the paired decision logic supports that split.
+Keep recommendation logic in the decision-table artifact; use the care-pathway
+for sequencing, actor ownership, and transitions.
 
 #### terminology
 
@@ -693,7 +807,7 @@ Use decision-table artifact type when guideline contains:
 ### Guideline Structure Types
 
 Before extracting, identify guideline type (see decision-table-guide.md for full details):
-1. **Procedural/Workflow** — temporal sequence (use `pathway_phases` metadata)
+1. **Procedural/Workflow** — temporal sequence (keep decision-table recommendation-scoped and express pathway hierarchy separately in `care-pathway.steps[]`)
 2. **Diagnostic** — hierarchical decision tree
 3. **Screening** — risk stratification + conditional testing
 4. **Treatment Optimization** — iterative adjustment cycles
@@ -706,28 +820,32 @@ Before extracting, identify guideline type (see decision-table-guide.md for full
 - **Rules**: Event + conditions → actions mapping
 - **Evidence traceability**: Every rule must have `rationale` field with source locator
 
-### pathway_phases Metadata
-
-**When to use**: Only for procedural/workflow guidelines with temporal sequence
-
-**Why**: Enables auto-derivation of care pathway artifact via `rh-skills derive pathway`
-
-**When to omit**: Diagnostic, screening, or treatment optimization guidelines (non-temporal)
+- When the narrative clearly groups recommendations by care phase, populate
+  optional `sections.pathway_phases[]` and keep `event.phase` and/or
+  `rule.phase` aligned to those phase ids to support downstream pathway
+  alignment.
+- Keep those phase labels as a canonical grouping model; do not turn broad
+  phases into the primary event units.
 
 ---
 
 ## Care Pathway Artifacts
 
-### Auto-Derivation vs Manual Extraction
+### Manual Extraction With Cross-Artifact Alignment
 
-**If a decision-table artifact with `pathway_phases` metadata exists**, DO NOT manually extract a care-pathway artifact.
+Care-pathway extraction remains explicit. Do not assume a separate pathway
+auto-derive command.
 
-**Instead**: Use `rh-skills derive pathway --from-decision-table <id>` to auto-generate the pathway
-
-**Manual extraction** of care pathways is only appropriate when:
-- No decision table exists for the clinical workflow
-- Guideline describes workflow without decision logic
-- Decision table lacks `pathway_phases` metadata
+When a related decision-table exists:
+- keep care-pathway `steps[]` and `transitions[]` aligned to the same clinical
+  phases
+- use a top-level pathway step plus `parent_id` children when the source
+  describes one overarching patient journey
+- expect downstream formalize to derive pathway-level orchestration from the
+  overall node structure and to promote only clinically meaningful nodes into
+  strategy-level grouping when supported by aligned decision-table structure
+- keep recommendation logic in the decision-table and sequencing in the
+  care-pathway
 
 ---
 

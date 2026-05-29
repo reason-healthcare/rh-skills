@@ -88,25 +88,28 @@ workspace:
         sections:
           steps:
             - id: step-1
-              name: "Confirm hypertension diagnosis"
+              label: "Confirm hypertension diagnosis"
               description: >
                 Confirm elevated BP on at least two separate visits
                 (SBP ≥ 130 mmHg or DBP ≥ 80 mmHg). Rule out white-coat
                 hypertension using home or ambulatory BP monitoring if indicated.
             - id: step-2
-              name: "Cardiovascular risk stratification"
+              label: "Cardiovascular risk stratification"
               description: >
                 Calculate 10-year ASCVD risk using pooled cohort equations.
                 Assess for target-organ damage (LVH, CKD, retinopathy).
                 Document comorbidities: diabetes, CKD stage, prior CVD events.
             - id: step-3
-              name: "Initiate or adjust antihypertensive therapy"
+              label: "Initiate or adjust antihypertensive therapy"
               description: >
                 Leaf step — apply the antihypertensive initiation ECA rule to
                 determine whether pharmacological therapy is indicated and which
                 first-line agent to prescribe.
-              sub_pathway_reference: antihypertensive-initiation-eca
-              is_leaf: true
+              substeps:
+                - id: antihypertensive-initiation
+                  label: "Apply antihypertensive initiation rule"
+                  description: "Determine whether pharmacological therapy is indicated and which first-line agent to prescribe."
+                  event: antihypertensive-initiation-eca
           transitions:
             - from: step-1
               to: step-2
@@ -176,10 +179,10 @@ prompt: |
   - `antihypertensive-initiation-eca` (decision-table) — an ECA rule with
     CQL-expressible applicability logic and a medication-request action
 
-  The care pathway's leaf step (`step-3`) carries a `sub_pathway_reference`
-  to `antihypertensive-initiation-eca`. The formalized PlanDefinition
-  (clinical-protocol) must link to the ECA PlanDefinition (eca-rule) at
-  that leaf action.
+  The care pathway's leaf step (`step-3`) contains a nested substep that
+  points at the antihypertensive initiation logic. The formalized
+  PlanDefinition (clinical-protocol) must link to the ECA PlanDefinition
+  (eca-rule) at that leaf action.
 
   Run the full formalize cycle:
   1. **plan** — generate a formalize plan proposing the full L3 FHIR package:
@@ -250,5 +253,5 @@ quality_focus:
 
 efficiency_focus:
   - "Does the agent plan all 4 FHIR resources in one plan step rather than discovering them incrementally?"
-  - "Does the agent recognize the sub_pathway_reference field without extra investigation loops?"
+  - "Does the agent recognize the nested substep link without extra investigation loops?"
   - "Are the CQL applicability expressions transcribed directly from the structured artifact without spec lookup?"

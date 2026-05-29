@@ -18,7 +18,7 @@ from rh_skills.common import (
     save_tracking,
     topic_dir,
 )
-from rh_skills.fhir.packaging import infer_package_id, prepare_package_workspace
+from rh_skills.fhir.packaging import infer_package_id, load_packager_toml, prepare_package_workspace
 
 
 def _resolve_rh_binary() -> str:
@@ -81,7 +81,7 @@ def package(topic, dry_run, check_only, pack_tgz, output_dir, workspace_dir):
         )
         cfg = {
             "name": "".join(w.capitalize() for w in topic.split("-")),
-            "id": topic,
+            "id": topic,  # Simple ID (IG.id), packageId will add 'reason.' prefix
             "canonical": "http://example.org/fhir",
             "status": "draft",
             "version": "0.1.0",
@@ -91,6 +91,9 @@ def package(topic, dry_run, check_only, pack_tgz, output_dir, workspace_dir):
         pkg_workspace = Path(workspace_dir)
     else:
         pkg_workspace = td / "process" / "package-workspace"
+
+    packager_cfg = load_packager_toml(pkg_workspace / "packager.toml")
+    canonical = packager_cfg.get("canonical", cfg["canonical"])
 
     build_dir = Path(output_dir) if output_dir else (pkg_workspace / "output")
     output_mode = "overridden (--output-dir)" if output_dir else "defaulted (<workspace>/output)"
@@ -103,7 +106,7 @@ def package(topic, dry_run, check_only, pack_tgz, output_dir, workspace_dir):
         version=cfg["version"],
         name=cfg["name"],
         ig_id=cfg["id"],
-        canonical=cfg["canonical"],
+        canonical=canonical,
         status=cfg["status"],
         package_id=resolved_package_id,
     )

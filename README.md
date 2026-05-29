@@ -39,6 +39,7 @@ understanding time lags in translational research." *J R Soc Med.* 2011;104(12):
   - [Ingest](docs/INGEST.md): L1 source acquisition and normalization
   - [Extract](docs/EXTRACT.md): L2 structured artifact derivation
   - [Formalize](docs/FORMALIZE.md): L3 FHIR R4 computable conversion
+  - [AI Iteration Guide](docs/AI_ITERATION_GUIDE.md): compare a concrete topic example to external test runs without overfitting the framework
 - [Usage Modes](docs/USAGE_MODES.md): CLI-first vs agent-native usage and configuration guidance
 - [Commands](docs/COMMANDS.md): full CLI reference with commands, subcommands, and options
 - [Example Project](example-project/): sample repository showing the expected project layout and artifacts

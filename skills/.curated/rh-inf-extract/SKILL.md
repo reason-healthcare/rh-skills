@@ -189,7 +189,7 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      |---|---|
      | `decision-table` / `policy` | Every triggering event, every normative "if X do Y" or "should/shall/must/consider" statement, each distinct condition threshold, and each action or recommendation |
      | `evidence-summary` | Each distinct finding, conclusion, or evidence grade reported; each PICOTS frame if present |
-     | `care-pathway` | Each named clinical sequence step, actor assignment, or timing constraint |
+     | `care-pathway` | Each named clinical phase/step, actor assignment, parent-child step relationship (`parent_id`), and transition condition |
      | `measure` | Each defined outcome, population definition, numerator/denominator specification |
      | `assessment` | Each instrument domain, scored item, or response scale described |
      | `terminology` | Each clinical concept, code system reference, or value set boundary mentioned |

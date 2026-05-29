@@ -228,18 +228,26 @@ def _validate_extract_artifact(
     
     # Run artifact-type-specific validation
     artifact_type = artifact_data.get("artifact_type")
+    
+    def emit_callback(level, msg):
+        if level == "ERROR":
+            _report_error(msg, emit=emit)
+        elif level == "WARN":
+            _report_warn(msg, emit=emit)
+    
     if artifact_type == "decision-table":
         from rh_skills.validators.decision_table import validate_decision_table
-        
-        def emit_callback(level, msg):
-            if level == "ERROR":
-                _report_error(msg, emit=emit)
-            elif level == "WARN":
-                _report_warn(msg, emit=emit)
         
         dt_errors, dt_warnings = validate_decision_table(artifact_data, emit_callback=emit_callback)
         errors += dt_errors
         warnings += dt_warnings
+    
+    elif artifact_type == "care-pathway":
+        from rh_skills.validators.care_pathway import validate_care_pathway
+        
+        cp_errors, cp_warnings = validate_care_pathway(artifact_data, emit_callback=emit_callback)
+        errors += cp_errors
+        warnings += cp_warnings
 
     return errors, warnings
 
@@ -391,7 +399,12 @@ def _validate_formalize_artifact(
 
     # Determine if this artifact uses deterministic builders (decision-table, care-pathway)
     # These artifact types generate FHIR directly without L3 intermediate format
-    artifact_type = target_entry.get("type") or artifact_data.get("artifact_type")
+    artifact_type = (
+        target_entry.get("artifact_type")
+        or target_entry.get("strategy")
+        or artifact_data.get("artifact_type")
+        or artifact_data.get("strategy")
+    )
     uses_deterministic_builders = artifact_type in ("decision-table", "care-pathway")
     
     expected_inputs = target_entry.get("input_artifacts", []) or []
@@ -421,13 +434,18 @@ def _validate_formalize_artifact(
             )
             errors += 1
 
-    # Determine if this artifact uses deterministic builders (decision-table, care-pathway)
-    # These artifact types generate FHIR directly without L3 intermediate format
-    artifact_type = target_entry.get("type") or artifact_data.get("artifact_type")
-    uses_deterministic_builders = artifact_type in ("decision-table", "care-pathway")
+    # Some artifact types formalize directly to FHIR JSON without an L3 intermediate
+    # YAML body, so section-level checks do not apply.
+    artifact_type = (
+        target_entry.get("artifact_type")
+        or target_entry.get("strategy")
+        or artifact_data.get("artifact_type")
+        or artifact_data.get("strategy")
+    )
+    uses_direct_fhir_outputs = artifact_type in ("decision-table", "care-pathway")
     
-    if not uses_deterministic_builders:
-        # Only validate L3 intermediate sections for non-deterministic artifacts
+    if not uses_direct_fhir_outputs:
+        # Only validate L3 intermediate sections for artifacts that declare them.
         for section_name in target_entry.get("required_sections", []) or []:
             if section_name not in artifact_data:
                 _report_error(f"  MISSING required formalize section: {section_name}", emit=emit)
@@ -439,18 +457,18 @@ def _validate_formalize_artifact(
                 emit=emit,
             )
     else:
-        # For deterministic builders, artifact_data is empty (no L3 intermediate)
-        # Validation happens at FHIR resource level only
+        # For direct FHIR outputs, artifact_data is empty (no L3 intermediate)
+        # Validation happens at the generated resource level only.
         if target_entry.get("required_sections"):
             _report_warn(
-                f"  Skipping L3 intermediate section checks for {artifact_type} (uses deterministic FHIR builders)",
+                f"  Skipping L3 intermediate section checks for {artifact_type} (formalizes directly to FHIR JSON)",
                 emit=emit,
             )
             warnings += 1
 
     # L3 FHIR JSON file validation
     fhir_errors, fhir_warnings = _validate_fhir_json_files(
-        topic, artifact, target_entry, emit=emit,
+        topic, artifact, target_entry, artifact_data, emit=emit,
     )
     errors += fhir_errors
     warnings += fhir_warnings
@@ -462,6 +480,7 @@ def _validate_fhir_json_files(
     topic: str,
     artifact: str,
     target_entry: dict,
+    artifact_data: dict | None = None,
     *,
     emit: bool = True,
 ) -> tuple[int, int]:
@@ -489,9 +508,19 @@ def _validate_fhir_json_files(
             errors += 1
         return errors, warnings
 
+    tracked_files = []
+    if isinstance(artifact_data, dict):
+        repo_root = topic_dir(topic).parent.parent
+        for rel_path in artifact_data.get("files") or []:
+            candidate = repo_root / rel_path
+            if candidate.exists() and candidate.suffix == ".json":
+                tracked_files.append(candidate)
+
+    files_to_validate = tracked_files or json_files
+
     # Map resourceType from filenames to check l3_targets coverage
     found_types: set[str] = set()
-    for json_file in json_files:
+    for json_file in files_to_validate:
         try:
             resource = _json.loads(json_file.read_text())
         except (ValueError, OSError):
@@ -524,6 +553,7 @@ def _validate_fhir_json_files(
 def _validate_l3_fhir_json(
     topic: str,
     artifact: str,
+    artifact_data: dict | None = None,
     *,
     emit: bool = True,
 ) -> tuple[int, int]:
@@ -542,6 +572,7 @@ def _validate_l3_fhir_json(
         raise click.UsageError(f"Topic '{topic}' not found")
 
     computable_dir = td / "computable"
+    repo_root = td.parent.parent
     if not computable_dir.exists():
         raise click.UsageError(
             f"No computable/ directory found for topic '{topic}'. "
@@ -555,8 +586,27 @@ def _validate_l3_fhir_json(
             "Run 'rh-skills formalize' to generate FHIR resources first."
         )
 
-    # Filter to files whose stem contains the artifact name.
-    matching = [f for f in all_json if artifact.lower() in f.stem.lower()]
+    tracked_files = []
+    if isinstance(artifact_data, dict):
+        for rel_path in artifact_data.get("files") or []:
+            candidate = Path(rel_path)
+            if not candidate.is_absolute():
+                candidate = Path(candidate)
+            tracked_files.append(candidate)
+
+    matching: list[Path] = []
+    repo_candidates: list[Path] = []
+    if tracked_files:
+        for rel_path in tracked_files:
+            candidate = repo_root / rel_path
+            if candidate.exists():
+                repo_candidates.append(candidate)
+        if repo_candidates:
+            matching = repo_candidates
+
+    # Fall back to name-based matching when tracking does not have usable file paths.
+    if not matching:
+        matching = [f for f in all_json if artifact.lower() in f.stem.lower()]
     if not matching:
         _report_warn(
             f"  No JSON files matching '{artifact}' in computable/ — validating all {len(all_json)} file(s)",
@@ -645,6 +695,29 @@ def validate_artifact_file(
         )
         errors += extract_errors
         warnings += extract_warnings
+        
+        # Always run artifact-type-specific validation even if no extract-plan
+        # This catches L2 schema violations like FHIR field leakage
+        artifact_type = artifact_data.get("artifact_type")
+        
+        def emit_callback(level, msg):
+            if level == "ERROR":
+                _report_error(msg, emit=emit)
+            elif level == "WARN":
+                _report_warn(msg, emit=emit)
+        
+        if artifact_type == "decision-table":
+            from rh_skills.validators.decision_table import validate_decision_table
+            dt_errors, dt_warnings = validate_decision_table(artifact_data, emit_callback=emit_callback)
+            errors += dt_errors
+            warnings += dt_warnings
+        
+        elif artifact_type == "care-pathway":
+            from rh_skills.validators.care_pathway import validate_care_pathway
+            cp_errors, cp_warnings = validate_care_pathway(artifact_data, emit_callback=emit_callback)
+            errors += cp_errors
+            warnings += cp_warnings
+        
         return errors, warnings
 
     elif level in ("l3", "computable"):
@@ -669,7 +742,9 @@ def validate_artifact_file(
         errors += formalize_errors
         warnings += formalize_warnings
 
-        fhir_errors, fhir_warnings = _validate_l3_fhir_json(topic, artifact, emit=emit)
+        fhir_errors, fhir_warnings = _validate_l3_fhir_json(
+            topic, artifact, artifact_data, emit=emit,
+        )
         errors += fhir_errors
         warnings += fhir_warnings
         return errors, warnings

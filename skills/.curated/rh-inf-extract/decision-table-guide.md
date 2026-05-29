@@ -487,6 +487,91 @@ rules:
 
 ---
 
+### Persistent Prerequisites (Workflow Pattern)
+
+**Definition**: Clinical state established at an earlier event that remains true for later sequential steps  
+**Pattern**: Condition appears at event N and should be repeated in ALL downstream events N+1, N+2, etc.  
+**When to use**: Procedural/workflow guidelines with temporal sequencing
+
+**Critical Rule**: If an earlier event establishes a prerequisite clinical state that remains true for later steps, downstream rules should repeat that state explicitly in `when`, unless the later step intentionally re-evaluates or relaxes it.
+
+**Example** (surgical workflow):
+```yaml
+events:
+  - id: e1
+    label: "Initial CRS Evaluation"
+    phase: "assessment"
+    phase_order: 1
+    
+  - id: e2
+    label: "Surgical Decision Point"
+    phase: "planning"
+    phase_order: 2
+    
+  - id: e3
+    label: "Pre-Operative Clearance"
+    phase: "planning"
+    phase_order: 3
+
+conditions:
+  - id: crs-diagnosis-confirmed
+    label: "CRS diagnosis confirmed"
+    description: "Patient meets diagnostic criteria for chronic rhinosinusitis"
+    values: ["true", "false"]
+    role: "persistent-prerequisite"  # Established at e1, required through e3
+    
+  - id: objective-inflammation-present
+    label: "Objective inflammation documented"
+    description: "Endoscopic or imaging evidence of inflammation"
+    values: ["true", "false"]
+    role: "persistent-prerequisite"  # Established at e1, required through e3
+    
+  - id: surgical-criteria-met
+    label: "Surgical candidacy criteria met"
+    description: "Failed medical therapy and meets clinical criteria"
+    values: ["true", "false"]
+    role: "branch-condition"  # Only checked at e2
+    
+rules:
+  # Event 1: Establish prerequisites
+  - id: r1
+    event: e1
+    when: {crs-diagnosis-confirmed: "true", objective-inflammation-present: "true"}
+    then: [verify-diagnostic-workup]
+    rationale: "Confirm diagnosis before proceeding"
+    
+  # Event 2: Prerequisites CARRIED FORWARD + new branch condition
+  - id: r2
+    event: e2
+    when: {crs-diagnosis-confirmed: "true", objective-inflammation-present: "true", surgical-criteria-met: "true"}
+    then: [offer-surgery]
+    rationale: "Offer surgery when persistent prerequisites confirmed AND surgical criteria met"
+    
+  # Event 3: Prerequisites CARRIED FORWARD again
+  - id: r3
+    event: e3
+    when: {crs-diagnosis-confirmed: "true", objective-inflammation-present: "true"}
+    then: [obtain-pre-op-clearance]
+    rationale: "Clearance requires confirmed diagnosis and inflammation"
+```
+
+**Why carry forward?** Prevents logic gaps where formalization might assume prerequisites persist implicitly, when the L2 artifact should be explicit.
+
+**Abstraction vs. Carry-Forward**:
+- **Prefer** explicit carry-forward of original conditions (e.g., `crs-diagnosis-confirmed`, `objective-inflammation-present`)
+- **Avoid** creating abstract summary conditions (e.g., `diagnosis-confirmed-and-meets-criteria`) unless reviewer-approved
+- **Do** allow diagnosis-confirmation conditions as branch criteria when the execution context is evaluating whether diagnosis is present
+- **Do not** use diagnosis as a prerequisite to assess whether diagnosis is present; treat that as the branch logic itself, not upstream context
+- **If abstracting**, keep both the original conditions AND the abstraction, or document why abstraction replaces them
+
+**Condition Role Values**:
+- `entry-prerequisite`: Must be true to enter the decision table at all
+- `persistent-prerequisite`: Established early, carried forward through sequential events
+- `branch-condition`: Determines which action at a specific event
+- `terminal-condition`: Final check before completion
+
+---
+
 ## Decision Type Inference
 
 Rules fall into two categories:
@@ -744,6 +829,54 @@ rules:
 
 ---
 
+### Pattern 4: Workflow Prerequisite Propagation
+
+**Use when**: Procedural/temporal guidelines where clinical state persists across multiple sequential events
+
+**Critical**: Carry forward prerequisite conditions established at earlier events
+
+```yaml
+# Event 1: Diagnosis established
+rules:
+  - id: r1
+    event: e1
+    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", objective-inflammation: "true"}
+    then: [confirm-crs-diagnosis]
+    
+# Event 2: Prerequisites REPEATED + new branch logic
+rules:
+  - id: r2
+    event: e2
+    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", objective-inflammation: "true", purulent-discharge: "false"}
+    then: [avoid-antibacterials]
+    
+  - id: r3
+    event: e2
+    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", objective-inflammation: "true", purulent-discharge: "true"}
+    then: [consider-antibacterials]
+    
+# Event 3: Prerequisites STILL REPEATED
+rules:
+  - id: r4
+    event: e3
+    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", objective-inflammation: "true", surgical-criteria-met: "true"}
+    then: [offer-sinus-surgery]
+```
+
+**Comment in YAML**:
+```yaml
+rules:
+  # Event 2: Surgical planning checkpoint
+  # Note: adult-patient, crs-diagnostic-criteria-met, objective-inflammation carried forward from e1
+  - id: r2
+    event: e2
+    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", ...}
+```
+
+**Validation Note**: Extract validation should warn if downstream events omit persistent prerequisites established earlier.
+
+---
+
 ## Anti-Patterns to Avoid
 
 ### ❌ Anti-Pattern 1: Duplicated Conditions
@@ -762,6 +895,139 @@ conditions:
 ```yaml
 conditions:
   - id: diagnosis-established
+```
+
+---
+
+### ❌ Anti-Pattern 2: Missing Prerequisite Carry-Forward (Workflow Gap)
+
+**Problem**: Sequential events in a workflow omit persistent prerequisites established earlier, creating implicit logic gaps
+
+**Example** (incomplete extraction):
+```yaml
+events:
+  - id: e1
+    label: "CRS Diagnosis"
+    phase: "assessment"
+  - id: e2
+    label: "Treatment Decision"
+    phase: "planning"
+  - id: e3
+    label: "Surgical Planning"
+    phase: "intervention"
+
+rules:
+  # Event 1: Prerequisites established
+  - id: r1
+    event: e1
+    when: {crs-diagnostic-criteria-met: "true", objective-inflammation: "true"}
+    then: [confirm-diagnosis]
+    
+  # ❌ WRONG: Event 2 omits prerequisites (assumes they persist implicitly)
+  - id: r2
+    event: e2
+    when: {failed-medical-therapy: "true"}  # Missing: crs-diagnostic-criteria-met, objective-inflammation
+    then: [consider-surgery]
+    
+  # ❌ WRONG: Event 3 also omits prerequisites
+  - id: r3
+    event: e3
+    when: {fine-cut-ct-available: "true"}  # Missing: all earlier prerequisites
+    then: [order-imaging]
+```
+
+**Fix**: Carry forward persistent prerequisites to downstream events
+```yaml
+rules:
+  # Event 1: Prerequisites established
+  - id: r1
+    event: e1
+    when: {crs-diagnostic-criteria-met: "true", objective-inflammation: "true"}
+    then: [confirm-diagnosis]
+    
+  # ✓ CORRECT: Event 2 repeats prerequisites
+  - id: r2
+    event: e2
+    when: {crs-diagnostic-criteria-met: "true", objective-inflammation: "true", failed-medical-therapy: "true"}
+    then: [consider-surgery]
+    rationale: "Prerequisites carried forward from e1; branch on medical therapy failure"
+    
+  # ✓ CORRECT: Event 3 repeats prerequisites
+  - id: r3
+    event: e3
+    when: {crs-diagnostic-criteria-met: "true", objective-inflammation: "true", fine-cut-ct-available: "true"}
+    then: [order-imaging]
+    rationale: "Prerequisites carried forward from e1; branch on CT availability"
+```
+
+**When to carry forward**:
+- Procedural/workflow guidelines with temporal sequencing
+- Clinical state established at event N remains true at N+1, N+2, etc.
+- Guideline doesn't explicitly re-evaluate the prerequisite at later events
+
+**When NOT to carry forward**:
+- Later event intentionally re-evaluates the condition (e.g., "reassess diagnosis")
+- Abstraction is reviewer-approved (e.g., `diagnosis-confirmed` replaces individual criteria)
+- Diagnostic tree guidelines (not workflow/procedural)
+
+---
+
+### ❌ Anti-Pattern 3: Abstract Summaries Without Source Traceability
+
+**Problem**: Creating abstract summary conditions that hide the original source criteria
+
+**Example** (over-abstraction):
+```yaml
+conditions:
+  # ❌ WRONG: Abstract condition without preserving originals
+  - id: diagnosis-confirmed
+    label: "Diagnosis confirmed and patient eligible"
+    description: "All diagnostic and eligibility criteria met"
+    values: ["true", "false"]
+
+rules:
+  - id: r1
+    event: e2
+    when: {diagnosis-confirmed: "true"}  # What criteria? Lost traceability
+    then: [proceed-to-treatment]
+```
+
+**Fix Option 1**: Keep both original conditions AND abstraction
+```yaml
+conditions:
+  # Original conditions (traceable to guideline)
+  - id: crs-diagnostic-criteria-met
+    label: "CRS diagnostic criteria met"
+    description: "Patient meets clinical diagnostic criteria per guideline section 2.1"
+    values: ["true", "false"]
+    
+  - id: adult-patient
+    label: "Adult patient"
+    description: "Age ≥18 years"
+    values: ["true", "false"]
+    
+  # Abstraction (if reviewer-approved for readability)
+  - id: diagnosis-and-eligibility-confirmed
+    label: "Diagnosis and eligibility confirmed"
+    description: "Combines crs-diagnostic-criteria-met AND adult-patient (abstraction approved by reviewer)"
+    values: ["true", "false"]
+    note: "Abstraction of crs-diagnostic-criteria-met AND adult-patient"
+
+rules:
+  - id: r1
+    event: e2
+    when: {crs-diagnostic-criteria-met: "true", adult-patient: "true"}  # Use originals
+    then: [proceed-to-treatment]
+```
+
+**Fix Option 2**: Document why abstraction replaces originals
+```yaml
+conditions:
+  - id: diagnosis-confirmed
+    label: "Diagnosis confirmed"
+    description: "CRS diagnostic criteria met AND adult patient (approved abstraction replaces individual conditions: crs-diagnostic-criteria-met, adult-patient)"
+    values: ["true", "false"]
+    note: "Replaces: crs-diagnostic-criteria-met, adult-patient (reviewer decision: abstract for readability)"
 ```
 
 ---
@@ -900,3 +1166,107 @@ Before finalizing decision table extraction, verify:
 
 **Next**: See pattern library in `examples/decision-tables/` for synthetic worked examples.
 
+---
+
+## Formalization Output (L2 → L3)
+
+When your decision table is formalized via `rh-skills formalize`, it generates CPG-on-FHIR resources using state-based action tree patterns:
+
+### PlanDefinition Structure
+
+**One PlanDefinition per event** (not per rule):
+- Events with multiple rules generate sibling actions under one PlanDefinition
+- Each action represents one rule with its specific `when` conditions
+- Actions reference ActivityDefinitions via `definitionCanonical`
+
+Example formalization:
+```yaml
+# L2 Input
+events:
+  - id: surgical-decision
+rules:
+  - rule_id: r1
+    event: surgical-decision
+    when: {candidacy-met: true}
+    then: [offer-surgery]
+  - rule_id: r2
+    event: surgical-decision
+    when: {candidacy-met: false}
+    then: [continue-medical-management]
+```
+
+```json
+// L3 Output
+{
+  "resourceType": "PlanDefinition",
+  "id": "surgical-decision",
+  "action": [
+    {
+      "id": "r1",
+      "condition": [{"expression": "CandidacyMet"}],
+      "definitionCanonical": ".../ActivityDefinition/offer-surgery"
+    },
+    {
+      "id": "r2",
+      "condition": [{"expression": "not CandidacyMet"}],
+      "definitionCanonical": ".../ActivityDefinition/continue-medical-management"
+    }
+  ]
+}
+```
+
+### CQL Library: Composite States
+
+**Automatic composite state detection**: If multiple rules share the same set of conditions, the formalizer generates a composite state definition:
+
+```yaml
+# L2: Multiple rules with 6 shared conditions
+when:
+  has-diagnosis: true
+  qol-documented: true
+  objective-findings: true
+  medical-therapy-inadequate: true
+  no-contraindications: true
+  patient-accepts-risks: true
+```
+
+```cql
+// L3: Composite state in CQL Library
+define "SurgicalCandidacyEstablished":
+  HasDiagnosis and QolDocumented and ObjectiveFindings and
+  MedicalTherapyInadequate and NoContraindications and PatientAcceptsRisks
+```
+
+Actions then reference the composite state instead of repeating all 6 atomic conditions.
+
+### Polarity-Aware Conditions
+
+**Negative conditions** (`when: {condition: false}`) automatically generate `not` expressions:
+
+```yaml
+# L2 Input
+when: {contraindications-present: false}
+```
+
+```json
+// L3 Output
+{
+  "condition": [{
+    "expression": { "expression": "not ContraindicationsPresent" }
+  }]
+}
+```
+
+### Prerequisite Hoisting
+
+**Shared conditions are hoisted to parent actions** to avoid duplication. If all sibling rules share a prerequisite, it appears once on the parent instead of repeating on every child.
+
+### Key Principles
+
+- ✅ **One PlanDefinition per event** (not per rule)
+- ✅ **Composite states reduce CQL duplication**
+- ✅ **Polarity-aware condition handling** (not X for false values)
+- ✅ **Actions may branch OR execute, never both**
+- ✅ **Prerequisite hoisting removes shared conditions from siblings**
+
+---

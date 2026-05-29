@@ -200,3 +200,20 @@ class TestPackageCommand:
         result = runner.invoke(package, ["test-topic"])
         assert result.exit_code == 1
         assert "check failed" in result.output
+
+    def test_package_prefers_packager_toml_canonical(self, packagable_topic, monkeypatch):
+        workspace_dir = packagable_topic / "topics" / "test-topic" / "process" / "package-workspace"
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+        (workspace_dir / "packager.toml").write_text(
+            'id = "reason.test-topic"\nversion = "0.1.0"\ncanonical = "https://pkg.example/fhir"\nstatus = "draft"\n'
+        )
+
+        monkeypatch.setattr("rh_skills.commands.package._resolve_rh_binary", lambda: "/fake/rh")
+        monkeypatch.setattr("rh_skills.commands.package._run_rh_command", lambda _args: _ok())
+
+        runner = CliRunner()
+        result = runner.invoke(package, ["test-topic"])
+        assert result.exit_code == 0, result.output
+
+        ig = json.loads((workspace_dir / "ImplementationGuide.json").read_text())
+        assert ig["url"].startswith("https://pkg.example/fhir/")

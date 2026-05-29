@@ -73,37 +73,37 @@ artifact_types:
   - policy
   - custom
 
-# ── Care-pathway vs. decision-table disambiguation ───────────────────────────
+# ── Care-pathway vs. decision-table: When to use each ────────────────────────
 #
-# CARE-PATHWAY (→ PlanDefinition type=clinical-protocol)
-#   Models a care sequence: phases, steps, and nested sub-steps.
-#   In FHIR: action.action[] nesting represents the workflow hierarchy.
-#   Actions in a pathway are ACTIVITIES, not event-triggered rules.
-#   A pathway step may carry an applicability condition (action.condition with
-#   kind=applicability) to gate whether the step applies — but it does NOT
-#   carry action.trigger. The pathway is invoked as a whole; triggers do not
-#   live on individual steps.
+# CARE-PATHWAY
+#   Use when source describes: sequential workflow, care phases, ordered steps,
+#   care progression, pathway structure, or "do step A, then step B, then C".
+#   
+#   Structure: Flat steps[] with optional parent_id hierarchy links.
+#   Keep actor on steps when known. When a paired decision table defines
+#   pathway_phases, care-pathway steps should mirror that canonical phase model 1:1.
 #
-# DECISION-TABLE / POLICY (→ PlanDefinition type=eca-rule)
-#   Models event-triggered logic: when event X occurs and condition Y is met,
-#   perform action Z.
-#   In FHIR: action.trigger captures the named or data-changed event that
-#   fires the rule. Actions are RECOMMENDATIONS or orders that execute when
-#   the rule fires. No meaningful action.action[] nesting — each rule is flat.
+# DECISION-TABLE
+#   Use when source describes: event-triggered decisions, conditional logic,
+#   "when X happens and Y is true, then recommend Z", clinical decision rules.
+#   
+#   Structure: Events, conditions, actions, and rules that bind them together.
+#   Each rule fires when an event occurs and conditions are met, then executes
+#   actions. Rules are flat, not hierarchical.
 #
-# Extraction signal:
-#   Source text describes phases/steps/activities in a care sequence → care-pathway
-#   Source text describes "if event occurs, then recommend X"         → decision-table
+# Key distinction:
+#   - Care-pathway = workflow sequence (what happens in what order)
+#   - Decision-table = conditional logic (when to recommend specific actions)
 #
 # ─────────────────────────────────────────────────────────────────────────────
 
 artifact_type_sections:
   care-pathway:
     description: >
-      Sequential care workflow intended for downstream PlanDefinition
-      (clinical-protocol) formalization. Captures hierarchical workflow
-      nodes (phases, steps, sub-steps). Do NOT include ECA trigger events
-      here — use decision-table for event-triggered logic.
+      Sequential care workflow with flat steps linked by transitions.
+      Use when source describes ordered activities in a care journey. When a
+      paired decision table exists, align the top-level steps to its
+      pathway_phases 1:1.
     recommended_sections:
       - summary
       - evidence_traceability
@@ -111,24 +111,19 @@ artifact_type_sections:
       - transitions
     section_definitions:
       steps: >
-        Hierarchical workflow nodes. Each entry: {id, label, description?,
-        parent_id?, action_type?, applicability_condition?}. Use parent_id
-        to express nesting (phase → step → sub-step). These become nested
-        action.action[] entries in a FHIR clinical-protocol PlanDefinition.
-        action_type is the type of clinical activity (order, referral,
-        assessment, communication, etc.). applicability_condition is an
-        optional free-text gate on whether the step applies within a
-        running pathway instance — distinct from an ECA trigger event.
+        Flat workflow steps. Each entry: {id, label, description?, actor?, parent_id?,
+        applicability_condition?}. parent_id references another step id when a
+        nested relationship is needed. When a paired decision table defines
+        pathway_phases, keep care-pathway steps aligned 1:1 with that phase model.
+        Actions are defined in decision-table artifacts, not in care pathways.
       transitions: >
-        Optional. Sequencing rules between steps or phases: {from_id, to_id,
-        condition?, description?}. Captures dependencies and branching logic
-        within the pathway. These become action.relatedAction entries in FHIR.
+        Optional sequencing rules between steps or phases: {from_id, to_id,
+        condition?, description?}. Captures dependencies and branching logic.
 
   decision-table:
     description: >
-      Event-condition-action (ECA) decision logic intended for downstream
-      PlanDefinition (eca-rule) formalization. Do NOT capture hierarchical
-      workflow step nesting here — use care-pathway for pathway structure.
+      Event-condition-action (ECA) decision logic. Use when source describes
+      conditional recommendations or event-triggered clinical decisions.
     recommended_sections:
       - summary
       - evidence_traceability
@@ -138,24 +133,20 @@ artifact_type_sections:
       - rules
     section_definitions:
       events: >
-        ECA trigger event definitions, typically {id, label, description?,
-        trigger_type?}. trigger_type: named-event | data-changed | periodic.
-        These become action.trigger entries in a FHIR eca-rule PlanDefinition.
-        Do NOT use this section to model care-pathway entry conditions or
-        workflow step applicability — those belong in care-pathway.steps.
+        ECA trigger event definitions: {id, label, description?, trigger_type, phase?}.
+        trigger_type: named-event | data-changed | periodic.
       conditions: >
-        List of condition definitions, typically {id, label, description?,
-        values[]}. Conditions represent the decision inputs or threshold tests.
-        These become action.condition (kind=applicability) entries in FHIR.
+        Condition definitions: {id, label, description?, values[]}.
+        values[] MUST use booleans (true/false), not "Yes"/"No".
       actions: >
-        List of action definitions, typically {id, label, description?, type?,
-        intent?}. Actions represent the clinical recommendation or workflow
-        consequence of a rule firing. These are flat — not nested workflow
-        steps. Use care-pathway.steps for sequenced workflow hierarchies.
+        Action definitions: {id, label, description?, type, intent?}.
+        Actions represent clinical recommendations or workflow consequences.
       rules: >
-        List of ECA bindings, typically {id, event?, when{}, then[]}. Each
-        rule references one event (optional when global), maps condition ids to
-        values in `when`, and lists action ids in `then`.
+        ECA bindings: {id, event, when{}, then[], action?, rationale?, description?, phase?}.
+        Each rule references an event, maps condition ids to values
+        in 'when', and lists action ids in 'then'. The 'phase' field (optional)
+        references pathway_phases[].id when pathway_phases section is present,
+        enabling grouping of rules by care phase.
 
 status_values:
   - draft

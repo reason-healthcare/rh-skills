@@ -214,7 +214,15 @@ def setup_topic_with_valid_extract_artifacts(tmp_repo, topic_name="my-skill", ar
         elif artifact_type == "terminology":
             sections["value_sets"] = [{"system": "SNOMED"}]
         else:
+            sections["events"] = [{"id": "e1", "label": "Review"}]
             sections["conditions"] = [{"id": "c1", "label": "Test", "values": ["Yes", "No"]}]
+            sections["data_elements"] = [{
+                "id": "de1",
+                "condition_id": "c1",
+                "label": "Test data element",
+            }]
+            sections["actions"] = [{"id": "a1", "label": "Do thing", "kind": "ServiceRequest"}]
+            sections["rules"] = [{"id": "r1", "event": "e1", "when": {"c1": "Yes"}, "then": ["a1"]}]
 
         buf = io.StringIO()
         y.dump({
@@ -1050,7 +1058,7 @@ def test_concept_enrich_custom_then_mcp_then_write_roundtrip(tmp_repo):
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text()
+        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text()
     )
     frailty = next((c for c in artifact["concepts"] if c["name"] == "Frailty"), None)
     assert frailty is not None
@@ -1239,7 +1247,7 @@ def test_write_concepts_includes_related_in_l2(tmp_repo):
 
     from ruamel.yaml import YAML as _YAML
     artifact = _YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts.yaml").read_text()
+        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text()
     )
     hyp = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
     assert hyp["codes"][0]["code"] == "38341003"
@@ -1478,10 +1486,30 @@ def test_plan_agent_mode_parses_injected_concerns(tmp_repo, monkeypatch):
     assert concerns[0]["resolution"] == ""
 
 
-def test_derive_agent_mode_writes_injected_content(tmp_repo, monkeypatch):
-    """Agent mode: --body-file content is written as L2 artifact (not scaffold)."""
+def test_derive_agent_mode_completes_body_file_draft(tmp_repo, monkeypatch):
+    """Agent mode: --body-file draft is completed by the agent output."""
     monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    monkeypatch.setenv("RH_STUB_RESPONSE", """\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: Completed from normalized source guidance.
+derived_from:
+  - ada-guidelines
+artifact_type: decision-table
+clinical_question: Who should be screened?
+sections:
+  summary: Adults with symptoms or risk factors should be assessed for screening.
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: Screen adults at risk
+      evidence:
+        - source: ada-guidelines
+          locator: Section 2
+""")
     body_content = """\
 id: screening-criteria
 name: screening-criteria
@@ -1489,23 +1517,23 @@ title: Screening Criteria
 version: "1.0.0"
 status: draft
 domain: diabetes
-description: Agent-generated content.
+description: "<stub: description>"
 derived_from:
   - ada-guidelines
 artifact_type: decision-table
 clinical_question: Who should be screened?
 sections:
-  summary: Agent-generated content.
+  summary: "<stub: summary>"
   evidence_traceability:
     - claim_id: crit-001
-      statement: Screen adults at risk
+      statement: "<stub: statement>"
       evidence:
         - source: ada-guidelines
-          locator: Section 2
+          locator: "<stub: locator>"
 """
     body_file = tmp_repo / "agent-body.yaml"
     body_file.write_text(body_content)
-    setup_topic_with_source(tmp_repo)
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     result = runner.invoke(promote, [
         "derive", "my-skill", "screening-criteria",
@@ -1520,7 +1548,86 @@ sections:
     artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
     content = artifact_path.read_text()
     assert "<stub:" not in content
-    assert "Agent-generated content." in content
+    assert "Completed from normalized source guidance." in content
+    assert "Adults with symptoms or risk factors" in content
+
+
+def test_derive_agent_mode_merges_partial_body_completion_into_sections(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv("RH_STUB_RESPONSE", """\
+title: CRS Surgical Management Care Pathway
+description: Completed care pathway draft.
+steps:
+  - id: crs-pathway
+    label: CRS pathway
+    description: Overall CRS surgical management pathway.
+  - id: assessment
+    label: Assessment
+    description: Verify diagnosis and assess candidacy.
+    parent_id: crs-pathway
+transitions:
+  - from_id: crs-pathway
+    to_id: assessment
+    description: Proceed to evaluation.
+evidence_traceability:
+  - claim_id: cp-001
+    statement: CRS care proceeds from diagnosis review into candidacy assessment.
+    evidence:
+      - source: ada-guidelines
+        locator: Section 2
+summary: Hierarchical care pathway for CRS surgical management.
+""")
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: care-pathway
+name: care-pathway
+title: Care Pathway
+version: "1.0.0"
+status: draft
+domain: care pathway
+description: "In what order do things happen in the care process?"
+derived_from:
+  - ada-guidelines
+artifact_type: care-pathway
+clinical_question: In what order do things happen in the care process?
+sections:
+  summary: "<stub: summary>"
+  steps:
+    - id: root
+      label: "<stub: root>"
+      description: "<stub: root description>"
+  transitions: []
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "<stub: statement>"
+      evidence:
+        - source: ada-guidelines
+          locator: "<stub: locator>"
+""")
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "care-pathway",
+        "--source", "ada-guidelines",
+        "--artifact-type", "care-pathway",
+        "--clinical-question", "In what order do things happen in the care process?",
+        "--required-section", "summary",
+        "--required-section", "steps",
+        "--required-section", "transitions",
+        "--required-section", "evidence_traceability",
+        "--body-file", str(body_file),
+    ])
+    assert result.exit_code == 0, result.output
+    artifact = load_yaml(
+        tmp_repo / "topics" / "my-skill" / "structured" / "care-pathway" / "care-pathway.yaml"
+    )
+    assert artifact["artifact_type"] == "care-pathway"
+    assert artifact["clinical_question"] == "In what order do things happen in the care process?"
+    assert artifact["sections"]["summary"] == "Hierarchical care pathway for CRS surgical management."
+    assert artifact["sections"]["steps"][0]["id"] == "crs-pathway"
+    assert artifact["sections"]["transitions"][0]["from_id"] == "crs-pathway"
+    assert artifact["sections"]["transitions"][0]["to_id"] == "assessment"
+    assert artifact["sections"]["evidence_traceability"][0]["claim_id"] == "cp-001"
 
 
 def test_derive_body_file_uses_artifact_type_from_body_for_tracking(tmp_repo, monkeypatch):
@@ -1794,7 +1901,7 @@ def _write_plan_for_body_init(tmp_repo, topic_name="my-skill"):
                 "artifact_type": "decision-table",
                 "source_files": ["sources/normalized/ada-guidelines.md"],
                 "key_questions": ["Who should be screened for diabetes?"],
-                "required_sections": ["summary", "events", "conditions", "actions", "rules", "evidence_traceability"],
+                "required_sections": ["summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"],
                 "concerns": [{"issue": "Threshold ambiguity: ADA vs USPSTF"}],
                 "reviewer_decision": "approved",
                 "approval_notes": "",
@@ -1827,7 +1934,7 @@ def test_body_init_scaffold_contains_required_sections(tmp_repo):
     content = (
         tmp_repo / "topics" / "my-skill" / "process" / "tmp" / "screening-criteria.yaml"
     ).read_text()
-    for section in ("summary", "events", "conditions", "actions", "rules", "evidence_traceability"):
+    for section in ("summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"):
         assert section in content, f"Missing section: {section}"
 
 

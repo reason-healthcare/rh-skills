@@ -1,6 +1,7 @@
 {% set sections = data.sections or {} %}
 {% set events = sections.events or [] %}
 {% set conditions = sections.conditions or [] %}
+{% set data_elements = sections.data_elements or [] %}
 {% set actions = sections.actions or [] %}
 {% set rules = sections.rules or [] %}
 {% set event_map = namespace(d={}) %}
@@ -20,6 +21,19 @@
 ## Summary
 
 {{ sections.summary }}
+
+{% endif %}
+{% if data_elements %}
+## Features And Data Elements
+
+| Condition | Data Element | Type | Description |
+|---|---|---|---|
+{% for c in conditions -%}
+{% set matching = data_elements | selectattr('condition_id', 'equalto', c.id) | list -%}
+{% for de in matching -%}
+| {{ cond_map.d.get(c.id, c.id or '?') }} | {{ (de.id or '?') ~ ' ' ~ (de.label or '') }} | {{ de.data_type or '-' }} | {{ de.description or '-' }} |
+{% endfor -%}
+{% endfor %}
 
 {% endif %}
 ## Rules
