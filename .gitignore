@@ -44,3 +44,6 @@ eval/transcripts
 
 
 *.lock
+
+/topics
+/rh-package-workspace

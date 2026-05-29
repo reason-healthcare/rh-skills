@@ -15,6 +15,53 @@ topics:
   - timestamp: '2026-04-05T21:43:23Z'
     type: created
     description: Topic scaffolded with rh-skills init
+- name: chronic-rhinosinusitis
+  title: Chronic Rhinosinusitis
+  description: CRS surgical management guidelines
+  author: Clinical Informatics Team
+  created_at: '2026-05-28T00:00:00Z'
+  structured:
+  - name: crs-surgical-management
+    artifact_type: decision-table
+    file: 
+      topics/chronic-rhinosinusitis/structured/crs-surgical-management/crs-surgical-management.yaml
+  - name: crs-pathway
+    artifact_type: care-pathway
+    file: topics/chronic-rhinosinusitis/structured/crs-pathway/crs-pathway.yaml
+  computable:
+  - name: crs-pathway
+    files:
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway.json
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-assessment-phase-strategy.json
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-planning-phase-strategy.json
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-operative-phase-strategy.json
+    - topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-follow-up-phase-strategy.json
+    - topics/chronic-rhinosinusitis/computable/Library-chronic-rhinosinusitis.json
+    created_at: '2026-05-29T02:57:09Z'
+    checksums:
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway.json: 
+        c169beb78748372d9cc7092566573687c6cbb94449789c2e3fd5c9e317d71114
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-assessment-phase-strategy.json: 
+        9bcf19fa5218400898da785856d174ea519d0582b38b6d934a24070a3943becd
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-planning-phase-strategy.json: 
+        8830cb59c2e23a7324e945aaf8ec08e6396b78048c3f398ab2e0d5561a7b5220
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-operative-phase-strategy.json: 
+        d862ff2195980f620d0024fa6fbfa4fe59089405e02d0ad22882781210c9cbfa
+      topics/chronic-rhinosinusitis/computable/PlanDefinition-crs-pathway-follow-up-phase-strategy.json: 
+        fe09f9b1458753b3c1b0c51bf07628c8b10e1ab502b48e8024d92a023a11cf5e
+      topics/chronic-rhinosinusitis/computable/Library-chronic-rhinosinusitis.json: 
+        048f8d5ae10b637968225fb1599bc6372e352c38a2fed81264cd8f9fd7357f22
+    converged_from:
+    - crs-pathway
+    strategy: care-pathway
+  events:
+  - timestamp: '2026-05-28T00:00:00Z'
+    type: created
+    description: CRS topic for testing
+  - timestamp: '2026-05-29T02:57:09Z'
+    type: computable_converged
+    description: Formalized 'crs-pathway' using care-pathway strategy → 6 
+      resources
 events:
 - timestamp: '2026-04-05T21:40:51Z'
   type: topic_created
