@@ -134,9 +134,14 @@ artifact_type_sections:
       - rules
     section_definitions:
       events: >
-        ECA trigger event definitions: {id, label, description?, trigger_type, phase?}.
-        trigger_type is optional when there is no formal event trigger.
-        When used, preferred values are: named-event | data-changed | periodic.
+        ECA workflow event definitions: {id, label, description?, phase?, trigger?}.
+        Events are primary. trigger is optional when the workflow context alone
+        is enough. When present, trigger must be an object with a
+        FHIR-compatible type such as named-event | periodic | data-changed |
+        data-added | data-modified | data-removed | data-accessed |
+        data-access-ended. trigger may also carry optional fields such as
+        name, source, resource, moment, resource_criteria, and timing_window
+        when the source supports them.
       conditions: >
         Condition definitions: {id, label, description?, values[]}.
         values[] MUST use canonical Yes/No values. When the source describes
@@ -150,15 +155,20 @@ artifact_type_sections:
         data_elements[] entry via condition_id. Use data_type for
         clinically-oriented categories such as symptom, diagnosis, imaging,
         history, patient-reported, finding, procedure, or assessment.
+        A data element may already exist in the record or may be produced by an
+        action during the pathway.
       actions: >
         Action definitions: {id, label, description?, kind, intent?,
-        parent_action_id?, produces_conditions[]?, assessment_artifact?}.
+        parent_action_id?, produces_conditions[]?, produces_data_elements[]?,
+        assessment_artifact?}.
         Actions represent clinical recommendations or workflow consequences.
         Use parent_action_id when a supporting action belongs under a broader
         assessment action. Use produces_conditions[] when an action establishes
-        one or more later branch conditions. Use assessment_artifact when an
-        action explicitly administers or reviews a structured assessment
-        instrument that should formalize to a Questionnaire.
+        one or more later branch conditions. Use produces_data_elements[] when
+        an action produces concrete findings, scores, or other evidence items
+        that later logic consumes. Use assessment_artifact when an action
+        explicitly administers or reviews a structured assessment instrument
+        that should formalize to a Questionnaire.
       rules: >
         ECA bindings: {id, event, when{}?, then[], action?, rationale?, description?, phase?}.
         Each rule references an event and lists action ids in 'then'.

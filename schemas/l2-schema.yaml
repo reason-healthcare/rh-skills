@@ -129,24 +129,53 @@ artifact_type_sections:
       - evidence_traceability
       - events
       - conditions
+      - data_elements
       - actions
       - rules
     section_definitions:
       events: >
-        ECA trigger event definitions: {id, label, description?, trigger_type, phase?}.
-        trigger_type: named-event | data-changed | periodic.
+        ECA workflow event definitions: {id, label, description?, phase?, trigger?}.
+        Events are primary. trigger is optional when the workflow context alone
+        is enough. When present, trigger must be an object with a
+        FHIR-compatible type such as named-event | periodic | data-changed |
+        data-added | data-modified | data-removed | data-accessed |
+        data-access-ended. trigger may also carry optional fields such as
+        name, source, resource, moment, resource_criteria, and timing_window
+        when the source supports them.
       conditions: >
         Condition definitions: {id, label, description?, values[]}.
-        values[] MUST use booleans (true/false), not "Yes"/"No".
+        values[] MUST use canonical Yes/No values. When the source describes
+        multi-part criteria (for example, symptom threshold + duration +
+        objective evidence), represent each criterion as its own condition and
+        reference those condition ids explicitly in rules.when{}.
+      data_elements: >
+        Data requirements for answering each decision condition:
+        {id, condition_id, label, description?, data_type?}.
+        Every condition in conditions[] MUST have at least one corresponding
+        data_elements[] entry via condition_id. Use data_type for
+        clinically-oriented categories such as symptom, diagnosis, imaging,
+        history, patient-reported, finding, procedure, or assessment.
+        A data element may already exist in the record or may be produced by an
+        action during the pathway.
       actions: >
-        Action definitions: {id, label, description?, type, intent?}.
+        Action definitions: {id, label, description?, kind, intent?,
+        parent_action_id?, produces_conditions[]?, produces_data_elements[]?,
+        assessment_artifact?}.
         Actions represent clinical recommendations or workflow consequences.
+        Use parent_action_id when a supporting action belongs under a broader
+        assessment action. Use produces_conditions[] when an action establishes
+        one or more later branch conditions. Use produces_data_elements[] when
+        an action produces concrete findings, scores, or other evidence items
+        that later logic consumes. Use assessment_artifact when an action
+        explicitly administers or reviews a structured assessment instrument
+        that should formalize to a Questionnaire.
       rules: >
-        ECA bindings: {id, event, when{}, then[], action?, rationale?, description?, phase?}.
-        Each rule references an event, maps condition ids to values
-        in 'when', and lists action ids in 'then'. The 'phase' field (optional)
-        references pathway_phases[].id when pathway_phases section is present,
-        enabling grouping of rules by care phase.
+        ECA bindings: {id, event, when{}?, then[], action?, rationale?, description?, phase?}.
+        Each rule references an event and lists action ids in 'then'.
+        Use 'when' when the source describes an additional branch condition;
+        omit it for unconditional event-driven rules. The 'phase' field
+        (optional) references pathway_phases[].id when pathway_phases
+        section is present, enabling grouping of rules by care phase.
 
 status_values:
   - draft

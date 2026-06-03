@@ -1333,7 +1333,10 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
         "id": "event-001",
         "label": "<stub: recommendation trigger>",
         "description": "<stub: evaluation moment for this recommendation>",
-        "trigger_type": "named-event",
+        "trigger": {
+            "type": "named-event",
+            "name": "<stub: event name>",
+        },
     }],
     "conditions": [{"id": "cond-001", "label": "<stub: condition>", "values": ["Yes", "No"]}],
     "data_elements": [{
@@ -1948,13 +1951,16 @@ Decision-table extraction guidance:
   conditions.
 - Use `actions[].produces_conditions[]` when an action explicitly establishes a
   later branch condition.
+- Use `actions[].produces_data_elements[]` when an action produces a concrete
+  finding, score, or other evidence item that later logic consumes.
 - Use `actions[].parent_action_id` when a supporting action belongs under a
   broader assessment action rather than standing alone.
 - Use `actions[].assessment_artifact` when an action explicitly administers or
   reviews a structured questionnaire or assessment instrument that should later
   formalize to a Questionnaire.
 - Use canonical `kind` for actions; do not emit legacy action `type`.
-- Include `trigger_type` when there is an explicit trigger; omit it when there is not a formal trigger.
+- Use `event.trigger` only when there is an explicit formal trigger. Omit it
+  when the event itself is the full workflow context.
 - If the narrative clearly groups recommendations by care phase, optionally define `sections.pathway_phases[]` as the canonical phase model and keep that grouping in `event.phase` and/or `rule.phase` without turning phases themselves into events.
 - Prefer one clinically explicit rule per recommendation branch, with `action` as a short human label and `rationale` as the recommendation basis.
 - When a recommendation belongs to a recognizable phase such as assessment, planning, intraoperative, or postoperative care, populate `rule.phase`.

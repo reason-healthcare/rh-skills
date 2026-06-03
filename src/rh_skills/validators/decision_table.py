@@ -3,7 +3,8 @@ Decision table validation.
 
 Canonical L2 contract (no legacy aliases):
 - sections.pathway_phases (when present) is the only supported phase model location
-- events may use trigger_type and phase (no phase_order)
+- events are primary; events may use optional trigger and phase (no phase_order,
+  no trigger_type)
 - conditions.values[] use explicit "Yes"/"No" values
 - every condition is backed by one or more sections.data_elements[] entries
 - actions use kind (intent optional)
@@ -12,6 +13,17 @@ Canonical L2 contract (no legacy aliases):
 """
 
 from typing import Dict, List, Tuple, Any, Set
+
+_FHIR_TRIGGER_TYPES = {
+    "named-event",
+    "periodic",
+    "data-changed",
+    "data-added",
+    "data-modified",
+    "data-removed",
+    "data-accessed",
+    "data-access-ended",
+}
 
 
 def _check_fhir_field_leakage(data: dict, path: str = "") -> List[str]:
@@ -149,6 +161,38 @@ def validate_decision_table(
         event_id = event.get("id", f"#{idx}")
         if event.get("phase_order") is not None:
             report_error(f"  decision-table: event '{event_id}' uses legacy 'phase_order' — remove it")
+        if event.get("trigger_type") is not None:
+            report_error(
+                f"  decision-table: event '{event_id}' uses legacy 'trigger_type' — use event.trigger.type"
+            )
+        trigger = event.get("trigger")
+        if trigger is not None:
+            if not isinstance(trigger, dict):
+                report_error(f"  decision-table: event '{event_id}' trigger must be an object when present")
+            else:
+                trigger_type = trigger.get("type")
+                if not isinstance(trigger_type, str) or not trigger_type.strip():
+                    report_error(f"  decision-table: event '{event_id}' trigger.type is required when trigger is present")
+                elif trigger_type not in _FHIR_TRIGGER_TYPES:
+                    report_error(
+                        f"  decision-table: event '{event_id}' trigger.type '{trigger_type}' is not a supported FHIR trigger type"
+                    )
+                if trigger_type == "named-event":
+                    name = trigger.get("name")
+                    if not isinstance(name, str) or not name.strip():
+                        report_error(
+                            f"  decision-table: event '{event_id}' named-event trigger requires trigger.name"
+                        )
+                resource_criteria = trigger.get("resource_criteria")
+                if resource_criteria is not None and not isinstance(resource_criteria, dict):
+                    report_error(
+                        f"  decision-table: event '{event_id}' trigger.resource_criteria must be an object when present"
+                    )
+                timing_window = trigger.get("timing_window")
+                if timing_window is not None and not isinstance(timing_window, dict):
+                    report_error(
+                        f"  decision-table: event '{event_id}' trigger.timing_window must be an object when present"
+                    )
 
     # Validate condition contract
     for idx, condition in enumerate(conditions, start=1):
@@ -172,11 +216,13 @@ def validate_decision_table(
 
     # Validate data element contract
     condition_data_map: Dict[str, int] = {}
+    data_element_ids: set[str] = set()
     for idx, data_element in enumerate(data_elements, start=1):
         if not isinstance(data_element, dict):
             report_error(f"  decision-table: data element #{idx} is not a dict")
             continue
         data_element_id = data_element.get("id", f"#{idx}")
+        data_element_ids.add(data_element_id)
         condition_id = data_element.get("condition_id")
         if not condition_id:
             report_error(f"  decision-table: data element '{data_element_id}' missing required condition_id")
@@ -224,6 +270,18 @@ def validate_decision_table(
                     if cond_id not in condition_ids:
                         report_error(
                             f"  decision-table: action '{action_id}' references unknown produced condition '{cond_id}'"
+                        )
+        produces_data_elements = action.get("produces_data_elements")
+        if produces_data_elements is not None:
+            if not isinstance(produces_data_elements, list) or not produces_data_elements:
+                report_error(
+                    f"  decision-table: action '{action_id}' produces_data_elements must be a non-empty list when present"
+                )
+            else:
+                for data_element_id in produces_data_elements:
+                    if data_element_id not in data_element_ids:
+                        report_error(
+                            f"  decision-table: action '{action_id}' references unknown produced data element '{data_element_id}'"
                         )
         assessment_artifact = action.get("assessment_artifact")
         if assessment_artifact is not None and not isinstance(assessment_artifact, str):

@@ -491,7 +491,9 @@ sections:
   events:
     - id: e1
       label: <recommendation-scoped evaluation trigger>
-      trigger_type: named-event         # optional when there is no formal trigger
+      trigger:                          # optional when there is no formal trigger
+        type: named-event
+        name: <event-name>
       phase: assessment                 # optional grouping field
   conditions:
     - id: c1
@@ -536,7 +538,7 @@ If every rule shares the same trigger, keep the event reference explicit on each
 rule for now; de-duplication can happen later during formalization.
 
 No legacy aliases are supported (`pathway_phase`, top-level `pathway_phases`,
-action `type`, `phase_order`, `rule_id`, `event_id`).
+action `type`, `phase_order`, `rule_id`, `event_id`, `trigger_type`).
 
 Every condition should have one or more corresponding
 `data_elements[]` entries that make the underlying data requirements explicit.
@@ -550,6 +552,12 @@ composite `derivation` structures.
 If the source says “at this step, do X” or “during this phase, assess/review/obtain Y,”
 prefer an event-driven rule with `event + then` and no `when`.
 
+Treat `events[]` as the primary workflow contexts. Add `event.trigger` only
+when the source implies a concrete activation mechanism that matters for
+formalization. When `event.trigger` is used, prefer FHIR-compatible trigger
+types such as `named-event`, `periodic`, `data-changed`, `data-added`, or
+`data-modified`.
+
 Do not gate verification, assessment, review, or evidence-gathering actions on
 the same confirmed state they are intended to establish.
 
@@ -559,6 +567,9 @@ establish later branch conditions, then gate later events on those conditions.
 
 Use `actions[].produces_conditions[]` when an action explicitly establishes a
 later branch condition.
+
+Use `actions[].produces_data_elements[]` when an action produces a concrete
+finding, score, or other evidence item that later logic consumes.
 
 Use `actions[].parent_action_id` when a supporting action belongs under a
 broader assessment action rather than standing alone.

@@ -63,11 +63,19 @@ Decision-table extraction guidance:
   conditions.
 - Use `actions[].produces_conditions[]` when an action explicitly establishes a
   later branch condition.
+- Use `actions[].produces_data_elements[]` when an action produces a concrete
+  finding, score, or other evidence item that later logic consumes.
 - Use `actions[].parent_action_id` when a supporting action belongs under a
   broader assessment action rather than standing alone.
 - Use `actions[].assessment_artifact` when a named questionnaire or assessment
   instrument is explicitly administered or reviewed as part of a broader
   assessment and should later formalize to a Questionnaire.
+- Treat `events[]` as the primary workflow contexts. Add `event.trigger` only
+  when the source implies a concrete activation mechanism that matters for
+  formalization.
+- When `event.trigger` is used, prefer FHIR-compatible trigger types such as
+  `named-event`, `periodic`, `data-changed`, `data-added`, or
+  `data-modified`.
 - A common staged pattern is:
   - `event + then` for verification work
   - later `event + when + then` for broader assessment work once verification succeeds

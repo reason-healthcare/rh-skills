@@ -85,7 +85,9 @@ sections:
   events:
     - id: screening-due
       label: Screening Due
-      trigger_type: named-event
+      trigger:
+        type: named-event
+        name: screening-due
   conditions:
     - id: at_risk
       label: At Risk
@@ -704,7 +706,9 @@ sections:
   events:
     - id: screening-due
       label: Screening Due
-      trigger_type: named-event
+      trigger:
+        type: named-event
+        name: screening-due
   conditions:
     - id: at_risk
       label: At Risk
@@ -763,7 +767,9 @@ sections:
   events:
     - id: screening-due
       label: Screening Due
-      trigger_type: named-event
+      trigger:
+        type: named-event
+        name: verification
   conditions:
     - id: symptom-threshold-met
       label: Symptom threshold met
@@ -842,7 +848,9 @@ sections:
   events:
     - id: screening-due
       label: Screening Due
-      trigger_type: named-event
+      trigger:
+        type: named-event
+        name: verification
   conditions:
     - id: crs-diagnostic-criteria-confirmed
       label: CRS diagnostic criteria confirmed
@@ -902,7 +910,9 @@ sections:
   events:
     - id: verification
       label: Verification
-      trigger_type: named-event
+      trigger:
+        type: named-event
+        name: verification
   conditions:
     - id: criteria-confirmed
       label: Criteria confirmed
@@ -925,6 +935,110 @@ concerns: []
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
     assert result.exit_code == 0, result.output
+
+
+def test_validate_decision_table_allows_event_without_trigger(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with event-only workflow context"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "What should happen during verification?"
+sections:
+  summary: "Verification should occur during the event."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform verification during the event"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: verification
+      label: Verification
+  conditions:
+    - id: criteria-confirmed
+      label: Criteria confirmed
+      values: [Yes, No]
+  data_elements:
+    - id: qualifying-symptoms
+      condition_id: criteria-confirmed
+      label: Qualifying symptoms
+  actions:
+    - id: review-evidence
+      label: Review evidence
+      kind: ServiceRequest
+  rules:
+    - id: verify
+      event: verification
+      then:
+        - review-evidence
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_decision_table_rejects_legacy_trigger_type(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact using legacy trigger_type"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "What should happen during verification?"
+sections:
+  summary: "Verification should occur during the event."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform verification during the event"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: verification
+      label: Verification
+      trigger_type: named-event
+  conditions:
+    - id: criteria-confirmed
+      label: Criteria confirmed
+      values: [Yes, No]
+  data_elements:
+    - id: qualifying-symptoms
+      condition_id: criteria-confirmed
+      label: Qualifying symptoms
+  actions:
+    - id: review-evidence
+      label: Review evidence
+      kind: ServiceRequest
+  rules:
+    - id: verify
+      event: verification
+      then:
+        - review-evidence
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "legacy 'trigger_type'" in result.output
 
 
 def test_validate_decision_table_action_relationship_fields(tmp_repo):
@@ -954,7 +1068,9 @@ sections:
   events:
     - id: assessment
       label: Assessment
-      trigger_type: named-event
+      trigger:
+        type: named-event
+        name: verification
   conditions:
     - id: diagnosis-verified
       label: Diagnosis verified
@@ -978,6 +1094,7 @@ sections:
       label: Administer SNOT-22
       kind: assessment
       parent_action_id: assess-candidacy
+      produces_data_elements: [candidacy-support]
       assessment_artifact: snot-22
   rules:
     - id: assess
@@ -992,6 +1109,59 @@ concerns: []
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
     assert result.exit_code == 0, result.output
+
+
+def test_validate_decision_table_rejects_unknown_produced_data_element(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with invalid produced data element reference"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "What should happen during staged assessment?"
+sections:
+  summary: "Use staged assessment."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform staged assessment"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: assessment
+      label: Assessment
+  conditions:
+    - id: diagnosis-verified
+      label: Diagnosis verified
+      values: [Yes, No]
+  data_elements:
+    - id: dx-support
+      condition_id: diagnosis-verified
+      label: Diagnostic support
+  actions:
+    - id: administer-snot-22
+      label: Administer SNOT-22
+      kind: assessment
+      produces_data_elements: [missing-score]
+  rules:
+    - id: assess
+      event: assessment
+      then:
+        - administer-snot-22
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "unknown produced data element 'missing-score'" in result.output
 
 
 def test_validate_care_pathway_rejects_nested_substeps(tmp_repo):
