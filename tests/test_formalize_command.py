@@ -543,7 +543,6 @@ sections:
 
             computable = topic_dir / "computable"
             activity = json.loads((computable / "ActivityDefinition-complete-qol-assessment.json").read_text())
-            questionnaire = json.loads((computable / "Questionnaire-qol-assessment.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
             assert activity["kind"] == "Task"
             assert activity["meta"]["profile"][0] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity"
@@ -556,10 +555,15 @@ sections:
                 for dv in activity.get("dynamicValue", [])
             )
             assert activity["relatedArtifact"][0]["resource"].endswith("/Questionnaire/qol-assessment")
-            assert questionnaire["resourceType"] == "Questionnaire"
-            assert questionnaire["item"][0]["linkId"] == "q1"
+            assert not (computable / "Questionnaire-qol-assessment.json").exists()
             assert child_plan["action"][0]["action"][0]["id"] == "assess-surgical-candidacy"
             assert child_plan["action"][0]["action"][0]["action"][0]["id"] == "complete-qol-assessment"
+
+            assessment_result = runner.invoke(formalize, [topic, "qol-assessment"])
+            assert assessment_result.exit_code == 0, assessment_result.output
+            questionnaire = json.loads((computable / "Questionnaire-qol-assessment.json").read_text())
+            assert questionnaire["resourceType"] == "Questionnaire"
+            assert questionnaire["item"][0]["linkId"] == "q1"
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -817,10 +821,16 @@ sections:
             pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
             assert [a["id"] for a in pathway["action"]] == ["crs-pathway"]
             assert [a["id"] for a in pathway["action"][0]["action"]] == ["assessment", "planning"]
-            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/path-assessment")
+            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/path-planning")
             assert (topic_dir / "computable" / "PlanDefinition-path-assessment.json").exists()
             assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
+            assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment.json").read_text())
+            planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
+            assert assessment_plan["type"]["coding"][0]["code"] == "workflow-definition"
+            assert planning_plan["type"]["coding"][0]["code"] == "workflow-definition"
+            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
+            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -909,10 +919,14 @@ sections:
             assert "Phase 'crs-pathway' has no mapped events" not in result.output
             pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
             assert [a["id"] for a in pathway["action"]] == ["crs-pathway"]
-            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/path-assessment")
+            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/path-planning")
             assert (topic_dir / "computable" / "PlanDefinition-path-assessment.json").exists()
             assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
+            assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment.json").read_text())
+            planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
+            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
+            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1082,10 +1096,14 @@ sections:
             pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
             assert [a["id"] for a in pathway["action"]] == ["crs-pathway"]
             assert [a["id"] for a in pathway["action"][0]["action"]] == ["assessment", "planning"]
-            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/path-assessment")
+            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/path-planning")
             assert (topic_dir / "computable" / "PlanDefinition-path-assessment.json").exists()
             assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
+            assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment.json").read_text())
+            planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
+            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
+            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
             assert not (topic_dir / "computable" / "PlanDefinition-path-crs-pathway.json").exists()
         finally:
             os.environ.pop("LLM_PROVIDER", None)
@@ -1174,8 +1192,13 @@ sections:
             protocol_path = next(computable.glob("PlanDefinition-*-protocol.json"))
             pathway = json.loads(protocol_path.read_text())
             child_nodes = pathway["action"][0]["action"]
-            assert "event-assess-candidacy" in child_nodes[0]["definitionCanonical"]
-            assert "event-operative-planning" in child_nodes[1]["definitionCanonical"]
+            assert child_nodes[0]["definitionCanonical"].endswith("/PlanDefinition/semantic-link-topic-protocol-assess-candidacy")
+            assert child_nodes[1]["definitionCanonical"].endswith("/PlanDefinition/semantic-link-topic-protocol-perform-definitive-surgery")
+
+            assess_plan = json.loads((computable / "PlanDefinition-semantic-link-topic-protocol-assess-candidacy.json").read_text())
+            assert assess_plan["type"]["coding"][0]["code"] == "workflow-definition"
+            nested = assess_plan["action"][0]["definitionCanonical"]
+            assert nested.endswith("/PlanDefinition/semantic-link-topic-recommendation-event-assess-candidacy")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1253,8 +1276,12 @@ sections:
             pathway = json.loads(protocol_path.read_text())
             child_nodes = pathway["action"][0]["action"]
             linked = [node["definitionCanonical"] for node in child_nodes]
-            assert linked[0].endswith("/PlanDefinition/duplicate-link-topic-recommendation-event-operative-planning")
-            assert linked[1].endswith("/ActivityDefinition/duplicate-link-topic-protocol-activity")
+            assert linked[0].endswith("/PlanDefinition/duplicate-link-topic-protocol-offer-and-plan-surgery")
+            assert linked[1].endswith("/PlanDefinition/duplicate-link-topic-protocol-perform-definitive-surgery")
+
+            surgery_plan = json.loads((computable / "PlanDefinition-duplicate-link-topic-protocol-perform-definitive-surgery.json").read_text())
+            nested = surgery_plan["action"][0]["definitionCanonical"]
+            assert nested.endswith("/ActivityDefinition/duplicate-link-topic-protocol-activity")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 

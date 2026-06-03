@@ -64,16 +64,32 @@ Completed:
 - terminology formalization to `ValueSet` output is proven
 - activity definitions now carry codings in the recent target work
 - assessment recommendations can point to questionnaire-backed assessment actions
+- initial template boundary is established in `formalize` for:
+  - `ActivityDefinition`
+  - decision-table `PlanDefinition`
+  - care-pathway `PlanDefinition`
+  - `Questionnaire`
+- L2 `event.trigger` support exists with optional presence and a repo-level schema direction
+- action output modeling now includes `produces_data_elements[]`
+- renderer/readout hierarchy exists for:
+  - care-pathway trees from `steps[].parent_id`
+  - decision-table event/rule/action trees
+- extract guidance now supports:
+  - event-only workflow contexts
+  - optional triggers
+  - broader-action / child-task decomposition
+  - direct instructions for using produced data elements from child tasks
 
 Still open:
 
 - end-to-end terminology proof in a repo-owned topic
-- template-driven YAML -> FHIR JSON conversion
-- explicit event/trigger contract in L2
-- stronger action output modeling
+- full template-driven YAML -> FHIR JSON conversion across the in-scope resource families
 - trigger/applicability ownership rules in L3 formalize
-- renderer/readout support for hierarchy
 - tighter CQL stubs with concrete criteria and status filtering
+- richer trigger propagation from L2 into L3 resource shapes
+- stronger strategy/recommendation topology alignment to the target L3 model
+- more concrete assessment artifact identity and questionnaire naming/linkage
+- assessment owns questionnaire generation; decision-table links to the canonical assessment questionnaire instead of emitting a duplicate
 
 ## Working Rules
 
@@ -124,25 +140,29 @@ Still open:
 
 ### 2. Formalize architecture
 
-- [ ] Refactor `formalize` to use template-driven YAML -> FHIR JSON conversion.
+- [ ] Finish refactoring `formalize` to use template-driven YAML -> FHIR JSON conversion.
   - This is not just adding templates alongside the current code.
   - It will require replacing parts of the current Python builder path in `formalize` and related FHIR builder code.
   - The target state is:
     - reusable FHIR resource templates for core artifact families
     - scripts/helpers that bind structured YAML data into those templates
     - less direct field-by-field JSON construction embedded in command logic
-- [ ] Establish the initial template boundary before more L3 alignment work:
+- [x] Establish the initial template boundary before more L3 alignment work:
   - identify the current builder entry points to replace
   - choose the first artifact families to template
   - introduce template-loading/render helpers into `formalize`
   - migrate one concrete resource family end to end before expanding scope
-- [ ] Define and validate a formal L2 `event.trigger` contract:
+- [x] Define and validate a formal L2 `event.trigger` contract:
   - optional presence
   - FHIR-compatible trigger types
   - resource criteria
   - timing-window support
-- [ ] Define stronger conventions for action outputs beyond `produces_conditions[]`, especially assessment-result outputs that later logic consumes.
+- [x] Define stronger conventions for action outputs beyond `produces_conditions[]`, especially assessment-result outputs that later logic consumes.
 - [ ] After the template layer is in place, add an explicit formalize rule for trigger/applicability ownership so branch logic is not duplicated across L3 levels.
+- [ ] Strengthen trigger propagation from L2 into L3 so actual formalized output carries:
+  - resource type/profile criteria where present
+  - coded trigger context where present
+  - postoperative timing semantics at the correct ownership level
 - [ ] After the template layer is in place, add explicit cross-artifact alignment support between care-pathway nodes and decision-table workflow contexts where that alignment matters to formalize.
 - [ ] After the template layer is in place, align formalize output progressively to the repo-owned target L3 shapes so
   pathway, strategy, recommendation, assessment, questionnaire, and follow-up
@@ -150,10 +170,17 @@ Still open:
   artifacts.
   - Scope this work to terminology, care-pathway, decision-table, assessment,
     and CQL-linked logic outputs only.
+- [ ] Reduce care-pathway L3 topology drift relative to the target:
+  - make `pathway -> strategy -> recommendation` boundaries more explicit
+  - reduce fallback to generic protocol activities where target-shaped recommendation linkage is expected
+  - preserve branch structure without collapsing too much into the protocol shell
+- [ ] Improve assessment/questionnaire formalization so the output keeps topic-specific assessment identity instead of defaulting to generic assessment naming where the source supports a named instrument.
+- [x] Ensure assessment artifacts are the single owner of Questionnaire generation, with decision-table actions linking to the canonical assessment questionnaire instead of creating duplicate questionnaire resources.
+- [ ] Improve assessment/questionnaire formalization so the output keeps topic-specific assessment identity instead of defaulting to generic assessment naming where the source supports a named instrument.
 
 ### 3. Extract and skill behavior
 
-- [ ] Improve extract/skill guidance so event-only workflow contexts, optional triggers, and parent/child assessment decomposition are produced reliably without hand editing.
+- [x] Improve extract/skill guidance so event-only workflow contexts, optional triggers, and parent/child assessment decomposition are produced reliably without hand editing.
 - [ ] Align extract behavior and L2 schema usage progressively to the repo-owned
   target L2 shapes so event decomposition, assessment hierarchy, and branching
   structure come from the framework rather than manual target authoring.
@@ -169,13 +196,14 @@ Still open:
   - concrete result criteria
   - explicit thresholds or TODOs
   - appropriate status filtering
+- [ ] Tighten extract/formalize guidance so named instruments and assessment artifacts are carried through with concrete identity when the source supports them.
 - [ ] Remove lingering comparison-style skill wording and keep only direct behavioral instructions.
 
 ### 4. Renderer and readouts
 
-- [ ] Upgrade the renderer/readout layer so hierarchy is supported directly.
-- [ ] Support care-pathway trees from `steps[].parent_id`.
-- [ ] Support decision-table event/rule/action trees from `events[]`, `rules[]`, and `actions[].parent_action_id`.
+- [x] Upgrade the renderer/readout layer so hierarchy is supported directly.
+- [x] Support care-pathway trees from `steps[].parent_id`.
+- [x] Support decision-table event/rule/action trees from `events[]`, `rules[]`, and `actions[].parent_action_id`.
 - [ ] Surface cross-artifact links between pathway nodes and downstream decision-table/recommendation artifacts.
 - [ ] Align rendered readouts to the repo-owned target readout shapes so the
   built-in renderer can produce the same kind of hierarchy and cross-link
@@ -191,11 +219,14 @@ Still open:
 ## Recommended Order
 
 1. Finish packaging and terminology proof in a repo-owned topic.
-2. Implement the initial template-driven `formalize` boundary and migrate the
-   first resource family off the current builder path.
-3. Continue L2/schema/skill work needed to clarify the target model.
-4. Resume L3/output-shape alignment on top of the template layer.
-5. Move hierarchical target readouts into the real renderer.
+2. Continue replacing the remaining builder-driven `formalize` shells with template-driven generation across the in-scope resource families.
+3. Close the top assessed actual-vs-target gaps in this order:
+   - richer trigger propagation from L2 into L3
+   - stronger `pathway -> strategy -> recommendation` topology
+   - concrete assessment/questionnaire identity
+   - tighter CQL/data-element specificity
+4. Continue L2/schema/skill work only where needed to support those target-shape gaps.
+5. Add cross-artifact readout visibility once the formalized topology is more stable.
 6. Refresh docs/specs after behavior stabilizes.
 
 ## Explicit Non-Goals
