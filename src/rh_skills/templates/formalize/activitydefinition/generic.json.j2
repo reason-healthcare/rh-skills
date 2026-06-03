@@ -1,0 +1,23 @@
+{
+  "resourceType": "ActivityDefinition",
+  "id": "{{ id }}",
+  "url": "{{ url }}",
+  "version": "{{ version }}",
+  "status": "{{ status }}",
+  "date": "{{ date }}",
+  "name": "{{ name }}",
+  "title": "{{ title }}",
+  "description": {{ description | tojson }},
+  "kind": "{{ kind }}",
+  "intent": "{{ intent }}",
+{% if do_not_perform %}
+  "doNotPerform": true,
+{% endif %}
+  "code": {{ code | tojson }}{% if participant or related_artifact %},{% endif %}
+{% if participant %}
+  "participant": {{ participant | tojson }}{% if related_artifact %},{% endif %}
+{% endif %}
+{% if related_artifact %}
+  "relatedArtifact": {{ related_artifact | tojson }}
+{% endif %}
+}

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import click
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from ruamel.yaml import YAML
 
 from rh_skills.commands.formalize_config import load_formalize_config
@@ -34,6 +35,8 @@ from rh_skills.fhir.normalize import (
 )
 from rh_skills.fhir.validate import validate_resource
 from rh_skills.fhir.packaging import load_packager_toml
+
+_FORMALIZE_TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "formalize"
 
 
 # ── CQL Content Embedding ─────────────────────────────────────────────────────
@@ -450,6 +453,71 @@ def _build_questionnaire_items(artifact_name: str, l2_data: dict | None) -> list
     }]
 
 
+def _formalize_template_env() -> Environment:
+    """Build a Jinja environment for FHIR JSON formalize templates."""
+    return Environment(
+        loader=FileSystemLoader(str(_FORMALIZE_TEMPLATES_DIR)),
+        undefined=StrictUndefined,
+        trim_blocks=True,
+        lstrip_blocks=True,
+        keep_trailing_newline=True,
+    )
+
+
+def _render_formalize_json_template(template_name: str, **context: Any) -> dict[str, Any]:
+    """Render a formalize JSON template and parse it back into a resource dict."""
+    env = _formalize_template_env()
+    rendered = env.get_template(template_name).render(**context)
+    return json.loads(rendered)
+
+
+def _render_activity_definition_resource(
+    context: dict[str, Any],
+    *,
+    questionnaire_task: bool = False,
+) -> dict[str, Any]:
+    """Render an ActivityDefinition resource from the template layer."""
+    template_name = (
+        "activitydefinition/questionnaire-task.json.j2"
+        if questionnaire_task
+        else "activitydefinition/generic.json.j2"
+    )
+    return _render_formalize_json_template(template_name, **context)
+
+
+def _render_decision_table_plan_definition_resource(
+    context: dict[str, Any],
+    *,
+    child_event_plan: bool = False,
+) -> dict[str, Any]:
+    """Render a decision-table PlanDefinition resource from the template layer."""
+    template_name = (
+        "plandefinition/decision-table-event.json.j2"
+        if child_event_plan
+        else "plandefinition/decision-table-root.json.j2"
+    )
+    return _render_formalize_json_template(template_name, **context)
+
+
+def _render_care_pathway_plan_definition_resource(
+    context: dict[str, Any],
+    *,
+    child_group_plan: bool = False,
+) -> dict[str, Any]:
+    """Render a care-pathway PlanDefinition resource from the template layer."""
+    template_name = (
+        "plandefinition/care-pathway-group.json.j2"
+        if child_group_plan
+        else "plandefinition/care-pathway-root.json.j2"
+    )
+    return _render_formalize_json_template(template_name, **context)
+
+
+def _render_questionnaire_resource(context: dict[str, Any]) -> dict[str, Any]:
+    """Render a Questionnaire resource from the template layer."""
+    return _render_formalize_json_template("questionnaire/generic.json.j2", **context)
+
+
 def _build_evidence_variable_characteristics(
     artifact_type: str,
     l2_data: dict | None,
@@ -735,21 +803,44 @@ def _build_care_pathway_activity_definition(
     artifact_name: str,
     sup_resource: dict,
     l2_data: dict | None,
-) -> None:
+) -> dict[str, Any]:
     """Populate ActivityDefinition stub details from the first care-pathway step."""
     sections = (l2_data or {}).get("sections") or {}
     steps = sections.get("steps") or []
     if not isinstance(steps, list) or not steps:
-        sup_resource["kind"] = "ServiceRequest"
-        return
+        return _render_activity_definition_resource(
+            _activity_definition_template_context(
+                resource_id=str(sup_resource["id"]),
+                canonical=str(sup_resource["url"]).rsplit("/ActivityDefinition/", 1)[0],
+                version=str(sup_resource["version"]),
+                status=str(sup_resource["status"]),
+                today=str(sup_resource["date"]),
+                title=str(sup_resource["title"]),
+                description=str(sup_resource.get("description") or sup_resource["title"]),
+                kind="ServiceRequest",
+                intent="proposal",
+                code=_default_activity_coding("ServiceRequest", str(sup_resource["title"]), str(sup_resource["id"])),
+            )
+        )
 
     first_step = steps[0] if isinstance(steps[0], dict) else {}
     label = first_step.get("label") or first_step.get("title") or artifact_name.replace("-", " ").title()
     description = first_step.get("description") or f"Activity stub for {label}"
-    sup_resource["kind"] = _activity_definition_kind(first_step.get("action_type"))
-    sup_resource["title"] = str(label)
-    sup_resource["description"] = str(description)
-    sup_resource["intent"] = "proposal"
+    kind = _activity_definition_kind(first_step.get("action_type"))
+    return _render_activity_definition_resource(
+        _activity_definition_template_context(
+            resource_id=str(sup_resource["id"]),
+            canonical=str(sup_resource["url"]).rsplit("/ActivityDefinition/", 1)[0],
+            version=str(sup_resource["version"]),
+            status=str(sup_resource["status"]),
+            today=str(sup_resource["date"]),
+            title=str(label),
+            description=str(description),
+            kind=kind,
+            intent="proposal",
+            code=_default_activity_coding(kind, str(label), str(sup_resource["id"])),
+        )
+    )
 
 
 def _default_activity_coding(kind: str, title: str, action_id: str) -> dict[str, Any]:
@@ -769,6 +860,47 @@ def _default_activity_coding(kind: str, title: str, action_id: str) -> dict[str,
             "display": display,
         }],
         "text": title or action_id,
+    }
+
+
+def _activity_definition_template_context(
+    *,
+    resource_id: str,
+    canonical: str,
+    version: str,
+    status: str,
+    today: str,
+    title: str,
+    description: str,
+    kind: str,
+    intent: str,
+    code: dict[str, Any],
+    do_not_perform: bool = False,
+    meta_profile: list[str] | None = None,
+    profile: str | None = None,
+    dynamic_value: list[dict[str, Any]] | None = None,
+    participant: list[dict[str, Any]] | None = None,
+    related_artifact: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Build the shared template context for ActivityDefinition resources."""
+    return {
+        "id": resource_id,
+        "url": f"{canonical}/ActivityDefinition/{resource_id}",
+        "version": version,
+        "status": status,
+        "date": today,
+        "name": _pascal_from_kebab(resource_id),
+        "title": title,
+        "description": description,
+        "kind": kind,
+        "intent": intent,
+        "code": code,
+        "do_not_perform": do_not_perform,
+        "meta_profile": meta_profile or [],
+        "profile": profile,
+        "dynamic_value": dynamic_value or [],
+        "participant": participant or [],
+        "related_artifact": related_artifact or [],
     }
 
 
@@ -810,18 +942,19 @@ def _build_questionnaire_resource(
         or assessment_data.get("name")
         or artifact_name.replace("-", " ").title()
     )
-    return {
-        "resourceType": "Questionnaire",
-        "id": questionnaire_id,
-        "url": f"{cfg['canonical']}/Questionnaire/{questionnaire_id}",
-        "version": cfg["version"],
-        "status": cfg["status"],
-        "date": today_date(),
-        "name": _pascal_from_kebab(questionnaire_id),
-        "title": title,
-        "description": str(assessment_data.get("description") or title),
-        "item": _build_questionnaire_items(artifact_name, assessment_data),
-    }
+    return _render_questionnaire_resource(
+        {
+            "id": questionnaire_id,
+            "url": f"{cfg['canonical']}/Questionnaire/{questionnaire_id}",
+            "version": cfg["version"],
+            "status": cfg["status"],
+            "date": today_date(),
+            "name": _pascal_from_kebab(questionnaire_id),
+            "title": title,
+            "description": str(assessment_data.get("description") or title),
+            "item": _build_questionnaire_items(artifact_name, assessment_data),
+        }
+    )
 
 
 def _collect_information_dynamic_values(questionnaire_canonical: str) -> list[dict[str, Any]]:
@@ -920,21 +1053,10 @@ def _build_decision_table_activity_definitions(
             continue
         action_id = to_kebab_case(str(action_def.get("id") or f"action-{idx}")) or f"action-{idx}"
         title = _decision_table_action_title(action_def)
-        resource: dict = {
-            "resourceType": "ActivityDefinition",
-            "id": action_id,
-            "url": f"{canonical}/ActivityDefinition/{action_id}",
-            "version": version,
-            "status": status,
-            "date": today,
-            "name": _pascal_from_kebab(action_id),
-            "title": title,
-            "description": str(action_def.get("description") or title),
-            "kind": _activity_definition_kind(action_def.get("kind")),
-            "intent": str(action_def.get("intent") or "proposal"),
-        }
-        if action_def.get("do_not_perform") is True:
-            resource["doNotPerform"] = True
+        kind = _activity_definition_kind(action_def.get("kind"))
+        description = str(action_def.get("description") or title)
+        intent = str(action_def.get("intent") or "proposal")
+        do_not_perform = action_def.get("do_not_perform") is True
 
         code = action_def.get("code")
         if isinstance(code, dict):
@@ -945,9 +1067,48 @@ def _build_decision_table_activity_definitions(
                 coding["system"] = str(code["system"])
             if code.get("display"):
                 coding["display"] = str(code["display"])
-            resource["code"] = {"coding": [coding], "text": title}
+            codeable_concept = {"coding": [coding], "text": title}
         else:
-            resource["code"] = _default_activity_coding(resource["kind"], title, action_id)
+            codeable_concept = _default_activity_coding(kind, title, action_id)
+
+        participant_entries: list[dict[str, Any]] = []
+        participants = action_def.get("participants") or action_def.get("participant")
+        if isinstance(participants, list):
+            for participant in participants:
+                if isinstance(participant, dict):
+                    role = participant.get("role") or participant.get("type")
+                else:
+                    role = participant
+                if role:
+                    participant_entries.append({"type": str(role)})
+
+        related_artifacts: list[dict[str, Any]] = []
+        documentation = action_def.get("documentation") or []
+        if isinstance(documentation, list):
+            for entry in documentation:
+                if not isinstance(entry, dict):
+                    continue
+                related = {"type": str(entry.get("type") or "documentation")}
+                if entry.get("text"):
+                    related["display"] = str(entry["text"])
+                related_artifacts.append(related)
+
+        template_context = _activity_definition_template_context(
+            resource_id=action_id,
+            canonical=canonical,
+            version=version,
+            status=status,
+            today=today,
+            title=title,
+            description=description,
+            kind=kind,
+            intent=intent,
+            code=codeable_concept,
+            do_not_perform=do_not_perform,
+            participant=participant_entries,
+            related_artifact=related_artifacts,
+        )
+        template_variant_is_questionnaire = False
 
         resolved_assessment_artifact = _resolve_assessment_artifact_name(
             action_def,
@@ -973,14 +1134,13 @@ def _build_decision_table_activity_definitions(
                 resolved_assessment_data,
             )
             questionnaire_canonical = f"{canonical}/Questionnaire/{questionnaire_id}"
-            resource["kind"] = "Task"
-            resource["meta"] = {
-                "profile": [
-                    "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
-                ],
-            }
-            resource["profile"] = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
-            resource["code"] = {
+            template_variant_is_questionnaire = True
+            template_context["kind"] = "Task"
+            template_context["meta_profile"] = [
+                "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
+            ]
+            template_context["profile"] = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
+            template_context["code"] = {
                 "coding": [{
                     "system": "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs",
                     "code": "collect-information",
@@ -988,10 +1148,7 @@ def _build_decision_table_activity_definitions(
                 }],
                 "text": title,
             }
-            resource["dynamicValue"] = _collect_information_dynamic_values(questionnaire_canonical)
-            related_artifacts = resource.get("relatedArtifact", [])
-            if not isinstance(related_artifacts, list):
-                related_artifacts = []
+            template_context["dynamic_value"] = _collect_information_dynamic_values(questionnaire_canonical)
             related_artifacts.append({
                 "type": "depends-on",
                 "resource": questionnaire_canonical,
@@ -1001,34 +1158,12 @@ def _build_decision_table_activity_definitions(
                     or resolved_assessment_artifact.replace("-", " ").title()
                 ),
             })
-            resource["relatedArtifact"] = related_artifacts
+            template_context["related_artifact"] = related_artifacts
 
-        participants = action_def.get("participants") or action_def.get("participant")
-        if isinstance(participants, list):
-            participant_entries = []
-            for participant in participants:
-                if isinstance(participant, dict):
-                    role = participant.get("role") or participant.get("type")
-                else:
-                    role = participant
-                if role:
-                    participant_entries.append({"type": str(role)})
-            if participant_entries:
-                resource["participant"] = participant_entries
-
-        documentation = action_def.get("documentation") or []
-        if isinstance(documentation, list):
-            related_artifacts = []
-            for entry in documentation:
-                if not isinstance(entry, dict):
-                    continue
-                related = {"type": str(entry.get("type") or "documentation")}
-                if entry.get("text"):
-                    related["display"] = str(entry["text"])
-                related_artifacts.append(related)
-            if related_artifacts:
-                resource["relatedArtifact"] = related_artifacts
-
+        resource = _render_activity_definition_resource(
+            template_context,
+            questionnaire_task=template_variant_is_questionnaire,
+        )
         resources.append(resource)
 
     return resources, used_assessments
@@ -1215,20 +1350,22 @@ def _build_decision_table_stub_plan_definitions(
                 "rules": event_rules,
             }
         }
-        child_plan = {
-            "resourceType": "PlanDefinition",
-            "id": child_id,
-            "url": f"{canonical}/PlanDefinition/{child_id}",
-            "version": version,
-            "status": status,
-            "date": today,
-            "name": _pascal_from_kebab(child_id),
-            "title": event_title,
-            "description": event_description,
-            "type": _plan_definition_type("eca-rule"),
-            "library": [library_canonical],
-            "action": _build_decision_table_plan_actions(event_id, canonical, child_l2),
-        }
+        child_plan = _render_decision_table_plan_definition_resource(
+            {
+                "id": child_id,
+                "url": f"{canonical}/PlanDefinition/{child_id}",
+                "version": version,
+                "status": status,
+                "date": today,
+                "name": _pascal_from_kebab(child_id),
+                "title": event_title,
+                "description": event_description,
+                "type": _plan_definition_type("eca-rule"),
+                "library": [library_canonical],
+                "action": _build_decision_table_plan_actions(event_id, canonical, child_l2),
+            },
+            child_event_plan=True,
+        )
         child_resources.append(child_plan)
         root_actions.append({
             "id": event_id,
@@ -1323,7 +1460,6 @@ def _build_care_pathway_stub_plan_definitions(
         title = str(step.get("label") or step.get("title") or step_id)
         description = str(step.get("description") or title)
         resource = {
-            "resourceType": "PlanDefinition",
             "id": child_id,
             "url": f"{canonical}/PlanDefinition/{child_id}",
             "version": version,
@@ -1335,7 +1471,12 @@ def _build_care_pathway_stub_plan_definitions(
             "type": _plan_definition_type("clinical-protocol"),
             "action": [build_subtree(step)],
         }
-        resources.append(resource)
+        resources.append(
+            _render_care_pathway_plan_definition_resource(
+                resource,
+                child_group_plan=True,
+            )
+        )
 
     return resources
 
@@ -1795,10 +1936,23 @@ def _build_stub_resources(
                 cfg,
                 l2_data,
             )
-            primary_resource["action"] = root_actions or _build_decision_table_plan_actions(
-                artifact_name,
-                canonical,
-                l2_data,
+            primary_resource = _render_decision_table_plan_definition_resource(
+                {
+                    "id": resource_id,
+                    "url": f"{canonical}/{primary}/{resource_id}",
+                    "version": version,
+                    "status": status,
+                    "date": today,
+                    "name": _pascal_from_kebab(resource_id),
+                    "title": artifact_name.replace("-", " ").title(),
+                    "type": _plan_definition_type(plan_type),
+                    "library": [f"{canonical}/Library/{_deterministic_library_id(resource_id)}"],
+                    "action": root_actions or _build_decision_table_plan_actions(
+                        artifact_name,
+                        canonical,
+                        l2_data,
+                    ),
+                },
             )
         elif artifact_type == "care-pathway":
             activity_definition_id = f"{resource_id}-activity"
@@ -1822,14 +1976,6 @@ def _build_stub_resources(
                 decision_table_name or "decision-table",
                 decision_table_data,
             )
-            primary_resource["action"] = _build_care_pathway_actions(
-                artifact_name,
-                canonical,
-                activity_definition_id,
-                l2_data,
-                recommendation_plan_map=recommendation_plan_map,
-                recommendation_candidates=recommendation_candidates,
-            )
             child_plan_definitions = _build_care_pathway_stub_plan_definitions(
                 resource_id,
                 canonical,
@@ -1838,6 +1984,26 @@ def _build_stub_resources(
                 activity_definition_id,
                 recommendation_plan_map=recommendation_plan_map,
                 recommendation_candidates=recommendation_candidates,
+            )
+            primary_resource = _render_care_pathway_plan_definition_resource(
+                {
+                    "id": resource_id,
+                    "url": f"{canonical}/{primary}/{resource_id}",
+                    "version": version,
+                    "status": status,
+                    "date": today,
+                    "name": _pascal_from_kebab(resource_id),
+                    "title": artifact_name.replace("-", " ").title(),
+                    "type": _plan_definition_type(plan_type),
+                    "action": _build_care_pathway_actions(
+                        artifact_name,
+                        canonical,
+                        activity_definition_id,
+                        l2_data,
+                        recommendation_plan_map=recommendation_plan_map,
+                        recommendation_candidates=recommendation_candidates,
+                    ),
+                },
             )
         else:
             primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
@@ -1854,7 +2020,22 @@ def _build_stub_resources(
             lib_id = f"{resource_id}-measure"
             primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
     elif primary == "Questionnaire":
-        primary_resource["item"] = _build_questionnaire_items(artifact_name, l2_data)
+        primary_resource = _render_questionnaire_resource(
+            {
+                "id": resource_id,
+                "url": f"{canonical}/{primary}/{resource_id}",
+                "version": version,
+                "status": status,
+                "date": today,
+                "name": _pascal_from_kebab(resource_id),
+                "title": artifact_name.replace("-", " ").title(),
+                "description": str(
+                    (l2_data or {}).get("description")
+                    or artifact_name.replace("-", " ").title()
+                ),
+                "item": _build_questionnaire_items(artifact_name, l2_data),
+            }
+        )
     elif primary == "ValueSet":
         primary_resource["compose"] = {"include": [{"system": "http://snomed.info/sct", "concept": [{"code": "TODO:PLACEHOLDER"}]}]}
     elif primary == "Evidence":
@@ -1946,13 +2127,25 @@ def _build_stub_resources(
             sup_resource["characteristic"] = _build_evidence_variable_characteristics(artifact_type, l2_data)
         elif sup_type == "ActivityDefinition":
             if artifact_type == "care-pathway":
-                _build_care_pathway_activity_definition(artifact_name, sup_resource, l2_data)
+                sup_resource = _build_care_pathway_activity_definition(artifact_name, sup_resource, l2_data)
             else:
                 sup_resource["kind"] = "ServiceRequest"
         elif sup_type == "ConceptMap":
             sup_resource["group"] = [{"source": "http://example.org", "target": "http://example.org", "element": []}]
         elif sup_type == "Questionnaire":
-            sup_resource["item"] = [{"linkId": "q1", "text": "Stub DTR question", "type": "choice"}]
+            sup_resource = _render_questionnaire_resource(
+                {
+                    "id": sup_id,
+                    "url": f"{canonical}/{sup_type}/{sup_id}",
+                    "version": version,
+                    "status": status,
+                    "date": today,
+                    "name": _pascal_from_kebab(sup_id),
+                    "title": f"{artifact_name} {sup_type}".replace("-", " ").title(),
+                    "description": f"{artifact_name} questionnaire".replace("-", " ").title(),
+                    "item": [{"linkId": "q1", "text": "Stub DTR question", "type": "choice"}],
+                }
+            )
 
         resources.append(sup_resource)
 
