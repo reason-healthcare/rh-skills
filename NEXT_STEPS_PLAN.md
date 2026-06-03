@@ -95,6 +95,12 @@ Still open:
 - Do not let the plan, iteration guide, target artifacts, and framework
   behavior drift apart. If one changes, assess whether the others must change
   too.
+- Do not keep adding builder-specific L3 shaping to the current `formalize`
+  path if that work is expected to be replaced by template-driven generation.
+  Prefer:
+  - L2/schema/skill/readout changes that clarify the target model
+  - template-refactor work in `formalize`
+  - then L3/output-shape work on top of the template layer
 
 ## Actionable To-Do List
 
@@ -113,15 +119,20 @@ Still open:
     - reusable FHIR resource templates for core artifact families
     - scripts/helpers that bind structured YAML data into those templates
     - less direct field-by-field JSON construction embedded in command logic
+- [ ] Establish the initial template boundary before more L3 alignment work:
+  - identify the current builder entry points to replace
+  - choose the first artifact families to template
+  - introduce template-loading/render helpers into `formalize`
+  - migrate one concrete resource family end to end before expanding scope
 - [ ] Define and validate a formal L2 `event.trigger` contract:
   - optional presence
   - FHIR-compatible trigger types
   - resource criteria
   - timing-window support
 - [ ] Define stronger conventions for action outputs beyond `produces_conditions[]`, especially assessment-result outputs that later logic consumes.
-- [ ] Add an explicit formalize rule for trigger/applicability ownership so branch logic is not duplicated across L3 levels.
-- [ ] Add explicit cross-artifact alignment support between care-pathway nodes and decision-table workflow contexts where that alignment matters to formalize.
-- [ ] Align formalize output progressively to the repo-owned target L3 shapes so
+- [ ] After the template layer is in place, add an explicit formalize rule for trigger/applicability ownership so branch logic is not duplicated across L3 levels.
+- [ ] After the template layer is in place, add explicit cross-artifact alignment support between care-pathway nodes and decision-table workflow contexts where that alignment matters to formalize.
+- [ ] After the template layer is in place, align formalize output progressively to the repo-owned target L3 shapes so
   pathway, strategy, recommendation, assessment, questionnaire, and follow-up
   branches can be produced by the framework rather than by hand-authored target
   artifacts.
@@ -162,10 +173,12 @@ Still open:
 ## Recommended Order
 
 1. Finish packaging and terminology proof in a repo-owned topic.
-2. Implement template-driven formalize work and the L2 event/trigger contract.
-3. Tighten extract/skill behavior to match the target model without hand edits.
-4. Move hierarchical target readouts into the real renderer.
-5. Refresh docs/specs after behavior stabilizes.
+2. Implement the initial template-driven `formalize` boundary and migrate the
+   first resource family off the current builder path.
+3. Continue L2/schema/skill work needed to clarify the target model.
+4. Resume L3/output-shape alignment on top of the template layer.
+5. Move hierarchical target readouts into the real renderer.
+6. Refresh docs/specs after behavior stabilizes.
 
 ## Explicit Non-Goals
 
