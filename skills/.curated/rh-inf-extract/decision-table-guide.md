@@ -152,6 +152,13 @@ Before finalizing extraction, verify:
 
 **Pattern**: One event per workflow phase or major decision point
 
+Prefer one event per major workflow context, not one event per child task.
+If questionnaire review, imaging review, counseling, phenotype review, and
+other narrow tasks all occur within the same broader staged context, keep one
+event and represent the finer distinction through separate rules and child
+actions. Split into separate events only when the workflow moment or trigger
+actually changes.
+
 **Example** (synthetic surgical protocol):
 ```yaml
 events:
@@ -354,18 +361,18 @@ conditions:
   - id: diabetes-confirmed
     label: "Diabetes diagnosis confirmed"
     description: "HbA1c ≥6.5% on two occasions or fasting glucose ≥126 mg/dL"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     
   # Specific conditions
   - id: inadequate-glycemic-control
     label: "Inadequate glycemic control"
     description: "HbA1c >8% despite oral medications"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     
   - id: complications-present
     label: "Diabetes complications present"
     description: "Retinopathy, nephropathy, or neuropathy documented"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
 ```
 
 **Usage in rules**:
@@ -373,12 +380,12 @@ conditions:
 rules:
   - rule_id: r1
     event: e1
-    when: {diabetes-confirmed: "true", inadequate-glycemic-control: "true"}
+    when: {diabetes-confirmed: "Yes", inadequate-glycemic-control: "Yes"}
     then: [initiate-insulin]
     
   - rule_id: r2
     event: e1
-    when: {diabetes-confirmed: "true", complications-present: "true"}
+    when: {diabetes-confirmed: "Yes", complications-present: "Yes"}
     then: [refer-endocrinology]
 ```
 
@@ -426,12 +433,12 @@ Conditions serve different roles depending on context:
 rules:
   - rule_id: r1
     event: e2
-    when: {diagnosis-established: "true", criterion-a: "true"}
+    when: {diagnosis-established: "Yes", criterion-a: "Yes"}
     then: [action-1]
     
   - rule_id: r2
     event: e2
-    when: {diagnosis-established: "true", criterion-b: "true"}
+    when: {diagnosis-established: "Yes", criterion-b: "Yes"}
     then: [action-2]
 ```
 
@@ -471,17 +478,17 @@ rules:
 rules:
   - rule_id: r1
     event: e2
-    when: {diagnosis-established: "true"}  # Pre-requisite
+    when: {diagnosis-established: "Yes"}  # Pre-requisite
     then: [counseling]
     
   - rule_id: r2
     event: e4
-    when: {diagnosis-established: "true", complication-present: "true"}  # Branch criterion
+    when: {diagnosis-established: "Yes", complication-present: "Yes"}  # Branch criterion
     then: [intensive-intervention]
     
   - rule_id: r3
     event: e4
-    when: {diagnosis-established: "true", complication-present: "false"}  # Branch criterion
+    when: {diagnosis-established: "Yes", complication-present: "No"}  # Branch criterion
     then: [standard-intervention]
 ```
 
@@ -517,40 +524,40 @@ conditions:
   - id: crs-diagnosis-confirmed
     label: "CRS diagnosis confirmed"
     description: "Patient meets diagnostic criteria for chronic rhinosinusitis"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     role: "persistent-prerequisite"  # Established at e1, required through e3
     
   - id: objective-inflammation-present
     label: "Objective inflammation documented"
     description: "Endoscopic or imaging evidence of inflammation"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     role: "persistent-prerequisite"  # Established at e1, required through e3
     
   - id: surgical-criteria-met
     label: "Surgical candidacy criteria met"
     description: "Failed medical therapy and meets clinical criteria"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     role: "branch-condition"  # Only checked at e2
     
 rules:
   # Event 1: Establish prerequisites
   - id: r1
     event: e1
-    when: {crs-diagnosis-confirmed: "true", objective-inflammation-present: "true"}
+    when: {crs-diagnosis-confirmed: "Yes", objective-inflammation-present: "Yes"}
     then: [verify-diagnostic-workup]
     rationale: "Confirm diagnosis before proceeding"
     
   # Event 2: Prerequisites CARRIED FORWARD + new branch condition
   - id: r2
     event: e2
-    when: {crs-diagnosis-confirmed: "true", objective-inflammation-present: "true", surgical-criteria-met: "true"}
+    when: {crs-diagnosis-confirmed: "Yes", objective-inflammation-present: "Yes", surgical-criteria-met: "Yes"}
     then: [offer-surgery]
     rationale: "Offer surgery when persistent prerequisites confirmed AND surgical criteria met"
     
   # Event 3: Prerequisites CARRIED FORWARD again
   - id: r3
     event: e3
-    when: {crs-diagnosis-confirmed: "true", objective-inflammation-present: "true"}
+    when: {crs-diagnosis-confirmed: "Yes", objective-inflammation-present: "Yes"}
     then: [obtain-pre-op-clearance]
     rationale: "Clearance requires confirmed diagnosis and inflammation"
 ```
@@ -606,7 +613,7 @@ rules:
 rules:
   - rule_id: r2
     event: e1
-    when: {purulent-discharge: "false"}  # Condition present
+    when: {purulent-discharge: "No"}  # Condition present
     then: [avoid-antibiotics]
     rationale: "Avoid antibiotics when purulent discharge absent"
     decision_type: "branching"
@@ -651,7 +658,7 @@ actions:
 rules:
   - rule_id: r1
     event: e1
-    when: {diabetes-confirmed: "true"}
+    when: {diabetes-confirmed: "Yes"}
     then: [initiate-metformin]
 ```
 
@@ -708,7 +715,7 @@ rules:
 rules:
   - rule_id: r1
     event: e1
-    when: {purulent-discharge: "false"}
+    when: {purulent-discharge: "No"}
     then: [avoid-antibiotics]
     rationale: "KAS 3: Avoid antibiotics when purulent discharge absent"
     
@@ -770,12 +777,12 @@ events:
 rules:
   - rule_id: r1
     event: e1
-    when: {criterion: "true"}
+    when: {criterion: "Yes"}
     then: [action-a]
     
   - rule_id: r2
     event: e1
-    when: {criterion: "false"}
+    when: {criterion: "No"}
     then: [action-b]
 ```
 
@@ -789,12 +796,12 @@ rules:
 rules:
   - rule_id: r1
     event: e1
-    when: {criterion-a: "true", criterion-b: "true", criterion-c: "true"}
+    when: {criterion-a: "Yes", criterion-b: "Yes", criterion-c: "Yes"}
     then: [intensive-action]
     
   - rule_id: r2
     event: e1
-    when: {criterion-a: "true", criterion-b: "false"}
+    when: {criterion-a: "Yes", criterion-b: "No"}
     then: [standard-action]
 ```
 
@@ -816,13 +823,13 @@ rules:
   # Branching rules: use collected data
   - rule_id: r2
     event: e1
-    when: {assessment-positive: "true"}
+    when: {assessment-positive: "Yes"}
     then: [intervention-a]
     decision_type: "branching"
     
   - rule_id: r3
     event: e1
-    when: {assessment-positive: "false"}
+    when: {assessment-positive: "No"}
     then: [intervention-b]
     decision_type: "branching"
 ```
@@ -840,26 +847,26 @@ rules:
 rules:
   - id: r1
     event: e1
-    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", objective-inflammation: "true"}
+    when: {adult-patient: "Yes", crs-diagnostic-criteria-met: "Yes", objective-inflammation: "Yes"}
     then: [confirm-crs-diagnosis]
     
 # Event 2: Prerequisites REPEATED + new branch logic
 rules:
   - id: r2
     event: e2
-    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", objective-inflammation: "true", purulent-discharge: "false"}
+    when: {adult-patient: "Yes", crs-diagnostic-criteria-met: "Yes", objective-inflammation: "Yes", purulent-discharge: "No"}
     then: [avoid-antibacterials]
     
   - id: r3
     event: e2
-    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", objective-inflammation: "true", purulent-discharge: "true"}
+    when: {adult-patient: "Yes", crs-diagnostic-criteria-met: "Yes", objective-inflammation: "Yes", purulent-discharge: "Yes"}
     then: [consider-antibacterials]
     
 # Event 3: Prerequisites STILL REPEATED
 rules:
   - id: r4
     event: e3
-    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", objective-inflammation: "true", surgical-criteria-met: "true"}
+    when: {adult-patient: "Yes", crs-diagnostic-criteria-met: "Yes", objective-inflammation: "Yes", surgical-criteria-met: "Yes"}
     then: [offer-sinus-surgery]
 ```
 
@@ -870,7 +877,7 @@ rules:
   # Note: adult-patient, crs-diagnostic-criteria-met, objective-inflammation carried forward from e1
   - id: r2
     event: e2
-    when: {adult-patient: "true", crs-diagnostic-criteria-met: "true", ...}
+    when: {adult-patient: "Yes", crs-diagnostic-criteria-met: "Yes", ...}
 ```
 
 **Validation Note**: Extract validation should warn if downstream events omit persistent prerequisites established earlier.
@@ -920,19 +927,19 @@ rules:
   # Event 1: Prerequisites established
   - id: r1
     event: e1
-    when: {crs-diagnostic-criteria-met: "true", objective-inflammation: "true"}
+    when: {crs-diagnostic-criteria-met: "Yes", objective-inflammation: "Yes"}
     then: [confirm-diagnosis]
     
   # ❌ WRONG: Event 2 omits prerequisites (assumes they persist implicitly)
   - id: r2
     event: e2
-    when: {failed-medical-therapy: "true"}  # Missing: crs-diagnostic-criteria-met, objective-inflammation
+    when: {failed-medical-therapy: "Yes"}  # Missing: crs-diagnostic-criteria-met, objective-inflammation
     then: [consider-surgery]
     
   # ❌ WRONG: Event 3 also omits prerequisites
   - id: r3
     event: e3
-    when: {fine-cut-ct-available: "true"}  # Missing: all earlier prerequisites
+    when: {fine-cut-ct-available: "Yes"}  # Missing: all earlier prerequisites
     then: [order-imaging]
 ```
 
@@ -942,20 +949,20 @@ rules:
   # Event 1: Prerequisites established
   - id: r1
     event: e1
-    when: {crs-diagnostic-criteria-met: "true", objective-inflammation: "true"}
+    when: {crs-diagnostic-criteria-met: "Yes", objective-inflammation: "Yes"}
     then: [confirm-diagnosis]
     
   # ✓ CORRECT: Event 2 repeats prerequisites
   - id: r2
     event: e2
-    when: {crs-diagnostic-criteria-met: "true", objective-inflammation: "true", failed-medical-therapy: "true"}
+    when: {crs-diagnostic-criteria-met: "Yes", objective-inflammation: "Yes", failed-medical-therapy: "Yes"}
     then: [consider-surgery]
     rationale: "Prerequisites carried forward from e1; branch on medical therapy failure"
     
   # ✓ CORRECT: Event 3 repeats prerequisites
   - id: r3
     event: e3
-    when: {crs-diagnostic-criteria-met: "true", objective-inflammation: "true", fine-cut-ct-available: "true"}
+    when: {crs-diagnostic-criteria-met: "Yes", objective-inflammation: "Yes", fine-cut-ct-available: "Yes"}
     then: [order-imaging]
     rationale: "Prerequisites carried forward from e1; branch on CT availability"
 ```
@@ -983,12 +990,12 @@ conditions:
   - id: diagnosis-confirmed
     label: "Diagnosis confirmed and patient eligible"
     description: "All diagnostic and eligibility criteria met"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
 
 rules:
   - id: r1
     event: e2
-    when: {diagnosis-confirmed: "true"}  # What criteria? Lost traceability
+    when: {diagnosis-confirmed: "Yes"}  # What criteria? Lost traceability
     then: [proceed-to-treatment]
 ```
 
@@ -999,24 +1006,24 @@ conditions:
   - id: crs-diagnostic-criteria-met
     label: "CRS diagnostic criteria met"
     description: "Patient meets clinical diagnostic criteria per guideline section 2.1"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     
   - id: adult-patient
     label: "Adult patient"
     description: "Age ≥18 years"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     
   # Abstraction (if reviewer-approved for readability)
   - id: diagnosis-and-eligibility-confirmed
     label: "Diagnosis and eligibility confirmed"
     description: "Combines crs-diagnostic-criteria-met AND adult-patient (abstraction approved by reviewer)"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     note: "Abstraction of crs-diagnostic-criteria-met AND adult-patient"
 
 rules:
   - id: r1
     event: e2
-    when: {crs-diagnostic-criteria-met: "true", adult-patient: "true"}  # Use originals
+    when: {crs-diagnostic-criteria-met: "Yes", adult-patient: "Yes"}  # Use originals
     then: [proceed-to-treatment]
 ```
 
@@ -1026,7 +1033,7 @@ conditions:
   - id: diagnosis-confirmed
     label: "Diagnosis confirmed"
     description: "CRS diagnostic criteria met AND adult patient (approved abstraction replaces individual conditions: crs-diagnostic-criteria-met, adult-patient)"
-    values: ["true", "false"]
+    values: ["Yes", "No"]
     note: "Replaces: crs-diagnostic-criteria-met, adult-patient (reviewer decision: abstract for readability)"
 ```
 
@@ -1049,7 +1056,7 @@ actions:
 
 rules:
   - rule_id: r1
-    when: {polyps-present: "true"}
+    when: {polyps-present: "Yes"}
     then: [perform-extensive-surgery]
 ```
 
@@ -1073,7 +1080,7 @@ rules:
     
   - rule_id: r2
     event: e1
-    when: {polyps-present: "true"}
+    when: {polyps-present: "Yes"}
     then: [perform-extensive-surgery]
     decision_type: "branching"
 ```
@@ -1140,7 +1147,7 @@ conditions:
 
 rules:
   - rule_id: r1
-    when: {other-condition: "true"}
+    when: {other-condition: "Yes"}
     # ...
 ```
 
@@ -1187,11 +1194,11 @@ events:
 rules:
   - rule_id: r1
     event: surgical-decision
-    when: {candidacy-met: true}
+    when: {candidacy-met: Yes}
     then: [offer-surgery]
   - rule_id: r2
     event: surgical-decision
-    when: {candidacy-met: false}
+    when: {candidacy-met: No}
     then: [continue-medical-management]
 ```
 
@@ -1215,37 +1222,31 @@ rules:
 }
 ```
 
-### CQL Library: Composite States
+### CQL Library: Explicit Conditions First
 
-**Automatic composite state detection**: If multiple rules share the same set of conditions, the formalizer generates a composite state definition:
+Keep the L2 artifact explicit. If multiple downstream rules depend on the same
+clinically meaningful state, repeat that state in `rules.when{}` where it is
+clinically required rather than inventing a new composite state in the L2
+artifact.
 
 ```yaml
-# L2: Multiple rules with 6 shared conditions
+# L2: Shared prerequisite repeated explicitly where needed
 when:
-  has-diagnosis: true
-  qol-documented: true
-  objective-findings: true
-  medical-therapy-inadequate: true
-  no-contraindications: true
-  patient-accepts-risks: true
+  has-diagnosis: Yes
+  objective-findings: Yes
+  medical-therapy-inadequate: Yes
 ```
 
-```cql
-// L3: Composite state in CQL Library
-define "SurgicalCandidacyEstablished":
-  HasDiagnosis and QolDocumented and ObjectiveFindings and
-  MedicalTherapyInadequate and NoContraindications and PatientAcceptsRisks
-```
-
-Actions then reference the composite state instead of repeating all 6 atomic conditions.
+The formalization layer may later optimize generated logic, but that is not an
+L2 authoring contract. The L2 artifact should stay readable on its own.
 
 ### Polarity-Aware Conditions
 
-**Negative conditions** (`when: {condition: false}`) automatically generate `not` expressions:
+**Negative conditions** (`when: {condition: No}`) automatically generate `not` expressions:
 
 ```yaml
 # L2 Input
-when: {contraindications-present: false}
+when: {contraindications-present: No}
 ```
 
 ```json
@@ -1257,16 +1258,18 @@ when: {contraindications-present: false}
 }
 ```
 
-### Prerequisite Hoisting
+### Shared Prerequisites
 
-**Shared conditions are hoisted to parent actions** to avoid duplication. If all sibling rules share a prerequisite, it appears once on the parent instead of repeating on every child.
+If later rules truly require the same prerequisite state, keep that prerequisite
+explicit in those later `rules.when{}` entries. Do not assume implicit carry
+forward, and do not rely on hoisting behavior as part of the L2 model.
 
 ### Key Principles
 
 - ✅ **One PlanDefinition per event** (not per rule)
-- ✅ **Composite states reduce CQL duplication**
+- ✅ **L2 conditions stay explicit and readable**
 - ✅ **Polarity-aware condition handling** (not X for false values)
 - ✅ **Actions may branch OR execute, never both**
-- ✅ **Prerequisite hoisting removes shared conditions from siblings**
+- ✅ **Shared prerequisites stay explicit where clinically required**
 
 ---

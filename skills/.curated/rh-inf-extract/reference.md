@@ -557,9 +557,25 @@ when the source implies a concrete activation mechanism that matters for
 formalization. When `event.trigger` is used, prefer FHIR-compatible trigger
 types such as `named-event`, `periodic`, `data-changed`, `data-added`, or
 `data-modified`.
+Keep `events[]` at the level of major workflow contexts or decision moments.
+Do not create a separate event for every child task or narrow sub-step when
+those activities still belong to the same broader staged context.
+If several recommendations share the same workflow moment, keep one event and
+express the finer distinction through separate rules and child actions rather
+than proliferating near-duplicate events.
 
 Do not gate verification, assessment, review, or evidence-gathering actions on
 the same confirmed state they are intended to establish.
+
+When the source describes a broader recommended action that contains distinct
+operational tasks, model the broader recommendation as the parent action and
+add separate child actions for the broken-down tasks when the source treats
+them as operationally separate.
+
+Use a child action for distinct tasks such as administering a questionnaire,
+reviewing imaging, reviewing prior therapy history, ordering a prerequisite
+study, or carrying out a separate counseling step. Group closely related work
+into one child action when the source does not require finer separation.
 
 When the source describes sequential clinical reasoning in one pathway, prefer
 one decision-table with staged events over child tables. Use early actions to
@@ -571,12 +587,21 @@ later branch condition.
 Use `actions[].produces_data_elements[]` when an action produces a concrete
 finding, score, or other evidence item that later logic consumes.
 
+Do not model the result of a child task as a prerequisite for doing the task
+itself. If the task obtains a score, finding, or result, make that result
+a `data_elements[]` entry and link it from the action with
+`produces_data_elements[]`.
+
 Use `actions[].parent_action_id` when a supporting action belongs under a
-broader assessment action rather than standing alone.
+broader parent action rather than standing alone.
 
 Use `actions[].assessment_artifact` when a named questionnaire or assessment
 instrument is explicitly administered or reviewed as part of a broader
 assessment and should later formalize to a Questionnaire.
+
+For later recommendation branches, use explicit assessed states from the source
+rather than inventing a generic summary condition when the guideline does not
+name one.
 
 Phase 1 guidance for a single decision-table artifact:
 - keep one artifact if needed, but make each `event` a recommendation-scoped
@@ -642,6 +667,14 @@ candidate clinical groupings that downstream formalize may promote into
 separate strategy artifacts when the paired decision logic supports that split.
 Keep recommendation logic in the decision-table artifact; use the care-pathway
 for sequencing, actor ownership, and transitions.
+When different parts of the pathway activate at different workflow moments,
+represent them as separate sibling branches under the same parent pathway
+rather than forcing one linear chain. Use a separate branch for coordination
+work such as scheduling follow-up when it has a different trigger or timing
+from assessment, planning, or completed follow-up. Do not create a separate
+pathway step for intervention execution when the source is really describing
+planning or ordering logic; keep it in the planning branch unless the guideline
+clearly treats execution as its own clinical stage.
 
 #### terminology
 

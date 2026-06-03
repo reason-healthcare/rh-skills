@@ -95,32 +95,32 @@ sections:
   rules:
     - id: r1
       event: e1-annual-screen
-      when: {has-diabetes: true}
+      when: {has-diabetes: Yes}
       action: conduct-screen
       rationale: "ADA Standards of Care 2024, Recommendation 11.18"
     - id: r2
       event: e2-risk-assessment
-      when: {has-diabetes: true}
+      when: {has-diabetes: Yes}
       action: classify-risk
       rationale: "ADA Standards of Care 2024, Recommendation 11.19"
     - id: r3
       event: e3-education
-      when: {has-diabetes: true}
+      when: {has-diabetes: Yes}
       action: provide-education
       rationale: "ADA Standards of Care 2024, Recommendation 11.20"
     - id: r4
       event: e4-podiatry-referral
-      when: {high-risk-features: true}
+      when: {high-risk-features: Yes}
       action: refer-podiatry
       rationale: "ADA Standards of Care 2024, Recommendation 11.21"
     - id: r5
       event: e5-schedule-followup
-      when: {high-risk-features: true}
+      when: {high-risk-features: Yes}
       action: schedule-3mo
       rationale: "ADA Standards of Care 2024, Recommendation 11.22a"
     - id: r6
       event: e5-schedule-followup
-      when: {high-risk-features: false}
+      when: {high-risk-features: No}
       action: schedule-12mo
       rationale: "ADA Standards of Care 2024, Recommendation 11.22b"
 ```

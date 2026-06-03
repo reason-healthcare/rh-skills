@@ -204,7 +204,7 @@ sections:
     
     - id: r2
       event: e2-cultures
-      when: {suspected-infection: true}
+      when: {suspected-infection: Yes}
       action: obtain-cultures
       rationale: "IDSA Antibiotic Stewardship Guidelines, Recommendation 3.2"
     
@@ -236,7 +236,7 @@ sections:
     # PHASE 3: DE-ESCALATION (branching — based on culture results)
     - id: r4a
       event: e4-deescalate
-      when: {organism-identified: true}
+      when: {organism-identified: Yes}
       action: deescalate-targeted
       rationale: "IDSA Antibiotic Stewardship Guidelines, Recommendation 4.1"
     
@@ -251,19 +251,19 @@ sections:
     # PHASE 4: DURATION (branching — based on clinical response)
     - id: r5a
       event: e5-duration
-      when: {clinical-improvement: true}
+      when: {clinical-improvement: Yes}
       action: discontinue-abx
       rationale: "IDSA Antibiotic Stewardship Guidelines, Recommendation 5.1"
     
     - id: r5b
       event: e5-duration
-      when: {persistent-infection: true}
+      when: {persistent-infection: Yes}
       action: extend-therapy
       rationale: "IDSA Antibiotic Stewardship Guidelines, Recommendation 5.2a"
     
     - id: r5c
       event: e5-duration
-      when: {persistent-infection: true}
+      when: {persistent-infection: Yes}
       action: consult-id
       rationale: "IDSA Antibiotic Stewardship Guidelines, Recommendation 5.2b"
   
