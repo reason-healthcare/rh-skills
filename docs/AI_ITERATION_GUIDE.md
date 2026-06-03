@@ -182,6 +182,14 @@ If behavior changes in one layer, the agent should explicitly decide whether the
 other layers need matching updates. Silent drift between these layers is a
 framework bug.
 
+When template-driven `formalize` refactoring is planned, do not keep layering
+builder-specific L3 output shaping onto the existing Python construction path
+unless the fix is urgent and narrowly scoped. Prefer this sequence:
+
+1. clarify the target model in L2/schema/skills/readouts
+2. establish or expand the template layer in `formalize`
+3. resume L3 output-shape alignment on top of that template layer
+
 ## Skill Usage In Iteration
 
 The curated skills are part of the framework being iterated on, not just
