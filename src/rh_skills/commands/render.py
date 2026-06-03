@@ -2,6 +2,7 @@
 
 from importlib.resources import files
 from itertools import product as itertools_product
+from collections import defaultdict
 from pathlib import Path
 
 import click
@@ -25,15 +26,201 @@ REQUIRED_SECTIONS: dict[str, list[str]] = {
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "render"
 
 
+def _display_label(item: dict, *, include_id: bool = False) -> str:
+    """Return a stable human-readable label for an L2 item."""
+    item_id = str(item.get("id") or "").strip()
+    label = str(item.get("label") or item.get("title") or item.get("description") or item_id or "?").strip()
+    if include_id and item_id:
+        return f"{item_id} {label}"
+    return label or item_id or "?"
+
+
+def _ascii_tree_from_nodes(nodes: list[dict]) -> str:
+    """Render a prebuilt node forest to an ASCII tree."""
+    lines: list[str] = []
+
+    def visit(node: dict, prefix: str, is_last: bool, is_root: bool = False) -> None:
+        label = str(node.get("label") or "?")
+        if is_root:
+            lines.append(label)
+        else:
+            connector = "`-- " if is_last else "|-- "
+            lines.append(f"{prefix}{connector}{label}")
+        children = node.get("children") or []
+        next_prefix = prefix + ("    " if is_last else "|   ")
+        for idx, child in enumerate(children):
+            visit(child, next_prefix, idx == len(children) - 1, False)
+
+    for idx, node in enumerate(nodes):
+        visit(node, "", idx == len(nodes) - 1, True)
+    return "\n".join(lines)
+
+
+def _care_pathway_tree(steps: list[dict]) -> str:
+    """Build an ASCII tree from care-pathway steps using parent_id."""
+    if not isinstance(steps, list) or not steps:
+        return ""
+
+    step_map = {str(step.get("id") or ""): step for step in steps if isinstance(step, dict)}
+    child_map: dict[str | None, list[dict]] = defaultdict(list)
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        parent_id = step.get("parent_id")
+        if isinstance(parent_id, str) and parent_id.strip() and parent_id in step_map:
+            child_map[parent_id].append(step)
+        else:
+            child_map[None].append(step)
+
+    def build_node(step: dict) -> dict:
+        step_id = str(step.get("id") or "")
+        children = [build_node(child) for child in child_map.get(step_id, [])]
+        return {
+            "label": _display_label(step),
+            "children": children,
+        }
+
+    roots = [build_node(step) for step in child_map.get(None, [])]
+    return _ascii_tree_from_nodes(roots)
+
+
+def _care_pathway_transition_rows(sections: dict) -> list[dict]:
+    """Resolve care-pathway transition endpoints to display labels."""
+    steps = (sections or {}).get("steps") or []
+    transitions = (sections or {}).get("transitions") or []
+    if not isinstance(steps, list) or not isinstance(transitions, list):
+        return []
+
+    step_map = {
+        str(step.get("id") or ""): step
+        for step in steps
+        if isinstance(step, dict) and str(step.get("id") or "").strip()
+    }
+
+    rows: list[dict] = []
+    for transition in transitions:
+        if not isinstance(transition, dict):
+            continue
+        from_id = str(transition.get("from_id") or transition.get("from") or "").strip()
+        to_id = str(transition.get("to_id") or transition.get("to") or "").strip()
+        from_label = _display_label(step_map[from_id]) if from_id in step_map else (from_id or "-")
+        to_label = _display_label(step_map[to_id]) if to_id in step_map else (to_id or "-")
+        rows.append({
+            "from_label": from_label,
+            "to_label": to_label,
+            "condition": transition.get("condition") or "-",
+            "description": transition.get("description") or "",
+        })
+    return rows
+
+
+def _decision_table_tree(sections: dict) -> str:
+    """Build an ASCII tree from decision-table events, rules, and action hierarchy."""
+    events = sections.get("events") or []
+    conditions = sections.get("conditions") or []
+    actions = sections.get("actions") or []
+    rules = sections.get("rules") or []
+    if not isinstance(events, list) or not events:
+        return ""
+
+    cond_map = {
+        str(cond.get("id") or ""): str(cond.get("label") or cond.get("id") or "?")
+        for cond in conditions
+        if isinstance(cond, dict)
+    }
+    action_map = {
+        str(action.get("id") or ""): action
+        for action in actions
+        if isinstance(action, dict) and str(action.get("id") or "").strip()
+    }
+    child_actions: dict[str | None, list[str]] = defaultdict(list)
+    for action_id, action in action_map.items():
+        parent_id = action.get("parent_action_id")
+        if isinstance(parent_id, str) and parent_id.strip() and parent_id in action_map:
+            child_actions[parent_id].append(action_id)
+        else:
+            child_actions[None].append(action_id)
+
+    rules_by_event: dict[str, list[dict]] = defaultdict(list)
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        event_id = str(rule.get("event") or "").strip()
+        if event_id:
+            rules_by_event[event_id].append(rule)
+
+    def action_in_scope(action_id: str, scoped_ids: set[str]) -> bool:
+        if action_id in scoped_ids:
+            return True
+        return any(action_in_scope(child_id, scoped_ids) for child_id in child_actions.get(action_id, []))
+
+    def build_action_node(action_id: str, scoped_ids: set[str]) -> dict:
+        action = action_map[action_id]
+        children = [
+            build_action_node(child_id, scoped_ids)
+            for child_id in child_actions.get(action_id, [])
+            if action_in_scope(child_id, scoped_ids)
+        ]
+        return {
+            "label": _display_label(action, include_id=True),
+            "children": children,
+        }
+
+    def build_rule_node(rule: dict) -> dict:
+        when_nodes: list[dict] = []
+        when_clause = rule.get("when") or {}
+        if isinstance(when_clause, dict):
+            for cond_id, value in when_clause.items():
+                when_nodes.append({
+                    "label": f"When: {cond_map.get(str(cond_id), str(cond_id))} = {value}",
+                    "children": [],
+                })
+
+        then_ids = [str(aid) for aid in (rule.get("then") or []) if str(aid) in action_map]
+        scoped_ids = set(then_ids)
+        top_action_ids = [
+            action_id for action_id in then_ids
+            if str(action_map[action_id].get("parent_action_id") or "") not in scoped_ids
+        ]
+        then_children = [build_action_node(action_id, scoped_ids) for action_id in top_action_ids]
+        children = when_nodes[:]
+        if then_children:
+            children.append({"label": "Then", "children": then_children})
+
+        rule_label = str(rule.get("action") or rule.get("description") or rule.get("id") or "rule").strip()
+        return {"label": f"Rule: {rule_label}", "children": children}
+
+    root_nodes: list[dict] = []
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        event_id = str(event.get("id") or "")
+        trigger = event.get("trigger") or {}
+        trigger_text = ""
+        if isinstance(trigger, dict):
+            trigger_name = str(trigger.get("name") or "").strip()
+            if trigger_name:
+                trigger_text = f" [trigger: {trigger_name}]"
+        root_nodes.append({
+            "label": f"Event: {_display_label(event)}{trigger_text}",
+            "children": [build_rule_node(rule) for rule in rules_by_event.get(event_id, [])],
+        })
+
+    return _ascii_tree_from_nodes(root_nodes)
+
+
 def _jinja_env(type_dir: Path) -> Environment:
     """Build a Jinja2 environment scoped to an artifact-type template directory."""
-    return Environment(
+    env = Environment(
         loader=FileSystemLoader(str(type_dir)),
         undefined=Undefined,
         trim_blocks=True,
         lstrip_blocks=True,
         keep_trailing_newline=True,
     )
+    env.globals["care_pathway_tree"] = _care_pathway_tree
+    env.globals["decision_table_tree"] = _decision_table_tree
+    return env
 
 
 def _validate_sections(sections: dict | None, artifact_type: str) -> None:
@@ -132,6 +319,9 @@ def _render_from_templates(data: dict, artifact_dir: Path, artifact_name: str) -
             sections.get("conditions", []),
             sections.get("rules", []),
         )
+    elif artifact_type == "care-pathway":
+        extra["pathway_tree"] = _care_pathway_tree((data.get("sections") or {}).get("steps") or [])
+        extra["transition_rows"] = _care_pathway_transition_rows(data.get("sections") or {})
 
     written: list[str] = []
     for tmpl_path in sorted(type_dir.glob("*.j2")):

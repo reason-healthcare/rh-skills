@@ -23,6 +23,15 @@
 {{ sections.summary }}
 
 {% endif %}
+{% set event_tree = decision_table_tree(sections) %}
+{% if event_tree %}
+## Event Tree
+
+```text
+{{ event_tree }}
+```
+
+{% endif %}
 {% if data_elements %}
 ## Features And Data Elements
 

@@ -81,6 +81,36 @@ def test_render_missing_required_sections_exits_1(tmp_repo):
     assert result.exit_code == 1
 
 
+def test_render_care_pathway_shows_ascii_tree(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "good-path", {
+        "id": "good-path",
+        "title": "Good Care Pathway",
+        "artifact_type": "care-pathway",
+        "sections": {
+            "steps": [
+                {"id": "pathway", "label": "CRS Surgical Pathway"},
+                {"id": "verify", "label": "Verify CRS Diagnosis", "parent_id": "pathway"},
+                {"id": "assess", "label": "Assess Surgical Candidacy", "parent_id": "pathway"},
+                {"id": "questionnaire", "label": "Administer SNOT-22", "parent_id": "assess"},
+            ],
+            "transitions": [
+                {"from_id": "verify", "to_id": "assess", "condition": "diagnosis confirmed"},
+            ],
+        },
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "good-path"])
+    assert result.exit_code == 0
+    artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "good-path"
+    content = (artifact_dir / "good-path-report.md").read_text()
+    assert "## Pathway Tree" in content
+    assert "CRS Surgical Pathway" in content
+    assert "|-- Verify CRS Diagnosis" in content
+    assert "`-- Administer SNOT-22" in content
+    assert "## Transitions" in content
+    assert "| Verify CRS Diagnosis | Assess Surgical Candidacy | diagnosis confirmed |" in content
+
+
 def test_render_decision_table_shows_event_column_when_present(tmp_repo):
     _write_artifact(tmp_repo, "my-skill", "good-dt", {
         "id": "good-dt",
@@ -104,9 +134,10 @@ def test_render_decision_table_shows_event_column_when_present(tmp_repo):
             ],
             "actions": [
                 {"id": "a1", "label": "Order test"},
+                {"id": "a2", "label": "Review questionnaire", "parent_action_id": "a1"},
             ],
             "rules": [
-                {"id": "r1", "event": "ev1", "when": {"c1": "Yes"}, "then": ["a1"]},
+                {"id": "r1", "event": "ev1", "when": {"c1": "Yes"}, "then": ["a1", "a2"]},
             ],
         },
     })
@@ -116,12 +147,16 @@ def test_render_decision_table_shows_event_column_when_present(tmp_repo):
     artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "good-dt"
     content = (artifact_dir / "good-dt-report.md").read_text()
     assert "Decision Table" in content
+    assert "## Event Tree" in content
     assert "## Features And Data Elements" in content
     assert "## Rules" in content
-    assert "Screening encounter" in content
+    assert "Event: Screening encounter" in content
+    assert "Rule: r1" in content
+    assert "When: High risk = Yes" in content
+    assert "a2 Review questionnaire" in content
     assert "High-risk clinical profile" in content
     assert "| Event Pattern | c1 High risk | Actions |" in content
-    assert "| ev1 Screening encounter | Yes | a1 Order test |" in content
+    assert "| ev1 Screening encounter | Yes | a1 Order test, a2 Review questionnaire |" in content
     assert "Order test" in content
 
 
