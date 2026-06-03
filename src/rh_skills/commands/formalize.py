@@ -698,6 +698,7 @@ def _build_care_pathway_actions(
     canonical: str,
     activity_definition_id: str,
     l2_data: dict | None,
+    branch_plan_map: dict[str, str] | None = None,
     recommendation_plan_map: dict[str, str] | None = None,
     recommendation_candidates: list[dict[str, Any]] | None = None,
 ) -> list[dict]:
@@ -755,10 +756,15 @@ def _build_care_pathway_actions(
             "title": title,
             "description": description,
         }
-        child_steps = child_map.get(step_id, [])
-        if child_steps:
-            action["action"] = [build_action(child) for child in child_steps]
+        branch_ref = (branch_plan_map or {}).get(step_id)
+        if branch_ref:
+            action["definitionCanonical"] = branch_ref
+            children = []
         else:
+            children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
+        if children:
+            action["action"] = [build_action(child) for child in children]
+        elif not branch_ref:
             exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_ref = exact_ref or _resolve_recommendation_reference(
                 step,
@@ -931,7 +937,7 @@ def _build_questionnaire_resource(
     cfg: dict[str, Any],
 ) -> dict[str, Any]:
     """Build a Questionnaire resource from a related assessment artifact."""
-    questionnaire_id = _deterministic_artifact_base_id(
+    questionnaire_id = to_kebab_case(artifact_name) or _deterministic_artifact_base_id(
         artifact_name,
         "assessment",
         topic,
@@ -1027,6 +1033,73 @@ def _decision_table_action_title(action_def: dict) -> str:
     )
 
 
+def _default_trigger_must_support(resource_type: str) -> list[str]:
+    """Return scaffold mustSupport fields for common trigger resource types."""
+    mapping = {
+        "ServiceRequest": ["status", "code", "authoredOn"],
+        "Procedure": ["status", "code", "performed"],
+        "Encounter": ["class", "period"],
+        "QuestionnaireResponse": ["status", "authored", "questionnaire"],
+        "Task": ["status", "code", "authoredOn"],
+    }
+    return list(mapping.get(resource_type, []))
+
+
+def _build_trigger_definition(event: dict[str, Any], *, fallback_name: str) -> dict[str, Any]:
+    """Build a FHIR-like TriggerDefinition from an L2 event."""
+    trigger_raw = event.get("trigger")
+    if not isinstance(trigger_raw, dict):
+        trigger_type = str(event.get("trigger_type") or "named-event")
+        return {
+            "type": trigger_type,
+            "name": str(event.get("id") or fallback_name),
+        }
+
+    trigger: dict[str, Any] = {
+        "type": str(trigger_raw.get("type") or "named-event"),
+        "name": str(trigger_raw.get("name") or event.get("id") or fallback_name),
+    }
+
+    resource_type = str(trigger_raw.get("resource") or "").strip()
+    if not resource_type:
+        return trigger
+
+    data_requirement: dict[str, Any] = {"type": resource_type}
+    profile = trigger_raw.get("profile")
+    if isinstance(profile, list) and profile:
+        data_requirement["profile"] = [str(value) for value in profile if value]
+    elif isinstance(profile, str) and profile.strip():
+        data_requirement["profile"] = [profile.strip()]
+    else:
+        data_requirement["profile"] = [f"http://hl7.org/fhir/StructureDefinition/{resource_type}"]
+
+    must_support = _default_trigger_must_support(resource_type)
+    resource_criteria = trigger_raw.get("resource_criteria")
+    if isinstance(resource_criteria, dict):
+        code_value = resource_criteria.get("code")
+        code_system = resource_criteria.get("system")
+        code_display = resource_criteria.get("display")
+        if code_value:
+            coding: dict[str, Any] = {"code": str(code_value)}
+            if code_system:
+                coding["system"] = str(code_system)
+            if code_display:
+                coding["display"] = str(code_display)
+            data_requirement["codeFilter"] = [{
+                "path": str(resource_criteria.get("path") or "code"),
+                "code": [coding],
+            }]
+            for field in ("code", "status"):
+                if field not in must_support:
+                    must_support.append(field)
+
+    if must_support:
+        data_requirement["mustSupport"] = must_support
+
+    trigger["data"] = [data_requirement]
+    return trigger
+
+
 def _build_decision_table_activity_definitions(
     topic: str,
     cfg: dict,
@@ -1034,7 +1107,7 @@ def _build_decision_table_activity_definitions(
     assessment_artifact_name: str | None = None,
     assessment_data: dict[str, Any] | None = None,
     assessment_lookup: dict[str, dict[str, Any]] | None = None,
-) -> tuple[list[dict], dict[str, dict[str, Any]]]:
+) -> list[dict]:
     """Build one ActivityDefinition per L2 decision-table action."""
     sections = (l2_data or {}).get("sections") or {}
     actions = sections.get("actions") or []
@@ -1042,7 +1115,6 @@ def _build_decision_table_activity_definitions(
         actions = []
 
     resources: list[dict] = []
-    used_assessments: dict[str, dict[str, Any]] = {}
     canonical = cfg["canonical"]
     version = cfg["version"]
     status = cfg["status"]
@@ -1126,8 +1198,7 @@ def _build_decision_table_activity_definitions(
             and isinstance(resolved_assessment_data, dict)
             and _is_assessment_action(action_def)
         ):
-            used_assessments[resolved_assessment_artifact] = resolved_assessment_data
-            questionnaire_id = _deterministic_artifact_base_id(
+            questionnaire_id = to_kebab_case(resolved_assessment_artifact) or _deterministic_artifact_base_id(
                 resolved_assessment_artifact,
                 "assessment",
                 topic,
@@ -1166,7 +1237,7 @@ def _build_decision_table_activity_definitions(
         )
         resources.append(resource)
 
-    return resources, used_assessments
+    return resources
 
 
 def _build_decision_table_plan_actions(
@@ -1256,11 +1327,9 @@ def _build_decision_table_plan_actions(
             }
 
             if event:
-                trigger = {
-                    "type": str(event.get("trigger_type") or "named-event"),
-                    "name": str(event.get("id") or f"event-{idx}"),
-                }
-                action_entry["trigger"] = [trigger]
+                action_entry["trigger"] = [
+                    _build_trigger_definition(event, fallback_name=f"event-{idx}")
+                ]
 
             when_map = rule.get("when") or {}
             condition_entries = []
@@ -1404,7 +1473,7 @@ def _build_care_pathway_stub_plan_definitions(
     activity_definition_id: str,
     recommendation_plan_map: dict[str, str] | None = None,
     recommendation_candidates: list[dict[str, Any]] | None = None,
-) -> list[dict]:
+) -> tuple[list[dict], dict[str, str]]:
     """Build scaffold child PlanDefinitions for likely care-pathway strategy/group nodes."""
     sections = (l2_data or {}).get("sections") or {}
     steps = sections.get("steps") or []
@@ -1454,11 +1523,13 @@ def _build_care_pathway_stub_plan_definitions(
         return action
 
     resources: list[dict] = []
+    branch_plan_map: dict[str, str] = {}
     for step in _care_pathway_plan_candidates([s for s in steps if isinstance(s, dict)]):
         step_id = to_kebab_case(str(step.get("id") or "pathway-step")) or "pathway-step"
         child_id = f"{resource_id}-{step_id}"
         title = str(step.get("label") or step.get("title") or step_id)
         description = str(step.get("description") or title)
+        branch_plan_map[str(step.get("id") or step_id)] = f"{canonical}/PlanDefinition/{child_id}"
         resource = {
             "id": child_id,
             "url": f"{canonical}/PlanDefinition/{child_id}",
@@ -1468,7 +1539,7 @@ def _build_care_pathway_stub_plan_definitions(
             "name": _pascal_from_kebab(child_id),
             "title": title,
             "description": description,
-            "type": _plan_definition_type("clinical-protocol"),
+            "type": _plan_definition_type("workflow-definition"),
             "action": [build_subtree(step)],
         }
         resources.append(
@@ -1478,7 +1549,7 @@ def _build_care_pathway_stub_plan_definitions(
             )
         )
 
-    return resources
+    return resources, branch_plan_map
 
 
 def _load_approved_formalize_target(topic: str) -> dict | None:
@@ -1976,7 +2047,7 @@ def _build_stub_resources(
                 decision_table_name or "decision-table",
                 decision_table_data,
             )
-            child_plan_definitions = _build_care_pathway_stub_plan_definitions(
+            child_plan_definitions, branch_plan_map = _build_care_pathway_stub_plan_definitions(
                 resource_id,
                 canonical,
                 cfg,
@@ -1985,6 +2056,7 @@ def _build_stub_resources(
                 recommendation_plan_map=recommendation_plan_map,
                 recommendation_candidates=recommendation_candidates,
             )
+            root_branch_plan_map = branch_plan_map if _care_pathway_has_hierarchy(l2_data or {}) else {}
             primary_resource = _render_care_pathway_plan_definition_resource(
                 {
                     "id": resource_id,
@@ -2000,6 +2072,7 @@ def _build_stub_resources(
                         canonical,
                         activity_definition_id,
                         l2_data,
+                        branch_plan_map=root_branch_plan_map,
                         recommendation_plan_map=recommendation_plan_map,
                         recommendation_candidates=recommendation_candidates,
                     ),
@@ -2062,7 +2135,7 @@ def _build_stub_resources(
                     loaded = _load_structured_artifact_yaml(topic, topic_entry, name)
                     if isinstance(loaded, dict):
                         assessment_lookup[name] = loaded
-        activity_resources, used_linked_assessments = _build_decision_table_activity_definitions(
+        activity_resources = _build_decision_table_activity_definitions(
                 topic,
                 cfg,
                 l2_data,
@@ -2071,24 +2144,6 @@ def _build_stub_resources(
                 assessment_lookup=assessment_lookup,
         )
         resources.extend(activity_resources)
-        if topic_entry is not None:
-            resolved_questionnaires: dict[str, dict[str, Any]] = {}
-            for used_name, used_data in used_linked_assessments.items():
-                if isinstance(used_data, dict):
-                    resolved_questionnaires[used_name] = used_data
-                    continue
-                loaded = _load_structured_artifact_yaml(topic, topic_entry, used_name)
-                if isinstance(loaded, dict) and loaded.get("artifact_type") == "assessment":
-                    resolved_questionnaires[used_name] = loaded
-            for used_name, used_data in resolved_questionnaires.items():
-                resources.append(
-                    _build_questionnaire_resource(
-                        topic,
-                        used_name,
-                        used_data,
-                        cfg,
-                    )
-                )
 
     # Supporting resources
     for sup_type in supporting:
@@ -2238,6 +2293,70 @@ def _resolve_related_decision_table(
                 return candidate, data
 
     return None, None
+
+
+def _legacy_decision_table_questionnaire_cleanup_files(
+    topic: str,
+    l2_data: dict[str, Any],
+    topic_entry: dict[str, Any] | None,
+) -> list[str]:
+    """Return stale decision-table-generated questionnaire filenames to remove.
+
+    Before assessment artifacts became the single owner of Questionnaire
+    generation, decision-table formalize generated linked questionnaires using a
+    topic-derived fallback id. If that legacy id differs from the canonical
+    assessment artifact id, the old file should be removed on rerun.
+    """
+    if not topic_entry:
+        return []
+
+    assessment_artifact_name, assessment_data = _resolve_related_assessment(topic, topic_entry, l2_data)
+    assessment_lookup: dict[str, dict[str, Any]] = {}
+    for structured_artifact in (topic_entry.get("structured", []) or []):
+        if structured_artifact.get("artifact_type") != "assessment":
+            continue
+        name = structured_artifact.get("name")
+        if isinstance(name, str) and name:
+            loaded = _load_structured_artifact_yaml(topic, topic_entry, name)
+            if isinstance(loaded, dict):
+                assessment_lookup[name] = loaded
+
+    sections = l2_data.get("sections") or {}
+    actions = sections.get("actions") or []
+    if not isinstance(actions, list):
+        return []
+
+    stale_files: set[str] = set()
+    for action_def in actions:
+        if not isinstance(action_def, dict) or not _is_assessment_action(action_def):
+            continue
+        resolved_assessment_artifact = _resolve_assessment_artifact_name(
+            action_def,
+            assessment_artifact_name,
+        )
+        if not resolved_assessment_artifact:
+            continue
+        resolved_assessment_data = None
+        if resolved_assessment_artifact == assessment_artifact_name and isinstance(assessment_data, dict):
+            resolved_assessment_data = assessment_data
+        else:
+            candidate = assessment_lookup.get(resolved_assessment_artifact)
+            if isinstance(candidate, dict):
+                resolved_assessment_data = candidate
+        if not isinstance(resolved_assessment_data, dict):
+            continue
+
+        canonical_id = to_kebab_case(resolved_assessment_artifact)
+        legacy_id = _deterministic_artifact_base_id(
+            resolved_assessment_artifact,
+            "assessment",
+            topic,
+            resolved_assessment_data,
+        )
+        if canonical_id and legacy_id != canonical_id:
+            stale_files.add(f"Questionnaire-{legacy_id}.json")
+
+    return sorted(stale_files)
 
 
 def _resolve_related_assessment(
@@ -2753,10 +2872,20 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
     # Normalize + validate
     computable_dir = td / "computable"
     computable_dir.mkdir(parents=True, exist_ok=True)
+    warnings: list[str] = []
+
+    if artifact_type == "decision-table":
+        for stale_name in _legacy_decision_table_questionnaire_cleanup_files(topic, l2_data, topic_entry):
+            stale_path = computable_dir / stale_name
+            if stale_path.exists():
+                try:
+                    stale_path.unlink()
+                    click.echo(f"  ✓ Removed stale {stale_name}")
+                except OSError as exc:
+                    warnings.append(f"  ⚠ {stale_name}: failed to remove stale file ({exc})")
 
     written_files: list[str] = []
     checksums: dict[str, str] = {}
-    warnings: list[str] = []
     failures: list[str] = []
 
     for resource in resources:

@@ -254,6 +254,67 @@ sections:
         assert activity_json["title"] == "Refer to specialist"
         assert activity_json["kind"] == "CommunicationRequest"
 
+    def test_decision_table_event_trigger_propagates_trigger_metadata(self, tmp_repo):
+        topic = "trigger-topic"
+        artifact = "triggered-decision"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        computable_dir = topic_dir / "computable"
+        structured_dir.mkdir(parents=True)
+        computable_dir.mkdir(parents=True)
+
+        self._make_root_tracking_yaml(tmp_repo, topic, artifact, "decision-table")
+        _make_formalize_config(topic_dir, topic)
+        (structured_dir / f"{artifact}.yaml").write_text(
+            """\
+artifact_type: decision-table
+name: triggered-decision
+description: Trigger-rich decision table.
+sections:
+  events:
+    - id: postsurgical-review
+      label: Postsurgical review
+      trigger:
+        type: named-event
+        name: endoscopic-sinus-surgery-completed
+        resource: Procedure
+        resource_criteria:
+          code: 312999006
+          system: http://snomed.info/sct
+          display: Functional endoscopic sinus surgery
+  conditions:
+    - id: c1
+      label: Routine follow-up window open
+      values: [Yes, No]
+  actions:
+    - id: a1
+      label: Assess outcomes
+      kind: ServiceRequest
+  rules:
+    - id: r1
+      event: postsurgical-review
+      when:
+        c1: Yes
+      then:
+        - a1
+"""
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(formalize, [topic, artifact], catch_exceptions=False)
+        assert result.exit_code == 0, result.output
+
+        child_plan = json.loads((computable_dir / "PlanDefinition-triggered-decision-postsurgical-review.json").read_text())
+        trigger = child_plan["action"][0]["trigger"][0]
+        assert trigger["type"] == "named-event"
+        assert trigger["name"] == "endoscopic-sinus-surgery-completed"
+        assert trigger["data"][0]["type"] == "Procedure"
+        assert trigger["data"][0]["profile"] == ["http://hl7.org/fhir/StructureDefinition/Procedure"]
+        assert "performed" in trigger["data"][0]["mustSupport"]
+        assert trigger["data"][0]["codeFilter"][0]["path"] == "code"
+        assert trigger["data"][0]["codeFilter"][0]["code"][0]["code"] == "312999006"
+        assert trigger["data"][0]["codeFilter"][0]["code"][0]["system"] == "http://snomed.info/sct"
+
     def test_decision_table_without_conditions_falls_back_to_generic_action(self, tmp_repo):
         """If L2 artifact has no conditions, fall back to generic stub action."""
         topic = "bells-palsy"
