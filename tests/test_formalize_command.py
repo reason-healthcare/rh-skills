@@ -997,6 +997,12 @@ sections:
             assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol.json").exists()
             assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol-assessment.json").exists()
             assert (computable / "ActivityDefinition-chronic-rhinosinusitis-surgical-management-protocol-activity.json").exists()
+            protocol = json.loads((computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol.json").read_text())
+            recommendation = json.loads((computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-recommendation-verify-diagnosis.json").read_text())
+            assert protocol["type"]["coding"][0]["system"] == "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+            assert protocol["type"]["coding"][0]["display"] == "Clinical Protocol"
+            assert recommendation["type"]["coding"][0]["system"] == "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+            assert recommendation["type"]["coding"][0]["display"] == "ECA Rule"
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1076,11 +1082,179 @@ sections:
             pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
             assert [a["id"] for a in pathway["action"]] == ["crs-pathway"]
             assert [a["id"] for a in pathway["action"][0]["action"]] == ["assessment", "planning"]
-            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/ActivityDefinition/path-activity")
-            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/ActivityDefinition/path-activity")
+            assert pathway["action"][0]["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
+            assert pathway["action"][0]["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
             assert (topic_dir / "computable" / "PlanDefinition-path-assessment.json").exists()
             assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
             assert not (topic_dir / "computable" / "PlanDefinition-path-crs-pathway.json").exists()
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_care_pathway_semantically_links_steps_to_recommendation_plans(self, tmp_repo):
+        topic = "semantic-link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "decision-table.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: event-assess-candidacy
+      label: Adult with verified CRS asks about surgery
+      phase: candidacy-assessment
+    - id: event-operative-planning
+      label: Surgeon determines operative extent for scheduled CRS surgery
+      phase: perioperative-management
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: assess-surgical-candidacy
+      label: Assess surgical candidacy
+      kind: ServiceRequest
+    - id: perform-full-exposure-surgery
+      label: Perform full exposure surgery
+      kind: Procedure
+  rules:
+    - id: r1
+      event: event-assess-candidacy
+      phase: candidacy-assessment
+      when: {confirmed: Yes}
+      then: [assess-surgical-candidacy]
+    - id: r2
+      event: event-operative-planning
+      phase: perioperative-management
+      when: {confirmed: Yes}
+      then: [perform-full-exposure-surgery]
+"""
+        )
+        (structured_dir / "care-pathway.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [decision-table]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+      description: Overall CRS pathway
+    - id: assess-candidacy
+      label: Assess candidacy for sinus surgery
+      description: Review burden and prior therapy before surgery.
+      parent_id: crs-pathway
+    - id: perform-definitive-surgery
+      label: Perform appropriately extensive surgery
+      description: Choose full exposure rather than limited dilation when advanced findings are present.
+      parent_id: crs-pathway
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "decision-table", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "care-pathway", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            assert runner.invoke(formalize, [topic, "decision-table"]).exit_code == 0
+            result = runner.invoke(formalize, [topic, "care-pathway"])
+            assert result.exit_code == 0, result.output
+
+            computable = topic_dir / "computable"
+            protocol_path = next(computable.glob("PlanDefinition-*-protocol.json"))
+            pathway = json.loads(protocol_path.read_text())
+            child_nodes = pathway["action"][0]["action"]
+            assert "event-assess-candidacy" in child_nodes[0]["definitionCanonical"]
+            assert "event-operative-planning" in child_nodes[1]["definitionCanonical"]
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_care_pathway_does_not_reuse_one_recommendation_for_multiple_steps(self, tmp_repo):
+        topic = "duplicate-link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "decision-table.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: event-operative-planning
+      label: Surgeon determines operative extent for scheduled CRS surgery
+      phase: perioperative-management
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: perform-full-exposure-surgery
+      label: Perform full exposure surgery
+      kind: Procedure
+  rules:
+    - id: r1
+      event: event-operative-planning
+      phase: perioperative-management
+      when: {confirmed: Yes}
+      then: [perform-full-exposure-surgery]
+"""
+        )
+        (structured_dir / "care-pathway.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [decision-table]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+      description: Overall CRS pathway
+    - id: offer-and-plan-surgery
+      label: Offer and plan sinus surgery
+      description: Offer surgery when expected benefits exceed nonsurgical management.
+      parent_id: crs-pathway
+    - id: perform-definitive-surgery
+      label: Perform appropriately extensive surgery
+      description: Choose full exposure rather than limited dilation when advanced findings are present.
+      parent_id: crs-pathway
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "decision-table", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "care-pathway", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            assert runner.invoke(formalize, [topic, "decision-table"]).exit_code == 0
+            result = runner.invoke(formalize, [topic, "care-pathway"])
+            assert result.exit_code == 0, result.output
+
+            computable = topic_dir / "computable"
+            protocol_path = next(computable.glob("PlanDefinition-*-protocol.json"))
+            pathway = json.loads(protocol_path.read_text())
+            child_nodes = pathway["action"][0]["action"]
+            linked = [node["definitionCanonical"] for node in child_nodes]
+            assert linked[0].endswith("/PlanDefinition/duplicate-link-topic-recommendation-event-operative-planning")
+            assert linked[1].endswith("/ActivityDefinition/duplicate-link-topic-protocol-activity")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 

@@ -631,6 +631,7 @@ def _build_care_pathway_actions(
     activity_definition_id: str,
     l2_data: dict | None,
     recommendation_plan_map: dict[str, str] | None = None,
+    recommendation_candidates: list[dict[str, Any]] | None = None,
 ) -> list[dict]:
     """Build PlanDefinition.action stubs from L2 care-pathway sections.
     """
@@ -675,6 +676,8 @@ def _build_care_pathway_actions(
         if from_id and to_id:
             transition_map.setdefault(from_id, []).append(transition)
 
+    used_recommendation_refs: set[str] = set()
+
     def build_action(step: dict) -> dict:
         step_id = str(step.get("id"))
         title = str(step.get("label") or step.get("title") or step_id or artifact_name.replace("-", " ").title())
@@ -688,10 +691,20 @@ def _build_care_pathway_actions(
         if child_steps:
             action["action"] = [build_action(child) for child in child_steps]
         else:
+            exact_ref = (recommendation_plan_map or {}).get(step_id)
+            recommendation_ref = exact_ref or _resolve_recommendation_reference(
+                step,
+                recommendation_plan_map or {},
+                recommendation_candidates or [],
+            )
+            if recommendation_ref and recommendation_ref in used_recommendation_refs and recommendation_ref != exact_ref:
+                recommendation_ref = None
             action["definitionCanonical"] = (
-                (recommendation_plan_map or {}).get(step_id)
+                recommendation_ref
                 or f"{canonical}/ActivityDefinition/{activity_definition_id}"
             )
+            if recommendation_ref:
+                used_recommendation_refs.add(recommendation_ref)
 
         related = []
         for transition in transition_map.get(step_id, []):
@@ -1212,7 +1225,7 @@ def _build_decision_table_stub_plan_definitions(
             "name": _pascal_from_kebab(child_id),
             "title": event_title,
             "description": event_description,
-            "type": {"coding": [{"code": "eca-rule"}]},
+            "type": _plan_definition_type("eca-rule"),
             "library": [library_canonical],
             "action": _build_decision_table_plan_actions(event_id, canonical, child_l2),
         }
@@ -1253,6 +1266,7 @@ def _build_care_pathway_stub_plan_definitions(
     l2_data: dict | None,
     activity_definition_id: str,
     recommendation_plan_map: dict[str, str] | None = None,
+    recommendation_candidates: list[dict[str, Any]] | None = None,
 ) -> list[dict]:
     """Build scaffold child PlanDefinitions for likely care-pathway strategy/group nodes."""
     sections = (l2_data or {}).get("sections") or {}
@@ -1271,6 +1285,8 @@ def _build_care_pathway_stub_plan_definitions(
         parent_id = step.get("parent_id")
         child_map.setdefault(parent_id if parent_id else None, []).append(step)
 
+    used_recommendation_refs: set[str] = set()
+
     def build_subtree(step: dict) -> dict:
         step_id = str(step.get("id") or "pathway-step")
         title = str(step.get("label") or step.get("title") or step_id)
@@ -1284,10 +1300,20 @@ def _build_care_pathway_stub_plan_definitions(
         if children:
             action["action"] = [build_subtree(child) for child in children]
         else:
+            exact_ref = (recommendation_plan_map or {}).get(step_id)
+            recommendation_ref = exact_ref or _resolve_recommendation_reference(
+                step,
+                recommendation_plan_map or {},
+                recommendation_candidates or [],
+            )
+            if recommendation_ref and recommendation_ref in used_recommendation_refs and recommendation_ref != exact_ref:
+                recommendation_ref = None
             action["definitionCanonical"] = (
-                (recommendation_plan_map or {}).get(step_id)
+                recommendation_ref
                 or f"{canonical}/ActivityDefinition/{activity_definition_id}"
             )
+            if recommendation_ref:
+                used_recommendation_refs.add(recommendation_ref)
         return action
 
     resources: list[dict] = []
@@ -1306,7 +1332,7 @@ def _build_care_pathway_stub_plan_definitions(
             "name": _pascal_from_kebab(child_id),
             "title": title,
             "description": description,
-            "type": {"coding": [{"code": "clinical-protocol"}]},
+            "type": _plan_definition_type("clinical-protocol"),
             "action": [build_subtree(step)],
         }
         resources.append(resource)
@@ -1501,6 +1527,62 @@ def _generate_polarity_aware_define_name(condition_label: str, expected_value: s
 
 def _pascal_from_kebab(value: str) -> str:
     return "".join(w.capitalize() for w in to_kebab_case(value).split("-") if w)
+
+
+def _plan_definition_type(code: str) -> dict[str, Any]:
+    """Return a complete PlanDefinition.type coding for scaffold outputs."""
+    display_map = {
+        "eca-rule": "ECA Rule",
+        "clinical-protocol": "Clinical Protocol",
+        "workflow-definition": "Workflow Definition",
+    }
+    return {
+        "coding": [{
+            "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+            "code": code,
+            "display": display_map.get(code, code.replace("-", " ").title()),
+        }]
+    }
+
+
+def _semantic_tokens(*values: str) -> set[str]:
+    """Normalize free-text identifiers into a comparable semantic token set."""
+    synonym_map = {
+        "subtypes": "subtype",
+        "phenotypes": "phenotype",
+        "phenotype": "subtype",
+        "planning": "plan",
+        "planned": "plan",
+        "operative": "surgery",
+        "operation": "surgery",
+        "surgical": "surgery",
+        "postop": "postoperative",
+        "postsurgical": "postoperative",
+        "follow-up": "followup",
+        "outcomes": "outcome",
+        "expectations": "expectation",
+        "recovery": "postoperative",
+    }
+    stopwords = {
+        "adult", "patient", "with", "and", "or", "the", "a", "an", "of", "for",
+        "to", "is", "are", "being", "whether", "about", "before", "after",
+        "during", "when", "once", "into", "from", "in", "on", "at", "by",
+        "crs", "sinus", "surgeon", "scheduled",
+    }
+    tokens: set[str] = set()
+    for value in values:
+        for raw in re.split(r"[^a-z0-9]+", str(value or "").lower()):
+            if not raw:
+                continue
+            token = synonym_map.get(raw, raw)
+            if token.endswith("ies") and len(token) > 4:
+                token = token[:-3] + "y"
+            elif token.endswith("s") and len(token) > 4:
+                token = token[:-1]
+            if token in stopwords or len(token) < 3:
+                continue
+            tokens.add(token)
+    return tokens
 
 
 def _normalize_legacy_system(system: str) -> str:
@@ -1702,7 +1784,7 @@ def _build_stub_resources(
     # Add type-specific required fields for stubs
     if primary == "PlanDefinition":
         plan_type = "eca-rule" if artifact_type in ("decision-table", "policy") else "clinical-protocol"
-        primary_resource["type"] = {"coding": [{"code": plan_type}]}
+        primary_resource["type"] = _plan_definition_type(plan_type)
         if artifact_type == "decision-table" and "Library" in supporting:
             lib_id = _deterministic_library_id(resource_id)
             primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
@@ -1734,12 +1816,19 @@ def _build_stub_resources(
                 decision_table_name or "decision-table",
                 decision_table_data,
             )
+            recommendation_candidates = _build_decision_table_reference_candidates(
+                canonical,
+                topic,
+                decision_table_name or "decision-table",
+                decision_table_data,
+            )
             primary_resource["action"] = _build_care_pathway_actions(
                 artifact_name,
                 canonical,
                 activity_definition_id,
                 l2_data,
                 recommendation_plan_map=recommendation_plan_map,
+                recommendation_candidates=recommendation_candidates,
             )
             child_plan_definitions = _build_care_pathway_stub_plan_definitions(
                 resource_id,
@@ -1748,6 +1837,7 @@ def _build_stub_resources(
                 l2_data,
                 activity_definition_id,
                 recommendation_plan_map=recommendation_plan_map,
+                recommendation_candidates=recommendation_candidates,
             )
         else:
             primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
@@ -2145,6 +2235,115 @@ def _build_decision_table_reference_map(
         reference_map[phase_id] = f"{canonical}/PlanDefinition/{base_id}-{to_kebab_case(only_event)}"
 
     return reference_map
+
+
+def _build_decision_table_reference_candidates(
+    canonical: str,
+    topic: str,
+    decision_table_name: str,
+    decision_table_data: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    """Build semantic recommendation-link candidates from a decision table."""
+    if not isinstance(decision_table_data, dict):
+        return []
+
+    sections = decision_table_data.get("sections") or {}
+    events = sections.get("events") or []
+    rules = sections.get("rules") or []
+    actions = sections.get("actions") or []
+    if not isinstance(events, list):
+        events = []
+    if not isinstance(rules, list):
+        rules = []
+    if not isinstance(actions, list):
+        actions = []
+
+    base_id = _deterministic_artifact_base_id(
+        decision_table_name,
+        "decision-table",
+        topic,
+        decision_table_data,
+    )
+    action_index = {
+        str(action.get("id") or "").strip(): action
+        for action in actions
+        if isinstance(action, dict) and str(action.get("id") or "").strip()
+    }
+    rules_by_event: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        event_id = str(rule.get("event") or "").strip()
+        if event_id:
+            rules_by_event[event_id].append(rule)
+
+    candidates: list[dict[str, Any]] = []
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        event_id = str(event.get("id") or "").strip()
+        if not event_id:
+            continue
+        canonical_ref = f"{canonical}/PlanDefinition/{base_id}-{to_kebab_case(event_id)}"
+        alias_values = [
+            event_id,
+            event_id.removeprefix("event-"),
+            event.get("label"),
+            event.get("title"),
+            event.get("phase"),
+        ]
+        for rule in rules_by_event.get(event_id, []):
+            alias_values.extend([rule.get("action"), rule.get("description"), rule.get("rationale")])
+            for action_id in rule.get("then") or []:
+                action_def = action_index.get(str(action_id))
+                alias_values.extend([
+                    action_id,
+                    (action_def or {}).get("label"),
+                    (action_def or {}).get("title"),
+                    (action_def or {}).get("description"),
+                ])
+        tokens = _semantic_tokens(*[str(v) for v in alias_values if v])
+        aliases = {to_kebab_case(str(v)) for v in alias_values if isinstance(v, str) and v.strip()}
+        candidates.append({
+            "canonical": canonical_ref,
+            "tokens": tokens,
+            "aliases": aliases,
+        })
+    return candidates
+
+
+def _resolve_recommendation_reference(
+    step: dict[str, Any],
+    recommendation_plan_map: dict[str, str],
+    recommendation_candidates: list[dict[str, Any]],
+) -> str | None:
+    """Resolve the best matching recommendation PlanDefinition for a pathway step."""
+    step_keys = [
+        str(step.get("id") or ""),
+        str(step.get("label") or ""),
+        str(step.get("title") or ""),
+        str(step.get("description") or ""),
+    ]
+    for key in step_keys[:3]:
+        normalized = to_kebab_case(key)
+        if normalized and normalized in recommendation_plan_map:
+            return recommendation_plan_map[normalized]
+
+    step_tokens = _semantic_tokens(*step_keys)
+    if not step_tokens:
+        return None
+
+    best_match: str | None = None
+    best_score = 0
+    for candidate in recommendation_candidates:
+        overlap = len(step_tokens & set(candidate.get("tokens") or set()))
+        if overlap > best_score:
+            best_score = overlap
+            best_match = candidate.get("canonical")
+
+    if best_score >= 2:
+        return best_match
+    return None
 
 def _build_with_deterministic_builders(
     artifact: str,
