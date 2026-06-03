@@ -36,6 +36,16 @@ Prefer this shape:
 - Encapsulate repeated retrieve filters in helpers when they represent a reusable
   semantic concept.
 - Keep terminology-based filters close to the retrieve unless there is strong reuse value.
+- Do not replace unresolved clinical evidence with Boolean input parameters.
+  Parameters are for runtime context such as `"Measurement Period"` or other
+  explicitly external inputs, not for patient findings like diagnosis status,
+  questionnaire burden, prior therapy history, or imaging evidence.
+- For decision-table-derived logic, create retrieve-level helper defines for the
+  underlying patient evidence, then derive the higher-level branch condition
+  from those helpers.
+- When a threshold is implied but not fully specified, keep the retrieve in CQL
+  and attach an explicit TODO or named threshold helper. Do not collapse the
+  evidence into a `default false` parameter.
 
 ## Date and interval handling
 

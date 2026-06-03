@@ -13,6 +13,26 @@ The important constraint is that `chronic-rhinosinusitis` is an evaluation
 reference, not a template to copy. Improvements must come from better CLI and
 skill behavior, not from manually shaping outputs to match one target topic.
 
+Do not use the external CRS project as a committed example source. It is an
+iteration probe only and is not owned as committed content in this repo.
+
+When updating the external comparison repo, use the CLI workflow to regenerate
+content. Do not hand-edit external structured or computable artifacts except
+when diagnosing a transient failure and discarding that change afterward.
+External comparison commits should come from:
+
+- `rh-skills promote body-init`
+- agent-authored draft completion
+- `rh-skills promote derive`
+- `rh-skills render`
+- `rh-skills formalize`
+- `rh-skills validate`
+- `rh-skills package --pack`
+
+If the framework change requires the external content to change, rerun the
+appropriate CLI steps and commit those regenerated outputs. Do not patch the
+comparison artifacts directly as the normal iteration path.
+
 ## Default Execution Mode
 
 Use `LLM_PROVIDER=stub` as the default mode for framework iteration.
@@ -293,6 +313,22 @@ sprawl for this class of narrative guideline.
    A future hypertension guideline or prior auth policy should still be able to
    pass through the same improved framework even if its output shape differs.
 
+9. Breaking changes are acceptable.
+   Do not preserve legacy schema or compatibility-only behavior if it blocks a
+   cleaner framework contract. This is a new tool.
+
+10. Use direct skill language.
+    When updating skills, state the behavior the agent should follow. Do not
+    describe desired behavior by contrasting it with previous behavior.
+
+11. Commit between iteration steps.
+    Each meaningful framework iteration step should end with a commit before
+    moving on to the next step. Apply this to both:
+    - the `rh-skills` repo when framework behavior changes
+    - the external comparison repo when regenerated content changes
+    Use separate commits for distinct framework moves, reruns, or corrections
+    so the iteration history stays inspectable.
+
 ## Change Surface Checklist
 
 Before closing an iteration, the agent should review this full checklist.
@@ -473,6 +509,15 @@ uv run rh-skills validate crs-surgical-management l3 decision-table
 
 If a full cycle is needed, re-run only the specific artifacts affected by the
 change whenever possible rather than regenerating everything blindly.
+
+After code or skill changes:
+
+1. run the relevant local tests for the touched code paths
+2. refresh the CLI and curated skills
+3. rerun the comparison content using this guide
+
+Do not treat code changes as complete until both tests and the iteration rerun
+have been done.
 
 Do not parallelize dependent lifecycle steps against the same artifact. In
 particular:
