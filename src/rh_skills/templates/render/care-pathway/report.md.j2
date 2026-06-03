@@ -4,35 +4,34 @@
 {% endif %}
 
 {% set sections = data.sections or {} %}
-{% set triggers = sections.triggers or [] %}
-{% if triggers %}
-## Triggers
-
-{% for t in triggers -%}
-- **{{ t.id or loop.index }}**: {{ t.description or '' }}
-{% endfor %}
-{% endif %}
-
 {% set steps = sections.steps or [] %}
+{% set transition_rows = transition_rows or [] %}
+
+{% if pathway_tree %}
+## Pathway Tree
+
+```text
+{{ pathway_tree }}
+```
+
+{% endif %}
 {% if steps %}
 ## Steps
 
-| Step | Description | Actor | Next |
-|------|-------------|-------|------|
+| Step | Description | Actor | Parent |
+|------|-------------|-------|--------|
 {% for s in steps -%}
-| {{ s.step or loop.index }} | {{ s.description or '' }} | {{ s.actor or '' }} | {{ s.next or '' }} |
+| {{ s.label or s.title or s.id or loop.index }} | {{ s.description or '' }} | {{ s.actor or '' }} | {{ s.parent_id or '-' }} |
 {% endfor %}
 
-## Clinical Pathway Diagram
-
-```mermaid
-flowchart TD
-{% for s in steps -%}
-    step{{ s.step or loop.index }}["{{ s.step or loop.index }}. {{ s.description or 'Step' }}"]
-{% endfor %}
-{% for s in steps -%}
-{% if s.next %}    step{{ s.step or loop.index }} --> step{{ s.next }}
 {% endif %}
-{%- endfor %}
-```
+{% if transition_rows %}
+## Transitions
+
+| From | To | Condition | Description |
+|------|----|-----------|-------------|
+{% for t in transition_rows -%}
+| {{ t.from_label }} | {{ t.to_label }} | {{ t.condition }} | {{ t.description }} |
+{% endfor %}
+
 {% endif %}
