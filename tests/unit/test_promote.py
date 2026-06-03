@@ -1884,24 +1884,29 @@ def test_decision_table_stub_supports_event_condition_action_shape(tmp_repo, mon
 
 # ── body-init mode ─────────────────────────────────────────────────────────────
 
-def _write_plan_for_body_init(tmp_repo, topic_name="my-skill"):
+def _write_plan_for_body_init(tmp_repo, topic_name="my-skill", artifact_type="decision-table", artifact_name=None):
     """Set up a topic with an approved extract-plan.yaml containing one artifact."""
     setup_topic_with_normalized_sources(tmp_repo, topic_name, source_names=("ada-guidelines",))
     plan_path = tmp_repo / "topics" / topic_name / "process" / "plans" / "extract-plan.yaml"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     y = YAML()
     y.default_flow_style = False
+    artifact_name = artifact_name or ("screening-criteria" if artifact_type == "decision-table" else "care-pathway")
+    required_sections = {
+        "decision-table": ["summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"],
+        "care-pathway": ["summary", "steps", "transitions", "evidence_traceability"],
+    }[artifact_type]
     plan = {
         "topic": topic_name,
         "plan_type": "extract",
         "status": "approved",
         "artifacts": [
             {
-                "name": "screening-criteria",
-                "artifact_type": "decision-table",
+                "name": artifact_name,
+                "artifact_type": artifact_type,
                 "source_files": ["sources/normalized/ada-guidelines.md"],
                 "key_questions": ["Who should be screened for diabetes?"],
-                "required_sections": ["summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"],
+                "required_sections": required_sections,
                 "concerns": [{"issue": "Threshold ambiguity: ADA vs USPSTF"}],
                 "reviewer_decision": "approved",
                 "approval_notes": "",
@@ -1936,6 +1941,37 @@ def test_body_init_scaffold_contains_required_sections(tmp_repo):
     ).read_text()
     for section in ("summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"):
         assert section in content, f"Missing section: {section}"
+
+
+def test_body_init_decision_table_scaffold_demonstrates_parent_child_tasks(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
+    runner = CliRunner()
+    runner.invoke(promote, ["body-init", "my-skill", "screening-criteria"])
+    content = (
+        tmp_repo / "topics" / "my-skill" / "process" / "tmp" / "screening-criteria.yaml"
+    ).read_text()
+    assert "id: broader-action" in content
+    assert "parent_action_id: broader-action" in content
+    assert "produces_data_elements:" in content
+    assert "assessment_artifact:" in content
+    assert "id: rule-001" in content
+    assert "then:" in content
+    assert "- review-supporting-data" in content
+    assert "- perform-structured-task" in content
+
+
+def test_body_init_care_pathway_scaffold_demonstrates_branching_phases(tmp_repo):
+    _write_plan_for_body_init(tmp_repo, artifact_type="care-pathway", artifact_name="care-pathway")
+    runner = CliRunner()
+    runner.invoke(promote, ["body-init", "my-skill", "care-pathway"])
+    content = (
+        tmp_repo / "topics" / "my-skill" / "process" / "tmp" / "care-pathway.yaml"
+    ).read_text()
+    assert "id: main-pathway" in content
+    assert "id: phase-001" in content
+    assert "id: phase-002" in content
+    assert "parent_id: main-pathway" in content
+    assert "separate branch when downstream timing or trigger differs" in content
 
 
 def test_body_init_scaffold_contains_concern_stub(tmp_repo):

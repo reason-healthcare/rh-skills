@@ -42,7 +42,11 @@ be explicit about one rule:
 
 - new framework work should reduce drift between actual CLI/skill behavior and
   these target shapes
-- if the target shapes are wrong, update the target shapes deliberately
+- prioritize semantic and structural alignment to the target shapes over low-value
+  syntax differences
+- treat differences such as `type` vs `kind` or `true/false` vs `Yes/No` as
+  secondary unless they block validation, formalization, or packaging
+- if the target shapes are materially wrong, update the target shapes deliberately
 - do not allow the framework and target examples to evolve as separate,
   conflicting models
 
@@ -95,6 +99,14 @@ Still open:
 - Do not let the plan, iteration guide, target artifacts, and framework
   behavior drift apart. If one changes, assess whether the others must change
   too.
+- When comparing external output to the repo-owned target, evaluate semantic and
+  structural alignment first:
+  - staged events and orchestration
+  - parent/child task decomposition
+  - condition/data-element separation
+  - readout hierarchy
+  - recommendation and follow-up structure
+  Treat syntax-only differences as lower priority unless they break the toolchain.
 - Do not keep adding builder-specific L3 shaping to the current `formalize`
   path if that work is expected to be replaced by template-driven generation.
   Prefer:
@@ -147,6 +159,12 @@ Still open:
   structure come from the framework rather than manual target authoring.
   - Scope this work to terminology, care-pathway, decision-table, assessment,
     and CQL-linked logic outputs only.
+- [ ] Run target-vs-external semantic alignment checks as a recurring loop item:
+  - compare current external CRS `care-pathway` and `decision-table` against the
+    repo-owned target shape
+  - identify the top 1-2 structural drifts
+  - fix framework behavior for those drifts before addressing cosmetic syntax
+    differences
 - [ ] Tighten CQL-authoring guidance so mocked/generated logic uses:
   - concrete result criteria
   - explicit thresholds or TODOs

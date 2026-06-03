@@ -112,7 +112,7 @@ rules:
   # Rule 1: Age-based screening
   - id: r1
     event: e1-determine-eligibility
-    when: {age-over-35: true}  # ← Condition referenced
+    when: {age-over-35: Yes}  # ← Condition referenced
     action: mark-screening-eligible
     rationale: "ADA 2024, Recommendation 2.1"
   
@@ -138,14 +138,14 @@ rules:
   # Rule 3: Order HbA1c
   - id: r3
     event: e2-select-test
-    when: {screening-eligible: true}  # ← Pre-requisite (same condition in r3, r4)
+    when: {screening-eligible: Yes}  # ← Pre-requisite (same condition in r3, r4)
     action: order-hba1c
     rationale: "ADA 2024, Recommendation 2.3a"
   
   # Rule 4: Order FPG (alternative)
   - id: r4
     event: e2-select-test
-    when: {screening-eligible: true}  # ← Pre-requisite (reused)
+    when: {screening-eligible: Yes}  # ← Pre-requisite (reused)
     action: order-fpg
     rationale: "ADA 2024, Recommendation 2.3b"
 ```
@@ -188,7 +188,7 @@ rules:
   # Rule 6: Initiate counseling
   - id: r6
     event: e4-diagnosis-confirmed
-    when: {diagnosis-confirmed: true}
+    when: {diagnosis-confirmed: Yes}
     action: initiate-lifestyle-counseling
     rationale: "ADA 2024, Recommendation 2.5"
 ```
@@ -254,10 +254,10 @@ conditions:
 
 rules:
   - id: r3
-    when: {eligible-for-testing: true}
+    when: {eligible-for-testing: Yes}
     action: order-hba1c
   - id: r4
-    when: {screening-criteria-met: true}  # ← Different ID, same meaning
+    when: {screening-criteria-met: Yes}  # ← Different ID, same meaning
     action: order-fpg
 ```
 
@@ -290,13 +290,13 @@ conditions:
 
 rules:
   - id: r2
-    when: {has-risk-factors: true}
+    when: {has-risk-factors: Yes}
     action: mark-screening-eligible
   - id: r7
-    when: {has-risk-factors: false}
+    when: {has-risk-factors: No}
     action: schedule-3yr-rescreen
   - id: r8
-    when: {has-risk-factors: true}
+    when: {has-risk-factors: Yes}
     action: schedule-annual-rescreen
 ```
 

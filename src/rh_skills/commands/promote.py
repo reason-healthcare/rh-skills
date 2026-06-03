@@ -1342,12 +1342,19 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
     "data_elements": [{
         "id": "de-001",
         "condition_id": "cond-001",
-        "label": "<stub: patient feature or data element>",
-        "description": "<stub: clinically relevant data needed to answer the condition>",
+        "label": "<stub: reviewed finding or history item>",
+        "description": "<stub: evidence item gathered or reviewed during the broader recommendation>",
         "data_type": "finding",
+    }, {
+        "id": "de-002",
+        "condition_id": "cond-001",
+        "label": "<stub: score, result, or structured assessment output>",
+        "description": "<stub: concrete result produced by a child task>",
+        "data_type": "assessment",
     }],
-    "rules": [{"id": "rule-001", "event": "event-001", "when": {"cond-001": "Yes"}, "then": ["recommend-action"]},
-              {"id": "rule-002", "event": "event-001", "when": {"cond-001": "No"}, "then": ["do-not-perform-action"]}],
+    "rules": [{"id": "rule-001", "event": "event-001", "then": ["broader-action", "review-supporting-data", "perform-structured-task"]},
+              {"id": "rule-002", "event": "event-001", "when": {"cond-001": "Yes"}, "then": ["recommend-action"]},
+              {"id": "rule-003", "event": "event-001", "when": {"cond-001": "No"}, "then": ["do-not-perform-action"]}],
     # care-pathway sections
     "steps": [{
         "id": "main-pathway",
@@ -1356,8 +1363,14 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
         "actor": "<stub: primary actor>",
     }, {
         "id": "phase-001",
-        "label": "<stub: major phase>",
-        "description": "<stub: what happens in this phase>",
+        "label": "<stub: major phase or branch>",
+        "description": "<stub: major stage of the pathway>",
+        "actor": "<stub: responsible actor>",
+        "parent_id": "main-pathway",
+    }, {
+        "id": "phase-002",
+        "label": "<stub: separate phase or coordination branch>",
+        "description": "<stub: separate branch when downstream timing or trigger differs>",
         "actor": "<stub: responsible actor>",
         "parent_id": "main-pathway",
     }],
@@ -1391,6 +1404,29 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
     if section_name == "actions":
         if artifact_type == "decision-table":
             return [
+                {
+                    "id": "broader-action",
+                    "label": "<stub: broader recommended action>",
+                    "description": "<stub: overall recommendation that may contain broken-down tasks>",
+                    "kind": "ServiceRequest",
+                },
+                {
+                    "id": "review-supporting-data",
+                    "label": "<stub: child task to review or obtain supporting data>",
+                    "description": "<stub: distinct operational task under the broader recommendation>",
+                    "kind": "ServiceRequest",
+                    "parent_action_id": "broader-action",
+                    "produces_data_elements": ["de-001"],
+                },
+                {
+                    "id": "perform-structured-task",
+                    "label": "<stub: child task using a structured instrument or other discrete workflow step>",
+                    "description": "<stub: separate child task that produces a concrete result>",
+                    "kind": "ServiceRequest",
+                    "parent_action_id": "broader-action",
+                    "produces_data_elements": ["de-002"],
+                    "assessment_artifact": "<stub: linked assessment artifact when applicable>",
+                },
                 {
                     "id": "recommend-action",
                     "label": "<stub: recommended action>",
@@ -1945,6 +1981,14 @@ Decision-table extraction guidance:
   prefer an event-driven rule with `event + then` and no `when`.
 - Do not gate verification, assessment, review, or evidence-gathering actions on
   the same confirmed state they are intended to establish.
+- When the source describes a broader recommended action that contains distinct
+  operational tasks, model the broader recommendation as the parent action and
+  add separate child actions for the broken-down tasks when the source treats
+  them as operationally separate.
+- Use a child action for distinct tasks such as administering a questionnaire,
+  reviewing imaging, reviewing prior therapy history, ordering a prerequisite
+  study, or carrying out a separate counseling step. Group closely related work
+  into one child action when the source does not require finer separation.
 - When one guideline segment describes sequential reasoning in a single pathway,
   prefer one decision-table with staged events over child tables. Use earlier
   actions to establish later branch conditions, then gate later events on those
@@ -1953,14 +1997,27 @@ Decision-table extraction guidance:
   later branch condition.
 - Use `actions[].produces_data_elements[]` when an action produces a concrete
   finding, score, or other evidence item that later logic consumes.
+- Do not model the result of a child task as a prerequisite for doing the task
+  itself. If the task obtains a score, finding, or result, make that
+  result a `data_elements[]` entry and link it from the action with
+  `produces_data_elements[]`.
 - Use `actions[].parent_action_id` when a supporting action belongs under a
-  broader assessment action rather than standing alone.
+  broader parent action rather than standing alone.
 - Use `actions[].assessment_artifact` when an action explicitly administers or
   reviews a structured questionnaire or assessment instrument that should later
   formalize to a Questionnaire.
+- For later recommendation branches, use explicit assessed states from the
+  source rather than inventing a generic summary condition when the guideline
+  does not name one.
 - Use canonical `kind` for actions; do not emit legacy action `type`.
+- Keep `events[]` at the level of major workflow contexts or decision moments.
+  Do not create a separate event for every child task or narrow sub-step when
+  those activities still belong to the same broader staged context.
 - Use `event.trigger` only when there is an explicit formal trigger. Omit it
   when the event itself is the full workflow context.
+- If several recommendations share the same workflow moment, keep one event and
+  express the finer distinction through separate rules and child actions rather
+  than proliferating near-duplicate events.
 - If the narrative clearly groups recommendations by care phase, optionally define `sections.pathway_phases[]` as the canonical phase model and keep that grouping in `event.phase` and/or `rule.phase` without turning phases themselves into events.
 - Prefer one clinically explicit rule per recommendation branch, with `action` as a short human label and `rationale` as the recommendation basis.
 - When a recommendation belongs to a recognizable phase such as assessment, planning, intraoperative, or postoperative care, populate `rule.phase`.
@@ -1973,6 +2030,9 @@ Care-pathway extraction guidance:
 - When the source describes one overarching patient journey with major phases, include a top-level pathway step and make the major phases children via `parent_id`.
 - Use care-pathway for sequencing, actor ownership, and transitions; keep recommendation logic itself in the decision-table artifact.
 - Keep top-level steps clinically meaningful and stable; reserve leaf steps for meaningful sub-phases, not every individual recommendation.
+- When different parts of the pathway activate at different workflow moments, represent them as separate sibling branches under the same parent pathway rather than forcing one linear sequence.
+- Use a separate branch for coordination work such as scheduling follow-up when it has a different trigger or timing from assessment, planning, or completed follow-up.
+- Do not create a separate pathway step for intervention execution when the source is really describing preservice planning or ordering logic; keep the execution detail under the planning branch unless the guideline truly treats it as its own clinical stage.
 - Use `transitions[]` only for actual clinical progression dependencies between steps.""",
 }
 
