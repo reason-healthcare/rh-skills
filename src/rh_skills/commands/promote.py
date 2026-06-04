@@ -3,6 +3,7 @@
 import csv
 import hashlib
 import io
+import re
 import sys
 from contextlib import contextmanager
 from pathlib import Path
@@ -1180,6 +1181,218 @@ def _load_related_structured_context(topic: str, artifact_type: str | None) -> l
     return contexts
 
 
+def _normalize_link_token(value: object) -> str:
+    text = str(value or "").strip().lower()
+    if not text:
+        return ""
+    text = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    return text
+
+
+def _link_tokens(value: object) -> set[str]:
+    normalized = _normalize_link_token(value)
+    if not normalized:
+        return set()
+    return {token for token in normalized.split("-") if token}
+
+
+def _enrich_care_pathway_rule_links(
+    artifact_data: dict,
+    related_contexts: list[tuple[str, dict]],
+) -> dict:
+    """Populate care-pathway rule_id/action_labels from a paired decision-table when clear."""
+    if not isinstance(artifact_data, dict):
+        return artifact_data
+
+    decision_table = next(
+        (
+            data for related_name, data in related_contexts
+            if related_name == "decision-table" and isinstance(data, dict)
+        ),
+        None,
+    )
+    if not isinstance(decision_table, dict):
+        return artifact_data
+
+    sections = artifact_data.get("sections")
+    if not isinstance(sections, dict):
+        return artifact_data
+    steps = sections.get("steps")
+    if not isinstance(steps, list):
+        return artifact_data
+
+    dt_sections = decision_table.get("sections") or {}
+    rules = dt_sections.get("rules") or []
+    events = dt_sections.get("events") or []
+    actions = dt_sections.get("actions") or []
+    if not isinstance(rules, list) or not isinstance(events, list) or not isinstance(actions, list):
+        return artifact_data
+
+    event_index = {
+        str(event.get("id") or "").strip(): event
+        for event in events
+        if isinstance(event, dict) and str(event.get("id") or "").strip()
+    }
+    action_index = {
+        str(action.get("id") or "").strip(): action
+        for action in actions
+        if isinstance(action, dict) and str(action.get("id") or "").strip()
+    }
+
+    rule_entries: list[dict] = []
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        rule_id = str(rule.get("id") or "").strip()
+        event_id = str(rule.get("event") or "").strip()
+        if not rule_id or not event_id:
+            continue
+        then_ids = rule.get("then") or []
+        if not isinstance(then_ids, list):
+            then_ids = []
+        action_labels: list[str] = []
+        action_aliases: set[str] = set()
+        action_label_tokens: dict[str, set[str]] = {}
+        for action_id in then_ids:
+            action_def = action_index.get(str(action_id).strip())
+            label = str((action_def or {}).get("label") or action_id or "").strip()
+            if not label:
+                continue
+            action_labels.append(label)
+            action_aliases.add(_normalize_link_token(label))
+            action_aliases.add(_normalize_link_token(action_id))
+            action_label_tokens[label] = _link_tokens(label)
+
+        event = event_index.get(event_id) or {}
+        ranking_tokens = set()
+        for value in [event.get("label"), rule.get("action"), *action_labels]:
+            ranking_tokens.update(_link_tokens(value))
+        rule_aliases = {
+            _normalize_link_token(event_id),
+            _normalize_link_token(event_id.removeprefix("event-")),
+            _normalize_link_token(event.get("label")),
+            _normalize_link_token(rule.get("action")),
+        }
+        rule_aliases = {alias for alias in rule_aliases if alias}
+        action_aliases = {alias for alias in action_aliases if alias}
+        rule_entries.append({
+            "rule_id": rule_id,
+            "rule_aliases": rule_aliases,
+            "action_aliases": action_aliases,
+            "action_labels": action_labels,
+            "action_label_tokens": action_label_tokens,
+            "ranking_tokens": ranking_tokens,
+        })
+
+    if not rule_entries:
+        return artifact_data
+
+    child_map: dict[str, list[dict]] = {}
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        parent_id = str(step.get("parent_id") or "").strip()
+        if parent_id:
+            child_map.setdefault(parent_id, []).append(step)
+
+    enriched_steps: list[dict] = []
+    for step in steps:
+        if not isinstance(step, dict):
+            enriched_steps.append(step)
+            continue
+        step_id = str(step.get("id") or "").strip()
+        if step_id and child_map.get(step_id):
+            updated = dict(step)
+            updated.pop("rule_id", None)
+            updated.pop("action_labels", None)
+            enriched_steps.append(updated)
+            continue
+        if str(step.get("rule_id") or "").strip():
+            enriched_steps.append(step)
+            continue
+
+        step_aliases = {
+            _normalize_link_token(step.get("id")),
+            _normalize_link_token(step.get("label")),
+            _normalize_link_token(step.get("title")),
+        }
+        step_aliases = {alias for alias in step_aliases if alias}
+        step_tokens = set()
+        for value in [step.get("id"), step.get("label"), step.get("title"), step.get("description")]:
+            step_tokens.update(_link_tokens(value))
+        if not step_aliases:
+            enriched_steps.append(step)
+            continue
+
+        action_matches: list[tuple[dict, list[str]]] = []
+        general_matches: list[dict] = []
+        for entry in rule_entries:
+            matched_labels = []
+            for label in entry["action_labels"]:
+                normalized_label = _normalize_link_token(label)
+                if normalized_label in step_aliases:
+                    matched_labels.append(label)
+                    continue
+                overlap = len(step_tokens & set(entry.get("action_label_tokens", {}).get(label) or set()))
+                if overlap >= 2:
+                    matched_labels.append(label)
+            if step_aliases & entry["action_aliases"]:
+                action_matches.append((entry, matched_labels or entry["action_labels"]))
+            elif matched_labels:
+                action_matches.append((entry, matched_labels))
+            elif step_aliases & entry["rule_aliases"]:
+                general_matches.append(entry)
+
+        chosen: dict | None = None
+        matched_action_labels: list[str] | None = None
+        if action_matches:
+            unique_rule_ids = {entry["rule_id"] for entry, _labels in action_matches}
+            if len(unique_rule_ids) == 1:
+                chosen, matched_action_labels = action_matches[0]
+            else:
+                scored = sorted(
+                    (
+                        (len(step_tokens & (entry.get("ranking_tokens") or set())), entry, labels)
+                        for entry, labels in action_matches
+                    ),
+                    key=lambda item: item[0],
+                    reverse=True,
+                )
+                if scored and (len(scored) == 1 or scored[0][0] > scored[1][0]):
+                    _, chosen, matched_action_labels = scored[0]
+        elif general_matches:
+            unique_rule_ids = {entry["rule_id"] for entry in general_matches}
+            if len(unique_rule_ids) == 1:
+                chosen = general_matches[0]
+                matched_action_labels = chosen["action_labels"]
+            else:
+                scored = sorted(
+                    (
+                        (len(step_tokens & (entry.get("ranking_tokens") or set())), entry)
+                        for entry in general_matches
+                    ),
+                    key=lambda item: item[0],
+                    reverse=True,
+                )
+                if scored and scored[0][0] > 0 and (len(scored) == 1 or scored[0][0] > scored[1][0]):
+                    _, chosen = scored[0]
+                    matched_action_labels = chosen["action_labels"]
+
+        if chosen is None:
+            enriched_steps.append(step)
+            continue
+
+        updated = dict(step)
+        updated["rule_id"] = chosen["rule_id"]
+        if not updated.get("action_labels") and matched_action_labels:
+            updated["action_labels"] = matched_action_labels
+        enriched_steps.append(updated)
+
+    sections["steps"] = enriched_steps
+    artifact_data["sections"] = sections
+    return artifact_data
+
+
 def _canonicalize_evidence_refs(entries: list[dict]) -> set[tuple[str, str, str, str]]:
     canonical: set[tuple[str, str, str, str]] = set()
     for entry in entries:
@@ -1367,6 +1580,8 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
         "description": "<stub: major stage of the pathway>",
         "actor": "<stub: responsible actor>",
         "parent_id": "main-pathway",
+        "rule_id": "<stub: decision-table rule id for this step, when applicable>",
+        "action_labels": ["<stub: human-readable decision-table action label>"],
     }, {
         "id": "phase-002",
         "label": "<stub: separate phase or coordination branch>",
@@ -2029,6 +2244,7 @@ Care-pathway extraction guidance:
 - Model the clinical sequence as flat `steps[]` with optional `parent_id`; do not use nested `substeps[]`.
 - When the source describes one overarching patient journey with major phases, include a top-level pathway step and make the major phases children via `parent_id`.
 - Use care-pathway for sequencing, actor ownership, and transitions; keep recommendation logic itself in the decision-table artifact.
+- When a pathway step corresponds to a specific decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels that the step orchestrates.
 - Keep top-level steps clinically meaningful and stable; reserve leaf steps for meaningful sub-phases, not every individual recommendation.
 - When different parts of the pathway activate at different workflow moments, represent them as separate sibling branches under the same parent pathway rather than forcing one linear sequence.
 - Use a separate branch for coordination work such as scheduling follow-up when it has a different trigger or timing from assessment, planning, or completed follow-up.
@@ -4209,6 +4425,12 @@ Rules:
                 )
             else:
                 l2_file.write_text(_sanitize_yaml(llm_output + "\n"))
+
+        if effective_artifact_type == "care-pathway" and related_contexts:
+            parsed_artifact = _yaml_safe().load(l2_file.read_text()) or {}
+            if isinstance(parsed_artifact, dict):
+                enriched_artifact = _enrich_care_pathway_rule_links(parsed_artifact, related_contexts)
+                l2_file.write_text(_dump_yaml_text(enriched_artifact))
 
         timestamp = now_iso()
         checksum = sha256_file(l2_file)

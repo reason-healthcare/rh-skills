@@ -1,5 +1,10 @@
 {
   "resourceType": "PlanDefinition",
+{% if meta_profile %}
+  "meta": {
+    "profile": {{ meta_profile | tojson }}
+  },
+{% endif %}
   "id": "{{ id }}",
   "url": "{{ url }}",
   "version": "{{ version }}",

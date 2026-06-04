@@ -115,6 +115,7 @@ Care-pathway extraction guidance:
 - When the source describes one overarching patient journey with major phases, create a top-level pathway step and make the major phases its children.
 - Treat every `steps[]` entry as a pathway node first. When present, an overall journey step is longitudinal orchestration, and its child phases are candidate groupings that downstream formalize may promote into separate strategy artifacts if the related decision logic supports it.
 - Keep recommendation logic in the decision-table artifact; use care-pathway for sequencing, actor ownership, and phase transitions.
+- When a pathway step corresponds to a specific decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels the step orchestrates.
 - When different parts of the pathway activate at different workflow moments, represent them as separate sibling branches under the same parent pathway rather than forcing one linear chain.
 - Use a separate branch for coordination work such as scheduling follow-up when it has a different trigger or timing from assessment, planning, or completed follow-up.
 - Do not create a separate pathway step for intervention execution when the source is really describing planning or ordering logic; keep it in the planning branch unless the guideline clearly treats execution as its own clinical stage.

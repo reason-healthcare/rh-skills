@@ -666,7 +666,10 @@ present, is the overall longitudinal journey, and its child phases are
 candidate clinical groupings that downstream formalize may promote into
 separate strategy artifacts when the paired decision logic supports that split.
 Keep recommendation logic in the decision-table artifact; use the care-pathway
-for sequencing, actor ownership, and transitions.
+for sequencing, actor ownership, and transitions. When a pathway step
+corresponds to a specific decision-table recommendation rule, populate
+`rule_id` with that rule and `action_labels` with the human-readable
+decision-table actions the step orchestrates.
 When different parts of the pathway activate at different workflow moments,
 represent them as separate sibling branches under the same parent pathway
 rather than forcing one linear chain. Use a separate branch for coordination

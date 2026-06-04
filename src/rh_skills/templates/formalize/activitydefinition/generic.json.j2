@@ -9,11 +9,13 @@
   "title": "{{ title }}",
   "description": {{ description | tojson }},
   "kind": "{{ kind }}",
-  "intent": "{{ intent }}",
+  "intent": "{{ intent }}"{% if do_not_perform or code or participant or related_artifact %},{% endif %}
 {% if do_not_perform %}
-  "doNotPerform": true,
+  "doNotPerform": true{% if code or participant or related_artifact %},{% endif %}
 {% endif %}
+{% if code %}
   "code": {{ code | tojson }}{% if participant or related_artifact %},{% endif %}
+{% endif %}
 {% if participant %}
   "participant": {{ participant | tojson }}{% if related_artifact %},{% endif %}
 {% endif %}

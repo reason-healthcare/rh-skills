@@ -1233,6 +1233,46 @@ def test_collect_stub_paths_finds_nested_stubs():
     assert "summary" not in paths
 
 
+def test_validate_care_pathway_accepts_rule_and_action_links(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with explicit decision-table rule links"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: phase-1
+      label: Phase 1
+      description: First phase
+      rule_id: rule-1
+      action_labels:
+        - Review prior therapy
+        - Offer surgery
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 0, result.output
+
+
 def test_collect_stub_paths_empty_on_clean_data():
     from rh_skills.commands.validate import _collect_stub_paths
     data = {
