@@ -112,10 +112,13 @@ artifact_type_sections:
     section_definitions:
       steps: >
         Flat workflow steps. Each entry: {id, label, description?, actor?, parent_id?,
-        applicability_condition?}. parent_id references another step id when a
-        nested relationship is needed. When a paired decision table defines
-        pathway_phases, keep care-pathway steps aligned 1:1 with that phase model.
-        Actions are defined in decision-table artifacts, not in care pathways.
+        applicability_condition?, rule_id?, action_labels?}. parent_id references
+        another step id when a nested relationship is needed. When a paired
+        decision table defines pathway_phases, keep care-pathway steps aligned
+        1:1 with that phase model. Use rule_id to point a step at the specific
+        decision-table rule it orchestrates, and use action_labels to name the
+        corresponding decision-table actions for readability. Actions are defined in
+        decision-table artifacts, not in care pathways.
       transitions: >
         Optional sequencing rules between steps or phases: {from_id, to_id,
         condition?, description?}. Captures dependencies and branching logic.

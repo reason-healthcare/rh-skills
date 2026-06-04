@@ -4,6 +4,7 @@ Care pathway validation
 Validates care-pathway artifacts for:
 - Required field completeness
 - Flat step model (optional parent_id + applicability_condition)
+- Optional rule/action linkage to decision-table logic
 - L2/L3 boundary enforcement (no FHIR-specific fields at L2)
 - Transition integrity
 """
@@ -119,6 +120,34 @@ def validate_care_pathway(
             report_error(
                 f"  care-pathway: phase '{phase_id}' uses legacy nested 'substeps' — use flat steps with parent_id"
             )
+
+        rule_id = phase.get("rule_id")
+        if rule_id is not None and not isinstance(rule_id, str):
+            report_error(
+                f"  care-pathway: phase '{phase_id or idx}' has non-string rule_id"
+            )
+        elif isinstance(rule_id, str) and not rule_id.strip():
+            report_error(
+                f"  care-pathway: phase '{phase_id or idx}' has empty rule_id"
+            )
+
+        action_labels = phase.get("action_labels")
+        if action_labels is not None:
+            if not isinstance(action_labels, list):
+                report_error(
+                    f"  care-pathway: phase '{phase_id or idx}' action_labels must be a list"
+                )
+            else:
+                for action_idx, action_label in enumerate(action_labels, start=1):
+                    if not isinstance(action_label, str) or not action_label.strip():
+                        report_error(
+                            f"  care-pathway: phase '{phase_id or idx}' action_labels[{action_idx}] must be a non-empty string"
+                        )
+            if not rule_id:
+                report_warn(
+                    f"  care-pathway: phase '{phase_id or idx}' uses action_labels without rule_id; "
+                    "formalize will treat them as descriptive only"
+                )
 
     # Validate step relationships and transitions
     for idx, phase in enumerate(steps, start=1):

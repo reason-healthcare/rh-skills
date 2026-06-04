@@ -79,6 +79,7 @@ Completed:
   - optional triggers
   - broader-action / child-task decomposition
   - direct instructions for using produced data elements from child tasks
+  - care-pathway step linkage to specific decision-table `rule_id` and human-readable `action_labels`
 
 Still open:
 
@@ -89,7 +90,6 @@ Still open:
 - richer trigger propagation from L2 into L3 resource shapes
 - stronger strategy/recommendation topology alignment to the target L3 model
 - more concrete assessment artifact identity and questionnaire naming/linkage
-- assessment owns questionnaire generation; decision-table links to the canonical assessment questionnaire instead of emitting a duplicate
 
 ## Working Rules
 
@@ -163,7 +163,8 @@ Still open:
   - resource type/profile criteria where present
   - coded trigger context where present
   - postoperative timing semantics at the correct ownership level
-- [ ] After the template layer is in place, add explicit cross-artifact alignment support between care-pathway nodes and decision-table workflow contexts where that alignment matters to formalize.
+- [x] Add explicit cross-artifact alignment support between care-pathway nodes and decision-table workflow contexts through care-pathway `rule_id` and human-readable `action_labels`.
+- [ ] Use the new care-pathway `rule_id` and `action_labels` linkage in the repo-owned target and external probe so actual extracted content stops relying on semantic fallback for child-step recommendation matching.
 - [ ] After the template layer is in place, align formalize output progressively to the repo-owned target L3 shapes so
   pathway, strategy, recommendation, assessment, questionnaire, and follow-up
   branches can be produced by the framework rather than by hand-authored target
@@ -174,9 +175,17 @@ Still open:
   - make `pathway -> strategy -> recommendation` boundaries more explicit
   - reduce fallback to generic protocol activities where target-shaped recommendation linkage is expected
   - preserve branch structure without collapsing too much into the protocol shell
+- [ ] Refactor decision-table formalize so rule-level recommendations become the reusable L3 linkage unit.
+  - Keep one `decision-table` artifact at L2.
+  - Generate one recommendation artifact per rule in L3, or at minimum a rule-addressable canonical child per rule.
+  - Preserve nested child actions from the rule `then` structure inside that rule-level recommendation artifact.
+  - Stop treating the event-level recommendation plan as the main reusable linkage target for care-pathway integration.
+- [ ] Refactor care-pathway formalize so pathway and strategy plans link to rule-level recommendation targets from the appropriate higher-level action.
+  - Use care-pathway `rule_id` as the primary linkage key when present.
+  - Keep activity links underneath the linked rule recommendation, not instead of it.
+  - Do not bypass rule recommendations by linking pathway and strategy actions directly to `ActivityDefinition` resources when the rule recommendation exists.
 - [ ] Improve assessment/questionnaire formalization so the output keeps topic-specific assessment identity instead of defaulting to generic assessment naming where the source supports a named instrument.
 - [x] Ensure assessment artifacts are the single owner of Questionnaire generation, with decision-table actions linking to the canonical assessment questionnaire instead of creating duplicate questionnaire resources.
-- [ ] Improve assessment/questionnaire formalization so the output keeps topic-specific assessment identity instead of defaulting to generic assessment naming where the source supports a named instrument.
 
 ### 3. Extract and skill behavior
 

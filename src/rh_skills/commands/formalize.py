@@ -97,8 +97,8 @@ STRATEGY_REGISTRY: dict[str, dict] = {
     },
     "care-pathway": {
         "primary": "PlanDefinition",
-        "supporting": ["ActivityDefinition"],
-        "description": "PlanDefinition (clinical-protocol) + ActivityDefinition",
+        "supporting": [],
+        "description": "PlanDefinition (clinical-protocol)",
     },
     "terminology": {
         "primary": "ValueSet",
@@ -513,6 +513,15 @@ def _render_care_pathway_plan_definition_resource(
     return _render_formalize_json_template(template_name, **context)
 
 
+def _plan_definition_meta_profiles(role: str) -> list[str]:
+    mapping = {
+        "pathway": ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-pathwaydefinition"],
+        "strategy": ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition"],
+        "recommendation": ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"],
+    }
+    return mapping.get(role, [])
+
+
 def _render_questionnaire_resource(context: dict[str, Any]) -> dict[str, Any]:
     """Render a Questionnaire resource from the template layer."""
     return _render_formalize_json_template("questionnaire/generic.json.j2", **context)
@@ -656,7 +665,6 @@ def _build_phase_style_actions(
                 "id": f"{phase_id}-{substep_id}",
                 "title": str(substep.get("label") or substep_desc),
                 "description": substep_desc,
-                "definitionCanonical": f"{canonical}/ActivityDefinition/{activity_definition_id}",
             }
             
             if substep.get("note"):
@@ -676,9 +684,6 @@ def _build_phase_style_actions(
         
         if child_actions:
             phase_action["action"] = child_actions
-        else:
-            # Phase without substeps - add definition directly
-            phase_action["definitionCanonical"] = f"{canonical}/ActivityDefinition/{activity_definition_id}"
         
         # Add trigger to first phase if triggers exist
         if phase_idx == 1 and triggers:
@@ -696,11 +701,11 @@ def _build_phase_style_actions(
 def _build_care_pathway_actions(
     artifact_name: str,
     canonical: str,
-    activity_definition_id: str,
     l2_data: dict | None,
     branch_plan_map: dict[str, str] | None = None,
     recommendation_plan_map: dict[str, str] | None = None,
     recommendation_candidates: list[dict[str, Any]] | None = None,
+    action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
 ) -> list[dict]:
     """Build PlanDefinition.action stubs from L2 care-pathway sections.
     """
@@ -713,13 +718,13 @@ def _build_care_pathway_actions(
     if not isinstance(transitions, list):
         transitions = []
 
-    if _is_phase_style_pathway(steps):
-        log_info("  Detected phase-style care-pathway format")
+        if _is_phase_style_pathway(steps):
+            log_info("  Detected phase-style care-pathway format")
         triggers = sections.get("triggers") or []
         if not isinstance(triggers, list):
             triggers = []
         actions = _build_phase_style_actions(
-            steps, artifact_name, canonical, activity_definition_id, triggers
+            steps, artifact_name, canonical, "", triggers
         )
         if actions:
             return actions
@@ -765,6 +770,7 @@ def _build_care_pathway_actions(
         if children:
             action["action"] = [build_action(child) for child in children]
         elif not branch_ref:
+            action_ref = _resolve_action_reference(step, action_reference_map or {})
             exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_ref = exact_ref or _resolve_recommendation_reference(
                 step,
@@ -773,11 +779,10 @@ def _build_care_pathway_actions(
             )
             if recommendation_ref and recommendation_ref in used_recommendation_refs and recommendation_ref != exact_ref:
                 recommendation_ref = None
-            action["definitionCanonical"] = (
-                recommendation_ref
-                or f"{canonical}/ActivityDefinition/{activity_definition_id}"
-            )
-            if recommendation_ref:
+            if action_ref:
+                action["definitionCanonical"] = action_ref
+            elif recommendation_ref:
+                action["definitionCanonical"] = recommendation_ref
                 used_recommendation_refs.add(recommendation_ref)
 
         related = []
@@ -887,6 +892,7 @@ def _activity_definition_template_context(
     dynamic_value: list[dict[str, Any]] | None = None,
     participant: list[dict[str, Any]] | None = None,
     related_artifact: list[dict[str, Any]] | None = None,
+    extension: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build the shared template context for ActivityDefinition resources."""
     return {
@@ -907,7 +913,42 @@ def _activity_definition_template_context(
         "dynamic_value": dynamic_value or [],
         "participant": participant or [],
         "related_artifact": related_artifact or [],
+        "extension": extension or [],
     }
+
+
+def _resolve_activity_code(action_def: dict[str, Any], *, action_id: str, title: str) -> dict[str, Any] | None:
+    """Return explicit activity coding from L2 when present, otherwise None."""
+    code = action_def.get("code")
+    if isinstance(code, dict):
+        coding = {
+            "code": str(code.get("code") or action_id),
+        }
+        if code.get("system"):
+            coding["system"] = str(code["system"])
+        if code.get("display"):
+            coding["display"] = str(code["display"])
+        return {"coding": [coding], "text": title}
+
+    codings = action_def.get("codings")
+    if isinstance(codings, list):
+        resolved: list[dict[str, Any]] = []
+        for entry in codings:
+            if not isinstance(entry, dict):
+                continue
+            code_value = str(entry.get("code") or "").strip()
+            if not code_value:
+                continue
+            coding = {"code": code_value}
+            if entry.get("system"):
+                coding["system"] = str(entry["system"])
+            if entry.get("display"):
+                coding["display"] = str(entry["display"])
+            resolved.append(coding)
+        if resolved:
+            return {"coding": resolved, "text": title}
+
+    return None
 
 
 def _is_assessment_action(action_def: dict[str, Any]) -> bool:
@@ -967,48 +1008,17 @@ def _collect_information_dynamic_values(questionnaire_canonical: str) -> list[di
     """Return stub dynamicValue entries for a CPG collect-information activity."""
     return [
         {
-            "path": "status",
+            "path": "input.type",
             "expression": {
-                "language": "text/cql-expression",
-                "expression": "'draft'",
+                "language": "text/cql",
+                "expression": "code",
             },
         },
         {
-            "path": "for",
+            "path": "input.value",
             "expression": {
-                "language": "text/cql-identifier",
-                "expression": "Patient",
-            },
-        },
-        {
-            "path": "encounter",
-            "expression": {
-                "language": "text/cql-identifier",
-                "expression": "Encounter",
-            },
-        },
-        {
-            "path": "authoredOn",
-            "expression": {
-                "language": "text/cql-expression",
-                "expression": "Now()",
-            },
-        },
-        {
-            "path": "owner",
-            "expression": {
-                "language": "text/cql-identifier",
-                "expression": "Practitioner",
-            },
-        },
-        {
-            "path": "input",
-            "expression": {
-                "language": "text/cql-expression",
-                "expression": (
-                    "TaskInput { type: 'Collect Information', "
-                    f"value: '{questionnaire_canonical}' }}"
-                ),
+                "language": "text/cql",
+                "expression": "extension('http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value",
             },
         },
     ]
@@ -1130,18 +1140,7 @@ def _build_decision_table_activity_definitions(
         intent = str(action_def.get("intent") or "proposal")
         do_not_perform = action_def.get("do_not_perform") is True
 
-        code = action_def.get("code")
-        if isinstance(code, dict):
-            coding = {
-                "code": str(code.get("code") or action_id),
-            }
-            if code.get("system"):
-                coding["system"] = str(code["system"])
-            if code.get("display"):
-                coding["display"] = str(code["display"])
-            codeable_concept = {"coding": [coding], "text": title}
-        else:
-            codeable_concept = _default_activity_coding(kind, title, action_id)
+        codeable_concept = _resolve_activity_code(action_def, action_id=action_id, title=title)
 
         participant_entries: list[dict[str, Any]] = []
         participants = action_def.get("participants") or action_def.get("participant")
@@ -1220,6 +1219,10 @@ def _build_decision_table_activity_definitions(
                 "text": title,
             }
             template_context["dynamic_value"] = _collect_information_dynamic_values(questionnaire_canonical)
+            template_context["extension"] = [{
+                "url": "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith",
+                "valueCanonical": questionnaire_canonical,
+            }]
             related_artifacts.append({
                 "type": "depends-on",
                 "resource": questionnaire_canonical,
@@ -1429,6 +1432,7 @@ def _build_decision_table_stub_plan_definitions(
                 "name": _pascal_from_kebab(child_id),
                 "title": event_title,
                 "description": event_description,
+                "meta_profile": _plan_definition_meta_profiles("recommendation"),
                 "type": _plan_definition_type("eca-rule"),
                 "library": [library_canonical],
                 "action": _build_decision_table_plan_actions(event_id, canonical, child_l2),
@@ -1470,9 +1474,9 @@ def _build_care_pathway_stub_plan_definitions(
     canonical: str,
     cfg: dict,
     l2_data: dict | None,
-    activity_definition_id: str,
     recommendation_plan_map: dict[str, str] | None = None,
     recommendation_candidates: list[dict[str, Any]] | None = None,
+    action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
 ) -> tuple[list[dict], dict[str, str]]:
     """Build scaffold child PlanDefinitions for likely care-pathway strategy/group nodes."""
     sections = (l2_data or {}).get("sections") or {}
@@ -1506,6 +1510,7 @@ def _build_care_pathway_stub_plan_definitions(
         if children:
             action["action"] = [build_subtree(child) for child in children]
         else:
+            action_ref = _resolve_action_reference(step, action_reference_map or {})
             exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_ref = exact_ref or _resolve_recommendation_reference(
                 step,
@@ -1514,11 +1519,10 @@ def _build_care_pathway_stub_plan_definitions(
             )
             if recommendation_ref and recommendation_ref in used_recommendation_refs and recommendation_ref != exact_ref:
                 recommendation_ref = None
-            action["definitionCanonical"] = (
-                recommendation_ref
-                or f"{canonical}/ActivityDefinition/{activity_definition_id}"
-            )
-            if recommendation_ref:
+            if action_ref:
+                action["definitionCanonical"] = action_ref
+            elif recommendation_ref:
+                action["definitionCanonical"] = recommendation_ref
                 used_recommendation_refs.add(recommendation_ref)
         return action
 
@@ -1539,6 +1543,7 @@ def _build_care_pathway_stub_plan_definitions(
             "name": _pascal_from_kebab(child_id),
             "title": title,
             "description": description,
+            "meta_profile": _plan_definition_meta_profiles("strategy"),
             "type": _plan_definition_type("workflow-definition"),
             "action": [build_subtree(step)],
         }
@@ -2016,6 +2021,7 @@ def _build_stub_resources(
                     "date": today,
                     "name": _pascal_from_kebab(resource_id),
                     "title": artifact_name.replace("-", " ").title(),
+                    "meta_profile": _plan_definition_meta_profiles("recommendation"),
                     "type": _plan_definition_type(plan_type),
                     "library": [f"{canonical}/Library/{_deterministic_library_id(resource_id)}"],
                     "action": root_actions or _build_decision_table_plan_actions(
@@ -2026,7 +2032,6 @@ def _build_stub_resources(
                 },
             )
         elif artifact_type == "care-pathway":
-            activity_definition_id = f"{resource_id}-activity"
             decision_table_name = None
             decision_table_data = None
             if topic_entry is not None:
@@ -2041,6 +2046,10 @@ def _build_stub_resources(
                 decision_table_name or "decision-table",
                 decision_table_data,
             )
+            action_reference_map = _build_decision_table_action_reference_map(
+                canonical,
+                decision_table_data,
+            )
             recommendation_candidates = _build_decision_table_reference_candidates(
                 canonical,
                 topic,
@@ -2052,9 +2061,9 @@ def _build_stub_resources(
                 canonical,
                 cfg,
                 l2_data,
-                activity_definition_id,
                 recommendation_plan_map=recommendation_plan_map,
                 recommendation_candidates=recommendation_candidates,
+                action_reference_map=action_reference_map,
             )
             root_branch_plan_map = branch_plan_map if _care_pathway_has_hierarchy(l2_data or {}) else {}
             primary_resource = _render_care_pathway_plan_definition_resource(
@@ -2066,15 +2075,16 @@ def _build_stub_resources(
                     "date": today,
                     "name": _pascal_from_kebab(resource_id),
                     "title": artifact_name.replace("-", " ").title(),
+                    "meta_profile": _plan_definition_meta_profiles("pathway"),
                     "type": _plan_definition_type(plan_type),
                     "action": _build_care_pathway_actions(
                         artifact_name,
                         canonical,
-                        activity_definition_id,
                         l2_data,
                         branch_plan_map=root_branch_plan_map,
                         recommendation_plan_map=recommendation_plan_map,
                         recommendation_candidates=recommendation_candidates,
+                        action_reference_map=action_reference_map,
                     ),
                 },
             )
@@ -2359,6 +2369,21 @@ def _legacy_decision_table_questionnaire_cleanup_files(
     return sorted(stale_files)
 
 
+def _legacy_care_pathway_cleanup_files(
+    artifact_name: str,
+    topic: str,
+    l2_data: dict[str, Any] | None,
+) -> list[str]:
+    """Return stale care-pathway-generated filenames to remove on rerun."""
+    resource_id = _deterministic_artifact_base_id(
+        artifact_name,
+        "care-pathway",
+        topic,
+        l2_data,
+    )
+    return [f"ActivityDefinition-{resource_id}-activity.json"]
+
+
 def _resolve_related_assessment(
     topic: str,
     topic_entry: dict,
@@ -2496,7 +2521,7 @@ def _build_decision_table_reference_map(
     decision_table_name: str,
     decision_table_data: dict[str, Any] | None,
 ) -> dict[str, str]:
-    """Map event and phase identifiers to recommendation PlanDefinition canonicals."""
+    """Map event, phase, and rule identifiers to recommendation PlanDefinition canonicals."""
     if not isinstance(decision_table_data, dict):
         return {}
 
@@ -2530,8 +2555,11 @@ def _build_decision_table_reference_map(
     for rule in rules:
         if not isinstance(rule, dict):
             continue
+        rule_id = str(rule.get("id") or "").strip()
         event_id = str(rule.get("event") or "").strip()
         phase_id = str(rule.get("phase") or "").strip()
+        if rule_id and event_id and event_id in event_index:
+            reference_map[rule_id] = f"{canonical}/PlanDefinition/{base_id}-{to_kebab_case(event_id)}"
         if event_id and phase_id and event_id in event_index:
             phase_to_event[phase_id].add(event_id)
 
@@ -2547,6 +2575,51 @@ def _build_decision_table_reference_map(
         reference_map[phase_id] = f"{canonical}/PlanDefinition/{base_id}-{to_kebab_case(only_event)}"
 
     return reference_map
+
+
+def _build_decision_table_action_reference_map(
+    canonical: str,
+    decision_table_data: dict[str, Any] | None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Map decision-table rule ids to referenced ActivityDefinition canonicals."""
+    if not isinstance(decision_table_data, dict):
+        return {}
+
+    sections = decision_table_data.get("sections") or {}
+    rules = sections.get("rules") or []
+    actions = sections.get("actions") or []
+    if not isinstance(rules, list) or not isinstance(actions, list):
+        return {}
+
+    action_index = {
+        str(action.get("id") or "").strip(): action
+        for action in actions
+        if isinstance(action, dict) and str(action.get("id") or "").strip()
+    }
+    reference_map: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        rule_id = str(rule.get("id") or "").strip()
+        if not rule_id:
+            continue
+        then_ids = rule.get("then") or []
+        if not isinstance(then_ids, list):
+            continue
+        for action_id in then_ids:
+            action_key = str(action_id or "").strip()
+            if not action_key:
+                continue
+            action_def = action_index.get(action_key) or {}
+            label = str(action_def.get("label") or action_key).strip()
+            reference_map[rule_id].append({
+                "canonical": f"{canonical}/ActivityDefinition/{to_kebab_case(action_key)}",
+                "label": label,
+                "normalized_label": to_kebab_case(label),
+                "tokens": _semantic_tokens(label, action_key, action_def.get("description") or ""),
+            })
+
+    return dict(reference_map)
 
 
 def _build_decision_table_reference_candidates(
@@ -2630,6 +2703,16 @@ def _resolve_recommendation_reference(
     recommendation_candidates: list[dict[str, Any]],
 ) -> str | None:
     """Resolve the best matching recommendation PlanDefinition for a pathway step."""
+    rule_id = str(step.get("rule_id") or "").strip()
+    if rule_id:
+        mapped_ref = recommendation_plan_map.get(rule_id)
+        if mapped_ref:
+            return mapped_ref
+        log_warn(
+            "  Care-pathway step '%s' references unknown decision-table rule_id '%s'"
+            % (str(step.get("id") or ""), rule_id)
+        )
+
     step_keys = [
         str(step.get("id") or ""),
         str(step.get("label") or ""),
@@ -2656,6 +2739,58 @@ def _resolve_recommendation_reference(
     if best_score >= 2:
         return best_match
     return None
+
+
+def _resolve_action_reference(
+    step: dict[str, Any],
+    action_reference_map: dict[str, list[dict[str, Any]]],
+) -> str | None:
+    """Resolve a direct ActivityDefinition link for a care-pathway step when clear."""
+    rule_id = str(step.get("rule_id") or "").strip()
+    if not rule_id:
+        return None
+
+    candidates = action_reference_map.get(rule_id) or []
+    if not candidates:
+        return None
+
+    action_labels = step.get("action_labels") or []
+    normalized_labels = {
+        to_kebab_case(str(label))
+        for label in action_labels
+        if isinstance(label, str) and label.strip()
+    }
+    normalized_labels = {label for label in normalized_labels if label}
+    if normalized_labels:
+        direct_matches = [
+            candidate for candidate in candidates
+            if str(candidate.get("normalized_label") or "") in normalized_labels
+        ]
+        if len(direct_matches) == 1:
+            return str(direct_matches[0]["canonical"])
+
+    step_tokens = _semantic_tokens(
+        str(step.get("label") or ""),
+        str(step.get("title") or ""),
+        str(step.get("description") or ""),
+        *[str(label) for label in action_labels if isinstance(label, str)],
+    )
+    if not step_tokens:
+        return None
+
+    scored = sorted(
+        (
+            (len(step_tokens & set(candidate.get("tokens") or set())), candidate)
+            for candidate in candidates
+        ),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+    if not scored or scored[0][0] < 2:
+        return None
+    if len(scored) > 1 and scored[0][0] == scored[1][0]:
+        return None
+    return str(scored[0][1]["canonical"])
 
 def _build_with_deterministic_builders(
     artifact: str,
@@ -2874,8 +3009,17 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
     computable_dir.mkdir(parents=True, exist_ok=True)
     warnings: list[str] = []
 
+    stale_cleanup_files: list[str] = []
     if artifact_type == "decision-table":
-        for stale_name in _legacy_decision_table_questionnaire_cleanup_files(topic, l2_data, topic_entry):
+        stale_cleanup_files.extend(
+            _legacy_decision_table_questionnaire_cleanup_files(topic, l2_data, topic_entry)
+        )
+    elif artifact_type == "care-pathway":
+        stale_cleanup_files.extend(
+            _legacy_care_pathway_cleanup_files(artifact, topic, l2_data)
+        )
+
+    for stale_name in stale_cleanup_files:
             stale_path = computable_dir / stale_name
             if stale_path.exists():
                 try:

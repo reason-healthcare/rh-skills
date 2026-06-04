@@ -89,8 +89,8 @@ def test_render_care_pathway_shows_ascii_tree(tmp_repo):
         "sections": {
             "steps": [
                 {"id": "pathway", "label": "CRS Surgical Pathway"},
-                {"id": "verify", "label": "Verify CRS Diagnosis", "parent_id": "pathway"},
-                {"id": "assess", "label": "Assess Surgical Candidacy", "parent_id": "pathway"},
+                {"id": "verify", "label": "Verify CRS Diagnosis", "parent_id": "pathway", "rule_id": "r-verify", "action_labels": ["Verify CRS diagnosis"]},
+                {"id": "assess", "label": "Assess Surgical Candidacy", "parent_id": "pathway", "rule_id": "r-assess", "action_labels": ["Assess surgical candidacy"]},
                 {"id": "questionnaire", "label": "Administer SNOT-22", "parent_id": "assess"},
             ],
             "transitions": [
@@ -107,6 +107,8 @@ def test_render_care_pathway_shows_ascii_tree(tmp_repo):
     assert "CRS Surgical Pathway" in content
     assert "|-- Verify CRS Diagnosis" in content
     assert "`-- Administer SNOT-22" in content
+    assert "## Rule Links" in content
+    assert "| Verify CRS Diagnosis | r-verify | Verify CRS diagnosis |" in content
     assert "## Transitions" in content
     assert "| Verify CRS Diagnosis | Assess Surgical Candidacy | diagnosis confirmed |" in content
 

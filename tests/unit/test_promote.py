@@ -1630,6 +1630,134 @@ sections:
     assert artifact["sections"]["evidence_traceability"][0]["claim_id"] == "cp-001"
 
 
+def test_derive_care_pathway_enriches_rule_links_from_related_decision_table(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv("RH_STUB_RESPONSE", """\
+title: CRS Surgical Management Care Pathway
+description: Completed care pathway draft.
+steps:
+  - id: crs-pathway
+    label: CRS pathway
+    description: Overall CRS surgical management pathway.
+  - id: assessment
+    label: Assessment
+    description: Verify diagnosis and assess candidacy.
+    parent_id: crs-pathway
+  - id: qol-questionnaire
+    label: Administer or review validated CRS quality-of-life questionnaire
+    description: Use a validated instrument such as SNOT-22 when it contributes meaningfully to candidacy assessment.
+    parent_id: assessment
+  - id: verify-diagnosis
+    label: Verify CRS diagnosis
+    description: Confirm CRS diagnosis before downstream recommendation logic.
+    parent_id: assessment
+  - id: surgery-recommendation
+    label: Offer surgery
+    description: Recommend surgery when explicit assessed states support it.
+    parent_id: assessment
+transitions:
+  - from_id: verify-diagnosis
+    to_id: surgery-recommendation
+    description: Proceed to surgical recommendation after diagnosis review.
+evidence_traceability:
+  - claim_id: cp-001
+    statement: CRS care proceeds from diagnosis review into surgical recommendation.
+    evidence:
+      - source: ada-guidelines
+        locator: Section 2
+summary: Hierarchical care pathway for CRS surgical management.
+""")
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    structured_dir = tmp_repo / "topics" / "my-skill" / "structured" / "decision-table"
+    structured_dir.mkdir(parents=True, exist_ok=True)
+    (structured_dir / "decision-table.yaml").write_text("""\
+id: decision-table
+name: decision-table
+title: Decision Table
+artifact_type: decision-table
+sections:
+  events:
+    - id: event-verify-diagnosis
+      label: Adult with possible CRS is being evaluated before surgery
+    - id: event-assess-candidacy
+      label: Adult with confirmed CRS is being assessed for possible surgery
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: verify-crs-diagnosis
+      label: Verify CRS diagnosis
+    - id: administer-snot-22-assessment
+      label: Administer or review SNOT-22 assessment
+    - id: offer-surgery
+      label: Offer surgery
+  rules:
+    - id: rule-001
+      event: event-verify-diagnosis
+      action: Verify CRS diagnosis
+      when: {confirmed: Yes}
+      then: [verify-crs-diagnosis]
+    - id: rule-002
+      event: event-assess-candidacy
+      action: Offer surgery
+      when: {confirmed: Yes}
+      then: [administer-snot-22-assessment, offer-surgery]
+""")
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: care-pathway
+name: care-pathway
+title: Care Pathway
+version: "1.0.0"
+status: draft
+domain: care pathway
+description: "In what order do things happen in the care process?"
+derived_from:
+  - ada-guidelines
+artifact_type: care-pathway
+clinical_question: In what order do things happen in the care process?
+sections:
+  summary: "<stub: summary>"
+  steps:
+    - id: root
+      label: "<stub: root>"
+      description: "<stub: root description>"
+  transitions: []
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "<stub: statement>"
+      evidence:
+        - source: ada-guidelines
+          locator: "<stub: locator>"
+""")
+    runner = CliRunner()
+    result = runner.invoke(promote, [
+        "derive", "my-skill", "care-pathway",
+        "--source", "ada-guidelines",
+        "--artifact-type", "care-pathway",
+        "--clinical-question", "In what order do things happen in the care process?",
+        "--required-section", "summary",
+        "--required-section", "steps",
+        "--required-section", "transitions",
+        "--required-section", "evidence_traceability",
+        "--body-file", str(body_file),
+    ])
+    assert result.exit_code == 0, result.output
+    artifact = load_yaml(
+        tmp_repo / "topics" / "my-skill" / "structured" / "care-pathway" / "care-pathway.yaml"
+    )
+    steps = {step["id"]: step for step in artifact["sections"]["steps"]}
+    assert "rule_id" not in steps["assessment"]
+    assert "action_labels" not in steps["assessment"]
+    assert steps["qol-questionnaire"]["rule_id"] == "rule-002"
+    assert steps["qol-questionnaire"]["action_labels"] == ["Administer or review SNOT-22 assessment"]
+    assert steps["verify-diagnosis"]["rule_id"] == "rule-001"
+    assert steps["verify-diagnosis"]["action_labels"] == ["Verify CRS diagnosis"]
+    assert steps["surgery-recommendation"]["rule_id"] == "rule-002"
+    assert steps["surgery-recommendation"]["action_labels"] == ["Offer surgery"]
+
+
 def test_derive_body_file_uses_artifact_type_from_body_for_tracking(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
@@ -1971,6 +2099,8 @@ def test_body_init_care_pathway_scaffold_demonstrates_branching_phases(tmp_repo)
     assert "id: phase-001" in content
     assert "id: phase-002" in content
     assert "parent_id: main-pathway" in content
+    assert "rule_id: '<stub: decision-table rule id for this step, when applicable>'" in content
+    assert "action_labels:" in content
     assert "separate branch when downstream timing or trigger differs" in content
 
 

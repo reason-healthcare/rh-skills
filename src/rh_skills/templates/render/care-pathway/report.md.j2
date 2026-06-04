@@ -25,6 +25,16 @@
 {% endfor %}
 
 {% endif %}
+{% if steps %}
+## Rule Links
+
+| Step | Rule ID | Action Labels |
+|------|---------|---------------|
+{% for s in steps -%}
+| {{ s.label or s.title or s.id or loop.index }} | {{ s.rule_id or '-' }} | {{ (s.action_labels or [])|join(', ') if s.action_labels else '-' }} |
+{% endfor %}
+
+{% endif %}
 {% if transition_rows %}
 ## Transitions
 

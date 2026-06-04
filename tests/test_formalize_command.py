@@ -457,13 +457,15 @@ sections:
             assert activity["doNotPerform"] is True
             assert activity["status"] == "active"
             assert activity["version"] == "2.1.0"
-            assert activity["code"]["coding"][0]["system"] == "http://reasonhealth.io/fhir/CodeSystem/activity-kind"
+            assert "code" not in activity
             plan = json.loads((computable / "PlanDefinition-dt.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
             assert len(plan["action"]) == 2
             assert plan["library"][0].endswith("/Library/dt-logic")
             assert plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
             assert child_plan["library"][0].endswith("/Library/dt-logic")
+            assert plan["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"]
+            assert child_plan["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"]
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -549,11 +551,13 @@ sections:
             assert activity["profile"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
             assert activity["code"]["coding"][0]["system"] == "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs"
             assert activity["code"]["coding"][0]["code"] == "collect-information"
-            assert any(
-                dv.get("path") == "input"
-                and "Questionnaire/qol-assessment" in dv.get("expression", {}).get("expression", "")
-                for dv in activity.get("dynamicValue", [])
-            )
+            assert activity["extension"][0]["url"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
+            assert activity["extension"][0]["valueCanonical"].endswith("/Questionnaire/qol-assessment")
+            dynamic_values = {dv["path"]: dv["expression"] for dv in activity.get("dynamicValue", [])}
+            assert dynamic_values["input.type"]["language"] == "text/cql"
+            assert dynamic_values["input.type"]["expression"] == "code"
+            assert dynamic_values["input.value"]["language"] == "text/cql"
+            assert dynamic_values["input.value"]["expression"] == "extension('http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value"
             assert activity["relatedArtifact"][0]["resource"].endswith("/Questionnaire/qol-assessment")
             assert not (computable / "Questionnaire-qol-assessment.json").exists()
             assert child_plan["action"][0]["action"][0]["id"] == "assess-surgical-candidacy"
@@ -733,7 +737,7 @@ sections:
             assert [action["id"] for action in pathway["action"]] == ["phase1", "phase2", "phase3"]
             assert pathway["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
             assert pathway["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-planning")
-            assert pathway["action"][2]["definitionCanonical"].endswith("/ActivityDefinition/path-activity")
+            assert "definitionCanonical" not in pathway["action"][2]
             assert (topic_dir / "computable" / "PlanDefinition-path-phase1.json").exists()
             assert (topic_dir / "computable" / "PlanDefinition-path-phase2.json").exists()
             assert (topic_dir / "computable" / "PlanDefinition-path-phase3.json").exists()
@@ -930,6 +934,84 @@ sections:
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
+    def test_stub_mode_care_pathway_step_rule_id_drives_recommendation_link(self, tmp_repo):
+        topic = "pathway-rule-link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: verify-diagnosis
+      label: Verify diagnosis
+      phase: assessment
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: verify-crs-diagnosis
+      label: Verify CRS diagnosis
+      kind: ServiceRequest
+  rules:
+    - id: rule-verify-diagnosis
+      event: verify-diagnosis
+      phase: assessment
+      when: {confirmed: Yes}
+      then: [verify-crs-diagnosis]
+"""
+        )
+        (structured_dir / "path.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [dt]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+      description: Overall CRS surgical pathway
+    - id: assessment-branch
+      label: Assessment and surgical decision
+      description: Assessment branch
+      parent_id: crs-pathway
+    - id: diagnosis-check
+      label: Diagnostic verification checkpoint
+      description: Confirm CRS diagnosis before further recommendations
+      parent_id: assessment-branch
+      rule_id: rule-verify-diagnosis
+      action_labels:
+        - Verify CRS diagnosis
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "dt", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "path", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "path"])
+            assert result.exit_code == 0, result.output
+
+            assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment-branch.json").read_text())
+            leaf_action = assessment_plan["action"][0]["action"][0]
+            assert leaf_action["id"] == "diagnosis-check"
+            assert leaf_action["definitionCanonical"].endswith("/ActivityDefinition/verify-crs-diagnosis")
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
     def test_generic_artifact_names_expand_to_semantic_computable_ids(self, tmp_repo):
         topic = "generic-naming-topic"
         topic_dir = tmp_repo / "topics" / topic
@@ -1010,13 +1092,17 @@ sections:
             assert (computable / "Library-chronic-rhinosinusitis-surgical-management-recommendation-logic.json").exists()
             assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol.json").exists()
             assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol-assessment.json").exists()
-            assert (computable / "ActivityDefinition-chronic-rhinosinusitis-surgical-management-protocol-activity.json").exists()
+            assert not (computable / "ActivityDefinition-chronic-rhinosinusitis-surgical-management-protocol-activity.json").exists()
             protocol = json.loads((computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol.json").read_text())
             recommendation = json.loads((computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-recommendation-verify-diagnosis.json").read_text())
+            strategy = json.loads((computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol-assessment.json").read_text())
             assert protocol["type"]["coding"][0]["system"] == "http://terminology.hl7.org/CodeSystem/plan-definition-type"
             assert protocol["type"]["coding"][0]["display"] == "Clinical Protocol"
             assert recommendation["type"]["coding"][0]["system"] == "http://terminology.hl7.org/CodeSystem/plan-definition-type"
             assert recommendation["type"]["coding"][0]["display"] == "ECA Rule"
+            assert protocol["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-pathwaydefinition"]
+            assert strategy["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition"]
+            assert recommendation["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"]
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1280,8 +1366,86 @@ sections:
             assert linked[1].endswith("/PlanDefinition/duplicate-link-topic-protocol-perform-definitive-surgery")
 
             surgery_plan = json.loads((computable / "PlanDefinition-duplicate-link-topic-protocol-perform-definitive-surgery.json").read_text())
-            nested = surgery_plan["action"][0]["definitionCanonical"]
-            assert nested.endswith("/ActivityDefinition/duplicate-link-topic-protocol-activity")
+            assert "definitionCanonical" not in surgery_plan["action"][0]
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_care_pathway_leaf_step_can_link_directly_to_decision_table_activity(self, tmp_repo):
+        topic = "leaf-action-link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "decision-table.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: event-assess-candidacy
+      label: Assess candidacy
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: assess-surgical-candidacy
+      label: Assess surgical candidacy
+      kind: ServiceRequest
+    - id: administer-snot-22-assessment
+      label: Administer or review SNOT-22 assessment
+      kind: Task
+  rules:
+    - id: r1
+      event: event-assess-candidacy
+      when: {confirmed: Yes}
+      then: [assess-surgical-candidacy, administer-snot-22-assessment]
+"""
+        )
+        (structured_dir / "care-pathway.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [decision-table]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+      description: Overall pathway
+    - id: assess-candidacy
+      label: Assess candidacy
+      description: Overall candidacy assessment
+      parent_id: crs-pathway
+    - id: qol-questionnaire
+      label: Administer or review validated CRS quality-of-life questionnaire
+      description: Use a validated instrument such as SNOT-22 when it contributes meaningfully to candidacy assessment.
+      parent_id: assess-candidacy
+      rule_id: r1
+      action_labels:
+        - Administer or review SNOT-22 assessment
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "decision-table", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "care-pathway", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            assert runner.invoke(formalize, [topic, "decision-table"]).exit_code == 0
+            result = runner.invoke(formalize, [topic, "care-pathway"])
+            assert result.exit_code == 0, result.output
+
+            branch_plan = json.loads((topic_dir / "computable" / "PlanDefinition-leaf-action-link-topic-protocol-assess-candidacy.json").read_text())
+            questionnaire_step = branch_plan["action"][0]["action"][0]
+            assert questionnaire_step["definitionCanonical"].endswith("/ActivityDefinition/administer-snot-22-assessment")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
