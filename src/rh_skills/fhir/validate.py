@@ -114,6 +114,22 @@ def _check_activity_definition(r: dict) -> list[str]:
     errors = []
     if e := _has_field(r, "kind", "ActivityDefinition.kind"):
         errors.append(e)
+    if e := _has_field(r, "code", "ActivityDefinition.code"):
+        errors.append(e)
+    else:
+        codings = r.get("code", {}).get("coding")
+        if isinstance(codings, list):
+            for coding in codings:
+                if (
+                    isinstance(coding, dict)
+                    and str(coding.get("system") or "").strip()
+                    == "http://reasonhealth.io/fhir/CodeSystem/activity-kind"
+                ):
+                    errors.append(
+                        "ActivityDefinition.code must use clinical terminology coding; "
+                        "generic activity-kind placeholders are not allowed"
+                    )
+                    break
     return errors
 
 

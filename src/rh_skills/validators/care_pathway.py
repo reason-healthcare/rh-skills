@@ -98,6 +98,7 @@ def validate_care_pathway(
         return errors, warnings
     
     step_ids: Set[str] = set()
+    child_map: Dict[str, List[dict]] = {}
     for idx, phase in enumerate(steps, start=1):
         if not isinstance(phase, dict):
             report_error(f"  care-pathway: phase #{idx} is not a dict")
@@ -115,6 +116,10 @@ def validate_care_pathway(
 
         if not phase.get("description"):
             report_warn(f"  care-pathway: phase '{phase_id or idx}' missing recommended 'description' field")
+
+        parent_id = phase.get("parent_id")
+        if isinstance(parent_id, str) and parent_id.strip():
+            child_map.setdefault(parent_id.strip(), []).append(phase)
 
         if "substeps" in phase:
             report_error(
@@ -148,6 +153,25 @@ def validate_care_pathway(
                     f"  care-pathway: phase '{phase_id or idx}' uses action_labels without rule_id; "
                     "formalize will treat them as descriptive only"
                 )
+
+    for idx, phase in enumerate(steps, start=1):
+        if not isinstance(phase, dict):
+            continue
+        phase_id = str(phase.get("id") or f"#{idx}")
+        rule_id = str(phase.get("rule_id") or "").strip()
+        if not rule_id:
+            continue
+        child_steps = child_map.get(phase_id) or []
+        if child_steps:
+            child_ids = [
+                str(child.get("id") or "<unknown>")
+                for child in child_steps
+                if isinstance(child, dict)
+            ]
+            report_error(
+                f"  care-pathway: phase '{phase_id}' links to rule '{rule_id}' but also contains child steps "
+                f"({', '.join(child_ids)}) — rule-linked pathway steps must be leaves; keep component tasks in the decision-table and leave wrapper phases unlinked"
+            )
 
     # Validate step relationships and transitions
     for idx, phase in enumerate(steps, start=1):

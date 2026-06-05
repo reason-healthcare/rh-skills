@@ -90,6 +90,7 @@ Still open:
 - richer trigger propagation from L2 into L3 resource shapes
 - stronger strategy/recommendation topology alignment to the target L3 model
 - more concrete assessment artifact identity and questionnaire naming/linkage
+- correction of redundant care-pathway sibling branches at the L2 extract/modeling layer when one recommendation is currently being split into multiple pathway children
 
 ## Working Rules
 
@@ -140,7 +141,7 @@ Still open:
 
 ### 2. Formalize architecture
 
-- [ ] Finish refactoring `formalize` to use template-driven YAML -> FHIR JSON conversion.
+- [x] Finish refactoring `formalize` to use template-driven YAML -> FHIR JSON conversion.
   - This is not just adding templates alongside the current code.
   - It will require replacing parts of the current Python builder path in `formalize` and related FHIR builder code.
   - The target state is:
@@ -158,34 +159,39 @@ Still open:
   - resource criteria
   - timing-window support
 - [x] Define stronger conventions for action outputs beyond `produces_conditions[]`, especially assessment-result outputs that later logic consumes.
-- [ ] After the template layer is in place, add an explicit formalize rule for trigger/applicability ownership so branch logic is not duplicated across L3 levels.
-- [ ] Strengthen trigger propagation from L2 into L3 so actual formalized output carries:
+- [x] Tighten trigger/applicability handling so branch logic is not duplicated across L3 levels and actual formalized output carries:
   - resource type/profile criteria where present
   - coded trigger context where present
   - postoperative timing semantics at the correct ownership level
 - [x] Add explicit cross-artifact alignment support between care-pathway nodes and decision-table workflow contexts through care-pathway `rule_id` and human-readable `action_labels`.
-- [ ] Use the new care-pathway `rule_id` and `action_labels` linkage in the repo-owned target and external probe so actual extracted content stops relying on semantic fallback for child-step recommendation matching.
-- [ ] After the template layer is in place, align formalize output progressively to the repo-owned target L3 shapes so
-  pathway, strategy, recommendation, assessment, questionnaire, and follow-up
-  branches can be produced by the framework rather than by hand-authored target
-  artifacts.
-  - Scope this work to terminology, care-pathway, decision-table, assessment,
-    and CQL-linked logic outputs only.
-- [ ] Reduce care-pathway L3 topology drift relative to the target:
-  - make `pathway -> strategy -> recommendation` boundaries more explicit
-  - reduce fallback to generic protocol activities where target-shaped recommendation linkage is expected
-  - preserve branch structure without collapsing too much into the protocol shell
-- [ ] Refactor decision-table formalize so rule-level recommendations become the reusable L3 linkage unit.
+- [x] Align formalize output progressively to the repo-owned target L3 shapes so pathway, strategy, recommendation, assessment, questionnaire, and follow-up branches can be produced by the framework rather than by hand-authored target artifacts.
+  - Scope this work to terminology, care-pathway, decision-table, assessment, and CQL-linked logic outputs only.
+  - Builders should select resources, normalize data, resolve links, and assemble template context; templates should own the FHIR JSON skeleton, static layout, and default shape.
+  - Once a resource family is templated, the builder should stop doing field-by-field JSON construction for that family.
+  - Make `pathway -> strategy -> recommendation` boundaries more explicit.
+  - Reduce fallback to generic protocol activities where target-shaped recommendation linkage is expected.
+  - Preserve branch structure without collapsing too much into the protocol shell.
   - Keep one `decision-table` artifact at L2.
   - Generate one recommendation artifact per rule in L3, or at minimum a rule-addressable canonical child per rule.
   - Preserve nested child actions from the rule `then` structure inside that rule-level recommendation artifact.
   - Stop treating the event-level recommendation plan as the main reusable linkage target for care-pathway integration.
-- [ ] Refactor care-pathway formalize so pathway and strategy plans link to rule-level recommendation targets from the appropriate higher-level action.
   - Use care-pathway `rule_id` as the primary linkage key when present.
   - Keep activity links underneath the linked rule recommendation, not instead of it.
   - Do not bypass rule recommendations by linking pathway and strategy actions directly to `ActivityDefinition` resources when the rule recommendation exists.
-- [ ] Improve assessment/questionnaire formalization so the output keeps topic-specific assessment identity instead of defaulting to generic assessment naming where the source supports a named instrument.
+  - Use the care-pathway `rule_id` and `action_labels` linkage in the repo-owned target and external probe so actual extracted content stops relying on semantic fallback for child-step recommendation matching.
+- [x] Improve assessment/questionnaire formalization so the output keeps topic-specific assessment identity instead of defaulting to generic assessment naming where the source supports a named instrument.
 - [x] Ensure assessment artifacts are the single owner of Questionnaire generation, with decision-table actions linking to the canonical assessment questionnaire instead of creating duplicate questionnaire resources.
+- [x] Move primary `ActivityDefinition.code` selection responsibility to formalize.
+  - Treat activity coding as an L3 concern by default, not an L2 authoring requirement.
+  - Update the formalize prompt/contract so AI selects the best available code system and code for each emitted `ActivityDefinition`.
+  - Keep optional explicit L2 action codes as an override path when a reviewer intentionally supplies them.
+  - Add validation and tests so non-placeholder `ActivityDefinition` outputs are expected to carry a `code` unless there is an explicitly documented exception.
+- [x] Correct care-pathway branching boundaries at the L2 extract/modeling layer.
+  - Treat this as an extract/schema/guidance issue, not a formalize-time branch-collapsing rule.
+  - Only branch in `care-pathway.steps[]` for distinct workflow contexts or distinct top-level recommendation contexts.
+  - When the source describes one recommendation with subordinate operational tasks, link the pathway step directly to that top-level rule and keep the task decomposition in the decision table via child actions, not child pathway steps.
+  - Enforce that a rule-linked care-pathway step is a leaf pathway node. Wrapper/orchestration steps may have children, but they should not carry `rule_id`.
+  - Update extract guidance, scaffolds, and validation so the candidacy pattern is modeled as sibling recommendation branches such as `verify diagnosis` vs `assess surgical candidacy`, not as child task expansion under one recommendation branch.
 
 ### 3. Extract and skill behavior
 
@@ -213,7 +219,7 @@ Still open:
 - [x] Upgrade the renderer/readout layer so hierarchy is supported directly.
 - [x] Support care-pathway trees from `steps[].parent_id`.
 - [x] Support decision-table event/rule/action trees from `events[]`, `rules[]`, and `actions[].parent_action_id`.
-- [ ] Surface cross-artifact links between pathway nodes and downstream decision-table/recommendation artifacts.
+- [x] Surface cross-artifact links between pathway nodes and downstream decision-table/recommendation artifacts.
 - [ ] Align rendered readouts to the repo-owned target readout shapes so the
   built-in renderer can produce the same kind of hierarchy and cross-link
   visibility now shown in the manual target reports.
@@ -230,6 +236,8 @@ Still open:
 1. Finish packaging and terminology proof in a repo-owned topic.
 2. Continue replacing the remaining builder-driven `formalize` shells with template-driven generation across the in-scope resource families.
 3. Close the top assessed actual-vs-target gaps in this order:
+   - AI-driven activity coding during formalize
+   - richer trigger propagation from L2 into L3
    - richer trigger propagation from L2 into L3
    - stronger `pathway -> strategy -> recommendation` topology
    - concrete assessment/questionnaire identity

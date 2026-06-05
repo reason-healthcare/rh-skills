@@ -457,7 +457,7 @@ sections:
             assert activity["doNotPerform"] is True
             assert activity["status"] == "active"
             assert activity["version"] == "2.1.0"
-            assert "code" not in activity
+            assert "code" not in activity  # no concept catalog is linked in this fixture
             plan = json.loads((computable / "PlanDefinition-dt.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
             assert len(plan["action"]) == 2
@@ -560,8 +560,8 @@ sections:
             assert dynamic_values["input.value"]["expression"] == "extension('http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value"
             assert activity["relatedArtifact"][0]["resource"].endswith("/Questionnaire/qol-assessment")
             assert not (computable / "Questionnaire-qol-assessment.json").exists()
-            assert child_plan["action"][0]["action"][0]["id"] == "assess-surgical-candidacy"
-            assert child_plan["action"][0]["action"][0]["action"][0]["id"] == "complete-qol-assessment"
+            assert child_plan["action"][0]["id"] == "assess-surgical-candidacy"
+            assert child_plan["action"][0]["action"][0]["id"] == "complete-qol-assessment"
 
             assessment_result = runner.invoke(formalize, [topic, "qol-assessment"])
             assert assessment_result.exit_code == 0, assessment_result.output
@@ -1002,13 +1002,16 @@ sections:
         os.environ["LLM_PROVIDER"] = "stub"
         try:
             runner = CliRunner()
+            assert runner.invoke(formalize, [topic, "dt"]).exit_code == 0
             result = runner.invoke(formalize, [topic, "path"])
             assert result.exit_code == 0, result.output
 
             assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment-branch.json").read_text())
             leaf_action = assessment_plan["action"][0]["action"][0]
             assert leaf_action["id"] == "diagnosis-check"
-            assert leaf_action["definitionCanonical"].endswith("/ActivityDefinition/verify-crs-diagnosis")
+            assert leaf_action["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
+            recommendation = json.loads((topic_dir / "computable" / "PlanDefinition-dt-verify-diagnosis.json").read_text())
+            assert recommendation["action"][0]["definitionCanonical"].endswith("/ActivityDefinition/verify-crs-diagnosis")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1284,7 +1287,7 @@ sections:
             assess_plan = json.loads((computable / "PlanDefinition-semantic-link-topic-protocol-assess-candidacy.json").read_text())
             assert assess_plan["type"]["coding"][0]["code"] == "workflow-definition"
             nested = assess_plan["action"][0]["definitionCanonical"]
-            assert nested.endswith("/PlanDefinition/semantic-link-topic-recommendation-event-assess-candidacy")
+            assert nested.endswith("/PlanDefinition/semantic-link-topic-recommendation-assess-candidacy")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1445,7 +1448,10 @@ sections:
 
             branch_plan = json.loads((topic_dir / "computable" / "PlanDefinition-leaf-action-link-topic-protocol-assess-candidacy.json").read_text())
             questionnaire_step = branch_plan["action"][0]["action"][0]
-            assert questionnaire_step["definitionCanonical"].endswith("/ActivityDefinition/administer-snot-22-assessment")
+            assert questionnaire_step["definitionCanonical"].endswith("/PlanDefinition/leaf-action-link-topic-recommendation-assess-candidacy")
+            recommendation = json.loads((topic_dir / "computable" / "PlanDefinition-leaf-action-link-topic-recommendation-assess-candidacy.json").read_text())
+            assert "definitionCanonical" not in recommendation["action"][0]
+            assert recommendation["action"][0]["action"][1]["definitionCanonical"].endswith("/ActivityDefinition/administer-snot-22-assessment")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 

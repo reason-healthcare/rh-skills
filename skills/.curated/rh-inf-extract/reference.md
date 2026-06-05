@@ -494,6 +494,16 @@ sections:
       trigger:                          # optional when there is no formal trigger
         type: named-event
         name: <event-name>
+        source: <workflow source>       # optional activation context
+        resource: <FHIR resource>       # optional trigger resource type
+        moment: <event moment>          # optional timing label
+        resource_criteria:              # optional resource filters
+          code: <code>
+          system: <code system>
+          display: <display>
+        timing_window:                  # optional timing semantics
+          start_after: <duration>
+          end_after: <duration>
       phase: assessment                 # optional grouping field
   conditions:
     - id: c1
@@ -538,7 +548,7 @@ If every rule shares the same trigger, keep the event reference explicit on each
 rule for now; de-duplication can happen later during formalization.
 
 No legacy aliases are supported (`pathway_phase`, top-level `pathway_phases`,
-action `type`, `phase_order`, `rule_id`, `event_id`, `trigger_type`).
+action `type`, `phase_order`, `event_id`, `trigger_type`).
 
 Every condition should have one or more corresponding
 `data_elements[]` entries that make the underlying data requirements explicit.
@@ -670,6 +680,12 @@ for sequencing, actor ownership, and transitions. When a pathway step
 corresponds to a specific decision-table recommendation rule, populate
 `rule_id` with that rule and `action_labels` with the human-readable
 decision-table actions the step orchestrates.
+Do not encode trigger metadata or ECA logic in care-pathway steps; keep that
+logic in decision-table events and rules, and use the pathway only as the
+sequencing shell.
+Collapse intermediate wrapper steps that do not carry their own `rule_id`,
+`action_labels`, or `applicability_condition`; keep them only when they add a
+distinct clinical phase.
 When different parts of the pathway activate at different workflow moments,
 represent them as separate sibling branches under the same parent pathway
 rather than forcing one linear chain. Use a separate branch for coordination
