@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Informatics Pipeline Demo — ReasonHub</title>
+  <style>
+    /* ── Fonts ─────────────────────────────────────────── */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    /* ── Brand tokens (from reason.health) ─────────────── */
+    :root {
+      --brand-dark:        #072928;
+      --brand-light:       #1be98e;
+
+      --bg-base:           #041b10;
+      --bg-card:           #072928;
+      --bg-card-raised:    #0b4240;
+      --bg-code:           #051a19;
+      --bg-tool:           #062121;
+
+      --border-subtle:     #0e5b59;
+      --border-card:       #0e5b5966;
+      --border-green:      #1be98e44;
+
+      --text-primary:      #ffffff;
+      --text-secondary:    #a3c9c8;
+      --text-muted:        #a9bebd;
+      --text-green:        #1be98e;
+      --text-green-dim:    #12975a;
+
+      --mono-font:         'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+      --sans-font:         'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      --radius-card:       14px;
+      --radius-sm:         8px;
+    }
+
+    /* ── Reset ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--sans-font);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-size: 18px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ────────────────────────────────────────────── */
+    .nav {
+      background: var(--bg-base);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo { display: flex; align-items: center; }
+    .nav-logo svg { height: 22px; width: auto; }
+    .nav-meta {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .nav-tag {
+      font-family: var(--mono-font);
+      font-size: 17px;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .nav-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-green);
+      font-family: var(--mono-font);
+      font-size: 17px;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 56px 40px 100px;
+    }
+
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero {
+      margin-bottom: 56px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .eyebrow {
+      font-family: var(--mono-font);
+      font-size: 17px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-green);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--text-green);
+    }
+    .hero h1 {
+      font-size: 57px;
+      font-weight: 500;
+      line-height: 1.15;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--text-green); }
+    .hero p {
+      font-size: 26px;
+      color: var(--text-secondary);
+      max-width: 640px;
+      line-height: 1.7;
+    }
+
+    /* ── Stage headers ──────────────────────────────────── */
+    .stage-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 48px 0 28px;
+    }
+    .stage-header-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+    .stage-label {
+      font-family: var(--mono-font);
+      font-size: 17px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .stage-label.l1 { color: #43efa3; border-color: #43efa344; background: #043018; }
+    .stage-label.l2 { color: #2de9e0; border-color: #2de9e044; background: #041e1d; }
+    .stage-label.l3 { color: #1be98e; border-color: #1be98e44; background: #041b10; }
+    .stage-label.pkg { color: #f3ba58; border-color: #f3ba5844; background: #1e1204; }
+
+    /* ── Chat turns ─────────────────────────────────────── */
+    .turn { margin-bottom: 28px; }
+
+    .turn-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .avatar {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .avatar.user  { background: #0e5b59; color: #1be98e; border: 1px solid #1be98e44; }
+    .avatar.agent { background: #1be98e1a; color: #1be98e; border: 1px solid #1be98e44; }
+    .avatar.note  { background: transparent; color: var(--text-muted); border: 1px solid var(--border-subtle); }
+
+    .turn-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.01em;
+    }
+    .turn-role {
+      font-size: 17px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-left: 4px;
+    }
+
+    /* ── Bubbles ────────────────────────────────────────── */
+    .bubble {
+      border-radius: var(--radius-card);
+      padding: 18px 22px;
+      font-size: 18px;
+      line-height: 1.7;
+    }
+    .bubble.user {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+    }
+    .bubble.agent {
+      background: #061815;
+      border: 1px solid var(--border-subtle);
+    }
+    .bubble p { margin-bottom: 10px; }
+    .bubble p:last-child { margin-bottom: 0; }
+
+    /* ── Tool calls ─────────────────────────────────────── */
+    .tool-call {
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      margin: 14px 0;
+      font-size: 19px;
+      margin-bottom: 40px;
+    }
+    .tool-header {
+      background: var(--bg-card-raised);
+      padding: 9px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .tool-indicator {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .tool-indicator.cli   { background: #2de9e0; }
+    .tool-indicator.mcp   { background: #1be98e; }
+
+    .tool-name {
+      font-family: var(--mono-font);
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .tool-source-tag {
+      margin-left: auto;
+      font-size: 15px;
+      font-family: var(--mono-font);
+      padding: 2px 8px;
+      border-radius: 10px;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+    .tool-source-tag.cli { background: #0e5b5922; color: #2de9e0; border: 1px solid #2de9e033; }
+    .tool-source-tag.mcp { background: #1be98e1a; color: #1be98e; border: 1px solid #1be98e33; }
+
+    .tool-body {
+      background: var(--bg-code);
+      padding: 12px 16px;
+      font-family: var(--mono-font);
+      font-size: 16px;
+      color: #7abab8;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .tool-result {
+      background: var(--bg-tool);
+      border-top: 1px solid var(--border-subtle);
+      padding: 10px 16px;
+      font-family: var(--mono-font);
+      font-size: 17px;
+      color: #1be98e;
+      white-space: pre-wrap;
+    }
+    .tool-result .muted { color: var(--text-muted); }
+
+    /* ── Inline code ────────────────────────────────────── */
+    code {
+      font-family: var(--mono-font);
+      font-size: 16px;
+      background: var(--bg-card-raised);
+      border: 1px solid var(--border-subtle);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: #2de9e0;
+    }
+
+    /* ── Code block ─────────────────────────────────────── */
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      overflow-x: auto;
+      font-family: var(--mono-font);
+      font-size: 16px;
+      color: #7abab8;
+      line-height: 1.6;
+      margin: 12px 0;
+    }
+    pre .kw { color: #43efa3; }
+    pre .str { color: #96f8cd; }
+    pre .cm { color: var(--text-muted); font-style: italic; }
+    pre .nu { color: #2de9e0; }
+
+    /* ── Callout boxes ──────────────────────────────────── */
+    .callout {
+      border-left: 2px solid;
+      padding: 12px 16px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 20px;
+      margin: 14px 0;
+      line-height: 1.65;
+    }
+    .callout.success {
+      background: #0d2818;
+      border-color: var(--text-green);
+      color: #96f8cd;
+    }
+    .callout.warn {
+      background: #1c1204;
+      border-color: #f3ba58;
+      color: #f3d08a;
+    }
+    .callout.info {
+      background: var(--bg-card);
+      border-color: #2de9e0;
+      color: var(--text-secondary);
+    }
+
+    /* ── Tables ─────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+      margin: 12px 0;
+    }
+    thead th {
+      background: var(--bg-card-raised);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 9px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #0b2422;
+      vertical-align: top;
+      color: var(--text-secondary);
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #061e1c; }
+    td strong { color: var(--text-primary); font-weight: 500; }
+    .pass { color: var(--text-green); font-weight: 600; }
+    .fail { color: #ea2e38; font-weight: 600; }
+    .warn-text { color: #f3ba58; }
+
+    /* ── Stat cards ─────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      padding: 18px 14px;
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 45px;
+      font-weight: 600;
+      color: var(--text-green);
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+    .stat-lbl {
+      font-size: 17px;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    /* ── Pipeline diagram ───────────────────────────────── */
+    .pipeline {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      margin: 16px 0;
+      overflow-x: auto;
+    }
+    .pipe-step {
+      flex: 1;
+      min-width: 120px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 14px 12px;
+      text-align: center;
+      position: relative;
+    }
+    .pipe-step:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+    .pipe-step:last-child  { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+    .pipe-step + .pipe-step { border-left: none; }
+    .pipe-step.active { background: #0b3a2f; border-color: var(--text-green); }
+    .pipe-step-label {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+    }
+    .pipe-step-sub {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-family: var(--mono-font);
+    }
+    .pipe-arrow {
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+      color: var(--text-muted);
+      font-size: 21px;
+      align-self: center;
+    }
+
+    /* ── Section prose ──────────────────────────────────── */
+    .prose { font-size: 18px; color: var(--text-secondary); line-height: 1.7; }
+    .prose strong { color: var(--text-primary); font-weight: 500; }
+    .prose p { margin-bottom: 10px; }
+    .prose p:last-child { margin-bottom: 0; }
+    ul.checklist { list-style: none; padding: 0; margin: 10px 0; }
+    ul.checklist li {
+      padding: 3px 0 3px 20px;
+      position: relative;
+      font-size: 20px;
+      color: var(--text-secondary);
+    }
+    ul.checklist li::before {
+      content: '–';
+      position: absolute;
+      left: 4px;
+      color: var(--text-muted);
+    }
+
+    /* ── Tool responsibility section ────────────────────── */
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 14px 0;
+    }
+    .tool-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      padding: 18px;
+    }
+    .tool-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .tool-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .tool-dot.cli { background: #2de9e0; }
+    .tool-dot.mcp { background: #1be98e; }
+
+    .tool-card-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: var(--mono-font);
+    }
+    .tool-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .tool-card li {
+      font-size: 19px;
+      color: var(--text-secondary);
+      padding: 4px 0;
+      border-bottom: 1px solid #0b2422;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .tool-card li:last-child { border-bottom: none; }
+    .tool-card li::before {
+      content: '›';
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    footer {
+      background: var(--brand-dark);
+      border-top: 1px solid var(--border-subtle);
+      padding: 24px 40px;
+      text-align: center;
+    }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .footer-meta {
+      font-family: var(--mono-font);
+      font-size: 16px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 680px) {
+      .nav-inner { padding: 14px 20px; }
+      .page { padding: 32px 20px 80px; }
+      .hero h1 { font-size: 42px; }
+      .tool-grid { grid-template-columns: 1fr; }
+      .pipeline { flex-wrap: wrap; }
+      .pipe-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <!-- ReasonHub inverted logo (white + green) -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 685.868 96.8157" role="img" aria-label="ReasonHub">
+        <path d="M25.1649,52.3244H0v-13.4781h32.2815c2.0431,0,3.3308-2.1786,2.3723-3.9892L19.3651,6.7294,30.9938,0l15.0757,27.7598c1.0263,1.8784,3.6987,1.8784,4.7057,0L65.8315,0l11.6287,6.7294-11.59,21.9987c-8.385,14.5915-23.8868,23.5866-40.6763,23.5866h-.029v.0097Z" fill="#1be98e"/>
+        <path d="M71.6604,44.501h25.1649v13.4781h-32.2816c-2.043,0-3.3308,2.1785-2.3722,3.9892l15.2887,28.118-11.6287,6.7294-15.0757-27.7598c-1.0263-1.8784-3.6987-1.8784-4.7057,0l-15.0563,27.7598-11.6287-6.7294,11.5899-21.9987c8.3851-14.5915,23.8868-23.5866,40.6763-23.5866h.0291Z" fill="#1be98e"/>
+        <path d="M147.372,19.8677h24.364v10.2679h-30.991c-1.264,0-2.284,1.0258-2.284,2.2861v45.6534h-10.865v-38.5802c0-11.8701,7.775-19.6272,19.786-19.6272h-.01Z" fill="#fff"/>
+        <path d="M176.886,59.0138v-20.0863c0-11.8701,7.774-19.6272,19.786-19.6272h19.105c12.012,0,19.787,7.7571,19.787,19.6272v13.5895h-47.804v13.5798c0,1.2603,1.03,2.2861,2.294,2.2861h20.592c2.284,0,3.314.2247,5.374-.9183l19.446-10.9616v11.411l-13.722,7.7571c-4.684,2.628-8.464,2.9699-12.808,2.9699h-12.235c-12.012,0-19.786-7.7571-19.786-19.6272h-.029ZM224.689,42.806v-10.9615c0-1.2603-1.03-2.2861-2.284-2.2861h-32.361c-1.263,0-2.293,1.0258-2.293,2.2861v10.9615h36.938Z" fill="#fff"/>
+        <path d="M286.798,30.1356h-39.349v-10.2679h32.721c11.895,0,19.786,7.7571,19.786,19.6272v38.5802h-10.865v-8.7829l-10.8186,6.0369c-4.685,2.628-8.465,3.3119-12.809,3.3119h-4.3994c-10.408,0-18.639-7.0732-18.639-18.2595v-.3411c0-10.6196,7.891-18.0347,19.786-18.0347h26.88v-9.584c0-1.2603-1.03-2.2861-2.293-2.2861ZM255.564,68.9405h10.748c2.293,0,3.314.2247,5.384-.9183l17.385-9.7013v-6.2721h-33.508c-1.263,0-2.283,1.0259-2.283,2.2861v12.3293c0,1.2603,1.03,2.2861,2.283,2.2861h-.009v-.0098Z" fill="#fff"/>
+        <path d="M409.908,19.2915c12.011,0,19.786,7.7571,19.786,19.6272v20.0864c0,11.87-7.775,19.6271-19.786,19.6271h-21.05c-12.011,0-19.786-7.7571-19.786-19.6271v-20.0864c0-11.8701,7.775-19.6272,19.786-19.6272h21.05ZM382.221,68.3741h34.314c1.264,0,2.294-1.0258,2.294-2.2861V31.8553c0-1.2603-1.03-2.2861-2.294-2.2861h-34.314c-1.264,0-2.294,1.0258-2.294,2.2861v34.2327c0,1.2603,1.03,2.2861,2.294,2.2861Z" fill="#fff"/>
+        <path d="M448.423,28.2004l10.408-5.9301c4.685-2.6281,8.465-2.97,12.809-2.97h6.181c10.864,0,18.639,7.7571,18.639,19.6272v39.1469h-10.865V31.8543c0-1.2603-1.03-2.2861-2.293-2.2861h-13.382c-2.284,0-3.314-.2247-5.374.9183l-16.132,9.0174v38.5802h-10.865V19.8669h10.865v8.3335h.009Z" fill="#fff"/>
+        <path d="M362.561,60.5083c0-6.5749-4.704-13.9705-11.584-15.9342-1.535-.4397-3.178-.6741-4.908-.6741h-26.426c-1.545,0-2.672-1.0356-2.672-2.6671v-8.4707c0-1.6315,1.117-2.6671,2.672-2.6671h40.031v-10.2288h-36.288c-1.73,0-3.372.2344-4.908.6838-6.89,1.9637-11.583,8.06-11.583,15.6901v2.2474c0,6.575,4.703,12.9936,11.583,14.9573,1.536.4396,3.178.6741,4.908.6741h26.426c1.545,0,2.673,1.0356,2.673,2.6671v8.2456c0,1.6315-1.118,2.6671-2.673,2.6671h-41.965v10.3656h38.222c1.73,0,3.373-.3811,4.908-.8305,6.88-1.9637,11.584-8.0599,11.584-15.69v-1.0356Z" fill="#fff"/>
+        <path d="M535.542,25.641c-3.196,0-4.183-.1073-7.611,1.7857l-16.993,9.6703v40.7434h-6.623V.0005h6.623v30.2073l13.672-7.7869c4.425-2.5566,7.727-3.1129,11.919-3.1129h7.059c9.159,0,16.005,7.1137,16.005,16.5692v41.973h-6.623V31.0958c0-3.1129-2.314-5.4548-5.412-5.4548h-12.016Z" fill="#fff"/>
+        <path d="M567.448,62.047V19.8669h6.623v47.0688c0,3.1129,2.314,5.4548,5.403,5.4548h31.333c3.088,0,5.412-2.3322,5.412-5.4548V19.8669h6.623v42.1801c0,9.5628-6.952,16.5691-16.547,16.5691h-22.29c-9.711,0-16.547-7.0063-16.547-16.5691h-.01Z" fill="#fff"/>
+        <path d="M630.697.0005h6.623v29.9764l13.236-7.5625c4.532-2.5566,7.727-3.1129,11.9189-3.1129h7.398c9.043,0,15.995,7.1137,15.995,16.5692v25.6358c0,9.4555-6.942,16.5692-16.547,16.5692h-38.614V.0005h-.0099ZM673.833,71.7427c3.089,0,5.403-2.3322,5.403-5.4548V31.0893c0-3.1128-2.305-5.4548-5.403-5.4548h-12.258c-3.195,0-4.183-.1073-7.611,1.7857l-16.654,9.5629v34.7596h36.523Z" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="nav-meta">
+      <span class="nav-tag">Informatics Pipeline</span>
+      <span class="nav-pill">hypertension-cms-measure</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Page ───────────────────────────────────────────── -->
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="eyebrow">Pipeline Demo — 2026-05-18</div>
+    <h1>From clinical evidence to<br><span>computable FHIR</span>, end to end.</h1>
+    <p>
+      A walkthrough of the ReasonHub informatics pipeline applied to
+      <strong>CMS165 — Controlling High Blood Pressure (NQF 0018)</strong>.
+      Starting from raw sources and ending with a deployable FHIR R4 package,
+      with every step reviewer-gated and fully traceable.
+    </p>
+  </div>
+
+  <!-- Pipeline overview -->
+  <div class="prose" style="margin-bottom:24px;">
+    <strong>Three lifecycle stages. Two tools. Three human review checkpoints.</strong>
+  </div>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-step-label">L1 — Discovery</div>
+      <div class="pipe-step-sub">Sources + Ingest</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-step">
+      <div class="pipe-step-label">L2 — Extract</div>
+      <div class="pipe-step-sub">Structured YAML</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-step active">
+      <div class="pipe-step-label">L3 — Formalize</div>
+      <div class="pipe-step-sub">FHIR R4 + CQL</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-step">
+      <div class="pipe-step-label">Package</div>
+      <div class="pipe-step-sub">v1.0.0 bundle</div>
+    </div>
+  </div>
+
+  <!-- ════ STAGE 1 ════ -->
+  <div class="stage-header">
+    <div class="stage-header-line"></div>
+    <div class="stage-label l1">Stage 1 — L1 Discovery &amp; Ingest</div>
+    <div class="stage-header-line"></div>
+  </div>
+
+  <!-- User turn -->
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar user">BK</div>
+      <span class="turn-name">Brian Kaney <span class="turn-role">Researcher</span></span>
+    </div>
+    <div class="bubble user">
+      <p>Build the full CMS165 hypertension quality measure pipeline — evidence base, structured artifacts, and computable FHIR output with CQL. Start from scratch.</p>
+    </div>
+  </div>
+
+  <!-- Agent turn: scaffolding + discovery -->
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar agent">RH</div>
+      <span class="turn-name">pi agent <span class="turn-role">rh-inf-discovery skill</span></span>
+    </div>
+    <div class="bubble agent">
+      <p>Scaffolding the topic and running discovery. I'll produce a curated source plan across six categories relevant to CMS165.</p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh-skills init hypertension-cms-measure</span>
+          <span class="tool-source-tag cli">rh-skills CLI</span>
+        </div>
+        <div class="tool-body">rh-skills init hypertension-cms-measure \
+  --domain hypertension --author "Brian Kaney"</div>
+        <div class="tool-result">topic created → topics/hypertension-cms-measure/
+event logged: topic_created (2026-05-18T19:43:08Z)</div>
+      </div>
+
+      <p>Discovery plan produced — 18 sources identified. Downloading all open-access sources now.</p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh-skills ingest normalize + annotate</span>
+          <span class="tool-source-tag cli">rh-skills CLI</span>
+        </div>
+        <div class="tool-body">rh-skills ingest normalize hypertension-cms-measure
+rh-skills ingest annotate hypertension-cms-measure</div>
+        <div class="tool-result">13 of 18 sources downloaded  (5 unavailable: HTTP 403/404)
+normalized → sources/normalized/*.md
+annotated  → 75 concept annotations across 13 sources
+<span class="muted">  uspstf: 9  |  cdc: 7  |  gbd: 8  |  vsac: 7  |  qi-core: 8
+  gravity: 8  |  pmid-41439541: 9  |  pmid-41186866: 8  |  nct: 5
+  icd-10-cm: 4  |  snomed: 4  |  loinc: 4  |  rxnorm: 6</span></div>
+      </div>
+
+      <div class="callout warn">
+        <strong>5 sources unavailable:</strong> CMS165 eCQM page (HTTP 404), ACC/AHA 2017 guideline (HTTP 403 — AHA blocks automated access), HCUP statistical brief (HTTP 404). Failures logged in <code>discovery-plan.yaml</code> for manual follow-up. Pipeline continued with the 13 successful downloads.
+      </div>
+
+      <p><strong>13 sources ingested, normalized to Markdown, classified, and annotated.</strong> Each source now carries YAML front matter with type, evidence level, domain tags, and concept annotations. Checksums recorded in <code>tracking.yaml</code>.</p>
+
+      <table>
+        <thead><tr><th>Source</th><th>Type</th><th>Evidence Level</th></tr></thead>
+        <tbody>
+          <tr><td><strong>USPSTF Hypertension Screening 2021</strong></td><td>Guideline</td><td>USPSTF-B</td></tr>
+          <tr><td><strong>CDC NCHS Hypertension Surveillance</strong></td><td>Government data</td><td>N/A</td></tr>
+          <tr><td><strong>GBD 2023 — Global Burden of Disease</strong></td><td>Health economics</td><td>Ia</td></tr>
+          <tr><td><strong>VSAC NQF 0018 Value Sets</strong></td><td>Value set</td><td>Reference standard</td></tr>
+          <tr><td><strong>QI-Core FHIR IG</strong></td><td>FHIR IG</td><td>Reference standard</td></tr>
+          <tr><td><strong>Gravity SDOH FHIR IG</strong></td><td>FHIR IG</td><td>Reference standard</td></tr>
+          <tr><td><strong>PMID 41439541 — Medicare HTN QI</strong></td><td>PubMed article</td><td>Grade B</td></tr>
+          <tr><td><strong>PMID 41186866 — Patient Activation RCT</strong></td><td>PubMed article</td><td>Ib</td></tr>
+          <tr><td><strong>NCT07556783 — Telephone HBPM Trial</strong></td><td>ClinicalTrials.gov</td><td>N/A</td></tr>
+          <tr><td><strong>ICD-10-CM, SNOMED CT, LOINC, RxNorm</strong></td><td>Terminology ×4</td><td>Reference standard</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════ STAGE 2 ════ -->
+  <div class="stage-header">
+    <div class="stage-header-line"></div>
+    <div class="stage-label l2">Stage 2 — L2 Extract (Structured Artifacts)</div>
+    <div class="stage-header-line"></div>
+  </div>
+
+  <!-- Agent: concept review with MCP -->
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar agent">RH</div>
+      <span class="turn-name">pi agent <span class="turn-role">rh-inf-extract skill</span></span>
+    </div>
+    <div class="bubble agent">
+      <p>Planning the extraction. Before generating structured artifacts, I'll run the <strong>concept review</strong> — each of the 75 annotated concepts is looked up against live terminology systems via <strong>ReasonHub MCP</strong>, then presented for your approval.</p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator mcp"></div>
+          <span class="tool-name">reasonhub__search_snomed</span>
+          <span class="tool-source-tag mcp">ReasonHub MCP</span>
+        </div>
+        <div class="tool-body">query: "essential hypertension disorder"</div>
+        <div class="tool-result">59621000  Essential hypertension                        score: 0.97
+38341003  Hypertensive disorder, systemic arterial      score: 0.95
+429457004 Systolic essential hypertension               score: 0.91
+170578008 Poor hypertension control                     score: 0.88
+56218007  Systolic hypertension                         score: 0.86</div>
+      </div>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator mcp"></div>
+          <span class="tool-name">reasonhub__search_loinc</span>
+          <span class="tool-source-tag mcp">ReasonHub MCP</span>
+        </div>
+        <div class="tool-body">query: "blood pressure systolic diastolic panel vital sign"</div>
+        <div class="tool-result">85354-9  Blood pressure panel with all children optional  score: 0.98
+8480-6   Systolic blood pressure                          score: 0.97
+8462-4   Diastolic blood pressure                         score: 0.97
+55284-4  Blood pressure systolic and diastolic            score: 0.91  [DISCOURAGED]</div>
+      </div>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator mcp"></div>
+          <span class="tool-name">reasonhub__search_icd10</span>
+          <span class="tool-source-tag mcp">ReasonHub MCP · SDOH codes</span>
+        </div>
+        <div class="tool-body">query: "food insecurity housing instability transportation financial social determinants"</div>
+        <div class="tool-result">Z59.41   Food insecurity                                     score: 0.96
+Z59.81   Housing instability, housed                         score: 0.94
+Z59.82   Transportation insecurity                           score: 0.95
+Z59.86   Financial insecurity                                score: 0.92
+Z60.4    Social exclusion and rejection                      score: 0.88</div>
+      </div>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator mcp"></div>
+          <span class="tool-name">reasonhub__search_rxnorm</span>
+          <span class="tool-source-tag mcp">ReasonHub MCP</span>
+        </div>
+        <div class="tool-body">query: "antihypertensive drug class ACE inhibitor ARB calcium channel blocker thiazide diuretic"</div>
+        <div class="tool-result">968      Antihypertensive agent                          score: 0.97
+1430745  ACE INHIBITORS, COMBINATIONS                    score: 0.94
+3571     Thiazide diuretic                               score: 0.96
+1899     Product containing calcium channel blocker      score: 0.95
+691779   BETA BLOCKERS/RELATED                           score: 0.93
+691944   ANGIOTENSIN II INHIBITOR                        score: 0.94</div>
+      </div>
+
+      <div class="callout success">
+        Concept review complete. 75 concepts reviewed across 13 sources — <strong>43 approved with standardized codes</strong> across SNOMED CT, ICD-10-CM, LOINC, and RxNorm. Written to <code>structured/concepts.yaml</code>.
+      </div>
+
+      <p>Extract plan generated with 6 proposed artifacts. Presenting for review.</p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh-skills promote extract plan</span>
+          <span class="tool-source-tag cli">rh-skills CLI</span>
+        </div>
+        <div class="tool-body">rh-skills promote extract plan hypertension-cms-measure</div>
+        <div class="tool-result">wrote: topics/hypertension-cms-measure/process/plans/extract-plan.yaml
+wrote: topics/hypertension-cms-measure/process/plans/extract-plan-readout.md
+6 artifacts proposed from 13 sources</div>
+      </div>
+
+      <table>
+        <thead><tr><th>Artifact</th><th>Sources</th><th>Purpose</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>measure</strong></td>
+            <td>All 13</td>
+            <td>CMS165 populations — initial pop, denominator, exclusions (ESRD N18.6, hospice, frailty), numerator (BP &lt; 140/90)</td>
+            <td class="pass">Approved</td>
+          </tr>
+          <tr>
+            <td><strong>terminology</strong></td>
+            <td>VSAC, LOINC, SNOMED, ICD-10-CM, RxNorm</td>
+            <td>7 value sets + concept map for all CMS165 terminology</td>
+            <td class="pass">Approved</td>
+          </tr>
+          <tr>
+            <td><strong>decision-table</strong></td>
+            <td>USPSTF, QI-Core, VSAC, Gravity, CDC, NCT trial</td>
+            <td>10 ECA rules across HTN screening, BP monitoring, SDOH referral, QI outreach</td>
+            <td class="pass">Approved</td>
+          </tr>
+          <tr>
+            <td><strong>evidence-summary</strong></td>
+            <td>CDC, GBD 2023, Gravity, PMID 41439541, NCT trial</td>
+            <td>8 graded findings on prevalence, global burden, QI interventions, SDOH drivers</td>
+            <td class="pass">Approved</td>
+          </tr>
+          <tr>
+            <td><strong>assessment</strong></td>
+            <td>Gravity SDOH IG, USPSTF</td>
+            <td>9-item instrument: 5 SDOH boolean screens + 4 BP measurements with LOINC + UCUM</td>
+            <td class="pass">Approved</td>
+          </tr>
+          <tr>
+            <td><strong><s>policy</s></strong></td>
+            <td>NCT trial only</td>
+            <td>Trial registry entry — not a coverage/authorization policy source</td>
+            <td class="fail">Rejected</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Reviewer approval -->
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar user">BK</div>
+      <span class="turn-name">Brian Kaney <span class="turn-role">Reviewer — extract plan approval</span></span>
+    </div>
+    <div class="bubble user">
+      <p>Approved. The policy rejection is correct — NCT trial evidence belongs in the evidence-summary. Proceed with implementation.</p>
+    </div>
+  </div>
+
+  <!-- Extraction run -->
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar agent">RH</div>
+      <span class="turn-name">pi agent <span class="turn-role">implementing L2 artifacts</span></span>
+    </div>
+    <div class="bubble agent">
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh-skills promote approve + implement</span>
+          <span class="tool-source-tag cli">rh-skills CLI</span>
+        </div>
+        <div class="tool-body">rh-skills promote approve hypertension-cms-measure
+rh-skills promote implement hypertension-cms-measure</div>
+        <div class="tool-result">status: approved  (reviewer: Brian Kaney, 2026-05-18T20:08:17Z)
+deriving structured artifacts...
+  measure          → structured/measure/measure.yaml                    20:14:00Z
+  terminology      → structured/terminology/terminology.yaml            20:17:04Z
+  decision-table   → structured/decision-table/decision-table.yaml      20:12:39Z
+  evidence-summary → structured/evidence-summary/evidence-summary.yaml  20:15:11Z
+  assessment       → structured/assessment/assessment.yaml              20:16:04Z
+  policy           → REJECTED — skipped
+5 artifacts written, 1 skipped</div>
+      </div>
+
+      <p>Five L2 structured artifacts written. Each records its derived-from sources and carries full evidence traceability claims. A snapshot of the measure specification:</p>
+
+      <pre><span class="cm"># structured/measure/measure.yaml (excerpt)</span>
+title: <span class="str">"CMS165 — Controlling High Blood Pressure: Quality Measure Specification"</span>
+
+populations:
+  - type: <span class="str">initial-population</span>
+    description: <span class="str">Patients aged 18–85, qualifying outpatient encounter,
+                 active essential hypertension (I10 / SNOMED 59621000)
+                 diagnosed ≥91 days before end of measurement period</span>
+
+  - type: <span class="str">denominator-exclusion</span>
+    description: <span class="str">ESRD (N18.6), hospice, frailty + advanced illness,
+                 pregnancy (O-codes), death during measurement period</span>
+
+  - type: <span class="str">numerator</span>
+    description: <span class="str">Most recent BP reading:
+                 systolic  &lt; 140 mm[Hg]  (LOINC 8480-6)
+                 diastolic &lt; 90  mm[Hg]  (LOINC 8462-4)</span>
+
+scoring:
+  method: <span class="str">proportion</span>
+  reporting_period: <span class="str">calendar year (Jan 1 – Dec 31)</span>
+
+stratification:
+  - by: <span class="str">race_ethnicity</span>   <span class="cm"># required 2024+</span>
+  - by: <span class="str">age_group</span>         <span class="cm"># [18–39, 40–64, 65–85]</span>
+  - by: <span class="str">payer_type</span>         <span class="cm"># [Medicare, Medicaid, Commercial]</span></pre>
+    </div>
+  </div>
+
+  <!-- ════ STAGE 3 ════ -->
+  <div class="stage-header">
+    <div class="stage-header-line"></div>
+    <div class="stage-label l3">Stage 3 — L3 Formalize (FHIR R4 + CQL)</div>
+    <div class="stage-header-line"></div>
+  </div>
+
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar agent">RH</div>
+      <span class="turn-name">pi agent <span class="turn-role">rh-inf-formalize skill</span></span>
+    </div>
+    <div class="bubble agent">
+      <p>Mapping each L2 artifact to FHIR R4 resource types via named formalization strategies. Before writing any JSON, I'll verify all codes via ReasonHub MCP.</p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator mcp"></div>
+          <span class="tool-name">reasonhub__codesystem_verify_code — LOINC 85354-9</span>
+          <span class="tool-source-tag mcp">ReasonHub MCP</span>
+        </div>
+        <div class="tool-body">code: "85354-9"  system: "http://loinc.org"</div>
+        <div class="tool-result">valid: true
+display: "Blood pressure panel with all children optional"
+status: ACTIVE
+EXAMPLE_UCUM_UNITS: mm[Hg]</div>
+      </div>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator mcp"></div>
+          <span class="tool-name">reasonhub__codesystem_subsumes — SNOMED hierarchy check</span>
+          <span class="tool-source-tag mcp">ReasonHub MCP</span>
+        </div>
+        <div class="tool-body">code_a: "38341003"  // Hypertensive disorder
+code_b: "59621000"  // Essential hypertension
+system: "http://snomed.info/sct"</div>
+        <div class="tool-result">result: subsumes
+<span class="muted">38341003 (Hypertensive disorder) IS-A parent of 59621000 (Essential hypertension)
+Both are valid for the SNOMED denominator value set.</span></div>
+      </div>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator mcp"></div>
+          <span class="tool-name">reasonhub__valueset_expand — SDOH Z59.x composition</span>
+          <span class="tool-source-tag mcp">ReasonHub MCP</span>
+        </div>
+        <div class="tool-body">system: "http://hl7.org/fhir/sid/icd-10-cm"
+concepts: Z59.41, Z59.81, Z59.811, Z59.82, Z59.86, Z60.4</div>
+        <div class="tool-result">expansion.total: 6  — all codes valid and active</div>
+      </div>
+
+      <p>All codes verified. Formalize plan generated for review:</p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh-skills promote formalize plan</span>
+          <span class="tool-source-tag cli">rh-skills CLI</span>
+        </div>
+        <div class="tool-body">rh-skills promote formalize plan hypertension-cms-measure</div>
+        <div class="tool-result">wrote: topics/hypertension-cms-measure/process/plans/formalize-plan.yaml
+5 strategies proposed  |  primary implementation target: measure</div>
+      </div>
+
+      <table>
+        <thead><tr><th>Strategy</th><th>L2 Input</th><th>FHIR Resources</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>terminology</code></td>
+            <td>terminology.yaml</td>
+            <td>ValueSet ×8 + ConceptMap ×1</td>
+          </tr>
+          <tr>
+            <td><code>assessment</code></td>
+            <td>assessment.yaml</td>
+            <td>Questionnaire (9 items — LOINC + SNOMED + ICD-10 + UCUM units)</td>
+          </tr>
+          <tr>
+            <td><code>evidence-summary</code></td>
+            <td>evidence-summary.yaml</td>
+            <td>Evidence + EvidenceVariable + Citation</td>
+          </tr>
+          <tr>
+            <td><code>decision-table</code></td>
+            <td>decision-table.yaml</td>
+            <td>PlanDefinition (eca-rule, 10 rules) + Library (CQL)</td>
+          </tr>
+          <tr>
+            <td><code>measure</code> &mdash; primary target</td>
+            <td>measure.yaml</td>
+            <td>Measure (proportional, 4 populations, 3 strats) + Library (CQL + ELM)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Reviewer: formalize approval -->
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar user">BK</div>
+      <span class="turn-name">Brian Kaney <span class="turn-role">Reviewer — formalize plan approval</span></span>
+    </div>
+    <div class="bubble user">
+      <p>Approved. <strong>measure</strong> is the correct primary target for CMS165. Generate everything.</p>
+    </div>
+  </div>
+
+  <!-- CQL toolchain detail -->
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar agent">RH</div>
+      <span class="turn-name">pi agent <span class="turn-role">rh-inf-cql skill &mdash; validate, compile, eval</span></span>
+    </div>
+    <div class="bubble agent">
+      <p>CQL compilation uses two CLI layers. <code>rh-skills cql</code> is a project-aware wrapper that resolves topic paths; <code>rh</code> is the underlying CLI that performs the actual compilation and evaluation.</p>
+
+      <p><strong>Step 1 &mdash; Validate</strong></p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh cql validate</span>
+          <span class="tool-source-tag cli">rh CLI</span>
+        </div>
+        <div class="tool-body"># Project-aware wrapper
+rh-skills cql validate hypertension-cms-measure MeasureLibrary
+rh-skills cql validate hypertension-cms-measure DecisionTableLibrary
+
+# Underlying rh command
+rh cql validate topics/hypertension-cms-measure/computable/MeasureLibrary.cql</div>
+        <div class="tool-result">MeasureLibrary.cql &mdash; 0 errors, 0 warnings
+DecisionTableLibrary.cql &mdash; 0 errors, 0 warnings</div>
+      </div>
+
+      <p><strong>Step 2 &mdash; Compile to ELM JSON</strong></p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh cql compile</span>
+          <span class="tool-source-tag cli">rh CLI</span>
+        </div>
+        <div class="tool-body"># Project-aware wrapper
+rh-skills cql translate hypertension-cms-measure MeasureLibrary
+
+# Underlying rh command
+rh cql compile topics/hypertension-cms-measure/computable/MeasureLibrary.cql \
+  --output topics/hypertension-cms-measure/computable/elm/MeasureLibrary.json
+
+# With debug annotations (adds source locators + result types to ELM nodes)
+rh cql compile topics/hypertension-cms-measure/computable/MeasureLibrary.cql \
+  --output topics/hypertension-cms-measure/computable/elm/MeasureLibrary.json \
+  --debug
+
+# Strict mode &mdash; disables implicit conversions
+rh cql compile topics/hypertension-cms-measure/computable/MeasureLibrary.cql \
+  --output topics/hypertension-cms-measure/computable/elm/MeasureLibrary.json \
+  --strict</div>
+        <div class="tool-result">wrote: computable/elm/MeasureLibrary.json
+wrote: computable/elm/DecisionTableLibrary.json</div>
+      </div>
+
+      <p><strong>Step 3 &mdash; Evaluate expressions against fixture data</strong></p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh cql eval</span>
+          <span class="tool-source-tag cli">rh CLI</span>
+        </div>
+        <div class="tool-body"># Evaluate a single named define against a FHIR Bundle
+rh cql eval \
+  topics/hypertension-cms-measure/computable/MeasureLibrary.cql \
+  "Numerator" \
+  --data tests/cql/MeasureLibrary/case-001-controlled-bp/input/bundle.json
+
+# With step-by-step trace (useful for debugging null propagation)
+rh cql eval \
+  topics/hypertension-cms-measure/computable/MeasureLibrary.cql \
+  "Most Recent Systolic Value" \
+  --data tests/cql/MeasureLibrary/case-002-uncontrolled/input/bundle.json \
+  --trace
+
+# With additional library include path (e.g. for FHIRHelpers)
+rh cql eval \
+  topics/hypertension-cms-measure/computable/MeasureLibrary.cql \
+  "Initial Population" \
+  --lib-path topics/hypertension-cms-measure/computable/ \
+  --data bundle.json</div>
+        <div class="tool-result">{"Numerator": true}
+<span class="muted">{"Most Recent Systolic Value": 128.0}  // trace: 14 evaluation steps</span></div>
+      </div>
+
+      <p>Additional <code>rh cql</code> commands for authoring and debugging:</p>
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh cql explain / repl / download</span>
+          <span class="tool-source-tag cli">rh CLI</span>
+        </div>
+        <div class="tool-body"># Parse tree inspection
+rh cql explain parse   topics/hypertension-cms-measure/computable/MeasureLibrary.cql
+
+# Semantic analysis details
+rh cql explain compile topics/hypertension-cms-measure/computable/MeasureLibrary.cql
+
+# Interactive REPL
+rh cql repl
+
+# Fetch FHIRHelpers for local validation (runtime dependency &mdash; not committed to computable/)
+rh download package fhir.cqf.common 4.0.1</div>
+      </div>
+
+      <div class="callout info">
+        <strong>FHIRHelpers-agnostic engine.</strong> The <code>rh</code> evaluator does not auto-inject <code>FHIRHelpers.ToConcept()</code> calls &mdash; unlike the Java reference translator. Every library that uses FHIR coded, quantity, or date types must include it explicitly:<br/><br/>
+        <code>include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers</code>
+      </div>
+
+      <table>
+        <thead><tr><th>Command</th><th>What it does</th><th>Key flags</th></tr></thead>
+        <tbody>
+          <tr><td><code>rh cql validate &lt;file.cql&gt;</code></td><td>Syntax and semantic check</td><td>&mdash;</td></tr>
+          <tr><td><code>rh cql compile &lt;file.cql&gt;</code></td><td>Compile to ELM JSON</td><td><code>-o / --output</code>, <code>--debug</code>, <code>--strict</code></td></tr>
+          <tr><td><code>rh cql eval &lt;file.cql&gt; &lt;name&gt;</code></td><td>Evaluate one named expression</td><td><code>--data &lt;bundle.json&gt;</code>, <code>--lib-path &lt;dir&gt;</code>, <code>--trace</code></td></tr>
+          <tr><td><code>rh cql explain parse</code></td><td>Print parse tree</td><td>&mdash;</td></tr>
+          <tr><td><code>rh cql explain compile</code></td><td>Print semantic analysis</td><td>&mdash;</td></tr>
+          <tr><td><code>rh cql repl</code></td><td>Interactive expression REPL</td><td>&mdash;</td></tr>
+          <tr><td><code>rh download package &lt;id&gt; &lt;ver&gt;</code></td><td>Fetch a FHIR package locally</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Formalize run + CQL -->
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar agent">RH</div>
+      <span class="turn-name">pi agent <span class="turn-role">rh-inf-formalize + rh-inf-cql skills</span></span>
+    </div>
+    <div class="bubble agent">
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh-skills promote formalize-approve + implement</span>
+          <span class="tool-source-tag cli">rh-skills CLI</span>
+        </div>
+        <div class="tool-body">rh-skills promote formalize-approve hypertension-cms-measure
+rh-skills promote implement hypertension-cms-measure --stage formalize</div>
+        <div class="tool-result">status: approved  (reviewer: bkaney, 2026-05-18T21:19:34Z)
+formalizing...
+  terminology      → 9 resources   (ValueSet ×8 + ConceptMap)  21:22:07Z
+  assessment       → 1 resource    (Questionnaire)             21:22:11Z
+  evidence-summary → 3 resources   (Evidence+EvidenceVariable+Citation)  21:22:14Z
+  decision-table   → 2 resources   (PlanDefinition+Library)    21:22:22Z
+  measure          → 2 resources   (Measure+Library)           21:22:25Z
+CQL compiled → ELM JSON for MeasureLibrary and DecisionTableLibrary</div>
+      </div>
+
+      <p>The generated CQL library implements the CMS165 population logic. It handles both panel observations (<code>LOINC 85354-9</code>) and standalone component codes, extracts typed quantities from <code>FHIR.Quantity</code>, and evaluates the <code>&lt; 140/90 mmHg</code> threshold:</p>
+
+      <pre><span class="cm">/**
+ * MeasureLibrary v1.0.0 — CMS165 Controlling High Blood Pressure
+ * NQF 0018 | MIPS #236 | HEDIS CBP
+ */</span>
+<span class="kw">library</span> MeasureLibrary <span class="kw">version</span> <span class="str">'1.0.0'</span>
+<span class="kw">using</span> FHIR <span class="kw">version</span> <span class="str">'4.0.1'</span>
+
+<span class="kw">valueset</span> <span class="str">"Essential Hypertension ICD10"</span>:
+  <span class="str">'...ValueSet/vs-htn-dx-icd10'</span>
+
+<span class="kw">valueset</span> <span class="str">"Blood Pressure Observations LOINC"</span>:
+  <span class="str">'...ValueSet/vs-bp-obs-loinc'</span>
+
+<span class="kw">parameter</span> <span class="str">"Measurement Period"</span> Interval&lt;DateTime&gt;
+  <span class="kw">default</span> Interval[<span class="nu">@2024-01-01</span>, <span class="nu">@2024-12-31</span>]
+
+<span class="kw">define</span> <span class="str">"Initial Population"</span>:
+  <span class="str">"Age 18 to 85"</span>
+    <span class="kw">and</span> <span class="kw">exists</span> <span class="str">"Qualifying Outpatient Encounters"</span>
+    <span class="kw">and</span> <span class="str">"Has Active Hypertension Diagnosed Before October"</span>
+
+<span class="kw">define</span> <span class="str">"Denominator Exclusion"</span>:
+  <span class="str">"Has End Stage Renal Disease"</span>  <span class="cm">// ICD-10-CM N18.6</span>
+
+<span class="kw">define</span> <span class="str">"Numerator"</span>:
+  <span class="str">"Denominator"</span>
+    <span class="kw">and</span> <span class="str">"Most Recent Systolic Value"</span>  &lt; <span class="nu">140</span>
+    <span class="kw">and</span> <span class="str">"Most Recent Diastolic Value"</span> &lt; <span class="nu">90</span></pre>
+    </div>
+  </div>
+
+  <!-- ════ PACKAGE ════ -->
+  <div class="stage-header">
+    <div class="stage-header-line"></div>
+    <div class="stage-label pkg">Final — Package</div>
+    <div class="stage-header-line"></div>
+  </div>
+
+  <div class="turn">
+    <div class="turn-header">
+      <div class="avatar agent">RH</div>
+      <span class="turn-name">pi agent <span class="turn-role">packaging</span></span>
+    </div>
+    <div class="bubble agent">
+
+      <div class="tool-call">
+        <div class="tool-header">
+          <div class="tool-indicator cli"></div>
+          <span class="tool-name">rh-skills package hypertension-cms-measure</span>
+          <span class="tool-source-tag cli">rh-skills CLI</span>
+        </div>
+        <div class="tool-body">rh-skills package hypertension-cms-measure</div>
+        <div class="tool-result">@reason/hypertension-cms-measure  v1.0.0
+FHIR 4.0.1  |  deps: us-core@6.1.0  crmi@1.0.0  cql@2.0.0
+
+  Measure-measure.json
+  Library-measure-library.json  (+ MeasureLibrary.cql + elm/MeasureLibrary.json)
+  PlanDefinition-decision-table.json
+  Library-decision-table-library.json  (+ DecisionTableLibrary.cql)
+  ValueSet ×8
+  ConceptMap-terminology-conceptmap.json
+  Questionnaire-assessment.json
+  Evidence-evidence-summary.json
+  EvidenceVariable-evidence-summary-evidencevariable.json
+  Citation-evidence-summary-citation.json
+  ImplementationGuide-hypertension-cms-measure.json
+  package.json
+
+22 resources  |  package: topics/hypertension-cms-measure/package/
+event logged: package_created (2026-05-18T21:32:30Z)</div>
+      </div>
+
+      <p>Pipeline complete. Final numbers:</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-num">13</div>
+          <div class="stat-lbl">Sources ingested</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">43</div>
+          <div class="stat-lbl">Concepts coded &amp; approved</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">5</div>
+          <div class="stat-lbl">L2 artifacts (of 6 proposed)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">22</div>
+          <div class="stat-lbl">FHIR R4 resources</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">2</div>
+          <div class="stat-lbl">CQL libraries + ELM</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">3</div>
+          <div class="stat-lbl">Human review checkpoints</div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <strong>Traceability example:</strong><br/>
+        <code>USPSTF 2021 HTML</code> &rarr; normalized to Markdown &rarr; 9 concepts annotated &rarr; <code>measure.yaml</code> (claim et-m-01: BP &lt; 140/90 threshold) &rarr; <code>Measure-measure.json</code> &rarr; <code>MeasureLibrary.cql</code> (<code>"Most Recent Systolic Value" &lt; 140</code>) &rarr; <code>@reason/hypertension-cms-measure v1.0.0</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TOOL RESPONSIBILITIES ════ -->
+  <div class="stage-header">
+    <div class="stage-header-line"></div>
+    <div class="stage-label" style="color:#a3c9c8; border-color:#0e5b59; background:#051a19;">How the Tools Work Together</div>
+    <div class="stage-header-line"></div>
+  </div>
+
+  <div class="prose" style="margin-bottom: 20px;">
+    <p>Two distinct systems drive the pipeline. The <strong>rh-skills CLI</strong> orchestrates the lifecycle — scaffolding, planning, reviewing, and packaging. <strong>ReasonHub MCP</strong> provides live terminology intelligence at the two points where coded clinical concepts must be resolved: concept enrichment during extraction, and code verification during formalization.</p>
+  </div>
+
+  <div class="tool-grid">
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-dot cli"></div>
+        <span class="tool-card-name">rh-skills CLI</span>
+      </div>
+      <ul>
+        <li>Scaffold topic, download and normalize sources</li>
+        <li>Generate discovery, extract, and formalize plans</li>
+        <li>Present plans to human reviewer; record approve/reject decisions</li>
+        <li>Derive L2 structured YAML artifacts from normalized sources</li>
+        <li>Generate CQL source from L2 structured artifacts</li>
+        <li>Package FHIR IG bundle with dependencies</li>
+        <li>Maintain checksums and event log in <code style="margin: 0;">tracking.yaml</code></li>
+      </ul>
+    </div>
+    <div class="tool-card">
+      <div class="tool-card-header">
+        <div class="tool-dot mcp"></div>
+        <span class="tool-card-name">ReasonHub MCP</span>
+      </div>
+      <ul>
+        <li>Semantic search across SNOMED CT, LOINC, RxNorm, ICD-10-CM, UCUM</li>
+        <li>Verify individual codes are valid and active in live code systems</li>
+        <li>Retrieve UCUM units for quantitative LOINC observations</li>
+        <li>Check SNOMED subsumption relationships</li>
+        <li>Expand and validate FHIR ValueSet compositions</li>
+        <li>Return similarity-ranked results with display names</li>
+        <li>Surface discouraged codes (e.g., LOINC 55284-4)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="margin-top: 14px;">
+    <div class="tool-card" style="border-color: #148f8b;">
+      <div class="tool-card-header">
+        <div class="tool-dot" style="background:#7abab8;"></div>
+        <span class="tool-card-name">rh CLI</span>
+      </div>
+      <ul>
+        <li>Validate CQL syntax and semantics &mdash; <code>rh cql validate &lt;file.cql&gt;</code></li>
+        <li>Compile CQL to ELM JSON &mdash; <code>rh cql compile --output --debug --strict</code></li>
+        <li>Evaluate named expressions against FHIR Bundles &mdash; <code>rh cql eval --data --trace</code></li>
+        <li>Parse tree and semantic analysis &mdash; <code>rh cql explain parse/compile</code></li>
+        <li>Interactive CQL REPL &mdash; <code>rh cql repl</code></li>
+        <li>Fetch FHIR packages for local validation &mdash; <code>rh download package</code></li>
+      </ul>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ── Footer ────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-meta">rh-skills v0.1.0 &nbsp;&middot;&nbsp; ReasonHub MCP &nbsp;&middot;&nbsp; pi coding agent &nbsp;&middot;&nbsp; 2026-05-18</span>
+    <span class="footer-meta">© 2026 Vermonster</span>
+  </div>
+</footer>
+
+</body>
+</html>
