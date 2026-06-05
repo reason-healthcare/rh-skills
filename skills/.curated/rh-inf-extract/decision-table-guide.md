@@ -43,7 +43,8 @@
 
 **Extraction strategy**:
 - Events map to workflow phases
-- Use `pathway_phases` metadata (enables care pathway auto-derivation)
+- Use `sections.pathway_phases[]` metadata when the narrative is phase-organized
+- Reference the canonical phase ids from `event.phase` and `rule.phase`
 - Sequencing is temporal/linear
 
 ---
@@ -158,6 +159,10 @@ other narrow tasks all occur within the same broader staged context, keep one
 event and represent the finer distinction through separate rules and child
 actions. Split into separate events only when the workflow moment or trigger
 actually changes.
+When the source provides activation metadata, keep it on `event.trigger`
+instead of splitting the event. Use `type`, `name`, `source`, `resource`,
+`moment`, `resource_criteria`, and `timing_window` when the source supports
+those details.
 
 **Example** (synthetic surgical protocol):
 ```yaml
@@ -251,36 +256,28 @@ events:
 
 **Strategy**: Map events to clinical workflow phases
 
-**Pattern**: Define `pathway_phases` with `order`; link events via `event.phase` and `event.phase_order`
+**Pattern**: Define `sections.pathway_phases[]`; link events via `event.phase` and `rule.phase`
 
 **Example**:
 ```yaml
-pathway_phases:
-  - id: "assessment"
-    label: "Assessment Phase"
-    description: "Patient evaluation and candidacy"
-    order: 1
-    
-  - id: "intervention"
-    label: "Intervention Phase"
-    description: "Therapeutic intervention"
-    order: 2
-    
-events:
-  - id: e1
-    label: "Initial Evaluation"
-    phase: "assessment"
-    phase_order: 1
-    
-  - id: e2
-    label: "Treatment Decision"
-    phase: "assessment"
-    phase_order: 2
-    
-  - id: e3
-    label: "Intervention"
-    phase: "intervention"
-    phase_order: 1
+sections:
+  pathway_phases:
+    - id: assessment
+      label: Assessment Phase
+      description: Patient evaluation and candidacy
+    - id: intervention
+      label: Intervention Phase
+      description: Therapeutic intervention
+  events:
+    - id: e1
+      label: Initial Evaluation
+      phase: assessment
+    - id: e2
+      label: Treatment Decision
+      phase: assessment
+    - id: e3
+      label: Intervention
+      phase: intervention
 ```
 
 ---
@@ -289,7 +286,7 @@ events:
 
 **Strategy**: Events represent levels in diagnostic tree
 
-**Pattern**: Document parent-child relationships in event descriptions; `pathway_phases` not required
+**Pattern**: Document parent-child relationships in event descriptions; `pathway_phases` is optional
 
 **Example**:
 ```yaml

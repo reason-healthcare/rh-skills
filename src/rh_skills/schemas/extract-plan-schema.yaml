@@ -408,3 +408,8 @@ care_pathway_guidance:
     - Phases must have sequential order
     - Steps reference specific clinical activities
     - Substeps may reference decision-table events when pathway is auto-derived
+  split_boundary:
+    - Use care-pathway for ordering, ownership, and phase transitions only.
+    - Use decision-table for event-triggered "when/then" logic and keep triggers there.
+    - When a pathway step maps to a decision-table rule, carry the linkage through rule_id and action_labels rather than duplicating the rule logic in steps.
+    - Collapse intermediate wrapper steps that do not carry their own rule_id, action_labels, or applicability_condition; only keep them when they represent a distinct workflow phase.

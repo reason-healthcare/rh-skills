@@ -42,6 +42,7 @@ Decision-table extraction guidance:
 - Use recommendation-scoped triggers such as `preoperative-planning-initiated`, not broad pathway phases such as `planning`.
 - Keep downstream rules local to the recommendation being evaluated; do not restate prior pathway progression unless it is clinically required.
 - If the source is primarily sequencing or phase ownership, prefer `care-pathway` over `decision-table`.
+- When the source provides activation details, keep them on `event.trigger` with `type`, `name`, `source`, `resource`, `moment`, `resource_criteria`, and `timing_window`; do not invent a separate event just to hold trigger metadata.
 - Use canonical `Yes`/`No` condition values in `conditions.values[]` and `rules.when{}`.
 - Every decision condition should have one or more supporting
   `data_elements[]` entries that name the patient features or clinical data
@@ -116,7 +117,11 @@ Care-pathway extraction guidance:
 - Treat every `steps[]` entry as a pathway node first. When present, an overall journey step is longitudinal orchestration, and its child phases are candidate groupings that downstream formalize may promote into separate strategy artifacts if the related decision logic supports it.
 - Keep recommendation logic in the decision-table artifact; use care-pathway for sequencing, actor ownership, and phase transitions.
 - When a pathway step corresponds to a specific decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels the step orchestrates.
+- **When a step encompasses multiple distinct clinical tasks**, model those as **child steps** under the parent rather than stacking them as multiple `action_labels` on a single leaf. More than one `action_label` is a signal to check whether those labels describe the same action (keep as one step) or distinct sequential/parallel tasks (decompose into children with their own `rule_id`). This applies especially when the source enumerates separate components of an assessment — e.g., instrument administration, objective evaluation, and prior therapy review within the same candidacy KAS.
+- Do not encode event-trigger metadata or ECA logic in care-pathway steps; use decision-table for that logic and keep care-pathway as the sequencing shell.
+- Collapse intermediate wrapper steps that do not carry their own `rule_id`, `action_labels`, or `applicability_condition`; keep them only when they add a distinct clinical phase.
 - When different parts of the pathway activate at different workflow moments, represent them as separate sibling branches under the same parent pathway rather than forcing one linear chain.
+- When a pathway step branches into mutually exclusive sub-approaches (e.g., technique A vs technique B, escalation vs continuation), create an **intermediate grouping step** as their shared parent rather than making all branches flat children of the root. The grouping step captures the decision point; its children capture the alternative approaches. Example: `plan-approach-step` (parent: root) → `plan-full-exposure-step` and `plan-dilation-step` (both `parent_id: plan-approach-step`).
 - Use a separate branch for coordination work such as scheduling follow-up when it has a different trigger or timing from assessment, planning, or completed follow-up.
 - Do not create a separate pathway step for intervention execution when the source is really describing planning or ordering logic; keep it in the planning branch unless the guideline clearly treats execution as its own clinical stage.
 

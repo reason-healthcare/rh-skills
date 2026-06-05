@@ -523,6 +523,7 @@ After code or skill changes:
 1. run the relevant local tests for the touched code paths
 2. refresh the CLI and curated skills
 3. rerun the comparison content using this guide
+4. repackage the content using `rh-skills package`
 
 Do not treat code changes as complete until both tests and the iteration rerun
 have been done.

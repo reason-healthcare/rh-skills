@@ -244,3 +244,209 @@ Conclusion:
 - This is not an artifact of stale installed CLI or stale installed skills.
 - The source framework behavior itself needs to change before the external
   rerun can progress to formalize.
+
+## Iteration 003 - Care-Pathway Branching Boundary Enforcement
+
+Date: 2026-06-08
+
+Hypothesis:
+If care-pathway extract guidance, scaffolds, and validation explicitly treat
+rule-linked pathway steps as leaf recommendation nodes, the external CRS
+care-pathway rerun should stop decomposing a single recommendation into child
+pathway tasks and instead branch only across distinct recommendation contexts.
+
+Mode:
+
+- local tests
+- live-model external rerun with `LLM_PROVIDER=ollama` and
+  `OLLAMA_MODEL=gemma4:31b-cloud`
+
+Framework files changed:
+
+- `NEXT_STEPS_PLAN.md`
+- `docs/EXTRACT.md`
+- `src/rh_skills/commands/promote.py`
+- `src/rh_skills/validators/care_pathway.py`
+- `tests/unit/test_promote.py`
+- `tests/unit/test_validate.py`
+
+Commands run:
+
+```bash
+cd /Users/taylorkingston/projects/rh-skills
+make install
+pytest tests/unit/test_promote.py -k 'care_pathway'
+pytest tests/unit/test_validate.py -k 'care_pathway'
+
+cd /Users/taylorkingston/rh-skills-projects/aao_vermonster_crs
+rh-skills skills update --from /Users/taylorkingston/projects/rh-skills/skills/.curated
+
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills promote body-init crs-surgical-management care-pathway --force
+
+LLM_PROVIDER=ollama OLLAMA_MODEL=gemma4:31b-cloud \
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills promote derive crs-surgical-management care-pathway --force \
+  --body-file /Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics/crs-surgical-management/process/tmp/care-pathway.yaml
+
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills validate crs-surgical-management structured care-pathway
+
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills render crs-surgical-management care-pathway
+```
+
+Observed L2 delta:
+
+- Improvement:
+  - the bad child-task decomposition under `Assess Surgical Candidacy` is gone
+  - the pathway now branches at recommendation-context level rather than
+    showing questionnaire/review tasks as pathway children
+- Remaining failure:
+  - the model assigned `rule_id: rule-001` to the orchestration root
+    `crs-surgical-journey`
+  - validation now correctly rejects that shape because rule-linked pathway
+    steps must be leaves
+
+Observed L3 delta:
+
+- A transient formalize pass on the earlier partial rerun showed cleaner L3
+  separation once `assess-candidacy` became a single recommendation-scoped
+  step.
+- After the final tightened validation rule, the regenerated L2 artifact is
+  intentionally blocked before a new L3 pass because the root step still mixes
+  orchestration and recommendation linkage.
+
+Generalizability assessment:
+
+- The improvement is generalizable: “do not expand one recommendation into
+  child pathway tasks” is not CRS-specific.
+- The remaining failure is also generalizable: narrative care-pathway extract
+  can still over-link broad wrapper nodes to recommendation rules unless the
+  framework constrains rule-link assignment more tightly.
+
+Next change to try:
+
+1. Tighten care-pathway rule-link assignment so orchestration/root steps are not
+   auto-linked when they have descendant recommendation branches.
+2. Consider rejecting invalid derived L2 artifacts inside `promote derive`
+   before they overwrite the structured file, using the same validator rule
+   that now flags non-leaf `rule_id` steps.
+
+## Iteration 004 - Wrapper-Step Rule Link Suppression
+
+Date: 2026-06-08
+
+Hypothesis:
+If care-pathway rule-link enrichment suppresses ancestor assignment whenever
+direct child branches already match recommendation rules, the external CRS
+care-pathway rerun should keep the orchestration root unlinked while preserving
+rule links on sibling recommendation branches.
+
+Mode:
+
+- local tests
+- live-model external rerun with `LLM_PROVIDER=ollama` and
+  `OLLAMA_MODEL=gemma4:31b-cloud`
+- stub-mode formalize for the external care-pathway artifact
+
+Framework files changed:
+
+- `src/rh_skills/commands/promote.py`
+- `tests/unit/test_promote.py`
+- `NEXT_STEPS_PLAN.md`
+
+Commands run:
+
+```bash
+cd /Users/taylorkingston/projects/rh-skills
+make install
+pytest tests/unit/test_promote.py -k 'care_pathway'
+pytest tests/unit/test_validate.py -k 'care_pathway'
+
+cd /Users/taylorkingston/rh-skills-projects/aao_vermonster_crs
+rh-skills skills update --from /Users/taylorkingston/projects/rh-skills/skills/.curated
+
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills promote body-init crs-surgical-management care-pathway --force
+
+LLM_PROVIDER=ollama OLLAMA_MODEL=gemma4:31b-cloud \
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills promote derive crs-surgical-management care-pathway --force \
+  --body-file /Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics/crs-surgical-management/process/tmp/care-pathway.yaml
+
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills validate crs-surgical-management structured care-pathway
+
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills render crs-surgical-management care-pathway
+
+LLM_PROVIDER=stub \
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills formalize crs-surgical-management care-pathway --force
+
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills validate crs-surgical-management l3 care-pathway
+
+RH_REPO_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs \
+RH_TRACKING_FILE=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/tracking.yaml \
+RH_TOPICS_ROOT=/Users/taylorkingston/rh-skills-projects/aao_vermonster_crs/topics \
+uv run --project /Users/taylorkingston/projects/rh-skills \
+  rh-skills package crs-surgical-management --pack
+```
+
+Observed L2 delta:
+
+- `crs-surgical-journey` is now an unlinked orchestration root.
+- `verify-diagnosis` and `assess-candidacy` are preserved as sibling
+  recommendation branches, which matches the intended care-pathway boundary.
+- Child-task pathway expansion under candidacy did not reappear.
+
+Observed L3 delta:
+
+- Formalized care-pathway outputs validate successfully.
+- The generated protocol set now reflects the corrected L2 branch ownership
+  without the earlier root-step recommendation-link bug.
+
+Generalizability assessment:
+
+- This change is generalizable because it relies on structural matching:
+  wrapper nodes with descendant recommendation branches should not receive their
+  own rule links.
+- The rule does not depend on CRS-specific ids or labels.
+
+Outcome:
+
+- External structured care-pathway validation: passed
+- External L3 care-pathway validation: passed
+- External package rebuilt successfully

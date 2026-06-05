@@ -294,3 +294,18 @@ class TestNegativeVerifyCases:
             "id": "med-admin",
         })
         assert any("kind" in e.lower() for e in errors)
+        assert any("code" in e.lower() for e in errors)
+
+    def test_activity_definition_rejects_generic_activity_kind_code(self):
+        errors = validate_resource({
+            "resourceType": "ActivityDefinition",
+            "id": "med-admin",
+            "kind": "ServiceRequest",
+            "code": {
+                "coding": [{
+                    "system": "http://reasonhealth.io/fhir/CodeSystem/activity-kind",
+                    "code": "service-request",
+                }],
+            },
+        })
+        assert any("generic activity-kind" in e.lower() for e in errors)

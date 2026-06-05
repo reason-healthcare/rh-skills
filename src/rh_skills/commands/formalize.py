@@ -365,6 +365,78 @@ def _patch_measure_library_references(resources: list[dict]) -> None:
             resource["library"] = library_urls
 
 
+def _is_generic_activity_kind_code(codeable_concept: Any) -> bool:
+    if not isinstance(codeable_concept, dict):
+        return False
+    codings = codeable_concept.get("coding")
+    if not isinstance(codings, list):
+        return False
+    return any(
+        isinstance(coding, dict)
+        and str(coding.get("system") or "").strip()
+        == "http://reasonhealth.io/fhir/CodeSystem/activity-kind"
+        for coding in codings
+    )
+
+
+def _ensure_activity_definition_codes(
+    resources: list[dict],
+    concept_candidates: list[dict[str, Any]] | None = None,
+) -> None:
+    """Backfill ActivityDefinition.code from reviewed concepts when available."""
+    collect_information_profiles = {
+        "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
+    }
+    questionnaire_task_profile = (
+        "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
+    )
+
+    for resource in resources:
+        if resource.get("resourceType") != "ActivityDefinition":
+            continue
+        existing_code = resource.get("code")
+        needs_resolution = existing_code is None or _is_generic_activity_kind_code(existing_code)
+        if not needs_resolution:
+            continue
+
+        title = str(resource.get("title") or resource.get("name") or resource.get("id") or "")
+        kind = str(resource.get("kind") or "").strip() or "ServiceRequest"
+        description = str(resource.get("description") or title)
+        meta_profiles = resource.get("meta", {}).get("profile") or []
+        profile = str(resource.get("profile") or "")
+        action_id = str(resource.get("id") or "")
+
+        resolved = _resolve_activity_code_from_concepts(
+            resource,
+            action_id=action_id,
+            title=title,
+            description=description,
+            kind=kind,
+            concept_candidates=concept_candidates,
+        )
+        if resolved:
+            resource["code"] = resolved
+            continue
+
+        if (
+            profile == questionnaire_task_profile
+            or any(profile_url in collect_information_profiles for profile_url in meta_profiles)
+        ):
+            resource["code"] = {
+                "coding": [{
+                    "system": "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs",
+                    "code": "collect-information",
+                    "display": "Collect information",
+                }],
+                "text": title or str(resource.get("id") or ""),
+            }
+            continue
+
+        # Generic activity-kind codes should not be retained as clinical coding.
+        if _is_generic_activity_kind_code(existing_code):
+            resource.pop("code", None)
+
+
 def _questionnaire_item_type(raw_type: str | None) -> str:
     """Map L2 assessment item types to FHIR Questionnaire item types."""
     normalized = str(raw_type or "").strip().lower()
@@ -497,6 +569,42 @@ def _render_decision_table_plan_definition_resource(
         else "plandefinition/decision-table-root.json.j2"
     )
     return _render_formalize_json_template(template_name, **context)
+
+
+def _decision_table_rule_plan_suffix(rule: dict[str, Any], idx: int) -> str:
+    """Return a readable rule-level recommendation suffix for a child plan."""
+    raw_rule_id = str(rule.get("id") or f"rule-{idx}").strip()
+    suffix = to_kebab_case(raw_rule_id) or f"rule-{idx}"
+    if suffix.startswith("rule-") and len(suffix) > 5 and not re.fullmatch(r"rule-\d+", suffix):
+        trimmed = suffix.removeprefix("rule-")
+        if trimmed:
+            return trimmed
+    return suffix
+
+
+def _build_decision_table_rule_suffix_map(
+    rules: list[dict[str, Any]],
+) -> dict[int, str]:
+    """Build stable, readable per-rule suffixes for recommendation child plans."""
+    suffix_map: dict[int, str] = {}
+    used_suffixes: set[str] = set()
+
+    for idx, rule in enumerate(rules, start=1):
+        if not isinstance(rule, dict):
+            continue
+        base_suffix = _decision_table_rule_plan_suffix(rule, idx)
+        if re.fullmatch(r"r\d+", base_suffix) or re.fullmatch(r"rule-\d+", base_suffix):
+            event_slug = to_kebab_case(str(rule.get("event") or "")).removeprefix("event-")
+            if event_slug:
+                base_suffix = event_slug
+
+        candidate = base_suffix or f"rule-{idx}"
+        if candidate in used_suffixes:
+            candidate = f"{candidate}-{idx}"
+        used_suffixes.add(candidate)
+        suffix_map[idx] = candidate
+
+    return suffix_map
 
 
 def _render_care_pathway_plan_definition_resource(
@@ -752,7 +860,7 @@ def _build_care_pathway_actions(
 
     used_recommendation_refs: set[str] = set()
 
-    def build_action(step: dict) -> dict:
+    def build_action(step: dict) -> list[dict]:
         step_id = str(step.get("id"))
         title = str(step.get("label") or step.get("title") or step_id or artifact_name.replace("-", " ").title())
         description = str(step.get("description") or title)
@@ -767,23 +875,24 @@ def _build_care_pathway_actions(
             children = []
         else:
             children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
+
         if children:
-            action["action"] = [build_action(child) for child in children]
+            action["action"] = [sub_action for child in children for sub_action in build_action(child)]
         elif not branch_ref:
-            action_ref = _resolve_action_reference(step, action_reference_map or {})
             exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_ref = exact_ref or _resolve_recommendation_reference(
                 step,
                 recommendation_plan_map or {},
                 recommendation_candidates or [],
             )
+            action_ref = _resolve_action_reference(step, action_reference_map or {})
             if recommendation_ref and recommendation_ref in used_recommendation_refs and recommendation_ref != exact_ref:
                 recommendation_ref = None
-            if action_ref:
-                action["definitionCanonical"] = action_ref
-            elif recommendation_ref:
+            if recommendation_ref:
                 action["definitionCanonical"] = recommendation_ref
                 used_recommendation_refs.add(recommendation_ref)
+            elif action_ref:
+                action["definitionCanonical"] = action_ref
 
         related = []
         for transition in transition_map.get(step_id, []):
@@ -797,10 +906,12 @@ def _build_care_pathway_actions(
             related.append(rel)
         if related:
             action["relatedAction"] = related
-        return action
+        return [action]
 
     root_steps = child_map.get(None, [])
-    actions = [build_action(step) for step in root_steps]
+    actions: list[dict[str, Any]] = []
+    for step in root_steps:
+        actions.extend(build_action(step))
     if actions:
         return actions
 
@@ -814,11 +925,20 @@ def _build_care_pathway_activity_definition(
     artifact_name: str,
     sup_resource: dict,
     l2_data: dict | None,
+    concept_candidates: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Populate ActivityDefinition stub details from the first care-pathway step."""
     sections = (l2_data or {}).get("sections") or {}
     steps = sections.get("steps") or []
     if not isinstance(steps, list) or not steps:
+        code = _resolve_activity_code_from_concepts(
+            {},
+            action_id=str(sup_resource["id"]),
+            title=str(sup_resource["title"]),
+            description=str(sup_resource.get("description") or sup_resource["title"]),
+            kind="ServiceRequest",
+            concept_candidates=concept_candidates,
+        )
         return _render_activity_definition_resource(
             _activity_definition_template_context(
                 resource_id=str(sup_resource["id"]),
@@ -830,7 +950,7 @@ def _build_care_pathway_activity_definition(
                 description=str(sup_resource.get("description") or sup_resource["title"]),
                 kind="ServiceRequest",
                 intent="proposal",
-                code=_default_activity_coding("ServiceRequest", str(sup_resource["title"]), str(sup_resource["id"])),
+                code=code,
             )
         )
 
@@ -838,6 +958,14 @@ def _build_care_pathway_activity_definition(
     label = first_step.get("label") or first_step.get("title") or artifact_name.replace("-", " ").title()
     description = first_step.get("description") or f"Activity stub for {label}"
     kind = _activity_definition_kind(first_step.get("action_type"))
+    code = _resolve_activity_code_from_concepts(
+        first_step,
+        action_id=str(sup_resource["id"]),
+        title=str(label),
+        description=str(description),
+        kind=kind,
+        concept_candidates=concept_candidates,
+    )
     return _render_activity_definition_resource(
         _activity_definition_template_context(
             resource_id=str(sup_resource["id"]),
@@ -849,30 +977,231 @@ def _build_care_pathway_activity_definition(
             description=str(description),
             kind=kind,
             intent="proposal",
-            code=_default_activity_coding(kind, str(label), str(sup_resource["id"])),
+            code=code,
         )
     )
 
 
-def _default_activity_coding(kind: str, title: str, action_id: str) -> dict[str, Any]:
-    """Return a generic scaffold CodeableConcept for ActivityDefinition.code."""
-    code_map = {
-        "ServiceRequest": ("service-request", "Requested clinical service"),
-        "CommunicationRequest": ("patient-education", "Patient education or counseling"),
-        "MedicationRequest": ("medication-request", "Medication recommendation"),
-        "Procedure": ("procedure", "Recommended procedure"),
-        "Task": ("clinical-task", "Clinical task"),
+def _activity_coding_tokens(*values: str) -> set[str]:
+    """Normalize text for ActivityDefinition semantic coding lookup."""
+    synonym_map = {
+        "operative": "surgery", "operation": "surgery", "surgical": "surgery",
+        "surgeries": "surgery", "procedures": "procedure", "planned": "plan",
+        "planning": "plan", "antibacterial": "antibiotic", "antibiotics": "antibiotic",
+        "tomography": "ct", "computed": "ct", "scan": "ct", "imaging": "ct",
     }
-    code, display = code_map.get(str(kind or "").strip(), ("clinical-activity", "Clinical activity"))
-    return {
-        "coding": [{
-            "system": "http://reasonhealth.io/fhir/CodeSystem/activity-kind",
-            "code": code,
-            "display": display,
-        }],
-        "text": title or action_id,
+    stopwords = {
+        "adult", "patient", "with", "and", "or", "the", "a", "an", "of", "for",
+        "to", "is", "are", "being", "whether", "about", "before", "after",
+        "during", "when", "once", "into", "from", "in", "on", "at", "by",
+        "needed", "need", "using", "review", "assess", "determine", "medical",
+        "therapy", "disease", "based", "procedure",
     }
+    keep_short = {"ct"}
+    tokens: set[str] = set()
+    for value in values:
+        for raw in re.split(r"[^a-z0-9]+", str(value or "").lower()):
+            if not raw:
+                continue
+            token = synonym_map.get(raw, raw)
+            if token.endswith("ies") and len(token) > 4:
+                token = token[:-3] + "y"
+            elif token.endswith("s") and len(token) > 4 and not token.endswith("sis"):
+                token = token[:-1]
+            if token in stopwords:
+                continue
+            if len(token) < 3 and token not in keep_short:
+                continue
+            tokens.add(token)
+    return tokens
 
+
+def _candidate_is_contrastively_excluded(action_text: str, candidate_tokens: set[str]) -> bool:
+    """Return True when candidate terms only appear in a contrastive exclusion clause."""
+    contrast_markers = ("rather than", "instead of", "not just", "not merely")
+    marker_positions = [action_text.find(m) for m in contrast_markers if m in action_text]
+    if not marker_positions:
+        return False
+    start = min(pos for pos in marker_positions if pos >= 0)
+    contrasted_segment = action_text[start:]
+    salient_tokens = {
+        t for t in candidate_tokens
+        if len(t) >= 5 and t not in {"surgery", "sinus", "procedure", "manual", "exposure"}
+    }
+    return any(f" {t}" in f" {contrasted_segment}" for t in salient_tokens)
+
+
+def _activity_code_from_concept(concept: dict[str, Any], title: str) -> dict[str, Any] | None:
+    codes = concept.get("codes") or []
+    if not isinstance(codes, list):
+        return None
+    resolved: list[dict[str, Any]] = []
+    for entry in codes:
+        if not isinstance(entry, dict):
+            continue
+        code_value = str(entry.get("code") or "").strip()
+        if not code_value:
+            continue
+        coding = {"code": code_value}
+        if entry.get("system"):
+            coding["system"] = str(entry["system"])
+        if entry.get("display"):
+            coding["display"] = str(entry["display"])
+        resolved.append(coding)
+    if not resolved:
+        return None
+    return {"coding": resolved, "text": title}
+
+
+def _activity_preferred_concept_types(kind: str, action_id: str, title: str, description: str) -> list[str]:
+    text = " ".join([action_id, title, description]).lower()
+    preferred: list[str] = []
+    if kind == "MedicationRequest" or any(t in text for t in ("antibiotic", "antibacterial", "medication", "drug")):
+        preferred.append("medication")
+    if kind in {"Procedure", "ServiceRequest", "Task"} or any(
+        t in text for t in ("surgery", "procedure", "ct", "tomography", "scan", "endoscopy", "irrigation", "debridement", "dilation")
+    ):
+        preferred.append("procedure")
+    if kind == "CommunicationRequest":
+        preferred.append("procedure")
+    return preferred
+
+
+def _resolve_activity_code_from_concepts(
+    action_def: dict[str, Any],
+    *,
+    action_id: str,
+    title: str,
+    description: str,
+    kind: str,
+    concept_candidates: list[dict[str, Any]] | None,
+) -> dict[str, Any] | None:
+    """Return reviewed terminology coding from concepts.yaml when there is a strong match."""
+    if not concept_candidates:
+        return None
+    supplemental_tokens: list[str] = []
+    for field in ("produces_data_elements", "produces_conditions", "concept_refs"):
+        raw_values = action_def.get(field)
+        if isinstance(raw_values, list):
+            supplemental_tokens.extend(str(value) for value in raw_values if value is not None)
+    action_tokens = _activity_coding_tokens(action_id, title, description, *supplemental_tokens)
+    if not action_tokens:
+        return None
+    preferred_types = _activity_preferred_concept_types(kind, action_id, title, description)
+    action_text = " ".join([action_id, title, description]).lower()
+    best_candidate: dict[str, Any] | None = None
+    best_score = 0
+    second_best = 0
+    scored_candidates: list[tuple[int, dict[str, Any]]] = []
+
+    def _preferred_tie_candidate(
+        tokens: set[str],
+        raw_text: str,
+        tied: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        by_id = {
+            str(candidate.get("normalized_id") or ""): candidate
+            for candidate in tied
+        }
+        if {"quality", "life", "burden", "symptom"} & tokens:
+            qol = by_id.get("quality-of-life")
+            if qol:
+                return qol
+        if "ct" in tokens:
+            ct_candidate = by_id.get("computed-tomography-of-paranasal-sinuses")
+            if ct_candidate:
+                return ct_candidate
+        if "dilation" in tokens:
+            for concept_id in ("balloon-sinus-dilation", "balloon-ostial-dilation"):
+                candidate = by_id.get(concept_id)
+                if candidate:
+                    return candidate
+        if "diagnosis" in tokens or "verify" in tokens:
+            endoscopy = by_id.get("nasal-endoscopy")
+            if endoscopy:
+                return endoscopy
+        if "followup" in tokens or "postoperative" in tokens:
+            debridement = by_id.get("postoperative-debridement")
+            if debridement:
+                return debridement
+        if "sinus-surgery" in by_id and "endoscopic-sinus-surgery" in by_id:
+            if any(keyword in raw_text for keyword in ("endoscopic", "full exposure")):
+                return by_id["endoscopic-sinus-surgery"]
+            return by_id["sinus-surgery"]
+        return None
+
+    for candidate in concept_candidates:
+        candidate_tokens = set(candidate.get("tokens") or set())
+        overlap = len(action_tokens & candidate_tokens)
+        if overlap == 0:
+            continue
+        if _candidate_is_contrastively_excluded(action_text, candidate_tokens):
+            continue
+        score = overlap * 10
+        concept_type = str(candidate.get("type") or "").strip().lower()
+        if concept_type and concept_type in preferred_types:
+            score += 8
+        roles = {str(r).strip().lower() for r in (candidate.get("role") or []) if str(r).strip()}
+        if "intervention" in roles:
+            score += 3
+        if "ct" in action_tokens and "ct" in candidate_tokens:
+            score += 8
+        if "postoperative" in action_tokens and "postoperative" in candidate_tokens:
+            score += 8
+        if "followup" in action_tokens and (
+            "postoperative" in candidate_tokens or "debridement" in candidate_tokens
+        ):
+            score += 6
+        if "ct" in action_tokens and "ct" not in candidate_tokens:
+            score -= 8
+        if "dilation" in action_tokens:
+            if "dilation" in candidate_tokens:
+                score += 10
+            else:
+                score -= 8
+        if "diagnosis" in action_tokens and (
+            "diagnosis" in candidate_tokens or "endoscopy" in candidate_tokens
+        ):
+            score += 10
+        if (
+            str(candidate.get("normalized_id") or "") == "quality-of-life"
+            and {"quality", "life", "burden", "symptom"} & action_tokens
+        ):
+            score += 12
+        if "antibiotic" in action_tokens and "antibiotic" in candidate_tokens:
+            score += 8
+        if "surgery" in action_tokens and "surgery" in candidate_tokens:
+            score += 5
+        if str(candidate.get("normalized_name") or "") == to_kebab_case(title):
+            score += 6
+        if str(candidate.get("normalized_id") or "") == action_id:
+            score += 6
+        blob = str(candidate.get("blob") or "")
+        if "endoscopic sinus surgery" in blob and ("full exposure" in action_text or "diseased tissue" in action_text):
+            score += 4
+        if score <= 0:
+            continue
+        scored_candidates.append((score, candidate))
+        if score > best_score:
+            second_best = best_score
+            best_score = score
+            best_candidate = candidate
+        elif score > second_best:
+            second_best = score
+    if best_candidate is None or best_score < 10:
+        return None
+    if second_best and best_score - second_best < 3:
+        tied = [candidate for score, candidate in scored_candidates if score == best_score]
+        preferred = _preferred_tie_candidate(action_tokens, action_text, tied)
+        if preferred:
+            resolved_preferred = preferred.get("code")
+            if isinstance(resolved_preferred, dict):
+                return resolved_preferred
+        return None
+    resolved_code = best_candidate.get("code")
+    if isinstance(resolved_code, dict):
+        return resolved_code
+    return None
 
 def _activity_definition_template_context(
     *,
@@ -1069,6 +1398,17 @@ def _build_trigger_definition(event: dict[str, Any], *, fallback_name: str) -> d
         "type": str(trigger_raw.get("type") or "named-event"),
         "name": str(trigger_raw.get("name") or event.get("id") or fallback_name),
     }
+    for field in ("source", "resource", "moment", "timing_window"):
+        value = trigger_raw.get(field)
+        if value is not None:
+            trigger[field] = value
+    resource_criteria_raw = trigger_raw.get("resource_criteria")
+    if isinstance(resource_criteria_raw, dict):
+        trigger["resource_criteria"] = {
+            key: str(value)
+            for key, value in resource_criteria_raw.items()
+            if value is not None and str(value).strip()
+        }
 
     resource_type = str(trigger_raw.get("resource") or "").strip()
     if not resource_type:
@@ -1084,7 +1424,7 @@ def _build_trigger_definition(event: dict[str, Any], *, fallback_name: str) -> d
         data_requirement["profile"] = [f"http://hl7.org/fhir/StructureDefinition/{resource_type}"]
 
     must_support = _default_trigger_must_support(resource_type)
-    resource_criteria = trigger_raw.get("resource_criteria")
+    resource_criteria = resource_criteria_raw if isinstance(resource_criteria_raw, dict) else None
     if isinstance(resource_criteria, dict):
         code_value = resource_criteria.get("code")
         code_system = resource_criteria.get("system")
@@ -1117,6 +1457,7 @@ def _build_decision_table_activity_definitions(
     assessment_artifact_name: str | None = None,
     assessment_data: dict[str, Any] | None = None,
     assessment_lookup: dict[str, dict[str, Any]] | None = None,
+    concept_candidates: list[dict[str, Any]] | None = None,
 ) -> list[dict]:
     """Build one ActivityDefinition per L2 decision-table action."""
     sections = (l2_data or {}).get("sections") or {}
@@ -1141,6 +1482,15 @@ def _build_decision_table_activity_definitions(
         do_not_perform = action_def.get("do_not_perform") is True
 
         codeable_concept = _resolve_activity_code(action_def, action_id=action_id, title=title)
+        if codeable_concept is None:
+            codeable_concept = _resolve_activity_code_from_concepts(
+                action_def,
+                action_id=action_id,
+                title=title,
+                description=description,
+                kind=kind,
+                concept_candidates=concept_candidates,
+            )
 
         participant_entries: list[dict[str, Any]] = []
         participants = action_def.get("participants") or action_def.get("participant")
@@ -1210,14 +1560,15 @@ def _build_decision_table_activity_definitions(
                 "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
             ]
             template_context["profile"] = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
-            template_context["code"] = {
-                "coding": [{
-                    "system": "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs",
-                    "code": "collect-information",
-                    "display": "Collect information",
-                }],
-                "text": title,
-            }
+            if not template_context.get("code"):
+                template_context["code"] = {
+                    "coding": [{
+                        "system": "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs",
+                        "code": "collect-information",
+                        "display": "Collect information",
+                    }],
+                    "text": title,
+                }
             template_context["dynamic_value"] = _collect_information_dynamic_values(questionnaire_canonical)
             template_context["extension"] = [{
                 "url": "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith",
@@ -1241,6 +1592,151 @@ def _build_decision_table_activity_definitions(
         resources.append(resource)
 
     return resources
+
+
+def _build_decision_table_referenced_actions(
+    then_ids: list[str],
+    canonical: str,
+    action_index: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Build nested referenced ActivityDefinition actions from a rule's then-ids."""
+    child_map: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    root_entries: list[dict[str, Any]] = []
+    valid_then_ids = {to_kebab_case(str(x)) for x in then_ids if str(x or "").strip()}
+
+    for action_ref in then_ids:
+        action_def = action_index.get(str(action_ref))
+        action_id = to_kebab_case(str(action_ref))
+        if not action_id:
+            continue
+        title = _decision_table_action_title(action_def or {"id": action_ref})
+        entry = {
+            "id": action_id,
+            "title": title,
+            "description": str((action_def or {}).get("description") or title),
+        }
+        parent_id = None
+        if isinstance(action_def, dict):
+            parent_raw = action_def.get("parent_action_id")
+            if isinstance(parent_raw, str) and parent_raw.strip():
+                parent_id = to_kebab_case(parent_raw)
+        if parent_id and parent_id in valid_then_ids:
+            child_map[parent_id].append(entry)
+        else:
+            root_entries.append(entry)
+
+    def attach_children(entry: dict[str, Any]) -> None:
+        children = child_map.get(str(entry.get("id") or ""), [])
+        if children:
+            entry["action"] = children
+            for child in children:
+                attach_children(child)
+        else:
+            entry["definitionCanonical"] = (
+                f"{canonical}/ActivityDefinition/{entry['id']}"
+            )
+
+    for entry in root_entries:
+        attach_children(entry)
+    return root_entries
+
+
+def _build_decision_table_rule_conditions(
+    rule: dict[str, Any],
+    condition_index: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Build applicability conditions for a single decision-table rule."""
+    when_map = rule.get("when") or {}
+    condition_entries: list[dict[str, Any]] = []
+    if not isinstance(when_map, dict):
+        return condition_entries
+
+    for cond_id, expected in when_map.items():
+        normalized_expected = str(expected or "").strip().lower()
+        if normalized_expected in {"", "n/a", "na", "*"}:
+            continue
+        condition = condition_index.get(str(cond_id), {})
+        condition_label = str(condition.get("label") or cond_id or "Condition")
+
+        cql_name = _generate_polarity_aware_define_name(condition_label, expected)
+        if normalized_expected in {"no", "false"}:
+            base_name = _condition_label_to_cql_name(condition_label)
+            expression = {
+                "language": "text/cql-expression",
+                "expression": f"not {base_name}",
+            }
+        else:
+            expression = {
+                "language": "text/cql-identifier",
+                "expression": cql_name,
+            }
+
+        condition_entries.append({
+            "kind": "applicability",
+            "expression": expression,
+        })
+    return condition_entries
+
+
+def _build_decision_table_rule_plan_actions(
+    rule: dict[str, Any],
+    event: dict[str, Any] | None,
+    canonical: str,
+    action_index: dict[str, dict[str, Any]],
+    condition_index: dict[str, dict[str, Any]],
+    *,
+    fallback_name: str,
+) -> list[dict[str, Any]]:
+    """Build the action tree for a single rule-level recommendation PlanDefinition."""
+    then_ids = rule.get("then") or []
+    child_actions = (
+        _build_decision_table_referenced_actions(then_ids, canonical, action_index)
+        if isinstance(then_ids, list)
+        else []
+    )
+    condition_entries = _build_decision_table_rule_conditions(rule, condition_index)
+    trigger_entries = (
+        [_build_trigger_definition(event, fallback_name=fallback_name)]
+        if isinstance(event, dict) and event
+        else []
+    )
+
+    if len(child_actions) == 1:
+        root_action = child_actions[0]
+        if trigger_entries:
+            root_action["trigger"] = trigger_entries
+        if condition_entries:
+            root_action["condition"] = condition_entries
+        return [root_action]
+
+    if child_actions:
+        title_parts = []
+        if event and event.get("label"):
+            title_parts.append(str(event["label"]))
+        if child_actions[0].get("title"):
+            title_parts.append(str(child_actions[0]["title"]))
+        wrapper: dict[str, Any] = {
+            "id": str(rule.get("id") or fallback_name),
+            "title": " — ".join(title_parts) if title_parts else str(rule.get("id") or "Recommendation"),
+            "description": str(rule.get("description") or (event or {}).get("description") or "Decision rule"),
+            "action": child_actions,
+        }
+        if trigger_entries:
+            wrapper["trigger"] = trigger_entries
+        if condition_entries:
+            wrapper["condition"] = condition_entries
+        return [wrapper]
+
+    fallback_action: dict[str, Any] = {
+        "id": str(rule.get("id") or fallback_name),
+        "title": str((event or {}).get("label") or rule.get("id") or "Recommendation"),
+        "description": str(rule.get("description") or (event or {}).get("description") or "Decision rule"),
+    }
+    if trigger_entries:
+        fallback_action["trigger"] = trigger_entries
+    if condition_entries:
+        fallback_action["condition"] = condition_entries
+    return [fallback_action]
 
 
 def _build_decision_table_plan_actions(
@@ -1271,38 +1767,6 @@ def _build_decision_table_plan_actions(
         if isinstance(action_def, dict) and action_def.get("id")
     } if isinstance(actions, list) else {}
 
-    def build_referenced_actions(then_ids: list[str]) -> list[dict]:
-        child_map: dict[str, list[dict]] = defaultdict(list)
-        root_entries: list[dict] = []
-
-        for action_ref in then_ids:
-            action_def = action_index.get(str(action_ref))
-            action_id = to_kebab_case(str(action_ref))
-            if not action_id:
-                continue
-            title = _decision_table_action_title(action_def or {"id": action_ref})
-            entry = {
-                "id": action_id,
-                "title": title,
-                "description": str((action_def or {}).get("description") or title),
-                "definitionCanonical": f"{canonical}/ActivityDefinition/{action_id}",
-            }
-            parent_id = None
-            if isinstance(action_def, dict):
-                parent_raw = action_def.get("parent_action_id")
-                if isinstance(parent_raw, str) and parent_raw.strip():
-                    parent_id = to_kebab_case(parent_raw)
-            if parent_id and parent_id in {to_kebab_case(str(x)) for x in then_ids}:
-                child_map[parent_id].append(entry)
-            else:
-                root_entries.append(entry)
-
-        for entry in root_entries:
-            children = child_map.get(entry["id"], [])
-            if children:
-                entry["action"] = children
-        return root_entries
-
     plan_actions: list[dict] = []
     if isinstance(rules, list):
         for idx, rule in enumerate(rules, start=1):
@@ -1310,65 +1774,16 @@ def _build_decision_table_plan_actions(
                 continue
 
             event = event_index.get(str(rule.get("event")))
-            then_ids = rule.get("then") or []
-            child_actions = build_referenced_actions(then_ids) if isinstance(then_ids, list) else []
-
-            title_parts = []
-            if event and event.get("label"):
-                title_parts.append(str(event["label"]))
-            if child_actions:
-                title_parts.append(child_actions[0]["title"])
-            
-            rule_id = rule.get("id")
-            if not rule_id:
-                rule_id = f"rule-{idx}"  # Auto-generate if truly missing
-            
-            action_entry: dict = {
-                "id": str(rule_id or f"rule-{idx}"),
-                "title": " — ".join(title_parts) if title_parts else f"{artifact_name.replace('-', ' ').title()} rule {idx}",
-                "description": str(rule.get("description") or (event or {}).get("description") or f"Decision rule {idx}"),
-            }
-
-            if event:
-                action_entry["trigger"] = [
-                    _build_trigger_definition(event, fallback_name=f"event-{idx}")
-                ]
-
-            when_map = rule.get("when") or {}
-            condition_entries = []
-            if isinstance(when_map, dict):
-                for cond_id, expected in when_map.items():
-                    normalized_expected = str(expected or "").strip().lower()
-                    if normalized_expected in {"", "n/a", "na", "*"}:
-                        continue
-                    condition = condition_index.get(str(cond_id), {})
-                    condition_label = str(condition.get("label") or cond_id or "Condition")
-                    
-                    # Generate polarity-aware define name (Builder-4 & Builder-5 fix)
-                    cql_name = _generate_polarity_aware_define_name(condition_label, expected)
-                    if normalized_expected in {"no", "false"}:
-                        base_name = _condition_label_to_cql_name(condition_label)
-                        expression = {
-                            "language": "text/cql-expression",
-                            "expression": f"not {base_name}",
-                        }
-                    else:
-                        expression = {
-                            "language": "text/cql-identifier",
-                            "expression": cql_name,
-                        }
-                    
-                    condition_entries.append({
-                        "kind": "applicability",
-                        "expression": expression,
-                    })
-            if condition_entries:
-                action_entry["condition"] = condition_entries
-
-            if child_actions:
-                action_entry["action"] = child_actions
-
-            plan_actions.append(action_entry)
+            rule_plan_actions = _build_decision_table_rule_plan_actions(
+                rule,
+                event,
+                canonical,
+                action_index,
+                condition_index,
+                fallback_name=f"rule-{idx}",
+            )
+            if rule_plan_actions:
+                plan_actions.extend(rule_plan_actions)
 
     if plan_actions:
         return plan_actions
@@ -1385,9 +1800,11 @@ def _build_decision_table_stub_plan_definitions(
     cfg: dict,
     l2_data: dict | None,
 ) -> tuple[list[dict], list[dict]]:
-    """Build scaffold child PlanDefinitions for decision-table events."""
+    """Build scaffold child PlanDefinitions for decision-table rules."""
     sections = (l2_data or {}).get("sections") or {}
     events = sections.get("events") or []
+    conditions = sections.get("conditions") or []
+    actions = sections.get("actions") or []
     rules = sections.get("rules") or []
     today = today_date()
     version = cfg["version"]
@@ -1396,32 +1813,58 @@ def _build_decision_table_stub_plan_definitions(
 
     if not isinstance(events, list):
         events = []
+    if not isinstance(conditions, list):
+        conditions = []
+    if not isinstance(actions, list):
+        actions = []
     if not isinstance(rules, list):
         rules = []
+
+    event_index = {
+        str(event.get("id")): event
+        for event in events
+        if isinstance(event, dict) and str(event.get("id") or "").strip()
+    }
+    condition_index = {
+        str(condition.get("id")): condition
+        for condition in conditions
+        if isinstance(condition, dict) and str(condition.get("id") or "").strip()
+    }
+    action_index = {
+        str(action_def.get("id")): action_def
+        for action_def in actions
+        if isinstance(action_def, dict) and str(action_def.get("id") or "").strip()
+    }
+    suffix_map = _build_decision_table_rule_suffix_map([rule for rule in rules if isinstance(rule, dict)])
 
     child_resources: list[dict] = []
     root_actions: list[dict] = []
 
-    for idx, event in enumerate(events, start=1):
-        if not isinstance(event, dict):
+    for idx, rule in enumerate(rules, start=1):
+        if not isinstance(rule, dict):
             continue
-        event_id = to_kebab_case(str(event.get("id") or f"event-{idx}")) or f"event-{idx}"
-        child_id = f"{resource_id}-{event_id}"
-        event_title = str(event.get("label") or event.get("title") or event_id)
-        event_description = str(event.get("description") or event_title)
-
-        event_rules = [
-            rule for rule in rules
-            if isinstance(rule, dict) and str(rule.get("event") or "") == str(event.get("id") or "")
-        ]
-        child_l2 = {
-            "sections": {
-                "events": [event],
-                "conditions": sections.get("conditions") or [],
-                "actions": sections.get("actions") or [],
-                "rules": event_rules,
-            }
-        }
+        event = event_index.get(str(rule.get("event") or "").strip()) or {}
+        suffix = suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)
+        child_id = f"{resource_id}-{suffix}"
+        child_actions = _build_decision_table_rule_plan_actions(
+            rule,
+            event if isinstance(event, dict) else None,
+            canonical,
+            action_index,
+            condition_index,
+            fallback_name=f"rule-{idx}",
+        )
+        child_title = (
+            str(child_actions[0].get("title") or "").strip()
+            if child_actions
+            else ""
+        )
+        child_description = str(
+            rule.get("description")
+            or (event or {}).get("description")
+            or child_title
+            or f"Decision rule {idx}"
+        )
         child_plan = _render_decision_table_plan_definition_resource(
             {
                 "id": child_id,
@@ -1430,20 +1873,23 @@ def _build_decision_table_stub_plan_definitions(
                 "status": status,
                 "date": today,
                 "name": _pascal_from_kebab(child_id),
-                "title": event_title,
-                "description": event_description,
+                "title": child_title or str((event or {}).get("label") or rule.get("id") or child_id),
+                "description": child_description,
                 "meta_profile": _plan_definition_meta_profiles("recommendation"),
                 "type": _plan_definition_type("eca-rule"),
                 "library": [library_canonical],
-                "action": _build_decision_table_plan_actions(event_id, canonical, child_l2),
+                "action": child_actions or [{
+                    "title": "Initial action",
+                    "description": "Stub action",
+                }],
             },
             child_event_plan=True,
         )
         child_resources.append(child_plan)
         root_actions.append({
-            "id": event_id,
-            "title": event_title,
-            "description": event_description,
+            "id": suffix,
+            "title": str(child_plan.get("title") or child_id),
+            "description": child_description,
             "definitionCanonical": f"{canonical}/PlanDefinition/{child_id}",
         })
 
@@ -1451,7 +1897,15 @@ def _build_decision_table_stub_plan_definitions(
 
 
 def _care_pathway_plan_candidates(steps: list[dict]) -> list[dict]:
-    """Return pathway nodes that warrant scaffold child PlanDefinitions."""
+    """Return pathway nodes that warrant scaffold child PlanDefinitions.
+
+    Direct children of the root always become PlanDefinition candidates.
+    When a direct-child candidate has **multiple children** (a branching
+    decision point), those grandchildren are also promoted to candidates so
+    that each sibling branch gets its own PlanDefinition rather than being
+    inlined as nested actions inside the parent.  A single child of a
+    candidate is kept inline — only multi-sibling branches are promoted.
+    """
     child_map: dict[str | None, list[dict]] = {}
     for step in steps:
         if not isinstance(step, dict):
@@ -1463,9 +1917,16 @@ def _care_pathway_plan_candidates(steps: list[dict]) -> list[dict]:
     if len(root_steps) == 1:
         only_root = root_steps[0]
         root_id = str(only_root.get("id") or "")
-        children = child_map.get(root_id, [])
-        if children:
-            return [child for child in children if isinstance(child, dict)]
+        direct_children = [c for c in child_map.get(root_id, []) if isinstance(c, dict)]
+        candidates: list[dict] = list(direct_children)
+        # Promote grandchildren when their parent branches into multiple siblings
+        for cand in list(candidates):
+            cand_id = str(cand.get("id") or "")
+            grandchildren = [c for c in child_map.get(cand_id, []) if isinstance(c, dict)]
+            if len(grandchildren) > 1:
+                candidates.extend(grandchildren)
+        if candidates:
+            return candidates
     return [step for step in root_steps if isinstance(step, dict)]
 
 
@@ -1497,7 +1958,16 @@ def _build_care_pathway_stub_plan_definitions(
 
     used_recommendation_refs: set[str] = set()
 
-    def build_subtree(step: dict) -> dict:
+    # Pre-compute branch_plan_map so build_subtree can reference child PlanDefinitions
+    # for intermediate grouping steps (grandchildren of root) instead of inlining them.
+    all_candidates = _care_pathway_plan_candidates([s for s in steps if isinstance(s, dict)])
+    pre_branch_plan_map: dict[str, str] = {}
+    for step in all_candidates:
+        step_id = to_kebab_case(str(step.get("id") or "pathway-step")) or "pathway-step"
+        child_id = f"{resource_id}-{step_id}"
+        pre_branch_plan_map[str(step.get("id") or step_id)] = f"{canonical}/PlanDefinition/{child_id}"
+
+    def build_subtree(step: dict) -> list[dict]:
         step_id = str(step.get("id") or "pathway-step")
         title = str(step.get("label") or step.get("title") or step_id)
         description = str(step.get("description") or title)
@@ -1508,27 +1978,42 @@ def _build_care_pathway_stub_plan_definitions(
         }
         children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
         if children:
-            action["action"] = [build_subtree(child) for child in children]
+            child_actions: list[dict] = []
+            for child in children:
+                child_step_id = str(child.get("id") or "")
+                # If this child has its own PlanDefinition, reference it via
+                # definitionCanonical rather than recursively inlining it.
+                child_branch_ref = pre_branch_plan_map.get(child_step_id)
+                if child_branch_ref:
+                    child_actions.append({
+                        "id": child_step_id,
+                        "title": str(child.get("label") or child.get("title") or child_step_id),
+                        "description": str(child.get("description") or child_step_id),
+                        "definitionCanonical": child_branch_ref,
+                    })
+                else:
+                    child_actions.extend(build_subtree(child))
+            action["action"] = child_actions
         else:
-            action_ref = _resolve_action_reference(step, action_reference_map or {})
             exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_ref = exact_ref or _resolve_recommendation_reference(
                 step,
                 recommendation_plan_map or {},
                 recommendation_candidates or [],
             )
+            action_ref = _resolve_action_reference(step, action_reference_map or {})
             if recommendation_ref and recommendation_ref in used_recommendation_refs and recommendation_ref != exact_ref:
                 recommendation_ref = None
-            if action_ref:
-                action["definitionCanonical"] = action_ref
-            elif recommendation_ref:
+            if recommendation_ref:
                 action["definitionCanonical"] = recommendation_ref
                 used_recommendation_refs.add(recommendation_ref)
-        return action
+            elif action_ref:
+                action["definitionCanonical"] = action_ref
+        return [action]
 
     resources: list[dict] = []
     branch_plan_map: dict[str, str] = {}
-    for step in _care_pathway_plan_candidates([s for s in steps if isinstance(s, dict)]):
+    for step in all_candidates:
         step_id = to_kebab_case(str(step.get("id") or "pathway-step")) or "pathway-step"
         child_id = f"{resource_id}-{step_id}"
         title = str(step.get("label") or step.get("title") or step_id)
@@ -1545,7 +2030,7 @@ def _build_care_pathway_stub_plan_definitions(
             "description": description,
             "meta_profile": _plan_definition_meta_profiles("strategy"),
             "type": _plan_definition_type("workflow-definition"),
-            "action": [build_subtree(step)],
+            "action": build_subtree(step),
         }
         resources.append(
             _render_care_pathway_plan_definition_resource(
@@ -1967,6 +2452,7 @@ def _build_stub_resources(
     cfg: dict,
     l2_data: dict | None = None,
     topic_entry: dict[str, Any] | None = None,
+    concept_candidates: list[dict[str, Any]] | None = None,
 ) -> list[dict]:
     """Build stub FHIR resources when LLM_PROVIDER=stub."""
     primary = strategy["primary"]
@@ -2152,6 +2638,7 @@ def _build_stub_resources(
                 assessment_artifact_name=assessment_artifact_name,
                 assessment_data=assessment_data,
                 assessment_lookup=assessment_lookup,
+                concept_candidates=concept_candidates,
         )
         resources.extend(activity_resources)
 
@@ -2192,7 +2679,12 @@ def _build_stub_resources(
             sup_resource["characteristic"] = _build_evidence_variable_characteristics(artifact_type, l2_data)
         elif sup_type == "ActivityDefinition":
             if artifact_type == "care-pathway":
-                sup_resource = _build_care_pathway_activity_definition(artifact_name, sup_resource, l2_data)
+                sup_resource = _build_care_pathway_activity_definition(
+                    artifact_name,
+                    sup_resource,
+                    l2_data,
+                    concept_candidates=concept_candidates,
+                )
             else:
                 sup_resource["kind"] = "ServiceRequest"
         elif sup_type == "ConceptMap":
@@ -2254,6 +2746,65 @@ def _load_structured_artifact_yaml(
         return YAML(typ="safe").load(l2_file.read_text()) or {}
     except Exception:
         return None
+
+
+def _load_topic_concept_candidates(
+    topic: str,
+    topic_entry: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    """Load reviewed concept candidates from the topic terminology artifact."""
+    if not topic_entry:
+        return []
+
+    terminology_artifacts = [
+        artifact for artifact in (topic_entry.get("structured", []) or [])
+        if isinstance(artifact, dict) and artifact.get("artifact_type") == "terminology"
+    ]
+    if not terminology_artifacts:
+        return []
+
+    concept_candidates: list[dict[str, Any]] = []
+    for artifact in terminology_artifacts:
+        artifact_name = artifact.get("name")
+        if not isinstance(artifact_name, str) or not artifact_name.strip():
+            continue
+        artifact_data = _load_structured_artifact_yaml(topic, topic_entry, artifact_name.strip())
+        if not isinstance(artifact_data, dict):
+            continue
+        sections = artifact_data.get("sections") or {}
+        concepts = sections.get("concepts") or artifact_data.get("concepts") or []
+        if not isinstance(concepts, list):
+            continue
+        for concept in concepts:
+            if not isinstance(concept, dict):
+                continue
+            concept_name = str(concept.get("name") or concept.get("id") or "").strip()
+            code = _activity_code_from_concept(concept, concept_name or "Clinical concept")
+            if code is None:
+                continue
+            code_displays = " ".join(
+                str(entry.get("display") or "")
+                for entry in (concept.get("codes") or [])
+                if isinstance(entry, dict)
+            )
+            concept_candidates.append({
+                "type": str(concept.get("type") or "").strip().lower(),
+                "role": concept.get("role") or [],
+                "normalized_name": to_kebab_case(concept_name),
+                "normalized_id": to_kebab_case(str(concept.get("id") or "")),
+                "tokens": _activity_coding_tokens(
+                    str(concept.get("id") or ""),
+                    concept_name,
+                    code_displays,
+                ),
+                "blob": " ".join([
+                    str(concept.get("id") or ""),
+                    concept_name,
+                    code_displays,
+                ]).lower(),
+                "code": code,
+            })
+    return concept_candidates
 
 
 def _resolve_related_decision_table(
@@ -2546,33 +3097,36 @@ def _build_decision_table_reference_map(
         if isinstance(event, dict) and str(event.get("id") or "").strip()
     }
     reference_map: dict[str, str] = {}
-    phase_to_event: dict[str, set[str]] = defaultdict(set)
+    phase_to_rule: dict[str, set[str]] = defaultdict(set)
+    event_to_rule: dict[str, set[str]] = defaultdict(set)
+    suffix_map = _build_decision_table_rule_suffix_map([rule for rule in rules if isinstance(rule, dict)])
 
-    for event_id in event_index:
-        canonical_ref = f"{canonical}/PlanDefinition/{base_id}-{to_kebab_case(event_id)}"
-        reference_map[event_id] = canonical_ref
-
-    for rule in rules:
+    for idx, rule in enumerate(rules, start=1):
         if not isinstance(rule, dict):
             continue
         rule_id = str(rule.get("id") or "").strip()
         event_id = str(rule.get("event") or "").strip()
         phase_id = str(rule.get("phase") or "").strip()
-        if rule_id and event_id and event_id in event_index:
-            reference_map[rule_id] = f"{canonical}/PlanDefinition/{base_id}-{to_kebab_case(event_id)}"
-        if event_id and phase_id and event_id in event_index:
-            phase_to_event[phase_id].add(event_id)
+        canonical_ref = f"{canonical}/PlanDefinition/{base_id}-{suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)}"
+        if rule_id:
+            reference_map[rule_id] = canonical_ref
+        if event_id and event_id in event_index:
+            event_to_rule[event_id].add(canonical_ref)
+        if phase_id and event_id and event_id in event_index:
+            phase_to_rule[phase_id].add(canonical_ref)
 
     for event_id, event in event_index.items():
         phase_id = str(event.get("phase") or "").strip()
+        event_rule_refs = event_to_rule.get(event_id) or set()
+        if len(event_rule_refs) == 1:
+            reference_map[event_id] = next(iter(event_rule_refs))
         if phase_id:
-            phase_to_event[phase_id].add(event_id)
+            phase_to_rule[phase_id].update(event_rule_refs)
 
-    for phase_id, event_ids in phase_to_event.items():
-        if len(event_ids) != 1:
+    for phase_id, rule_refs in phase_to_rule.items():
+        if len(rule_refs) != 1:
             continue
-        only_event = next(iter(event_ids))
-        reference_map[phase_id] = f"{canonical}/PlanDefinition/{base_id}-{to_kebab_case(only_event)}"
+        reference_map[phase_id] = next(iter(rule_refs))
 
     return reference_map
 
@@ -2654,39 +3208,38 @@ def _build_decision_table_reference_candidates(
         for action in actions
         if isinstance(action, dict) and str(action.get("id") or "").strip()
     }
-    rules_by_event: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for rule in rules:
+    suffix_map = _build_decision_table_rule_suffix_map([rule for rule in rules if isinstance(rule, dict)])
+    candidates: list[dict[str, Any]] = []
+    event_index = {
+        str(event.get("id") or "").strip(): event
+        for event in events
+        if isinstance(event, dict) and str(event.get("id") or "").strip()
+    }
+    for idx, rule in enumerate(rules, start=1):
         if not isinstance(rule, dict):
             continue
         event_id = str(rule.get("event") or "").strip()
-        if event_id:
-            rules_by_event[event_id].append(rule)
-
-    candidates: list[dict[str, Any]] = []
-    for event in events:
-        if not isinstance(event, dict):
-            continue
-        event_id = str(event.get("id") or "").strip()
-        if not event_id:
-            continue
-        canonical_ref = f"{canonical}/PlanDefinition/{base_id}-{to_kebab_case(event_id)}"
+        event = event_index.get(event_id) or {}
+        canonical_ref = f"{canonical}/PlanDefinition/{base_id}-{suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)}"
         alias_values = [
+            rule.get("id"),
             event_id,
             event_id.removeprefix("event-"),
-            event.get("label"),
-            event.get("title"),
-            event.get("phase"),
+            rule.get("phase"),
+            rule.get("description"),
+            rule.get("rationale"),
+            (event or {}).get("label"),
+            (event or {}).get("title"),
+            (event or {}).get("phase"),
         ]
-        for rule in rules_by_event.get(event_id, []):
-            alias_values.extend([rule.get("action"), rule.get("description"), rule.get("rationale")])
-            for action_id in rule.get("then") or []:
-                action_def = action_index.get(str(action_id))
-                alias_values.extend([
-                    action_id,
-                    (action_def or {}).get("label"),
-                    (action_def or {}).get("title"),
-                    (action_def or {}).get("description"),
-                ])
+        for action_id in rule.get("then") or []:
+            action_def = action_index.get(str(action_id))
+            alias_values.extend([
+                action_id,
+                (action_def or {}).get("label"),
+                (action_def or {}).get("title"),
+                (action_def or {}).get("description"),
+            ])
         tokens = _semantic_tokens(*[str(v) for v in alias_values if v])
         aliases = {to_kebab_case(str(v)) for v in alias_values if isinstance(v, str) and v.strip()}
         candidates.append({
@@ -2971,6 +3524,7 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
             l2_data = _yaml.load(l2_content) or {}
         except Exception:
             l2_data = {}
+    concept_candidates = _load_topic_concept_candidates(topic, topic_entry)
 
     # Build prompts and invoke LLM
     system_prompt = _build_system_prompt(artifact_type, strategy, cfg)
@@ -2994,6 +3548,7 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
             cfg,
             l2_data,
             topic_entry=topic_entry,
+            concept_candidates=concept_candidates,
         )
     else:
         resources = _parse_llm_response(llm_output)
@@ -3003,6 +3558,7 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
 
     # Ensure Measure.library references companion Library resources
     _patch_measure_library_references(resources)
+    _ensure_activity_definition_codes(resources, concept_candidates=concept_candidates)
 
     # Normalize + validate
     computable_dir = td / "computable"

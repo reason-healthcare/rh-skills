@@ -1,52 +1,62 @@
 schema_version: "1.0"
 sources:
-  - name: ada-guidelines-2024
-    file: sources/ada-guidelines-2024.md
-    type: document
-    checksum: "7a0d2d4d7057b7f4d10046f08b7fdfe35ecff374717c507215679b9b4853a8e9"
-    ingested_at: "2026-04-03T00:00:00Z"
-    text_extracted: false
+- name: ada-guidelines-2024
+  file: sources/ada-guidelines-2024.md
+  type: document
+  checksum: "7a0d2d4d7057b7f4d10046f08b7fdfe35ecff374717c507215679b9b4853a8e9"
+  ingested_at: "2026-04-03T00:00:00Z"
+  text_extracted: false
 topics:
-  - name: diabetes-screening
-    title: "Diabetes Screening"
-    description: "Clinical decision support for evidence-based diabetes screening using ADA criteria"
-    author: "Clinical Informatics Team"
+- name: diabetes-screening
+  title: "Diabetes Screening"
+  description: "Clinical decision support for evidence-based diabetes screening using
+    ADA criteria"
+  author: "Clinical Informatics Team"
+  created_at: "2026-04-03T00:00:00Z"
+  structured:
+  - name: screening-criteria
+    file: 
+      topics/diabetes-screening/structured/screening-criteria/screening-criteria.yaml
     created_at: "2026-04-03T00:00:00Z"
-    structured:
-      - name: screening-criteria
-        file: topics/diabetes-screening/structured/screening-criteria/screening-criteria.yaml
-        created_at: "2026-04-03T00:00:00Z"
-        checksum: "b61662af23fa7b93b679055389aaa5fb2a7efa8b668225c7fff618fa2792ee10"
-        derived_from:
-          - ada-guidelines-2024
-      - name: risk-factors
-        file: topics/diabetes-screening/structured/risk-factors/risk-factors.yaml
-        created_at: "2026-04-03T00:00:00Z"
-        checksum: "9a295b631ca73c257eabbf2dbbcfb0d42befad2c83327c1280792c821e9c7ab7"
-        derived_from:
-          - ada-guidelines-2024
-    computable:
-      - name: diabetes-screening-computable
-        file: topics/diabetes-screening/computable/diabetes-screening-computable.yaml
-        created_at: "2026-04-03T00:00:00Z"
-        checksum: "40b32486882c106e7f820417d63ffda367ebbc8fb6e15d34425ce7e85f01ae60"
-        converged_from:
-          - screening-criteria
-          - risk-factors
-    events:
-      - timestamp: "2026-04-03T00:05:00Z"
-        type: structured_derived
-        description: Derived screening-criteria from ada-guidelines-2024
-      - timestamp: "2026-04-03T00:06:00Z"
-        type: structured_derived
-        description: Derived risk-factors from ada-guidelines-2024
-      - timestamp: "2026-04-03T00:15:00Z"
-        type: computable_converged
-        description: Converged diabetes-screening-computable from screening-criteria, risk-factors
+    checksum: "b61662af23fa7b93b679055389aaa5fb2a7efa8b668225c7fff618fa2792ee10"
+    derived_from:
+    - ada-guidelines-2024
+  - name: risk-factors
+    file: topics/diabetes-screening/structured/risk-factors/risk-factors.yaml
+    created_at: "2026-04-03T00:00:00Z"
+    checksum: "9a295b631ca73c257eabbf2dbbcfb0d42befad2c83327c1280792c821e9c7ab7"
+    derived_from:
+    - ada-guidelines-2024
+  computable:
+  - name: diabetes-screening-computable
+    file: 
+      topics/diabetes-screening/computable/diabetes-screening-computable.yaml
+    created_at: "2026-04-03T00:00:00Z"
+    checksum: "40b32486882c106e7f820417d63ffda367ebbc8fb6e15d34425ce7e85f01ae60"
+    converged_from:
+    - screening-criteria
+    - risk-factors
+  events:
+  - timestamp: "2026-04-03T00:05:00Z"
+    type: structured_derived
+    description: Derived screening-criteria from ada-guidelines-2024
+  - timestamp: "2026-04-03T00:06:00Z"
+    type: structured_derived
+    description: Derived risk-factors from ada-guidelines-2024
+  - timestamp: "2026-04-03T00:15:00Z"
+    type: computable_converged
+    description: Converged diabetes-screening-computable from 
+      screening-criteria, risk-factors
 events:
-  - timestamp: "2026-04-03T00:00:00Z"
-    type: topic_created
-    description: Topic scaffolded with rh-skills init
-  - timestamp: "2026-04-03T00:01:00Z"
-    type: source_added
-    description: "Ingested source: ada-guidelines-2024"
+- timestamp: "2026-04-03T00:00:00Z"
+  type: topic_created
+  description: Topic scaffolded with rh-skills init
+- timestamp: "2026-04-03T00:01:00Z"
+  type: source_added
+  description: "Ingested source: ada-guidelines-2024"
+- timestamp: '2026-06-08T19:42:57Z'
+  type: source_normalized
+  description: 'Normalized: clinical-doc_pdf'
+- timestamp: '2026-06-08T19:44:02Z'
+  type: source_normalized
+  description: 'Normalized: clinical-doc_pdf'

@@ -285,6 +285,7 @@ def test_validate_l3_decision_table_skips_intermediate_section_checks_for_determ
         "resourceType": "ActivityDefinition",
         "id": "action-verify",
         "kind": "ServiceRequest",
+        "code": {"coding": [{"system": "http://snomed.info/sct", "code": "185349003", "display": "Encounter for check up"}]},
         "status": "draft",
     }))
     (computable_dir / "Library-my-skill.json").write_text(json.dumps({
@@ -1265,6 +1266,112 @@ sections:
       action_labels:
         - Review prior therapy
         - Offer surgery
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_care_pathway_rejects_children_under_rule_linked_step(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway that incorrectly decomposes one recommendation into child pathway tasks"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: main-pathway
+      label: Main pathway
+      description: Overall pathway
+    - id: assess-candidacy
+      label: Assess surgical candidacy
+      description: Recommendation branch
+      parent_id: main-pathway
+      rule_id: rule-004
+      action_labels:
+        - Assess surgical candidacy
+    - id: questionnaire
+      label: Offer surgery
+      description: Separate child branch that should not sit under a rule-linked step
+      parent_id: assess-candidacy
+    - id: review-history
+      label: Review therapy history
+      description: Component task that should live in the decision table
+      parent_id: assess-candidacy
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 1
+    assert "rule-linked pathway steps must be leaves" in result.output
+
+
+def test_validate_care_pathway_allows_distinct_rule_linked_sibling_branches(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with sibling recommendation branches"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: main-pathway
+      label: Main pathway
+      description: Overall pathway
+    - id: assessment
+      label: Assessment and surgical decision
+      description: Distinct recommendation branches sit underneath this orchestration step
+      parent_id: main-pathway
+    - id: verify-diagnosis
+      label: Verify diagnosis
+      description: First recommendation branch
+      parent_id: assessment
+      rule_id: rule-001
+      action_labels:
+        - Verify diagnosis
+    - id: assess-candidacy
+      label: Assess surgical candidacy
+      description: Second recommendation branch
+      parent_id: assessment
+      rule_id: rule-004
+      action_labels:
+        - Assess surgical candidacy
   transitions: []
 concerns: []
 """)

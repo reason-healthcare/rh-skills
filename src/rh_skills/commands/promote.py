@@ -1583,8 +1583,30 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
         "rule_id": "<stub: decision-table rule id for this step, when applicable>",
         "action_labels": ["<stub: human-readable decision-table action label>"],
     }, {
-        "id": "phase-002",
-        "label": "<stub: separate phase or coordination branch>",
+        "id": "phase-002-group",
+        "label": "<stub: decision-point grouping step — use when the pathway branches into mutually exclusive sub-approaches>",
+        "description": "<stub: captures the decision point; its children capture the alternative approaches>",
+        "actor": "<stub: responsible actor>",
+        "parent_id": "main-pathway",
+    }, {
+        "id": "phase-002-branch-a",
+        "label": "<stub: first alternative sub-approach>",
+        "description": "<stub: applied when condition X is met>",
+        "actor": "<stub: responsible actor>",
+        "parent_id": "phase-002-group",
+        "rule_id": "<stub: rule id for this branch>",
+        "action_labels": ["<stub: action label for branch A>"],
+    }, {
+        "id": "phase-002-branch-b",
+        "label": "<stub: second alternative sub-approach>",
+        "description": "<stub: applied when condition Y is met>",
+        "actor": "<stub: responsible actor>",
+        "parent_id": "phase-002-group",
+        "rule_id": "<stub: rule id for this branch>",
+        "action_labels": ["<stub: action label for branch B>"],
+    }, {
+        "id": "phase-003",
+        "label": "<stub: downstream phase after branches converge>",
         "description": "<stub: separate branch when downstream timing or trigger differs>",
         "actor": "<stub: responsible actor>",
         "parent_id": "main-pathway",
@@ -2246,7 +2268,10 @@ Care-pathway extraction guidance:
 - Use care-pathway for sequencing, actor ownership, and transitions; keep recommendation logic itself in the decision-table artifact.
 - When a pathway step corresponds to a specific decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels that the step orchestrates.
 - Keep top-level steps clinically meaningful and stable; reserve leaf steps for meaningful sub-phases, not every individual recommendation.
+- **When a step encompasses multiple distinct clinical tasks** (e.g., administer a structured instrument AND evaluate objective findings AND review prior therapy), model those as **child steps** under the parent step rather than stacking them all as multiple `action_labels` on a single leaf. A step with more than one `action_label` is a signal to check whether those labels represent the same action (keep as one step) or distinct sequential/parallel clinical tasks (decompose into children). Each child step should carry its own `rule_id` if one exists in the decision-table.
+- When the source describes a multi-component assessment (e.g., KAS that covers both instrument administration and objective evaluation), decompose into sibling child steps under the assessment parent: one step per discrete clinical task. This applies especially when tasks have different actors, different artifacts, or different timing within the same phase.
 - When different parts of the pathway activate at different workflow moments, represent them as separate sibling branches under the same parent pathway rather than forcing one linear sequence.
+- When a pathway step branches into mutually exclusive sub-approaches (e.g., technique A vs technique B, escalation vs continuation), create an **intermediate grouping step** as their shared parent rather than making all branches flat children of the root. The grouping step captures the decision point; its children capture the alternatives. Example: a "Plan Surgical Approach" grouping step with `parent_id: root` whose children "Plan Full Exposure" and "Plan Dilation" each have `parent_id: plan-approach-step`.
 - Use a separate branch for coordination work such as scheduling follow-up when it has a different trigger or timing from assessment, planning, or completed follow-up.
 - Do not create a separate pathway step for intervention execution when the source is really describing preservice planning or ordering logic; keep the execution detail under the planning branch unless the guideline truly treats it as its own clinical stage.
 - Use `transitions[]` only for actual clinical progression dependencies between steps.""",
