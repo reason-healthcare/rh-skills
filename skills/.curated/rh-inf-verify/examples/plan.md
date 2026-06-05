@@ -9,8 +9,8 @@ Topic: diabetes-ccm
 Observed topic state
 - discovery-plan.yaml exists
 - normalized ingest outputs exist under sources/normalized/
-- extract-plan.md is approved and structured artifacts exist
-- no formalize-plan.md yet
+- extract-plan.yaml is approved and structured artifacts exist
+- no formalize-plan.yaml yet
 
 Expected stage applicability
 | Stage | Applicability | Why |

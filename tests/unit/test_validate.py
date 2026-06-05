@@ -86,6 +86,39 @@ concerns: []
 """)
 
 
+def make_valid_concepts_extract_l2(tmp_repo, skill="my-skill"):
+    td = tmp_repo / "topics" / skill / "structured" / "concepts"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "concepts.yaml").write_text("""\
+id: concepts
+name: concepts
+title: "Concept Catalog"
+version: "1.0.0"
+status: draft
+domain: terminology
+description: |
+  Deduplicated concept catalog derived from topic concept annotations.
+derived_from:
+  - source-l1
+artifact_type: terminology
+sections:
+  summary: "Reviewed terminology package."
+  value_sets:
+    - id: hypertension
+      name: Hypertension
+      concept_refs:
+        - hypertension
+concepts:
+  - id: hypertension
+    name: Hypertension
+    type: disorder
+    codes:
+      - system: http://snomed.info/sct
+        code: "38341003"
+        display: Hypertensive disorder, systemic arterial (disorder)
+""")
+
+
 def make_invalid_l2(tmp_repo, skill="my-skill", artifact="bad-artifact"):
     td = tmp_repo / "topics" / skill / "structured" / artifact
     td.mkdir(parents=True, exist_ok=True)
@@ -117,6 +150,70 @@ def make_valid_formalize_l3(tmp_repo, skill="my-skill", artifact="test-l3"):
         "status": "draft",
         "item": [{"linkId": "q1", "text": "Test question", "type": "string"}],
     }))
+
+
+def write_tracking_with_computable(
+    tmp_repo,
+    topic="my-skill",
+    artifact="test-l3",
+    *,
+    converged_from=None,
+    strategy="assessment",
+):
+    y = YAML()
+    y.default_flow_style = False
+    tracking = {
+        "schema_version": "1.0",
+        "sources": [],
+        "topics": [{
+            "name": topic,
+            "structured": [],
+            "computable": [{
+                "name": artifact,
+                "files": [f"topics/{topic}/computable/Questionnaire-{artifact}.json"],
+                "checksums": {},
+                "converged_from": converged_from or ["screening-criteria"],
+                "strategy": strategy,
+            }],
+            "events": [],
+        }],
+    }
+    with open(tmp_repo / "tracking.yaml", "w") as f:
+        y.dump(tracking, f)
+
+
+def write_formalize_plan_yaml(
+    tmp_repo,
+    topic="my-skill",
+    artifact="test-l3",
+    *,
+    reviewer_decision="approved",
+    implementation_target=True,
+):
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "formalize-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    plan = {
+        "topic": topic,
+        "plan_type": "formalize",
+        "status": "approved",
+        "reviewer": "Tester",
+        "reviewed_at": "2026-04-14T00:00:00Z",
+        "artifacts": [{
+            "name": artifact,
+            "artifact_type": "assessment",
+            "strategy": "assessment",
+            "input_artifacts": ["screening-criteria"],
+            "l3_targets": ["Questionnaire"],
+            "required_sections": [],
+            "reviewer_decision": reviewer_decision,
+            "implementation_target": implementation_target,
+        }],
+    }
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+    return plan_path
 
 
 # ── L2 validation tests ────────────────────────────────────────────────────────
@@ -157,6 +254,17 @@ def test_validate_unknown_artifact_exits_2(tmp_repo):
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l2", "nonexistent-artifact"])
     assert result.exit_code == 2
+
+
+def test_value_sets_section_accepts_concept_refs():
+    from rh_skills.commands.validate import _validate_required_section_completeness
+
+    errors = _validate_required_section_completeness(
+        "value_sets",
+        [{"id": "hypertension", "name": "Hypertension", "concept_refs": ["hypertension"]}],
+        emit=False,
+    )
+    assert errors == 0
 
 
 def test_validate_invalid_level_exits_2(tmp_repo):
@@ -224,6 +332,24 @@ def test_validate_extract_artifact_checks_plan_requirements(tmp_repo):
     assert "VALID" in result.output
 
 
+def test_validate_concepts_extract_artifact_allows_missing_clinical_question(tmp_repo):
+    write_extract_plan(tmp_repo, artifact="concepts")
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
+    plan = YAML().load(plan_path.read_text())
+    plan["artifacts"][0]["artifact_type"] = "terminology"
+    plan["artifacts"][0]["required_sections"] = ["summary", "value_sets"]
+    y = YAML()
+    y.default_flow_style = False
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+
+    make_valid_concepts_extract_l2(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "concepts"])
+    assert result.exit_code == 0, result.output
+    assert "VALID" in result.output
+
+
 def test_validate_extract_artifact_fails_missing_traceability(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
@@ -267,12 +393,24 @@ def test_validate_extract_artifact_fails_missing_concerns_when_plan_requires_the
 
 
 def test_validate_formalize_artifact_checks_approved_plan_requirements(tmp_repo):
-    """Valid Questionnaire FHIR JSON passes l3 validation (plan check no longer applies)."""
+    """Valid Questionnaire FHIR JSON passes l3 validation with YAML formalize plan checks."""
+    write_tracking_with_computable(tmp_repo)
+    write_formalize_plan_yaml(tmp_repo)
     make_valid_formalize_l3(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
     assert result.exit_code == 0, result.output
     assert "VALID" in result.output
+
+
+def test_validate_formalize_artifact_reads_yaml_plan_and_flags_input_mismatch(tmp_repo):
+    write_tracking_with_computable(tmp_repo, converged_from=["different-input"])
+    write_formalize_plan_yaml(tmp_repo)
+    make_valid_formalize_l3(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "l3", "test-l3"])
+    assert result.exit_code == 1
+    assert "approved formalize plan inputs" in result.output
 
 
 def test_validate_formalize_artifact_fails_when_converged_inputs_mismatch(tmp_repo):

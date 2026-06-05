@@ -6,7 +6,7 @@ validation guidance.
 ## Entry Points
 
 - Planning terminology artifacts: use **Terminology Resolution (Plan Mode)** for tool matrix, lookup gate, and candidate recording rules.
-- Reviewing `concepts-review.csv`: use **Concept Review CSV** quick-reference commands, then column definitions if needed.
+- Reviewing concept CSVs under `process/plans/concepts/`: use **Concept Review CSV** quick-reference commands, then column definitions if needed.
 - Finalizing concept review: run the **Before Finalize checklist** in the review workflow section.
 - Verifying output shape: use extract-plan and concepts schema sections below.
 
@@ -44,8 +44,8 @@ concept_review:                    # present when normalized front matter includ
   source_files:
     - sources/normalized/<source-slug>.md
   status: <pending-review | approved>
-  review_artifact: topics/<topic>/process/plans/concepts-review.csv
-  final_artifact: topics/<topic>/structured/concepts.yaml
+  review_artifact: topics/<topic>/process/plans/concepts/
+  final_artifact: topics/<topic>/structured/concepts/concepts.yaml
 artifacts:
   - name: <kebab-case>
     artifact_type: <catalog type>
@@ -76,6 +76,14 @@ artifacts:
         search_query: <query used to find this code>
     reviewer_decision: <pending-review | approved | needs-revision | rejected>
     approval_notes: <string>
+  - name: concepts                  # explicit terminology package row when concept review exists
+    artifact_type: terminology
+    source_files:
+      - sources/normalized/<source>.md
+    required_sections:
+      - summary
+      - value_sets
+    approval_notes: Materialized by `rh-skills promote concept write <topic>` after concept review finalization.
 ```
 
 ---
@@ -151,7 +159,7 @@ recommended `EXAMPLE_UCUM_UNITS` when needed.
 
 ### Extract-Stage Ontology Relationship Policy (Related Rows)
 
-Related rows in `concepts-review.csv` are extract-stage scope annotations, not broad ontology expansion.
+Related rows in the per-concept CSVs under `process/plans/concepts/` are extract-stage scope annotations, not broad ontology expansion.
 Only ontology-native predicates are allowed in this phase.
 
 Default allowed predicates:
@@ -181,10 +189,10 @@ section during formalize.
 ### Concept Review CSV
 
 When normalized source front matter contains `concepts[]`, extract planning writes:
-- `topics/<topic>/process/plans/concepts-review.csv` — the single review artifact; edit this file to approve or exclude individual codes
+- `topics/<topic>/process/plans/concepts/` — one CSV per concept (`<concept-slug>.csv`); edit these files to approve or exclude individual codes
 - `topics/<topic>/process/plans/concepts-review-meta.yaml` — finalization metadata only (written by `--finalize`)
 
-All concepts always appear in `concepts.yaml`. A concept gets a `codes` list only if at least one of its rows has `approved (y/n) = y`. Custom concepts not extracted from source documents can be added with `concept add`.
+The explicit extract artifact row named `concepts` is the reviewer-facing terminology package. `rh-skills promote concept write <topic>` materializes that row to `topics/<topic>/structured/concepts/concepts.yaml`. Only concepts with at least one approved candidate code or approved expansion are emitted into the final artifact. Custom concepts not extracted from source documents can be added with `concept add`.
 
 #### Quick Reference
 
@@ -254,7 +262,7 @@ When finalized, run during implement mode:
 ```sh
 rh-skills promote concept write <topic>
 ```
-This writes `topics/<topic>/structured/concepts.yaml`.
+This writes `topics/<topic>/structured/concepts/concepts.yaml`.
 
 #### Per-concept CSV columns
 
@@ -274,7 +282,7 @@ Each concept has its own CSV under `topics/<topic>/process/plans/concepts/<conce
 | `display` | Candidate display text |
 | `distance` | Semantic distance from MCP (float; lower = closer) |
 | `confidence (high/medium/low)` | Confidence label from MCP |
-| `include/exclude` | Set to `include` to emit this code in `concepts.yaml`; `exclude` to omit it |
+| `include/exclude` | Set to `include` to emit this code in `topics/<topic>/structured/concepts/concepts.yaml`; `exclude` to omit it |
 | `comments` | Reviewer note |
 | `row_type` | `candidate` (default), `related`, or `expansion`; discriminates candidate codes from semantic expansion rows |
 | `relation` | Ontology-native predicate for `related` rows: `is_a` \| `finding_site` \| `associated_morphology` \| `causative_agent` \| `due_to` |
@@ -290,8 +298,8 @@ This writes to the `lookup_notes` column and marks the concept as lookup-complet
 **Decision semantics:**
 - Every `candidate` row (non-empty `system` or `code`) must have `include/exclude` set to `include` or `exclude` before `--finalize` succeeds
 - `related` and `expansion` rows are optional — `--finalize` does not require them to have a decision
-- A concept with at least one `include/exclude = include` candidate row → `codes` list written in `concepts.yaml`
-- A concept with no `include` candidate rows → appears in `concepts.yaml` without a `codes` key
+- A concept with at least one `include/exclude = include` candidate row → `codes` list written in `topics/<topic>/structured/concepts/concepts.yaml`
+- A concept with no approved candidate rows and no approved expansions → the concept is omitted from the final artifact
 - `--approve-all` / `--exclude-all` only affect `candidate` rows; use `--approve-related` / `--exclude-related` to decide individual `related` rows
 - Custom concepts (`sources: custom`) follow the same rules — add codes via `concept enrich`
 
@@ -303,14 +311,14 @@ status: <pending-review | approved>
 generated_at: <ISO-8601 timestamp>
 reviewed_at: <ISO-8601 timestamp or null>
 reviewer: <reviewer name>
-csv_checksum: <SHA-256 of per-concept CSVs>
+checksums: <map of concept-slug -> SHA-256 checksum>
 review_artifact: topics/<topic>/process/plans/concepts/
-final_artifact: topics/<topic>/structured/concepts.yaml
+final_artifact: topics/<topic>/structured/concepts/concepts.yaml
 ```
 
 #### Final L2 terminology concept schema
 
-The resulting L2 artifact (`concepts.yaml`) uses this shape:
+The resulting L2 artifact (`topics/<topic>/structured/concepts/concepts.yaml`) uses this shape:
 
 ```yaml
 concepts:
@@ -449,7 +457,7 @@ sections:
   summary: <string>
   events:
     - id: e1
-      label: <triggering clinical or workflow event>
+      label: <recommendation-scoped evaluation trigger>
   conditions:
     - id: c1
       label: <condition name>
@@ -480,6 +488,13 @@ sections:
 evaluation, the condition values that must hold, and the actions that follow.
 If every rule shares the same trigger, keep the event reference explicit on each
 rule for now; de-duplication can happen later during formalization.
+
+Phase 1 guidance for a single decision-table artifact:
+- keep one artifact if needed, but make each `event` a recommendation-scoped
+  evaluation moment rather than a broad pathway phase
+- keep `when` values local to the recommendation being evaluated
+- do not restate prior pathway progression in downstream rules unless that
+  prerequisite is clinically required by the recommendation itself
 
 #### care-pathway
 

@@ -79,7 +79,7 @@ Allowed alternatives:
 
 **Runtime defaults** (assume these unless the user specifies otherwise):
 - CQL version: `1.5.3` | FHIR model: `4.0.1` | Translator: standard defaults (signatureLevel none, enableAnnotations false)
-- Engine: `rh` — does NOT auto-inject FHIRHelpers; does NOT evaluate test expressions (eval pending)
+- Engine: `rh` — does NOT auto-inject FHIRHelpers; fixture tests are executed through `rh-skills cql test` / `rh cql eval`
 
 **Anti-patterns that cause silent failures or runtime errors:**
 
@@ -882,11 +882,11 @@ must call these — do not write files directly.
 |--------|---------|--------|
 | Validate CQL syntax and semantics | `rh-skills cql validate <topic> <library>` | ✓ active (`rh cql validate`) |
 | Compile CQL to ELM JSON | `rh-skills cql translate <topic> <library>` | ✓ active (`rh cql compile`) |
-| Run fixture-based test cases | `rh-skills cql test <topic> <library>` | ⏳ eval pending — lists cases only |
+| Run fixture-based test cases | `rh-skills cql test <topic> <library>` | ✓ active (`rh cql eval` per expected expression) |
 
-`rh-skills cql test` lists fixture cases and confirms they are structurally
-complete, but does **not** execute expressions. Evaluation is pending. Do not
-attempt to replicate test execution by calling `rh cql eval` directly.
+`rh-skills cql test` discovers fixture cases under `tests/cql/<Library>/case-*/`,
+runs `rh cql eval` for every expected expression, compares actual vs expected
+values, and exits non-zero if any assertion fails.
 
 ---
 

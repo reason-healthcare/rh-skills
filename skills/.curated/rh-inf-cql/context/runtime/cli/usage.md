@@ -9,7 +9,7 @@ rh-skills cql validate hyperlipidemia-treatment-monitoring HyperlipidemiaMonitor
 ```
 
 - Resolves the `.cql` file from `topics/<topic>/computable/<LibraryName>.cql`
-- Runs `rh cql compile` on the file
+- Runs `rh cql validate` on the file
 - Reports translator errors and warnings
 - Exits 0 on success, non-zero on error
 
@@ -19,7 +19,7 @@ rh-skills cql validate hyperlipidemia-treatment-monitoring HyperlipidemiaMonitor
 rh-skills cql translate hyperlipidemia-treatment-monitoring HyperlipidemiaMonitoring
 ```
 
-- Writes ELM JSON to `topics/<topic>/computable/<LibraryName>.elm.json`
+- Writes ELM JSON to `topics/<topic>/computable/<LibraryName>.json`
 - Same path resolution as validate
 
 ## Run Test Fixtures
@@ -48,7 +48,7 @@ rh cql eval \
 
 | Output | Path |
 |--------|------|
-| ELM JSON | `topics/<topic>/computable/<LibraryName>.elm.json` |
+| ELM JSON | `topics/<topic>/computable/<LibraryName>.json` |
 | Test results | stdout / stderr (not persisted) |
 | Validation report | stdout |
 

@@ -4,13 +4,13 @@
 
 ```text
 $ rh-inf-formalize plan diabetes-ccm
-Loaded 3 approved structured inputs from extract-plan.md
+Loaded 3 approved structured inputs from extract-plan.yaml
   screening-decisions (decision-table)
   care-pathway (care-pathway)
   lab-value-sets (terminology)
 ⚠ Overlap detected: decision-table + care-pathway → PlanDefinition
   Default: separate resources (eca-rule vs clinical-protocol)
-Wrote topics/diabetes-ccm/process/plans/formalize-plan.md
+Wrote topics/diabetes-ccm/process/plans/formalize-plan.yaml
   3 artifacts proposed (1 per L2 type)
 ```
 
@@ -21,6 +21,7 @@ $ rh-inf-formalize implement diabetes-ccm
 Processing artifact 1/3: screening-decisions (decision-table)
   Running: rh-skills formalize diabetes-ccm screening-decisions
   ✓ PlanDefinition-screening-decisions.json
+  ✓ ActivityDefinition-recommend-action.json
   ✓ Library-screening-decisions.json
   ✓ ScreeningDecisions.cql
 
@@ -35,8 +36,8 @@ Processing artifact 3/3: lab-value-sets (terminology)
 
 Packaging:
   Running: rh-skills package diabetes-ccm
-  ✓ package.json
-  ✓ ImplementationGuide-diabetes-ccm.json
+  ✓ process/package-workspace/packager.toml
+  ✓ process/package-workspace/ImplementationGuide.json
   6 resources bundled
 ```
 
@@ -46,6 +47,7 @@ Packaging:
 $ rh-inf-formalize verify diabetes-ccm
 Checking decision-table artifact (screening-decisions):
   ✓ PlanDefinition has action[] with conditions
+  ✓ ActivityDefinition outputs are referenced by definitionCanonical
   ✓ Library has type and content
   ✓ CQL syntactically valid
   ✓ converged_from matches approved plan inputs

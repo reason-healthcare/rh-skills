@@ -40,7 +40,8 @@ optional_fields:
 #   concepts           — concept catalog; only for terminology artifact type
                        # Structure:
                        #   concepts:
-                       #   - name: <human-readable concept label>  # required
+                       #   - id: <stable concept identifier, kebab-case> # required
+                       #     name: <human-readable concept label>  # required
                        #     type: <SNOMED semantic tag, e.g. finding | disorder | procedure | observable entity>  # required
                        #     role: <optional clinical role>        # optional; one of:
                        #           inclusion-criterion | exclusion-criterion | intervention |
@@ -60,6 +61,11 @@ optional_fields:
                        #   - Custom concepts (not extracted from source documents) are added via
                        #     'concept enrich --source custom'; their sources value is 'custom'.
                        #   - related_codes[] is NOT written at L2; ECL-based expansion moves to L3 formalization.
+                       #
+                       #   terminology sections:
+                       #   sections.value_sets[] is a thin manifest of computable ValueSets.
+                       #   It references reviewed concepts by concepts[].id rather than duplicating
+                       #   approved codes or expansions inline.
 
 artifact_types:
   - eligibility-criteria
@@ -141,21 +147,33 @@ artifact_type_sections:
         ECA trigger event definitions, typically {id, label, description?,
         trigger_type?}. trigger_type: named-event | data-changed | periodic.
         These become action.trigger entries in a FHIR eca-rule PlanDefinition.
-        Do NOT use this section to model care-pathway entry conditions or
-        workflow step applicability — those belong in care-pathway.steps.
+        Prefer recommendation-scoped evaluation moments such as
+        "preoperative-planning-initiated" over broad pathway phases such as
+        "planning". Do NOT use this section to model care-pathway entry
+        conditions or workflow step applicability — those belong in
+        care-pathway.steps.
       conditions: >
         List of condition definitions, typically {id, label, description?,
         values[]}. Conditions represent the decision inputs or threshold tests.
         These become action.condition (kind=applicability) entries in FHIR.
+        Keep them local to the recommendation being evaluated; do not restate
+        upstream pathway progression unless it is clinically required by the
+        recommendation itself.
       actions: >
         List of action definitions, typically {id, label, description?, type?,
+        kind?, code?, valueset?, do_not_perform?, participants?, documentation?,
         intent?}. Actions represent the clinical recommendation or workflow
-        consequence of a rule firing. These are flat — not nested workflow
-        steps. Use care-pathway.steps for sequenced workflow hierarchies.
+        consequence of a rule firing and formalize to ActivityDefinition
+        resources referenced by PlanDefinition.action.definitionCanonical.
+        These are flat — not nested workflow steps. Use care-pathway.steps for
+        sequenced workflow hierarchies.
       rules: >
         List of ECA bindings, typically {id, event?, when{}, then[]}. Each
         rule references one event (optional when global), maps condition ids to
-        values in `when`, and lists action ids in `then`.
+        values in `when`, and lists action ids in `then`. Phase 1 guidance:
+        one decision-table artifact may contain multiple recommendation groups,
+        but each rule should stay recommendation-scoped rather than encoding
+        the entire care pathway as cumulative prerequisite state.
 
 status_values:
   - draft

@@ -10,8 +10,8 @@ from rh_skills.common import (
     load_schema,
     log_error,
     log_warn,
-    require_tracking,
     require_topic,
+    require_tracking,
     schemas_dir,
     topic_dir,
 )
@@ -102,6 +102,14 @@ def _collect_stub_paths(value, path: str = "") -> list[str]:
     return stubs
 
 
+def _requires_clinical_question(artifact: str, artifact_data: dict) -> bool:
+    """Return whether extract validation should require clinical_question."""
+    return not (
+        artifact == "concepts"
+        and artifact_data.get("artifact_type") == "terminology"
+    )
+
+
 def _validate_extract_artifact(
     topic: str,
     artifact: str,
@@ -135,7 +143,7 @@ def _validate_extract_artifact(
         _report_error("  MISSING extract field: artifact_type", emit=emit)
         errors += 1
 
-    if not artifact_data.get("clinical_question"):
+    if _requires_clinical_question(artifact, artifact_data) and not artifact_data.get("clinical_question"):
         _report_error("  MISSING extract field: clinical_question", emit=emit)
         errors += 1
 
@@ -259,8 +267,18 @@ def _validate_required_section_completeness(
         if not _is_non_empty_list(section_value):
             _report_error("  MISSING required formalize section content: value_sets", emit=emit)
             return 1
-        if not any(_is_non_empty_list(value_set.get("codes")) for value_set in section_value if isinstance(value_set, dict)):
-            _report_error("  INCOMPLETE formalize section: value_sets require coded entries", emit=emit)
+        if not any(
+            isinstance(value_set, dict)
+            and (
+                _is_non_empty_list(value_set.get("codes"))
+                or _is_non_empty_list(value_set.get("concept_refs"))
+            )
+            for value_set in section_value
+        ):
+            _report_error(
+                "  INCOMPLETE formalize section: value_sets require coded entries or concept_refs",
+                emit=emit,
+            )
             errors += 1
     elif section_name == "measures":
         if not _is_non_empty_list(section_value):
@@ -306,11 +324,19 @@ def _validate_formalize_artifact(
     *,
     emit: bool = True,
 ) -> tuple[int, int]:
-    plan_path = topic_dir(topic) / "process" / "plans" / "formalize-plan.md"
-    if not plan_path.exists():
+    plans_dir = topic_dir(topic) / "process" / "plans"
+    yaml_plan_path = plans_dir / "formalize-plan.yaml"
+    markdown_plan_path = plans_dir / "formalize-plan.md"
+
+    if yaml_plan_path.exists():
+        plan = _yaml_safe().load(yaml_plan_path.read_text()) or {}
+        plan_label = "formalize-plan.yaml"
+    elif markdown_plan_path.exists():
+        plan = _parse_markdown_frontmatter(markdown_plan_path)
+        plan_label = "formalize-plan.md"
+    else:
         return 0, 0
 
-    plan = _parse_markdown_frontmatter(plan_path)
     if plan.get("status") != "approved":
         return 0, 0
 
@@ -325,7 +351,7 @@ def _validate_formalize_artifact(
     if target_entry is None:
         if artifact_data.get("converged_from"):
             _report_warn(
-                "  formalize-plan.md exists but this artifact is not the approved implementation target",
+                f"  {plan_label} exists but this artifact is not the approved implementation target",
                 emit=emit,
             )
             return 0, 1
@@ -336,7 +362,7 @@ def _validate_formalize_artifact(
 
     if target_entry.get("reviewer_decision") != "approved":
         _report_error(
-            "  formalize-plan.md target is not approved for implementation",
+            f"  {plan_label} target is not approved for implementation",
             emit=emit,
         )
         errors += 1
@@ -575,7 +601,31 @@ def validate_artifact_file(
         return errors, warnings
 
     elif level in ("l3", "computable"):
-        return _validate_l3_fhir_json(topic, artifact, emit=emit)
+        errors = 0
+        warnings = 0
+
+        try:
+            tracking = require_tracking()
+            topic_entry = require_topic(tracking, topic)
+        except click.UsageError:
+            topic_entry = {}
+
+        computable_entries = topic_entry.get("computable", []) if isinstance(topic_entry, dict) else []
+        artifact_data = next(
+            (entry for entry in computable_entries if entry.get("name") == artifact),
+            {},
+        )
+
+        formalize_errors, formalize_warnings = _validate_formalize_artifact(
+            topic, artifact, artifact_data, emit=emit,
+        )
+        errors += formalize_errors
+        warnings += formalize_warnings
+
+        fhir_errors, fhir_warnings = _validate_l3_fhir_json(topic, artifact, emit=emit)
+        errors += fhir_errors
+        warnings += fhir_warnings
+        return errors, warnings
 
     else:
         raise click.UsageError(

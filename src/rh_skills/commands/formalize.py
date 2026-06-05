@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 import click
@@ -86,8 +87,8 @@ STRATEGY_REGISTRY: dict[str, dict] = {
     },
     "decision-table": {
         "primary": "PlanDefinition",
-        "supporting": ["Library"],
-        "description": "PlanDefinition (eca-rule) + Library (CQL)",
+        "supporting": ["Library", "ActivityDefinition"],
+        "description": "PlanDefinition (eca-rule) + ActivityDefinition + Library (CQL)",
     },
     "care-pathway": {
         "primary": "PlanDefinition",
@@ -221,6 +222,515 @@ def _patch_measure_library_references(resources: list[dict]) -> None:
             resource["library"] = library_urls
 
 
+def _questionnaire_item_type(raw_type: str | None) -> str:
+    """Map L2 assessment item types to FHIR Questionnaire item types."""
+    normalized = str(raw_type or "").strip().lower()
+    mapping = {
+        "ordinal": "choice",
+        "choice": "choice",
+        "likert": "choice",
+        "boolean": "boolean",
+        "numeric": "integer",
+        "number": "integer",
+        "integer": "integer",
+        "text": "string",
+        "string": "string",
+        "date": "date",
+    }
+    return mapping.get(normalized, "choice")
+
+
+def _answer_option_value(option: dict) -> dict | None:
+    """Build a FHIR answerOption.value[x] from an L2 option entry."""
+    label = option.get("label")
+    value = option.get("value", label)
+    if label is not None:
+        return {
+            "valueCoding": {
+                "code": str(value if value is not None else label),
+                "display": str(label),
+            }
+        }
+    if isinstance(value, bool):
+        return {"valueBoolean": value}
+    if isinstance(value, int) and not isinstance(value, bool):
+        return {"valueInteger": value}
+    if isinstance(value, float):
+        return {"valueDecimal": value}
+    if value is None:
+        return None
+    return {"valueString": str(value)}
+
+
+def _build_questionnaire_items(artifact_name: str, l2_data: dict | None) -> list[dict]:
+    """Build Questionnaire.item stubs from L2 assessment sections."""
+    sections = (l2_data or {}).get("sections") or {}
+    items = sections.get("items") or []
+    if not isinstance(items, list):
+        items = []
+
+    questionnaire_items: list[dict] = []
+    for idx, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            continue
+
+        link_id = str(item.get("id") or f"q{idx}")
+        text = str(
+            item.get("text")
+            or item.get("label")
+            or f"{artifact_name.replace('-', ' ').title()} item {idx}"
+        )
+        questionnaire_item = {
+            "linkId": link_id,
+            "text": text,
+            "type": _questionnaire_item_type(item.get("type")),
+        }
+
+        options = item.get("options") or []
+        answer_options = []
+        if isinstance(options, list):
+            for option in options:
+                if not isinstance(option, dict):
+                    continue
+                value = _answer_option_value(option)
+                if value is not None:
+                    answer_options.append(value)
+        if answer_options:
+            questionnaire_item["answerOption"] = answer_options
+
+        questionnaire_items.append(questionnaire_item)
+
+    if questionnaire_items:
+        return questionnaire_items
+
+    return [{
+        "linkId": "q1",
+        "text": "Replace with assessment item text",
+        "type": "choice",
+    }]
+
+
+def _build_evidence_variable_characteristics(
+    artifact_type: str,
+    l2_data: dict | None,
+) -> list[dict]:
+    """Build EvidenceVariable.characteristic stubs from L2 sections."""
+    sections = (l2_data or {}).get("sections") or {}
+    characteristics: list[dict] = []
+
+    def add_description(value: str | None) -> None:
+        if value:
+            characteristics.append({"description": value})
+
+    frames = sections.get("frames") or []
+    if isinstance(frames, list):
+        for frame in frames:
+            if not isinstance(frame, dict):
+                continue
+            add_description(frame.get("population") and f"Population: {frame['population']}")
+            add_description(frame.get("intervention") and f"Intervention: {frame['intervention']}")
+            add_description(frame.get("comparison") and f"Comparison: {frame['comparison']}")
+            outcomes = frame.get("outcomes") or []
+            if isinstance(outcomes, list):
+                outcome_values = [str(outcome) for outcome in outcomes if outcome]
+                if outcome_values:
+                    add_description(f"Outcomes: {'; '.join(outcome_values)}")
+
+    risk_factors = sections.get("risk_factors") or []
+    if isinstance(risk_factors, list):
+        for risk_factor in risk_factors:
+            if not isinstance(risk_factor, dict):
+                continue
+            factor = risk_factor.get("factor") or risk_factor.get("name") or risk_factor.get("id")
+            if not factor:
+                continue
+            extras = [
+                str(risk_factor.get("direction")) if risk_factor.get("direction") else "",
+                str(risk_factor.get("magnitude")) if risk_factor.get("magnitude") else "",
+            ]
+            extras = [entry for entry in extras if entry]
+            description = f"Risk factor: {factor}"
+            if extras:
+                description += f" ({'; '.join(extras)})"
+            add_description(description)
+
+    for section_name, prefix in (
+        ("populations", "Population"),
+        ("interventions", "Intervention"),
+        ("comparisons", "Comparison"),
+        ("outcomes", "Outcome"),
+    ):
+        entries = sections.get(section_name) or []
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if isinstance(entry, dict):
+                label = entry.get("description") or entry.get("name") or entry.get("label") or entry.get("id")
+            else:
+                label = entry
+            if label:
+                add_description(f"{prefix}: {label}")
+
+    if characteristics:
+        return characteristics
+
+    fallback_by_type = {
+        "evidence-summary": "Population/intervention/outcome criteria to be refined from the evidence summary",
+        "eligibility-criteria": "Eligibility criterion to be refined into coded inclusion or exclusion logic",
+        "risk-factors": "Risk factor characteristic to be refined into coded exposure logic",
+    }
+    return [{"description": fallback_by_type.get(artifact_type, "Characteristic criteria to be refined")}]
+
+
+def _activity_definition_kind(raw_type: str | None) -> str:
+    """Map L2 care-pathway action types to ActivityDefinition.kind."""
+    normalized = str(raw_type or "").strip().lower()
+    mapping = {
+        "order": "ServiceRequest",
+        "servicerequest": "ServiceRequest",
+        "referral": "ServiceRequest",
+        "assessment": "ServiceRequest",
+        "communication": "CommunicationRequest",
+        "communicationrequest": "CommunicationRequest",
+        "medication": "MedicationRequest",
+        "medicationrequest": "MedicationRequest",
+        "task": "Task",
+    }
+    return mapping.get(normalized, "ServiceRequest")
+
+
+def _build_care_pathway_actions(
+    artifact_name: str,
+    canonical: str,
+    activity_definition_id: str,
+    l2_data: dict | None,
+) -> list[dict]:
+    """Build PlanDefinition.action stubs from L2 care-pathway sections."""
+    sections = (l2_data or {}).get("sections") or {}
+    steps = sections.get("steps") or []
+    transitions = sections.get("transitions") or []
+    triggers = sections.get("triggers") or []
+
+    if not isinstance(steps, list):
+        steps = []
+    if not isinstance(transitions, list):
+        transitions = []
+    if not isinstance(triggers, list):
+        triggers = []
+
+    transition_map: dict[str, list[dict]] = {}
+    for transition in transitions:
+        if not isinstance(transition, dict):
+            continue
+        from_id = transition.get("from_id")
+        to_id = transition.get("to_id")
+        if not from_id or not to_id:
+            continue
+        entry = {
+            "actionId": str(to_id),
+            "relationship": "before-start",
+        }
+        if transition.get("description"):
+            entry["description"] = str(transition["description"])
+        if transition.get("condition"):
+            entry["offsetDuration"] = {
+                "value": 1,
+                "unit": "d",
+                "system": "http://unitsofmeasure.org",
+                "code": "d",
+            }
+        transition_map.setdefault(str(from_id), []).append(entry)
+
+    actions: list[dict] = []
+    for idx, step in enumerate(steps, start=1):
+        if not isinstance(step, dict):
+            continue
+        step_id = str(step.get("id") or f"step-{idx}")
+        title = str(step.get("label") or step.get("title") or f"Step {idx}")
+        description = str(
+            step.get("description")
+            or step.get("label")
+            or f"{artifact_name.replace('-', ' ').title()} pathway step {idx}"
+        )
+        action = {
+            "id": step_id,
+            "title": title,
+            "description": description,
+            "definitionCanonical": f"{canonical}/ActivityDefinition/{activity_definition_id}",
+        }
+        if step_id in transition_map:
+            action["relatedAction"] = transition_map[step_id]
+        condition_text = step.get("applicability_condition")
+        if condition_text:
+            action["condition"] = [{
+                "kind": "applicability",
+                "expression": {
+                    "language": "text/fhirpath",
+                    "expression": f"true /* {condition_text} */",
+                },
+            }]
+        if idx == 1 and triggers:
+            trigger = triggers[0] if isinstance(triggers[0], dict) else {}
+            action["trigger"] = [{
+                "type": "named-event",
+                "name": str(trigger.get("id") or "pathway-entry"),
+            }]
+        actions.append(action)
+
+    if actions:
+        return actions
+
+    return [{
+        "title": "Initial action",
+        "description": "Stub action",
+    }]
+
+
+def _build_care_pathway_activity_definition(
+    artifact_name: str,
+    sup_resource: dict,
+    l2_data: dict | None,
+) -> None:
+    """Populate ActivityDefinition stub details from the first care-pathway step."""
+    sections = (l2_data or {}).get("sections") or {}
+    steps = sections.get("steps") or []
+    if not isinstance(steps, list) or not steps:
+        sup_resource["kind"] = "ServiceRequest"
+        return
+
+    first_step = steps[0] if isinstance(steps[0], dict) else {}
+    label = first_step.get("label") or first_step.get("title") or artifact_name.replace("-", " ").title()
+    description = first_step.get("description") or f"Activity stub for {label}"
+    sup_resource["kind"] = _activity_definition_kind(first_step.get("action_type"))
+    sup_resource["title"] = str(label)
+    sup_resource["description"] = str(description)
+    sup_resource["intent"] = "proposal"
+
+
+def _decision_table_action_title(action_def: dict) -> str:
+    return str(
+        action_def.get("label")
+        or action_def.get("title")
+        or action_def.get("id")
+        or "Decision table action"
+    )
+
+
+def _build_decision_table_activity_definitions(cfg: dict, l2_data: dict | None) -> list[dict]:
+    """Build one ActivityDefinition per L2 decision-table action."""
+    sections = (l2_data or {}).get("sections") or {}
+    actions = sections.get("actions") or []
+    if not isinstance(actions, list):
+        actions = []
+
+    resources: list[dict] = []
+    canonical = cfg["canonical"]
+    version = cfg["version"]
+    status = cfg["status"]
+    today = today_date()
+
+    for idx, action_def in enumerate(actions, start=1):
+        if not isinstance(action_def, dict):
+            continue
+        action_id = to_kebab_case(str(action_def.get("id") or f"action-{idx}")) or f"action-{idx}"
+        title = _decision_table_action_title(action_def)
+        resource: dict = {
+            "resourceType": "ActivityDefinition",
+            "id": action_id,
+            "url": f"{canonical}/ActivityDefinition/{action_id}",
+            "version": version,
+            "status": status,
+            "date": today,
+            "name": _pascal_from_kebab(action_id),
+            "title": title,
+            "description": str(action_def.get("description") or title),
+            "kind": _activity_definition_kind(action_def.get("kind") or action_def.get("type")),
+            "intent": str(action_def.get("intent") or "proposal"),
+        }
+        if action_def.get("do_not_perform") is True:
+            resource["doNotPerform"] = True
+
+        code = action_def.get("code")
+        if isinstance(code, dict):
+            coding = {
+                "code": str(code.get("code") or action_id),
+            }
+            if code.get("system"):
+                coding["system"] = str(code["system"])
+            if code.get("display"):
+                coding["display"] = str(code["display"])
+            resource["code"] = {"coding": [coding], "text": title}
+        else:
+            resource["code"] = {"text": title}
+
+        participants = action_def.get("participants") or action_def.get("participant")
+        if isinstance(participants, list):
+            participant_entries = []
+            for participant in participants:
+                if isinstance(participant, dict):
+                    role = participant.get("role") or participant.get("type")
+                else:
+                    role = participant
+                if role:
+                    participant_entries.append({"type": str(role)})
+            if participant_entries:
+                resource["participant"] = participant_entries
+
+        documentation = action_def.get("documentation") or []
+        if isinstance(documentation, list):
+            related_artifacts = []
+            for entry in documentation:
+                if not isinstance(entry, dict):
+                    continue
+                related = {"type": str(entry.get("type") or "documentation")}
+                if entry.get("text"):
+                    related["display"] = str(entry["text"])
+                related_artifacts.append(related)
+            if related_artifacts:
+                resource["relatedArtifact"] = related_artifacts
+
+        resources.append(resource)
+
+    return resources
+
+
+def _build_decision_table_plan_actions(
+    artifact_name: str,
+    canonical: str,
+    l2_data: dict | None,
+) -> list[dict]:
+    """Build PlanDefinition.action entries from L2 decision-table rules."""
+    sections = (l2_data or {}).get("sections") or {}
+    events = sections.get("events") or []
+    conditions = sections.get("conditions") or []
+    actions = sections.get("actions") or []
+    rules = sections.get("rules") or []
+
+    event_index = {
+        str(event.get("id")): event
+        for event in events
+        if isinstance(event, dict) and event.get("id")
+    } if isinstance(events, list) else {}
+    condition_index = {
+        str(condition.get("id")): condition
+        for condition in conditions
+        if isinstance(condition, dict) and condition.get("id")
+    } if isinstance(conditions, list) else {}
+    action_index = {
+        str(action_def.get("id")): action_def
+        for action_def in actions
+        if isinstance(action_def, dict) and action_def.get("id")
+    } if isinstance(actions, list) else {}
+
+    plan_actions: list[dict] = []
+    if isinstance(rules, list):
+        for idx, rule in enumerate(rules, start=1):
+            if not isinstance(rule, dict):
+                continue
+
+            event = event_index.get(str(rule.get("event")))
+            then_ids = rule.get("then") or []
+            child_actions = []
+            if isinstance(then_ids, list):
+                for action_ref in then_ids:
+                    action_def = action_index.get(str(action_ref))
+                    action_id = to_kebab_case(str(action_ref))
+                    if not action_id:
+                        continue
+                    title = _decision_table_action_title(action_def or {"id": action_ref})
+                    child_actions.append({
+                        "id": action_id,
+                        "title": title,
+                        "description": str((action_def or {}).get("description") or title),
+                        "definitionCanonical": f"{canonical}/ActivityDefinition/{action_id}",
+                    })
+
+            title_parts = []
+            if event and event.get("label"):
+                title_parts.append(str(event["label"]))
+            if child_actions:
+                title_parts.append(child_actions[0]["title"])
+            action_entry: dict = {
+                "id": str(rule.get("id") or f"rule-{idx}"),
+                "title": " — ".join(title_parts) if title_parts else f"{artifact_name.replace('-', ' ').title()} rule {idx}",
+                "description": str(rule.get("description") or (event or {}).get("description") or f"Decision rule {idx}"),
+            }
+
+            if event:
+                trigger = {
+                    "type": str(event.get("trigger_type") or "named-event"),
+                    "name": str(event.get("id") or f"event-{idx}"),
+                }
+                action_entry["trigger"] = [trigger]
+
+            when_map = rule.get("when") or {}
+            condition_entries = []
+            if isinstance(when_map, dict):
+                for cond_id, expected in when_map.items():
+                    normalized_expected = str(expected or "").strip().lower()
+                    if normalized_expected in {"", "n/a", "na", "*"}:
+                        continue
+                    condition = condition_index.get(str(cond_id), {})
+                    cql_name = _condition_label_to_cql_name(
+                        str(condition.get("label") or cond_id or "Condition")
+                    )
+                    expression = {
+                        "language": "text/cql-identifier",
+                        "expression": cql_name,
+                    }
+                    if normalized_expected in {"no", "false", "absent"}:
+                        expression = {
+                            "language": "text/cql-expression",
+                            "expression": f"not {cql_name}",
+                        }
+                    condition_entries.append({
+                        "kind": "applicability",
+                        "expression": expression,
+                    })
+            if condition_entries:
+                action_entry["condition"] = condition_entries
+
+            if child_actions:
+                action_entry["action"] = child_actions
+
+            plan_actions.append(action_entry)
+
+    if plan_actions:
+        return plan_actions
+
+    return [{
+        "title": "Initial action",
+        "description": "Stub action",
+    }]
+
+
+def _load_approved_formalize_target(topic: str) -> dict | None:
+    """Return the approved implementation target from formalize-plan.yaml if present."""
+    plan_path = topic_dir(topic) / "process" / "plans" / "formalize-plan.yaml"
+    if not plan_path.exists():
+        return None
+
+    data = YAML(typ="safe").load(plan_path.read_text()) or {}
+    if data.get("status") != "approved":
+        raise click.UsageError(
+            "formalize-plan.yaml is not approved. Review and approve the plan before formalizing."
+        )
+
+    artifacts = data.get("artifacts") or []
+    targets = [entry for entry in artifacts if entry.get("implementation_target") is True]
+    if len(targets) != 1:
+        raise click.UsageError(
+            "formalize-plan.yaml must mark exactly one artifact as implementation_target: true."
+        )
+
+    target = targets[0]
+    if target.get("reviewer_decision") != "approved":
+        raise click.UsageError(
+            "formalize-plan.yaml target is not approved for implementation."
+        )
+    return target
+
+
 def _parse_llm_response(raw: str) -> list[dict]:
     """Parse LLM response into list of FHIR resource dicts.
 
@@ -251,8 +761,169 @@ def _parse_llm_response(raw: str) -> list[dict]:
 
 def _condition_label_to_cql_name(label: str) -> str:
     """Convert a condition label to a CQL define name (PascalCase, no spaces)."""
-    words = re.split(r"[\s\-_/]+", label)
+    words = re.split(r"[^A-Za-z0-9]+", label)
     return "".join(w.capitalize() for w in words if w)
+
+
+def _pascal_from_kebab(value: str) -> str:
+    return "".join(w.capitalize() for w in to_kebab_case(value).split("-") if w)
+
+
+def _normalize_legacy_system(system: str) -> str:
+    normalized = (system or "").strip().lower()
+    aliases = {
+        "snomed ct": "http://snomed.info/sct",
+        "snomed": "http://snomed.info/sct",
+        "loinc": "http://loinc.org",
+        "icd-10-cm": "http://hl7.org/fhir/sid/icd-10-cm",
+        "icd10-cm": "http://hl7.org/fhir/sid/icd-10-cm",
+        "rxnorm": "http://www.nlm.nih.gov/research/umls/rxnorm",
+    }
+    return aliases.get(normalized, system)
+
+
+def _group_value_set_codings(codings: list[dict]) -> list[dict]:
+    grouped: dict[str, dict] = {}
+    seen: set[tuple[str, str]] = set()
+    for coding in codings:
+        system = (coding.get("system") or "").strip()
+        code = (coding.get("code") or "").strip()
+        if not system or not code:
+            continue
+        key = (system.casefold(), code.casefold())
+        if key in seen:
+            continue
+        seen.add(key)
+        include = grouped.setdefault(system, {"system": system, "concept": []})
+        concept_entry = {"code": code}
+        display = (coding.get("display") or "").strip()
+        if display:
+            concept_entry["display"] = display
+        include["concept"].append(concept_entry)
+    return list(grouped.values())
+
+
+def _build_terminology_stub_resources(
+    artifact_name: str,
+    cfg: dict,
+    l2_data: dict | None = None,
+) -> list[dict]:
+    today = today_date()
+    canonical = cfg["canonical"]
+    version = cfg["version"]
+    status = cfg["status"]
+    sections = (l2_data or {}).get("sections") or {}
+    value_sets = sections.get("value_sets") or []
+    concepts = (l2_data or {}).get("concepts") or []
+    concept_index = {
+        str(c.get("id", "")).strip(): c
+        for c in concepts
+        if isinstance(c, dict) and str(c.get("id", "")).strip()
+    }
+
+    resources: list[dict] = []
+    used_ids: defaultdict[str, int] = defaultdict(int)
+
+    if not isinstance(value_sets, list) or not value_sets:
+        value_sets = [{"id": artifact_name, "name": artifact_name}]
+
+    for idx, value_set in enumerate(value_sets, start=1):
+        if not isinstance(value_set, dict):
+            continue
+        raw_id = str(value_set.get("id") or value_set.get("name") or f"{artifact_name}-{idx}")
+        base_vs_id = to_kebab_case(raw_id) or to_kebab_case(f"{artifact_name}-{idx}")
+        used_ids[base_vs_id] += 1
+        vs_id = base_vs_id if used_ids[base_vs_id] == 1 else f"{base_vs_id}-{used_ids[base_vs_id]}"
+        vs_name = str(value_set.get("name") or value_set.get("title") or raw_id).strip()
+
+        codings: list[dict] = []
+
+        default_system = _normalize_legacy_system(str(value_set.get("system") or "").strip())
+        for entry in value_set.get("codes") or []:
+            if isinstance(entry, dict):
+                codings.append({
+                    "system": _normalize_legacy_system(str(entry.get("system") or default_system)),
+                    "code": str(entry.get("code") or ""),
+                    "display": str(entry.get("display") or ""),
+                })
+            elif isinstance(entry, str):
+                codings.append({"system": default_system, "code": entry, "display": ""})
+
+        for concept_ref in value_set.get("concept_refs") or []:
+            concept = concept_index.get(str(concept_ref).strip())
+            if not isinstance(concept, dict):
+                continue
+            for entry in concept.get("codes") or []:
+                if isinstance(entry, dict):
+                    codings.append({
+                        "system": _normalize_legacy_system(str(entry.get("system") or "")),
+                        "code": str(entry.get("code") or ""),
+                        "display": str(entry.get("display") or ""),
+                    })
+            for expansion in concept.get("expansions") or []:
+                if isinstance(expansion, dict):
+                    codings.append({
+                        "system": _normalize_legacy_system(str(expansion.get("system") or default_system)),
+                        "code": str(expansion.get("code") or ""),
+                        "display": "",
+                    })
+
+        for concept in value_set.get("concepts") or []:
+            if not isinstance(concept, dict):
+                continue
+            system = _normalize_legacy_system(str(concept.get("system") or default_system))
+            code = str(concept.get("code") or "").strip()
+            display = str(concept.get("display") or concept.get("term") or "").strip()
+            if code:
+                codings.append({"system": system, "code": code, "display": display})
+            elif display:
+                codings.append({
+                    "system": system or "http://snomed.info/sct",
+                    "code": "TODO:MCP-UNREACHABLE",
+                    "display": display,
+                })
+
+        includes = _group_value_set_codings(codings)
+        if not includes:
+            includes = [{
+                "system": "http://snomed.info/sct",
+                "concept": [{"code": "TODO:MCP-UNREACHABLE"}],
+            }]
+
+        resources.append({
+            "resourceType": "ValueSet",
+            "id": vs_id,
+            "url": f"{canonical}/ValueSet/{vs_id}",
+            "version": version,
+            "status": status,
+            "date": today,
+            "name": _pascal_from_kebab(vs_id),
+            "title": vs_name or artifact_name.replace("-", " ").title(),
+            "compose": {"include": includes},
+        })
+
+    concept_maps = sections.get("concept_maps") or sections.get("concept_mappings") or []
+    if isinstance(concept_maps, list):
+        for idx, concept_map in enumerate(concept_maps, start=1):
+            if not isinstance(concept_map, dict):
+                continue
+            raw_id = str(concept_map.get("id") or concept_map.get("name") or f"{artifact_name}-concept-map-{idx}")
+            cm_id = to_kebab_case(raw_id) or to_kebab_case(f"{artifact_name}-concept-map-{idx}")
+            source_system = str(concept_map.get("source_system") or "http://example.org/source")
+            target_system = str(concept_map.get("target_system") or "http://example.org/target")
+            resources.append({
+                "resourceType": "ConceptMap",
+                "id": cm_id,
+                "url": f"{canonical}/ConceptMap/{cm_id}",
+                "version": version,
+                "status": status,
+                "date": today,
+                "name": _pascal_from_kebab(cm_id),
+                "title": str(concept_map.get("name") or raw_id).replace("-", " ").title(),
+                "group": [{"source": source_system, "target": target_system, "element": []}],
+            })
+
+    return resources
 
 
 def _build_stub_resources(
@@ -272,6 +943,9 @@ def _build_stub_resources(
     version = cfg["version"]
     status = cfg["status"]
 
+    if artifact_type == "terminology":
+        return _build_terminology_stub_resources(artifact_name, cfg, l2_data)
+
     resources = []
 
     # Primary resource
@@ -282,7 +956,7 @@ def _build_stub_resources(
         "version": version,
         "status": status,
         "date": today,
-        "name": "".join(w.capitalize() for w in resource_id.split("-")),
+        "name": _pascal_from_kebab(resource_id),
         "title": artifact_name.replace("-", " ").title(),
     }
 
@@ -290,24 +964,23 @@ def _build_stub_resources(
     if primary == "PlanDefinition":
         plan_type = "eca-rule" if artifact_type in ("decision-table", "policy") else "clinical-protocol"
         primary_resource["type"] = {"coding": [{"code": plan_type}]}
+        if artifact_type == "decision-table" and "Library" in supporting:
+            lib_id = f"{resource_id}-{to_kebab_case('Library')}"
+            primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
         if artifact_type == "decision-table" and l2_data:
-            conditions = (l2_data.get("sections") or {}).get("conditions") or []
-            if conditions:
-                actions = []
-                for cond in conditions:
-                    cql_name = _condition_label_to_cql_name(
-                        cond.get("label") or cond.get("id") or "Condition"
-                    )
-                    actions.append({
-                        "title": cond.get("label") or cond.get("id"),
-                        "condition": [{
-                            "kind": "applicability",
-                            "expression": {"language": "text/cql-identifier", "expression": cql_name},
-                        }],
-                    })
-                primary_resource["action"] = actions
-            else:
-                primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
+            primary_resource["action"] = _build_decision_table_plan_actions(
+                artifact_name,
+                canonical,
+                l2_data,
+            )
+        elif artifact_type == "care-pathway":
+            activity_definition_id = f"{resource_id}-{to_kebab_case('ActivityDefinition')}"
+            primary_resource["action"] = _build_care_pathway_actions(
+                artifact_name,
+                canonical,
+                activity_definition_id,
+                l2_data,
+            )
         else:
             primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
     elif primary == "Measure":
@@ -323,19 +996,24 @@ def _build_stub_resources(
             lib_id = f"{resource_id}-{to_kebab_case('Library')}"
             primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
     elif primary == "Questionnaire":
-        primary_resource["item"] = [{"linkId": "q1", "text": "Stub question", "type": "choice"}]
+        primary_resource["item"] = _build_questionnaire_items(artifact_name, l2_data)
     elif primary == "ValueSet":
         primary_resource["compose"] = {"include": [{"system": "http://snomed.info/sct", "concept": [{"code": "TODO:PLACEHOLDER"}]}]}
     elif primary == "Evidence":
         primary_resource["certainty"] = [{"rating": {"coding": [{"code": "moderate"}]}}]
     elif primary == "EvidenceVariable":
         # Used by eligibility-criteria and risk-factors strategies
-        primary_resource["characteristic"] = [{"description": "Stub characteristic — replace with coded criteria"}]
+        primary_resource["characteristic"] = _build_evidence_variable_characteristics(artifact_type, l2_data)
 
     resources.append(primary_resource)
 
+    if artifact_type == "decision-table":
+        resources.extend(_build_decision_table_activity_definitions(cfg, l2_data))
+
     # Supporting resources
     for sup_type in supporting:
+        if artifact_type == "decision-table" and sup_type == "ActivityDefinition":
+            continue
         sup_id = f"{resource_id}-{to_kebab_case(sup_type)}"
         sup_resource: dict = {
             "resourceType": sup_type,
@@ -344,16 +1022,19 @@ def _build_stub_resources(
             "version": version,
             "status": status,
             "date": today,
-            "name": "".join(w.capitalize() for w in sup_id.split("-")),
+            "name": _pascal_from_kebab(sup_id),
             "title": f"{artifact_name} {sup_type}".replace("-", " ").title(),
         }
         # Required fields for stubs
         if sup_type == "Library":
             sup_resource["type"] = {"coding": [{"code": "logic-library"}]}
         elif sup_type == "EvidenceVariable":
-            sup_resource["characteristic"] = [{"description": "Stub characteristic"}]
+            sup_resource["characteristic"] = _build_evidence_variable_characteristics(artifact_type, l2_data)
         elif sup_type == "ActivityDefinition":
-            sup_resource["kind"] = "ServiceRequest"
+            if artifact_type == "care-pathway":
+                _build_care_pathway_activity_definition(artifact_name, sup_resource, l2_data)
+            else:
+                sup_resource["kind"] = "ServiceRequest"
         elif sup_type == "ConceptMap":
             sup_resource["group"] = [{"source": "http://example.org", "target": "http://example.org", "element": []}]
         elif sup_type == "Questionnaire":
@@ -426,6 +1107,13 @@ def formalize(topic, artifact, dry_run, force):
             err=True,
         )
         sys.exit(2)
+
+    approved_target = _load_approved_formalize_target(topic)
+    if approved_target is not None and approved_target.get("name") != artifact:
+        raise click.UsageError(
+            f"Artifact '{artifact}' is not the approved implementation target in formalize-plan.yaml. "
+            f"Target: '{approved_target.get('name', '<unknown>')}'."
+        )
 
     # Load L2 YAML content — prefer the registered file path from tracking
     _artifact_file = artifact_entry.get("file")
@@ -547,14 +1235,18 @@ def formalize(topic, artifact, dry_run, force):
 
     # Update tracking
     timestamp = now_iso()
-    topic_entry.setdefault("computable", []).append({
+    new_entry = {
         "name": artifact,
         "files": written_files,
         "created_at": timestamp,
         "checksums": checksums,
         "converged_from": [artifact],
         "strategy": artifact_type if not is_fallback else "generic",
-    })
+    }
+    existing_entries = topic_entry.get("computable", []) or []
+    topic_entry["computable"] = [
+        entry for entry in existing_entries if entry.get("name") != artifact
+    ] + [new_entry]
 
     resource_count = len(written_files)
     strategy_label = artifact_type if not is_fallback else "generic"

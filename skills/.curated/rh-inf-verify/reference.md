@@ -47,8 +47,8 @@ verify subagent.
 |-------|-----------------------|-----------------------|
 | `discovery` | `topics/<topic>/process/plans/discovery-plan.yaml` exists | no discovery plan found for topic |
 | `ingest` | `topics/<topic>/process/plans/discovery-plan.yaml` exists, sources are registered, or ingest outputs exist under `sources/normalized/` | discovery planning is incomplete and no ingest evidence exists yet |
-| `extract` | `topics/<topic>/process/plans/extract-plan.md` exists or structured artifacts exist under `topics/<topic>/structured/` | ingest evidence exists but no extract plan or structured artifacts exist yet |
-| `formalize` | `topics/<topic>/process/plans/formalize-plan.md` exists or computable artifacts exist under `topics/<topic>/computable/` | extract outputs exist but no formalize plan or computable artifacts exist yet |
+| `extract` | `topics/<topic>/process/plans/extract-plan.yaml` exists or structured artifacts exist under `topics/<topic>/structured/` | ingest evidence exists but no extract plan or structured artifacts exist yet |
+| `formalize` | `topics/<topic>/process/plans/formalize-plan.yaml` exists or computable artifacts exist under `topics/<topic>/computable/` | extract outputs exist but no formalize plan or computable artifacts exist yet |
 
 `unavailable` means the stage-specific verify workflow itself is missing or
 cannot be launched in the current environment.

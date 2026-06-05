@@ -454,4 +454,3 @@ def load_schema(schema_name: str) -> dict:
     y = _yaml_safe()
     with open(path) as f:
         return y.load(f)
-

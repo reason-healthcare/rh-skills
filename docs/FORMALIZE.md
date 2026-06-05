@@ -22,7 +22,7 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 | L2 Type | Primary FHIR Resource | Supporting | Required Sections |
 |---------|----------------------|-----------|-------------------|
 | evidence-summary | Evidence | EvidenceVariable, Citation | evidence |
-| decision-table | PlanDefinition (eca-rule) | Library (CQL) | actions, libraries |
+| decision-table | PlanDefinition (eca-rule) | ActivityDefinition, Library (CQL) | actions, libraries |
 | care-pathway | PlanDefinition (clinical-protocol) | ActivityDefinition | pathways, actions |
 | terminology | ValueSet | ConceptMap | value_sets |
 | measure | Measure | Library (CQL) | measures, libraries |
@@ -99,7 +99,7 @@ Two formalize strategies produce a `.cql` source file alongside the FHIR JSON:
 
 | Strategy | CQL Library | Supporting FHIR Resource |
 |----------|-------------|--------------------------|
-| `decision-table` | Library (CQL) | PlanDefinition (eca-rule) |
+| `decision-table` | Library (CQL) | PlanDefinition (eca-rule), ActivityDefinition |
 | `measure` | Library (CQL) | Measure |
 
 `rh-skills formalize` writes a `.cql` scaffold to `topics/<topic>/computable/<Library>.cql`. The **`rh-inf-cql` skill** is responsible for authoring, reviewing, and validating the CQL content after the scaffold is generated. The FHIR JSON wrapper (Library.json, Measure.json) remains `rh-inf-formalize`'s responsibility.

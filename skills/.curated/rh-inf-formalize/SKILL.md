@@ -56,14 +56,17 @@ type-specific FHIR R4 targets. Plan mode generates a review packet with the
 strategy, L3 target resources, and required sections. Implement mode executes
 the approved target through `rh-skills formalize` (for individual FHIR JSON
 generation) and `rh-skills package` (for FHIR NPM packaging). Verify mode is
-read-only.
+read-only. For terminology, the normal input path is the approved extract
+artifact row named `concepts`, materialized at
+`topics/<topic>/structured/concepts/concepts.yaml` by
+`rh-skills promote concept write <topic>`.
 
 ### Strategy Table
 
 | L2 Type | Strategy | Primary Resource | Supporting Resources |
 |---------|----------|------------------|---------------------|
 | `evidence-summary` | evidence-summary | Evidence | EvidenceVariable, Citation |
-| `decision-table` | decision-table | PlanDefinition (eca-rule) | Library (CQL) |
+| `decision-table` | decision-table | PlanDefinition (eca-rule) | ActivityDefinition, Library (CQL) |
 | `care-pathway` | care-pathway | PlanDefinition (clinical-protocol) | ActivityDefinition |
 | `terminology` | terminology | ValueSet | ConceptMap |
 | `measure` | measure | Measure | Library (CQL) |
@@ -165,6 +168,10 @@ review packet. Plan mode appends `formalize_planned` to tracking.yaml via
    to the strategy table above. If multiple artifacts share the same type, group
    them under one strategy. If the topic has multiple different types, propose
    separate artifacts per strategy (one per unique L2 type).
+   Treat the explicit extract artifact named `concepts` as the standard
+   terminology package. Older topics may still rely on legacy formalize-side
+   fallback behavior, but new plans should assume `concepts` is present in the
+   approved extract artifacts.
 5. Use `rh-skills promote formalize-plan <topic> [--force]` to write:
    - `topics/<topic>/process/plans/formalize-plan.yaml` — control file with (`topic`, `plan_type`, `status`, `reviewer`, `reviewed_at`, `artifacts[]`)
    - `topics/<topic>/process/plans/formalize-plan-readout.md` — human-friendly readout (derived, do not edit directly)
@@ -493,7 +500,7 @@ When multiple strategies produce resources that reference each other:
 - A Measure references its Library via `library[]`.
 - Use canonical URLs in the form
   `http://example.org/fhir/<ResourceType>/<id>` for cross-references.
-  The actual base URL is set during `rh-skills package`.
+  The actual base URL is set via `rh-skills formalize-config`.
 
 **`sub_pathway_reference` (care-pathway → ECA rule)**: When a care-pathway step
 carries `sub_pathway_reference: <eca-artifact-id>`, the formalized

@@ -131,7 +131,7 @@ normalize after installing the missing tool.
 Source naming note: `rh-skills ingest implement` and `rh-skills ingest normalize`
 auto-derive `<name>` from the filename by sanitizing the stem and appending the
 extension with an underscore suffix (`<stem>_<ext>`). Example:
-`CPG_SurgCRS_FAQ_V6.pdf` -> `CPG_SurgCRS_FAQ_V6_pdf`.
+`CPG_Surg_FAQ_V6.pdf` -> `CPG_Surg_FAQ_V6_pdf`.
 Use this derived name for subsequent `classify` and `annotate` commands.
 
 ---

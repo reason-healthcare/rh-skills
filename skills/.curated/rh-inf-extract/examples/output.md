@@ -25,7 +25,7 @@ Writing:
 `topics/diabetes-ccm/process/plans/concepts/`
 `topics/diabetes-ccm/process/plans/concepts-review-meta.yaml`
 
-Enrich `concepts-review.csv` with RH MCP candidate codes
+Enrich per-concept CSVs under `topics/diabetes-ccm/process/plans/concepts/` with RH MCP candidate codes
 before human approval, for example:
 
 ```sh

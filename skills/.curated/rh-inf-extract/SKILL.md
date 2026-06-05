@@ -4,7 +4,8 @@ description: >
   Reviewer-gated extraction skill for deriving L2 structured artifacts from
   ingested normalized sources. Runs MCP terminology enrichment, presents batch
   proposals for human review, records decisions via concept review CLI, and
-  writes finalized concepts.yaml and extract-plan.yaml.
+  writes finalized `topics/<topic>/structured/concepts/concepts.yaml` plus an
+  extract plan that includes an explicit `concepts` terminology artifact row.
   Supported modes: plan · implement · verify.
   Use when the user asks to extract structured artifacts from sources for a topic.
 compatibility: "rh-skills >= 0.1.0"
@@ -443,8 +444,11 @@ Once all concepts are enriched, present a **single batch proposal** covering
 every pending concept. Render all candidates in a per-concept Markdown table —
 the reviewer selects the code(s); you do not pre-pick or recommend one. After
 the reviewer confirms, execute decisions one concept at a time via
-`concept review`. `concepts.yaml` is written during implement mode via
-`rh-skills promote concept write`.
+`concept review`. The final terminology package is written during implement
+mode via `rh-skills promote concept write` to
+`topics/<topic>/structured/concepts/concepts.yaml`, and the extract plan's
+explicit `concepts` artifact row is the reviewer-facing contract for that
+package.
 
 **⚠ Do NOT ask the reviewer how they want to proceed or offer workflow options
 (e.g. "Option A — I drive" vs "Option B — you drive"). The workflow is fixed:
@@ -857,11 +861,14 @@ all deterministic writes must go through `rh-skills promote derive`,
    other than `approved`. (`rejected` and `needs-revision` artifacts are
    silently skipped — do not error on them.)
    If the plan includes `concept_review` with `status: approved`, write
-   `concepts.yaml` first before processing other artifacts:
+   `topics/<topic>/structured/concepts/concepts.yaml` first before processing
+   other artifacts:
    ```sh
    rh-skills promote concept write <topic>
    ```
-3. For each approved artifact, construct the artifact YAML by reasoning over the
+   The explicit extract artifact named `concepts` is satisfied by this command.
+   Do not run `body-init` or `derive` for that artifact.
+3. For each approved artifact other than `concepts`, construct the artifact YAML by reasoning over the
    normalized source files and the schema for the artifact type (see `reference.md`).
    You are the reasoning layer — the CLI only writes what you provide.
 

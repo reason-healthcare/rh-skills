@@ -29,7 +29,7 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 | Type | SME Question | L3 FHIR Target | Key Sections |
 |------|-------------|-----------------|--------------|
 | **evidence-summary** | What does the evidence say? | Evidence, EvidenceVariable, Citation | summary_points, risk_factors, evidence_traceability |
-| **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), Library (CQL) | events, conditions, actions, rules, exceptions |
+| **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), ActivityDefinition, Library (CQL) | events, conditions, actions, rules, exceptions |
 | **care-pathway** | In what order do things happen? | PlanDefinition (clinical-protocol), ActivityDefinition | triggers, steps (ordered with actor + next-step) |
 | **terminology** | What codes define the concepts? | ValueSet, ConceptMap | value_sets, concept_maps |
 | **measure** | How do we know it's working? | Measure, Library (CQL) | populations, scoring, improvement_notation |
@@ -37,6 +37,11 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 | **policy** | What's required for coverage? | PlanDefinition (eca-rule), Questionnaire (DTR), Library | applicability, criteria, actions |
 
 Custom types allowed when no standard type preserves the clinical purpose (must be justified in plan).
+
+Decision-table extraction guidance:
+- Use recommendation-scoped triggers such as `preoperative-planning-initiated`, not broad pathway phases such as `planning`.
+- Keep downstream rules local to the recommendation being evaluated; do not restate prior pathway progression unless it is clinically required.
+- If the source is primarily sequencing or phase ownership, prefer `care-pathway` over `decision-table`.
 
 ---
 
@@ -140,7 +145,7 @@ Custom types allowed when no standard type preserves the clinical purpose (must 
 ### Validation Rules
 
 Post-derive validation checks:
-1. Required top-level fields: id, name, title, version, status, domain, description, derived_from[], artifact_type, clinical_question
+1. Required top-level fields: id, name, title, version, status, domain, description, derived_from[], artifact_type, clinical_question (`topics/<topic>/structured/concepts/concepts.yaml` is the exception and does not require `clinical_question`)
 2. Type-specific required sections (e.g., decision-table MUST have events, conditions, actions, rules)
 3. Evidence traceability: claims have evidence[] entries
 4. Conflict records present when extract-plan listed unresolved concerns

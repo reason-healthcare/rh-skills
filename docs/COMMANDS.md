@@ -434,7 +434,7 @@ rh-skills formalize <topic> <artifact> [--strategy TYPE] [--dry-run]
 | L2 Type | Primary Output | Supporting Output |
 |---------|---------------|-------------------|
 | evidence-summary | Evidence.json | EvidenceVariable.json, Citation.json |
-| decision-table | PlanDefinition.json | Library.json, .cql |
+| decision-table | PlanDefinition.json | ActivityDefinition.json, Library.json, .cql |
 | care-pathway | PlanDefinition.json | ActivityDefinition.json |
 | terminology | ValueSet.json | ConceptMap.json |
 | measure | Measure.json | Library.json, .cql |
@@ -505,42 +505,42 @@ rh-skills formalize-config diabetes-screening --force --version 1.0.0
 
 ## `rh-skills package`
 
-Bundle computable resources into a FHIR NPM package.
+Stage computable resources into a package workspace and run `rh package`.
 
 ```
-rh-skills package <topic> [--dry-run]
+rh-skills package <topic> [--dry-run] [--check-only] [--pack] [--output-dir PATH] [--workspace-dir PATH]
 ```
 
 **Arguments:**
 - `topic` — Topic name
 
 **Options:**
-- `--dry-run` — Show what would be packaged without writing files
+- `--dry-run` — Show effective workspace/output paths and commands without executing `rh`
+- `--check-only` — Run `rh package check <workspace>` only
+- `--pack` — Run `rh package pack <build-output>` after successful build
+- `--workspace-dir PATH` — Override workspace location (default: `topics/<topic>/process/package-workspace`)
+- `--output-dir PATH` — Override build output location (default: `<workspace>/output`)
 
 **Prerequisites:**
-- `formalize-config.yaml` must exist (run `rh-skills formalize-config <topic>` first); if missing, defaults are used with a warning.
+- `formalize-config.yaml` should exist (`rh-skills formalize-config <topic>`); if missing, defaults are used with a warning.
 
 **Behavior:**
-- Collects all FHIR JSON files from `topics/<topic>/computable/`
-- Generates `package.json` with FHIR NPM metadata
-- Creates an `ImplementationGuide` resource listing all contained resources
-- Writes the package to `topics/<topic>/package/`
+- Stages FHIR JSON and CQL from `topics/<topic>/computable/` into the workspace
+- Writes packaging control files in the workspace
+- Executes:
+  - `rh package check <workspace>`
+  - `rh package build <workspace>` (uses `--out <PATH>` only when `--output-dir` is provided)
+  - optional `rh package pack <effective-build-output>` when `--pack` is used
 
-**Output Layout:**
-```
-topics/<topic>/package/
-├── package.json
-├── ImplementationGuide-<id>.json
-├── PlanDefinition-<id>.json
-├── Library-<id>.json
-├── ValueSet-<id>.json
-└── ...
-```
+**Default Paths:**
+- Workspace: `topics/<topic>/process/package-workspace`
+- Build output: `topics/<topic>/process/package-workspace/output`
 
 **Example:**
 ```bash
 rh-skills package diabetes-screening
 rh-skills package diabetes-screening --dry-run
+rh-skills package diabetes-screening --output-dir /tmp/pkg-out
 ```
 
 ---

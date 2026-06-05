@@ -29,7 +29,7 @@ metadata:
 
 `rh-inf-resolve` is the concern resolution step in the RH lifecycle. It must
 run **after any plan phase** (`promote plan` or `promote formalize-plan`) and
-**before implementation** (`promote derive`, `promote combine`, or
+**before implementation** (`promote derive` or
 `formalize`).
 
 Its job is simple: list every open concern, present each one to the human
@@ -216,7 +216,7 @@ run **after** the plan phase and **before** any implementation command:
 | `rh-skills promote plan`        | `rh-skills promote approve`        |
 | `rh-skills promote formalize-plan` | `rh-skills formalize <topic>`   |
 | Any plan phase with concerns    | `rh-skills promote derive`         |
-|                                 | `rh-skills promote combine`        |
+|                                 | `rh-skills formalize <topic> <artifact>` |
 
 Other skills should check for open concerns before invoking implementation
 commands, and call `rh-inf-resolve` if any are found:
@@ -256,7 +256,7 @@ This skill produces no artifact files. Its sole side-effects are:
 - **Never auto-resolve a concern.** Even if the concern text seems trivial or
   the preferred interpretation appears obvious from source content, present it
   to the human and wait.
-- **Never proceed to `derive`, `combine`, or `formalize` while concerns are
+- **Never proceed to `derive` or `formalize` while concerns are
   open**, unless the reviewer explicitly types `skip` or `defer` for that
   conflict (and in that case, clearly communicate the implementation block).
 - **Do not web search** for conflict resolution guidance. All resolution
