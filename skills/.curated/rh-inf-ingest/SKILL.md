@@ -376,8 +376,8 @@ Annotation guidance:
   `Ibuprofen:medication` (comparator analgesic).
 - Never include a colon in the concept name passed to `--concept`; rewrite it.
   Example: use `AAO-HNSF Clinical Practice Guideline Surgical Management of
-  Chronic Rhinosinusitis` instead of `AAO-HNSF Clinical Practice Guideline:
-  Surgical Management of Chronic Rhinosinusitis`.
+  Acute Heart Disease` instead of `Clinical Practice Guideline:
+  Acute Heart Disease`.
 
 By default, `annotate` **appends** new concepts to any already recorded for this source.
 Pass `--overwrite` to replace all existing concepts for the source.

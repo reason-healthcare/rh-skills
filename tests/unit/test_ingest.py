@@ -19,8 +19,8 @@ def test_source_name_clean_stem():
 
 
 def test_source_name_spaces_replaced():
-    assert _source_name_from_path(Path("GLIA Summary Report-CPGSurgCRS-Final.pdf")) == (
-        "GLIA_Summary_Report-CPGSurgCRS-Final_pdf"
+    assert _source_name_from_path(Path("GLIA Summary Report-CPGSurg-Final.pdf")) == (
+        "GLIA_Summary_Report-CPGSurg-Final_pdf"
     )
 
 
