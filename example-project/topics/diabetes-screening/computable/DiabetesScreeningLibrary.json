@@ -1,0 +1,174 @@
+{
+  "library": {
+    "identifier": {
+      "id": "DiabetesScreeningLibrary",
+      "version": "0.1.0"
+    },
+    "schemaIdentifier": {
+      "id": "urn:hl7-org:elm",
+      "version": "r1"
+    },
+    "usings": {
+      "def": [
+        {
+          "localIdentifier": "FHIR",
+          "version": "4.0.1"
+        }
+      ]
+    },
+    "includes": {
+      "def": [
+        {
+          "localIdentifier": "FHIRHelpers",
+          "path": "FHIRHelpers",
+          "version": "4.0.1"
+        }
+      ]
+    },
+    "codeSystems": {
+      "def": [
+        {
+          "name": "LOINC",
+          "id": "http://loinc.org",
+          "accessLevel": "Public"
+        },
+        {
+          "name": "SNOMEDCT",
+          "id": "http://snomed.info/sct",
+          "accessLevel": "Public"
+        }
+      ]
+    },
+    "valueSets": {
+      "def": [
+        {
+          "name": "Fasting Plasma Glucose",
+          "id": "http://example.org/fhir/ValueSet/fasting-plasma-glucose",
+          "accessLevel": "Public"
+        },
+        {
+          "name": "Hemoglobin A1C",
+          "id": "http://example.org/fhir/ValueSet/hemoglobin-a1c",
+          "accessLevel": "Public"
+        },
+        {
+          "name": "Obesity",
+          "id": "http://example.org/fhir/ValueSet/obesity",
+          "accessLevel": "Public"
+        },
+        {
+          "name": "Hypertension",
+          "id": "http://example.org/fhir/ValueSet/hypertension",
+          "accessLevel": "Public"
+        }
+      ]
+    },
+    "contexts": {
+      "def": [
+        {
+          "name": "Patient"
+        }
+      ]
+    },
+    "statements": {
+      "def": [
+        {
+          "name": "Age35OrOlder",
+          "context": "Patient",
+          "accessLevel": "Public",
+          "expression": {
+            "type": "GreaterOrEqual",
+            "localId": "1",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "type": "FunctionRef",
+                "localId": "5",
+                "locator": "0-0:0-0",
+                "name": "AgeInYearsAt",
+                "operand": [
+                  {
+                    "type": "FunctionRef",
+                    "localId": "7",
+                    "locator": "0-0:0-0",
+                    "name": "Today"
+                  }
+                ]
+              },
+              {
+                "type": "Literal",
+                "localId": "8",
+                "locator": "0-0:0-0",
+                "valueType": "{urn:hl7-org:elm-types:r1}Integer",
+                "value": "35"
+              }
+            ]
+          }
+        },
+        {
+          "name": "HasADiabetesRiskFactor",
+          "context": "Patient",
+          "accessLevel": "Public",
+          "expression": {
+            "type": "Or",
+            "localId": "9",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "type": "Exists",
+                "localId": "10",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "type": "Retrieve",
+                  "localId": "11",
+                  "locator": "0-0:0-0",
+                  "dataType": "{http://hl7.org/fhir}Condition",
+                  "codeProperty": "code",
+                  "codes": {
+                    "type": "ValueSetRef",
+                    "localId": "12",
+                    "locator": "0-0:0-0",
+                    "name": "Obesity"
+                  },
+                  "include": [],
+                  "codeFilter": [],
+                  "dateFilter": [],
+                  "otherFilter": []
+                }
+              },
+              {
+                "type": "Exists",
+                "localId": "13",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "type": "Retrieve",
+                  "localId": "14",
+                  "locator": "0-0:0-0",
+                  "dataType": "{http://hl7.org/fhir}Condition",
+                  "codeProperty": "code",
+                  "codes": {
+                    "type": "ValueSetRef",
+                    "localId": "15",
+                    "locator": "0-0:0-0",
+                    "name": "Hypertension"
+                  },
+                  "include": [],
+                  "codeFilter": [],
+                  "dateFilter": [],
+                  "otherFilter": []
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "annotation": [
+      {
+        "type": "CqlToElmInfo",
+        "translatorVersion": "0.2.0-beta.2",
+        "translatorOptions": "DisableListDemotion,DisableListPromotion,EnableAnnotations,EnableLocators"
+      }
+    ]
+  }
+}

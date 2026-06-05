@@ -1,0 +1,85 @@
+{
+  "files": [
+    {
+      "filename": "ActivityDefinition-recommend-a1c.json",
+      "id": "recommend-a1c",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/recommend-a1c",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-recommend-fasting-glucose.json",
+      "id": "recommend-fasting-glucose",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/recommend-fasting-glucose",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-recommend-follow-up.json",
+      "id": "recommend-follow-up",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/recommend-follow-up",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "Library-diabetes-screening-library.json",
+      "id": "diabetes-screening-library",
+      "resourceType": "Library",
+      "url": "http://example.org/fhir/Library/diabetes-screening-library",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-care-pathway.json",
+      "id": "diabetes-screening-care-pathway",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-care-pathway",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-follow-up.json",
+      "id": "diabetes-screening-follow-up",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-follow-up",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-order-set.json",
+      "id": "diabetes-screening-order-set",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-order-set",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-fasting-plasma-glucose.json",
+      "id": "fasting-plasma-glucose",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/fasting-plasma-glucose",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-hemoglobin-a1c.json",
+      "id": "hemoglobin-a1c",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/hemoglobin-a1c",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-hypertension.json",
+      "id": "hypertension",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/hypertension",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-obesity.json",
+      "id": "obesity",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/obesity",
+      "version": "0.1.0"
+    }
+  ],
+  "index-version": 2
+}

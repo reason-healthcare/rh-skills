@@ -1,0 +1,16 @@
+{
+  "code": {
+    "text": "Recommend follow-up"
+  },
+  "date": "2026-06-05",
+  "description": "Schedule a follow-up screening review after initial screening.",
+  "id": "recommend-follow-up",
+  "intent": "proposal",
+  "kind": "ServiceRequest",
+  "name": "RecommendFollowUp",
+  "resourceType": "ActivityDefinition",
+  "status": "draft",
+  "title": "Recommend follow-up",
+  "url": "http://example.org/fhir/ActivityDefinition/recommend-follow-up",
+  "version": "0.1.0"
+}

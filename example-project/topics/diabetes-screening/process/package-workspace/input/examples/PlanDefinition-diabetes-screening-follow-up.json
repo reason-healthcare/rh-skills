@@ -1,0 +1,42 @@
+{
+  "resourceType": "PlanDefinition",
+  "id": "diabetes-screening-follow-up",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-follow-up",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-05",
+  "name": "DiabetesScreeningFollowUp",
+  "title": "Diabetes Screening Follow-up Plan",
+  "type": {
+    "coding": [
+      {
+        "code": "eca-rule"
+      }
+    ]
+  },
+  "description": "Follow-up recommendation after the screening interval elapses.",
+  "library": [
+    "http://example.org/fhir/Library/diabetes-screening-library"
+  ],
+  "action": [
+    {
+      "id": "follow-up-screening",
+      "title": "Follow-up review due — Recommend follow-up",
+      "description": "The screening follow-up interval has elapsed.",
+      "trigger": [
+        {
+          "type": "periodic",
+          "name": "follow-up-review-due"
+        }
+      ],
+      "action": [
+        {
+          "id": "recommend-follow-up",
+          "title": "Recommend follow-up",
+          "description": "Schedule a follow-up screening review after initial screening.",
+          "definitionCanonical": "http://example.org/fhir/ActivityDefinition/recommend-follow-up"
+        }
+      ]
+    }
+  ]
+}

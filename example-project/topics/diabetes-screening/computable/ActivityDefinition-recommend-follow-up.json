@@ -1,0 +1,16 @@
+{
+  "resourceType": "ActivityDefinition",
+  "id": "recommend-follow-up",
+  "url": "http://example.org/fhir/ActivityDefinition/recommend-follow-up",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-05",
+  "name": "RecommendFollowUp",
+  "title": "Recommend follow-up",
+  "description": "Schedule a follow-up screening review after initial screening.",
+  "kind": "ServiceRequest",
+  "intent": "proposal",
+  "code": {
+    "text": "Recommend follow-up"
+  }
+}

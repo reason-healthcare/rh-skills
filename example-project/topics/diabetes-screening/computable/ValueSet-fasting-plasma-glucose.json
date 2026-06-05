@@ -1,0 +1,23 @@
+{
+  "resourceType": "ValueSet",
+  "id": "fasting-plasma-glucose",
+  "url": "http://example.org/fhir/ValueSet/fasting-plasma-glucose",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-05",
+  "name": "FastingPlasmaGlucose",
+  "title": "Fasting plasma glucose",
+  "compose": {
+    "include": [
+      {
+        "system": "http://loinc.org",
+        "concept": [
+          {
+            "code": "1558-6",
+            "display": "Fasting glucose [Mass/volume] in Serum or Plasma"
+          }
+        ]
+      }
+    ]
+  }
+}

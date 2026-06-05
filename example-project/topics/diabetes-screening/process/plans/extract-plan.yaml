@@ -1,0 +1,75 @@
+topic: diabetes-screening
+plan_type: extract
+status: approved
+reviewer: Copilot
+reviewed_at: '2026-06-05T18:15:00Z'
+review_summary: Approved concepts, care-pathway, and decision-table artifacts.
+cross_artifact_issues: []
+artifacts:
+- name: concepts
+  artifact_type: terminology
+  custom_artifact_type:
+  source_files: &id001
+  - sources/normalized/ada-guidelines-2024.md
+  purpose: Defines the reviewed terminology package for downstream ValueSet and 
+    ConceptMap formalization.
+  rationale: Packages 1 normalized source(s) worth of reviewed concept coding 
+    into an explicit L2 terminology artifact.
+  key_questions:
+  - What reviewed codes and terminology define the clinical concepts for this 
+    topic?
+  required_sections:
+  - summary
+  - value_sets
+  concerns: []
+  reviewer_decision: approved
+  approval_notes: Materialized by `rh-skills promote concept write` after 
+    concept review finalization.
+- name: care-pathway
+  artifact_type: care-pathway
+  custom_artifact_type:
+  source_files:
+  - sources/normalized/ada-guidelines-2024.md
+  purpose: Maps the diabetes screening workflow from eligibility assessment to 
+    the ordered screening tests.
+  rationale: Synthesizes the normalized ADA screening guidance into a 
+    workflow-oriented pathway artifact for downstream formalization.
+  key_questions:
+  - What is the stepwise screening pathway?
+  required_sections:
+  - summary
+  - steps
+  - evidence_traceability
+  concerns: []
+  reviewer_decision: approved
+  approval_notes: Approved for downstream care-pathway formalization.
+- name: decision-table
+  artifact_type: decision-table
+  custom_artifact_type:
+  source_files:
+  - sources/normalized/ada-guidelines-2024.md
+  purpose: Encodes event-condition-action clinical decision logic for CDS rule 
+    formalization.
+  rationale: Synthesizes 1 normalized source(s) contributing to decision-table 
+    for review and downstream formalization.
+  key_questions:
+  - What recommendation-scoped triggers, local conditions, and actions form the 
+    decision logic?
+  required_sections:
+  - summary
+  - events
+  - conditions
+  - actions
+  - rules
+  - evidence_traceability
+  concerns: []
+  reviewer_decision: approved
+  approval_notes: Approved for downstream decision-table formalization.
+concept_review:
+  source_files: *id001
+  status: approved
+  concept_count: 4
+  review_artifact: topics/diabetes-screening/process/plans/concepts/
+  final_artifact: topics/diabetes-screening/structured/concepts/concepts.yaml
+  reviewer: Copilot
+  reviewed_at: '2026-06-05T18:13:54Z'

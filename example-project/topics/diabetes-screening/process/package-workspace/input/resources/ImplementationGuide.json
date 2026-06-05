@@ -1,0 +1,115 @@
+{
+  "resourceType": "ImplementationGuide",
+  "id": "diabetes-screening",
+  "url": "http://example.org/fhir/ImplementationGuide/diabetes-screening",
+  "version": "0.1.0",
+  "name": "DiabetesScreening",
+  "title": "Diabetes Screening",
+  "status": "draft",
+  "packageId": "reason.diabetes-screening",
+  "fhirVersion": [
+    "4.0.1"
+  ],
+  "dependsOn": [
+    {
+      "id": "hl7fhirr4core",
+      "packageId": "hl7.fhir.r4.core",
+      "uri": "http://hl7.org/fhir/4.0.1",
+      "version": "4.0.1"
+    },
+    {
+      "id": "hl7fhiruscore",
+      "packageId": "hl7.fhir.us.core",
+      "uri": "https://packages.fhir.org/hl7.fhir.us.core/6.1.0",
+      "version": "6.1.0"
+    },
+    {
+      "id": "hl7fhiruvcrmi",
+      "packageId": "hl7.fhir.uv.crmi",
+      "uri": "https://packages.fhir.org/hl7.fhir.uv.crmi/1.0.0",
+      "version": "1.0.0"
+    },
+    {
+      "id": "hl7fhiruvcql",
+      "packageId": "hl7.fhir.uv.cql",
+      "uri": "https://packages.fhir.org/hl7.fhir.uv.cql/2.0.0",
+      "version": "2.0.0"
+    }
+  ],
+  "definition": {
+    "resource": [
+      {
+        "reference": {
+          "reference": "ActivityDefinition/recommend-a1c"
+        },
+        "name": "ActivityDefinition-recommend-a1c"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/recommend-fasting-glucose"
+        },
+        "name": "ActivityDefinition-recommend-fasting-glucose"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/recommend-follow-up"
+        },
+        "name": "ActivityDefinition-recommend-follow-up"
+      },
+      {
+        "reference": {
+          "reference": "DiabetesScreeningLibrary"
+        },
+        "name": "DiabetesScreeningLibrary"
+      },
+      {
+        "reference": {
+          "reference": "Library/diabetes-screening-library"
+        },
+        "name": "Library-diabetes-screening-library"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-care-pathway"
+        },
+        "name": "PlanDefinition-diabetes-screening-care-pathway"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-follow-up"
+        },
+        "name": "PlanDefinition-diabetes-screening-follow-up"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-order-set"
+        },
+        "name": "PlanDefinition-diabetes-screening-order-set"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/fasting-plasma-glucose"
+        },
+        "name": "ValueSet-fasting-plasma-glucose"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/hemoglobin-a1c"
+        },
+        "name": "ValueSet-hemoglobin-a1c"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/hypertension"
+        },
+        "name": "ValueSet-hypertension"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/obesity"
+        },
+        "name": "ValueSet-obesity"
+      }
+    ]
+  }
+}

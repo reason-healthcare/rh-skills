@@ -1,0 +1,174 @@
+{
+  "library": {
+    "annotation": [
+      {
+        "translatorOptions": "DisableListDemotion,DisableListPromotion,EnableAnnotations,EnableLocators",
+        "translatorVersion": "0.2.0-beta.2",
+        "type": "CqlToElmInfo"
+      }
+    ],
+    "codeSystems": {
+      "def": [
+        {
+          "accessLevel": "Public",
+          "id": "http://loinc.org",
+          "name": "LOINC"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://snomed.info/sct",
+          "name": "SNOMEDCT"
+        }
+      ]
+    },
+    "contexts": {
+      "def": [
+        {
+          "name": "Patient"
+        }
+      ]
+    },
+    "identifier": {
+      "id": "DiabetesScreeningLibrary",
+      "version": "0.1.0"
+    },
+    "includes": {
+      "def": [
+        {
+          "localIdentifier": "FHIRHelpers",
+          "path": "FHIRHelpers",
+          "version": "4.0.1"
+        }
+      ]
+    },
+    "schemaIdentifier": {
+      "id": "urn:hl7-org:elm",
+      "version": "r1"
+    },
+    "statements": {
+      "def": [
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "1",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "5",
+                "locator": "0-0:0-0",
+                "name": "AgeInYearsAt",
+                "operand": [
+                  {
+                    "localId": "7",
+                    "locator": "0-0:0-0",
+                    "name": "Today",
+                    "type": "FunctionRef"
+                  }
+                ],
+                "type": "FunctionRef"
+              },
+              {
+                "localId": "8",
+                "locator": "0-0:0-0",
+                "type": "Literal",
+                "value": "35",
+                "valueType": "{urn:hl7-org:elm-types:r1}Integer"
+              }
+            ],
+            "type": "GreaterOrEqual"
+          },
+          "name": "Age35OrOlder"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "9",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "10",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "codeFilter": [],
+                  "codeProperty": "code",
+                  "codes": {
+                    "localId": "12",
+                    "locator": "0-0:0-0",
+                    "name": "Obesity",
+                    "type": "ValueSetRef"
+                  },
+                  "dataType": "{http://hl7.org/fhir}Condition",
+                  "dateFilter": [],
+                  "include": [],
+                  "localId": "11",
+                  "locator": "0-0:0-0",
+                  "otherFilter": [],
+                  "type": "Retrieve"
+                },
+                "type": "Exists"
+              },
+              {
+                "localId": "13",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "codeFilter": [],
+                  "codeProperty": "code",
+                  "codes": {
+                    "localId": "15",
+                    "locator": "0-0:0-0",
+                    "name": "Hypertension",
+                    "type": "ValueSetRef"
+                  },
+                  "dataType": "{http://hl7.org/fhir}Condition",
+                  "dateFilter": [],
+                  "include": [],
+                  "localId": "14",
+                  "locator": "0-0:0-0",
+                  "otherFilter": [],
+                  "type": "Retrieve"
+                },
+                "type": "Exists"
+              }
+            ],
+            "type": "Or"
+          },
+          "name": "HasADiabetesRiskFactor"
+        }
+      ]
+    },
+    "usings": {
+      "def": [
+        {
+          "localIdentifier": "FHIR",
+          "version": "4.0.1"
+        }
+      ]
+    },
+    "valueSets": {
+      "def": [
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/fasting-plasma-glucose",
+          "name": "Fasting Plasma Glucose"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/hemoglobin-a1c",
+          "name": "Hemoglobin A1C"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/obesity",
+          "name": "Obesity"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/hypertension",
+          "name": "Hypertension"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,109 @@
+artifact_type: decision-table
+id: diabetes-screening-order-set
+name: diabetes-screening-order-set
+title: Diabetes Screening Order Set
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: |
+  Decision logic for determining whether a patient should receive diabetes
+  screening based on age and known risk factors.
+clinical_question: When should an adult receive diabetes screening?
+derived_from:
+- ada-guidelines-2024
+clinical_context: |
+  The table distinguishes patients who should be screened now from those who can
+  wait until the next age-based screening interval.
+references:
+- "American Diabetes Association. Standards of Care in Diabetes—2024."
+tags:
+- decision-table
+- diabetes
+- screening
+summary: |
+  Screening is recommended for all adults age 35 and older, and earlier for
+  adults with a diabetes risk factor.
+sections:
+  summary: Screening is recommended for adults age 35 and older, and earlier
+    for adults with a diabetes risk factor.
+  evidence_traceability:
+  - claim_id: age-based-screening
+    statement: Adults age 35 and older should be screened.
+    evidence:
+    - source: ada-guidelines-2024
+      locator: screening age threshold
+  - claim_id: risk-based-screening
+    statement: Younger adults with diabetes risk factors should also be screened.
+    evidence:
+    - source: ada-guidelines-2024
+      locator: risk-factor guidance
+  events:
+  - id: screening-review-started
+    label: Screening review started
+    description: A clinician is evaluating whether screening is due.
+    trigger_type: named-event
+  - id: follow-up-review-due
+    label: Follow-up review due
+    description: The screening follow-up interval has elapsed.
+    trigger_type: periodic
+  conditions:
+  - id: age-35-or-older
+    label: Age 35 or older
+    description: Patient has reached the standard screening age threshold.
+    values:
+    - "Patient.age >= 35"
+  - id: has-risk-factor
+    label: Has a diabetes risk factor
+    description: Patient has at least one risk factor such as family history or 
+      hypertension.
+    values:
+    - "first-degree relative with diabetes"
+  actions:
+  - id: recommend-fasting-glucose
+    label: Recommend fasting plasma glucose
+    description: Order fasting plasma glucose as a screening test.
+    type: order
+    intent: proposal
+    valueset: fasting-plasma-glucose
+  - id: recommend-a1c
+    label: Recommend hemoglobin A1C
+    description: Order A1C as a screening test.
+    type: order
+    intent: proposal
+    valueset: hemoglobin-a1c
+  - id: recommend-follow-up
+    label: Recommend follow-up
+    description: Schedule a follow-up screening review after initial screening.
+    type: referral
+    intent: proposal
+  plan_definitions:
+  - id: diabetes-screening-order-set
+    title: Diabetes Screening Order Set
+    description: Screening recommendations based on age and risk factors.
+    rules:
+    - age-based-screening
+    - risk-based-screening
+  - id: diabetes-screening-follow-up
+    title: Diabetes Screening Follow-up Plan
+    description: Follow-up recommendation after the screening interval elapses.
+    rules:
+    - follow-up-screening
+  rules:
+  - id: age-based-screening
+    event: screening-review-started
+    when:
+      age-35-or-older: true
+    then:
+    - recommend-fasting-glucose
+    - recommend-a1c
+  - id: risk-based-screening
+    event: screening-review-started
+    when:
+      has-risk-factor: true
+    then:
+    - recommend-fasting-glucose
+    - recommend-a1c
+  - id: follow-up-screening
+    event: follow-up-review-due
+    then:
+    - recommend-follow-up

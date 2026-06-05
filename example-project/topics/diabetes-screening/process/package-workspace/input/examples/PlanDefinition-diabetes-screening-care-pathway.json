@@ -1,0 +1,31 @@
+{
+  "resourceType": "PlanDefinition",
+  "id": "diabetes-screening-care-pathway",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-care-pathway",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-05",
+  "name": "DiabetesScreeningCarePathway",
+  "title": "Diabetes Screening Care Pathway",
+  "type": {
+    "coding": [
+      {
+        "code": "clinical-protocol"
+      }
+    ]
+  },
+  "action": [
+    {
+      "id": "assess-eligibility",
+      "title": "Assess screening eligibility",
+      "description": "Determine whether the adult meets criteria for diabetes screening.",
+      "definitionCanonical": "http://example.org/fhir/PlanDefinition/diabetes-screening-order-set"
+    },
+    {
+      "id": "follow-up",
+      "title": "Follow up after screening decision",
+      "description": "Follow up after initial screening.",
+      "definitionCanonical": "http://example.org/fhir/PlanDefinition/diabetes-screening-follow-up"
+    }
+  ]
+}

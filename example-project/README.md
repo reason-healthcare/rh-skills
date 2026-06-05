@@ -1,9 +1,9 @@
 # Example Project
 
-This directory is a reference **target repository** using the current RH Skills
-framework layout. It shows what a clinical team repo looks like after running
-`rh-skills init diabetes-screening` and then adding one source, two structured
-artifacts, and one computable artifact.
+This directory is a compact reference **target repository** using the current
+RH Skills framework layout. It shows what a clinical team repo looks like after
+running `rh-skills init diabetes-screening` and then adding one source plus a
+small set of CLI-generated artifacts.
 
 ## What is included
 
@@ -16,20 +16,43 @@ example-project/
     └── diabetes-screening/
         ├── TOPIC.md
         ├── structured/
-        │   ├── screening-criteria.yaml
-        │   └── risk-factors.yaml
+        │   ├── care-pathway/
+        │   │   ├── care-pathway.yaml
+        │   │   └── care-pathway-report.md
+        │   ├── decision-table/
+        │   │   ├── decision-table.yaml
+        │   │   └── decision-table-report.md
+        │   └── concepts/
+        │       ├── concepts.yaml
+        │       └── concepts-report.md
         ├── computable/
-        │   └── diabetes-screening-computable.yaml
+        │   ├── ActivityDefinition-recommend-a1c.json
+        │   ├── ActivityDefinition-recommend-fasting-glucose.json
+        │   ├── ActivityDefinition-recommend-follow-up.json
+        │   ├── DiabetesScreeningLibrary.cql
+        │   ├── Library-diabetes-screening-library.json
+        │   ├── PlanDefinition-diabetes-screening-care-pathway.json
+        │   ├── PlanDefinition-diabetes-screening-follow-up.json
+        │   ├── PlanDefinition-diabetes-screening-order-set.json
+        │   ├── ValueSet-fasting-plasma-glucose.json
+        │   ├── ValueSet-hemoglobin-a1c.json
+        │   ├── ValueSet-hypertension.json
+        │   └── ValueSet-obesity.json
         └── process/
+            ├── formalize-config.yaml
             ├── research.md
             ├── conflicts.md
-            ├── contracts/
-            │   └── screening-eligibility.yaml
-            ├── checklists/
-            │   └── clinical-review.md
             ├── fixtures/
             │   └── screening-eligibility.yaml
             └── plans/
+                ├── extract-plan-readout.md
+                ├── extract-plan.yaml
+                ├── concepts-review-meta.yaml
+                ├── concepts/
+                │   ├── fasting-plasma-glucose.csv
+                │   ├── hemoglobin-a1c.csv
+                │   ├── hypertension.csv
+                │   └── obesity.csv
                 └── tasks.md
 ```
 
@@ -38,10 +61,10 @@ example-project/
 - `sources/` holds raw L1 inputs shared across topics
 - `topics/<name>/structured/` holds L2 semi-structured YAML artifacts that match
   `schemas/l2-schema.yaml`
-- `topics/<name>/computable/` holds L3 computable YAML artifacts that match
-  `schemas/l3-schema.yaml`
+- `topics/<name>/computable/` holds generated L3 FHIR JSON artifacts and any CQL
+  scaffolds that match `schemas/l3-schema.yaml`
 - `topics/<name>/process/` holds supporting workflow assets such as research,
-  contracts, checklists, fixtures, and task lists
+  conflicts, fixtures, plans, and task lists
 - `tracking.yaml` records the repo-level source/topic inventory plus provenance
   links for structured and computable artifacts
 
@@ -49,16 +72,26 @@ example-project/
 
 `topics/diabetes-screening/` demonstrates a small, internally consistent topic:
 
-- one ingested source: `ada-guidelines-2024`
-- two structured artifacts:
-  - `screening-criteria`
-  - `risk-factors`
-- one computable artifact:
-  - `diabetes-screening-computable`
+1. one ingested source: `ada-guidelines-2024`
+2. three structured artifacts:
+ - `care-pathway`
+ - `decision-table`
+ - `concepts`
+3. generated computable resources:
+ - `PlanDefinition-diabetes-screening-care-pathway`
+ - `PlanDefinition-diabetes-screening-order-set`
+ - `PlanDefinition-diabetes-screening-follow-up`
+ - `Library-diabetes-screening-library`
+ - `ActivityDefinition-recommend-fasting-glucose`
+ - `ActivityDefinition-recommend-a1c`
+ - `ActivityDefinition-recommend-follow-up`
+ - `ValueSet-*`
+ - `DiabetesScreeningLibrary.cql`
+ - `process/package-workspace/output/reason.diabetes-screening-0.1.0.tgz`
 
-The contract and fixture files are examples of process assets used to review and
-exercise the sample computable artifact; they are not additional schema
-definitions for `rh-skills validate`.
+The sample is intentionally partial: it keeps just enough files to show the
+project structure while still demonstrating generated ValueSets, a CQL-backed
+screening order set, a follow-up plan definition, and a packaged output archive.
 
 ## Using the example
 
@@ -72,9 +105,9 @@ export RH_TOPICS_ROOT="$RH_REPO_ROOT/topics"
 export RH_TRACKING_FILE="$RH_REPO_ROOT/tracking.yaml"
 export RH_SOURCES_ROOT="$RH_REPO_ROOT/sources"
 
-uv run rh-skills validate diabetes-screening screening-criteria
-uv run rh-skills validate diabetes-screening risk-factors
-uv run rh-skills validate diabetes-screening diabetes-screening-computable
+uv run rh-skills validate diabetes-screening care-pathway
+uv run rh-skills validate diabetes-screening decision-table
+uv run rh-skills validate diabetes-screening concepts
 ```
 
 Agent-native skill bundles are built from the framework repository's curated

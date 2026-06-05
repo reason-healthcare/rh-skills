@@ -1,0 +1,91 @@
+{
+  "resourceType": "PlanDefinition",
+  "id": "diabetes-screening-order-set",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-order-set",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-05",
+  "name": "DiabetesScreeningOrderSet",
+  "title": "Diabetes Screening Order Set",
+  "type": {
+    "coding": [
+      {
+        "code": "eca-rule"
+      }
+    ]
+  },
+  "description": "Screening recommendations based on age and risk factors.",
+  "library": [
+    "http://example.org/fhir/Library/diabetes-screening-library"
+  ],
+  "action": [
+    {
+      "id": "age-based-screening",
+      "title": "Screening review started — Recommend fasting plasma glucose",
+      "description": "A clinician is evaluating whether screening is due.",
+      "trigger": [
+        {
+          "type": "named-event",
+          "name": "screening-review-started"
+        }
+      ],
+      "condition": [
+        {
+          "kind": "applicability",
+          "expression": {
+            "language": "text/cql-identifier",
+            "expression": "Age35OrOlder"
+          }
+        }
+      ],
+      "action": [
+        {
+          "id": "recommend-fasting-glucose",
+          "title": "Recommend fasting plasma glucose",
+          "description": "Order fasting plasma glucose as a screening test.",
+          "definitionCanonical": "http://example.org/fhir/ActivityDefinition/recommend-fasting-glucose"
+        },
+        {
+          "id": "recommend-a1c",
+          "title": "Recommend hemoglobin A1C",
+          "description": "Order A1C as a screening test.",
+          "definitionCanonical": "http://example.org/fhir/ActivityDefinition/recommend-a1c"
+        }
+      ]
+    },
+    {
+      "id": "risk-based-screening",
+      "title": "Screening review started — Recommend fasting plasma glucose",
+      "description": "A clinician is evaluating whether screening is due.",
+      "trigger": [
+        {
+          "type": "named-event",
+          "name": "screening-review-started"
+        }
+      ],
+      "condition": [
+        {
+          "kind": "applicability",
+          "expression": {
+            "language": "text/cql-identifier",
+            "expression": "HasADiabetesRiskFactor"
+          }
+        }
+      ],
+      "action": [
+        {
+          "id": "recommend-fasting-glucose",
+          "title": "Recommend fasting plasma glucose",
+          "description": "Order fasting plasma glucose as a screening test.",
+          "definitionCanonical": "http://example.org/fhir/ActivityDefinition/recommend-fasting-glucose"
+        },
+        {
+          "id": "recommend-a1c",
+          "title": "Recommend hemoglobin A1C",
+          "description": "Order A1C as a screening test.",
+          "definitionCanonical": "http://example.org/fhir/ActivityDefinition/recommend-a1c"
+        }
+      ]
+    }
+  ]
+}

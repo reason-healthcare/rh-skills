@@ -1,0 +1,23 @@
+{
+  "compose": {
+    "include": [
+      {
+        "concept": [
+          {
+            "code": "414916001",
+            "display": "Obesity"
+          }
+        ],
+        "system": "http://snomed.info/sct"
+      }
+    ]
+  },
+  "date": "2026-06-05",
+  "id": "obesity",
+  "name": "Obesity",
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "title": "Obesity",
+  "url": "http://example.org/fhir/ValueSet/obesity",
+  "version": "0.1.0"
+}

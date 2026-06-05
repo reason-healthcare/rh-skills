@@ -1,0 +1,22 @@
+{
+  "code": {
+    "text": "Recommend hemoglobin A1C"
+  },
+  "date": "2026-06-05",
+  "description": "Order A1C as a screening test.",
+  "id": "recommend-a1c",
+  "intent": "proposal",
+  "kind": "ServiceRequest",
+  "name": "RecommendA1c",
+  "relatedArtifact": [
+    {
+      "resource": "http://example.org/fhir/ValueSet/hemoglobin-a1c",
+      "type": "depends-on"
+    }
+  ],
+  "resourceType": "ActivityDefinition",
+  "status": "draft",
+  "title": "Recommend hemoglobin A1C",
+  "url": "http://example.org/fhir/ActivityDefinition/recommend-a1c",
+  "version": "0.1.0"
+}

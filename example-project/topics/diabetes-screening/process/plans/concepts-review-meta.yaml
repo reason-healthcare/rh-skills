@@ -1,0 +1,16 @@
+topic: diabetes-screening
+status: approved
+generated_at: '2026-06-05T18:13:50Z'
+reviewed_at: '2026-06-05T18:13:54Z'
+reviewer: Copilot
+checksums:
+  fasting-plasma-glucose: 
+    0b569acc70c5e556b3aae3b63d80ec6c44da731b6d9b7830129367c1e319372f
+  hemoglobin-a1c: 
+    9e03c3b6312afb774feee4b1cc1aadc30cc0be744d2409f771ddecbaf8599ce9
+  hypertension: 3edcd73d8b64d92a5ddb0d7dac74f19789fff5558093ff25b5de1ea511b94450
+  obesity: bd469c2e25dc209019fd625ccaa103c5ba3ecd6e4deeef3663aefbcd26c71201
+source_files:
+- sources/normalized/ada-guidelines-2024.md
+final_artifact: topics/diabetes-screening/structured/concepts/concepts.yaml
+review_artifact: topics/diabetes-screening/process/plans/concepts/

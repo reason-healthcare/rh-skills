@@ -1,0 +1,22 @@
+{
+  "code": {
+    "text": "Recommend fasting plasma glucose"
+  },
+  "date": "2026-06-05",
+  "description": "Order fasting plasma glucose as a screening test.",
+  "id": "recommend-fasting-glucose",
+  "intent": "proposal",
+  "kind": "ServiceRequest",
+  "name": "RecommendFastingGlucose",
+  "relatedArtifact": [
+    {
+      "resource": "http://example.org/fhir/ValueSet/fasting-plasma-glucose",
+      "type": "depends-on"
+    }
+  ],
+  "resourceType": "ActivityDefinition",
+  "status": "draft",
+  "title": "Recommend fasting plasma glucose",
+  "url": "http://example.org/fhir/ActivityDefinition/recommend-fasting-glucose",
+  "version": "0.1.0"
+}

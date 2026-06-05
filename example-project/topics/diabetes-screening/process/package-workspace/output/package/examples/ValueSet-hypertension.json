@@ -1,0 +1,23 @@
+{
+  "compose": {
+    "include": [
+      {
+        "concept": [
+          {
+            "code": "38341003",
+            "display": "Hypertensive disorder, systemic arterial"
+          }
+        ],
+        "system": "http://snomed.info/sct"
+      }
+    ]
+  },
+  "date": "2026-06-05",
+  "id": "hypertension",
+  "name": "Hypertension",
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "title": "Hypertension",
+  "url": "http://example.org/fhir/ValueSet/hypertension",
+  "version": "0.1.0"
+}

@@ -1,52 +1,152 @@
 schema_version: "1.0"
 sources:
-  - name: ada-guidelines-2024
-    file: sources/ada-guidelines-2024.md
-    type: document
-    checksum: "7a0d2d4d7057b7f4d10046f08b7fdfe35ecff374717c507215679b9b4853a8e9"
-    ingested_at: "2026-04-03T00:00:00Z"
-    text_extracted: false
+- name: ada-guidelines-2024
+  file: sources/ada-guidelines-2024.md
+  type: document
+  checksum: "5ab36f57b47ab616df818db58467fcf594042b454d357866756dd80929d5e944"
+  ingested_at: "2026-04-03T00:00:00Z"
+  text_extracted: true
+  normalized: sources/normalized/ada-guidelines-2024.md
+  topic: diabetes-screening
+  annotated_at: '2026-06-05T18:03:56Z'
+  concept_count: 4
 topics:
-  - name: diabetes-screening
-    title: "Diabetes Screening"
-    description: "Clinical decision support for evidence-based diabetes screening using ADA criteria"
-    author: "Clinical Informatics Team"
-    created_at: "2026-04-03T00:00:00Z"
-    structured:
-      - name: screening-criteria
-        file: topics/diabetes-screening/structured/screening-criteria/screening-criteria.yaml
-        created_at: "2026-04-03T00:00:00Z"
-        checksum: "b61662af23fa7b93b679055389aaa5fb2a7efa8b668225c7fff618fa2792ee10"
-        derived_from:
-          - ada-guidelines-2024
-      - name: risk-factors
-        file: topics/diabetes-screening/structured/risk-factors/risk-factors.yaml
-        created_at: "2026-04-03T00:00:00Z"
-        checksum: "9a295b631ca73c257eabbf2dbbcfb0d42befad2c83327c1280792c821e9c7ab7"
-        derived_from:
-          - ada-guidelines-2024
-    computable:
-      - name: diabetes-screening-computable
-        file: topics/diabetes-screening/computable/diabetes-screening-computable.yaml
-        created_at: "2026-04-03T00:00:00Z"
-        checksum: "40b32486882c106e7f820417d63ffda367ebbc8fb6e15d34425ce7e85f01ae60"
-        converged_from:
-          - screening-criteria
-          - risk-factors
-    events:
-      - timestamp: "2026-04-03T00:05:00Z"
-        type: structured_derived
-        description: Derived screening-criteria from ada-guidelines-2024
-      - timestamp: "2026-04-03T00:06:00Z"
-        type: structured_derived
-        description: Derived risk-factors from ada-guidelines-2024
-      - timestamp: "2026-04-03T00:15:00Z"
-        type: computable_converged
-        description: Converged diabetes-screening-computable from screening-criteria, risk-factors
-events:
-  - timestamp: "2026-04-03T00:00:00Z"
+- name: diabetes-screening
+  title: "Diabetes Screening"
+  description: "Clinical decision support for evidence-based diabetes screening using
+    ADA criteria"
+  author: "Clinical Informatics Team"
+  created_at: "2026-04-03T00:00:00Z"
+  structured:
+  - name: care-pathway
+    file: 
+      topics/diabetes-screening/structured/care-pathway/care-pathway.yaml
+    created_at: "2026-06-05T18:01:33Z"
+    checksum: "ea37c92b38e73351bb5156e0f2be96ffa3afbea38a2256a017f87308d9b592d8"
+    derived_from:
+    - ada-guidelines-2024
+    artifact_type: care-pathway
+  - name: decision-table
+    file: 
+      topics/diabetes-screening/structured/decision-table/decision-table.yaml
+    created_at: "2026-06-05T18:53:14Z"
+    checksum: "2fce60c6529a3d832fb9c3107a58ace7ad150c0c3bd1f68bde7827ffd79979d9"
+    derived_from:
+    - ada-guidelines-2024
+    artifact_type: decision-table
+  - name: concepts
+    file: 
+      topics/diabetes-screening/structured/concepts/concepts.yaml
+    created_at: '2026-06-05T18:13:55Z'
+    checksum: 77248c63f26e5d5099192f95366b02593797da5ec2c6a91e10ca89d37f76d729
+    derived_from:
+    - ada-guidelines-2024
+    artifact_type: terminology
+  computable:
+  - name: concepts
+    files:
+    - topics/diabetes-screening/computable/ValueSet-fasting-plasma-glucose.json
+    - topics/diabetes-screening/computable/ValueSet-hemoglobin-a1c.json
+    - topics/diabetes-screening/computable/ValueSet-hypertension.json
+    - topics/diabetes-screening/computable/ValueSet-obesity.json
+    created_at: '2026-06-05T18:19:47Z'
+    checksums:
+      topics/diabetes-screening/computable/ValueSet-fasting-plasma-glucose.json: 
+        d51db278e9c903935ea2faaf50d4635b7765a7519b06e7389d16c6735743ad80
+      topics/diabetes-screening/computable/ValueSet-hemoglobin-a1c.json: 
+        c4a84259a0728a3b76d3a4d56ec58c7e9d1f5b128892959a01ef73b4611a1923
+      topics/diabetes-screening/computable/ValueSet-hypertension.json: 
+        f812315131e8d9ad6c7856926687bcb5f3a9d0b1c07da73d8a457066b78d51a2
+      topics/diabetes-screening/computable/ValueSet-obesity.json: 
+        79d7f0dfc20d2684996f3fa110b14124a94d8e9a8a3cd233770debe0cd3bb313
+    converged_from:
+    - concepts
+    strategy: terminology
+  - name: diabetes-screening-order-set
+    files:
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-order-set.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-follow-up.json
+    - topics/diabetes-screening/computable/ActivityDefinition-recommend-fasting-glucose.json
+    - topics/diabetes-screening/computable/ActivityDefinition-recommend-a1c.json
+    - topics/diabetes-screening/computable/ActivityDefinition-recommend-follow-up.json
+    created_at: '2026-06-05T19:12:39Z'
+    checksums:
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-order-set.json: 
+        81e2ee22f61245a84aa39c6c32847769d03fe8f20927c3bcba6f6735a37892b9
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-follow-up.json: 
+        de4f94bb395a5a61f51a85460502c231015b8c3ac2f591e1e4ff1840c42b518d
+      topics/diabetes-screening/computable/ActivityDefinition-recommend-fasting-glucose.json: 
+        415456820e29fd33907347905b71438ad267e88aca72a7706fb40dce6ffc5c97
+      topics/diabetes-screening/computable/ActivityDefinition-recommend-a1c.json: 
+        72a1b41f3e14715ea619ff66b1feefa6ea3ba39c3623a025fdabfc32438f4629
+      topics/diabetes-screening/computable/ActivityDefinition-recommend-follow-up.json: 
+        f6eba85cc23139df0b67ce701aeb6ff715467b80dc56ed968338181fce33151f
+    converged_from:
+    - diabetes-screening-order-set
+    strategy: decision-table
+  - name: diabetes-screening-care-pathway
+    files:
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-care-pathway.json
+    created_at: '2026-06-05T19:13:55Z'
+    checksums:
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-care-pathway.json: 
+        e1b67991beae4c3dda9a53de5fc722ae08ba038c16aef1b0d179c7c32b3a9e37
+    converged_from:
+    - diabetes-screening-care-pathway
+    strategy: care-pathway
+  events:
+  - timestamp: '2026-04-03T00:00:00Z'
     type: topic_created
     description: Topic scaffolded with rh-skills init
-  - timestamp: "2026-04-03T00:01:00Z"
+  - timestamp: '2026-04-03T00:01:00Z'
     type: source_added
-    description: "Ingested source: ada-guidelines-2024"
+    description: 'Ingested source: ada-guidelines-2024'
+  - timestamp: '2026-06-05T17:57:31Z'
+    type: source_normalized
+    description: 'Normalized: ada-guidelines-2024'
+  - timestamp: '2026-06-05T17:57:50Z'
+    type: structured_derived
+    description: Derived care-pathway from ada-guidelines-2024
+  - timestamp: '2026-06-05T17:57:51Z'
+    type: structured_derived
+    description: Derived decision-table from ada-guidelines-2024
+  - timestamp: '2026-06-05T18:13:50Z'
+    type: extract_planned
+    description: 'Wrote extract plan: topics/diabetes-screening/process/plans/extract-plan.yaml'
+  - timestamp: '2026-06-05T18:13:54Z'
+    type: concept_review_approved
+    description: Concept review finalized by 'Copilot'
+  - timestamp: '2026-06-05T18:13:55Z'
+    type: concepts_written
+    description: Derived concepts terminology artifact from CSV review
+  - timestamp: '2026-06-05T18:19:47Z'
+    type: computable_converged
+    description: Formalized 'concepts' using terminology strategy → 4 resources
+  - timestamp: '2026-06-05T19:10:17Z'
+    type: computable_converged
+    description: Formalized 'decision-table' using decision-table strategy → 5 
+      resources
+  - timestamp: '2026-06-05T19:12:09Z'
+    type: computable_converged
+    description: Formalized 'diabetes-screening-care-pathway' using care-pathway
+      strategy → 2 resources
+  - timestamp: '2026-06-05T19:12:39Z'
+    type: computable_converged
+    description: Formalized 'diabetes-screening-order-set' using decision-table 
+      strategy → 5 resources
+  - timestamp: '2026-06-05T19:13:55Z'
+    type: computable_converged
+    description: Formalized 'diabetes-screening-care-pathway' using care-pathway
+      strategy → 2 resources
+  - timestamp: '2026-06-05T19:39:32Z'
+    type: package_created
+    description: Packaged 'diabetes-screening' → reason.diabetes-screening 
+      v0.1.0 (13 resources)
+  - timestamp: '2026-06-05T19:42:37Z'
+    type: package_created
+    description: Packaged 'diabetes-screening' → reason.diabetes-screening 
+      v0.1.0 (13 resources)
+events:
+- timestamp: '2026-06-05T18:03:56Z'
+  type: source_annotated
+  description: 'Annotated: ada-guidelines-2024 (4 concepts)'

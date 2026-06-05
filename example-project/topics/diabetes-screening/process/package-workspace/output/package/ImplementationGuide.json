@@ -1,0 +1,116 @@
+{
+  "definition": {
+    "resource": [
+      {
+        "description": "Order A1C as a screening test.",
+        "exampleBoolean": true,
+        "name": "RecommendA1c",
+        "reference": {
+          "reference": "ActivityDefinition/recommend-a1c"
+        }
+      },
+      {
+        "description": "Order fasting plasma glucose as a screening test.",
+        "exampleBoolean": true,
+        "name": "RecommendFastingGlucose",
+        "reference": {
+          "reference": "ActivityDefinition/recommend-fasting-glucose"
+        }
+      },
+      {
+        "description": "Schedule a follow-up screening review after initial screening.",
+        "exampleBoolean": true,
+        "name": "RecommendFollowUp",
+        "reference": {
+          "reference": "ActivityDefinition/recommend-follow-up"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningLibrary",
+        "reference": {
+          "reference": "Library/diabetes-screening-library"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningCarePathway",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-care-pathway"
+        }
+      },
+      {
+        "description": "Follow-up recommendation after the screening interval elapses.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningFollowUp",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-follow-up"
+        }
+      },
+      {
+        "description": "Screening recommendations based on age and risk factors.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningOrderSet",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-order-set"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "FastingPlasmaGlucose",
+        "reference": {
+          "reference": "ValueSet/fasting-plasma-glucose"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "HemoglobinA1c",
+        "reference": {
+          "reference": "ValueSet/hemoglobin-a1c"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "Hypertension",
+        "reference": {
+          "reference": "ValueSet/hypertension"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "Obesity",
+        "reference": {
+          "reference": "ValueSet/obesity"
+        }
+      }
+    ]
+  },
+  "dependsOn": [
+    {
+      "id": "hl7_fhir_us_core",
+      "packageId": "hl7.fhir.us.core",
+      "version": "6.1.0"
+    },
+    {
+      "id": "hl7_fhir_uv_cql",
+      "packageId": "hl7.fhir.uv.cql",
+      "version": "2.0.0"
+    },
+    {
+      "id": "hl7_fhir_uv_crmi",
+      "packageId": "hl7.fhir.uv.crmi",
+      "version": "1.0.0"
+    }
+  ],
+  "fhirVersion": [
+    "4.0.1"
+  ],
+  "id": "diabetes-screening",
+  "name": "DiabetesScreening",
+  "packageId": "reason.diabetes-screening",
+  "resourceType": "ImplementationGuide",
+  "status": "draft",
+  "title": "Diabetes Screening",
+  "url": "http://example.org/fhir/ImplementationGuide/diabetes-screening",
+  "version": "0.1.0"
+}

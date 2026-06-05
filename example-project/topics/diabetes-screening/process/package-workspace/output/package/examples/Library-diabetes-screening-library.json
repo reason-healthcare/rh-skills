@@ -1,0 +1,23 @@
+{
+  "content": [
+    {
+      "contentType": "text/cql",
+      "data": "bGlicmFyeSBEaWFiZXRlc1NjcmVlbmluZ0xpYnJhcnkgdmVyc2lvbiAnMC4xLjAnCgp1c2luZyBGSElSIHZlcnNpb24gJzQuMC4xJwppbmNsdWRlIEZISVJIZWxwZXJzIHZlcnNpb24gJzQuMC4xJwoKY29kZXN5c3RlbSAiTE9JTkMiOiAnaHR0cDovL2xvaW5jLm9yZycKY29kZXN5c3RlbSAiU05PTUVEQ1QiOiAnaHR0cDovL3Nub21lZC5pbmZvL3NjdCcKCnZhbHVlc2V0ICJGYXN0aW5nIFBsYXNtYSBHbHVjb3NlIjogJ2h0dHA6Ly9leGFtcGxlLm9yZy9maGlyL1ZhbHVlU2V0L2Zhc3RpbmctcGxhc21hLWdsdWNvc2UnCnZhbHVlc2V0ICJIZW1vZ2xvYmluIEExQyI6ICdodHRwOi8vZXhhbXBsZS5vcmcvZmhpci9WYWx1ZVNldC9oZW1vZ2xvYmluLWExYycKdmFsdWVzZXQgIk9iZXNpdHkiOiAnaHR0cDovL2V4YW1wbGUub3JnL2ZoaXIvVmFsdWVTZXQvb2Jlc2l0eScKdmFsdWVzZXQgIkh5cGVydGVuc2lvbiI6ICdodHRwOi8vZXhhbXBsZS5vcmcvZmhpci9WYWx1ZVNldC9oeXBlcnRlbnNpb24nCgpjb250ZXh0IFBhdGllbnQKCmRlZmluZSAiQWdlMzVPck9sZGVyIjoKICBBZ2VJblllYXJzQXQoVG9kYXkoKSkgPj0gMzUKCmRlZmluZSAiSGFzQURpYWJldGVzUmlza0ZhY3RvciI6CiAgZXhpc3RzKFtDb25kaXRpb246ICJPYmVzaXR5Il0pCiAgICBvciBleGlzdHMoW0NvbmRpdGlvbjogIkh5cGVydGVuc2lvbiJdKQo="
+    }
+  ],
+  "date": "2026-06-05",
+  "id": "diabetes-screening-library",
+  "name": "DiabetesScreeningLibrary",
+  "resourceType": "Library",
+  "status": "draft",
+  "title": "Diabetes Screening Library",
+  "type": {
+    "coding": [
+      {
+        "code": "logic-library"
+      }
+    ]
+  },
+  "url": "http://example.org/fhir/Library/diabetes-screening-library",
+  "version": "0.1.0"
+}

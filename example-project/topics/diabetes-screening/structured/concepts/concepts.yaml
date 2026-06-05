@@ -1,0 +1,87 @@
+id: diabetes-screening-terminology
+name: diabetes-screening-terminology
+title: Diabetes Screening Terminology Catalog
+version: 1.0.0
+status: draft
+domain: terminology
+description: Deduplicated concept catalog derived from topic concept annotations
+  and reviewed for standardized coding.
+derived_from:
+- ada-guidelines-2024
+artifact_type: terminology
+review_status: approved
+sections:
+  summary: Terminology review output derived from topic concept annotations.
+    Each concept was deduplicated across sources before human review.
+  value_sets:
+  - id: fasting-plasma-glucose
+    name: Fasting plasma glucose
+    concept_refs:
+    - fasting-plasma-glucose
+  - id: hemoglobin-a1c
+    name: Hemoglobin A1C
+    concept_refs:
+    - hemoglobin-a1c
+  - id: hypertension
+    name: Hypertension
+    concept_refs:
+    - hypertension
+  - id: obesity
+    name: Obesity
+    concept_refs:
+    - obesity
+concepts:
+- id: fasting-plasma-glucose
+  name: Fasting plasma glucose
+  type: observable entity
+  role:
+  - observation
+  context: 'is diagnosed by any one of the following criteria: 1. **Fasting plasma
+    glucose (FPG)** >=126 mg/dL (7.0 mmol/L) - fasting defined as no'
+  codes:
+  - system: http://loinc.org
+    code: 1558-6
+    display: Fasting glucose [Mass/volume] in Serum or Plasma
+- id: hemoglobin-a1c
+  name: Hemoglobin A1C
+  type: observable entity
+  role:
+  - observation
+  codes:
+  - system: http://loinc.org
+    code: 4548-4
+    display: Hemoglobin A1c/Hemoglobin.total in Blood
+- id: hypertension
+  name: Hypertension
+  type: disorder
+  role:
+  - risk-factor
+  context: Asian American, Pacific Islander) - History of cardiovascular disease
+    - Hypertension (>=140/90 mmHg or on therapy for hypertension) - HDL
+    cholesterol
+  codes:
+  - system: http://snomed.info/sct
+    code: '38341003'
+    display: Hypertensive disorder, systemic arterial
+  expansions:
+  - system: http://snomed.info/sct
+    relation: is-a
+    code: '38341003'
+    rationale: All descendants of hypertension
+- id: obesity
+  name: Obesity
+  type: disorder
+  role:
+  - risk-factor
+  context: '- Other clinical conditions associated with insulin resistance (e.g.,
+    severe obesity, acanthosis nigricans) For all patients, testing should begin at
+    age'
+  codes:
+  - system: http://snomed.info/sct
+    code: '414916001'
+    display: Obesity
+  expansions:
+  - system: http://snomed.info/sct
+    relation: is-a
+    code: '414916001'
+    rationale: All descendants of obesity

@@ -1,0 +1,45 @@
+artifact_type: care-pathway
+id: diabetes-screening-care-pathway
+name: diabetes-screening-care-pathway
+title: Diabetes Screening Care Pathway
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: |
+  A simple care pathway showing the screening sequence for adults who meet ADA
+  criteria for diabetes screening.
+clinical_question: What screening steps should happen for an adult who meets the
+  ADA diabetes screening criteria?
+derived_from:
+- ada-guidelines-2024
+clinical_context: |
+  Start screening at age 35, or earlier when diabetes risk factors indicate a
+  higher likelihood of undiagnosed diabetes.
+references:
+- "American Diabetes Association. Standards of Care in Diabetes—2024."
+tags:
+- pathway
+- diabetes
+- screening
+summary: |
+  The care pathway sequences diabetes screening from eligibility assessment to
+  follow-up after screening is due.
+sections:
+  summary: Assess screening eligibility first, then follow up with the patient
+    after screening is indicated.
+  evidence_traceability:
+  - claim_id: pathway-sequencing
+    statement: Screening begins with an eligibility assessment before follow-up
+      actions.
+    evidence:
+    - source: ada-guidelines-2024
+      locator: screening sequence
+  steps:
+  - id: assess-eligibility
+    label: Assess screening eligibility
+    description: Determine whether the adult meets criteria for diabetes screening.
+    action_type: assessment
+  - id: follow-up
+    label: Follow up after screening decision
+    description: Follow up after initial screening.
+    action_type: communication
