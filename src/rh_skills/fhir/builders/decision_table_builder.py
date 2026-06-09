@@ -64,9 +64,14 @@ class DecisionTableBuilder(FHIRBuilder):
         
         # Analyze condition hoisting
         classifications = self.hoister.analyze_decision_table(decision_table)
+        evidence_claim_index = self.build_evidence_claim_index(decision_table)
         
         # Build resources
-        plan_definitions = self.build_recommendations(decision_table, classifications)
+        plan_definitions = self.build_recommendations(
+            decision_table,
+            classifications,
+            evidence_claim_index,
+        )
         activity_definitions = self.build_activity_definitions(decision_table)
         
         return {
@@ -74,7 +79,12 @@ class DecisionTableBuilder(FHIRBuilder):
             'ActivityDefinition': activity_definitions
         }
 
-    def build_recommendations(self, decision_table: Dict[str, Any], classifications: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def build_recommendations(
+        self,
+        decision_table: Dict[str, Any],
+        classifications: Dict[str, Any],
+        evidence_claim_index: Dict[str, Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
         """Build Recommendation PlanDefinitions (one per event).
         
         Args:
@@ -106,7 +116,13 @@ class DecisionTableBuilder(FHIRBuilder):
                 # No rules for this event (pure data collection, not decision logic)
                 continue
             
-            pd = self._build_recommendation_for_event(event, event_rules, classifications, decision_table)
+            pd = self._build_recommendation_for_event(
+                event,
+                event_rules,
+                classifications,
+                decision_table,
+                evidence_claim_index,
+            )
             plan_definitions.append(pd)
         
         return plan_definitions
@@ -116,7 +132,8 @@ class DecisionTableBuilder(FHIRBuilder):
         event: Dict[str, Any], 
         rules: List[Dict[str, Any]], 
         classifications: Dict[str, Any],
-        decision_table: Dict[str, Any]
+        decision_table: Dict[str, Any],
+        evidence_claim_index: Dict[str, Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Build single Recommendation PlanDefinition for an event.
         
@@ -153,7 +170,7 @@ class DecisionTableBuilder(FHIRBuilder):
             
             # Build action function for unmet/met branches (captures self, classifications, decision_table)
             def build_action(rule):
-                return self._build_simple_action_from_rule(rule)
+                return self._build_simple_action_from_rule(rule, evidence_claim_index)
             
             actions = build_unmet_met_branches(
                 state_name=state_name,
@@ -163,7 +180,12 @@ class DecisionTableBuilder(FHIRBuilder):
             )
         else:
             # Fall back to flat actions with standard hoisting
-            actions = self._build_state_based_actions(rules, classifications, decision_table)
+            actions = self._build_state_based_actions(
+                rules,
+                classifications,
+                decision_table,
+                evidence_claim_index,
+            )
             # Hoist shared prerequisites among sibling actions
             actions = hoist_shared_prerequisites(actions)
         
@@ -196,8 +218,58 @@ class DecisionTableBuilder(FHIRBuilder):
             "label": f"Decision table: {self.artifact_id}",
             "citation": decision_table.get('citation', '')
         }]
+        evidence_related = self.build_evidence_related_artifacts(
+            [claim_id for rule in rules for claim_id in (rule.get("evidence_traceability_ids") or []) if isinstance(claim_id, str)],
+            evidence_claim_index,
+        )
+        if evidence_related:
+            plan_definition["relatedArtifact"].extend(
+                {
+                    "type": "documentation",
+                    "label": doc.get("label", "Evidence traceability"),
+                    "citation": doc.get("citation", ""),
+                }
+                for doc in evidence_related
+                if doc.get("citation")
+            )
         
         return plan_definition
+
+    def _apply_recommendation_metadata(
+        self,
+        action: Dict[str, Any],
+        rule: Dict[str, Any],
+        evidence_claim_index: Dict[str, Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Attach evidence citations and recommendation strength to an action."""
+        recommendation_ext = self.build_strength_of_recommendation_extension(
+            rule.get("recommendation_strength") or rule.get("strength_of_recommendation")
+        )
+        if recommendation_ext:
+            existing_ext = action.get("extension") or []
+            action["extension"] = [*existing_ext, recommendation_ext]
+
+        evidence_related = self.build_evidence_related_artifacts(
+            rule.get("evidence_traceability_ids"),
+            evidence_claim_index,
+        )
+        if evidence_related:
+            existing_docs = action.get("documentation") or []
+            action["documentation"] = [*existing_docs, *evidence_related]
+        elif rule.get("evidence") and isinstance(rule["evidence"], dict):
+            source_locator = str(rule["evidence"].get("source_locator") or "").strip()
+            if source_locator:
+                existing_docs = action.get("documentation") or []
+                action["documentation"] = [
+                    *existing_docs,
+                    {
+                        "type": "citation",
+                        "label": source_locator,
+                        "citation": source_locator,
+                    },
+                ]
+
+        return action
     
     def _extract_shared_prerequisites(self, rules: List[Dict[str, Any]]) -> Dict[str, str]:
         """Extract conditions that are shared across ALL rules with the SAME value.
@@ -235,7 +307,8 @@ class DecisionTableBuilder(FHIRBuilder):
         self,
         rules: List[Dict[str, Any]],
         classifications: Dict[str, Any],
-        decision_table: Dict[str, Any]
+        decision_table: Dict[str, Any],
+        evidence_claim_index: Dict[str, Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
         """Build state-based action tree from rules.
         
@@ -254,7 +327,7 @@ class DecisionTableBuilder(FHIRBuilder):
         
         # Build one action per rule with full when conditions
         for rule in rules:
-            action = self._build_simple_action_from_rule(rule)
+            action = self._build_simple_action_from_rule(rule, evidence_claim_index)
             actions.append(action)
         
         # Prerequisite hoisting will remove shared conditions
@@ -262,7 +335,11 @@ class DecisionTableBuilder(FHIRBuilder):
         
         return actions
     
-    def _build_simple_action_from_rule(self, rule: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_simple_action_from_rule(
+        self,
+        rule: Dict[str, Any],
+        evidence_claim_index: Dict[str, Dict[str, Any]],
+    ) -> Dict[str, Any]:
         """Build action directly from rule with all its when conditions.
         
         Args:
@@ -314,14 +391,7 @@ class DecisionTableBuilder(FHIRBuilder):
                     })
                 action["action"] = child_actions
         
-        # Add documentation if present
-        if rule.get('evidence'):
-            action["documentation"] = [{
-                "type": "documentation",
-                "label": rule['evidence'].get('source_locator', 'Evidence')
-            }]
-        
-        return action
+        return self._apply_recommendation_metadata(action, rule, evidence_claim_index)
     
     def _group_rules_by_state(self, rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Group rules by their workflow state (when clause).

@@ -38,6 +38,114 @@ class FHIRBuilder:
         """
         return f"{self.base_url}/{resource_type}/{resource_id}"
 
+    def build_evidence_claim_index(self, artifact: Dict[str, Any] | None) -> Dict[str, Dict[str, Any]]:
+        """Index evidence_traceability claims by claim_id."""
+        if not isinstance(artifact, dict):
+            return {}
+
+        sections = artifact.get("sections") or {}
+        claims = sections.get("evidence_traceability") or []
+        if not isinstance(claims, list):
+            return {}
+
+        claim_index: Dict[str, Dict[str, Any]] = {}
+        for claim in claims:
+            if not isinstance(claim, dict):
+                continue
+            claim_id = str(claim.get("claim_id") or "").strip()
+            if claim_id:
+                claim_index[claim_id] = claim
+        return claim_index
+
+    def build_evidence_related_artifacts(
+        self,
+        evidence_ids: list[str] | None,
+        evidence_claim_index: Dict[str, Dict[str, Any]] | None = None,
+    ) -> list[Dict[str, Any]]:
+        """Build RelatedArtifact documentation entries for evidence traceability."""
+        if not evidence_ids or not isinstance(evidence_ids, list):
+            return []
+
+        claim_index = evidence_claim_index or {}
+        related_artifacts: list[Dict[str, Any]] = []
+        for evidence_id in evidence_ids:
+            claim_id = str(evidence_id or "").strip()
+            if not claim_id:
+                continue
+            claim = claim_index.get(claim_id)
+            if not claim:
+                continue
+
+            statement = str(claim.get("statement") or "").strip()
+            citation_parts: list[str] = []
+            if statement:
+                citation_parts.append(statement)
+            evidence_entries = claim.get("evidence") or []
+            if isinstance(evidence_entries, list) and evidence_entries:
+                evidence_bits: list[str] = []
+                for evidence in evidence_entries:
+                    if not isinstance(evidence, dict):
+                        continue
+                    source = str(evidence.get("source") or "").strip()
+                    locator = str(evidence.get("locator") or "").strip()
+                    if source and locator:
+                        evidence_bits.append(f"{source}: {locator}")
+                    elif source:
+                        evidence_bits.append(source)
+                    elif locator:
+                        evidence_bits.append(locator)
+                if evidence_bits:
+                    citation_parts.append("Evidence: " + "; ".join(evidence_bits))
+
+            related_artifact: Dict[str, Any] = {
+                "type": "citation",
+                "label": claim_id,
+            }
+            related_artifact["citation"] = " ".join(citation_parts) if citation_parts else claim_id
+            related_artifacts.append(related_artifact)
+
+        return related_artifacts
+
+    def build_strength_of_recommendation_extension(self, value: Any) -> Dict[str, Any] | None:
+        """Build a cqf-strengthOfRecommendation extension from an explicit value."""
+        strength = str(value or "").strip().lower()
+        if strength not in {"strong", "weak"}:
+            return None
+
+        return {
+            "url": "http://hl7.org/fhir/StructureDefinition/cqf-strengthOfRecommendation",
+            "valueCodeableConcept": {
+                "coding": [{
+                    "system": "http://hl7.org/fhir/recommendation-strength",
+                    "code": strength,
+                }],
+            },
+        }
+
+    def select_strength_of_recommendation(
+        self,
+        items: list[Dict[str, Any]] | None,
+        *,
+        field_names: tuple[str, ...] = ("recommendation_strength", "strength_of_recommendation"),
+    ) -> str | None:
+        """Return a shared strong/weak recommendation strength when all items agree."""
+        if not items:
+            return None
+
+        strengths: set[str] = set()
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            for field_name in field_names:
+                normalized = str(item.get(field_name) or "").strip().lower()
+                if normalized in {"strong", "weak"}:
+                    strengths.add(normalized)
+                    break
+
+        if len(strengths) == 1:
+            return next(iter(strengths))
+        return None
+
     def build_cql_expression(self, condition_id: str, value: str | bool = None) -> Dict[str, Any]:
         """Build CQL expression reference for a condition with optional polarity.
         

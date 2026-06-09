@@ -114,6 +114,8 @@ sections:
         - order-screening
       action: Order screening
       rationale: Evidence supports screening
+      evidence_traceability_ids:
+        - crit-001
 concerns: []
 """)
 
@@ -1112,6 +1114,174 @@ concerns: []
     assert result.exit_code == 0, result.output
 
 
+def test_validate_decision_table_rejects_unknown_evidence_traceability_links(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with invalid evidence traceability links"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How is candidacy assessed?"
+sections:
+  summary: "Use staged assessment."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform staged assessment"
+      strength: moderate
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: assessment
+      label: Assessment
+  conditions:
+    - id: diagnosis-verified
+      label: Diagnosis verified
+      values: [Yes, No]
+  data_elements:
+    - id: dx-support
+      condition_id: diagnosis-verified
+      label: Diagnostic support
+  actions:
+    - id: assess-candidacy
+      label: Assess candidacy
+      kind: ServiceRequest
+      evidence_traceability_ids: [crit-999]
+  rules:
+    - id: assess
+      event: assessment
+      then:
+        - assess-candidacy
+      evidence_traceability_ids: [crit-999]
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "unknown evidence claim_id 'crit-999'" in result.output
+
+
+def test_validate_decision_table_rejects_missing_rule_evidence_traceability_links(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with missing rule evidence traceability links"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How is candidacy assessed?"
+sections:
+  summary: "Use staged assessment."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform staged assessment"
+      strength: moderate
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: assessment
+      label: Assessment
+  conditions:
+    - id: diagnosis-verified
+      label: Diagnosis verified
+      values: [Yes, No]
+  data_elements:
+    - id: dx-support
+      condition_id: diagnosis-verified
+      label: Diagnostic support
+  actions:
+    - id: assess-candidacy
+      label: Assess candidacy
+      kind: ServiceRequest
+      evidence_traceability_ids: [crit-001]
+  rules:
+    - id: assess
+      event: assessment
+      then:
+        - assess-candidacy
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "rule 'assess' missing required evidence_traceability_ids[] link(s)" in result.output
+
+
+def test_validate_decision_table_rejects_inferred_provenance_without_rationale(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with inferred recommendation missing rationale"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How is candidacy assessed?"
+sections:
+  summary: "Use staged assessment."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform staged assessment"
+      strength: moderate
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: assessment
+      label: Assessment
+  conditions:
+    - id: diagnosis-verified
+      label: Diagnosis verified
+      values: [Yes, No]
+  data_elements:
+    - id: dx-support
+      condition_id: diagnosis-verified
+      label: Diagnostic support
+  actions:
+    - id: assess-candidacy
+      label: Assess candidacy
+      kind: ServiceRequest
+      evidence_traceability_ids: [crit-001]
+      provenance:
+        source: inferred
+  rules:
+    - id: assess
+      event: assessment
+      then:
+        - assess-candidacy
+      evidence_traceability_ids: [crit-001]
+      provenance:
+        source: inferred
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "inferred provenance requires provenance.rationale" in result.output
+
+
 def test_validate_decision_table_rejects_unknown_produced_data_element(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
@@ -1266,12 +1436,204 @@ sections:
       action_labels:
         - Review prior therapy
         - Offer surgery
+      evidence_traceability_ids:
+        - cp-001
   transitions: []
 concerns: []
 """)
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "care-artifact"])
     assert result.exit_code == 0, result.output
+
+
+def test_validate_care_pathway_rejects_unknown_evidence_traceability_links(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with invalid evidence links on rule-linked steps"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      strength: moderate
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: main-pathway
+      label: Main pathway
+      description: Overall pathway
+    - id: assess-candidacy
+      label: Assess surgical candidacy
+      description: Recommendation branch
+      parent_id: main-pathway
+      rule_id: rule-004
+      action_labels:
+        - Assess surgical candidacy
+      evidence_traceability_ids:
+        - cp-999
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 1
+    assert "unknown evidence claim_id 'cp-999'" in result.output
+
+
+def test_validate_care_pathway_rejects_missing_recommendation_evidence_traceability_links(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with recommendation branch missing evidence links"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      strength: moderate
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: main-pathway
+      label: Main pathway
+      description: Overall pathway
+    - id: assess-candidacy
+      label: Assess surgical candidacy
+      description: Recommendation branch
+      parent_id: main-pathway
+      rule_id: rule-004
+      action_labels:
+        - Assess surgical candidacy
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 1
+    assert "phase 'assess-candidacy' missing required evidence_traceability_ids[] link(s)" in result.output
+
+
+def test_validate_care_pathway_rejects_inferred_provenance_without_rationale(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with inferred recommendation missing rationale"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      strength: moderate
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: main-pathway
+      label: Main pathway
+      description: Overall pathway
+    - id: assess-candidacy
+      label: Evaluate treatment readiness
+      description: Recommendation branch
+      parent_id: main-pathway
+      rule_id: rule-004
+      action_labels:
+        - Start antihyperglycemic therapy
+      evidence_traceability_ids:
+        - cp-001
+      provenance:
+        source: inferred
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 1
+    assert "inferred provenance requires provenance.rationale" in result.output
+
+
+def test_validate_care_pathway_warns_on_semantic_mismatch_between_step_and_actions(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with intentionally mismatched step/action semantics"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      strength: moderate
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: main-pathway
+      label: Main pathway
+      description: Overall pathway
+    - id: retinal-screening
+      label: Perform diabetic retinal screening
+      description: Screen for retinopathy
+      parent_id: main-pathway
+      rule_id: rule-004
+      action_labels:
+        - Initiate insulin pump therapy
+      evidence_traceability_ids:
+        - cp-001
+      provenance:
+        source: source_direct
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "may be semantically misaligned with step intent" in result.output
 
 
 def test_validate_care_pathway_rejects_children_under_rule_linked_step(tmp_repo):

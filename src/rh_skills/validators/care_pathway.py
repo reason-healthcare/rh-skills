@@ -9,7 +9,18 @@ Validates care-pathway artifacts for:
 - Transition integrity
 """
 
+import re
 from typing import Dict, List, Tuple, Any, Set
+
+_EVIDENCE_STRENGTH_VALUES = {
+    "high",
+    "moderate",
+    "low",
+    "very-low",
+    "consensus",
+    "insufficient",
+}
+_PROVENANCE_SOURCES = {"source_direct", "inferred"}
 
 
 def _check_fhir_field_leakage(data: dict, path: str = "") -> List[str]:
@@ -74,6 +85,14 @@ def validate_care_pathway(
         if emit_callback:
             emit_callback("WARN", msg)
         warnings += 1
+
+    def _semantic_tokens(*values: str) -> set[str]:
+        tokens: set[str] = set()
+        for value in values:
+            for token in re.split(r"[^a-z0-9]+", str(value or "").lower()):
+                if len(token) >= 3:
+                    tokens.add(token)
+        return tokens
     
     # Check for FHIR field leakage (L2 should be FHIR-agnostic)
     fhir_leaks = _check_fhir_field_leakage(artifact_data)
@@ -89,6 +108,30 @@ def validate_care_pathway(
             report_error(f"  L2 schema violation: FHIR-specific field '{leak}' — remove from L2 artifact")
     
     sections = artifact_data.get("sections", {})
+    evidence_traceability = sections.get("evidence_traceability") or []
+    claim_ids: set[str] = set()
+    if evidence_traceability:
+        if not isinstance(evidence_traceability, list):
+            report_error("  care-pathway: evidence_traceability must be a list when present")
+        else:
+            for idx, entry in enumerate(evidence_traceability, start=1):
+                if not isinstance(entry, dict):
+                    continue
+                claim_id = str(entry.get("claim_id") or "").strip()
+                if claim_id:
+                    claim_ids.add(claim_id)
+                strength = entry.get("strength")
+                if strength is None or str(strength).strip() == "":
+                    report_warn(
+                        f"  care-pathway: evidence_traceability entry #{idx} missing recommended 'strength' field"
+                    )
+                    continue
+                normalized_strength = str(strength).strip().lower()
+                if normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
+                    report_error(
+                        f"  care-pathway: evidence_traceability entry #{idx} has invalid strength '{strength}' "
+                        f"(allowed: {', '.join(sorted(_EVIDENCE_STRENGTH_VALUES))})"
+                    )
     
     # Validate required sections
     steps = sections.get("steps", [])
@@ -153,6 +196,72 @@ def validate_care_pathway(
                     f"  care-pathway: phase '{phase_id or idx}' uses action_labels without rule_id; "
                     "formalize will treat them as descriptive only"
                 )
+
+        recommendation_like = bool(rule_id) or bool(action_labels)
+        if recommendation_like:
+            traceability_ids = phase.get("evidence_traceability_ids")
+            if traceability_ids is None:
+                report_error(
+                    f"  care-pathway: phase '{phase_id or idx}' missing required evidence_traceability_ids[] link(s)"
+                )
+            elif not isinstance(traceability_ids, list) or not traceability_ids:
+                report_error(
+                    f"  care-pathway: phase '{phase_id or idx}' evidence_traceability_ids must be a non-empty list"
+                )
+            else:
+                for trace_idx, claim_id in enumerate(traceability_ids, start=1):
+                    if not isinstance(claim_id, str) or not claim_id.strip():
+                        report_error(
+                            f"  care-pathway: phase '{phase_id or idx}' evidence_traceability_ids[{trace_idx}] must be a non-empty string"
+                        )
+                        continue
+                    if claim_ids and claim_id.strip() not in claim_ids:
+                        report_error(
+                            f"  care-pathway: phase '{phase_id or idx}' references unknown evidence claim_id '{claim_id.strip()}'"
+                        )
+
+            provenance = phase.get("provenance")
+            if provenance is None:
+                report_warn(
+                    f"  care-pathway: phase '{phase_id or idx}' missing recommended provenance metadata"
+                )
+            elif not isinstance(provenance, dict):
+                report_error(
+                    f"  care-pathway: phase '{phase_id or idx}' provenance must be an object when present"
+                )
+            else:
+                source = str(provenance.get("source") or "").strip()
+                if not source:
+                    report_error(
+                        f"  care-pathway: phase '{phase_id or idx}' provenance.source is required when provenance is present"
+                    )
+                elif source not in _PROVENANCE_SOURCES:
+                    report_error(
+                        f"  care-pathway: phase '{phase_id or idx}' provenance.source '{source}' is invalid "
+                        f"(allowed: {', '.join(sorted(_PROVENANCE_SOURCES))})"
+                    )
+                elif source == "inferred":
+                    rationale = str(provenance.get("rationale") or "").strip()
+                    if not rationale:
+                        report_error(
+                            f"  care-pathway: phase '{phase_id or idx}' inferred provenance requires provenance.rationale"
+                        )
+                    if not isinstance(traceability_ids, list) or not traceability_ids:
+                        report_error(
+                            f"  care-pathway: phase '{phase_id or idx}' inferred provenance requires non-empty evidence_traceability_ids[]"
+                        )
+
+            if isinstance(action_labels, list) and action_labels:
+                step_tokens = _semantic_tokens(
+                    str(phase.get("id") or ""),
+                    str(phase.get("label") or ""),
+                    str(phase.get("description") or ""),
+                )
+                action_tokens = _semantic_tokens(*[str(label) for label in action_labels])
+                if step_tokens and action_tokens and len(step_tokens & action_tokens) == 0:
+                    report_warn(
+                        f"  care-pathway: phase '{phase_id or idx}' action_labels may be semantically misaligned with step intent"
+                    )
 
     for idx, phase in enumerate(steps, start=1):
         if not isinstance(phase, dict):
