@@ -543,6 +543,93 @@ def _render_formalize_json_template(template_name: str, **context: Any) -> dict[
     return json.loads(rendered)
 
 
+def _build_evidence_claim_index(l2_data: dict | None) -> dict[str, dict[str, Any]]:
+    """Index evidence claims by claim_id for lookup during formalization."""
+    sections = (l2_data or {}).get("sections") or {}
+    claims = sections.get("evidence_traceability") or []
+    if not isinstance(claims, list):
+        return {}
+    index: dict[str, dict[str, Any]] = {}
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id") or "").strip()
+        if claim_id:
+            index[claim_id] = claim
+    return index
+
+
+def _build_evidence_related_artifacts(
+    evidence_ids: list[str] | None,
+    evidence_claim_index: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Build FHIR RelatedArtifact entries for evidence traceability claims."""
+    if not evidence_ids or not isinstance(evidence_ids, list):
+        return []
+
+    claim_index = evidence_claim_index or {}
+    related_artifacts: list[dict[str, Any]] = []
+    for evidence_id in evidence_ids:
+        claim_id = str(evidence_id or "").strip()
+        if not claim_id:
+            continue
+        claim = claim_index.get(claim_id)
+        if not isinstance(claim, dict):
+            log_warn(f"  evidence_traceability_ids claim '{claim_id}' not found in evidence_traceability")
+            continue
+
+        citation_parts: list[str] = []
+        statement = str(claim.get("statement") or "").strip()
+        if statement:
+            citation_parts.append(statement)
+        evidence_entries = claim.get("evidence") or []
+        if isinstance(evidence_entries, list) and evidence_entries:
+            evidence_bits: list[str] = []
+            for evidence in evidence_entries:
+                if not isinstance(evidence, dict):
+                    continue
+                source = str(evidence.get("source") or "").strip()
+                locator = str(evidence.get("locator") or "").strip()
+                if source and locator:
+                    evidence_bits.append(f"{source}: {locator}")
+                elif source:
+                    evidence_bits.append(source)
+                elif locator:
+                    evidence_bits.append(locator)
+            if evidence_bits:
+                citation_parts.append("Evidence: " + "; ".join(evidence_bits))
+
+        related_artifact: dict[str, Any] = {
+            "type": "citation",
+            "label": claim_id,
+        }
+        if citation_parts:
+            related_artifact["citation"] = " ".join(citation_parts)
+        else:
+            related_artifact["citation"] = claim_id
+        related_artifacts.append(related_artifact)
+
+    return related_artifacts
+
+
+def _build_strength_of_recommendation_extension(value: Any) -> dict[str, Any] | None:
+    """Build a cqf-strengthOfRecommendation extension from an explicit L2 value."""
+    strength = str(value or "").strip().lower()
+    if not strength:
+        return None
+    if strength not in {"strong", "weak"}:
+        return None
+    return {
+        "url": "http://hl7.org/fhir/StructureDefinition/cqf-strengthOfRecommendation",
+        "valueCodeableConcept": {
+            "coding": [{
+                "system": "http://hl7.org/fhir/recommendation-strength",
+                "code": strength,
+            }],
+        },
+    }
+
+
 def _render_activity_definition_resource(
     context: dict[str, Any],
     *,
@@ -740,6 +827,7 @@ def _build_phase_style_actions(
     canonical: str,
     activity_definition_id: str,
     triggers: list,
+    evidence_claim_index: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict]:
     """Build actions from phase-style care-pathway format (with substeps)."""
     actions: list[dict] = []
@@ -774,12 +862,26 @@ def _build_phase_style_actions(
                 "title": str(substep.get("label") or substep_desc),
                 "description": substep_desc,
             }
+            recommendation_ext = _build_strength_of_recommendation_extension(
+                substep.get("recommendation_strength")
+                or substep.get("strength_of_recommendation")
+            )
+            if recommendation_ext:
+                child_action["extension"] = [recommendation_ext]
+            substep_evidence_ids = substep.get("evidence_traceability_ids")
+            substep_evidence_related = _build_evidence_related_artifacts(
+                substep_evidence_ids,
+                evidence_claim_index,
+            )
+            if substep_evidence_related:
+                child_action["documentation"] = substep_evidence_related
             
             if substep.get("note"):
-                child_action["documentation"] = [{
+                note_docs = [{
                     "type": "documentation",
                     "display": str(substep["note"]),
                 }]
+                child_action["documentation"] = [*child_action.get("documentation", []), *note_docs]
             
             child_actions.append(child_action)
         
@@ -789,9 +891,22 @@ def _build_phase_style_actions(
             "title": phase_title,
             "description": phase_desc,
         }
+        recommendation_ext = _build_strength_of_recommendation_extension(
+            phase.get("recommendation_strength")
+            or phase.get("strength_of_recommendation")
+        )
+        if recommendation_ext:
+            phase_action["extension"] = [recommendation_ext]
         
         if child_actions:
             phase_action["action"] = child_actions
+        phase_evidence_ids = phase.get("evidence_traceability_ids")
+        phase_evidence_related = _build_evidence_related_artifacts(
+            phase_evidence_ids,
+            evidence_claim_index,
+        )
+        if phase_evidence_related:
+            phase_action["documentation"] = phase_evidence_related
         
         # Add trigger to first phase if triggers exist
         if phase_idx == 1 and triggers:
@@ -810,6 +925,7 @@ def _build_care_pathway_actions(
     artifact_name: str,
     canonical: str,
     l2_data: dict | None,
+    evidence_claim_index: dict[str, dict[str, Any]] | None = None,
     branch_plan_map: dict[str, str] | None = None,
     recommendation_plan_map: dict[str, str] | None = None,
     recommendation_candidates: list[dict[str, Any]] | None = None,
@@ -832,7 +948,7 @@ def _build_care_pathway_actions(
         if not isinstance(triggers, list):
             triggers = []
         actions = _build_phase_style_actions(
-            steps, artifact_name, canonical, "", triggers
+            steps, artifact_name, canonical, "", triggers, evidence_claim_index
         )
         if actions:
             return actions
@@ -869,6 +985,17 @@ def _build_care_pathway_actions(
             "title": title,
             "description": description,
         }
+        recommendation_ext = _build_strength_of_recommendation_extension(
+            step.get("recommendation_strength")
+            or step.get("strength_of_recommendation")
+        )
+        if recommendation_ext:
+            action["extension"] = [recommendation_ext]
+        evidence_ids = step.get("evidence_traceability_ids")
+        evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
+        if evidence_related:
+            action["documentation"] = evidence_related
+
         branch_ref = (branch_plan_map or {}).get(step_id)
         if branch_ref:
             action["definitionCanonical"] = branch_ref
@@ -1684,6 +1811,7 @@ def _build_decision_table_rule_plan_actions(
     canonical: str,
     action_index: dict[str, dict[str, Any]],
     condition_index: dict[str, dict[str, Any]],
+    evidence_claim_index: dict[str, dict[str, Any]] | None = None,
     *,
     fallback_name: str,
 ) -> list[dict[str, Any]]:
@@ -1703,10 +1831,22 @@ def _build_decision_table_rule_plan_actions(
 
     if len(child_actions) == 1:
         root_action = child_actions[0]
+        recommendation_ext = _build_strength_of_recommendation_extension(
+            rule.get("recommendation_strength")
+            or rule.get("strength_of_recommendation")
+        )
+        if recommendation_ext:
+            existing_ext = root_action.get("extension") or []
+            root_action["extension"] = [*existing_ext, recommendation_ext]
         if trigger_entries:
             root_action["trigger"] = trigger_entries
         if condition_entries:
             root_action["condition"] = condition_entries
+        evidence_ids = rule.get("evidence_traceability_ids")
+        evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
+        if evidence_related:
+            existing_docs = root_action.get("documentation") or []
+            root_action["documentation"] = [*existing_docs, *evidence_related]
         return [root_action]
 
     if child_actions:
@@ -1721,6 +1861,16 @@ def _build_decision_table_rule_plan_actions(
             "description": str(rule.get("description") or (event or {}).get("description") or "Decision rule"),
             "action": child_actions,
         }
+        recommendation_ext = _build_strength_of_recommendation_extension(
+            rule.get("recommendation_strength")
+            or rule.get("strength_of_recommendation")
+        )
+        if recommendation_ext:
+            wrapper["extension"] = [recommendation_ext]
+        evidence_ids = rule.get("evidence_traceability_ids")
+        evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
+        if evidence_related:
+            wrapper["documentation"] = evidence_related
         if trigger_entries:
             wrapper["trigger"] = trigger_entries
         if condition_entries:
@@ -1732,6 +1882,16 @@ def _build_decision_table_rule_plan_actions(
         "title": str((event or {}).get("label") or rule.get("id") or "Recommendation"),
         "description": str(rule.get("description") or (event or {}).get("description") or "Decision rule"),
     }
+    recommendation_ext = _build_strength_of_recommendation_extension(
+        rule.get("recommendation_strength")
+        or rule.get("strength_of_recommendation")
+    )
+    if recommendation_ext:
+        fallback_action["extension"] = [recommendation_ext]
+    evidence_ids = rule.get("evidence_traceability_ids")
+    evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
+    if evidence_related:
+        fallback_action["documentation"] = evidence_related
     if trigger_entries:
         fallback_action["trigger"] = trigger_entries
     if condition_entries:
@@ -1743,6 +1903,7 @@ def _build_decision_table_plan_actions(
     artifact_name: str,
     canonical: str,
     l2_data: dict | None,
+    evidence_claim_index: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict]:
     """Build PlanDefinition.action entries from L2 decision-table rules."""
     sections = (l2_data or {}).get("sections") or {}
@@ -1780,6 +1941,7 @@ def _build_decision_table_plan_actions(
                 canonical,
                 action_index,
                 condition_index,
+                evidence_claim_index,
                 fallback_name=f"rule-{idx}",
             )
             if rule_plan_actions:
@@ -1799,6 +1961,7 @@ def _build_decision_table_stub_plan_definitions(
     canonical: str,
     cfg: dict,
     l2_data: dict | None,
+    evidence_claim_index: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Build scaffold child PlanDefinitions for decision-table rules."""
     sections = (l2_data or {}).get("sections") or {}
@@ -1852,6 +2015,7 @@ def _build_decision_table_stub_plan_definitions(
             canonical,
             action_index,
             condition_index,
+            evidence_claim_index,
             fallback_name=f"rule-{idx}",
         )
         child_title = (
@@ -1935,6 +2099,7 @@ def _build_care_pathway_stub_plan_definitions(
     canonical: str,
     cfg: dict,
     l2_data: dict | None,
+    evidence_claim_index: dict[str, dict[str, Any]] | None = None,
     recommendation_plan_map: dict[str, str] | None = None,
     recommendation_candidates: list[dict[str, Any]] | None = None,
     action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
@@ -1976,6 +2141,10 @@ def _build_care_pathway_stub_plan_definitions(
             "title": title,
             "description": description,
         }
+        evidence_ids = step.get("evidence_traceability_ids")
+        evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
+        if evidence_related:
+            action["documentation"] = evidence_related
         children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
         if children:
             child_actions: list[dict] = []
@@ -1985,12 +2154,23 @@ def _build_care_pathway_stub_plan_definitions(
                 # definitionCanonical rather than recursively inlining it.
                 child_branch_ref = pre_branch_plan_map.get(child_step_id)
                 if child_branch_ref:
-                    child_actions.append({
+                    child_action = {
                         "id": child_step_id,
                         "title": str(child.get("label") or child.get("title") or child_step_id),
                         "description": str(child.get("description") or child_step_id),
                         "definitionCanonical": child_branch_ref,
-                    })
+                    }
+                    child_recommendation_ext = _build_strength_of_recommendation_extension(
+                        child.get("recommendation_strength")
+                        or child.get("strength_of_recommendation")
+                    )
+                    if child_recommendation_ext:
+                        child_action["extension"] = [child_recommendation_ext]
+                    child_evidence_ids = child.get("evidence_traceability_ids")
+                    child_evidence_related = _build_evidence_related_artifacts(child_evidence_ids, evidence_claim_index)
+                    if child_evidence_related:
+                        child_action["documentation"] = child_evidence_related
+                    child_actions.append(child_action)
                 else:
                     child_actions.extend(build_subtree(child))
             action["action"] = child_actions
@@ -2470,6 +2650,7 @@ def _build_stub_resources(
         return _build_terminology_stub_resources(artifact_name, cfg, l2_data)
 
     resources = []
+    evidence_claim_index = _build_evidence_claim_index(l2_data)
 
     # Primary resource
     child_plan_definitions: list[dict] = []
@@ -2497,6 +2678,7 @@ def _build_stub_resources(
                 canonical,
                 cfg,
                 l2_data,
+                evidence_claim_index,
             )
             primary_resource = _render_decision_table_plan_definition_resource(
                 {
@@ -2514,6 +2696,7 @@ def _build_stub_resources(
                         artifact_name,
                         canonical,
                         l2_data,
+                        evidence_claim_index,
                     ),
                 },
             )
@@ -2547,6 +2730,7 @@ def _build_stub_resources(
                 canonical,
                 cfg,
                 l2_data,
+                evidence_claim_index,
                 recommendation_plan_map=recommendation_plan_map,
                 recommendation_candidates=recommendation_candidates,
                 action_reference_map=action_reference_map,
@@ -2567,6 +2751,7 @@ def _build_stub_resources(
                         artifact_name,
                         canonical,
                         l2_data,
+                        evidence_claim_index=evidence_claim_index,
                         branch_plan_map=root_branch_plan_map,
                         recommendation_plan_map=recommendation_plan_map,
                         recommendation_candidates=recommendation_candidates,

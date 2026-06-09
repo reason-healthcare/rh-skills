@@ -83,6 +83,13 @@ Decision-table extraction guidance:
 - Use `actions[].assessment_artifact` when a named questionnaire or assessment
   instrument is explicitly administered or reviewed as part of a broader
   assessment and should later formalize to a Questionnaire.
+- For every recommendation action and rule, include
+  `evidence_traceability_ids[]` referencing one or more
+  `sections.evidence_traceability[].claim_id` values.
+- Add provenance metadata on recommendation actions/rules:
+  - `provenance.source: source_direct` for source-explicit recommendations
+  - `provenance.source: inferred` only when synthesized from multiple statements,
+    with required `provenance.rationale`.
 - For later recommendation branches, use explicit assessed states from the
   source rather than inventing a generic summary condition when the guideline
   does not name one.
@@ -117,11 +124,18 @@ Care-pathway extraction guidance:
 - Treat every `steps[]` entry as a pathway node first. When present, an overall journey step is longitudinal orchestration, and its child phases are candidate groupings that downstream formalize may promote into separate strategy artifacts if the related decision logic supports it.
 - Keep recommendation logic in the decision-table artifact; use care-pathway for sequencing, actor ownership, and phase transitions.
 - When a pathway step corresponds to a specific decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels the step orchestrates.
-- **When a step encompasses multiple distinct clinical tasks**, model those as **child steps** under the parent rather than stacking them as multiple `action_labels` on a single leaf. More than one `action_label` is a signal to check whether those labels describe the same action (keep as one step) or distinct sequential/parallel tasks (decompose into children with their own `rule_id`). This applies especially when the source enumerates separate components of an assessment — e.g., instrument administration, objective evaluation, and prior therapy review within the same candidacy KAS.
+- For recommendation-like pathway steps (`rule_id`/`action_labels` present),
+  include `evidence_traceability_ids[]` referencing one or more
+  `sections.evidence_traceability[].claim_id` values.
+- Add provenance metadata on recommendation-like steps:
+  - `provenance.source: source_direct` for source-explicit steps
+  - `provenance.source: inferred` only when synthesized, with required
+    `provenance.rationale`.
+- **When a step encompasses multiple distinct clinical tasks**, model those as **child steps** under the parent rather than stacking them as multiple `action_labels` on a single leaf. More than one `action_label` is a signal to check whether those labels describe the same action (keep as one step) or distinct sequential/parallel tasks (decompose into children with their own `rule_id`). Trigger decomposition from source-agnostic cues such as different verbs, actors, timing windows, required artifacts, or outputs.
 - Do not encode event-trigger metadata or ECA logic in care-pathway steps; use decision-table for that logic and keep care-pathway as the sequencing shell.
 - Collapse intermediate wrapper steps that do not carry their own `rule_id`, `action_labels`, or `applicability_condition`; keep them only when they add a distinct clinical phase.
 - When different parts of the pathway activate at different workflow moments, represent them as separate sibling branches under the same parent pathway rather than forcing one linear chain.
-- When a pathway step branches into mutually exclusive sub-approaches (e.g., technique A vs technique B, escalation vs continuation), create an **intermediate grouping step** as their shared parent rather than making all branches flat children of the root. The grouping step captures the decision point; its children capture the alternative approaches. Example: `plan-approach-step` (parent: root) → `plan-full-exposure-step` and `plan-dilation-step` (both `parent_id: plan-approach-step`).
+- When a pathway step branches into mutually exclusive sub-approaches (e.g., lifestyle-only vs medication escalation), create an **intermediate grouping step** as their shared parent rather than making all branches flat children of the root. The grouping step captures the decision point; its children capture the alternative approaches. Example: `glycemic-path-step` (parent: root) → `intensify-lifestyle-step` and `start-glp1-step` (both `parent_id: glycemic-path-step`).
 - Use a separate branch for coordination work such as scheduling follow-up when it has a different trigger or timing from assessment, planning, or completed follow-up.
 - Do not create a separate pathway step for intervention execution when the source is really describing planning or ordering logic; keep it in the planning branch unless the guideline clearly treats execution as its own clinical stage.
 

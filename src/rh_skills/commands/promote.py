@@ -1277,6 +1277,11 @@ def _enrich_care_pathway_rule_links(
         action_aliases = {alias for alias in action_aliases if alias}
         rule_entries.append({
             "rule_id": rule_id,
+            "evidence_traceability_ids": [
+                str(claim_id).strip()
+                for claim_id in (rule.get("evidence_traceability_ids") or [])
+                if isinstance(claim_id, str) and str(claim_id).strip()
+            ],
             "rule_aliases": rule_aliases,
             "action_aliases": action_aliases,
             "action_labels": action_labels,
@@ -1308,7 +1313,18 @@ def _enrich_care_pathway_rule_links(
             enriched_steps.append(updated)
             continue
         if str(step.get("rule_id") or "").strip():
-            enriched_steps.append(step)
+            updated = dict(step)
+            if not updated.get("evidence_traceability_ids"):
+                matching_entry = next(
+                    (
+                        entry for entry in rule_entries
+                        if entry.get("rule_id") == str(updated.get("rule_id") or "").strip()
+                    ),
+                    None,
+                )
+                if matching_entry and matching_entry.get("evidence_traceability_ids"):
+                    updated["evidence_traceability_ids"] = list(matching_entry["evidence_traceability_ids"])
+            enriched_steps.append(updated)
             continue
 
         step_aliases = {
@@ -1386,6 +1402,8 @@ def _enrich_care_pathway_rule_links(
         updated["rule_id"] = chosen["rule_id"]
         if not updated.get("action_labels") and matched_action_labels:
             updated["action_labels"] = matched_action_labels
+        if not updated.get("evidence_traceability_ids") and chosen.get("evidence_traceability_ids"):
+            updated["evidence_traceability_ids"] = list(chosen["evidence_traceability_ids"])
         enriched_steps.append(updated)
 
     sections["steps"] = enriched_steps
@@ -1565,9 +1583,27 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
         "description": "<stub: concrete result produced by a child task>",
         "data_type": "assessment",
     }],
-    "rules": [{"id": "rule-001", "event": "event-001", "then": ["broader-action", "review-supporting-data", "perform-structured-task"]},
-              {"id": "rule-002", "event": "event-001", "when": {"cond-001": "Yes"}, "then": ["recommend-action"]},
-              {"id": "rule-003", "event": "event-001", "when": {"cond-001": "No"}, "then": ["do-not-perform-action"]}],
+    "rules": [{
+        "id": "rule-001",
+        "event": "event-001",
+        "then": ["broader-action", "review-supporting-data", "perform-structured-task"],
+        "evidence_traceability_ids": ["claim-001"],
+        "provenance": {"source": "source_direct"},
+    }, {
+        "id": "rule-002",
+        "event": "event-001",
+        "when": {"cond-001": "Yes"},
+        "then": ["recommend-action"],
+        "evidence_traceability_ids": ["claim-001"],
+        "provenance": {"source": "source_direct"},
+    }, {
+        "id": "rule-003",
+        "event": "event-001",
+        "when": {"cond-001": "No"},
+        "then": ["do-not-perform-action"],
+        "evidence_traceability_ids": ["claim-001"],
+        "provenance": {"source": "inferred", "rationale": "<stub: why this inference is supported by the source>"},
+    }],
     # care-pathway sections
     "steps": [{
         "id": "main-pathway",
@@ -1582,6 +1618,8 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
         "parent_id": "main-pathway",
         "rule_id": "<stub: decision-table rule id for this step, when applicable>",
         "action_labels": ["<stub: human-readable decision-table action label>"],
+        "evidence_traceability_ids": ["<stub: claim_id from sections.evidence_traceability>"],
+        "provenance": {"source": "source_direct"},
     }, {
         "id": "phase-002-group",
         "label": "<stub: decision-point grouping step — use when the pathway branches into mutually exclusive sub-approaches>",
@@ -1596,6 +1634,8 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
         "parent_id": "phase-002-group",
         "rule_id": "<stub: rule id for this branch>",
         "action_labels": ["<stub: action label for branch A>"],
+        "evidence_traceability_ids": ["<stub: claim_id from sections.evidence_traceability>"],
+        "provenance": {"source": "source_direct"},
     }, {
         "id": "phase-002-branch-b",
         "label": "<stub: second alternative sub-approach>",
@@ -1604,6 +1644,8 @@ _STUB_SECTION_SHAPES: dict[str, object] = {
         "parent_id": "phase-002-group",
         "rule_id": "<stub: rule id for this branch>",
         "action_labels": ["<stub: action label for branch B>"],
+        "evidence_traceability_ids": ["<stub: claim_id from sections.evidence_traceability>"],
+        "provenance": {"source": "inferred", "rationale": "<stub: why this branch is inferred from source evidence>"},
     }, {
         "id": "phase-003",
         "label": "<stub: downstream phase after branches converge>",
@@ -1646,6 +1688,8 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "label": "<stub: broader recommended action>",
                     "description": "<stub: overall recommendation that may contain broken-down tasks>",
                     "kind": "ServiceRequest",
+                    "evidence_traceability_ids": ["claim-001"],
+                    "provenance": {"source": "source_direct"},
                 },
                 {
                     "id": "review-supporting-data",
@@ -1654,6 +1698,8 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "kind": "ServiceRequest",
                     "parent_action_id": "broader-action",
                     "produces_data_elements": ["de-001"],
+                    "evidence_traceability_ids": ["claim-001"],
+                    "provenance": {"source": "source_direct"},
                 },
                 {
                     "id": "perform-structured-task",
@@ -1663,12 +1709,16 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "parent_action_id": "broader-action",
                     "produces_data_elements": ["de-002"],
                     "assessment_artifact": "<stub: linked assessment artifact when applicable>",
+                    "evidence_traceability_ids": ["claim-001"],
+                    "provenance": {"source": "source_direct"},
                 },
                 {
                     "id": "recommend-action",
                     "label": "<stub: recommended action>",
                     "description": "<stub: what should be done when the rule applies>",
                     "kind": "ServiceRequest",
+                    "evidence_traceability_ids": ["claim-001"],
+                    "provenance": {"source": "source_direct"},
                 },
                 {
                     "id": "do-not-perform-action",
@@ -1676,6 +1726,8 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "description": "<stub: what should not be done when the rule applies>",
                     "kind": "ServiceRequest",
                     "do_not_perform": True,
+                    "evidence_traceability_ids": ["claim-001"],
+                    "provenance": {"source": "inferred", "rationale": "<stub: why withholding action is inferred from evidence>"},
                 },
             ]
         if artifact_type == "care-pathway":
@@ -2257,6 +2309,10 @@ Decision-table extraction guidance:
   than proliferating near-duplicate events.
 - If the narrative clearly groups recommendations by care phase, optionally define `sections.pathway_phases[]` as the canonical phase model and keep that grouping in `event.phase` and/or `rule.phase` without turning phases themselves into events.
 - Prefer one clinically explicit rule per recommendation branch, with `action` as a short human label and `rationale` as the recommendation basis.
+- Every recommendation rule and action must include `evidence_traceability_ids[]` that reference `sections.evidence_traceability[].claim_id`.
+- Add provenance metadata on recommendation rules/actions:
+  - `provenance.source: source_direct` when explicitly stated in source text
+  - `provenance.source: inferred` only when synthesized from multiple source statements, and include `provenance.rationale`
 - When a recommendation belongs to a recognizable phase such as assessment, planning, intraoperative, or postoperative care, populate `rule.phase`.
 - When the logic reads as a sequence such as verify -> assess -> recommend,
   keep that as staged events in one table unless a later stage becomes too
@@ -2267,11 +2323,15 @@ Care-pathway extraction guidance:
 - When the source describes one overarching patient journey with major phases, include a top-level pathway step and make the major phases children via `parent_id`.
 - Use care-pathway for sequencing, actor ownership, and transitions; keep recommendation logic itself in the decision-table artifact.
 - When a pathway step corresponds to a specific decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels that the step orchestrates.
+- For recommendation-like steps (`rule_id`/`action_labels` present), include required `evidence_traceability_ids[]` that reference `sections.evidence_traceability[].claim_id`.
+- Add provenance metadata on recommendation-like steps:
+  - `provenance.source: source_direct` when the step is directly stated by source text
+  - `provenance.source: inferred` only when synthesized, with required `provenance.rationale`
 - Keep top-level steps clinically meaningful and stable; reserve leaf steps for meaningful sub-phases, not every individual recommendation.
-- **When a step encompasses multiple distinct clinical tasks** (e.g., administer a structured instrument AND evaluate objective findings AND review prior therapy), model those as **child steps** under the parent step rather than stacking them all as multiple `action_labels` on a single leaf. A step with more than one `action_label` is a signal to check whether those labels represent the same action (keep as one step) or distinct sequential/parallel clinical tasks (decompose into children). Each child step should carry its own `rule_id` if one exists in the decision-table.
-- When the source describes a multi-component assessment (e.g., KAS that covers both instrument administration and objective evaluation), decompose into sibling child steps under the assessment parent: one step per discrete clinical task. This applies especially when tasks have different actors, different artifacts, or different timing within the same phase.
+- **When a step encompasses multiple distinct clinical tasks** (e.g., collect baseline labs AND perform risk scoring AND document treatment readiness), model those as **child steps** under the parent step rather than stacking them all as multiple `action_labels` on a single leaf. A step with more than one `action_label` is a signal to check whether those labels represent the same action (keep as one step) or distinct sequential/parallel clinical tasks (decompose into children). Each child step should carry its own `rule_id` when one exists in the decision-table.
+- Decompose multi-component recommendations using source-agnostic cues: different verbs, different actors, different timing windows, different required artifacts, or different outputs.
 - When different parts of the pathway activate at different workflow moments, represent them as separate sibling branches under the same parent pathway rather than forcing one linear sequence.
-- When a pathway step branches into mutually exclusive sub-approaches (e.g., technique A vs technique B, escalation vs continuation), create an **intermediate grouping step** as their shared parent rather than making all branches flat children of the root. The grouping step captures the decision point; its children capture the alternatives. Example: a "Plan Surgical Approach" grouping step with `parent_id: root` whose children "Plan Full Exposure" and "Plan Dilation" each have `parent_id: plan-approach-step`.
+- When a pathway step branches into mutually exclusive sub-approaches (e.g., lifestyle-only vs medication escalation), create an **intermediate grouping step** as their shared parent rather than making all branches flat children of the root. The grouping step captures the decision point; its children capture the alternatives. Example: a "Select Glycemic Management Path" grouping step with `parent_id: root` whose children "Intensify Lifestyle Plan" and "Start GLP-1 Therapy" each have `parent_id: glycemic-path-step`.
 - Use a separate branch for coordination work such as scheduling follow-up when it has a different trigger or timing from assessment, planning, or completed follow-up.
 - Do not create a separate pathway step for intervention execution when the source is really describing preservice planning or ordering logic; keep the execution detail under the planning branch unless the guideline truly treats it as its own clinical stage.
 - Use `transitions[]` only for actual clinical progression dependencies between steps.""",

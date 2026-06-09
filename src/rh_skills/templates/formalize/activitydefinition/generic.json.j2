@@ -9,17 +9,20 @@
   "title": "{{ title }}",
   "description": {{ description | tojson }},
   "kind": "{{ kind }}",
-  "intent": "{{ intent }}"{% if do_not_perform or code or participant or related_artifact %},{% endif %}
+  "intent": "{{ intent }}"{% if do_not_perform or code or participant or related_artifact or extension %},{% endif %}
 {% if do_not_perform %}
-  "doNotPerform": true{% if code or participant or related_artifact %},{% endif %}
+  "doNotPerform": true{% if code or participant or related_artifact or extension %},{% endif %}
 {% endif %}
 {% if code %}
-  "code": {{ code | tojson }}{% if participant or related_artifact %},{% endif %}
+  "code": {{ code | tojson }}{% if participant or related_artifact or extension %},{% endif %}
 {% endif %}
 {% if participant %}
-  "participant": {{ participant | tojson }}{% if related_artifact %},{% endif %}
+  "participant": {{ participant | tojson }}{% if related_artifact or extension %},{% endif %}
 {% endif %}
 {% if related_artifact %}
-  "relatedArtifact": {{ related_artifact | tojson }}
+  "relatedArtifact": {{ related_artifact | tojson }}{% if extension %},{% endif %}
+{% endif %}
+{% if extension %}
+  "extension": {{ extension | tojson }}
 {% endif %}
 }

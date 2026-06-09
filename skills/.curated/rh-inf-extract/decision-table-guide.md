@@ -134,6 +134,7 @@ Before finalizing extraction, verify:
 - [ ] **Every action** has corresponding entry in `actions` section
 - [ ] **Every rule** references valid action IDs in `then: [...]`
 - [ ] **Every guideline "should/shall" statement** appears as an action
+- [ ] **Recommendation rules include required `evidence_traceability_ids[]`** pointing to `sections.evidence_traceability[].claim_id`
 - [ ] **Evidence traceability** present for all rules
 - [ ] **Pathway phases** defined (if workflow guideline)
 - [ ] **No duplicate conditions** (check for semantic equivalence)

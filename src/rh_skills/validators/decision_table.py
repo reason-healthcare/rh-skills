@@ -25,6 +25,16 @@ _FHIR_TRIGGER_TYPES = {
     "data-access-ended",
 }
 
+_EVIDENCE_STRENGTH_VALUES = {
+    "high",
+    "moderate",
+    "low",
+    "very-low",
+    "consensus",
+    "insufficient",
+}
+_PROVENANCE_SOURCES = {"source_direct", "inferred"}
+
 
 def _check_fhir_field_leakage(data: dict, path: str = "") -> List[str]:
     """Recursively check for FHIR-specific fields at L2 level."""
@@ -100,6 +110,7 @@ def validate_decision_table(
     actions = sections.get("actions", [])
     rules = sections.get("rules", [])
     pathway_phases = sections.get("pathway_phases")
+    evidence_traceability = sections.get("evidence_traceability") or []
     
     if not events or len(events) == 0:
         report_error("  decision-table: events section is empty")
@@ -118,6 +129,102 @@ def validate_decision_table(
     if not rules or len(rules) == 0:
         report_error("  decision-table: rules section is empty")
         return errors, warnings
+
+    claim_ids: set[str] = set()
+    if evidence_traceability:
+        if not isinstance(evidence_traceability, list):
+            report_error("  decision-table: evidence_traceability must be a list when present")
+        else:
+            for idx, entry in enumerate(evidence_traceability, start=1):
+                if not isinstance(entry, dict):
+                    continue
+                claim_id = str(entry.get("claim_id") or "").strip()
+                if claim_id:
+                    claim_ids.add(claim_id)
+                strength = entry.get("strength")
+                if strength is None or str(strength).strip() == "":
+                    report_warn(
+                        f"  decision-table: evidence_traceability entry #{idx} missing recommended 'strength' field"
+                    )
+                    continue
+                normalized_strength = str(strength).strip().lower()
+                if normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
+                    report_error(
+                        f"  decision-table: evidence_traceability entry #{idx} has invalid strength '{strength}' "
+                        f"(allowed: {', '.join(sorted(_EVIDENCE_STRENGTH_VALUES))})"
+                    )
+
+    def _validate_traceability_links(
+        *,
+        owner_label: str,
+        owner_type: str,
+        traceability_ids: Any,
+    ) -> None:
+        if traceability_ids is None:
+            if owner_type == "rule":
+                report_error(
+                    f"  decision-table: {owner_type} '{owner_label}' missing required evidence_traceability_ids[] link(s)"
+                )
+            else:
+                report_warn(
+                    f"  decision-table: {owner_type} '{owner_label}' missing recommended evidence_traceability_ids[] link(s)"
+                )
+            return
+        if not isinstance(traceability_ids, list) or not traceability_ids:
+            report_error(
+                f"  decision-table: {owner_type} '{owner_label}' evidence_traceability_ids must be a non-empty list"
+            )
+            return
+        for idx, claim_id in enumerate(traceability_ids, start=1):
+            if not isinstance(claim_id, str) or not claim_id.strip():
+                report_error(
+                    f"  decision-table: {owner_type} '{owner_label}' evidence_traceability_ids[{idx}] must be a non-empty string"
+                )
+                continue
+            if claim_ids and claim_id.strip() not in claim_ids:
+                report_error(
+                    f"  decision-table: {owner_type} '{owner_label}' references unknown evidence claim_id '{claim_id.strip()}'"
+                )
+
+    def _validate_provenance(
+        *,
+        owner_label: str,
+        owner_type: str,
+        provenance: Any,
+        traceability_ids: Any,
+    ) -> None:
+        if provenance is None:
+            report_warn(
+                f"  decision-table: {owner_type} '{owner_label}' missing recommended provenance metadata"
+            )
+            return
+        if not isinstance(provenance, dict):
+            report_error(
+                f"  decision-table: {owner_type} '{owner_label}' provenance must be an object when present"
+            )
+            return
+        source = str(provenance.get("source") or "").strip()
+        if not source:
+            report_error(
+                f"  decision-table: {owner_type} '{owner_label}' provenance.source is required when provenance is present"
+            )
+            return
+        if source not in _PROVENANCE_SOURCES:
+            report_error(
+                f"  decision-table: {owner_type} '{owner_label}' provenance.source '{source}' is invalid "
+                f"(allowed: {', '.join(sorted(_PROVENANCE_SOURCES))})"
+            )
+            return
+        if source == "inferred":
+            rationale = str(provenance.get("rationale") or "").strip()
+            if not rationale:
+                report_error(
+                    f"  decision-table: {owner_type} '{owner_label}' inferred provenance requires provenance.rationale"
+                )
+            if not isinstance(traceability_ids, list) or not traceability_ids:
+                report_error(
+                    f"  decision-table: {owner_type} '{owner_label}' inferred provenance requires non-empty evidence_traceability_ids[]"
+                )
     
     # Build lookup maps
     event_ids = {e["id"] for e in events if isinstance(e, dict) and "id" in e}
@@ -288,6 +395,17 @@ def validate_decision_table(
             report_error(
                 f"  decision-table: action '{action_id}' assessment_artifact must be a string when present"
             )
+        _validate_traceability_links(
+            owner_label=str(action_id),
+            owner_type="action",
+            traceability_ids=action.get("evidence_traceability_ids"),
+        )
+        _validate_provenance(
+            owner_label=str(action_id),
+            owner_type="action",
+            provenance=action.get("provenance"),
+            traceability_ids=action.get("evidence_traceability_ids"),
+        )
     
     # Validate rules reference valid events, conditions, actions
     condition_usage: Dict[str, int] = {}  # Track how often each condition is used
@@ -341,6 +459,17 @@ def validate_decision_table(
         # Check recommended 'rationale' field (evidence traceability)
         if not rule.get("rationale"):
             report_warn(f"  decision-table: rule '{rule_id}' missing recommended 'rationale' field")
+        _validate_traceability_links(
+            owner_label=str(rule_id),
+            owner_type="rule",
+            traceability_ids=rule.get("evidence_traceability_ids"),
+        )
+        _validate_provenance(
+            owner_label=str(rule_id),
+            owner_type="rule",
+            provenance=rule.get("provenance"),
+            traceability_ids=rule.get("evidence_traceability_ids"),
+        )
         
         # Check 'phase' field if pathway_phases present
         if rule.get("pathway_phase") is not None:
