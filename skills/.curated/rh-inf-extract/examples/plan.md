@@ -10,6 +10,7 @@ artifacts:
     source_files:
       - sources/normalized/ada-2024-guideline.md
       - sources/normalized/uspstf-screening.md
+    purpose: "Defines recommendation-scoped diabetes screening decision logic for downstream formalization."
     rationale: "Combines guideline and preventive screening evidence into decision logic with eligibility conditions."
     key_questions:
       - Who should be screened?
@@ -33,6 +34,7 @@ artifacts:
     source_files:
       - sources/normalized/ada-2024-guideline.md
       - sources/normalized/cdc-surveillance.md
+    purpose: "Summarizes narrative diabetes risk findings and evidence statements for downstream review."
     rationale: "Captures evidence findings and risk factors for downstream reasoning."
     key_questions:
       - What does the evidence say about diabetes risk?

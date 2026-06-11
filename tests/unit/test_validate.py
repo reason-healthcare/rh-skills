@@ -420,6 +420,85 @@ def test_validate_l3_uses_tracked_computable_files_over_stale_name_matches(tmp_r
     assert stale_path.name not in result.output
 
 
+def test_validate_l3_evidence_summary_skips_missing_intermediate_sections_when_files_tracked(tmp_repo):
+    topic = "my-skill"
+    artifact = "evidence-summary"
+    computable_dir = tmp_repo / "topics" / topic / "computable"
+    computable_dir.mkdir(parents=True, exist_ok=True)
+
+    import json
+
+    (computable_dir / "Evidence-evidence-summary.json").write_text(json.dumps({
+        "resourceType": "Evidence",
+        "id": "evidence-summary",
+        "status": "draft",
+        "certainty": [{"rating": {"coding": [{"code": "moderate"}]}}],
+    }))
+    (computable_dir / "EvidenceVariable-evidence-summary-evidencevariable.json").write_text(json.dumps({
+        "resourceType": "EvidenceVariable",
+        "id": "evidence-summary-evidencevariable",
+        "status": "draft",
+        "characteristic": [{"description": "Adults with chronic rhinosinusitis"}],
+    }))
+    (computable_dir / "Citation-evidence-summary-citation.json").write_text(json.dumps({
+        "resourceType": "Citation",
+        "id": "evidence-summary-citation",
+        "status": "draft",
+    }))
+
+    y = YAML()
+    tracking = {
+        "schema_version": "1.0",
+        "sources": [],
+        "topics": [{
+            "name": topic,
+            "structured": [],
+            "computable": [{
+                "name": artifact,
+                "files": [
+                    f"topics/{topic}/computable/Evidence-evidence-summary.json",
+                    f"topics/{topic}/computable/EvidenceVariable-evidence-summary-evidencevariable.json",
+                    f"topics/{topic}/computable/Citation-evidence-summary-citation.json",
+                ],
+                "checksums": {},
+                "converged_from": [artifact],
+                "strategy": "evidence-summary",
+            }],
+            "events": [],
+        }],
+    }
+    with open(tmp_repo / "tracking.yaml", "w") as f:
+        y.dump(tracking, f)
+
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "formalize-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan = {
+        "topic": topic,
+        "plan_type": "formalize",
+        "status": "approved",
+        "reviewer": "Tester",
+        "reviewed_at": "2026-04-14T00:00:00Z",
+        "artifacts": [{
+            "name": f"{topic}-evidence-summary",
+            "source_artifact": artifact,
+            "artifact_type": "evidence-summary",
+            "strategy": "evidence-summary",
+            "input_artifacts": [artifact],
+            "l3_targets": ["Evidence", "EvidenceVariable", "Citation"],
+            "required_sections": ["evidence"],
+            "reviewer_decision": "approved",
+            "implementation_target": True,
+        }],
+    }
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+
+    runner = CliRunner()
+    result = runner.invoke(validate, [topic, "l3", artifact])
+    assert result.exit_code == 0, result.output
+    assert "MISSING required formalize section" not in result.output
+
+
 def test_validate_invalid_l2_exits_1(tmp_repo):
     make_invalid_l2(tmp_repo)
     runner = CliRunner()
@@ -1446,6 +1525,48 @@ concerns: []
     assert result.exit_code == 0, result.output
 
 
+def test_validate_care_pathway_accepts_rule_ids_on_leaf_step(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with grouped recommendation rule links"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: phase-1
+      label: Phase 1
+      description: First phase
+      rule_ids: [rule-1, rule-2]
+      action_labels:
+        - Review prior therapy
+        - Offer surgery
+      evidence_traceability_ids:
+        - cp-001
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 0, result.output
+
+
 def test_validate_care_pathway_rejects_unknown_evidence_traceability_links(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
@@ -1688,6 +1809,57 @@ concerns: []
     assert "rule-linked pathway steps must be leaves" in result.output
 
 
+def test_validate_care_pathway_rejects_children_under_rule_ids_linked_step(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-artifact.yaml").write_text("""\
+id: care-artifact
+name: care-artifact
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway with grouped rule links incorrectly attached to a parent step"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Pathway summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway statement"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  steps:
+    - id: assessment
+      label: Assessment and surgical decision
+      description: Shared parent branch
+      rule_ids: [rule-001, rule-004]
+      action_labels:
+        - Verify diagnosis
+        - Assess surgical candidacy
+      evidence_traceability_ids:
+        - cp-001
+    - id: verify-diagnosis
+      label: Verify diagnosis
+      description: First child branch
+      parent_id: assessment
+    - id: assess-candidacy
+      label: Assess surgical candidacy
+      description: Second child branch
+      parent_id: assessment
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-artifact"])
+    assert result.exit_code == 1
+    assert "rule-linked pathway steps must be leaves" in result.output
+
+
 def test_validate_care_pathway_allows_distinct_rule_linked_sibling_branches(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
@@ -1727,6 +1899,10 @@ sections:
       rule_id: rule-001
       action_labels:
         - Verify diagnosis
+      evidence_traceability_ids:
+        - cp-001
+      provenance:
+        source: source_direct
     - id: assess-candidacy
       label: Assess surgical candidacy
       description: Second recommendation branch
@@ -1734,6 +1910,10 @@ sections:
       rule_id: rule-004
       action_labels:
         - Assess surgical candidacy
+      evidence_traceability_ids:
+        - cp-001
+      provenance:
+        source: source_direct
   transitions: []
 concerns: []
 """)

@@ -921,6 +921,40 @@ rh-skills render <topic> <artifact-name>
    normalized source files and the schema for the artifact type (see `reference.md`).
    You are the reasoning layer — the CLI only writes what you provide.
 
+   Before filling any scaffold, load the relevant artifact-specific guidance and
+   apply it explicitly:
+   - `decision-table`: read the `decision-table` schema block in `reference.md`
+     and the extraction heuristics in `decision-table-guide.md` before editing
+     the body. Deconstruct distinct recommendations into separate rules and
+     actions even when they share the same broad visit, phase, or workflow
+     moment. Use recommendation-scoped events and keep one clinically explicit
+     rule per recommendation branch.
+   - `care-pathway`: read the `care-pathway` schema block and guidance bullets
+     in `reference.md` before editing the body. Use the flat `steps[]` +
+     `parent_id` model. Parent steps that have children must not also carry
+     `rule_id` or `rule_ids[]`; push recommendation linkage down to the most
+     specific child step. A leaf step may link one rule via `rule_id`, or a
+     tight recommendation cluster via `rule_ids[]`.
+   - `evidence-summary`: read the matching schema block in `reference.md` and
+     capture discrete findings, optional risk factors, frames, and
+     evidence-traceability claims without collapsing them into one narrative blob.
+   - `terminology`: read the matching schema block in `reference.md` and keep
+     the output constrained to explicit value-set / concept-map structure backed
+     by the approved concept review results.
+   - `measure`: read the matching schema block in `reference.md` and express
+     population definitions, scoring method, and improvement notation explicitly.
+   - `assessment`: read the matching schema block in `reference.md` and express
+     instrument metadata, items, options, scoring, and MCP-derived codings when available.
+   - `policy`: read the matching schema block in `reference.md` and separate
+     applicability, criteria, and disposition actions clearly.
+   - Other artifact types: read the matching schema block in `reference.md`
+     before editing the body.
+
+   For `decision-table` and `care-pathway`, also consult `examples/output.md`
+   before deriving if the artifact shape is ambiguous. Validation success alone
+   is not enough; the derived body must conform to the artifact-specific schema
+   and guidance.
+
    Write the constructed YAML to a temp file, then pass it with `--body-file`:
 
    > **`--body-file` writes the file directly — the CLI does NOT inject or merge

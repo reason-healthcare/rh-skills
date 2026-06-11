@@ -1,320 +1,223 @@
-# Care Pathway Auto-Derivation Example
+# Care Pathway Alignment Example
 
 ## Overview
 
-When a decision table artifact includes **pathway_phases** metadata, the corresponding care pathway can be **auto-generated** using the `rh-skills derive pathway` command.
+Use this example when a temporal or procedural decision table includes
+`sections.pathway_phases[]` and you want the paired care-pathway artifact to
+stay aligned with that phase model.
 
-This eliminates manual pathway authoring, ensures consistency, and reduces duplication.
-
----
-
-## When to Use Auto-Derivation
-
-✅ **Use auto-derivation when:**
-- A decision-table artifact with `pathway_phases` metadata exists
-- Guideline has temporal/procedural workflow structure
-- Events are organized into sequential clinical phases
-
-❌ **Do NOT use auto-derivation when:**
-- No decision table exists for the workflow
-- Guideline describes workflow without decision logic
-- Decision table lacks `pathway_phases` (diagnostic, screening, treatment optimization guidelines)
+This example is intentionally written in the **current L2 shapes**:
+- decision-table uses `sections.pathway_phases[]`
+- rules use `then: [...]`
+- care-pathway uses flat `steps[]` with optional `parent_id`
+- recommendation linkage belongs on leaf pathway steps via `rule_id` or
+  `rule_ids[]`
 
 ---
 
-## Example: Diabetes Foot Care Pathway
+## When This Pattern Fits
 
-### Step 1: Decision Table with pathway_phases
+Use this pattern when:
+- a decision-table already captures the recommendation logic
+- the guideline has major temporal or procedural phases
+- you want the care-pathway to mirror those phases without re-encoding ECA logic
 
-Source decision table: `diabetes-foot-care-decisions.yaml`
+Do not use this pattern when:
+- the workflow has no paired decision-table
+- the source is primarily a diagnostic tree or screening eligibility algorithm
+- the pathway needs to combine recommendations from multiple different tables
+
+---
+
+## Example Source Pair
+
+### Decision Table
 
 ```yaml
 id: diabetes-foot-care-decisions
 artifact_type: decision-table
-pathway_phases:
-  - id: screening
-    label: "Annual Foot Screening"
-    description: "Assess diabetic foot risk"
-    order: 1
-  - id: classification
-    label: "Risk Classification"
-    description: "Stratify patients by ulcer/amputation risk"
-    order: 2
-  - id: intervention
-    label: "Prevention Interventions"
-    description: "Targeted interventions based on risk level"
-    order: 3
-  - id: monitoring
-    label: "Ongoing Monitoring"
-    description: "Follow-up schedule based on risk tier"
-    order: 4
-
+domain: diabetes
+clinical_question: "What recommendation-scoped decisions govern diabetic foot screening and follow-up?"
 sections:
+  pathway_phases:
+    - id: screening
+      label: Annual foot screening
+      description: Assess diabetic foot risk
+    - id: classification
+      label: Risk classification
+      description: Stratify patients by ulcer and amputation risk
+    - id: intervention
+      label: Prevention interventions
+      description: Apply targeted interventions based on risk level
+    - id: monitoring
+      label: Ongoing monitoring
+      description: Schedule follow-up based on risk tier
   events:
-    - id: e1-annual-screen
-      label: "Annual Foot Examination"
+    - id: annual-foot-screen
+      label: Annual foot screening review
       phase: screening
-      phase_order: 1
-    - id: e2-risk-assessment
-      label: "Risk Stratification Decision"
+    - id: risk-stratification
+      label: Risk stratification review
       phase: classification
-      phase_order: 1
-    - id: e3-education
-      label: "Patient Education Decision"
+    - id: patient-education-review
+      label: Patient education review
       phase: intervention
-      phase_order: 1
-    - id: e4-podiatry-referral
-      label: "Podiatry Referral Decision"
+    - id: podiatry-referral-review
+      label: Podiatry referral review
       phase: intervention
-      phase_order: 2
-    - id: e5-schedule-followup
-      label: "Follow-Up Scheduling Decision"
+    - id: followup-scheduling-review
+      label: Follow-up scheduling review
       phase: monitoring
-      phase_order: 1
-  
   conditions:
     - id: has-diabetes
-      description: "Patient has type 1 or type 2 diabetes"
+      label: Diabetes diagnosis confirmed
+      values: [Yes, No]
     - id: high-risk-features
-      description: "Neuropathy, deformity, or prior ulcer present"
-  
+      label: High-risk foot features present
+      values: [Yes, No]
   actions:
-    - id: conduct-screen
-      description: "Perform annual comprehensive foot examination"
-    - id: classify-risk
-      description: "Assign risk category (low/moderate/high)"
-    - id: provide-education
-      description: "Deliver foot care education"
-    - id: refer-podiatry
-      description: "Refer to podiatry"
-    - id: schedule-3mo
-      description: "Schedule 3-month follow-up"
-    - id: schedule-12mo
-      description: "Schedule 12-month follow-up"
-  
+    - id: perform-foot-exam
+      label: Perform annual comprehensive foot examination
+    - id: assign-risk-category
+      label: Assign diabetic foot risk category
+    - id: deliver-foot-care-education
+      label: Deliver foot care education
+    - id: refer-to-podiatry
+      label: Refer to podiatry
+    - id: schedule-3-month-followup
+      label: Schedule 3-month follow-up
+    - id: schedule-12-month-followup
+      label: Schedule 12-month follow-up
   rules:
-    - id: r1
-      event: e1-annual-screen
+    - id: rule-perform-foot-exam
+      event: annual-foot-screen
+      phase: screening
       when: {has-diabetes: Yes}
-      action: conduct-screen
-      rationale: "ADA Standards of Care 2024, Recommendation 11.18"
-    - id: r2
-      event: e2-risk-assessment
+      then: [perform-foot-exam]
+    - id: rule-assign-risk-category
+      event: risk-stratification
+      phase: classification
       when: {has-diabetes: Yes}
-      action: classify-risk
-      rationale: "ADA Standards of Care 2024, Recommendation 11.19"
-    - id: r3
-      event: e3-education
+      then: [assign-risk-category]
+    - id: rule-deliver-foot-care-education
+      event: patient-education-review
+      phase: intervention
       when: {has-diabetes: Yes}
-      action: provide-education
-      rationale: "ADA Standards of Care 2024, Recommendation 11.20"
-    - id: r4
-      event: e4-podiatry-referral
+      then: [deliver-foot-care-education]
+    - id: rule-refer-to-podiatry
+      event: podiatry-referral-review
+      phase: intervention
       when: {high-risk-features: Yes}
-      action: refer-podiatry
-      rationale: "ADA Standards of Care 2024, Recommendation 11.21"
-    - id: r5
-      event: e5-schedule-followup
+      then: [refer-to-podiatry]
+    - id: rule-schedule-3-month-followup
+      event: followup-scheduling-review
+      phase: monitoring
       when: {high-risk-features: Yes}
-      action: schedule-3mo
-      rationale: "ADA Standards of Care 2024, Recommendation 11.22a"
-    - id: r6
-      event: e5-schedule-followup
+      then: [schedule-3-month-followup]
+    - id: rule-schedule-12-month-followup
+      event: followup-scheduling-review
+      phase: monitoring
       when: {high-risk-features: No}
-      action: schedule-12mo
-      rationale: "ADA Standards of Care 2024, Recommendation 11.22b"
+      then: [schedule-12-month-followup]
 ```
 
----
-
-### Step 2: Auto-Generate Care Pathway
-
-Run the derive command:
-
-```bash
-rh-skills derive pathway --from-decision-table diabetes-foot-care-decisions
-```
-
-**Output**: `diabetes-foot-care-decisions-pathway.yaml` generated in `topics/diabetes-ccm/structured/`
-
----
-
-### Step 3: Generated Pathway Structure
+### Aligned Care Pathway
 
 ```yaml
-id: diabetes-foot-care-decisions-pathway
-name: diabetes-foot-care-decisions-pathway
-title: "Pathway For Diabetes Foot Care Workflow"
-version: "0.1.0"
-status: draft
-domain: diabetes-ccm
-description: |
-  Auto-generated care pathway from diabetes-foot-care-decisions decision table.
-  Organizes clinical decision points into workflow phases.
-  
-  NOTE: This artifact is auto-generated. Do not edit manually.
-  Regenerate using: rh-skills derive pathway --from-decision-table diabetes-foot-care-decisions --force
-
-derived_from:
-  - diabetes-foot-care-decisions
+id: diabetes-foot-care-pathway
 artifact_type: care-pathway
-clinical_question: "How should the diabetes-ccm workflow be organized across care phases?"
-
-fhir_mapping:
-  profile: "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-pathwaydefinition"
-  plan_definition_type: "clinical-protocol"
-  library: "diabetes-foot-care-decisions"
-  subject: "Patient"
-  auto_generated: true
-  source_artifact: "diabetes-foot-care-decisions"
-  generation_timestamp: "2026-05-28T20:31:00Z"
-
-sections:
-  summary: |
-    This pathway organizes the diabetes-ccm care continuum into 4 clinical phases.
-    Each phase contains decision points and activities derived from the 
-    diabetes-foot-care-decisions decision table.
-  
-  steps:
-    - id: screening
-      label: "Annual Foot Screening"
-      description: "Assess diabetic foot risk"
-      actor: "Clinician"
-      substeps:
-        - id: screening-decision
-          label: "Screening Decision"
-          description: "Annual Foot Examination"
-          event: "e1-annual-screen"
-    
-    - id: classification
-      label: "Risk Classification"
-      description: "Stratify patients by ulcer/amputation risk"
-      actor: "Clinician"
-      substeps:
-        - id: risk-assessment
-          label: "Risk Stratification Decision"
-          description: "Risk Stratification Decision"
-          event: "e2-risk-assessment"
-    
-    - id: intervention
-      label: "Prevention Interventions"
-      description: "Targeted interventions based on risk level"
-      actor: "Clinician"
-      substeps:
-        - id: education
-          label: "Patient Education Decision"
-          description: "Patient Education Decision"
-          event: "e3-education"
-        - id: podiatry-referral
-          label: "Podiatry Referral Decision"
-          description: "Podiatry Referral Decision"
-          event: "e4-podiatry-referral"
-    
-    - id: monitoring
-      label: "Ongoing Monitoring"
-      description: "Follow-up schedule based on risk tier"
-      actor: "Clinician"
-      substeps:
-        - id: followup-scheduling
-          label: "Follow-Up Scheduling Decision"
-          description: "Follow-Up Scheduling Decision"
-          event: "e5-schedule-followup"
-```
-
----
-
-## Key Benefits of Auto-Derivation
-
-1. **No duplication**: Pathway structure derived directly from decision table metadata
-2. **Consistency**: Events, phases, and sequencing guaranteed to match decision logic
-3. **Traceability**: `derived_from` and `auto_generated` metadata explicit
-4. **Maintainability**: Regenerate pathway when decision table changes (single source of truth)
-5. **Speed**: Instant generation vs manual pathway authoring
-
----
-
-## Workflow Integration
-
-### Extract Plan Entry
-
-When planning L2 extraction, include **both** artifacts:
-
-```yaml
-artifacts:
-  - name: diabetes-foot-care-decisions
-    artifact_type: decision-table
-    source_files:
-      - sources/normalized/ada-2024-standards.md
-    required_sections:
-      - summary
-      - events
-      - conditions
-      - actions
-      - rules
-      - pathway_phases  # ← Required for auto-derivation
-      - evidence_traceability
-  
-  # Do NOT manually author this pathway — auto-derive it instead
-  # - name: diabetes-foot-care-pathway
-  #   artifact_type: care-pathway
-  #   ...
-```
-
-### Derivation Command
-
-After decision table is implemented and validated:
-
-```bash
-rh-skills validate diabetes-ccm l2 diabetes-foot-care-decisions
-rh-skills derive pathway --from-decision-table diabetes-foot-care-decisions
-rh-skills validate diabetes-ccm l2 diabetes-foot-care-decisions-pathway
-```
-
----
-
-## When Manual Pathway Authoring is Appropriate
-
-**Only manually author a care-pathway when:**
-
-1. **No decision table exists** — Guideline describes workflow without conditional decision logic
-2. **Non-temporal guideline** — Diagnostic tree or screening eligibility (no sequential phases)
-3. **Pathway spans multiple decision tables** — Complex pathways combining logic from multiple tables
-
-**Example of manual pathway (no decision table)**:
-
-```yaml
-id: patient-onboarding-pathway
-artifact_type: care-pathway
-description: |
-  Onboarding workflow for new chronic disease patients.
-  No conditional decision logic; purely procedural checklist.
-
+clinical_question: "How should diabetic foot care recommendations be sequenced across the care pathway?"
+metadata:
+  derived_from:
+    - diabetes-foot-care-decisions
 sections:
   steps:
-    - step: 1
-      code: "Welcome and Enrollment"
-      description: "Register patient, collect demographics"
-      substeps:
-        - substep: "1.1"
-          description: "Verify insurance eligibility"
-        - substep: "1.2"
-          description: "Complete intake forms"
-    - step: 2
-      code: "Baseline Assessment"
-      description: "Initial clinical evaluation"
-      substeps:
-        - substep: "2.1"
-          description: "Collect vital signs and labs"
-        - substep: "2.2"
-          description: "Review medication history"
+    - id: diabetic-foot-care-pathway
+      label: Diabetic foot care pathway
+      description: Overall diabetic foot screening and follow-up journey
+    - id: screening-phase
+      label: Annual foot screening
+      description: Screening phase of the pathway
+      parent_id: diabetic-foot-care-pathway
+    - id: perform-exam-step
+      label: Perform annual foot examination
+      description: Conduct the annual comprehensive foot exam
+      parent_id: screening-phase
+      rule_id: rule-perform-foot-exam
+      action_labels:
+        - Perform annual comprehensive foot examination
+    - id: classification-phase
+      label: Risk classification
+      description: Classification phase of the pathway
+      parent_id: diabetic-foot-care-pathway
+    - id: assign-risk-step
+      label: Assign risk category
+      description: Determine diabetic foot risk tier
+      parent_id: classification-phase
+      rule_id: rule-assign-risk-category
+      action_labels:
+        - Assign diabetic foot risk category
+    - id: intervention-phase
+      label: Prevention interventions
+      description: Intervention phase of the pathway
+      parent_id: diabetic-foot-care-pathway
+    - id: education-and-referral-step
+      label: Education and referral recommendations
+      description: Deliver education and refer high-risk patients when indicated
+      parent_id: intervention-phase
+      rule_ids:
+        - rule-deliver-foot-care-education
+        - rule-refer-to-podiatry
+      action_labels:
+        - Deliver foot care education
+        - Refer to podiatry
+    - id: monitoring-phase
+      label: Ongoing monitoring
+      description: Monitoring phase of the pathway
+      parent_id: diabetic-foot-care-pathway
+    - id: schedule-followup-step
+      label: Schedule follow-up
+      description: Schedule follow-up according to risk tier
+      parent_id: monitoring-phase
+      rule_ids:
+        - rule-schedule-3-month-followup
+        - rule-schedule-12-month-followup
+      action_labels:
+        - Schedule 3-month follow-up
+        - Schedule 12-month follow-up
+  transitions:
+    - from_id: screening-phase
+      to_id: classification-phase
+      description: Proceed after screening assessment
+    - from_id: classification-phase
+      to_id: intervention-phase
+      description: Proceed after assigning risk category
+    - from_id: intervention-phase
+      to_id: monitoring-phase
+      description: Proceed to follow-up planning
 ```
 
 ---
 
-## Summary
+## Alignment Rules Illustrated
 
-**Default approach**: If a decision table with `pathway_phases` exists, **always use auto-derivation**.
+1. `sections.pathway_phases[]` belongs inside the decision-table `sections` block.
+2. Events and rules reference phase IDs via `event.phase` and `rule.phase`.
+3. Recommendation logic stays in the decision-table; the care-pathway only
+   sequences and groups that logic.
+4. Parent pathway steps do not carry `rule_id` or `rule_ids[]` when they also
+   have children.
+5. A leaf pathway step can link:
+   - one recommendation with `rule_id`
+   - a tight recommendation cluster with `rule_ids[]`
 
-**Command**: `rh-skills derive pathway --from-decision-table <decision-table-id>`
+---
 
-**Only manually author pathways** when no decision table exists or pathway spans multiple tables.
+## Practical Guidance
+
+- If several recommendations share the same workflow moment, keep one event in
+  the decision-table and separate them into distinct `rules[]` and `actions[]`.
+- Mirror the major phase model in the care-pathway, but push recommendation
+  linkage down to the most specific leaf step.
+- Use grouped `rule_ids[]` only when the linked recommendations genuinely form
+  one tight pathway node with the same actor, timing, and clinical meaning.

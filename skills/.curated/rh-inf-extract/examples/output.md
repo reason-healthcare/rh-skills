@@ -71,6 +71,8 @@ rh-inf-extract implement diabetes-ccm
 **Agent:**
 
 Reading `topics/diabetes-ccm/process/plans/extract-plan.yaml`...
+Loading the `decision-table` schema from `reference.md` and the extraction
+heuristics from `decision-table-guide.md`...
 
 Approved artifacts:
 - `screening-decisions`
@@ -78,8 +80,14 @@ Approved artifacts:
 Running:
 
 ```sh
-# Write the reasoned artifact body first (all required L2 fields included):
-cat > /tmp/rh-screening-decisions.yaml << 'EOF'
+# Generate the approved scaffold first:
+rh-skills promote body-init diabetes-ccm screening-decisions
+
+# Then fill the scaffold with reasoned clinical content:
+#   topics/diabetes-ccm/process/tmp/screening-decisions.yaml
+# Replace every <stub: ...> placeholder before deriving.
+
+# Resulting body file:
 id: screening-decisions
 name: screening-decisions
 title: Diabetes Screening Decisions
@@ -93,34 +101,39 @@ derived_from:
 artifact_type: decision-table
 clinical_question: "Who should be screened and at what interval?"
 sections:
-  summary: "Adults at elevated risk should receive annual screening."
+  summary: "Adult diabetes screening recommendations deconstructed into recommendation-scoped decision logic."
   events:
-    - id: e1
-      label: "Adult diabetes screening encounter"
+    - id: routine-screening-review
+      label: "Routine diabetes screening review"
   conditions:
-    - id: c1
+    - id: risk-status
       label: "Risk status"
       values: ["elevated", "average"]
   actions:
-    - id: a1
-      label: "Annual screening"
-    - id: a2
-      label: "Screening every 3 years"
+    - id: order-annual-screening
+      label: "Order annual diabetes screening"
+    - id: order-triennial-screening
+      label: "Order screening every 3 years"
   rules:
-    - id: r1
-      event: e1
-      when: {c1: "elevated"}
-      then: [a1]
-    - id: r2
-      event: e1
-      when: {c1: "average"}
-      then: [a2]
+    - id: rule-annual-screening
+      event: routine-screening-review
+      when: {risk-status: "elevated"}
+      then: [order-annual-screening]
+    - id: rule-triennial-screening
+      event: routine-screening-review
+      when: {risk-status: "average"}
+      then: [order-triennial-screening]
   evidence_traceability:
-    - claim_id: c1
+    - claim_id: claim-annual-screening
       statement: "Elevated risk warrants annual screening"
       evidence:
         - source: ada-2024-guideline
           locator: "Section 2"
+    - claim_id: claim-triennial-screening
+      statement: "Average-risk adults may be screened every 3 years"
+      evidence:
+        - source: uspstf-screening
+          locator: "Recommendation statement"
 concerns:
   - issue: "Interval language differs between ADA and USPSTF"
     positions:
@@ -129,7 +142,6 @@ concerns:
     preferred_interpretation:
       source: ada-2024-guideline
       rationale: "More explicit for chronic care workflows"
-EOF
 
 # Then derive, passing the file:
 rh-skills promote derive diabetes-ccm screening-decisions \
@@ -143,7 +155,7 @@ rh-skills promote derive diabetes-ccm screening-decisions \
   --required-section actions \
   --required-section rules \
   --required-section evidence_traceability \
-  --body-file /tmp/rh-screening-decisions.yaml
+  --body-file topics/diabetes-ccm/process/tmp/screening-decisions.yaml
 ```
 
 In `--body-file` mode, the YAML is authoritative. Omit `--evidence-ref` and
@@ -200,7 +212,7 @@ rh-skills promote derive diabetes-ccm screening-decisions \
   --required-section actions \
   --required-section rules \
   --required-section evidence_traceability \
-  --body-file /tmp/rh-screening-decisions.yaml \
+  --body-file topics/diabetes-ccm/process/tmp/screening-decisions.yaml \
   --force
 rh-skills validate diabetes-ccm screening-decisions
 rh-skills render diabetes-ccm screening-decisions
