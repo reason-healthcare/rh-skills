@@ -1196,6 +1196,54 @@ def _link_tokens(value: object) -> set[str]:
     return {token for token in normalized.split("-") if token}
 
 
+def _step_rule_refs(step: dict) -> list[str]:
+    refs: list[str] = []
+    rule_id = step.get("rule_id")
+    if isinstance(rule_id, str) and rule_id.strip():
+        refs.append(rule_id.strip())
+    rule_ids = step.get("rule_ids")
+    if isinstance(rule_ids, list):
+        for value in rule_ids:
+            if isinstance(value, str) and value.strip():
+                refs.append(value.strip())
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for ref in refs:
+        if ref not in seen:
+            seen.add(ref)
+            deduped.append(ref)
+    return deduped
+
+
+def _assign_step_rule_refs(step: dict, rule_ids: list[str], action_labels: list[str] | None) -> dict:
+    updated = dict(step)
+    deduped_rule_ids = []
+    seen_rule_ids: set[str] = set()
+    for rule_id in rule_ids:
+        if rule_id and rule_id not in seen_rule_ids:
+            seen_rule_ids.add(rule_id)
+            deduped_rule_ids.append(rule_id)
+
+    if len(deduped_rule_ids) == 1:
+        updated["rule_id"] = deduped_rule_ids[0]
+        updated.pop("rule_ids", None)
+    elif deduped_rule_ids:
+        updated["rule_ids"] = deduped_rule_ids
+        updated.pop("rule_id", None)
+
+    if action_labels:
+        deduped_labels = []
+        seen_labels: set[str] = set()
+        for label in action_labels:
+            normalized = str(label or "").strip()
+            if normalized and normalized not in seen_labels:
+                seen_labels.add(normalized)
+                deduped_labels.append(normalized)
+        if deduped_labels:
+            updated["action_labels"] = deduped_labels
+    return updated
+
+
 def _enrich_care_pathway_rule_links(
     artifact_data: dict,
     related_contexts: list[tuple[str, dict]],
@@ -1277,6 +1325,7 @@ def _enrich_care_pathway_rule_links(
         action_aliases = {alias for alias in action_aliases if alias}
         rule_entries.append({
             "rule_id": rule_id,
+            "event_id": event_id,
             "evidence_traceability_ids": [
                 str(claim_id).strip()
                 for claim_id in (rule.get("evidence_traceability_ids") or [])
@@ -1309,21 +1358,27 @@ def _enrich_care_pathway_rule_links(
         if step_id and child_map.get(step_id):
             updated = dict(step)
             updated.pop("rule_id", None)
+            updated.pop("rule_ids", None)
             updated.pop("action_labels", None)
             enriched_steps.append(updated)
             continue
-        if str(step.get("rule_id") or "").strip():
+        existing_rule_refs = _step_rule_refs(step)
+        if existing_rule_refs:
             updated = dict(step)
             if not updated.get("evidence_traceability_ids"):
-                matching_entry = next(
-                    (
-                        entry for entry in rule_entries
-                        if entry.get("rule_id") == str(updated.get("rule_id") or "").strip()
-                    ),
-                    None,
-                )
-                if matching_entry and matching_entry.get("evidence_traceability_ids"):
-                    updated["evidence_traceability_ids"] = list(matching_entry["evidence_traceability_ids"])
+                linked_claim_ids: list[str] = []
+                for rule_ref in existing_rule_refs:
+                    matching_entry = next(
+                        (entry for entry in rule_entries if entry.get("rule_id") == rule_ref),
+                        None,
+                    )
+                    if not matching_entry:
+                        continue
+                    for claim_id in matching_entry.get("evidence_traceability_ids") or []:
+                        if claim_id not in linked_claim_ids:
+                            linked_claim_ids.append(claim_id)
+                if linked_claim_ids:
+                    updated["evidence_traceability_ids"] = linked_claim_ids
             enriched_steps.append(updated)
             continue
 
@@ -1359,12 +1414,13 @@ def _enrich_care_pathway_rule_links(
             elif step_aliases & entry["rule_aliases"]:
                 general_matches.append(entry)
 
-        chosen: dict | None = None
-        matched_action_labels: list[str] | None = None
+        chosen_rule_ids: list[str] = []
+        matched_action_labels: list[str] = []
         if action_matches:
             unique_rule_ids = {entry["rule_id"] for entry, _labels in action_matches}
             if len(unique_rule_ids) == 1:
-                chosen, matched_action_labels = action_matches[0]
+                chosen_rule_ids = [action_matches[0][0]["rule_id"]]
+                matched_action_labels = list(action_matches[0][1])
             else:
                 scored = sorted(
                     (
@@ -1374,13 +1430,22 @@ def _enrich_care_pathway_rule_links(
                     key=lambda item: item[0],
                     reverse=True,
                 )
-                if scored and (len(scored) == 1 or scored[0][0] > scored[1][0]):
-                    _, chosen, matched_action_labels = scored[0]
+                if scored:
+                    top_score = scored[0][0]
+                    selected = [
+                        (entry, labels)
+                        for score, entry, labels in scored
+                        if score == top_score and score > 0
+                    ]
+                    if selected:
+                        chosen_rule_ids = [entry["rule_id"] for entry, _labels in selected]
+                        for _entry, labels in selected:
+                            matched_action_labels.extend(labels)
         elif general_matches:
             unique_rule_ids = {entry["rule_id"] for entry in general_matches}
             if len(unique_rule_ids) == 1:
-                chosen = general_matches[0]
-                matched_action_labels = chosen["action_labels"]
+                chosen_rule_ids = [general_matches[0]["rule_id"]]
+                matched_action_labels = list(general_matches[0]["action_labels"])
             else:
                 scored = sorted(
                     (
@@ -1390,20 +1455,31 @@ def _enrich_care_pathway_rule_links(
                     key=lambda item: item[0],
                     reverse=True,
                 )
-                if scored and scored[0][0] > 0 and (len(scored) == 1 or scored[0][0] > scored[1][0]):
-                    _, chosen = scored[0]
-                    matched_action_labels = chosen["action_labels"]
+                if scored and scored[0][0] > 0:
+                    top_score = scored[0][0]
+                    top_entries = [entry for score, entry in scored if score == top_score]
+                    event_ids = {entry.get("event_id") for entry in top_entries}
+                    if len(event_ids) == 1:
+                        chosen_rule_ids = [entry["rule_id"] for entry in top_entries]
+                        for entry in top_entries:
+                            matched_action_labels.extend(entry["action_labels"])
 
-        if chosen is None:
+        if not chosen_rule_ids:
             enriched_steps.append(step)
             continue
 
-        updated = dict(step)
-        updated["rule_id"] = chosen["rule_id"]
-        if not updated.get("action_labels") and matched_action_labels:
-            updated["action_labels"] = matched_action_labels
-        if not updated.get("evidence_traceability_ids") and chosen.get("evidence_traceability_ids"):
-            updated["evidence_traceability_ids"] = list(chosen["evidence_traceability_ids"])
+        updated = _assign_step_rule_refs(step, chosen_rule_ids, matched_action_labels)
+        if not updated.get("evidence_traceability_ids"):
+            linked_claim_ids: list[str] = []
+            for chosen_rule_id in chosen_rule_ids:
+                chosen = next((entry for entry in rule_entries if entry.get("rule_id") == chosen_rule_id), None)
+                if not chosen:
+                    continue
+                for claim_id in chosen.get("evidence_traceability_ids") or []:
+                    if claim_id not in linked_claim_ids:
+                        linked_claim_ids.append(claim_id)
+            if linked_claim_ids:
+                updated["evidence_traceability_ids"] = linked_claim_ids
         enriched_steps.append(updated)
 
     sections["steps"] = enriched_steps
@@ -2298,6 +2374,9 @@ Decision-table extraction guidance:
 - For later recommendation branches, use explicit assessed states from the
   source rather than inventing a generic summary condition when the guideline
   does not name one.
+- Deconstruct distinct recommendations into separate rules and actions even
+  when they happen during the same broad visit, phase, or workflow moment.
+  Shared timing is not, by itself, a reason to merge recommendation logic.
 - Use canonical `kind` for actions; do not emit legacy action `type`.
 - Keep `events[]` at the level of major workflow contexts or decision moments.
   Do not create a separate event for every child task or narrow sub-step when
@@ -2305,8 +2384,9 @@ Decision-table extraction guidance:
 - Use `event.trigger` only when there is an explicit formal trigger. Omit it
   when the event itself is the full workflow context.
 - If several recommendations share the same workflow moment, keep one event and
-  express the finer distinction through separate rules and child actions rather
-  than proliferating near-duplicate events.
+  express the finer distinction through separate recommendation-scoped rules
+  and child actions rather than collapsing them into one broad assessment,
+  planning, or follow-up rule.
 - If the narrative clearly groups recommendations by care phase, optionally define `sections.pathway_phases[]` as the canonical phase model and keep that grouping in `event.phase` and/or `rule.phase` without turning phases themselves into events.
 - Prefer one clinically explicit rule per recommendation branch, with `action` as a short human label and `rationale` as the recommendation basis.
 - Every recommendation rule and action must include `evidence_traceability_ids[]` that reference `sections.evidence_traceability[].claim_id`.
@@ -2322,12 +2402,14 @@ Care-pathway extraction guidance:
 - Model the clinical sequence as flat `steps[]` with optional `parent_id`; do not use nested `substeps[]`.
 - When the source describes one overarching patient journey with major phases, include a top-level pathway step and make the major phases children via `parent_id`.
 - Use care-pathway for sequencing, actor ownership, and transitions; keep recommendation logic itself in the decision-table artifact.
-- When a pathway step corresponds to a specific decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels that the step orchestrates.
-- For recommendation-like steps (`rule_id`/`action_labels` present), include required `evidence_traceability_ids[]` that reference `sections.evidence_traceability[].claim_id`.
+- When a pathway leaf step corresponds to one decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels that the step orchestrates.
+- When a pathway leaf step intentionally groups a tight cluster of closely related decision-table recommendations with the same actor, timing, and pathway meaning, populate `rule_ids[]` and `action_labels` for that grouped leaf step.
+- A parent pathway step must not carry `rule_id` or `rule_ids[]` if it also has child steps; push the linkage down to the most specific child step that owns the recommendation.
+- For recommendation-like steps (`rule_id`/`rule_ids[]`/`action_labels` present), include required `evidence_traceability_ids[]` that reference `sections.evidence_traceability[].claim_id`.
 - Add provenance metadata on recommendation-like steps:
   - `provenance.source: source_direct` when the step is directly stated by source text
   - `provenance.source: inferred` only when synthesized, with required `provenance.rationale`
-- Keep top-level steps clinically meaningful and stable; reserve leaf steps for meaningful sub-phases, not every individual recommendation.
+- Keep top-level steps clinically meaningful and stable, but deconstruct leaf steps far enough that each distinct recommendation can attach to the right pathway node instead of being absorbed into one broad sibling branch.
 - **When a step encompasses multiple distinct clinical tasks** (e.g., collect baseline labs AND perform risk scoring AND document treatment readiness), model those as **child steps** under the parent step rather than stacking them all as multiple `action_labels` on a single leaf. A step with more than one `action_label` is a signal to check whether those labels represent the same action (keep as one step) or distinct sequential/parallel clinical tasks (decompose into children). Each child step should carry its own `rule_id` when one exists in the decision-table.
 - Decompose multi-component recommendations using source-agnostic cues: different verbs, different actors, different timing windows, different required artifacts, or different outputs.
 - When different parts of the pathway activate at different workflow moments, represent them as separate sibling branches under the same parent pathway rather than forcing one linear sequence.

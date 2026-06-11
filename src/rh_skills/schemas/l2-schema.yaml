@@ -118,15 +118,16 @@ artifact_type_sections:
         strong | weak.
       steps: >
         Flat workflow steps. Each entry: {id, label, description?, actor?, parent_id?,
-        applicability_condition?, rule_id?, action_labels?, evidence_traceability_ids[]?, provenance?}. parent_id references
+        applicability_condition?, rule_id?, rule_ids[]?, action_labels?, evidence_traceability_ids[]?, provenance?}. parent_id references
         another step id when a nested relationship is needed. When a paired
         decision table defines pathway_phases, keep care-pathway steps aligned
-        1:1 with that phase model. Use rule_id to point a step at the specific
-        decision-table rule it orchestrates, and use action_labels to name the
-        corresponding decision-table actions for readability. For recommendation-like
-        steps (rule_id/action_labels present), include required
-        evidence_traceability_ids[] linking to
-        sections.evidence_traceability[].claim_id and provenance
+        1:1 with that phase model. Use rule_id to point a step at a specific
+        decision-table rule it orchestrates, or rule_ids[] when a leaf step
+        intentionally groups a tight cluster of related rules. Use action_labels
+        to name the corresponding decision-table actions for readability. Parent
+        steps that also have children must not carry rule_id/rule_ids[]. For
+        recommendation-like steps (rule_id/rule_ids[]/action_labels present), include evidence_traceability_ids[]
+        linking to sections.evidence_traceability[].claim_id and provenance
         metadata such as {source: source_direct|inferred, rationale?}. Inferred
         recommendations should always include rationale. Actions are defined in
         decision-table artifacts, not in care pathways.
@@ -152,7 +153,7 @@ artifact_type_sections:
         {claim_id, statement, strength?, evidence[]}. claim_id must be unique per
         artifact and is referenced from actions and rules via
         evidence_traceability_ids[]. strength is recommended and should use one of:
-        high | moderate | low | very-low | consensus | insufficient.
+        strong | weak.
       events: >
         ECA workflow event definitions: {id, label, description?, phase?, trigger?}.
         Events are primary. trigger is optional when the workflow context alone
@@ -200,7 +201,7 @@ artifact_type_sections:
         omit it for unconditional event-driven rules. The 'phase' field
         (optional) references pathway_phases[].id when pathway_phases
         section is present, enabling grouping of rules by care phase.
-        Include required evidence_traceability_ids[] to link recommendation logic to
+        Include evidence_traceability_ids[] to link recommendation logic to
         one or more evidence_traceability claim_id values and provenance
         metadata such as {source: source_direct|inferred, rationale?}. Inferred
         recommendations should always include rationale.

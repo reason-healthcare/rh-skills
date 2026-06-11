@@ -130,6 +130,7 @@
 Before finalizing extraction, verify:
 
 - [ ] **ALL Key Action Statements extracted** (not just conditional ones)
+- [ ] **Distinct recommendations deconstructed** into separate rules/actions even when they share the same visit, phase, or workflow moment
 - [ ] **Unconditional recommendations captured** as rules with `when: {}`
 - [ ] **Every action** has corresponding entry in `actions` section
 - [ ] **Every rule** references valid action IDs in `then: [...]`
@@ -157,9 +158,9 @@ Before finalizing extraction, verify:
 Prefer one event per major workflow context, not one event per child task.
 If questionnaire review, imaging review, counseling, phenotype review, and
 other narrow tasks all occur within the same broader staged context, keep one
-event and represent the finer distinction through separate rules and child
-actions. Split into separate events only when the workflow moment or trigger
-actually changes.
+event and represent the finer distinction through separate recommendation-scoped
+rules and child actions. Split into separate events only when the workflow
+moment or trigger actually changes.
 When the source provides activation metadata, keep it on `event.trigger`
 instead of splitting the event. Use `type`, `name`, `source`, `resource`,
 `moment`, `resource_criteria`, and `timing_window` when the source supports
@@ -506,17 +507,14 @@ events:
   - id: e1
     label: "Initial CRS Evaluation"
     phase: "assessment"
-    phase_order: 1
     
   - id: e2
     label: "Surgical Decision Point"
     phase: "planning"
-    phase_order: 2
     
   - id: e3
     label: "Pre-Operative Clearance"
     phase: "planning"
-    phase_order: 3
 
 conditions:
   - id: crs-diagnosis-confirmed
@@ -736,32 +734,25 @@ evidence_traceability:
 ### Pattern
 
 ```yaml
-pathway_phases:
-  - id: "assessment"
-    label: "Assessment Phase"
-    description: "Patient evaluation and candidacy assessment"
-    order: 1
-    
-  - id: "intervention"
-    label: "Intervention Phase"
-    description: "Therapeutic intervention"
-    order: 2
-    
-events:
-  - id: e1
-    label: "Initial Evaluation"
-    phase: "assessment"
-    phase_order: 1
-    fhir_plan_definition_id: "InitialEvaluation"
-    
-  - id: e2
-    label: "Treatment"
-    phase: "intervention"
-    phase_order: 1
-    fhir_plan_definition_id: "TreatmentIntervention"
+sections:
+  pathway_phases:
+    - id: assessment
+      label: Assessment phase
+      description: Patient evaluation and candidacy assessment
+    - id: intervention
+      label: Intervention phase
+      description: Therapeutic intervention
+  events:
+    - id: e1
+      label: Initial evaluation
+      phase: assessment
+    - id: e2
+      label: Treatment
+      phase: intervention
 ```
 
-**Result**: Care pathway can be auto-generated via `rh-skills derive pathway --from-decision-table <id>`
+**Result**: The paired care-pathway can mirror the same major phase model while
+keeping recommendation logic in the decision-table.
 
 ---
 
@@ -1165,7 +1156,7 @@ Before finalizing decision table extraction, verify:
 - [ ] evidence_traceability section exists
 - [ ] Actions have FHIR activity definition IDs
 - [ ] pathway_phases included only if temporal workflow guideline
-- [ ] All events in pathway_phases have phase and phase_order
+- [ ] All events in pathway_phases have a matching `phase` value
 
 ---
 

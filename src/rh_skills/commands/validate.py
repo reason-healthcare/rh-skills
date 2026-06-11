@@ -434,19 +434,15 @@ def _validate_formalize_artifact(
             )
             errors += 1
 
-    # Some artifact types formalize directly to FHIR JSON without an L3 intermediate
-    # YAML body, so section-level checks do not apply.
-    artifact_type = (
-        target_entry.get("artifact_type")
-        or target_entry.get("strategy")
-        or artifact_data.get("artifact_type")
-        or artifact_data.get("strategy")
-    )
-    uses_direct_fhir_outputs = artifact_type in ("decision-table", "care-pathway")
-    
-    if not uses_direct_fhir_outputs:
-        # Only validate L3 intermediate sections for artifacts that declare them.
-        for section_name in target_entry.get("required_sections", []) or []:
+    # Current formalize implementations write FHIR JSON files directly to
+    # computable/ and track file metadata in tracking.yaml. When no L3
+    # intermediate sections are present on the tracking entry, validate the
+    # generated resources and tracking metadata only.
+    required_sections = target_entry.get("required_sections", []) or []
+    has_l3_intermediate_sections = any(section_name in artifact_data for section_name in required_sections)
+
+    if has_l3_intermediate_sections:
+        for section_name in required_sections:
             if section_name not in artifact_data:
                 _report_error(f"  MISSING required formalize section: {section_name}", emit=emit)
                 errors += 1
@@ -457,11 +453,9 @@ def _validate_formalize_artifact(
                 emit=emit,
             )
     else:
-        # For direct FHIR outputs, artifact_data is empty (no L3 intermediate)
-        # Validation happens at the generated resource level only.
         if target_entry.get("required_sections"):
             _report_warn(
-                f"  Skipping L3 intermediate section checks for {artifact_type} (formalizes directly to FHIR JSON)",
+                f"  Skipping L3 intermediate section checks for {artifact_type} (no L3 section body tracked; validating FHIR JSON outputs instead)",
                 emit=emit,
             )
             warnings += 1

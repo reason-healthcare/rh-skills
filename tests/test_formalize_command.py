@@ -159,6 +159,63 @@ class TestFormalizeCommand:
         events = topic["events"]
         assert any(e["type"] == "computable_converged" for e in events)
 
+    def test_tracking_uses_matching_plan_entry_inputs_not_primary_target(self, formalize_topic):
+        topic_dir = formalize_topic / "topics" / "test-topic"
+        structured_dir = topic_dir / "structured"
+        y = YAML()
+        y.default_flow_style = False
+        with open(structured_dir / "other-rules.yaml", "w") as f:
+            y.dump({
+                "artifact_schema_version": "1.0",
+                "metadata": {"id": "other-rules", "title": "Other Decision Rules"},
+                "decision_table": [{"condition": "x", "action": "y"}],
+            }, f)
+
+        tracking = load_tracking(formalize_topic)
+        topic = next(t for t in tracking["topics"] if t["name"] == "test-topic")
+        topic["structured"].append({
+            "name": "other-rules",
+            "artifact_type": "decision-table",
+            "status": "approved",
+            "file": "topics/test-topic/structured/other-rules.yaml",
+        })
+        yaml = YAML()
+        yaml.default_flow_style = False
+        with open(formalize_topic / "tracking.yaml", "w") as f:
+            yaml.dump(tracking, f)
+
+        plans_dir = topic_dir / "process" / "plans"
+        plans_dir.mkdir(parents=True, exist_ok=True)
+        (plans_dir / "formalize-plan.yaml").write_text(
+            "topic: test-topic\n"
+            "plan_type: formalize\n"
+            "status: approved\n"
+            "artifacts:\n"
+            "  - name: test-topic-test-rules\n"
+            "    source_artifact: test-rules\n"
+            "    strategy: decision-table\n"
+            "    input_artifacts:\n"
+            "      - test-rules\n"
+            "    implementation_target: true\n"
+            "    reviewer_decision: approved\n"
+            "  - name: test-topic-other-rules\n"
+            "    source_artifact: other-rules\n"
+            "    strategy: decision-table\n"
+            "    input_artifacts:\n"
+            "      - other-rules\n"
+            "    implementation_target: false\n"
+            "    reviewer_decision: approved\n"
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(formalize, ["test-topic", "other-rules", "--force"])
+        assert result.exit_code == 0, result.output
+
+        tracking = load_tracking(formalize_topic)
+        topic = next(t for t in tracking["topics"] if t["name"] == "test-topic")
+        entry = next(e for e in topic["computable"] if e["name"] == "other-rules")
+        assert entry["converged_from"] == ["other-rules"]
+
     def test_artifact_not_found(self, formalize_topic):
         runner = CliRunner()
         result = runner.invoke(formalize, ["test-topic", "nonexistent"])
@@ -457,7 +514,7 @@ sections:
             assert activity["doNotPerform"] is True
             assert activity["status"] == "active"
             assert activity["version"] == "2.1.0"
-            assert "code" not in activity  # no concept catalog is linked in this fixture
+            assert activity["code"]["text"] == "Order sinus CT"
             plan = json.loads((computable / "PlanDefinition-dt.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
             assert len(plan["action"]) == 2
@@ -1012,6 +1069,97 @@ sections:
             assert leaf_action["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
             recommendation = json.loads((topic_dir / "computable" / "PlanDefinition-dt-verify-diagnosis.json").read_text())
             assert recommendation["action"][0]["definitionCanonical"].endswith("/ActivityDefinition/verify-crs-diagnosis")
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_care_pathway_step_rule_ids_expand_to_multiple_recommendation_links(self, tmp_repo):
+        topic = "pathway-multi-rule-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: assess-candidacy
+      label: Assess candidacy
+      phase: assessment
+  conditions:
+    - id: confirmed
+      label: Confirmed
+      values: [Yes, No]
+  actions:
+    - id: assess-surgical-candidacy
+      label: Assess surgical candidacy
+      kind: ServiceRequest
+    - id: offer-surgery
+      label: Offer surgery
+      kind: ServiceRequest
+  rules:
+    - id: rule-assess-candidacy
+      event: assess-candidacy
+      phase: assessment
+      when: {confirmed: Yes}
+      then: [assess-surgical-candidacy]
+    - id: rule-offer-surgery
+      event: assess-candidacy
+      phase: assessment
+      when: {confirmed: Yes}
+      then: [offer-surgery]
+"""
+        )
+        (structured_dir / "path.yaml").write_text(
+            """\
+artifact_type: care-pathway
+metadata:
+  derived_from: [dt]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+      description: Overall CRS surgical pathway
+    - id: assessment-branch
+      label: Assessment and surgical decision
+      description: Assessment branch
+      parent_id: crs-pathway
+    - id: candidacy-and-recommendation
+      label: Assess candidacy and recommend surgery
+      description: Determine candidacy and make the surgery recommendation
+      parent_id: assessment-branch
+      rule_ids:
+        - rule-assess-candidacy
+        - rule-offer-surgery
+      action_labels:
+        - Assess surgical candidacy
+        - Offer surgery
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "dt", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "path", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            assert runner.invoke(formalize, [topic, "dt"]).exit_code == 0
+            result = runner.invoke(formalize, [topic, "path"])
+            assert result.exit_code == 0, result.output
+
+            assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment-branch.json").read_text())
+            grouped_step = assessment_plan["action"][0]["action"][0]
+            assert grouped_step["id"] == "candidacy-and-recommendation"
+            assert len(grouped_step["action"]) == 2
+            assert all("definitionCanonical" in child for child in grouped_step["action"])
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 

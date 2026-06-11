@@ -93,6 +93,24 @@ def validate_care_pathway(
                 if len(token) >= 3:
                     tokens.add(token)
         return tokens
+
+    def _step_rule_refs(phase: dict) -> list[str]:
+        refs: list[str] = []
+        rule_id = phase.get("rule_id")
+        if isinstance(rule_id, str) and rule_id.strip():
+            refs.append(rule_id.strip())
+        rule_ids = phase.get("rule_ids")
+        if isinstance(rule_ids, list):
+            for value in rule_ids:
+                if isinstance(value, str) and value.strip():
+                    refs.append(value.strip())
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for ref in refs:
+            if ref not in seen:
+                seen.add(ref)
+                deduped.append(ref)
+        return deduped
     
     # Check for FHIR field leakage (L2 should be FHIR-agnostic)
     fhir_leaks = _check_fhir_field_leakage(artifact_data)
@@ -178,6 +196,26 @@ def validate_care_pathway(
             report_error(
                 f"  care-pathway: phase '{phase_id or idx}' has empty rule_id"
             )
+        rule_ids = phase.get("rule_ids")
+        if rule_ids is not None:
+            if not isinstance(rule_ids, list):
+                report_error(
+                    f"  care-pathway: phase '{phase_id or idx}' rule_ids must be a list"
+                )
+            elif not rule_ids:
+                report_error(
+                    f"  care-pathway: phase '{phase_id or idx}' rule_ids must not be empty"
+                )
+            else:
+                for rule_idx, linked_rule_id in enumerate(rule_ids, start=1):
+                    if not isinstance(linked_rule_id, str) or not linked_rule_id.strip():
+                        report_error(
+                            f"  care-pathway: phase '{phase_id or idx}' rule_ids[{rule_idx}] must be a non-empty string"
+                        )
+        if rule_id and isinstance(rule_ids, list) and rule_ids:
+            report_error(
+                f"  care-pathway: phase '{phase_id or idx}' must use either rule_id or rule_ids, not both"
+            )
 
         action_labels = phase.get("action_labels")
         if action_labels is not None:
@@ -191,13 +229,13 @@ def validate_care_pathway(
                         report_error(
                             f"  care-pathway: phase '{phase_id or idx}' action_labels[{action_idx}] must be a non-empty string"
                         )
-            if not rule_id:
+            if not _step_rule_refs(phase):
                 report_warn(
-                    f"  care-pathway: phase '{phase_id or idx}' uses action_labels without rule_id; "
+                    f"  care-pathway: phase '{phase_id or idx}' uses action_labels without rule_id/rule_ids; "
                     "formalize will treat them as descriptive only"
                 )
 
-        recommendation_like = bool(rule_id) or bool(action_labels)
+        recommendation_like = bool(_step_rule_refs(phase)) or bool(action_labels)
         if recommendation_like:
             traceability_ids = phase.get("evidence_traceability_ids")
             if traceability_ids is None:
@@ -267,8 +305,8 @@ def validate_care_pathway(
         if not isinstance(phase, dict):
             continue
         phase_id = str(phase.get("id") or f"#{idx}")
-        rule_id = str(phase.get("rule_id") or "").strip()
-        if not rule_id:
+        rule_refs = _step_rule_refs(phase)
+        if not rule_refs:
             continue
         child_steps = child_map.get(phase_id) or []
         if child_steps:
@@ -278,8 +316,8 @@ def validate_care_pathway(
                 if isinstance(child, dict)
             ]
             report_error(
-                f"  care-pathway: phase '{phase_id}' links to rule '{rule_id}' but also contains child steps "
-                f"({', '.join(child_ids)}) — rule-linked pathway steps must be leaves; keep component tasks in the decision-table and leave wrapper phases unlinked"
+                f"  care-pathway: phase '{phase_id}' links to rule(s) '{', '.join(rule_refs)}' but also contains child steps "
+                f"({', '.join(child_ids)}) — rule-linked pathway steps must be leaves; push recommendation linkage down to the appropriate child step and leave wrapper phases unlinked"
             )
 
     # Validate step relationships and transitions

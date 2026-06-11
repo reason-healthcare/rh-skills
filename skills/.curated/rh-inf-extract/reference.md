@@ -9,6 +9,12 @@ validation guidance.
 - Reviewing concept CSVs under `process/plans/concepts/`: use **Concept Review CSV** quick-reference commands, then column definitions if needed.
 - Finalizing concept review: run the **Before Finalize checklist** in the review workflow section.
 - Verifying output shape: use extract-plan and concepts schema sections below.
+- Implementing a structured artifact: load the matching type-specific schema block below before filling a
+  `body-init` scaffold. For `decision-table`, also apply `decision-table-guide.md`. For `care-pathway`,
+  apply the guidance bullets in this reference section. For `evidence-summary`,
+  `terminology`, `measure`, `assessment`, and `policy`, read the corresponding
+  schema block below and keep the derived body aligned to that artifact's
+  explicit section shape rather than improvising a generic narrative structure.
 
 ---
 
@@ -196,7 +202,8 @@ The explicit extract artifact row named `concepts` is the reviewer-facing termin
 
 ### Care-pathway structure
 
-Care-pathway artifacts use a phased shape. When the source describes one
+Care-pathway artifacts use a flat `steps[]` shape with optional `parent_id`
+hierarchy. When the source describes one
 overarching patient journey with major phases, express that hierarchy with a
 top-level pathway step and `parent_id` links:
 
@@ -221,7 +228,8 @@ sections:
 ```
 
 Use flat `steps[]`, keep `actor` when known, and express hierarchy with
-`parent_id`. Do not use nested `substeps[]`.
+`parent_id`. Do not use nested `substeps[]`, or legacy `step` / `next`
+numbering.
 
 #### Quick Reference
 
@@ -571,8 +579,8 @@ Keep `events[]` at the level of major workflow contexts or decision moments.
 Do not create a separate event for every child task or narrow sub-step when
 those activities still belong to the same broader staged context.
 If several recommendations share the same workflow moment, keep one event and
-express the finer distinction through separate rules and child actions rather
-than proliferating near-duplicate events.
+express the finer distinction through separate recommendation-scoped rules and
+child actions rather than proliferating near-duplicate events.
 
 Do not gate verification, assessment, review, or evidence-gathering actions on
 the same confirmed state they are intended to establish.
@@ -616,6 +624,8 @@ name one.
 Phase 1 guidance for a single decision-table artifact:
 - keep one artifact if needed, but make each `event` a recommendation-scoped
   evaluation moment rather than a broad pathway phase
+- deconstruct distinct recommendations into separate `rules[]` and `actions[]`
+  even when they happen during the same broad visit, phase, or workflow moment
 - keep `when` values local to the recommendation being evaluated
 - when the source describes a routine workflow-step action, prefer `event + then`
   with no `when`
@@ -679,7 +689,13 @@ Keep recommendation logic in the decision-table artifact; use the care-pathway
 for sequencing, actor ownership, and transitions. When a pathway step
 corresponds to a specific decision-table recommendation rule, populate
 `rule_id` with that rule and `action_labels` with the human-readable
-decision-table actions the step orchestrates.
+decision-table actions the step orchestrates. When a pathway leaf step
+intentionally groups a tight cluster of closely related recommendations with
+the same actor, timing, and pathway meaning, use `rule_ids[]` plus grouped
+`action_labels`.
+Parent steps that have child steps must not also carry `rule_id` or
+`rule_ids[]`; push recommendation linkage down to the most specific child step
+that owns the recommendation.
 Do not encode trigger metadata or ECA logic in care-pathway steps; keep that
 logic in decision-table events and rules, and use the pathway only as the
 sequencing shell.
@@ -694,6 +710,9 @@ from assessment, planning, or completed follow-up. Do not create a separate
 pathway step for intervention execution when the source is really describing
 planning or ordering logic; keep it in the planning branch unless the guideline
 clearly treats execution as its own clinical stage.
+Deconstruct leaf steps far enough that each distinct recommendation can attach
+to the right pathway node instead of being absorbed into one broad sibling
+branch.
 
 #### terminology
 

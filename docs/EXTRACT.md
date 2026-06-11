@@ -93,6 +93,9 @@ Decision-table extraction guidance:
 - For later recommendation branches, use explicit assessed states from the
   source rather than inventing a generic summary condition when the guideline
   does not name one.
+- Deconstruct distinct recommendations into separate rules and actions even
+  when they happen during the same broad visit, phase, or workflow moment.
+  Shared timing is not, by itself, a reason to merge recommendation logic.
 - Treat `events[]` as the primary workflow contexts. Add `event.trigger` only
   when the source implies a concrete activation mechanism that matters for
   formalization.
@@ -103,8 +106,9 @@ Decision-table extraction guidance:
   `named-event`, `periodic`, `data-changed`, `data-added`, or
   `data-modified`.
 - If several recommendations share the same workflow moment, keep one event and
-  express the finer distinction through separate rules and child actions rather
-  than proliferating near-duplicate events.
+  express the finer distinction through separate recommendation-scoped rules
+  and child actions rather than collapsing them into one broad assessment,
+  planning, or follow-up rule.
 - A common staged pattern is:
   - `event + then` for verification work
   - later `event + when + then` for broader assessment work once verification succeeds
@@ -123,14 +127,19 @@ Care-pathway extraction guidance:
 - When the source describes one overarching patient journey with major phases, create a top-level pathway step and make the major phases its children.
 - Treat every `steps[]` entry as a pathway node first. When present, an overall journey step is longitudinal orchestration, and its child phases are candidate groupings that downstream formalize may promote into separate strategy artifacts if the related decision logic supports it.
 - Keep recommendation logic in the decision-table artifact; use care-pathway for sequencing, actor ownership, and phase transitions.
-- When a pathway step corresponds to a specific decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels the step orchestrates.
-- For recommendation-like pathway steps (`rule_id`/`action_labels` present),
+- When a pathway leaf step corresponds to one decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels the step orchestrates.
+- When a pathway leaf step intentionally groups a tight cluster of closely related recommendation rules with the same actor, timing, and pathway meaning, populate `rule_ids[]` with those rules and `action_labels` with the grouped action labels.
+- A parent pathway step must not carry `rule_id` or `rule_ids[]` if it also has child steps; push the linkage down to the most specific child step that owns the recommendation.
+- For recommendation-like pathway steps (`rule_id`/`rule_ids[]`/`action_labels` present),
   include `evidence_traceability_ids[]` referencing one or more
   `sections.evidence_traceability[].claim_id` values.
 - Add provenance metadata on recommendation-like steps:
   - `provenance.source: source_direct` for source-explicit steps
   - `provenance.source: inferred` only when synthesized, with required
     `provenance.rationale`.
+- Deconstruct leaf steps far enough that each distinct recommendation can
+  attach to the right pathway node instead of being absorbed into one broad
+  sibling branch.
 - **When a step encompasses multiple distinct clinical tasks**, model those as **child steps** under the parent rather than stacking them as multiple `action_labels` on a single leaf. More than one `action_label` is a signal to check whether those labels describe the same action (keep as one step) or distinct sequential/parallel tasks (decompose into children with their own `rule_id`). Trigger decomposition from source-agnostic cues such as different verbs, actors, timing windows, required artifacts, or outputs.
 - Do not encode event-trigger metadata or ECA logic in care-pathway steps; use decision-table for that logic and keep care-pathway as the sequencing shell.
 - Collapse intermediate wrapper steps that do not carry their own `rule_id`, `action_labels`, or `applicability_condition`; keep them only when they add a distinct clinical phase.

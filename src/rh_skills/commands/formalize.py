@@ -432,9 +432,12 @@ def _ensure_activity_definition_codes(
             }
             continue
 
-        # Generic activity-kind codes should not be retained as clinical coding.
-        if _is_generic_activity_kind_code(existing_code):
-            resource.pop("code", None)
+        # Preserve a minimally descriptive clinical codeable concept when no
+        # reviewed terminology match is available. This satisfies the
+        # ActivityDefinition contract without emitting a fake generic coding.
+        resource["code"] = {
+            "text": title or action_id,
+        }
 
 
 def _questionnaire_item_type(raw_type: str | None) -> str:
@@ -1007,17 +1010,32 @@ def _build_care_pathway_actions(
             action["action"] = [sub_action for child in children for sub_action in build_action(child)]
         elif not branch_ref:
             exact_ref = (recommendation_plan_map or {}).get(step_id)
-            recommendation_ref = exact_ref or _resolve_recommendation_reference(
+            recommendation_refs = _resolve_recommendation_references(
                 step,
                 recommendation_plan_map or {},
                 recommendation_candidates or [],
             )
+            if exact_ref and exact_ref not in recommendation_refs:
+                recommendation_refs = [exact_ref, *recommendation_refs]
             action_ref = _resolve_action_reference(step, action_reference_map or {})
-            if recommendation_ref and recommendation_ref in used_recommendation_refs and recommendation_ref != exact_ref:
-                recommendation_ref = None
-            if recommendation_ref:
-                action["definitionCanonical"] = recommendation_ref
-                used_recommendation_refs.add(recommendation_ref)
+            available_refs = [
+                ref for ref in recommendation_refs
+                if ref == exact_ref or ref not in used_recommendation_refs
+            ]
+            if len(available_refs) > 1:
+                grouped_actions = []
+                for ref_idx, ref in enumerate(available_refs, start=1):
+                    used_recommendation_refs.add(ref)
+                    grouped_actions.append({
+                        "id": f"{step_id}-recommendation-{ref_idx}",
+                        "title": title,
+                        "description": description,
+                        "definitionCanonical": ref,
+                    })
+                action["action"] = grouped_actions
+            elif len(available_refs) == 1:
+                action["definitionCanonical"] = available_refs[0]
+                used_recommendation_refs.add(available_refs[0])
             elif action_ref:
                 action["definitionCanonical"] = action_ref
 
@@ -2176,17 +2194,32 @@ def _build_care_pathway_stub_plan_definitions(
             action["action"] = child_actions
         else:
             exact_ref = (recommendation_plan_map or {}).get(step_id)
-            recommendation_ref = exact_ref or _resolve_recommendation_reference(
+            recommendation_refs = _resolve_recommendation_references(
                 step,
                 recommendation_plan_map or {},
                 recommendation_candidates or [],
             )
+            if exact_ref and exact_ref not in recommendation_refs:
+                recommendation_refs = [exact_ref, *recommendation_refs]
             action_ref = _resolve_action_reference(step, action_reference_map or {})
-            if recommendation_ref and recommendation_ref in used_recommendation_refs and recommendation_ref != exact_ref:
-                recommendation_ref = None
-            if recommendation_ref:
-                action["definitionCanonical"] = recommendation_ref
-                used_recommendation_refs.add(recommendation_ref)
+            available_refs = [
+                ref for ref in recommendation_refs
+                if ref == exact_ref or ref not in used_recommendation_refs
+            ]
+            if len(available_refs) > 1:
+                grouped_actions = []
+                for ref_idx, ref in enumerate(available_refs, start=1):
+                    used_recommendation_refs.add(ref)
+                    grouped_actions.append({
+                        "id": f"{step_id}-recommendation-{ref_idx}",
+                        "title": title,
+                        "description": description,
+                        "definitionCanonical": ref,
+                    })
+                action["action"] = grouped_actions
+            elif len(available_refs) == 1:
+                action["definitionCanonical"] = available_refs[0]
+                used_recommendation_refs.add(available_refs[0])
             elif action_ref:
                 action["definitionCanonical"] = action_ref
         return [action]
@@ -2289,6 +2322,23 @@ def _check_artifact_approved(topic: str, artifact: str) -> bool:
     
     # Artifact not in plan = allow formalization (plan might not cover all artifacts)
     return True
+
+
+def _load_formalize_plan_artifact(topic: str, artifact: str) -> dict | None:
+    """Return the matching approved formalize-plan artifact entry for an L2 artifact."""
+    plan_path = topic_dir(topic) / "process" / "plans" / "formalize-plan.yaml"
+    if not plan_path.exists():
+        return None
+
+    data = YAML(typ="safe").load(plan_path.read_text()) or {}
+    if data.get("status") != "approved":
+        return None
+
+    for entry in data.get("artifacts") or []:
+        source_artifact = entry.get("source_artifact") or entry.get("name")
+        if source_artifact == artifact:
+            return entry
+    return None
 
 
 def _approved_target_source_artifact(target: dict) -> str | None:
@@ -3479,16 +3529,64 @@ def _resolve_recommendation_reference(
     return None
 
 
+def _step_rule_refs(step: dict[str, Any]) -> list[str]:
+    refs: list[str] = []
+    rule_id = step.get("rule_id")
+    if isinstance(rule_id, str) and rule_id.strip():
+        refs.append(rule_id.strip())
+    rule_ids = step.get("rule_ids")
+    if isinstance(rule_ids, list):
+        for value in rule_ids:
+            if isinstance(value, str) and value.strip():
+                refs.append(value.strip())
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for ref in refs:
+        if ref not in seen:
+            seen.add(ref)
+            deduped.append(ref)
+    return deduped
+
+
+def _resolve_recommendation_references(
+    step: dict[str, Any],
+    recommendation_plan_map: dict[str, str],
+    recommendation_candidates: list[dict[str, Any]],
+) -> list[str]:
+    resolved: list[str] = []
+    for rule_ref in _step_rule_refs(step):
+        mapped_ref = recommendation_plan_map.get(rule_ref)
+        if mapped_ref:
+            if mapped_ref not in resolved:
+                resolved.append(mapped_ref)
+        else:
+            log_warn(
+                "  Care-pathway step '%s' references unknown decision-table rule_id '%s'"
+                % (str(step.get("id") or ""), rule_ref)
+            )
+    if resolved:
+        return resolved
+
+    fallback = _resolve_recommendation_reference(
+        step,
+        recommendation_plan_map,
+        recommendation_candidates,
+    )
+    return [fallback] if fallback else []
+
+
 def _resolve_action_reference(
     step: dict[str, Any],
     action_reference_map: dict[str, list[dict[str, Any]]],
 ) -> str | None:
     """Resolve a direct ActivityDefinition link for a care-pathway step when clear."""
-    rule_id = str(step.get("rule_id") or "").strip()
-    if not rule_id:
+    rule_refs = _step_rule_refs(step)
+    if not rule_refs:
         return None
 
-    candidates = action_reference_map.get(rule_id) or []
+    candidates: list[dict[str, Any]] = []
+    for rule_ref in rule_refs:
+        candidates.extend(action_reference_map.get(rule_ref) or [])
     if not candidates:
         return None
 
@@ -3674,6 +3772,7 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
         cfg["canonical"] = packager_canonical
 
     approved_target = _load_approved_formalize_target(topic)
+    artifact_plan_entry = _load_formalize_plan_artifact(topic, artifact)
     
     # Check if this artifact is approved for formalization
     if not _check_artifact_approved(topic, artifact):
@@ -3845,7 +3944,7 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
         "files": written_files,
         "created_at": timestamp,
         "checksums": checksums,
-        "converged_from": (approved_target.get("input_artifacts") or [artifact]) if approved_target else [artifact],
+        "converged_from": (artifact_plan_entry.get("input_artifacts") or [artifact]) if artifact_plan_entry else [artifact],
         "strategy": artifact_type if not is_fallback else "generic",
     }
     existing_entries = topic_entry.get("computable", []) or []
