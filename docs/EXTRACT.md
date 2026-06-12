@@ -18,7 +18,7 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 |---------|---------|-----------|
 | `rh-skills promote plan <topic> [--force]` | Generate extract review packet | `extract-plan.yaml`, `extract-plan-readout.md`, tracking event |
 | `rh-skills promote approve <topic> --artifact <name> --decision <approved\|rejected\|needs-revision> [--add-concern TEXT] [--finalize]` | Record reviewer approval decisions | `extract-plan.yaml` (updated), `extract-plan-readout.md` (regenerated) |
-| `rh-skills promote derive <topic> <name> --source <source> [--artifact-type TYPE] [--clinical-question TEXT] [--required-section S] [--evidence-ref REF] [--concern C]` | Create single L2 artifact via LLM | `structured/<name>/<name>.yaml`, tracking event |
+| `rh-skills promote derive artifact <topic> <name> --source <source> [--artifact-type TYPE] [--clinical-question TEXT] [--required-section S] [--evidence-ref REF] [--concern C]` | Create single L2 artifact via LLM | `structured/<name>/<name>.yaml`, tracking event |
 | `rh-skills validate <topic> structured <artifact>` | Schema-validate L2 artifact | (read-only) |
 | `rh-skills render <topic> structured <artifact>` | Generate human-readable Markdown report with Mermaid diagrams | `structured/<name>/<name>-report.md` |
 
@@ -127,6 +127,7 @@ Care-pathway extraction guidance:
 - When the source describes one overarching patient journey with major phases, create a top-level pathway step and make the major phases its children.
 - Treat every `steps[]` entry as a pathway node first. When present, an overall journey step is longitudinal orchestration, and its child phases are candidate groupings that downstream formalize may promote into separate strategy artifacts if the related decision logic supports it.
 - Keep recommendation logic in the decision-table artifact; use care-pathway for sequencing, actor ownership, and phase transitions.
+- Prefer direct care-pathway authoring first. Use `rh-skills promote derive pathway --from-decision-table <decision-table-id>` only as a fallback when recommendation-to-pathway linkage is proving hard to align manually.
 - When a pathway leaf step corresponds to one decision-table recommendation rule, populate `rule_id` with that rule and `action_labels` with the human-readable decision-table action labels the step orchestrates.
 - When a pathway leaf step intentionally groups a tight cluster of closely related recommendation rules with the same actor, timing, and pathway meaning, populate `rule_ids[]` with those rules and `action_labels` with the grouped action labels.
 - A parent pathway step must not carry `rule_id` or `rule_ids[]` if it also has child steps; push the linkage down to the most specific child step that owns the recommendation.
@@ -178,7 +179,7 @@ Care-pathway extraction guidance:
    ├─ Regenerates readout with final decisions
    └─ Plan status → approved
 
-3. IMPLEMENT: rh-skills promote derive <topic> <name> --source <source> ...
+3. IMPLEMENT: rh-skills promote derive artifact <topic> <name> --source <source> ...
    ├─ For each approved artifact:
    │   ├─ Map plan entry → CLI arguments
    │   ├─ LLM generates L2 YAML from L1 source(s)
@@ -190,7 +191,7 @@ Care-pathway extraction guidance:
    │   │   └─ Conflict records: present when plan listed concerns
 
 Artifact-level rerun guidance:
-- Use `rh-skills promote derive <topic> <name> --force ...` to re-run only one non-terminology structured artifact in place.
+- Use `rh-skills promote derive artifact <topic> <name> --force ...` to re-run only one non-terminology structured artifact in place.
 - This path refreshes that artifact and its tracking entry only; it does not require re-running terminology lookup, concept review, or `concept write` when the terminology package is unchanged.
 - Do not use this path for the explicit `concepts` terminology artifact; refresh that package with `rh-skills promote concept write <topic>`.
 - After an artifact-only rerun, validate just that artifact with `rh-skills validate <topic> <name>`.

@@ -218,8 +218,8 @@ rh-skills ingest implement sources/<file> [--topic <topic>]
 ### 2. Derive structured artifacts (L2)
 
 ```bash
-rh-skills promote derive diabetes-screening --source ada-guidelines --name screening-criteria
-rh-skills promote derive diabetes-screening --source ada-guidelines --name risk-factors
+rh-skills promote derive artifact diabetes-screening screening-criteria --source ada-guidelines
+rh-skills promote derive artifact diabetes-screening risk-factors --source ada-guidelines
 ```
 
 ### 3. Validate the L2 artifacts

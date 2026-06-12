@@ -967,6 +967,18 @@ rh-skills render <topic> <artifact-name>
    recommendations unlinked simply because several belong under the same
    pathway branch.
 
+   Prefer direct care-pathway authoring first. If recommendation-to-pathway
+   linkage keeps drifting or collapsing during care-pathway authoring, you may
+   use the fallback scaffold command:
+
+   ```sh
+   rh-skills promote derive pathway --from-decision-table <decision-table-id>
+   ```
+
+   Use it only as a recovery tool to regain alignment from the paired
+   `decision-table` phase model, then review and refine the generated
+   `care-pathway` artifact before treating it as complete.
+
    Write the constructed YAML to a temp file, then pass it with `--body-file`:
 
    > **`--body-file` writes the file directly — the CLI does NOT inject or merge

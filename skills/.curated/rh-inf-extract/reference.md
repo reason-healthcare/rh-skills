@@ -927,8 +927,9 @@ Before extracting, identify guideline type (see decision-table-guide.md for full
 
 ### Manual Extraction With Cross-Artifact Alignment
 
-Care-pathway extraction remains explicit. Do not assume a separate pathway
-auto-derive command.
+Care-pathway extraction should usually remain explicit. Do not default to
+auto-derivation when direct care-pathway authoring can preserve the clinical
+sequencing and recommendation linkage clearly.
 
 When a related decision-table exists:
 - keep care-pathway `steps[]` and `transitions[]` aligned to the same clinical
@@ -943,6 +944,16 @@ When a related decision-table exists:
 - ensure all recommendation-scoped decision-table rules are represented in
   care-pathway leaf linkage via `rule_id` or `rule_ids[]`; grouping is allowed
   when clinically coherent, but omitted rule coverage is not
+
+If recommendation-to-pathway linkage is proving difficult to align manually,
+you may use the fallback scaffold command:
+
+```sh
+rh-skills promote derive pathway --from-decision-table <decision-table-id>
+```
+
+Use this only as a repair tool. The generated care-pathway should be reviewed
+and refined rather than accepted as the primary authoring path by default.
 
 ---
 

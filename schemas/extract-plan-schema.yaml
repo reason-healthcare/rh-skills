@@ -2,7 +2,8 @@
 # Process control file: topics/<topic>/process/plans/extract-plan.yaml
 # Written by: rh-skills promote plan <topic>
 # Reviewed via: rh-skills promote approve <topic>
-# Read by: rh-skills promote implement <topic>
+# Executed through: rh-skills promote body-init <topic> <artifact-name>
+# then rh-skills promote derive artifact <topic> <artifact-name> --body-file <path>
 
 schema_version: "1.0"
 
@@ -346,7 +347,7 @@ decision_table_guidance:
   
   optional_sections:
     - pathway_phases        # Only for temporal/procedural guidelines with clear workflow sequence
-                           # When present, enables auto-derivation of care-pathway artifact
+                           # When present, can support fallback care-pathway auto-derivation
     - concerns             # Source disagreements or unresolved issues
   
   validation_requirements:
@@ -359,7 +360,8 @@ decision_table_guidance:
     when_to_include: >
       Only for procedural/workflow guidelines with temporal sequence
       (assessment → planning → execution → follow-up).
-      Enables auto-derivation via `rh-skills derive pathway`.
+      Can support fallback derivation via
+      `rh-skills promote derive pathway`.
     when_to_omit: >
       Diagnostic guidelines (hierarchical decision trees), screening guidelines
       (conditional risk-based testing), treatment optimization (iterative cycles).
@@ -378,8 +380,9 @@ decision_table_guidance:
 
 care_pathway_guidance:
   description: >
-    Care pathways encode workflow sequences (phases → steps → substeps).
-    Use ONLY when no decision-table artifact with pathway_phases exists.
+    Care pathways encode workflow sequences using flat steps with parent-child
+    links. Prefer direct care-pathway authoring. Use fallback derivation only
+    when recommendation linkage is difficult to align manually.
   
   required_sections:
     - summary
@@ -391,20 +394,32 @@ care_pathway_guidance:
   
   auto_derivation_preferred:
     condition: >
-      If a decision-table artifact with pathway_phases metadata exists for
-      the same clinical workflow, DO NOT manually extract a care-pathway.
+      If a paired decision-table already contains pathway_phases and manual
+      care-pathway authoring is struggling to preserve recommendation-to-pathway
+      linkage coverage, you may generate a fallback scaffold from that
+      decision-table instead of reworking the pathway from scratch.
     command: >
-      rh-skills derive pathway --from-decision-table <decision-table-id>
+      rh-skills promote derive pathway --from-decision-table <decision-table-id>
     metadata:
       - derived_from: [decision-table-id]
-      - auto_generated: true
+      - artifact_type: care-pathway
+      - flat steps[] with parent_id hierarchy
+      - recommendation linkage copied through rule_id/rule_ids[] when phase-aligned rules exist
   
   manual_extraction_when:
     - No decision table exists for the workflow
     - Guideline describes workflow without decision logic
     - Decision table lacks pathway_phases metadata (non-temporal guidelines)
+    - Direct care-pathway authoring can already preserve recommendation linkage clearly
   
   structure_requirements:
-    - Phases must have sequential order
-    - Steps reference specific clinical activities
-    - Substeps may reference decision-table events when pathway is auto-derived
+    - Flat `steps[]` with optional `parent_id` is the canonical care-pathway structure
+    - Derived pathways may include a root pathway node plus child phase steps
+    - Parent steps with children must not carry `rule_id` or `rule_ids[]`
+    - When recommendation linkage is present, leaf steps carry `rule_id` or `rule_ids[]`
+    - Derived pathways should preserve recommendation coverage when phase-aligned rules exist
+  split_boundary:
+    - Use care-pathway for ordering, ownership, and phase transitions only.
+    - Use decision-table for event-triggered "when/then" logic and keep triggers there.
+    - When a pathway step maps to a decision-table rule, carry the linkage through rule_id/rule_ids[] and action_labels rather than duplicating the rule logic in steps.
+    - Collapse intermediate wrapper steps that do not carry their own rule_id, action_labels, or applicability_condition; only keep them when they represent a distinct workflow phase.

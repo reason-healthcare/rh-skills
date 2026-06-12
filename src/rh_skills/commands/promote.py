@@ -11,6 +11,7 @@ from pathlib import Path
 import click
 from ruamel.yaml import YAML
 
+from rh_skills.commands.derive import derive_pathway as _derive_pathway
 from rh_skills.common import (
     append_topic_event,
     config_value,
@@ -2663,7 +2664,7 @@ def _render_extract_readout(plan: dict) -> str:
     if status == "approved":
         lines.extend([
             f"- Plan status: `approved` — {approved_count}/{len(artifacts)} artifact(s) approved.",
-            "- Ready to run: `rh-skills promote implement <topic>`",
+            f"- Ready to run: `rh-skills promote body-init {topic} <artifact-name>` then `rh-skills promote derive artifact {topic} <artifact-name> --body-file topics/{topic}/process/tmp/<artifact-name>.yaml`",
         ])
     else:
         lines.extend([
@@ -4301,7 +4302,8 @@ def body_init(topic, name, output, force):
     Reads artifact_type, derived_from, clinical_question, and required_sections
     from the approved plan artifact and writes a structurally correct YAML scaffold
     to topics/<topic>/process/tmp/<name>.yaml (or --output).
-    Fill in clinical content, then pass the file to 'rh-skills promote derive --body-file'.
+    Fill in clinical content, then pass the file to
+    'rh-skills promote derive artifact --body-file'.
     """
     tracking = require_tracking()
     require_topic(tracking, topic)
@@ -4371,12 +4373,18 @@ def body_init(topic, name, output, force):
     log_info(f"Created: {out_path}")
 
     click.echo(f"\nFill in clinical content, then run:")
-    click.echo(f"  rh-skills promote derive {topic} {name} \\")
+    click.echo(f"  rh-skills promote derive artifact {topic} {name} \\")
     click.echo(f"    --body-file {out_path}")
     click.echo(f"\nNote: artifact_type and derived_from are read from the body file. Do not change id or name.")
 
 
-@promote.command()
+@promote.group("derive")
+def derive():
+    """Derive L2 structured artifacts and fallback scaffolds."""
+    pass
+
+
+@derive.command("artifact")
 @click.argument("topic")
 @click.argument("name")
 @click.option("--source", required=False, multiple=True, help="L1 source name (can repeat). Optional when --body-file is provided — derived_from is read from the body file.")
@@ -4395,7 +4403,7 @@ def body_init(topic, name, output, force):
               help="Path to a YAML file containing the complete artifact body; repeated content flags become consistency checks")
 @click.option("--force", is_flag=True, help="Overwrite an existing structured artifact and refresh its tracking entry")
 @click.option("--dry-run", is_flag=True, help="Print what would be created without doing it")
-def derive(
+def derive_artifact(
     topic,
     name,
     source,
@@ -4628,6 +4636,26 @@ Rules:
         save_tracking(tracking)
 
         log_info(f"Created: {l2_file}")
+
+
+@derive.command("pathway")
+@click.option(
+    "--from-decision-table",
+    required=True,
+    help="Decision table artifact ID (e.g., crs-surgical-management)",
+)
+@click.option(
+    "--pathway-id",
+    help="ID for generated pathway (default: <decision-table-id>-pathway)",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Overwrite existing pathway if present",
+)
+def derive_pathway(from_decision_table: str, pathway_id: str | None, force: bool):
+    """Generate a fallback care-pathway scaffold from a decision-table phase model."""
+    _derive_pathway(from_decision_table, pathway_id, force)
 
 
 @promote.command()

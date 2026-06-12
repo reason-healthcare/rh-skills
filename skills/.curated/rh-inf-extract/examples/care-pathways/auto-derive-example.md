@@ -4,7 +4,8 @@
 
 Use this example when a temporal or procedural decision table includes
 `sections.pathway_phases[]` and you want the paired care-pathway artifact to
-stay aligned with that phase model.
+stay aligned with that phase model, especially if direct care-pathway authoring
+is struggling to preserve recommendation linkage cleanly.
 
 This example is intentionally written in the **current L2 shapes**:
 - decision-table uses `sections.pathway_phases[]`
@@ -21,11 +22,19 @@ Use this pattern when:
 - a decision-table already captures the recommendation logic
 - the guideline has major temporal or procedural phases
 - you want the care-pathway to mirror those phases without re-encoding ECA logic
+- you need a fallback scaffold to repair recommendation-to-pathway alignment
 
 Do not use this pattern when:
 - the workflow has no paired decision-table
 - the source is primarily a diagnostic tree or screening eligibility algorithm
 - the pathway needs to combine recommendations from multiple different tables
+- direct care-pathway authoring is already producing clear, well-aligned linkage
+
+Fallback command:
+
+```sh
+rh-skills promote derive pathway --from-decision-table <decision-table-id>
+```
 
 ---
 

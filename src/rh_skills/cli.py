@@ -1,7 +1,6 @@
 import click
 from rh_skills.commands import (
     cql as cql_cmd,
-    derive,
     fhirpath as fhirpath_cmd,
     formalize,
     formalize_config,
@@ -46,4 +45,3 @@ main.add_command(search.search)
 main.add_command(skills.skills)
 main.add_command(cql_cmd.cql)
 main.add_command(fhirpath_cmd.fhirpath)
-main.add_command(derive.derive)
