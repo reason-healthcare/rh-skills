@@ -681,14 +681,10 @@ def _validate_formalize_artifact(
 ) -> tuple[int, int]:
     plans_dir = topic_dir(topic) / "process" / "plans"
     yaml_plan_path = plans_dir / "formalize-plan.yaml"
-    markdown_plan_path = plans_dir / "formalize-plan.md"
 
     if yaml_plan_path.exists():
         plan = _yaml_safe().load(yaml_plan_path.read_text()) or {}
         plan_label = "formalize-plan.yaml"
-    elif markdown_plan_path.exists():
-        plan = _parse_markdown_frontmatter(markdown_plan_path)
-        plan_label = "formalize-plan.md"
     else:
         return 0, 0
 
@@ -729,21 +725,22 @@ def _validate_formalize_artifact(
         )
         errors += 1
 
-    # Determine if this artifact uses deterministic builders (decision-table, care-pathway)
-    # These artifact types generate FHIR directly without L3 intermediate format
+    # decision-table and care-pathway formalization write direct FHIR outputs
+    # rather than relying on intermediate L3 section scaffolds.
     artifact_type = (
         target_entry.get("artifact_type")
         or target_entry.get("strategy")
         or artifact_data.get("artifact_type")
         or artifact_data.get("strategy")
     )
-    uses_deterministic_builders = artifact_type in ("decision-table", "care-pathway")
+    uses_direct_fhir_path = artifact_type in ("decision-table", "care-pathway")
     
     expected_inputs = target_entry.get("input_artifacts", []) or []
     actual_inputs = artifact_data.get("converged_from") or []
     
-    if not uses_deterministic_builders:
-        # Only validate converged_from for non-deterministic artifacts
+    if not uses_direct_fhir_path:
+        # Only validate converged_from for artifacts that still depend on
+        # plan-driven intermediate formalize section expectations.
         if not actual_inputs:
             _report_error("  MISSING formalize field: converged_from", emit=emit)
             errors += 1
@@ -755,8 +752,8 @@ def _validate_formalize_artifact(
             )
             errors += 1
 
-    # Strategy match check (skip for deterministic builders)
-    if not uses_deterministic_builders:
+    # Strategy match check (skip for direct FHIR formalize paths)
+    if not uses_direct_fhir_path:
         plan_strategy = target_entry.get("strategy", "")
         actual_strategy = artifact_data.get("strategy", "")
         if plan_strategy and actual_strategy and plan_strategy != actual_strategy:

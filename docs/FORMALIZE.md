@@ -69,7 +69,7 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 
 4. VERIFY: rh-inf-formalize verify (invokes rh-skills validate)
    ├─ Plan consistency: strategy match, input_artifacts match
-   ├─ Deterministic builder outputs (`decision-table`, `care-pathway`) skip
+   ├─ Direct FHIR formalize outputs (`decision-table`, `care-pathway`) skip
    │  stale intermediate-section checks and validate at the generated FHIR level
    ├─ L3 target coverage: every l3_targets[] has a file
    ├─ Per-type structural checks (see table above)

@@ -212,7 +212,7 @@ Artifact-level rerun guidance:
    │   ├─ Scans approved L2 artifacts
    │   ├─ Groups by artifact_type
    │   ├─ Detects FHIR resource type overlaps
-   │   └─ Creates formalize-plan.md
+   │   └─ Creates formalize-plan.yaml
    └─ Ready for L3 conversion
 ```
 

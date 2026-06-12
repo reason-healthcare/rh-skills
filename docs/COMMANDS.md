@@ -612,7 +612,7 @@ rh-skills validate <topic> <level> <artifact>
 
 **Output:** Required-field errors (blocking, exit 1) and optional-field warnings (advisory, exit 0).
 
-When `topics/<topic>/process/plans/formalize-plan.md` exists, is approved, and
+When `topics/<topic>/process/plans/formalize-plan.yaml` exists, is approved, and
 lists the artifact as the implementation target, validation also checks:
 - approved `input_artifacts[]` vs `converged_from[]`
 - required computable sections from the approved plan

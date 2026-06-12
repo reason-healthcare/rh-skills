@@ -2249,6 +2249,8 @@ def test_formalize_plan_writes_review_packet_and_records_event(tmp_repo):
     assert "# Cross-Artifact Issues" in readout
     assert "# Implementation Readiness" in readout
     assert "formalize-plan.yaml" in readout
+    assert "single implementation target" not in readout
+    assert "Each artifact must have `reviewer_decision: approved`" in readout
 
     tracking = load_yaml(tmp_repo / "tracking.yaml")
     topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
