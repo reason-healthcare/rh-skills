@@ -58,6 +58,28 @@ def write_extract_plan(tmp_repo, topic="my-skill", artifact="test-artifact", *, 
     return plan_path
 
 
+def write_extract_plan_with_artifacts(tmp_repo, artifacts, *, topic="my-skill"):
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "extract-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    y = YAML()
+    y.default_flow_style = False
+    plan = {
+        "topic": topic,
+        "plan_type": "extract",
+        "status": "approved",
+        "reviewer": "Tester",
+        "reviewed_at": "2026-04-14T00:00:00Z",
+        "review_summary": "",
+        "cross_artifact_issues": [],
+        "artifacts": artifacts,
+    }
+    from io import StringIO
+    buf = StringIO()
+    y.dump(plan, buf)
+    plan_path.write_text(buf.getvalue())
+    return plan_path
+
+
 def make_valid_extract_l2(tmp_repo, skill="my-skill", artifact="test-artifact"):
     td = tmp_repo / "topics" / skill / "structured" / artifact
     td.mkdir(parents=True, exist_ok=True)
@@ -1412,6 +1434,484 @@ concerns: []
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
     assert result.exit_code == 1
     assert "unknown produced data element 'missing-score'" in result.output
+
+
+def test_validate_paired_decision_table_and_care_pathway_require_full_rule_coverage(tmp_repo):
+    write_extract_plan_with_artifacts(
+        tmp_repo,
+        artifacts=[
+            {
+                "name": "decision-table",
+                "artifact_type": "decision-table",
+                "source_files": ["sources/normalized/source-l1.md"],
+                "rationale": "Decision logic",
+                "key_questions": ["Which recommendations apply?"],
+                "required_sections": ["summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"],
+                "concerns": [],
+                "reviewer_decision": "approved",
+                "approval_notes": "Proceed",
+            },
+            {
+                "name": "care-pathway",
+                "artifact_type": "care-pathway",
+                "source_files": ["sources/normalized/source-l1.md"],
+                "rationale": "Workflow pathway",
+                "key_questions": ["How do recommendations map onto the pathway?"],
+                "required_sections": ["summary", "steps", "transitions", "evidence_traceability"],
+                "concerns": [],
+                "reviewer_decision": "approved",
+                "approval_notes": "Proceed",
+            },
+        ],
+    )
+    dt_dir = tmp_repo / "topics" / "my-skill" / "structured" / "decision-table"
+    dt_dir.mkdir(parents=True, exist_ok=True)
+    (dt_dir / "decision-table.yaml").write_text("""\
+id: decision-table
+name: decision-table
+title: "Decision Table"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Recommendation-scoped decision logic"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which recommendations apply?"
+sections:
+  summary: "Summary"
+  evidence_traceability:
+    - claim_id: claim-001
+      statement: "Recommendation 1"
+      evidence:
+        - source: source-l1
+          locator: "Section 1"
+    - claim_id: claim-002
+      statement: "Recommendation 2"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: event-001
+      label: Verify diagnosis
+    - id: event-002
+      label: Assess candidacy
+  conditions:
+    - id: cond-001
+      label: Eligible
+      description: Eligibility check
+      values: [Yes, No]
+  data_elements:
+    - id: de-001
+      condition_id: cond-001
+      label: Eligibility
+      description: Supporting data
+      data_type: boolean
+  actions:
+    - id: action-001
+      label: Verify diagnosis
+      kind: ServiceRequest
+    - id: action-002
+      label: Assess candidacy
+      kind: ServiceRequest
+  rules:
+    - id: rule-001
+      event: event-001
+      then: [action-001]
+      action: Verify diagnosis
+      evidence_traceability_ids: [claim-001]
+    - id: rule-002
+      event: event-002
+      then: [action-002]
+      action: Assess candidacy
+      evidence_traceability_ids: [claim-002]
+concerns: []
+""")
+    cp_dir = tmp_repo / "topics" / "my-skill" / "structured" / "care-pathway"
+    cp_dir.mkdir(parents=True, exist_ok=True)
+    (cp_dir / "care-pathway.yaml").write_text("""\
+id: care-pathway
+name: care-pathway
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Pathway missing one recommendation link"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "How do recommendations map onto the pathway?"
+sections:
+  summary: "Summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway step"
+      evidence:
+        - source: source-l1
+          locator: "Section 1"
+  steps:
+    - id: step-001
+      label: Main pathway
+      description: Wrapper step
+    - id: step-002
+      label: Verify diagnosis
+      description: Leaf step
+      parent_id: step-001
+      rule_id: rule-001
+      action_labels: [Verify diagnosis]
+      evidence_traceability_ids: [cp-001]
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "decision-table"])
+    assert result.exit_code == 1
+    assert "rule-002" in result.output
+    assert "paired decision-table/care-pathway coverage failure" in result.output
+
+
+def test_validate_paired_decision_table_and_care_pathway_accept_grouped_rule_ids_coverage(tmp_repo):
+    write_extract_plan_with_artifacts(
+        tmp_repo,
+        artifacts=[
+            {
+                "name": "decision-table",
+                "artifact_type": "decision-table",
+                "source_files": ["sources/normalized/source-l1.md"],
+                "rationale": "Decision logic",
+                "key_questions": ["Which recommendations apply?"],
+                "required_sections": ["summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"],
+                "concerns": [],
+                "reviewer_decision": "approved",
+                "approval_notes": "Proceed",
+            },
+            {
+                "name": "care-pathway",
+                "artifact_type": "care-pathway",
+                "source_files": ["sources/normalized/source-l1.md"],
+                "rationale": "Workflow pathway",
+                "key_questions": ["How do recommendations map onto the pathway?"],
+                "required_sections": ["summary", "steps", "transitions", "evidence_traceability"],
+                "concerns": [],
+                "reviewer_decision": "approved",
+                "approval_notes": "Proceed",
+            },
+        ],
+    )
+    dt_dir = tmp_repo / "topics" / "my-skill" / "structured" / "decision-table"
+    dt_dir.mkdir(parents=True, exist_ok=True)
+    (dt_dir / "decision-table.yaml").write_text("""\
+id: decision-table
+name: decision-table
+title: "Decision Table"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Recommendation-scoped decision logic"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which recommendations apply?"
+sections:
+  summary: "Summary"
+  evidence_traceability:
+    - claim_id: claim-001
+      statement: "Recommendation 1"
+      evidence:
+        - source: source-l1
+          locator: "Section 1"
+    - claim_id: claim-002
+      statement: "Recommendation 2"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: event-001
+      label: Verify diagnosis
+    - id: event-002
+      label: Assess candidacy
+  conditions:
+    - id: cond-001
+      label: Eligible
+      description: Eligibility check
+      values: [Yes, No]
+  data_elements:
+    - id: de-001
+      condition_id: cond-001
+      label: Eligibility
+      description: Supporting data
+      data_type: boolean
+  actions:
+    - id: action-001
+      label: Verify diagnosis
+      kind: ServiceRequest
+    - id: action-002
+      label: Assess candidacy
+      kind: ServiceRequest
+  rules:
+    - id: rule-001
+      event: event-001
+      then: [action-001]
+      action: Verify diagnosis
+      evidence_traceability_ids: [claim-001]
+    - id: rule-002
+      event: event-002
+      then: [action-002]
+      action: Assess candidacy
+      evidence_traceability_ids: [claim-002]
+concerns: []
+""")
+    cp_dir = tmp_repo / "topics" / "my-skill" / "structured" / "care-pathway"
+    cp_dir.mkdir(parents=True, exist_ok=True)
+    (cp_dir / "care-pathway.yaml").write_text("""\
+id: care-pathway
+name: care-pathway
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Pathway with grouped recommendation coverage"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "How do recommendations map onto the pathway?"
+sections:
+  summary: "Summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway step"
+      evidence:
+        - source: source-l1
+          locator: "Section 1"
+  steps:
+    - id: step-001
+      label: Main pathway
+      description: Wrapper step
+    - id: step-002
+      label: Assessment and surgical decision
+      description: Grouped leaf step
+      parent_id: step-001
+      rule_ids: [rule-001, rule-002]
+      action_labels:
+        - Verify diagnosis
+        - Assess candidacy
+      evidence_traceability_ids: [cp-001]
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-pathway"])
+    assert result.exit_code == 0, result.output
+    assert "paired decision-table/care-pathway coverage failure" not in result.output
+
+
+def test_validate_grouped_rule_ids_still_fail_when_one_decision_table_rule_is_omitted(tmp_repo):
+    write_extract_plan_with_artifacts(
+        tmp_repo,
+        artifacts=[
+            {
+                "name": "decision-table",
+                "artifact_type": "decision-table",
+                "source_files": ["sources/normalized/source-l1.md"],
+                "rationale": "Decision logic",
+                "key_questions": ["Which recommendations apply?"],
+                "required_sections": ["summary", "events", "conditions", "data_elements", "actions", "rules", "evidence_traceability"],
+                "concerns": [],
+                "reviewer_decision": "approved",
+                "approval_notes": "Proceed",
+            },
+            {
+                "name": "care-pathway",
+                "artifact_type": "care-pathway",
+                "source_files": ["sources/normalized/source-l1.md"],
+                "rationale": "Workflow pathway",
+                "key_questions": ["How do recommendations map onto the pathway?"],
+                "required_sections": ["summary", "steps", "transitions", "evidence_traceability"],
+                "concerns": [],
+                "reviewer_decision": "approved",
+                "approval_notes": "Proceed",
+            },
+        ],
+    )
+    dt_dir = tmp_repo / "topics" / "my-skill" / "structured" / "decision-table"
+    dt_dir.mkdir(parents=True, exist_ok=True)
+    (dt_dir / "decision-table.yaml").write_text("""\
+id: decision-table
+name: decision-table
+title: "Decision Table"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Recommendation-scoped decision logic"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which recommendations apply?"
+sections:
+  summary: "Summary"
+  evidence_traceability:
+    - claim_id: claim-001
+      statement: "Recommendation 1"
+      evidence:
+        - source: source-l1
+          locator: "Section 1"
+    - claim_id: claim-002
+      statement: "Recommendation 2"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+    - claim_id: claim-003
+      statement: "Recommendation 3"
+      evidence:
+        - source: source-l1
+          locator: "Section 3"
+  events:
+    - id: event-001
+      label: Verify diagnosis
+    - id: event-002
+      label: Assess candidacy
+    - id: event-003
+      label: Offer surgery
+  conditions:
+    - id: cond-001
+      label: Eligible
+      description: Eligibility check
+      values: [Yes, No]
+  data_elements:
+    - id: de-001
+      condition_id: cond-001
+      label: Eligibility
+      description: Supporting data
+      data_type: boolean
+  actions:
+    - id: action-001
+      label: Verify diagnosis
+      kind: ServiceRequest
+    - id: action-002
+      label: Assess candidacy
+      kind: ServiceRequest
+    - id: action-003
+      label: Offer surgery
+      kind: ServiceRequest
+  rules:
+    - id: rule-001
+      event: event-001
+      then: [action-001]
+      action: Verify diagnosis
+      evidence_traceability_ids: [claim-001]
+    - id: rule-002
+      event: event-002
+      then: [action-002]
+      action: Assess candidacy
+      evidence_traceability_ids: [claim-002]
+    - id: rule-003
+      event: event-003
+      then: [action-003]
+      action: Offer surgery
+      evidence_traceability_ids: [claim-003]
+concerns: []
+""")
+    cp_dir = tmp_repo / "topics" / "my-skill" / "structured" / "care-pathway"
+    cp_dir.mkdir(parents=True, exist_ok=True)
+    (cp_dir / "care-pathway.yaml").write_text("""\
+id: care-pathway
+name: care-pathway
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Grouped pathway branch that still omits one recommendation"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "How do recommendations map onto the pathway?"
+sections:
+  summary: "Summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway step"
+      evidence:
+        - source: source-l1
+          locator: "Section 1"
+  steps:
+    - id: step-001
+      label: Main pathway
+      description: Wrapper step
+    - id: step-002
+      label: Assessment and surgical decision
+      description: Grouped leaf step
+      parent_id: step-001
+      rule_ids: [rule-001, rule-002]
+      action_labels:
+        - Verify diagnosis
+        - Assess candidacy
+      evidence_traceability_ids: [cp-001]
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-pathway"])
+    assert result.exit_code == 1
+    assert "rule-003" in result.output
+    assert "paired decision-table/care-pathway coverage failure" in result.output
+
+
+def test_validate_decision_table_without_care_pathway_skips_paired_coverage_requirement(tmp_repo):
+    write_extract_plan(tmp_repo, artifact="decision-table")
+    make_valid_extract_l2(tmp_repo, artifact="decision-table")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "decision-table"])
+    assert result.exit_code == 0, result.output
+    assert "paired decision-table/care-pathway coverage failure" not in result.output
+
+
+def test_validate_care_pathway_without_decision_table_skips_paired_coverage_requirement(tmp_repo):
+    write_extract_plan(tmp_repo, artifact="care-pathway")
+    plan_path = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml"
+    plan = YAML().load(plan_path.read_text())
+    plan["artifacts"][0]["artifact_type"] = "care-pathway"
+    plan["artifacts"][0]["required_sections"] = ["summary", "evidence_traceability", "steps", "transitions"]
+    y = YAML()
+    y.default_flow_style = False
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "care-pathway"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "care-pathway.yaml").write_text("""\
+id: care-pathway
+name: care-pathway
+title: "Care Pathway"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Care pathway only"
+derived_from:
+  - source-l1
+artifact_type: care-pathway
+clinical_question: "What is the pathway?"
+sections:
+  summary: "Summary"
+  evidence_traceability:
+    - claim_id: cp-001
+      statement: "Pathway step"
+      evidence:
+        - source: source-l1
+          locator: "Section 1"
+  steps:
+    - id: step-001
+      label: Main pathway
+      description: Leaf step
+      rule_id: rule-001
+      action_labels: [Assess candidacy]
+      evidence_traceability_ids: [cp-001]
+  transitions: []
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "care-pathway"])
+    assert result.exit_code == 0, result.output
+    assert "paired decision-table/care-pathway coverage failure" not in result.output
 
 
 def test_validate_care_pathway_rejects_nested_substeps(tmp_repo):

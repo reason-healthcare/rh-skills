@@ -102,6 +102,109 @@ def _collect_stub_paths(value, path: str = "") -> list[str]:
     return stubs
 
 
+def _load_yaml_file(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    data = _yaml_safe().load(path.read_text()) or {}
+    return data if isinstance(data, dict) else {}
+
+
+def _paired_recommendation_rule_refs(step: dict) -> list[str]:
+    refs: list[str] = []
+    rule_id = step.get("rule_id")
+    if isinstance(rule_id, str) and rule_id.strip():
+        refs.append(rule_id.strip())
+    rule_ids = step.get("rule_ids")
+    if isinstance(rule_ids, list):
+        for value in rule_ids:
+            if isinstance(value, str) and value.strip():
+                refs.append(value.strip())
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for ref in refs:
+        if ref not in seen:
+            seen.add(ref)
+            deduped.append(ref)
+    return deduped
+
+
+def _find_structured_pair_for_topic(topic: str) -> tuple[tuple[str, dict] | None, tuple[str, dict] | None]:
+    structured_dir = topic_dir(topic) / "structured"
+    if not structured_dir.exists():
+        return None, None
+
+    typed_artifacts: dict[str, list[tuple[str, dict]]] = {
+        "decision-table": [],
+        "care-pathway": [],
+    }
+    for artifact_dir in structured_dir.iterdir():
+        if not artifact_dir.is_dir():
+            continue
+        artifact_file = artifact_dir / f"{artifact_dir.name}.yaml"
+        if not artifact_file.exists():
+            continue
+        artifact_data = _load_yaml_file(artifact_file)
+        artifact_type = str(artifact_data.get("artifact_type") or "").strip()
+        if artifact_type in typed_artifacts:
+            typed_artifacts[artifact_type].append((artifact_dir.name, artifact_data))
+
+    decision_tables = typed_artifacts["decision-table"]
+    care_pathways = typed_artifacts["care-pathway"]
+    if len(decision_tables) != 1 or len(care_pathways) != 1:
+        return None, None
+    return decision_tables[0], care_pathways[0]
+
+
+def _validate_paired_recommendation_coverage(
+    topic: str,
+    artifact: str,
+    artifact_data: dict,
+    *,
+    emit: bool = True,
+) -> tuple[int, int]:
+    artifact_type = str(artifact_data.get("artifact_type") or "").strip()
+    if artifact_type not in {"decision-table", "care-pathway"}:
+        return 0, 0
+
+    decision_table_entry, care_pathway_entry = _find_structured_pair_for_topic(topic)
+    if decision_table_entry is None or care_pathway_entry is None:
+        return 0, 0
+
+    decision_table_name, decision_table_data = decision_table_entry
+    care_pathway_name, care_pathway_data = care_pathway_entry
+
+    if artifact_type == "decision-table" and artifact != decision_table_name:
+        return 0, 0
+    if artifact_type == "care-pathway" and artifact != care_pathway_name:
+        return 0, 0
+
+    decision_rules = {
+        str(rule.get("id") or "").strip()
+        for rule in ((decision_table_data.get("sections") or {}).get("rules") or [])
+        if isinstance(rule, dict) and str(rule.get("id") or "").strip()
+    }
+    if not decision_rules:
+        return 0, 0
+
+    linked_rules: set[str] = set()
+    for step in ((care_pathway_data.get("sections") or {}).get("steps") or []):
+        if not isinstance(step, dict):
+            continue
+        linked_rules.update(_paired_recommendation_rule_refs(step))
+
+    orphaned_rules = sorted(decision_rules - linked_rules)
+    if not orphaned_rules:
+        return 0, 0
+
+    _report_error(
+        "  paired decision-table/care-pathway coverage failure: decision-table rule(s) "
+        f"{', '.join(orphaned_rules)} are not linked from any care-pathway leaf step "
+        f"({decision_table_name} -> {care_pathway_name})",
+        emit=emit,
+    )
+    return 1, 0
+
+
 def _requires_clinical_question(artifact: str, artifact_data: dict) -> bool:
     """Return whether extract validation should require clinical_question."""
     return not (
@@ -711,7 +814,16 @@ def validate_artifact_file(
             cp_errors, cp_warnings = validate_care_pathway(artifact_data, emit_callback=emit_callback)
             errors += cp_errors
             warnings += cp_warnings
-        
+
+        paired_errors, paired_warnings = _validate_paired_recommendation_coverage(
+            topic,
+            artifact,
+            artifact_data,
+            emit=emit,
+        )
+        errors += paired_errors
+        warnings += paired_warnings
+
         return errors, warnings
 
     elif level in ("l3", "computable"):

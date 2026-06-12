@@ -15,6 +15,12 @@ validation guidance.
   `terminology`, `measure`, `assessment`, and `policy`, read the corresponding
   schema block below and keep the derived body aligned to that artifact's
   explicit section shape rather than improvising a generic narrative structure.
+- Implementing paired `decision-table` + `care-pathway` artifacts: treat them
+  as a linked model. Keep all recommendation logic in the `decision-table`,
+  keep sequencing/orchestration in the `care-pathway`, and ensure every
+  recommendation-scoped rule is represented in care-pathway leaf linkage.
+  Grouping with `rule_ids[]` is allowed when it preserves explicit coverage;
+  omitted recommendation coverage is not.
 
 ---
 
@@ -696,6 +702,12 @@ the same actor, timing, and pathway meaning, use `rule_ids[]` plus grouped
 Parent steps that have child steps must not also carry `rule_id` or
 `rule_ids[]`; push recommendation linkage down to the most specific child step
 that owns the recommendation.
+When both artifacts are present, optimize for complete recommendation coverage,
+not forced 1:1 decomposition. A broader pathway branch may legitimately resolve
+to one grouped leaf step with `rule_ids[]`, but do not leave some
+decision-table recommendation rules unlinked simply because multiple
+recommendations belong under the same branch. Every recommendation-scoped rule
+should appear in at least one leaf step's `rule_id` or `rule_ids[]` linkage.
 Do not encode trigger metadata or ECA logic in care-pathway steps; keep that
 logic in decision-table events and rules, and use the pathway only as the
 sequencing shell.
@@ -928,6 +940,9 @@ When a related decision-table exists:
   strategy-level grouping when supported by aligned decision-table structure
 - keep recommendation logic in the decision-table and sequencing in the
   care-pathway
+- ensure all recommendation-scoped decision-table rules are represented in
+  care-pathway leaf linkage via `rule_id` or `rule_ids[]`; grouping is allowed
+  when clinically coherent, but omitted rule coverage is not
 
 ---
 

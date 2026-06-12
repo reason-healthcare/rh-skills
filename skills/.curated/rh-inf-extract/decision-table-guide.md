@@ -132,6 +132,7 @@ Before finalizing extraction, verify:
 - [ ] **ALL Key Action Statements extracted** (not just conditional ones)
 - [ ] **Distinct recommendations deconstructed** into separate rules/actions even when they share the same visit, phase, or workflow moment
 - [ ] **Unconditional recommendations captured** as rules with `when: {}`
+- [ ] **Paired care-pathway coverage preserved** when a care-pathway artifact also exists: every recommendation-scoped rule remains linkable to at least one care-pathway leaf step, singly or via grouped `rule_ids[]`
 - [ ] **Every action** has corresponding entry in `actions` section
 - [ ] **Every rule** references valid action IDs in `then: [...]`
 - [ ] **Every guideline "should/shall" statement** appears as an action
