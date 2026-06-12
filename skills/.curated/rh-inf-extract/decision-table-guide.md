@@ -730,7 +730,9 @@ evidence_traceability:
 
 **When to use**: Only for **procedural/workflow guidelines** with clear temporal sequence
 
-**Why**: Enables auto-derivation of care pathway artifact (eliminates manual pathway authoring)
+**Why**: Provides the canonical phase model that can support fallback
+care-pathway derivation if manual pathway authoring struggles to preserve
+recommendation linkage cleanly.
 
 ### Pattern
 

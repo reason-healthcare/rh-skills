@@ -1,14 +1,15 @@
 """
-derive.py - Auto-derive artifacts from existing L2 structured artifacts
+derive.py - Auto-derive artifacts from existing L2 structured artifacts.
 
-Currently supports:
-- Care pathway derivation from decision tables with pathway_phases metadata
+Currently supports fallback care-pathway derivation from decision tables with
+pathway_phases metadata.
 """
 
-import click
 from pathlib import Path
+from typing import Any
+
 from ruamel.yaml import YAML
-from typing import Dict, List, Any
+
 
 yaml = YAML()
 yaml.preserve_quotes = True
@@ -16,197 +17,278 @@ yaml.default_flow_style = False
 yaml.width = 4096
 
 
-@click.group()
-def derive():
-    """Auto-derive artifacts from structured artifacts."""
-    pass
+def _topics_root() -> Path:
+    return Path("topics")
 
 
-@derive.command("pathway")
-@click.option(
-    "--from-decision-table",
-    required=True,
-    help="Decision table artifact ID (e.g., crs-surgical-management)",
-)
-@click.option(
-    "--pathway-id",
-    help="ID for generated pathway (default: <decision-table-id>-pathway)",
-)
-@click.option(
-    "--force",
-    is_flag=True,
-    help="Overwrite existing pathway if present",
-)
-def derive_pathway(from_decision_table: str, pathway_id: str, force: bool):
-    """
-    Auto-generate care pathway from decision table with pathway_phases metadata.
-    
-    Reads pathway_phases and events from the source decision table and generates
-    a care-pathway artifact with phases and substeps.
-    
-    Example:
-        rh-skills derive pathway --from-decision-table crs-surgical-management
-    """
-    
-    # Find decision table file
-    topics_dir = Path("topics")
+def _find_decision_table(from_decision_table: str) -> tuple[Path | None, Path | None]:
+    topics_dir = _topics_root()
     if not topics_dir.exists():
-        click.echo("Error: topics/ directory not found. Run from repository root.", err=True)
-        return 1
-    
-    # Search for decision table
-    dt_path = None
-    topic_dir = None
+        return None, None
+
     for topic in topics_dir.iterdir():
         if not topic.is_dir():
             continue
         structured_dir = topic / "structured"
         if not structured_dir.exists():
             continue
-        
-        # Check for decision table directory
         dt_dir = structured_dir / from_decision_table
         dt_file = dt_dir / f"{from_decision_table}.yaml"
         if dt_file.exists():
-            dt_path = dt_file
-            topic_dir = topic
-            break
-    
-    if not dt_path:
-        click.echo(f"Error: Decision table '{from_decision_table}' not found in topics/*/structured/", err=True)
-        return 1
-    
-    # Load decision table
+            return dt_file, topic
+    return None, None
+
+
+def _step_label(text: str) -> str:
+    return str(text or "").replace("-", " ").replace("_", " ").strip().title()
+
+
+def _phase_summary(event_labels: list[str]) -> str:
+    if not event_labels:
+        return ""
+    unique_labels: list[str] = []
+    seen: set[str] = set()
+    for label in event_labels:
+        normalized = str(label or "").strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique_labels.append(normalized)
+    if not unique_labels:
+        return ""
+    if len(unique_labels) == 1:
+        return f"Includes recommendation context: {unique_labels[0]}."
+    return "Includes recommendation contexts: " + ", ".join(unique_labels) + "."
+
+
+def _dedupe_strings(values: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        normalized = str(value or "").strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            deduped.append(normalized)
+    return deduped
+
+
+def derive_pathway(from_decision_table: str, pathway_id: str | None, force: bool):
+    """
+    Auto-generate a fallback care-pathway scaffold from decision-table phases.
+
+    Reads `sections.pathway_phases[]` and aligned `events[].phase` metadata from
+    the source decision table and generates a care-pathway artifact using the
+    current flat `steps[]` + `parent_id` model.
+    """
+    import click
+
+    topics_dir = _topics_root()
+    if not topics_dir.exists():
+        click.echo("Error: topics/ directory not found. Run from repository root.", err=True)
+        raise SystemExit(1)
+
+    dt_path, topic_dir = _find_decision_table(from_decision_table)
+    if not dt_path or not topic_dir:
+        click.echo(
+            f"Error: Decision table '{from_decision_table}' not found in topics/*/structured/",
+            err=True,
+        )
+        raise SystemExit(1)
+
     click.echo(f"Loading decision table: {dt_path}")
     with open(dt_path) as f:
-        dt_data = yaml.load(f)
-    
-    # Validate decision table has pathway_phases
-    if "sections" not in dt_data:
+        dt_data = yaml.load(f) or {}
+
+    sections = dt_data.get("sections")
+    if not isinstance(sections, dict):
         click.echo("Error: Decision table missing 'sections' field", err=True)
-        return 1
-    
-    sections = dt_data["sections"]
-    if "pathway_phases" not in sections:
+        raise SystemExit(1)
+
+    pathway_phases = sections.get("pathway_phases")
+    if not isinstance(pathway_phases, list) or not pathway_phases:
         click.echo(
-            f"Error: Decision table '{from_decision_table}' lacks pathway_phases metadata.\n"
+            f"Error: Decision table '{from_decision_table}' lacks non-empty pathway_phases metadata.\n"
             "Only decision tables with temporal workflow structure can auto-generate pathways.\n"
             "For diagnostic, screening, or treatment optimization guidelines, manually author the pathway.",
-            err=True
+            err=True,
         )
-        return 1
-    
-    pathway_phases = sections["pathway_phases"]
-    
-    if not pathway_phases or len(pathway_phases) == 0:
-        click.echo("Error: pathway_phases is empty", err=True)
-        return 1
-    
-    # Extract events
-    if "events" not in sections:
+        raise SystemExit(1)
+
+    events = sections.get("events")
+    if not isinstance(events, list):
         click.echo("Error: Decision table missing 'events' section", err=True)
-        return 1
-    
-    events = sections["events"]
-    
-    # Group events by phase
-    events_by_phase = {}
+        raise SystemExit(1)
+    actions = sections.get("actions")
+    if not isinstance(actions, list):
+        actions = []
+    rules = sections.get("rules")
+    if not isinstance(rules, list):
+        rules = []
+
+    events_by_phase: dict[str, list[dict[str, Any]]] = {}
+    event_index: dict[str, dict[str, Any]] = {}
     for event in events:
-        phase_id = event.get("phase")
-        if not phase_id:
-            click.echo(f"Warning: Event '{event.get('id')}' has no phase field, skipping", err=True)
+        if not isinstance(event, dict):
             continue
-        
-        if phase_id not in events_by_phase:
-            events_by_phase[phase_id] = []
-        
-        events_by_phase[phase_id].append(event)
-    
-    # Sort events within each phase by phase_order
-    for phase_id in events_by_phase:
-        events_by_phase[phase_id].sort(key=lambda e: e.get("phase_order", 999))
-    
-    # Generate pathway ID
+        event_id = str(event.get("id") or "").strip()
+        if event_id:
+            event_index[event_id] = event
+        phase_id = str(event.get("phase") or "").strip()
+        if not phase_id:
+            continue
+        events_by_phase.setdefault(phase_id, []).append(event)
+
+    action_index = {
+        str(action.get("id") or "").strip(): action
+        for action in actions
+        if isinstance(action, dict) and str(action.get("id") or "").strip()
+    }
+    rules_by_phase: dict[str, list[dict[str, Any]]] = {}
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        phase_id = str(rule.get("phase") or "").strip()
+        if not phase_id:
+            event = event_index.get(str(rule.get("event") or "").strip()) or {}
+            phase_id = str(event.get("phase") or "").strip()
+        if not phase_id:
+            continue
+        rules_by_phase.setdefault(phase_id, []).append(rule)
+
     if not pathway_id:
         pathway_id = f"{from_decision_table}-pathway"
-    
-    # Check if pathway already exists
+
     pathway_dir = topic_dir / "structured" / pathway_id
     pathway_file = pathway_dir / f"{pathway_id}.yaml"
-    
     if pathway_file.exists() and not force:
         click.echo(
             f"Error: Pathway '{pathway_id}' already exists at {pathway_file}\n"
-            f"Use --force to overwrite",
-            err=True
+            "Use --force to overwrite",
+            err=True,
         )
-        return 1
-    
-    # Build pathway data
+        raise SystemExit(1)
+
+    title_source = str(dt_data.get("title") or _step_label(from_decision_table))
+    root_label = title_source.removesuffix(" Decision Table").strip() or _step_label(pathway_id)
+    root_id = pathway_id
+
+    steps: list[dict[str, Any]] = [{
+        "id": root_id,
+        "label": root_label,
+        "description": (
+            f"Overall pathway scaffold derived from decision-table '{from_decision_table}'."
+        ),
+    }]
+    transitions: list[dict[str, Any]] = []
+    phase_step_ids: list[str] = []
+
+    for phase in pathway_phases:
+        if not isinstance(phase, dict):
+            continue
+        phase_id = str(phase.get("id") or "").strip()
+        if not phase_id:
+            continue
+        phase_step_ids.append(phase_id)
+        phase_description = str(phase.get("description") or "").strip()
+        phase_event_labels = [
+            str(event.get("label") or event.get("id") or "").strip()
+            for event in events_by_phase.get(phase_id, [])
+            if isinstance(event, dict)
+        ]
+        event_summary = _phase_summary(phase_event_labels)
+        description_parts = [part for part in [phase_description, event_summary] if part]
+        step = {
+            "id": phase_id,
+            "label": str(phase.get("label") or _step_label(phase_id)),
+            "description": " ".join(description_parts).strip() or f"Derived phase '{phase_id}'.",
+            "parent_id": root_id,
+        }
+
+        phase_rules = rules_by_phase.get(phase_id, [])
+        phase_rule_ids = _dedupe_strings([
+            str(rule.get("id") or "").strip()
+            for rule in phase_rules
+            if isinstance(rule, dict)
+        ])
+        if phase_rule_ids:
+            if len(phase_rule_ids) == 1:
+                step["rule_id"] = phase_rule_ids[0]
+            else:
+                step["rule_ids"] = phase_rule_ids
+
+            action_labels: list[str] = []
+            evidence_ids: list[str] = []
+            for rule in phase_rules:
+                if not isinstance(rule, dict):
+                    continue
+                for claim_id in (rule.get("evidence_traceability_ids") or []):
+                    if isinstance(claim_id, str):
+                        evidence_ids.append(claim_id)
+                for action_id in (rule.get("then") or []):
+                    action_def = action_index.get(str(action_id).strip()) or {}
+                    action_label = str(action_def.get("label") or action_id or "").strip()
+                    if action_label:
+                        action_labels.append(action_label)
+            deduped_labels = _dedupe_strings(action_labels)
+            if deduped_labels:
+                step["action_labels"] = deduped_labels
+            deduped_evidence_ids = _dedupe_strings(evidence_ids)
+            if deduped_evidence_ids:
+                step["evidence_traceability_ids"] = deduped_evidence_ids
+
+        steps.append(step)
+
+    for idx in range(len(phase_step_ids) - 1):
+        transitions.append({
+            "from_id": phase_step_ids[idx],
+            "to_id": phase_step_ids[idx + 1],
+            "description": "Proceed to the next derived clinical phase.",
+        })
+
+    evidence_traceability = sections.get("evidence_traceability")
+    if not isinstance(evidence_traceability, list):
+        evidence_traceability = []
+
     pathway_data = {
         "id": pathway_id,
         "name": pathway_id,
-        "title": f"Pathway For {dt_data.get('title', from_decision_table)}",
+        "title": f"Pathway For {title_source}",
         "version": "0.1.0",
         "status": "draft",
         "domain": dt_data.get("domain", "clinical"),
         "description": (
-            f"Auto-generated care pathway from {from_decision_table} decision table.\n"
-            f"Organizes clinical decision points into workflow phases.\n"
-            f"\n"
-            f"NOTE: This artifact is auto-generated. Do not edit manually.\n"
-            f"Regenerate using: rh-skills derive pathway --from-decision-table {from_decision_table} --force"
+            f"Fallback care-pathway scaffold derived from {from_decision_table} decision table.\n"
+            f"Uses the current flat steps model with parent_id hierarchy.\n\n"
+            "Use this only when direct care-pathway authoring is struggling to keep "
+            "recommendation linkage aligned with the decision-table.\n"
+            "Review and refine the generated pathway before use.\n"
+            f"Regenerate using: rh-skills promote derive pathway --from-decision-table {from_decision_table} --force"
         ),
         "derived_from": [from_decision_table],
         "artifact_type": "care-pathway",
-        "clinical_question": f"How should the {dt_data.get('domain', 'clinical')} workflow be organized across care phases?",
+        "clinical_question": (
+            f"How should the {dt_data.get('domain', 'clinical')} workflow be organized across care phases?"
+        ),
         "sections": {
             "summary": (
-                f"This pathway organizes the {dt_data.get('domain', 'clinical')} care continuum "
-                f"into {len(pathway_phases)} clinical phases. Each phase contains decision points "
-                f"and activities derived from the {from_decision_table} decision table."
+                f"This pathway scaffold organizes the {dt_data.get('domain', 'clinical')} care continuum "
+                f"into {len(phase_step_ids)} derived clinical phases from the decision-table phase model."
             ),
-            "evidence_traceability": dt_data.get("sections", {}).get("evidence_traceability", {}),
-        }
+            "evidence_traceability": evidence_traceability,
+            "steps": steps,
+            "transitions": transitions,
+        },
+        "concerns": [],
     }
-    
-    # Build steps from phases
-    steps = []
-    for phase in pathway_phases:
-        phase_id = phase["id"]
-        phase_events = events_by_phase.get(phase_id, [])
-        
-        # Build substeps from events
-        substeps = []
-        for event in phase_events:
-            substeps.append({
-                "id": event["id"],
-                "label": event.get("label", event["id"]),
-                "description": event.get("description", event.get("label", event["id"])),
-                "event": event["id"],
-            })
-        
-        steps.append({
-            "id": phase_id,
-            "label": phase.get("label", phase_id),
-            "description": phase.get("description", ""),
-            "actor": "Clinician",
-            "substeps": substeps,
-        })
-    
-    pathway_data["sections"]["steps"] = steps
-    
-    # Create pathway directory and write file
+
     pathway_dir.mkdir(parents=True, exist_ok=True)
-    
     click.echo(f"Writing pathway: {pathway_file}")
     with open(pathway_file, "w") as f:
         yaml.dump(pathway_data, f)
-    
+
     click.echo(f"✓ Care pathway '{pathway_id}' generated successfully")
     click.echo(f"  Source: {from_decision_table}")
-    click.echo(f"  Phases: {len(pathway_phases)}")
-    click.echo(f"  Events: {sum(len(events_by_phase.get(p['id'], [])) for p in pathway_phases)}")
+    click.echo(f"  Phases: {len(phase_step_ids)}")
+    click.echo(f"  Phase-linked events observed: {sum(len(events_by_phase.get(p, [])) for p in phase_step_ids)}")
+    click.echo(f"  Structure: flat steps[] with parent_id")
+    click.echo("  Intended use: fallback scaffold for recommendation-to-pathway alignment repair")
     click.echo(f"  Location: {pathway_file}")
-    
-    return 0

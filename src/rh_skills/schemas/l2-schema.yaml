@@ -113,24 +113,32 @@ artifact_type_sections:
       evidence_traceability: >
         Evidence claims that support recommendation content:
         {claim_id, statement, strength?, evidence[]}. claim_id must be unique
-        per artifact and is referenced by action/rule evidence links.
-        strength is recommended and should use one of:
-        strong | weak.
+        per artifact and is referenced by recommendation-like steps through
+        evidence_traceability_ids[]. strength is recommended and should use
+        validator-supported values such as high | moderate | low | very-low |
+        consensus | insufficient.
       steps: >
         Flat workflow steps. Each entry: {id, label, description?, actor?, parent_id?,
-        applicability_condition?, rule_id?, rule_ids[]?, action_labels?, evidence_traceability_ids[]?, provenance?}. parent_id references
+        applicability_condition?, rule_id?, rule_ids[]?, action_labels?,
+        evidence_traceability_ids[]?, provenance?}. parent_id references
         another step id when a nested relationship is needed. When a paired
         decision table defines pathway_phases, keep care-pathway steps aligned
         1:1 with that phase model. Use rule_id to point a step at a specific
         decision-table rule it orchestrates, or rule_ids[] when a leaf step
-        intentionally groups a tight cluster of related rules. Use action_labels
-        to name the corresponding decision-table actions for readability. Parent
-        steps that also have children must not carry rule_id/rule_ids[]. For
-        recommendation-like steps (rule_id/rule_ids[]/action_labels present), include evidence_traceability_ids[]
-        linking to sections.evidence_traceability[].claim_id and provenance
-        metadata such as {source: source_direct|inferred, rationale?}. Inferred
-        recommendations should always include rationale. Actions are defined in
-        decision-table artifacts, not in care pathways.
+        intentionally groups a tight cluster of related rules with the same
+        pathway meaning. Use action_labels to name the corresponding
+        decision-table actions for readability. Parent steps that also have
+        child steps must not carry rule_id or rule_ids[]; push recommendation
+        linkage down to the leaf step that owns it. For recommendation-like
+        steps (rule_id/rule_ids[]/action_labels present), include
+        evidence_traceability_ids[] linking to
+        sections.evidence_traceability[].claim_id and provenance metadata such
+        as {source: source_direct|inferred, rationale?}. Inferred
+        recommendations should always include rationale. When both a
+        decision-table and care-pathway are present, every
+        recommendation-scoped decision-table rule should appear in at least one
+        care-pathway leaf step's rule_id or rule_ids[] linkage. Actions are
+        defined in decision-table artifacts, not in care pathways.
       transitions: >
         Optional sequencing rules between steps or phases: {from_id, to_id,
         condition?, description?}. Captures dependencies and branching logic.
@@ -152,8 +160,9 @@ artifact_type_sections:
         Evidence claims that support decision logic:
         {claim_id, statement, strength?, evidence[]}. claim_id must be unique per
         artifact and is referenced from actions and rules via
-        evidence_traceability_ids[]. strength is recommended and should use one of:
-        strong | weak.
+        evidence_traceability_ids[]. strength is recommended and should use
+        validator-supported values such as high | moderate | low | very-low |
+        consensus | insufficient.
       events: >
         ECA workflow event definitions: {id, label, description?, phase?, trigger?}.
         Events are primary. trigger is optional when the workflow context alone
@@ -200,11 +209,11 @@ artifact_type_sections:
         Use 'when' when the source describes an additional branch condition;
         omit it for unconditional event-driven rules. The 'phase' field
         (optional) references pathway_phases[].id when pathway_phases
-        section is present, enabling grouping of rules by care phase.
-        Include evidence_traceability_ids[] to link recommendation logic to
-        one or more evidence_traceability claim_id values and provenance
-        metadata such as {source: source_direct|inferred, rationale?}. Inferred
-        recommendations should always include rationale.
+        section is present, enabling grouping of rules by care phase. Include
+        evidence_traceability_ids[] to link recommendation logic to one or more
+        evidence_traceability claim_id values and provenance metadata such as
+        {source: source_direct|inferred, rationale?}. Inferred recommendations
+        should always include rationale.
 
 status_values:
   - draft

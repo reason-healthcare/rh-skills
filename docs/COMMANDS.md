@@ -179,12 +179,12 @@ Re-checksums all sources in `tracking.yaml` and reports `✓ OK` or `✗ CHANGED
 
 Derive and combine artifacts.
 
-### `rh-skills promote derive <topic> <name>`
+### `rh-skills promote derive artifact <topic> <name>`
 
 Create a structured (L2) artifact scaffold.
 
-```
-rh-skills promote derive <topic> <name> [--force]
+```sh
+rh-skills promote derive artifact <topic> <name> [--force]
 ```
 
 Creates `topics/<topic>/structured/<name>.yaml` with schema-valid YAML scaffold.
@@ -200,6 +200,27 @@ terminology package `concepts` is not re-derived with this command; use
 `rh-skills promote concept write <topic>` instead. When terminology has not
 changed, leave `concept review` / `concept write` as-is and validate only the
 artifact you re-ran.
+
+### `rh-skills promote derive pathway --from-decision-table <artifact>`
+
+Generate a fallback `care-pathway` scaffold from a `decision-table` that already
+has `sections.pathway_phases[]`.
+
+```sh
+rh-skills promote derive pathway --from-decision-table <decision-table-id> [--pathway-id <id>] [--force]
+```
+
+Use this only when direct care-pathway authoring is having trouble keeping
+recommendation linkage aligned with the paired decision-table. It is a repair
+and fallback tool, not the primary authoring path.
+
+The generated artifact:
+
+- uses the flat `steps[]` + `parent_id` care-pathway model
+- mirrors the decision-table phase model
+- copies phase-aligned `rule_id` / `rule_ids[]`, `action_labels`, and
+  `evidence_traceability_ids[]` when available
+- still requires human review before use
 
 ### `rh-skills promote combine <topic> <sources…> <target>`
 

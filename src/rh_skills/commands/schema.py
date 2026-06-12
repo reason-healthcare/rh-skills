@@ -154,7 +154,7 @@ def _print_discovery_plan_schema(data: dict) -> None:
 
 _SCHEMA_LABELS = {
     "l2": "L2 Structured",
-    "l3": "L3 Computable",
+    "l3": "L3 Computable (Retired Intermediate Schema)",
     "extract-plan": "Extract Plan",
     "concepts-plan": "Concepts Plan",
 }
@@ -168,9 +168,18 @@ def _print_artifact_schema(artifact_type: str, data: dict) -> None:
         header += f"{description.strip()}\n"
     click.echo(header)
 
+    if artifact_type == "l3":
+        click.echo(
+            "WARNING: This is a retired intermediate YAML reference. Current L3/computable "
+            "outputs are direct FHIR JSON resources written by `rh-skills formalize` and "
+            "validated by `rh-skills validate <topic> l3 <artifact>`.\n"
+        )
+
     required = data.get("required_fields", [])
+    legacy_required = data.get("legacy_required_fields", [])
     optional = data.get("optional_fields", [])
     optional_sections = data.get("optional_sections", {})
+    legacy_optional_sections = data.get("legacy_optional_sections", {})
     artifact_types = data.get("artifact_types", [])
     artifact_type_sections = data.get("artifact_type_sections", {})
     status_values = data.get("status_values", [])
@@ -178,6 +187,10 @@ def _print_artifact_schema(artifact_type: str, data: dict) -> None:
     if required:
         click.echo("Required fields:")
         for f in required:
+            click.echo(f"  {f}")
+    elif legacy_required:
+        click.echo("Legacy required fields:")
+        for f in legacy_required:
             click.echo(f"  {f}")
 
     if optional:
@@ -196,6 +209,16 @@ def _print_artifact_schema(artifact_type: str, data: dict) -> None:
                 fields = info.get("fields", [])
                 if fields:
                     click.echo(f"    fields: {', '.join(fields)}")
+            else:
+                click.echo(f"  {section}")
+    elif legacy_optional_sections:
+        click.echo("\nLegacy optional sections:")
+        for section, info in legacy_optional_sections.items():
+            if isinstance(info, dict):
+                fhir = info.get("fhir_equivalent", "")
+                desc = info.get("description", "")
+                fhir_note = f"  (FHIR: {fhir})" if fhir else ""
+                click.echo(f"  {section:<18} {desc}{fhir_note}")
             else:
                 click.echo(f"  {section}")
 
@@ -228,7 +251,10 @@ def _print_artifact_schema(artifact_type: str, data: dict) -> None:
         "concepts-plan": "rh-skills promote concept review <topic>",
         "extract-plan": "rh-skills promote approve <topic>",
     }
-    hint = _PLAN_HINTS.get(artifact_type, f"rh-skills validate <topic> {artifact_type} <artifact-name>")
+    if artifact_type == "l3":
+        hint = "rh-skills formalize <topic> <artifact>  then  rh-skills validate <topic> l3 <artifact>"
+    else:
+        hint = _PLAN_HINTS.get(artifact_type, f"rh-skills validate <topic> {artifact_type} <artifact-name>")
     click.echo(f"\nValidate/review with: {hint}")
 
 

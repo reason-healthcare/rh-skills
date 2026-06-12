@@ -68,7 +68,7 @@ def test_lifecycle_derive_dry_run_prints_prompt(tmp_repo, monkeypatch):
     with open(tmp_repo / "tracking.yaml", "w") as f:
         y.dump(tracking, f)
 
-    result = runner.invoke(promote, ["derive", "test-workflow-skill", "criteria", "--source", "guideline", "--dry-run"])
+    result = runner.invoke(promote, ["derive", "artifact", "test-workflow-skill", "criteria", "--source", "guideline", "--dry-run"])
     assert result.exit_code == 0
     assert "DRY RUN" in result.output
 
@@ -229,11 +229,12 @@ ADA 2024 diabetes screening guidance:
 
     derive_result = runner.invoke(
         promote,
-        [
-            "derive",
-            "diabetes-screening",
-            "screening-criteria",
-            "--source",
+            [
+                "derive",
+                "artifact",
+                "diabetes-screening",
+                "screening-criteria",
+                "--source",
             "ada-guidelines-2024_md",
         ],
     )

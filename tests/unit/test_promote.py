@@ -300,7 +300,7 @@ def test_derive_creates_l2_artifact_file(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
-    result = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    result = runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "ada-guidelines"])
     assert result.exit_code == 0, result.output
     assert (tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml").exists()
 
@@ -309,7 +309,7 @@ def test_derive_updates_tracking_structured_list(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
-    runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "ada-guidelines"])
     data = load_yaml(tmp_repo / "tracking.yaml")
     topic = next(t for t in data["topics"] if t["name"] == "my-skill")
     assert len(topic["structured"]) == 1
@@ -319,7 +319,7 @@ def test_derive_records_structured_derived_event(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
-    runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "ada-guidelines"])
     data = load_yaml(tmp_repo / "tracking.yaml")
     topic = next(t for t in data["topics"] if t["name"] == "my-skill")
     event_types = [e["type"] for e in topic["events"]]
@@ -330,7 +330,7 @@ def test_derive_count_creates_n_artifacts(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
-    result = runner.invoke(promote, ["derive", "my-skill", "risk", "--source", "ada-guidelines", "--count", "3"])
+    result = runner.invoke(promote, ["derive", "artifact", "my-skill", "risk", "--source", "ada-guidelines", "--count", "3"])
     assert result.exit_code == 0, result.output
     assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-1" / "risk-1.yaml").exists()
     assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-2" / "risk-2.yaml").exists()
@@ -341,7 +341,7 @@ def test_derive_dry_run_does_not_create_file(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
-    result = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines", "--dry-run"])
+    result = runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "ada-guidelines", "--dry-run"])
     assert result.exit_code == 0
     assert not (tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml").exists()
     assert "DRY RUN" in result.output
@@ -352,10 +352,10 @@ def test_derive_existing_artifact_requires_force(tmp_repo, monkeypatch):
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
 
-    first = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    first = runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "ada-guidelines"])
     assert first.exit_code == 0, first.output
 
-    second = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    second = runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "ada-guidelines"])
     assert second.exit_code == 2
     assert "Use --force to overwrite only this artifact" in second.output
 
@@ -378,7 +378,7 @@ sections:
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
 
-    first = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
+    first = runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "ada-guidelines"])
     assert first.exit_code == 0, first.output
 
     monkeypatch.setenv("RH_STUB_RESPONSE", """\
@@ -394,7 +394,7 @@ derived_from:
 sections:
   summary: Updated summary.
 """)
-    second = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines", "--force"])
+    second = runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "ada-guidelines", "--force"])
     assert second.exit_code == 0, second.output
 
     artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml"
@@ -415,7 +415,7 @@ def test_derive_blocks_overwriting_concepts_terminology_artifact(tmp_repo, monke
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
 
-    result = runner.invoke(promote, ["derive", "my-skill", "concepts", "--source", "ada-guidelines", "--force"])
+    result = runner.invoke(promote, ["derive", "artifact", "my-skill", "concepts", "--source", "ada-guidelines", "--force"])
     assert result.exit_code == 2
     assert "Use 'rh-skills promote concept write my-skill' instead of derive --force." in result.output
 
@@ -424,14 +424,14 @@ def test_derive_fails_exit_2_if_source_not_found(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
-    result = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "nonexistent"])
+    result = runner.invoke(promote, ["derive", "artifact", "my-skill", "criteria", "--source", "nonexistent"])
     assert result.exit_code == 2
 
 
 def test_derive_fails_exit_2_if_topic_not_found(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     runner = CliRunner()
-    result = runner.invoke(promote, ["derive", "ghost-skill", "criteria", "--source", "l1-art"])
+    result = runner.invoke(promote, ["derive", "artifact", "ghost-skill", "criteria", "--source", "l1-art"])
     assert result.exit_code == 2
 
 
@@ -440,7 +440,7 @@ def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--artifact-type", "decision-table",
         "--clinical-question", "Who should be screened?",
@@ -464,7 +464,7 @@ def test_derive_invalid_evidence_ref_format_exits_2(tmp_repo, monkeypatch):
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "criteria",
+        "derive", "artifact", "my-skill", "criteria",
         "--source", "ada-guidelines",
         "--evidence-ref", "broken-format",
     ])
@@ -477,7 +477,7 @@ def test_derive_concern_same_issue_merges_positions(tmp_repo, monkeypatch):
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "hba1c-target",
+        "derive", "artifact", "my-skill", "hba1c-target",
         "--source", "ada-guidelines",
         "--artifact-type", "decision-table",
         "--concern", "HbA1c target|ada-guidelines|ADA recommends <7.0%",
@@ -500,7 +500,7 @@ def test_derive_conflict_alias_still_writes_concerns(tmp_repo, monkeypatch):
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--conflict", "Interval differs|ada-guidelines|Annual screening",
     ])
@@ -1536,7 +1536,7 @@ sections:
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--artifact-type", "decision-table",
         "--clinical-question", "Who should be screened?",
@@ -1607,7 +1607,7 @@ sections:
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "care-pathway",
+        "derive", "artifact", "my-skill", "care-pathway",
         "--source", "ada-guidelines",
         "--artifact-type", "care-pathway",
         "--clinical-question", "In what order do things happen in the care process?",
@@ -1733,7 +1733,7 @@ sections:
 """)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "care-pathway",
+        "derive", "artifact", "my-skill", "care-pathway",
         "--source", "ada-guidelines",
         "--artifact-type", "care-pathway",
         "--clinical-question", "In what order do things happen in the care process?",
@@ -1780,7 +1780,7 @@ sections:
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--body-file", str(body_file),
     ])
@@ -1826,7 +1826,7 @@ concerns:
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--artifact-type", "evidence-summary",
         "--clinical-question", "A different question",
@@ -1862,7 +1862,7 @@ sections:
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--body-file", str(body_file),
     ])
@@ -1893,7 +1893,7 @@ sections:
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--body-file", str(body_file),
     ])
     assert result.exit_code == 0, result.output
@@ -1929,7 +1929,7 @@ sections:
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--body-file", str(body_file),
     ])
     assert result.exit_code == 2
@@ -1956,7 +1956,7 @@ sections:
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--body-file", str(body_file),
     ])
     assert result.exit_code == 2
@@ -1970,7 +1970,7 @@ def test_derive_offline_mode_writes_stub_scaffold(tmp_repo, monkeypatch):
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--artifact-type", "decision-table",
         "--clinical-question", "Who should be screened?",
@@ -1991,7 +1991,7 @@ def test_decision_table_stub_supports_event_condition_action_shape(tmp_repo, mon
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
+        "derive", "artifact", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--artifact-type", "decision-table",
         "--clinical-question", "Who should be screened?",
