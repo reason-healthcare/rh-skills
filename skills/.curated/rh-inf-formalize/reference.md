@@ -184,7 +184,7 @@ to documentation requirements from the L2 source.
 ## Type-Specific Conversion Rules (Implement Mode)
 
 When implementing each artifact, follow the conversion rules for its strategy.
-Full business rules are in `docs/FORMALIZE_STRATEGIES.md`; summaries below.
+The strategy summaries below are the active reference for this skill.
 
 ### evidence-summary → Evidence Package
 
