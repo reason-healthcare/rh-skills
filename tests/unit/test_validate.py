@@ -292,7 +292,7 @@ def test_validate_formalize_artifact_matches_source_artifact(tmp_repo):
     assert result.exit_code == 0
 
 
-def test_validate_l3_decision_table_skips_intermediate_section_checks_for_deterministic_builder(tmp_repo):
+def test_validate_l3_decision_table_skips_intermediate_section_checks_for_direct_fhir_path(tmp_repo):
     topic = "my-skill"
     artifact = "decision-table"
     computable_dir = tmp_repo / "topics" / topic / "computable"

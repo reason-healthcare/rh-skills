@@ -898,7 +898,7 @@ def _render_formalize_readout(topic: str, plan: dict, blocked_inputs: list[str])
             lines.append(f"- Primary implementation target: `{impl_target}`")
     lines.extend([
         "- Eligible structured inputs are limited to extract-approved artifacts that still pass validation.",
-        "- Reviewer action required: approve the plan and the single implementation target before formalization.",
+        "- Reviewer action required: approve the plan and any artifact that should proceed to formalization.",
         "",
         "# Proposed Artifacts",
         "",
@@ -940,7 +940,9 @@ def _render_formalize_readout(topic: str, plan: dict, blocked_inputs: list[str])
         "# Implementation Readiness",
         "",
         "- Current plan status: `pending-review`",
-        "- Implement MUST NOT proceed until `status: approved` is set in `formalize-plan.yaml` and the single target has `reviewer_decision: approved`.",
+        "- Implement MUST NOT proceed until `status: approved` is set in `formalize-plan.yaml`.",
+        "- Each artifact must have `reviewer_decision: approved` before `rh-skills formalize <topic> <artifact>` may proceed.",
+        "- `implementation_target: true` marks the plan's primary artifact for review focus and packaging priority; it does not block other approved artifacts.",
         "- All `input_artifacts[]` entries must still exist in `topics/<topic>/structured/` and pass validation at implement time.",
         "",
     ])

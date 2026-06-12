@@ -69,7 +69,7 @@ Every lifecycle transition follows this mandatory three-step pattern:
 | **Discovery** | `rh-inf-discovery` | plan · verify | `topics/<topic>/process/plans/discovery-plan.yaml` | Source registry + domain narrative | [→ DISCOVERY.md](DISCOVERY.md) |
 | **Ingest** | `rh-inf-ingest` | plan · implement · verify | Transient stdout pre-flight summary (no durable plan file; optionally informed by `topics/<topic>/process/plans/discovery-plan.yaml`) | Normalized L1 sources + concepts | [→ INGEST.md](INGEST.md) |
 | **Extract** | `rh-inf-extract` | plan · implement · verify | `extract-plan.yaml` | L2 artifacts in `structured/` | [→ EXTRACT.md](EXTRACT.md) |
-| **Formalize** | `rh-inf-formalize` + `rh-inf-cql` | plan · implement · verify | `formalize-plan.md` | L3 FHIR resources + authored CQL in `computable/` | [→ FORMALIZE.md](FORMALIZE.md) |
+| **Formalize** | `rh-inf-formalize` + `rh-inf-cql` | plan · implement · verify | `formalize-plan.yaml` | L3 FHIR resources + authored CQL in `computable/` | [→ FORMALIZE.md](FORMALIZE.md) |
 | **Verify** | `rh-inf-verify` | *(standalone)* | — | Consolidated topic verification report | |
 | **Status** | `rh-inf-status` | progress · next-steps · check-changes | — | Lifecycle summary + deterministic next steps | |
 
@@ -98,8 +98,8 @@ topics/<name>/
 │   ├── plans/
 │   │   ├── discovery-plan.yaml
 │   │   ├── discovery-readout.md
-│   │   ├── extract-plan.md
-│   │   ├── formalize-plan.md
+│   │   ├── extract-plan.yaml
+│   │   ├── formalize-plan.yaml
 │   │   └── tasks.md             ← rh-skills tasks tracking
 │   ├── fixtures/                ← LLM test fixtures
 │   │   └── results/             ← test run results
