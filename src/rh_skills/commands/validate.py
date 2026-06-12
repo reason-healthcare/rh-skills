@@ -1,6 +1,9 @@
 """rh-skills validate — Validate an artifact against its level schema."""
 
+import base64
 from pathlib import Path
+import json as _json
+import re
 
 import click
 from ruamel.yaml import YAML
@@ -109,6 +112,18 @@ def _load_yaml_file(path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
+_CQL_CONDITION_LANGUAGES = {"text/cql-expression", "text/cql-identifier"}
+_PARAMETERISH_CQL_RE = re.compile(r"parameter", re.IGNORECASE)
+_CQL_DEFINE_RE = re.compile(
+    r'^\s*define\s+(?:"(?P<quoted>[^"]+)"|(?P<plain>[A-Za-z_][A-Za-z0-9_]*))\s*:\s*(?P<body>.*?)(?=^\s*define\s+|\Z)',
+    re.IGNORECASE | re.MULTILINE | re.DOTALL,
+)
+_CQL_PARAMETER_RE = re.compile(
+    r'^\s*parameter\s+(?:"(?P<quoted>[^"]+)"|(?P<plain>[A-Za-z_][A-Za-z0-9_]*))\b',
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
 def _paired_recommendation_rule_refs(step: dict) -> list[str]:
     refs: list[str] = []
     rule_id = step.get("rule_id")
@@ -153,6 +168,220 @@ def _find_structured_pair_for_topic(topic: str) -> tuple[tuple[str, dict] | None
     if len(decision_tables) != 1 or len(care_pathways) != 1:
         return None, None
     return decision_tables[0], care_pathways[0]
+
+
+def _tracked_json_files_for_topic(
+    topic: str,
+    artifact_data: dict | None = None,
+) -> list[Path]:
+    computable_dir = topic_dir(topic) / "computable"
+    if not computable_dir.exists():
+        return []
+
+    tracked_files: list[Path] = []
+    if isinstance(artifact_data, dict):
+        repo_root = topic_dir(topic).parent.parent
+        for rel_path in artifact_data.get("files") or []:
+            candidate = repo_root / rel_path
+            if candidate.exists() and candidate.suffix == ".json":
+                tracked_files.append(candidate)
+
+    return tracked_files or list(computable_dir.glob("*.json"))
+
+
+def _find_best_cql_path(cql_files: list[Path], library_name: str) -> Path | None:
+    if not cql_files:
+        return None
+    if len(cql_files) == 1:
+        return cql_files[0]
+    for path in cql_files:
+        if path.stem == library_name:
+            return path
+    library_lower = library_name.lower()
+    for path in cql_files:
+        if path.stem.lower() == library_lower:
+            return path
+    return cql_files[0]
+
+
+def _load_decision_table_cql_source(topic: str, artifact_data: dict | None = None) -> tuple[str | None, str | None]:
+    library_resource = None
+    for json_file in _tracked_json_files_for_topic(topic, artifact_data):
+        try:
+            resource = _json.loads(json_file.read_text())
+        except (ValueError, OSError):
+            continue
+        if resource.get("resourceType") == "Library":
+            library_resource = resource
+            content = resource.get("content") or []
+            for item in content:
+                if not isinstance(item, dict) or item.get("contentType") != "text/cql":
+                    continue
+                data = item.get("data")
+                if not data:
+                    continue
+                try:
+                    decoded = base64.b64decode(data).decode("utf-8")
+                except Exception:
+                    continue
+                return decoded, f"embedded Library/{resource.get('id') or '?'}"
+
+    computable_dir = topic_dir(topic) / "computable"
+    cql_files = sorted(computable_dir.glob("*.cql")) if computable_dir.exists() else []
+    if not cql_files:
+        return None, None
+
+    library_name = ""
+    if isinstance(library_resource, dict):
+        library_name = str(library_resource.get("name") or library_resource.get("id") or "").strip()
+    chosen = _find_best_cql_path(cql_files, library_name)
+    if chosen is None:
+        return None, None
+    try:
+        return chosen.read_text(), chosen.name
+    except OSError:
+        return None, None
+
+
+def _parse_cql_defines(cql_source: str) -> dict[str, str]:
+    defines: dict[str, str] = {}
+    for match in _CQL_DEFINE_RE.finditer(cql_source):
+        name = (match.group("quoted") or match.group("plain") or "").strip()
+        body = (match.group("body") or "").strip()
+        if name:
+            defines[name] = body
+    return defines
+
+
+def _parse_cql_parameters(cql_source: str) -> set[str]:
+    names: set[str] = set()
+    for match in _CQL_PARAMETER_RE.finditer(cql_source):
+        name = (match.group("quoted") or match.group("plain") or "").strip()
+        if name:
+            names.add(name)
+    return names
+
+
+def _condition_expression_define_refs(language: str, expr_text: str) -> list[str]:
+    normalized = expr_text.strip()
+    if language == "text/cql-identifier":
+        if normalized.lower().startswith("not "):
+            normalized = normalized[4:].strip()
+        return [normalized] if normalized else []
+    if language == "text/cql-expression":
+        match = re.fullmatch(r'not\s+("?)([A-Za-z_][A-Za-z0-9_]*)\1', normalized, re.IGNORECASE)
+        if match:
+            return [match.group(2)]
+    return []
+
+
+def _iter_plan_actions(actions) -> list[dict]:
+    collected: list[dict] = []
+    if not isinstance(actions, list):
+        return collected
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        collected.append(action)
+        collected.extend(_iter_plan_actions(action.get("action")))
+    return collected
+
+
+def _validate_l3_decision_table_condition_expressions(
+    topic: str,
+    artifact_data: dict | None = None,
+    *,
+    emit: bool = True,
+) -> tuple[int, int]:
+    errors = 0
+    warnings = 0
+    cql_source, cql_label = _load_decision_table_cql_source(topic, artifact_data)
+    cql_defines = _parse_cql_defines(cql_source) if cql_source else {}
+    cql_parameters = _parse_cql_parameters(cql_source) if cql_source else set()
+    warned_missing_cql = False
+
+    for json_file in _tracked_json_files_for_topic(topic, artifact_data):
+        try:
+            resource = _json.loads(json_file.read_text())
+        except (ValueError, OSError):
+            continue
+
+        if resource.get("resourceType") != "PlanDefinition":
+            continue
+        codings = ((resource.get("type") or {}).get("coding") or [])
+        type_codes = {
+            str(coding.get("code") or "").strip()
+            for coding in codings
+            if isinstance(coding, dict)
+        }
+        if "eca-rule" not in type_codes:
+            continue
+
+        for action in _iter_plan_actions(resource.get("action")):
+            action_id = str(action.get("id") or action.get("title") or resource.get("id") or "<unknown>")
+            for idx, condition in enumerate(action.get("condition") or [], start=1):
+                if not isinstance(condition, dict):
+                    _report_error(
+                        f"  {json_file.name}: action '{action_id}' condition[{idx}] must be an object",
+                        emit=emit,
+                    )
+                    errors += 1
+                    continue
+                expression = condition.get("expression")
+                if not isinstance(expression, dict):
+                    _report_error(
+                        f"  {json_file.name}: action '{action_id}' condition[{idx}] missing expression object",
+                        emit=emit,
+                    )
+                    errors += 1
+                    continue
+                language = str(expression.get("language") or "").strip()
+                expr_text = str(expression.get("expression") or "").strip()
+                if not language or not expr_text:
+                    _report_error(
+                        f"  {json_file.name}: action '{action_id}' condition[{idx}] missing CQL language or expression text",
+                        emit=emit,
+                    )
+                    errors += 1
+                    continue
+                if language not in _CQL_CONDITION_LANGUAGES:
+                    _report_error(
+                        f"  {json_file.name}: action '{action_id}' condition[{idx}] uses unsupported expression language '{language}'",
+                        emit=emit,
+                    )
+                    errors += 1
+                    continue
+                define_refs = _condition_expression_define_refs(language, expr_text)
+                if define_refs:
+                    if not cql_source:
+                        if not warned_missing_cql:
+                            _report_warn(
+                                "  No CQL source found for decision-table validation; cannot verify that applicability expressions resolve to Library defines",
+                                emit=emit,
+                            )
+                            warnings += 1
+                            warned_missing_cql = True
+                        continue
+                    for define_name in define_refs:
+                        define_body = cql_defines.get(define_name)
+                        if define_body is None:
+                            _report_error(
+                                f"  {json_file.name}: action '{action_id}' condition[{idx}] references missing CQL define '{define_name}' in {cql_label or 'decision-table CQL source'}",
+                                emit=emit,
+                            )
+                            errors += 1
+                            continue
+                        if (
+                            _PARAMETERISH_CQL_RE.search(define_body)
+                            or any(parameter_name in define_body for parameter_name in cql_parameters)
+                        ):
+                            _report_warn(
+                                f"  {json_file.name}: action '{action_id}' condition[{idx}] maps to CQL define '{define_name}' that looks parameter-based; prefer value-set-backed retrieve logic",
+                                emit=emit,
+                            )
+                            warnings += 1
+
+    return errors, warnings
 
 
 def _validate_paired_recommendation_coverage(
@@ -569,6 +798,15 @@ def _validate_formalize_artifact(
     )
     errors += fhir_errors
     warnings += fhir_warnings
+
+    if artifact_type == "decision-table":
+        dt_l3_errors, dt_l3_warnings = _validate_l3_decision_table_condition_expressions(
+            topic,
+            artifact_data,
+            emit=emit,
+        )
+        errors += dt_l3_errors
+        warnings += dt_l3_warnings
 
     return errors, warnings
 
