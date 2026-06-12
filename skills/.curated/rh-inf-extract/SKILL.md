@@ -955,6 +955,18 @@ rh-skills render <topic> <artifact-name>
    is not enough; the derived body must conform to the artifact-specific schema
    and guidance.
 
+   When both a `decision-table` and a `care-pathway` are approved for the same
+   topic, treat them as a paired modeling problem rather than two isolated
+   outputs. Keep recommendation logic in the `decision-table`, keep sequencing
+   and orchestration in the `care-pathway`, and ensure every
+   recommendation-scoped decision-table rule is represented in care-pathway leaf
+   linkage. This does not require one pathway leaf per rule: a single leaf may
+   use `rule_ids[]` when multiple recommendations genuinely belong to the same
+   pathway node meaning, actor, and timing. The requirement is complete
+   recommendation coverage, not forced 1:1 decomposition. Do not leave some
+   recommendations unlinked simply because several belong under the same
+   pathway branch.
+
    Write the constructed YAML to a temp file, then pass it with `--body-file`:
 
    > **`--body-file` writes the file directly — the CLI does NOT inject or merge
