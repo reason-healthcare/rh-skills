@@ -59,7 +59,9 @@ optional_fields:
                        #   - context is extracted at ingest annotate time from the first body-text occurrence of the concept name.
                        #   - Custom concepts (not extracted from source documents) are added via
                        #     'concept enrich --source custom'; their sources value is 'custom'.
-                       #   - related_codes[] is NOT written at L2; ECL-based expansion moves to L3 formalization.
+                       #   - Approved related terminology rows may be written at L2 as
+                       #     concepts[].codes[].related[]. Expansion rules remain inputs to
+                       #     review/formalization rather than generic free-form L2 expansion output.
 
 artifact_types:
   - eligibility-criteria
@@ -150,6 +152,7 @@ artifact_type_sections:
     recommended_sections:
       - summary
       - evidence_traceability
+      - pathway_phases
       - events
       - conditions
       - data_elements
@@ -163,6 +166,13 @@ artifact_type_sections:
         evidence_traceability_ids[]. strength is recommended and should use
         validator-supported values such as high | moderate | low | very-low |
         consensus | insufficient.
+      pathway_phases: >
+        Optional canonical phase model for phase-organized narratives:
+        {id, label, description?}. Use only when the source clearly groups
+        recommendations by care phase or workflow stage. When present, define
+        phases under sections.pathway_phases[] (not top-level pathway_phases)
+        and keep events[].phase and rules[].phase aligned to
+        pathway_phases[].id values.
       events: >
         ECA workflow event definitions: {id, label, description?, phase?, trigger?}.
         Events are primary. trigger is optional when the workflow context alone
