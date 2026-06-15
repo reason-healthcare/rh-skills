@@ -514,6 +514,8 @@ sections:
             assert activity["doNotPerform"] is True
             assert activity["status"] == "active"
             assert activity["version"] == "2.1.0"
+            assert activity["code"]["coding"][0]["system"] == "http://snomed.info/sct"
+            assert activity["code"]["coding"][0]["code"] == "TODO:MCP-UNREACHABLE"
             assert activity["code"]["text"] == "Order sinus CT"
             plan = json.loads((computable / "PlanDefinition-dt.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
@@ -1066,7 +1068,7 @@ sections:
             assert result.exit_code == 0, result.output
 
             assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment-branch.json").read_text())
-            leaf_action = assessment_plan["action"][0]["action"][0]
+            leaf_action = assessment_plan["action"][0]
             assert leaf_action["id"] == "diagnosis-check"
             assert leaf_action["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
             recommendation = json.loads((topic_dir / "computable" / "PlanDefinition-dt-verify-diagnosis.json").read_text())
@@ -1158,7 +1160,7 @@ sections:
             assert result.exit_code == 0, result.output
 
             assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment-branch.json").read_text())
-            grouped_step = assessment_plan["action"][0]["action"][0]
+            grouped_step = assessment_plan["action"][0]
             assert grouped_step["id"] == "candidacy-and-recommendation"
             assert len(grouped_step["action"]) == 2
             assert all("definitionCanonical" in child for child in grouped_step["action"])
@@ -1597,7 +1599,7 @@ sections:
             assert result.exit_code == 0, result.output
 
             branch_plan = json.loads((topic_dir / "computable" / "PlanDefinition-leaf-action-link-topic-protocol-assess-candidacy.json").read_text())
-            questionnaire_step = branch_plan["action"][0]["action"][0]
+            questionnaire_step = branch_plan["action"][0]
             assert questionnaire_step["definitionCanonical"].endswith("/PlanDefinition/leaf-action-link-topic-recommendation-assess-candidacy")
             recommendation = json.loads((topic_dir / "computable" / "PlanDefinition-leaf-action-link-topic-recommendation-assess-candidacy.json").read_text())
             assert "definitionCanonical" not in recommendation["action"][0]

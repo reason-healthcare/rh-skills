@@ -142,6 +142,18 @@ Provider behavior contract:
 Directionality: `rh-skills formalize` consumes L2 structured artifacts as input
 and emits L3 FHIR JSON artifacts as output.
 
+Executable activity coding rule:
+- If an `ActivityDefinition` already has approved coding in the topic `concepts` artifact, reuse it.
+- If it does not, implement mode must call ReasonHub MCP to find a real code before writing JSON.
+- Choose the target terminology by action kind:
+  `MedicationRequest` → prefer RxNorm;
+  `Procedure` → prefer SNOMED CT;
+  `ServiceRequest` → prefer LOINC for lab/observable/instrument orders, otherwise SNOMED CT for procedural/imaging/referral orders;
+  `CommunicationRequest` → usually SNOMED CT;
+  `Task` → prefer the same system you would choose for the underlying clinical action.
+- Do not use recommendation prose or text-only `code.text` as a substitute for coding.
+- If MCP is unavailable, emit an explicit `TODO:MCP-UNREACHABLE` placeholder coding so verify fails visibly.
+
 When creating or editing L2 inputs for provider-backed formalization:
 - keep stable machine IDs for rules, actions, conditions, steps, and phases
 - keep ECA structure explicit (event/trigger, when conditions, then actions)

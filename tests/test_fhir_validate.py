@@ -309,3 +309,14 @@ class TestNegativeVerifyCases:
             },
         })
         assert any("generic activity-kind" in e.lower() for e in errors)
+
+    def test_activity_definition_rejects_text_only_codeable_concept(self):
+        errors = validate_resource({
+            "resourceType": "ActivityDefinition",
+            "id": "order-antibiotic",
+            "kind": "MedicationRequest",
+            "code": {
+                "text": "Recommend antibiotic therapy",
+            },
+        })
+        assert any("text-only" in e.lower() for e in errors)
