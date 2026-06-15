@@ -710,6 +710,32 @@ For terminology attachment at L2:
 - Apply coding expectations to **actions without children**.
 - Parent grouping actions may omit coding when they only organize child tasks.
 - If the parent action is itself a recommendation that could stand alone, code it too.
+- If the source describes an order set or regimen, model it in the extract
+  artifact as a parent recommendation context using the existing nesting
+  pattern: keep the regimen/order set as the parent rule/action context when
+  useful, and break the executable medication content into separate child
+  `MedicationRequest` leaf actions, one per medication order whenever the
+  source names the components.
+
+### Regimens And Order Sets
+
+When a guideline says to start a regimen, induction protocol, discharge
+medication bundle, or other order set:
+
+- extract the grouping concept into the decision-table itself, not as a later
+  formalize-only inference
+- use a parent rule and/or parent action for the grouping construct when that
+  matches the recommendation structure
+- use separate child rules when the source gives distinct conditional or staged
+  component recommendations inside the regimen
+- extract each named medication order as its own child action
+- attach RxNorm-first coding to each child medication action
+- avoid a single broad child like `"start-antibiotic-regimen"` when the source
+  explicitly names amoxicillin, clavulanate, prednisone, etc.
+
+If downstream formalization needs a computable grouping artifact, that extract
+structure can later map to an order-set-style `PlanDefinition`, while the leaf
+executable actions remain individual `MedicationRequest` activities.
 
 ---
 

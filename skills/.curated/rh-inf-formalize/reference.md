@@ -211,6 +211,16 @@ Phase 1 guidance for a single decision-table artifact:
 | `sections.actions[]` | One **ActivityDefinition** per action, referenced from PlanDefinition via `definitionCanonical`. |
 | CQL expressions | **Library** with CQL source. Each condition/action → named CQL define. |
 
+Order-set and regimen decomposition rule:
+- If an L2 action is only a grouping construct for a regimen or order set, keep
+  it as orchestration and decompose the executable content into child leaf
+  actions.
+- Each named medication component should become its own child
+  `ActivityDefinition` with `kind: MedicationRequest` and RxNorm-first coding.
+- When a computable grouping artifact is needed for the parent bundle, it may
+  be represented as a `PlanDefinition` using `type.coding.code = order-set`,
+  while the executable medication leaves remain separate activities.
+
 If formalize emits recommendation-scoped child PlanDefinitions, each child that
 contains `condition[].expression` entries must also include the same
 `library[]` reference as the parent decision-table PlanDefinition.

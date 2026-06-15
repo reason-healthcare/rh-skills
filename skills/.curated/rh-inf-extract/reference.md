@@ -599,6 +599,18 @@ operational tasks, model the broader recommendation as the parent action and
 add separate child actions for the broken-down tasks when the source treats
 them as operationally separate.
 
+When the source describes an order set, regimen, or protocolized medication
+bundle, model it explicitly at extract time using the existing nesting pattern:
+keep the regimen/order set as a parent recommendation context, represent the
+bundle action as a parent action when useful, and decompose the executable
+content to the smallest clinically executable units possible. Represent each
+individual medication order as its own child leaf action with
+`kind: MedicationRequest`. If the source names distinct recommendation branches
+or stages within the bundle, keep those as separate recommendation-scoped rules
+under the same staged event model rather than collapsing the whole regimen into
+one broad rule. Do not leave a multi-medication regimen as one uncoded or broad
+medication action when the source names the component drugs.
+
 Use a child action for distinct tasks such as administering a questionnaire,
 reviewing imaging, reviewing prior therapy history, ordering a prerequisite
 study, or carrying out a separate counseling step. Group closely related work
@@ -626,6 +638,18 @@ For executable leaf actions, routinely populate `actions[].concept_refs[]`
 and/or explicit `code` / `codings[]` at L2. Parent grouping actions that exist
 only to organize child tasks do not need their own coding unless the source
 treats the parent itself as an independently executable recommendation.
+
+For medication regimens and order sets, apply that rule at the component-drug
+level: each child `MedicationRequest` leaf action should carry the terminology
+linkage, typically with RxNorm-first coding.
+
+For regimen/order-set logic, prefer extract-time structure over formalize-time
+reconstruction:
+- one parent rule when the source expresses a single bundled recommendation
+- separate child rules when the source expresses distinct conditional or staged
+  component recommendations
+- parent action for the grouping construct when it helps readability
+- child medication leaf actions for each executable medication order
 
 Use `actions[].assessment_artifact` when a named questionnaire or assessment
 instrument is explicitly administered or reviewed as part of a broader

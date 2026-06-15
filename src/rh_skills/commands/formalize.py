@@ -2617,6 +2617,7 @@ def _plan_definition_type(code: str) -> dict[str, Any]:
         "eca-rule": "ECA Rule",
         "clinical-protocol": "Clinical Protocol",
         "workflow-definition": "Workflow Definition",
+        "order-set": "Order Set",
     }
     return {
         "coding": [{

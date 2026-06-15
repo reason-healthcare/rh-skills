@@ -154,6 +154,17 @@ Executable activity coding rule:
 - Do not use recommendation prose or text-only `code.text` as a substitute for coding.
 - If MCP is unavailable, emit an explicit `TODO:MCP-UNREACHABLE` placeholder coding so verify fails visibly.
 
+Order-set and regimen decomposition rule:
+- When the L2 source describes an order set, regimen, or medication bundle,
+  do not keep it as one broad executable medication action if the component
+  orders are named.
+- Preserve the grouping logic as orchestration, but break the executable
+  content into child leaf actions at the smallest clinically orderable unit,
+  usually one `MedicationRequest` per medication.
+- If the grouping itself needs a computable container, represent that container
+  as a `PlanDefinition` with order-set semantics rather than collapsing the
+  component medications into one action code.
+
 When creating or editing L2 inputs for provider-backed formalization:
 - keep stable machine IDs for rules, actions, conditions, steps, and phases
 - keep ECA structure explicit (event/trigger, when conditions, then actions)
