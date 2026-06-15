@@ -578,9 +578,7 @@ prefer an event-driven rule with `event + then` and no `when`.
 
 Treat `events[]` as the primary workflow contexts. Add `event.trigger` only
 when the source implies a concrete activation mechanism that matters for
-formalization. When `event.trigger` is used, prefer FHIR-compatible trigger
-types such as `named-event`, `periodic`, `data-changed`, `data-added`, or
-`data-modified`.
+formalization.
 Keep `events[]` at the level of major workflow contexts or decision moments.
 Do not create a separate event for every child task or narrow sub-step when
 those activities still belong to the same broader staged context.
