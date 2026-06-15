@@ -84,6 +84,8 @@ artifact_types:
 #   Structure: Flat steps[] with optional parent_id hierarchy links.
 #   Keep actor on steps when known. When a paired decision table defines
 #   pathway_phases, care-pathway steps should mirror that canonical phase model 1:1.
+#   applicability_condition gates whether a pathway step applies inside the
+#   workflow; it is not an event trigger.
 #
 # DECISION-TABLE
 #   Use when source describes: event-triggered decisions, conditional logic,
@@ -92,6 +94,7 @@ artifact_types:
 #   Structure: Events, conditions, actions, and rules that bind them together.
 #   Each rule fires when an event occurs and conditions are met, then executes
 #   actions. Rules are flat, not hierarchical.
+#   Trigger semantics belong in events[].trigger, not in care-pathway steps.
 #
 # Key distinction:
 #   - Care-pathway = workflow sequence (what happens in what order)
@@ -139,8 +142,10 @@ artifact_type_sections:
         recommendations should always include rationale. When both a
         decision-table and care-pathway are present, every
         recommendation-scoped decision-table rule should appear in at least one
-        care-pathway leaf step's rule_id or rule_ids[] linkage. Actions are
-        defined in decision-table artifacts, not in care pathways.
+        care-pathway leaf step's rule_id or rule_ids[] linkage.
+        applicability_condition is a local pathway gate, not an event trigger.
+        Actions are defined in decision-table artifacts, not in care pathways;
+        use care-pathway only for sequencing and orchestration.
       transitions: >
         Optional sequencing rules between steps or phases: {from_id, to_id,
         condition?, description?}. Captures dependencies and branching logic.
@@ -181,7 +186,8 @@ artifact_type_sections:
         data-added | data-modified | data-removed | data-accessed |
         data-access-ended. trigger may also carry optional fields such as
         name, source, resource, moment, resource_criteria, and timing_window
-        when the source supports them.
+        when the source supports them. Use events[] for trigger semantics, not
+        for care-pathway step applicability or sequencing.
       conditions: >
         Condition definitions: {id, label, description?, values[]}.
         values[] MUST use canonical Yes/No values. When the source describes
@@ -212,7 +218,8 @@ artifact_type_sections:
         evidence_traceability_ids[] to link each action to one or more
         evidence_traceability claim_id values, and provenance metadata such as
         {source: source_direct|inferred, rationale?}. Inferred recommendations
-        should always include rationale.
+        should always include rationale. Actions are flat recommendation or
+        workflow-consequence definitions, not nested care-pathway structure.
       rules: >
         ECA bindings: {id, event, when{}?, then[], action?, rationale?, description?, phase?, evidence_traceability_ids[]?, provenance?}.
         Each rule references an event and lists action ids in 'then'.
