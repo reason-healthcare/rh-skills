@@ -1544,11 +1544,13 @@ sections:
     - id: assess-candidacy
       label: Assess candidacy
       kind: ServiceRequest
+      concept_refs: [surgical-candidacy-assessment]
       produces_conditions: [candidacy-appropriate]
     - id: administer-snot-22
       label: Administer SNOT-22
       kind: assessment
       parent_action_id: assess-candidacy
+      concept_refs: [snot-22]
       produces_data_elements: [candidacy-support]
       assessment_artifact: snot-22
   rules:
@@ -1565,6 +1567,128 @@ concerns: []
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
     assert result.exit_code == 0, result.output
+
+
+def test_validate_decision_table_warns_when_leaf_action_lacks_terminology_linkage(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with uncoded leaf action"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How is candidacy assessed?"
+sections:
+  summary: "Use staged assessment."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform staged assessment"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: assessment
+      label: Assessment
+      trigger:
+        type: named-event
+        name: verification
+  conditions:
+    - id: diagnosis-verified
+      label: Diagnosis verified
+      values: [Yes, No]
+  data_elements:
+    - id: dx-support
+      condition_id: diagnosis-verified
+      label: Diagnostic support
+  actions:
+    - id: assess-candidacy
+      label: Assess candidacy
+      kind: ServiceRequest
+  rules:
+    - id: assess
+      event: assessment
+      when:
+        diagnosis-verified: Yes
+      evidence_traceability_ids: [crit-001]
+      then:
+        - assess-candidacy
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "leaf action 'assess-candidacy' is missing recommended concept_refs[] or code/codings[] terminology linkage" in result.output
+
+
+def test_validate_decision_table_parent_action_without_coding_does_not_warn_when_only_grouping(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: diabetes
+description: "Artifact with grouping parent action"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How is candidacy assessed?"
+sections:
+  summary: "Use staged assessment."
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: "Perform staged assessment"
+      evidence:
+        - source: source-l1
+          locator: "Section 2"
+  events:
+    - id: assessment
+      label: Assessment
+      trigger:
+        type: named-event
+        name: verification
+  conditions:
+    - id: diagnosis-verified
+      label: Diagnosis verified
+      values: [Yes, No]
+  data_elements:
+    - id: dx-support
+      condition_id: diagnosis-verified
+      label: Diagnostic support
+  actions:
+    - id: assess-candidacy
+      label: Assess candidacy
+      kind: ServiceRequest
+    - id: administer-snot-22
+      label: Administer SNOT-22
+      kind: Task
+      parent_action_id: assess-candidacy
+      concept_refs: [snot-22]
+  rules:
+    - id: assess
+      event: assessment
+      when:
+        diagnosis-verified: Yes
+      evidence_traceability_ids: [crit-001]
+      then:
+        - assess-candidacy
+        - administer-snot-22
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "leaf action 'assess-candidacy'" not in result.output
 
 
 def test_validate_decision_table_rejects_unknown_evidence_traceability_links(tmp_repo):

@@ -348,6 +348,14 @@ def validate_decision_table(
                 f"  decision-table: condition '{cond_id}' has no corresponding data_elements entry"
             )
 
+    child_action_counts: Dict[str, int] = {}
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        parent_action_id = action.get("parent_action_id")
+        if isinstance(parent_action_id, str) and parent_action_id.strip():
+            child_action_counts[parent_action_id.strip()] = child_action_counts.get(parent_action_id.strip(), 0) + 1
+
     # Validate action contract
     for idx, action in enumerate(actions, start=1):
         if not isinstance(action, dict):
@@ -395,6 +403,25 @@ def validate_decision_table(
             report_error(
                 f"  decision-table: action '{action_id}' assessment_artifact must be a string when present"
             )
+        has_children = child_action_counts.get(str(action_id), 0) > 0
+        if not has_children:
+            concept_refs = action.get("concept_refs")
+            code = action.get("code")
+            codings = action.get("codings")
+            has_concept_refs = isinstance(concept_refs, list) and any(
+                isinstance(ref, str) and ref.strip() for ref in concept_refs
+            )
+            has_code = isinstance(code, dict) and any(
+                str(code.get(field) or "").strip() for field in ("code", "display", "system")
+            )
+            has_codings = isinstance(codings, list) and any(
+                isinstance(entry, dict) and str(entry.get("code") or "").strip()
+                for entry in codings
+            )
+            if not (has_concept_refs or has_code or has_codings):
+                report_warn(
+                    f"  decision-table: leaf action '{action_id}' is missing recommended concept_refs[] or code/codings[] terminology linkage"
+                )
         _validate_traceability_links(
             owner_label=str(action_id),
             owner_type="action",

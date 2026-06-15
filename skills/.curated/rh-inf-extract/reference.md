@@ -537,6 +537,11 @@ sections:
       label: <action name>
       kind: <ServiceRequest|CommunicationRequest|MedicationRequest|Procedure|Task>
       intent: <optional intent label>
+      concept_refs: [<approved concept id>]    # recommended for executable leaf actions
+      codings:                                 # recommended for executable leaf actions
+        - system: <code system uri>
+          code: <code>
+          display: <display>
   rules:
     - id: r1
       event: e1
@@ -616,6 +621,11 @@ a `data_elements[]` entry and link it from the action with
 
 Use `actions[].parent_action_id` when a supporting action belongs under a
 broader parent action rather than standing alone.
+
+For executable leaf actions, routinely populate `actions[].concept_refs[]`
+and/or explicit `code` / `codings[]` at L2. Parent grouping actions that exist
+only to organize child tasks do not need their own coding unless the source
+treats the parent itself as an independently executable recommendation.
 
 Use `actions[].assessment_artifact` when a named questionnaire or assessment
 instrument is explicitly administered or reviewed as part of a broader
