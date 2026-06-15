@@ -3,7 +3,7 @@
 # Written by: rh-skills promote plan <topic>
 # Reviewed via: rh-skills promote approve <topic>
 # Executed through: rh-skills promote body-init <topic> <artifact-name>
-# then rh-skills promote derive artifact <topic> <artifact-name> --body-file <path>
+# then rh-skills promote derive <topic> <artifact-name> --body-file <path>
 
 schema_version: "1.0"
 

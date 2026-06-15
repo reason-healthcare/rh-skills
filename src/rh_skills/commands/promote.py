@@ -2666,7 +2666,7 @@ def _render_extract_readout(plan: dict) -> str:
     if status == "approved":
         lines.extend([
             f"- Plan status: `approved` — {approved_count}/{len(artifacts)} artifact(s) approved.",
-            f"- Ready to run: `rh-skills promote body-init {topic} <artifact-name>` then `rh-skills promote derive artifact {topic} <artifact-name> --body-file topics/{topic}/process/tmp/<artifact-name>.yaml`",
+            f"- Ready to run: `rh-skills promote body-init {topic} <artifact-name>` then `rh-skills promote derive {topic} <artifact-name> --body-file topics/{topic}/process/tmp/<artifact-name>.yaml`",
         ])
     else:
         lines.extend([
@@ -4305,7 +4305,7 @@ def body_init(topic, name, output, force):
     from the approved plan artifact and writes a structurally correct YAML scaffold
     to topics/<topic>/process/tmp/<name>.yaml (or --output).
     Fill in clinical content, then pass the file to
-    'rh-skills promote derive artifact --body-file'.
+    'rh-skills promote derive --body-file'.
     """
     tracking = require_tracking()
     require_topic(tracking, topic)
@@ -4375,18 +4375,29 @@ def body_init(topic, name, output, force):
     log_info(f"Created: {out_path}")
 
     click.echo(f"\nFill in clinical content, then run:")
-    click.echo(f"  rh-skills promote derive artifact {topic} {name} \\")
+    click.echo(f"  rh-skills promote derive {topic} {name} \\")
     click.echo(f"    --body-file {out_path}")
     click.echo(f"\nNote: artifact_type and derived_from are read from the body file. Do not change id or name.")
 
 
-@promote.group("derive")
+class _DeriveGroup(click.Group):
+    """Route bare `derive` invocations to the default artifact derivation command."""
+
+    def resolve_command(self, ctx, args):
+        if args and args[0] not in self.commands:
+            cmd = self.get_command(ctx, "artifact")
+            if cmd is not None:
+                return "artifact", cmd, args
+        return super().resolve_command(ctx, args)
+
+
+@promote.group("derive", cls=_DeriveGroup)
 def derive():
     """Derive L2 structured artifacts and fallback scaffolds."""
     pass
 
 
-@derive.command("artifact")
+@derive.command("artifact", hidden=True)
 @click.argument("topic")
 @click.argument("name")
 @click.option("--source", required=False, multiple=True, help="L1 source name (can repeat). Optional when --body-file is provided — derived_from is read from the body file.")
