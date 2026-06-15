@@ -228,6 +228,18 @@ for the attached CQL source bytes.
 **MCP**: Search for coded concepts in conditions/actions.
 **CQL**: Required. Generate compilable CQL with `context Patient` and `using FHIR version '4.0.1'`.
 
+Executable action coding rule:
+- `ActivityDefinition.code` must include at least one real terminology coding.
+- Reuse approved `concepts` artifact codings first.
+- If no reviewed code exists, resolve one during formalize with ReasonHub MCP instead of leaving prose in `code.text`.
+- Fallback only on MCP failure, using an explicit `TODO:MCP-UNREACHABLE` placeholder coding in the likely target system so verification catches the gap.
+- Preferred final coding by FHIR activity kind:
+  `MedicationRequest` → RxNorm first;
+  `Procedure` → SNOMED CT first;
+  `ServiceRequest` → LOINC first for lab/observable/instrument orders, otherwise SNOMED CT first for procedural/imaging/referral orders;
+  `CommunicationRequest` → SNOMED CT first;
+  `Task` → keep CPG collect-information coding for questionnaire collection tasks, otherwise align to the underlying clinical action.
+
 ### care-pathway → Clinical Protocol
 
 | L2 Input | FHIR Output |
@@ -247,6 +259,7 @@ uses `relatedAction[]` with `relationship: after-end` on sibling phase actions.
 - Nested `action[]` for phase → child-step hierarchy
 - No action has both `definitionCanonical` and child `action[]` (branch OR execute, never both)
 - Substeps reference decision table recommendation PlanDefinitions via canonical URLs
+- Child strategy PlanDefinitions should begin with the first unique descendant actions, not a duplicate wrapper of the branch node already represented in the parent plan.
 
 **Example Structure**:
 ```json

@@ -118,7 +118,12 @@ def _check_activity_definition(r: dict) -> list[str]:
         errors.append(e)
     else:
         codings = r.get("code", {}).get("coding")
-        if isinstance(codings, list):
+        if not isinstance(codings, list) or not codings:
+            errors.append(
+                "ActivityDefinition.code must include at least one clinical terminology coding; "
+                "text-only codeable concepts are not allowed"
+            )
+        else:
             for coding in codings:
                 if (
                     isinstance(coding, dict)

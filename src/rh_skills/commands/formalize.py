@@ -339,7 +339,15 @@ generate a companion CQL library with compilable expressions. Use 'library <Name
 'using FHIR version "4.0.1"', 'include FHIRHelpers version "4.0.1"', 'context Patient'. \
 If logic is too ambiguous, use '// TODO: <reason>' stubs.
 
-For terminology: If MCP tools are unavailable, use "TODO:MCP-UNREACHABLE" as placeholder codes.
+For terminology and executable activities:
+- ActivityDefinition.code MUST carry clinical terminology coding, not recommendation prose.
+- If approved concept review already resolved a code, reuse that exact coding.
+- If concept review did not resolve a code, use ReasonHub MCP to search the appropriate terminology:
+  RxNorm for medications, SNOMED CT for procedures/findings, LOINC for labs/observables,
+  or all-code-system search first if the target system is unclear.
+- Only if MCP tools are unavailable may you emit "TODO:MCP-UNREACHABLE" placeholder codes.
+- Never satisfy ActivityDefinition.code with text-only content when the action is a medication,
+  procedure, order, or other executable clinical activity.
 
 {authoring_contract}
 
@@ -379,6 +387,79 @@ def _is_generic_activity_kind_code(codeable_concept: Any) -> bool:
     )
 
 
+def _activity_preferred_systems(
+    kind: str,
+    action_id: str,
+    title: str,
+    description: str,
+) -> list[str]:
+    """Return preferred code systems for an activity based on FHIR kind and semantics."""
+    text = " ".join([action_id, title, description]).lower()
+    rxnorm = "http://www.nlm.nih.gov/research/umls/rxnorm"
+    snomed = "http://snomed.info/sct"
+    loinc = "http://loinc.org"
+
+    lab_tokens = {
+        "lab", "laboratory", "questionnaire", "survey", "score", "scale", "panel",
+        "test", "measure", "measurement", "screen", "screening", "assess",
+        "assessment", "evaluate", "evaluation", "review", "observe", "observation",
+        "monitor", "monitoring", "qol", "snot", "phq", "gad",
+    }
+    procedure_tokens = {
+        "surgery", "procedure", "ct", "tomography", "scan", "endoscopy",
+        "irrigation", "debridement", "dilation", "biopsy", "refer", "referral",
+        "consult", "imaging",
+    }
+    medication_tokens = {"antibiotic", "antibacterial", "medication", "drug", "prescribe"}
+
+    if kind == "MedicationRequest" or any(token in text for token in medication_tokens):
+        return [rxnorm, snomed]
+    if kind == "Procedure":
+        return [snomed]
+    if kind == "ServiceRequest":
+        if any(token in text for token in lab_tokens):
+            return [loinc, snomed]
+        return [snomed, loinc]
+    if kind == "CommunicationRequest":
+        return [snomed]
+    if kind == "Task":
+        if any(token in text for token in procedure_tokens):
+            return [snomed, loinc]
+        if any(token in text for token in lab_tokens):
+            return [loinc, snomed]
+        return [snomed]
+    return [snomed, loinc]
+
+
+def _normalize_activity_codeable_concept(
+    codeable_concept: dict[str, Any] | None,
+    *,
+    kind: str,
+    action_id: str,
+    title: str,
+    description: str,
+) -> dict[str, Any] | None:
+    """Reorder coding entries so the preferred system for the FHIR kind comes first."""
+    if not isinstance(codeable_concept, dict):
+        return codeable_concept
+    codings = codeable_concept.get("coding")
+    if not isinstance(codings, list) or len(codings) < 2:
+        return codeable_concept
+
+    preferred_systems = _activity_preferred_systems(kind, action_id, title, description)
+    priority = {system: idx for idx, system in enumerate(preferred_systems)}
+
+    def _coding_rank(coding: Any) -> tuple[int, int]:
+        if not isinstance(coding, dict):
+            return (len(priority) + 1, len(priority) + 1)
+        system = str(coding.get("system") or "").strip()
+        return (priority.get(system, len(priority)), 0)
+
+    normalized = dict(codeable_concept)
+    normalized["coding"] = sorted(codings, key=_coding_rank)
+    return normalized
+
+
 def _ensure_activity_definition_codes(
     resources: list[dict],
     concept_candidates: list[dict[str, Any]] | None = None,
@@ -395,16 +476,26 @@ def _ensure_activity_definition_codes(
         if resource.get("resourceType") != "ActivityDefinition":
             continue
         existing_code = resource.get("code")
+        title = str(resource.get("title") or resource.get("name") or resource.get("id") or "")
+        kind = str(resource.get("kind") or "").strip() or "ServiceRequest"
+        description = str(resource.get("description") or title)
+        action_id = str(resource.get("id") or "")
+        normalized_existing = _normalize_activity_codeable_concept(
+            existing_code if isinstance(existing_code, dict) else None,
+            kind=kind,
+            action_id=action_id,
+            title=title,
+            description=description,
+        )
+        if normalized_existing is not None:
+            resource["code"] = normalized_existing
+            existing_code = normalized_existing
         needs_resolution = existing_code is None or _is_generic_activity_kind_code(existing_code)
         if not needs_resolution:
             continue
 
-        title = str(resource.get("title") or resource.get("name") or resource.get("id") or "")
-        kind = str(resource.get("kind") or "").strip() or "ServiceRequest"
-        description = str(resource.get("description") or title)
         meta_profiles = resource.get("meta", {}).get("profile") or []
         profile = str(resource.get("profile") or "")
-        action_id = str(resource.get("id") or "")
 
         resolved = _resolve_activity_code_from_concepts(
             resource,
@@ -415,7 +506,13 @@ def _ensure_activity_definition_codes(
             concept_candidates=concept_candidates,
         )
         if resolved:
-            resource["code"] = resolved
+            resource["code"] = _normalize_activity_codeable_concept(
+                resolved,
+                kind=kind,
+                action_id=action_id,
+                title=title,
+                description=description,
+            )
             continue
 
         if (
@@ -432,12 +529,12 @@ def _ensure_activity_definition_codes(
             }
             continue
 
-        # Preserve a minimally descriptive clinical codeable concept when no
-        # reviewed terminology match is available. This satisfies the
-        # ActivityDefinition contract without emitting a fake generic coding.
-        resource["code"] = {
-            "text": title or action_id,
-        }
+        resource["code"] = _activity_unresolved_placeholder_code(
+            kind=kind,
+            action_id=action_id,
+            title=title,
+            description=description,
+        )
 
 
 def _questionnaire_item_type(raw_type: str | None) -> str:
@@ -1210,6 +1307,26 @@ def _activity_preferred_concept_types(kind: str, action_id: str, title: str, des
     if kind == "CommunicationRequest":
         preferred.append("procedure")
     return preferred
+
+
+def _activity_unresolved_placeholder_code(
+    *,
+    kind: str,
+    action_id: str,
+    title: str,
+    description: str,
+) -> dict[str, Any]:
+    """Return an explicit MCP-unreachable placeholder coding for unresolved activities."""
+    preferred_systems = _activity_preferred_systems(kind, action_id, title, description)
+    system = preferred_systems[0] if preferred_systems else "http://snomed.info/sct"
+    return {
+        "coding": [{
+            "system": system,
+            "code": "TODO:MCP-UNREACHABLE",
+            "display": title or action_id,
+        }],
+        "text": title or action_id,
+    }
 
 
 def _resolve_activity_code_from_concepts(
@@ -2224,6 +2341,39 @@ def _build_care_pathway_stub_plan_definitions(
                 action["definitionCanonical"] = action_ref
         return [action]
 
+    def build_branch_actions(step: dict) -> list[dict]:
+        """Start child PlanDefinitions at the first unique descendant action."""
+        step_id = str(step.get("id") or "pathway-step")
+        children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
+        if not children:
+            return build_subtree(step)
+
+        branch_actions: list[dict] = []
+        for child in children:
+            child_step_id = str(child.get("id") or "")
+            child_branch_ref = pre_branch_plan_map.get(child_step_id)
+            if child_branch_ref:
+                child_action = {
+                    "id": child_step_id,
+                    "title": str(child.get("label") or child.get("title") or child_step_id),
+                    "description": str(child.get("description") or child_step_id),
+                    "definitionCanonical": child_branch_ref,
+                }
+                child_recommendation_ext = _build_strength_of_recommendation_extension(
+                    child.get("recommendation_strength")
+                    or child.get("strength_of_recommendation")
+                )
+                if child_recommendation_ext:
+                    child_action["extension"] = [child_recommendation_ext]
+                child_evidence_ids = child.get("evidence_traceability_ids")
+                child_evidence_related = _build_evidence_related_artifacts(child_evidence_ids, evidence_claim_index)
+                if child_evidence_related:
+                    child_action["documentation"] = child_evidence_related
+                branch_actions.append(child_action)
+            else:
+                branch_actions.extend(build_subtree(child))
+        return branch_actions
+
     resources: list[dict] = []
     branch_plan_map: dict[str, str] = {}
     for step in all_candidates:
@@ -2243,7 +2393,7 @@ def _build_care_pathway_stub_plan_definitions(
             "description": description,
             "meta_profile": _plan_definition_meta_profiles("strategy"),
             "type": _plan_definition_type("workflow-definition"),
-            "action": build_subtree(step),
+            "action": build_branch_actions(step),
         }
         resources.append(
             _render_care_pathway_plan_definition_resource(

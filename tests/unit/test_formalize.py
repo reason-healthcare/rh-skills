@@ -14,7 +14,10 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from rh_skills.commands.formalize import formalize
+from rh_skills.commands.formalize import (
+    _normalize_activity_codeable_concept,
+    formalize,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -467,3 +470,39 @@ sections:
         activity_json = json.loads((computable_dir / "ActivityDefinition-a1.json").read_text())
         assert activity_json["kind"] == "MedicationRequest"
         assert activity_json["doNotPerform"] is True
+
+    def test_activity_code_prefers_rxnorm_first_for_medication_request(self):
+        code = {
+            "coding": [
+                {"system": "http://snomed.info/sct", "code": "372729009", "display": "Antibiotic therapy"},
+                {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "723", "display": "Amoxicillin"},
+            ],
+            "text": "Prescribe amoxicillin",
+        }
+        normalized = _normalize_activity_codeable_concept(
+            code,
+            kind="MedicationRequest",
+            action_id="prescribe-amoxicillin",
+            title="Prescribe amoxicillin",
+            description="Start oral amoxicillin therapy.",
+        )
+        assert normalized is not None
+        assert normalized["coding"][0]["system"] == "http://www.nlm.nih.gov/research/umls/rxnorm"
+
+    def test_activity_code_prefers_loinc_first_for_service_request_lab_order(self):
+        code = {
+            "coding": [
+                {"system": "http://snomed.info/sct", "code": "104177005", "display": "Hemoglobin A1c measurement"},
+                {"system": "http://loinc.org", "code": "4548-4", "display": "HbA1c/Total Hgb, Blood"},
+            ],
+            "text": "Order HbA1c",
+        }
+        normalized = _normalize_activity_codeable_concept(
+            code,
+            kind="ServiceRequest",
+            action_id="order-hba1c",
+            title="Order HbA1c",
+            description="Order hemoglobin A1c laboratory measurement.",
+        )
+        assert normalized is not None
+        assert normalized["coding"][0]["system"] == "http://loinc.org"
