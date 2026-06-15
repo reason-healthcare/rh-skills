@@ -146,22 +146,21 @@ artifact_fields:
     type: string
     required: true
     description: >
-      Artifact type from the standard catalog. Determines the downstream
-      formalization strategy and the FHIR resource targets for the L3 artifact.
+      Artifact type from the standard catalog for this planned extract artifact.
     guidance: >
       Choose the closest match from the catalog. If no catalog type fits,
       set to 'custom' and populate custom_artifact_type. Avoid 'custom' when
       a catalog type is a reasonable approximation.
     allowed_values:
-      - eligibility-criteria   # FHIR: PlanDefinition applicability condition
-      - risk-factors            # FHIR: RiskAssessment / ClinicalImpression
-      - evidence-summary        # FHIR: Evidence / EvidenceVariable
-      - decision-table          # FHIR: PlanDefinition (eca-rule) — action.trigger-based event logic
-      - care-pathway            # FHIR: PlanDefinition (clinical-protocol) — action.action[] nesting for workflow steps
-      - terminology             # FHIR: ValueSet / ConceptMap
-      - measure                 # FHIR: Measure
-      - assessment              # FHIR: Questionnaire
-      - policy                  # FHIR: PlanDefinition with coverage logic
+      - eligibility-criteria
+      - risk-factors
+      - evidence-summary
+      - decision-table
+      - care-pathway
+      - terminology
+      - measure
+      - assessment
+      - policy
 
   custom_artifact_type:
     type: string          # or null
@@ -195,11 +194,10 @@ artifact_fields:
     description: >
       What this artifact accomplishes and its intended downstream use.
     guidance: >
-      State the artifact's clinical role and how it will be consumed in the
-      formalization step. Purpose is forward-looking — focus on what the
-      artifact will do in the system, not on the evidence behind it.
-      Distinct from rationale: rationale explains the evidence choice;
-      purpose explains the artifact's role in the clinical workflow.
+      State the artifact's clinical role and intended use within the topic.
+      Purpose is forward-looking — focus on what the artifact is meant to do,
+      not on the evidence behind it. Distinct from rationale: rationale
+      explains the evidence choice; purpose explains the artifact's role.
     example: >
       Provides the population eligibility logic used as the applicability
       condition in the CDS PlanDefinition for diabetes annual screening.
@@ -328,98 +326,3 @@ concern_entry_fields:
 #   All artifacts decided → reviewer may finalize plan to 'approved'
 #   Any artifact rejected → plan may be finalized as 'rejected'
 #   Any artifact needs-revision → plan remains pending-review until revised
-
-# ── Decision Table Artifact Type ──────────────────────────────────────────────
-
-decision_table_guidance:
-  description: >
-    Decision tables encode event-driven clinical decision logic (when X, then Y).
-    Use when guideline contains conditional recommendations tied to clinical
-    decision points or workflow phases.
-  
-  required_sections:
-    - summary
-    - evidence_traceability
-    - events                # Clinical decision points or workflow milestones
-    - conditions            # Clinical criteria from "when" clauses
-    - actions               # Recommendations from "then" clauses
-    - rules                 # Event + conditions → actions mapping
-  
-  optional_sections:
-    - pathway_phases        # Only for temporal/procedural guidelines with clear workflow sequence
-                           # When present, can support fallback care-pathway auto-derivation
-    - concerns             # Source disagreements or unresolved issues
-  
-  validation_requirements:
-    - Every rule must have a rationale field with source recommendation locator
-    - Conditions should be defined once and reused across rules (avoid duplication)
-    - Events must have unique IDs and descriptions
-    - Actions must map to FHIR resource types (ServiceRequest, Procedure, etc.)
-  
-  pathway_phases_usage:
-    when_to_include: >
-      Only for procedural/workflow guidelines with temporal sequence
-      (assessment → planning → execution → follow-up).
-      Can support fallback derivation via
-      `rh-skills promote derive pathway`.
-    when_to_omit: >
-      Diagnostic guidelines (hierarchical decision trees), screening guidelines
-      (conditional risk-based testing), treatment optimization (iterative cycles).
-    structure:
-      - id: phase-1
-        name: Assessment
-        order: 1
-        description: Initial patient evaluation
-  
-  extraction_guidance: >
-    See decision-table-guide.md for comprehensive extraction heuristics covering
-    4 guideline structure types (procedural/workflow, diagnostic, screening,
-    treatment optimization).
-
-# ── Care Pathway Artifact Type ───────────────────────────────────────────────
-
-care_pathway_guidance:
-  description: >
-    Care pathways encode workflow sequences using flat steps with parent-child
-    links. Prefer direct care-pathway authoring. Use fallback derivation only
-    when recommendation linkage is difficult to align manually.
-  
-  required_sections:
-    - summary
-    - evidence_traceability
-    - phases                # Workflow phases containing steps
-  
-  optional_sections:
-    - concerns
-  
-  auto_derivation_preferred:
-    condition: >
-      If a paired decision-table already contains pathway_phases and manual
-      care-pathway authoring is struggling to preserve recommendation-to-pathway
-      linkage coverage, you may generate a fallback scaffold from that
-      decision-table instead of reworking the pathway from scratch.
-    command: >
-      rh-skills promote derive pathway --from-decision-table <decision-table-id>
-    metadata:
-      - derived_from: [decision-table-id]
-      - artifact_type: care-pathway
-      - flat steps[] with parent_id hierarchy
-      - recommendation linkage copied through rule_id/rule_ids[] when phase-aligned rules exist
-  
-  manual_extraction_when:
-    - No decision table exists for the workflow
-    - Guideline describes workflow without decision logic
-    - Decision table lacks pathway_phases metadata (non-temporal guidelines)
-    - Direct care-pathway authoring can already preserve recommendation linkage clearly
-  
-  structure_requirements:
-    - Flat `steps[]` with optional `parent_id` is the canonical care-pathway structure
-    - Derived pathways may include a root pathway node plus child phase steps
-    - Parent steps with children must not carry `rule_id` or `rule_ids[]`
-    - When recommendation linkage is present, leaf steps carry `rule_id` or `rule_ids[]`
-    - Derived pathways should preserve recommendation coverage when phase-aligned rules exist
-  split_boundary:
-    - Use care-pathway for ordering, ownership, and phase transitions only.
-    - Use decision-table for event-triggered "when/then" logic and keep triggers there.
-    - When a pathway step maps to a decision-table rule, carry the linkage through rule_id/rule_ids[] and action_labels rather than duplicating the rule logic in steps.
-    - Collapse intermediate wrapper steps that do not carry their own rule_id, action_labels, or applicability_condition; only keep them when they represent a distinct workflow phase.
