@@ -2357,6 +2357,12 @@ Decision-table extraction guidance:
   operational tasks, model the broader recommendation as the parent action and
   add separate child actions for the broken-down tasks when the source treats
   them as operationally separate.
+- When the source describes an order set, regimen, or medication bundle,
+  model it explicitly in the decision-table at extract time using the same
+  nesting pattern: parent rule/action context for the grouped recommendation
+  when useful, child `MedicationRequest` leaf actions for each named
+  medication order, and separate child rules when the source expresses
+  distinct conditional or staged component recommendations.
 - Use a child action for distinct tasks such as administering a questionnaire,
   reviewing imaging, reviewing prior therapy history, ordering a prerequisite
   study, or carrying out a separate counseling step. Group closely related work
