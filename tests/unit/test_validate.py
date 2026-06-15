@@ -1266,6 +1266,7 @@ sections:
       event: screening-due
       when:
         crs-diagnostic-criteria-confirmed: Yes
+      evidence_traceability_ids: [crit-001]
       then:
         - order-screening
 concerns: []
@@ -1320,6 +1321,7 @@ sections:
   rules:
     - id: verify
       event: verification
+      evidence_traceability_ids: [crit-001]
       then:
         - review-evidence
 concerns: []
@@ -1371,6 +1373,7 @@ sections:
   rules:
     - id: verify
       event: verification
+      evidence_traceability_ids: [crit-001]
       then:
         - review-evidence
 concerns: []
@@ -1493,6 +1496,7 @@ sections:
       event: assessment
       when:
         diagnosis-verified: Yes
+      evidence_traceability_ids: [crit-001]
       then:
         - assess-candidacy
         - administer-snot-22
