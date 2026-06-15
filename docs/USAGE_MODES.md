@@ -145,7 +145,7 @@ Three modes of operation are supported, based on whether `LLM_PROVIDER` is set:
 CLI via `RH_STUB_RESPONSE`. The CLI handles file I/O, validation, and tracking:
 
 ```bash
-RH_STUB_RESPONSE="<full yaml body>" rh-skills promote derive artifact <topic> <artifact-name> \
+RH_STUB_RESPONSE="<full yaml body>" rh-skills promote derive <topic> <artifact-name> \
   --source <source-name> --artifact-type <type> ...
 ```
 
