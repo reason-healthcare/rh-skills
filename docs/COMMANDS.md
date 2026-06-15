@@ -179,12 +179,12 @@ Re-checksums all sources in `tracking.yaml` and reports `✓ OK` or `✗ CHANGED
 
 Derive and combine artifacts.
 
-### `rh-skills promote derive artifact <topic> <name>`
+### `rh-skills promote derive <topic> <name>`
 
 Create a structured (L2) artifact scaffold.
 
 ```sh
-rh-skills promote derive artifact <topic> <name> [--force]
+rh-skills promote derive <topic> <name> [--force]
 ```
 
 Creates `topics/<topic>/structured/<name>.yaml` with schema-valid YAML scaffold.

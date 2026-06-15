@@ -18,7 +18,7 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 |---------|---------|-----------|
 | `rh-skills promote plan <topic> [--force]` | Generate extract review packet | `extract-plan.yaml`, `extract-plan-readout.md`, tracking event |
 | `rh-skills promote approve <topic> --artifact <name> --decision <approved\|rejected\|needs-revision> [--add-concern TEXT] [--finalize]` | Record reviewer approval decisions | `extract-plan.yaml` (updated), `extract-plan-readout.md` (regenerated) |
-| `rh-skills promote derive artifact <topic> <name> --source <source> [--artifact-type TYPE] [--clinical-question TEXT] [--required-section S] [--evidence-ref REF] [--concern C]` | Create single L2 artifact via LLM | `structured/<name>/<name>.yaml`, tracking event |
+| `rh-skills promote derive <topic> <name> --source <source> [--artifact-type TYPE] [--clinical-question TEXT] [--required-section S] [--evidence-ref REF] [--concern C]` | Create single L2 artifact via LLM | `structured/<name>/<name>.yaml`, tracking event |
 | `rh-skills validate <topic> structured <artifact>` | Schema-validate L2 artifact | (read-only) |
 | `rh-skills render <topic> structured <artifact>` | Generate human-readable Markdown report with Mermaid diagrams | `structured/<name>/<name>-report.md` |
 
@@ -73,7 +73,7 @@ Decision-table extraction guidance:
    ├─ Regenerates readout with final decisions
    └─ Plan status → approved
 
-3. IMPLEMENT: rh-skills promote derive artifact <topic> <name> --source <source> ...
+3. IMPLEMENT: rh-skills promote derive <topic> <name> --source <source> ...
    ├─ For each approved artifact:
    │   ├─ Map plan entry → CLI arguments
    │   ├─ LLM generates L2 YAML from L1 source(s)
@@ -85,7 +85,7 @@ Decision-table extraction guidance:
    │   │   └─ Conflict records: present when plan listed concerns
 
 Artifact-level rerun guidance:
-- Use `rh-skills promote derive artifact <topic> <name> --force ...` to re-run only one non-terminology structured artifact in place.
+- Use `rh-skills promote derive <topic> <name> --force ...` to re-run only one non-terminology structured artifact in place.
 - This path refreshes that artifact and its tracking entry only; it does not require re-running terminology lookup, concept review, or `concept write` when the terminology package is unchanged.
 - Do not use this path for the explicit `concepts` terminology artifact; refresh that package with `rh-skills promote concept write <topic>`.
 - After an artifact-only rerun, validate just that artifact with `rh-skills validate <topic> structured <name>`.
