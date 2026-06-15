@@ -1,0 +1,1141 @@
+{
+  "library": {
+    "annotation": [
+      {
+        "translatorOptions": "DisableListDemotion,DisableListPromotion,EnableAnnotations,EnableLocators",
+        "translatorVersion": "0.2.0-beta.2",
+        "type": "CqlToElmInfo"
+      }
+    ],
+    "contexts": {
+      "def": [
+        {
+          "name": "Patient"
+        }
+      ]
+    },
+    "identifier": {
+      "id": "DiabetesScreeningRecommendationLogic",
+      "version": "0.1.0"
+    },
+    "includes": {
+      "def": [
+        {
+          "localIdentifier": "FHIRHelpers",
+          "path": "FHIRHelpers",
+          "version": "4.0.1"
+        }
+      ]
+    },
+    "parameters": {
+      "def": [
+        {
+          "accessLevel": "Public",
+          "name": "IsPregnant"
+        },
+        {
+          "accessLevel": "Public",
+          "name": "FastingPlasmaGlucoseMgPerdL"
+        },
+        {
+          "accessLevel": "Public",
+          "name": "TwoHourOgttGlucoseMgPerdL"
+        },
+        {
+          "accessLevel": "Public",
+          "name": "HemoglobinA1cPercent"
+        },
+        {
+          "accessLevel": "Public",
+          "name": "RandomPlasmaGlucoseMgPerdL"
+        },
+        {
+          "accessLevel": "Public",
+          "name": "HasClassicHyperglycemiaSymptoms"
+        }
+      ]
+    },
+    "schemaIdentifier": {
+      "id": "urn:hl7-org:elm",
+      "version": "r1"
+    },
+    "statements": {
+      "def": [
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "1",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "3",
+                "locator": "0-0:0-0",
+                "name": "AgeInYears",
+                "type": "FunctionRef"
+              },
+              {
+                "localId": "4",
+                "locator": "0-0:0-0",
+                "type": "Literal",
+                "value": "35",
+                "valueType": "{urn:hl7-org:elm-types:r1}Integer"
+              }
+            ],
+            "type": "GreaterOrEqual"
+          },
+          "name": "Age35YearsOrOlder"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "5",
+            "locator": "0-0:0-0",
+            "operand": {
+              "codeFilter": [],
+              "codeProperty": "code",
+              "codes": {
+                "localId": "7",
+                "locator": "0-0:0-0",
+                "name": "Hypertension",
+                "type": "ValueSetRef"
+              },
+              "dataType": "{http://hl7.org/fhir}Condition",
+              "dateFilter": [],
+              "include": [],
+              "localId": "6",
+              "locator": "0-0:0-0",
+              "otherFilter": [],
+              "type": "Retrieve"
+            },
+            "type": "Exists"
+          },
+          "name": "HasHypertension"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "8",
+            "locator": "0-0:0-0",
+            "operand": {
+              "codeFilter": [],
+              "codeProperty": "code",
+              "codes": {
+                "localId": "10",
+                "locator": "0-0:0-0",
+                "name": "Overweight",
+                "type": "ValueSetRef"
+              },
+              "dataType": "{http://hl7.org/fhir}Condition",
+              "dateFilter": [],
+              "include": [],
+              "localId": "9",
+              "locator": "0-0:0-0",
+              "otherFilter": [],
+              "type": "Retrieve"
+            },
+            "type": "Exists"
+          },
+          "name": "HasOverweight"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "11",
+            "locator": "0-0:0-0",
+            "operand": {
+              "codeFilter": [],
+              "codeProperty": "code",
+              "codes": {
+                "localId": "13",
+                "locator": "0-0:0-0",
+                "name": "Obesity",
+                "type": "ValueSetRef"
+              },
+              "dataType": "{http://hl7.org/fhir}Condition",
+              "dateFilter": [],
+              "include": [],
+              "localId": "12",
+              "locator": "0-0:0-0",
+              "otherFilter": [],
+              "type": "Retrieve"
+            },
+            "type": "Exists"
+          },
+          "name": "HasObesity"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "14",
+            "locator": "0-0:0-0",
+            "operand": {
+              "codeFilter": [],
+              "codeProperty": "code",
+              "codes": {
+                "localId": "16",
+                "locator": "0-0:0-0",
+                "name": "PolycysticOvarySyndrome",
+                "type": "ValueSetRef"
+              },
+              "dataType": "{http://hl7.org/fhir}Condition",
+              "dateFilter": [],
+              "include": [],
+              "localId": "15",
+              "locator": "0-0:0-0",
+              "otherFilter": [],
+              "type": "Retrieve"
+            },
+            "type": "Exists"
+          },
+          "name": "HasPolycysticOvarySyndrome"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "17",
+            "locator": "0-0:0-0",
+            "operand": {
+              "codeFilter": [],
+              "codeProperty": "code",
+              "codes": {
+                "localId": "19",
+                "locator": "0-0:0-0",
+                "name": "HumanImmunodeficiencyVirusInfection",
+                "type": "ValueSetRef"
+              },
+              "dataType": "{http://hl7.org/fhir}Condition",
+              "dateFilter": [],
+              "include": [],
+              "localId": "18",
+              "locator": "0-0:0-0",
+              "otherFilter": [],
+              "type": "Retrieve"
+            },
+            "type": "Exists"
+          },
+          "name": "HasHumanImmunodeficiencyVirusInfection"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "20",
+            "locator": "0-0:0-0",
+            "operand": {
+              "codeFilter": [],
+              "codeProperty": "code",
+              "codes": {
+                "localId": "22",
+                "locator": "0-0:0-0",
+                "name": "Prediabetes",
+                "type": "ValueSetRef"
+              },
+              "dataType": "{http://hl7.org/fhir}Condition",
+              "dateFilter": [],
+              "include": [],
+              "localId": "21",
+              "locator": "0-0:0-0",
+              "otherFilter": [],
+              "type": "Retrieve"
+            },
+            "type": "Exists"
+          },
+          "name": "HasPrediabetesHistory"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "23",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "24",
+                "locator": "0-0:0-0",
+                "name": "HasOverweight",
+                "type": "ExpressionRef"
+              },
+              {
+                "localId": "25",
+                "locator": "0-0:0-0",
+                "name": "HasObesity",
+                "type": "ExpressionRef"
+              }
+            ],
+            "type": "Or"
+          },
+          "name": "OverweightOrObesityPresent"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "26",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "27",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "28",
+                    "locator": "0-0:0-0",
+                    "operand": [
+                      {
+                        "localId": "29",
+                        "locator": "0-0:0-0",
+                        "name": "HasHypertension",
+                        "type": "ExpressionRef"
+                      },
+                      {
+                        "localId": "30",
+                        "locator": "0-0:0-0",
+                        "name": "HasPolycysticOvarySyndrome",
+                        "type": "ExpressionRef"
+                      }
+                    ],
+                    "type": "Or"
+                  },
+                  {
+                    "localId": "31",
+                    "locator": "0-0:0-0",
+                    "name": "HasHumanImmunodeficiencyVirusInfection",
+                    "type": "ExpressionRef"
+                  }
+                ],
+                "type": "Or"
+              },
+              {
+                "localId": "32",
+                "locator": "0-0:0-0",
+                "name": "HasPrediabetesHistory",
+                "type": "ExpressionRef"
+              }
+            ],
+            "type": "Or"
+          },
+          "name": "AtLeastOneAdditionalDiabetesRiskFactorPresent"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "33",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "34",
+                "locator": "0-0:0-0",
+                "name": "IsPregnant",
+                "type": "ExpressionRef"
+              },
+              {
+                "localId": "35",
+                "locator": "0-0:0-0",
+                "type": "Literal",
+                "value": "false",
+                "valueType": "{urn:hl7-org:elm-types:r1}Boolean"
+              }
+            ],
+            "type": "Coalesce"
+          },
+          "name": "PregnancyPresent"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "36",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "37",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "38",
+                    "locator": "0-0:0-0",
+                    "operand": [
+                      {
+                        "localId": "39",
+                        "locator": "0-0:0-0",
+                        "operand": {
+                          "isType": "{urn:hl7-org:elm-types:r1}null",
+                          "isTypeSpecifier": {
+                            "name": "{urn:hl7-org:elm-types:r1}null",
+                            "type": "NamedTypeSpecifier"
+                          },
+                          "localId": "40",
+                          "locator": "0-0:0-0",
+                          "operand": {
+                            "localId": "41",
+                            "locator": "0-0:0-0",
+                            "name": "FastingPlasmaGlucoseMgPerdL",
+                            "type": "ExpressionRef"
+                          },
+                          "type": "Is"
+                        },
+                        "type": "Not"
+                      },
+                      {
+                        "localId": "42",
+                        "locator": "0-0:0-0",
+                        "operand": {
+                          "isType": "{urn:hl7-org:elm-types:r1}null",
+                          "isTypeSpecifier": {
+                            "name": "{urn:hl7-org:elm-types:r1}null",
+                            "type": "NamedTypeSpecifier"
+                          },
+                          "localId": "43",
+                          "locator": "0-0:0-0",
+                          "operand": {
+                            "localId": "44",
+                            "locator": "0-0:0-0",
+                            "name": "TwoHourOgttGlucoseMgPerdL",
+                            "type": "ExpressionRef"
+                          },
+                          "type": "Is"
+                        },
+                        "type": "Not"
+                      }
+                    ],
+                    "type": "Or"
+                  },
+                  {
+                    "localId": "45",
+                    "locator": "0-0:0-0",
+                    "operand": {
+                      "isType": "{urn:hl7-org:elm-types:r1}null",
+                      "isTypeSpecifier": {
+                        "name": "{urn:hl7-org:elm-types:r1}null",
+                        "type": "NamedTypeSpecifier"
+                      },
+                      "localId": "46",
+                      "locator": "0-0:0-0",
+                      "operand": {
+                        "localId": "47",
+                        "locator": "0-0:0-0",
+                        "name": "HemoglobinA1cPercent",
+                        "type": "ExpressionRef"
+                      },
+                      "type": "Is"
+                    },
+                    "type": "Not"
+                  }
+                ],
+                "type": "Or"
+              },
+              {
+                "localId": "48",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "isType": "{urn:hl7-org:elm-types:r1}null",
+                  "isTypeSpecifier": {
+                    "name": "{urn:hl7-org:elm-types:r1}null",
+                    "type": "NamedTypeSpecifier"
+                  },
+                  "localId": "49",
+                  "locator": "0-0:0-0",
+                  "operand": {
+                    "localId": "50",
+                    "locator": "0-0:0-0",
+                    "name": "RandomPlasmaGlucoseMgPerdL",
+                    "type": "ExpressionRef"
+                  },
+                  "type": "Is"
+                },
+                "type": "Not"
+              }
+            ],
+            "type": "Or"
+          },
+          "name": "HasAnyScreeningResult"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "51",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "52",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "isType": "{urn:hl7-org:elm-types:r1}null",
+                  "isTypeSpecifier": {
+                    "name": "{urn:hl7-org:elm-types:r1}null",
+                    "type": "NamedTypeSpecifier"
+                  },
+                  "localId": "53",
+                  "locator": "0-0:0-0",
+                  "operand": {
+                    "localId": "54",
+                    "locator": "0-0:0-0",
+                    "name": "FastingPlasmaGlucoseMgPerdL",
+                    "type": "ExpressionRef"
+                  },
+                  "type": "Is"
+                },
+                "type": "Not"
+              },
+              {
+                "localId": "55",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "56",
+                    "locator": "0-0:0-0",
+                    "name": "FastingPlasmaGlucoseMgPerdL",
+                    "type": "ExpressionRef"
+                  },
+                  {
+                    "localId": "57",
+                    "locator": "0-0:0-0",
+                    "type": "Literal",
+                    "value": "126.0",
+                    "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                  }
+                ],
+                "type": "GreaterOrEqual"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "FastingGlucoseInDiabetesRange"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "58",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "59",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "isType": "{urn:hl7-org:elm-types:r1}null",
+                  "isTypeSpecifier": {
+                    "name": "{urn:hl7-org:elm-types:r1}null",
+                    "type": "NamedTypeSpecifier"
+                  },
+                  "localId": "60",
+                  "locator": "0-0:0-0",
+                  "operand": {
+                    "localId": "61",
+                    "locator": "0-0:0-0",
+                    "name": "TwoHourOgttGlucoseMgPerdL",
+                    "type": "ExpressionRef"
+                  },
+                  "type": "Is"
+                },
+                "type": "Not"
+              },
+              {
+                "localId": "62",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "63",
+                    "locator": "0-0:0-0",
+                    "name": "TwoHourOgttGlucoseMgPerdL",
+                    "type": "ExpressionRef"
+                  },
+                  {
+                    "localId": "64",
+                    "locator": "0-0:0-0",
+                    "type": "Literal",
+                    "value": "200.0",
+                    "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                  }
+                ],
+                "type": "GreaterOrEqual"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "TwoHourOgttInDiabetesRange"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "65",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "66",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "isType": "{urn:hl7-org:elm-types:r1}null",
+                  "isTypeSpecifier": {
+                    "name": "{urn:hl7-org:elm-types:r1}null",
+                    "type": "NamedTypeSpecifier"
+                  },
+                  "localId": "67",
+                  "locator": "0-0:0-0",
+                  "operand": {
+                    "localId": "68",
+                    "locator": "0-0:0-0",
+                    "name": "HemoglobinA1cPercent",
+                    "type": "ExpressionRef"
+                  },
+                  "type": "Is"
+                },
+                "type": "Not"
+              },
+              {
+                "localId": "69",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "70",
+                    "locator": "0-0:0-0",
+                    "name": "HemoglobinA1cPercent",
+                    "type": "ExpressionRef"
+                  },
+                  {
+                    "localId": "71",
+                    "locator": "0-0:0-0",
+                    "type": "Literal",
+                    "value": "6.5",
+                    "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                  }
+                ],
+                "type": "GreaterOrEqual"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "HemoglobinA1cInDiabetesRange"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "72",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "73",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "74",
+                    "locator": "0-0:0-0",
+                    "operand": {
+                      "isType": "{urn:hl7-org:elm-types:r1}null",
+                      "isTypeSpecifier": {
+                        "name": "{urn:hl7-org:elm-types:r1}null",
+                        "type": "NamedTypeSpecifier"
+                      },
+                      "localId": "75",
+                      "locator": "0-0:0-0",
+                      "operand": {
+                        "localId": "76",
+                        "locator": "0-0:0-0",
+                        "name": "RandomPlasmaGlucoseMgPerdL",
+                        "type": "ExpressionRef"
+                      },
+                      "type": "Is"
+                    },
+                    "type": "Not"
+                  },
+                  {
+                    "localId": "77",
+                    "locator": "0-0:0-0",
+                    "operand": [
+                      {
+                        "localId": "78",
+                        "locator": "0-0:0-0",
+                        "name": "RandomPlasmaGlucoseMgPerdL",
+                        "type": "ExpressionRef"
+                      },
+                      {
+                        "localId": "79",
+                        "locator": "0-0:0-0",
+                        "type": "Literal",
+                        "value": "200.0",
+                        "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                      }
+                    ],
+                    "type": "GreaterOrEqual"
+                  }
+                ],
+                "type": "And"
+              },
+              {
+                "localId": "80",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "81",
+                    "locator": "0-0:0-0",
+                    "name": "HasClassicHyperglycemiaSymptoms",
+                    "type": "ExpressionRef"
+                  },
+                  {
+                    "localId": "82",
+                    "locator": "0-0:0-0",
+                    "type": "Literal",
+                    "value": "false",
+                    "valueType": "{urn:hl7-org:elm-types:r1}Boolean"
+                  }
+                ],
+                "type": "Coalesce"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "RandomGlucoseInDiabetesRange"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "83",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "84",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "85",
+                    "locator": "0-0:0-0",
+                    "operand": [
+                      {
+                        "localId": "86",
+                        "locator": "0-0:0-0",
+                        "name": "FastingGlucoseInDiabetesRange",
+                        "type": "ExpressionRef"
+                      },
+                      {
+                        "localId": "87",
+                        "locator": "0-0:0-0",
+                        "name": "TwoHourOgttInDiabetesRange",
+                        "type": "ExpressionRef"
+                      }
+                    ],
+                    "type": "Or"
+                  },
+                  {
+                    "localId": "88",
+                    "locator": "0-0:0-0",
+                    "name": "HemoglobinA1cInDiabetesRange",
+                    "type": "ExpressionRef"
+                  }
+                ],
+                "type": "Or"
+              },
+              {
+                "localId": "89",
+                "locator": "0-0:0-0",
+                "name": "RandomGlucoseInDiabetesRange",
+                "type": "ExpressionRef"
+              }
+            ],
+            "type": "Or"
+          },
+          "name": "DiabetesDiagnosticThresholdMet"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "90",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "91",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "92",
+                    "locator": "0-0:0-0",
+                    "operand": {
+                      "isType": "{urn:hl7-org:elm-types:r1}null",
+                      "isTypeSpecifier": {
+                        "name": "{urn:hl7-org:elm-types:r1}null",
+                        "type": "NamedTypeSpecifier"
+                      },
+                      "localId": "93",
+                      "locator": "0-0:0-0",
+                      "operand": {
+                        "localId": "94",
+                        "locator": "0-0:0-0",
+                        "name": "FastingPlasmaGlucoseMgPerdL",
+                        "type": "ExpressionRef"
+                      },
+                      "type": "Is"
+                    },
+                    "type": "Not"
+                  },
+                  {
+                    "localId": "95",
+                    "locator": "0-0:0-0",
+                    "operand": [
+                      {
+                        "localId": "96",
+                        "locator": "0-0:0-0",
+                        "name": "FastingPlasmaGlucoseMgPerdL",
+                        "type": "ExpressionRef"
+                      },
+                      {
+                        "localId": "97",
+                        "locator": "0-0:0-0",
+                        "type": "Literal",
+                        "value": "100.0",
+                        "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                      }
+                    ],
+                    "type": "GreaterOrEqual"
+                  }
+                ],
+                "type": "And"
+              },
+              {
+                "localId": "98",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "99",
+                    "locator": "0-0:0-0",
+                    "name": "FastingPlasmaGlucoseMgPerdL",
+                    "type": "ExpressionRef"
+                  },
+                  {
+                    "localId": "100",
+                    "locator": "0-0:0-0",
+                    "type": "Literal",
+                    "value": "125.0",
+                    "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                  }
+                ],
+                "type": "LessOrEqual"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "FastingGlucoseInPrediabetesRange"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "101",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "102",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "103",
+                    "locator": "0-0:0-0",
+                    "operand": {
+                      "isType": "{urn:hl7-org:elm-types:r1}null",
+                      "isTypeSpecifier": {
+                        "name": "{urn:hl7-org:elm-types:r1}null",
+                        "type": "NamedTypeSpecifier"
+                      },
+                      "localId": "104",
+                      "locator": "0-0:0-0",
+                      "operand": {
+                        "localId": "105",
+                        "locator": "0-0:0-0",
+                        "name": "TwoHourOgttGlucoseMgPerdL",
+                        "type": "ExpressionRef"
+                      },
+                      "type": "Is"
+                    },
+                    "type": "Not"
+                  },
+                  {
+                    "localId": "106",
+                    "locator": "0-0:0-0",
+                    "operand": [
+                      {
+                        "localId": "107",
+                        "locator": "0-0:0-0",
+                        "name": "TwoHourOgttGlucoseMgPerdL",
+                        "type": "ExpressionRef"
+                      },
+                      {
+                        "localId": "108",
+                        "locator": "0-0:0-0",
+                        "type": "Literal",
+                        "value": "140.0",
+                        "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                      }
+                    ],
+                    "type": "GreaterOrEqual"
+                  }
+                ],
+                "type": "And"
+              },
+              {
+                "localId": "109",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "110",
+                    "locator": "0-0:0-0",
+                    "name": "TwoHourOgttGlucoseMgPerdL",
+                    "type": "ExpressionRef"
+                  },
+                  {
+                    "localId": "111",
+                    "locator": "0-0:0-0",
+                    "type": "Literal",
+                    "value": "199.0",
+                    "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                  }
+                ],
+                "type": "LessOrEqual"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "TwoHourOgttInPrediabetesRange"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "112",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "113",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "114",
+                    "locator": "0-0:0-0",
+                    "operand": {
+                      "isType": "{urn:hl7-org:elm-types:r1}null",
+                      "isTypeSpecifier": {
+                        "name": "{urn:hl7-org:elm-types:r1}null",
+                        "type": "NamedTypeSpecifier"
+                      },
+                      "localId": "115",
+                      "locator": "0-0:0-0",
+                      "operand": {
+                        "localId": "116",
+                        "locator": "0-0:0-0",
+                        "name": "HemoglobinA1cPercent",
+                        "type": "ExpressionRef"
+                      },
+                      "type": "Is"
+                    },
+                    "type": "Not"
+                  },
+                  {
+                    "localId": "117",
+                    "locator": "0-0:0-0",
+                    "operand": [
+                      {
+                        "localId": "118",
+                        "locator": "0-0:0-0",
+                        "name": "HemoglobinA1cPercent",
+                        "type": "ExpressionRef"
+                      },
+                      {
+                        "localId": "119",
+                        "locator": "0-0:0-0",
+                        "type": "Literal",
+                        "value": "5.7",
+                        "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                      }
+                    ],
+                    "type": "GreaterOrEqual"
+                  }
+                ],
+                "type": "And"
+              },
+              {
+                "localId": "120",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "121",
+                    "locator": "0-0:0-0",
+                    "name": "HemoglobinA1cPercent",
+                    "type": "ExpressionRef"
+                  },
+                  {
+                    "localId": "122",
+                    "locator": "0-0:0-0",
+                    "type": "Literal",
+                    "value": "6.4",
+                    "valueType": "{urn:hl7-org:elm-types:r1}Decimal"
+                  }
+                ],
+                "type": "LessOrEqual"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "HemoglobinA1cInPrediabetesRange"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "123",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "124",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "localId": "125",
+                  "locator": "0-0:0-0",
+                  "name": "DiabetesDiagnosticThresholdMet",
+                  "type": "ExpressionRef"
+                },
+                "type": "Not"
+              },
+              {
+                "localId": "126",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "127",
+                    "locator": "0-0:0-0",
+                    "operand": [
+                      {
+                        "localId": "128",
+                        "locator": "0-0:0-0",
+                        "name": "FastingGlucoseInPrediabetesRange",
+                        "type": "ExpressionRef"
+                      },
+                      {
+                        "localId": "129",
+                        "locator": "0-0:0-0",
+                        "name": "TwoHourOgttInPrediabetesRange",
+                        "type": "ExpressionRef"
+                      }
+                    ],
+                    "type": "Or"
+                  },
+                  {
+                    "localId": "130",
+                    "locator": "0-0:0-0",
+                    "name": "HemoglobinA1cInPrediabetesRange",
+                    "type": "ExpressionRef"
+                  }
+                ],
+                "type": "Or"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "PrediabetesThresholdMet"
+        },
+        {
+          "accessLevel": "Public",
+          "context": "Patient",
+          "expression": {
+            "localId": "131",
+            "locator": "0-0:0-0",
+            "operand": [
+              {
+                "localId": "132",
+                "locator": "0-0:0-0",
+                "operand": [
+                  {
+                    "localId": "133",
+                    "locator": "0-0:0-0",
+                    "name": "HasAnyScreeningResult",
+                    "type": "ExpressionRef"
+                  },
+                  {
+                    "localId": "134",
+                    "locator": "0-0:0-0",
+                    "operand": {
+                      "localId": "135",
+                      "locator": "0-0:0-0",
+                      "name": "DiabetesDiagnosticThresholdMet",
+                      "type": "ExpressionRef"
+                    },
+                    "type": "Not"
+                  }
+                ],
+                "type": "And"
+              },
+              {
+                "localId": "136",
+                "locator": "0-0:0-0",
+                "operand": {
+                  "localId": "137",
+                  "locator": "0-0:0-0",
+                  "name": "PrediabetesThresholdMet",
+                  "type": "ExpressionRef"
+                },
+                "type": "Not"
+              }
+            ],
+            "type": "And"
+          },
+          "name": "ScreeningResultNormal"
+        }
+      ]
+    },
+    "usings": {
+      "def": [
+        {
+          "localIdentifier": "FHIR",
+          "version": "4.0.1"
+        }
+      ]
+    },
+    "valueSets": {
+      "def": [
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/prediabetes",
+          "name": "Prediabetes"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/type-2-diabetes-mellitus",
+          "name": "Type2DiabetesMellitus"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/hypertension",
+          "name": "Hypertension"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/obesity",
+          "name": "Obesity"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/overweight",
+          "name": "Overweight"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/polycystic-ovary-syndrome",
+          "name": "PolycysticOvarySyndrome"
+        },
+        {
+          "accessLevel": "Public",
+          "id": "http://example.org/fhir/ValueSet/human-immunodeficiency-virus-infection",
+          "name": "HumanImmunodeficiencyVirusInfection"
+        }
+      ]
+    }
+  }
+}

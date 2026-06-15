@@ -1,0 +1,16 @@
+{
+  "code": {
+    "text": "Diagnose prediabetes"
+  },
+  "date": "2026-06-15",
+  "description": "Classify the patient as having prediabetes when ADA prediabetes thresholds are met without diabetes thresholds.",
+  "id": "diagnose-prediabetes",
+  "intent": "proposal",
+  "kind": "ServiceRequest",
+  "name": "DiagnosePrediabetes",
+  "resourceType": "ActivityDefinition",
+  "status": "draft",
+  "title": "Diagnose prediabetes",
+  "url": "http://example.org/fhir/ActivityDefinition/diagnose-prediabetes",
+  "version": "0.1.0"
+}

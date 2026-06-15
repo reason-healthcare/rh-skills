@@ -1,0 +1,28 @@
+{
+  "resourceType": "ActivityDefinition",
+  "id": "refer-lifestyle-intervention",
+  "url": "http://example.org/fhir/ActivityDefinition/refer-lifestyle-intervention",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "ReferLifestyleIntervention",
+  "title": "Refer to intensive behavioral lifestyle intervention",
+  "description": "Refer patients with prediabetes to a DPP-modeled intensive behavioral lifestyle intervention program.",
+  "kind": "ServiceRequest",
+  "intent": "proposal",
+  "code": {
+    "coding": [
+      {
+        "code": "714628002",
+        "display": "Prediabetes",
+        "system": "http://snomed.info/sct"
+      },
+      {
+        "code": "R73.03",
+        "display": "Prediabetes",
+        "system": "http://hl7.org/fhir/sid/icd-10-cm"
+      }
+    ],
+    "text": "Prediabetes"
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "resourceType": "PlanDefinition",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition"
+    ]
+  },
+  "id": "diabetes-screening-protocol-eligibility-phase",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-eligibility-phase",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "DiabetesScreeningProtocolEligibilityPhase",
+  "title": "Review screening eligibility",
+  "description": "Assess age, weight status, risk factors, and pregnancy status.",
+  "type": {
+    "coding": [
+      {
+        "code": "workflow-definition",
+        "display": "Workflow Definition",
+        "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+      }
+    ]
+  },
+  "action": [
+    {
+      "action": [
+        {
+          "definitionCanonical": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-assess-eligibility-step",
+          "description": "Perform the general eligibility review before branching to testing, pregnancy-specific criteria, or deferral.",
+          "documentation": [
+            {
+              "citation": "Age-based screening begins at 35 years. Evidence: ada-guidelines-2024_md: For all patients, testing should begin at age 35.",
+              "label": "claim-001",
+              "type": "citation"
+            },
+            {
+              "citation": "Earlier screening is supported for overweight or obese adults with additional diabetes risk factors. Evidence: ada-guidelines-2024_md: Testing should be considered in adults of any age who are overweight or obese and who have one or more additional risk factors.",
+              "label": "claim-002",
+              "type": "citation"
+            }
+          ],
+          "id": "assess-eligibility-step",
+          "title": "Assess age, weight, and risk factors"
+        },
+        {
+          "definitionCanonical": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-route-pregnancy-step",
+          "description": "Use gestational diabetes screening criteria at 24-28 weeks for pregnant patients.",
+          "documentation": [
+            {
+              "citation": "Pregnancy uses different criteria with gestational diabetes screening at 24-28 weeks. Evidence: ada-guidelines-2024_md: Pregnant women use different criteria (GDM screening at 24-28 weeks).",
+              "label": "claim-003",
+              "type": "citation"
+            }
+          ],
+          "id": "route-pregnancy-step",
+          "title": "Route pregnancy to gestational diabetes criteria"
+        },
+        {
+          "definitionCanonical": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-proceed-to-screening-step",
+          "description": "Screen when age-based or weight-risk-based ADA criteria are met.",
+          "documentation": [
+            {
+              "citation": "Age-based screening begins at 35 years. Evidence: ada-guidelines-2024_md: For all patients, testing should begin at age 35.",
+              "label": "claim-001",
+              "type": "citation"
+            },
+            {
+              "citation": "Earlier screening is supported for overweight or obese adults with additional diabetes risk factors. Evidence: ada-guidelines-2024_md: Testing should be considered in adults of any age who are overweight or obese and who have one or more additional risk factors.",
+              "label": "claim-002",
+              "type": "citation"
+            }
+          ],
+          "id": "proceed-to-screening-step",
+          "title": "Proceed to adult screening testing"
+        },
+        {
+          "definitionCanonical": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-defer-screening-step",
+          "description": "Defer routine asymptomatic screening until ADA eligibility criteria are met.",
+          "documentation": [
+            {
+              "citation": "Age-based screening begins at 35 years. Evidence: ada-guidelines-2024_md: For all patients, testing should begin at age 35.",
+              "label": "claim-001",
+              "type": "citation"
+            },
+            {
+              "citation": "Earlier screening is supported for overweight or obese adults with additional diabetes risk factors. Evidence: ada-guidelines-2024_md: Testing should be considered in adults of any age who are overweight or obese and who have one or more additional risk factors.",
+              "label": "claim-002",
+              "type": "citation"
+            }
+          ],
+          "id": "defer-screening-step",
+          "title": "Defer routine screening"
+        }
+      ],
+      "description": "Assess age, weight status, risk factors, and pregnancy status.",
+      "id": "eligibility-phase",
+      "title": "Review screening eligibility"
+    }
+  ]
+}

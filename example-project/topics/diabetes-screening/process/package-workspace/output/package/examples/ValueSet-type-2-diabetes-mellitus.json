@@ -1,0 +1,32 @@
+{
+  "compose": {
+    "include": [
+      {
+        "concept": [
+          {
+            "code": "44054006",
+            "display": "Type 2 diabetes mellitus"
+          }
+        ],
+        "system": "http://snomed.info/sct"
+      },
+      {
+        "concept": [
+          {
+            "code": "E11",
+            "display": "Type 2 diabetes mellitus"
+          }
+        ],
+        "system": "http://hl7.org/fhir/sid/icd-10-cm"
+      }
+    ]
+  },
+  "date": "2026-06-15",
+  "id": "type-2-diabetes-mellitus",
+  "name": "Type2DiabetesMellitus",
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "title": "Type 2 diabetes mellitus",
+  "url": "http://example.org/fhir/ValueSet/type-2-diabetes-mellitus",
+  "version": "0.1.0"
+}

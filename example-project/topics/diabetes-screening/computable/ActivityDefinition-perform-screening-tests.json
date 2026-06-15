@@ -1,0 +1,16 @@
+{
+  "resourceType": "ActivityDefinition",
+  "id": "perform-screening-tests",
+  "url": "http://example.org/fhir/ActivityDefinition/perform-screening-tests",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "PerformScreeningTests",
+  "title": "Perform ADA diabetes screening tests",
+  "description": "Order or review fasting plasma glucose, A1C, OGTT, or random glucose with symptoms as clinically appropriate.",
+  "kind": "ServiceRequest",
+  "intent": "proposal",
+  "code": {
+    "text": "Perform ADA diabetes screening tests"
+  }
+}

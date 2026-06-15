@@ -1,0 +1,51 @@
+topic: diabetes-screening
+status: approved
+generated_at: '2026-06-15T17:28:04Z'
+reviewed_at: '2026-06-15T17:35:13Z'
+reviewer: Codex
+checksums:
+  acanthosis-nigricans: 
+    bd066bdc2fb3c193f38511ce2e2b0103c830b82c8e6631879ea10d4f5adbd373
+  classic-symptoms-of-hyperglycemia: 
+    3d62fa747073d45bf7a312220be822441633765862f5a1fd807f94a0ab810912
+  diabetes-prevention-program-modeled-lifestyle-program: 
+    f43bde737b35934ebdbd03a831a257e9d86904248b55a7aba99faf5ff9afd702
+  fasting-plasma-glucose: 
+    5ce70ce97e81183ff7d2be54924407c37aba8308356649890dd0fbca78c6bfad
+  first-degree-relative-with-diabetes: 
+    86a23a35156ac8ed962ccacf8413312e622425f8ff876d71d62fc32834f721d6
+  hemoglobin-a1c: 
+    fab0c38cbf83a758ce07c5dc39d940dc2c7584dc993e91481bf799334d7baf84
+  high-risk-race-or-ethnicity: 
+    d99e551f9a0b34818d9ca6898b82ac864d07ac15d299ea0521c39c5ea7e87df9
+  history-of-cardiovascular-disease: 
+    cb161bfd89d0e47cbb16d33a0d057bbfa12cfaf726f0fc833cfbd39e151addb1
+  human-immunodeficiency-virus-infection: 
+    c2bda1da342c61aec37fa2b40d4c855de2a8d0f17c587a09ae7e25b76e6fa957
+  hypertension: 7a929c95aa1f1fde3aa082ded682a3319df1296d0f1d2206a9e89ffe19b39e67
+  hypertriglyceridemia: 
+    553a030ed13c92b910fb7279716ad84ad9901fb3efb3aa10aa525141d2720803
+  insulin-resistance: 
+    f65f62127c275622f0441e05b890edb06f9c5362d62c74ec021bb7c49008b8d3
+  intensive-behavioral-lifestyle-intervention: 
+    1c47dd4bb1e8bf856bd1c976f7f51e87a5b5100082b7755ec330b73a899978d8
+  low-hdl-cholesterol: 
+    df029e114d7f431ca72e35ea669c2aed763d38015a86541b1a3bc250f660a3d5
+  obesity: 1c32d91499265791fe4a32222eac6590a8e75e6af6a06e133cb7be9a1a1c4a8a
+  oral-glucose-tolerance-test: 
+    7a8ff75af5f554caa0c2318bef5c325193feb5e6307e861dda74d8678f922202
+  overweight: eb7d4c334cc960432be9e07d6489301b4ef7b86f36eaa4c0b90665adbeeba066
+  physical-inactivity: 
+    446007e8b16add5d3a8d9acb36bff04d18b5383734004faf932d75c9aa1c9678
+  polycystic-ovary-syndrome: 
+    c48ce618298e4cf4673af61ada731968f065dcf6c263afe7f7d12c0c51b036c6
+  prediabetes: 54965856c327157b9c6c6f1507ca31690ce80f00f59f0ab06abb56ead14f88de
+  pregnancy: 717eb5ed88ab59772e07f0187e244008a15b84fee14eff2871c76ff1a91cbf01
+  random-plasma-glucose: 
+    9e15a72a36db0f534b9dbeb1d8f38c95eeee44c2b79ed24dd3ba9cd2c27a870d
+  type-2-diabetes-mellitus: 
+    ab5a60718e678be47e1de4e5ffeb4f1168dc2e03ccbc22f45f04b5c2ecd49140
+source_files:
+- sources/normalized/ada-guidelines-2024_md.md
+final_artifact: topics/diabetes-screening/structured/concepts/concepts.yaml
+review_artifact: topics/diabetes-screening/process/plans/concepts/

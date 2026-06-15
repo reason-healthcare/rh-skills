@@ -1,0 +1,32 @@
+{
+  "resourceType": "ValueSet",
+  "id": "prediabetes",
+  "url": "http://example.org/fhir/ValueSet/prediabetes",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "Prediabetes",
+  "title": "Prediabetes",
+  "compose": {
+    "include": [
+      {
+        "system": "http://snomed.info/sct",
+        "concept": [
+          {
+            "code": "714628002",
+            "display": "Prediabetes"
+          }
+        ]
+      },
+      {
+        "system": "http://hl7.org/fhir/sid/icd-10-cm",
+        "concept": [
+          {
+            "code": "R73.03",
+            "display": "Prediabetes"
+          }
+        ]
+      }
+    ]
+  }
+}

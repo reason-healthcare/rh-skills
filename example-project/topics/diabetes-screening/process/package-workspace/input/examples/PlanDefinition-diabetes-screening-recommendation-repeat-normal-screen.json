@@ -1,0 +1,58 @@
+{
+  "resourceType": "PlanDefinition",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"
+    ]
+  },
+  "id": "diabetes-screening-recommendation-repeat-normal-screen",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-repeat-normal-screen",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "DiabetesScreeningRecommendationRepeatNormalScreen",
+  "title": "Repeat screening at least every 3 years",
+  "description": "Interpret fasting glucose, A1C, OGTT, and symptom-triggered random glucose results.",
+  "type": {
+    "coding": [
+      {
+        "code": "eca-rule",
+        "display": "ECA Rule",
+        "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+      }
+    ]
+  },
+  "library": [
+    "http://example.org/fhir/Library/diabetes-screening-recommendation-logic"
+  ],
+  "action": [
+    {
+      "condition": [
+        {
+          "expression": {
+            "expression": "ScreeningResultNormal",
+            "language": "text/cql-identifier"
+          },
+          "kind": "applicability"
+        }
+      ],
+      "definitionCanonical": "http://example.org/fhir/ActivityDefinition/repeat-screening-three-years",
+      "description": "Repeat screening no less frequently than every 3 years after a normal result.",
+      "documentation": [
+        {
+          "citation": "Prediabetes should trigger referral to an intensive behavioral lifestyle intervention program and normal results should trigger repeat screening at least every 3 years. Evidence: ada-guidelines-2024_md: Prediabetes recommendation and screening interval statement.",
+          "label": "claim-005",
+          "type": "citation"
+        }
+      ],
+      "id": "repeat-screening-three-years",
+      "title": "Repeat screening at least every 3 years",
+      "trigger": [
+        {
+          "name": "diabetes-screening-result-review",
+          "type": "named-event"
+        }
+      ]
+    }
+  ]
+}

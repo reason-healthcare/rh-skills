@@ -72,9 +72,12 @@ export RH_TOPICS_ROOT="$RH_REPO_ROOT/topics"
 export RH_TRACKING_FILE="$RH_REPO_ROOT/tracking.yaml"
 export RH_SOURCES_ROOT="$RH_REPO_ROOT/sources"
 
-uv run rh-skills validate diabetes-screening screening-criteria
-uv run rh-skills validate diabetes-screening risk-factors
-uv run rh-skills validate diabetes-screening diabetes-screening-computable
+uv run rh-skills validate diabetes-screening decision-table
+uv run rh-skills validate diabetes-screening care-pathway
+uv run rh-skills validate diabetes-screening evidence-summary
+uv run rh-skills validate diabetes-screening computable decision-table
+uv run rh-skills validate diabetes-screening computable care-pathway
+uv run rh-skills validate diabetes-screening computable evidence-summary
 ```
 
 Agent-native skill bundles are built from the framework repository's curated

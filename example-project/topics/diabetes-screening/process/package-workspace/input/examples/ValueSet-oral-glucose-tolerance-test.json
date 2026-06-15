@@ -1,0 +1,23 @@
+{
+  "resourceType": "ValueSet",
+  "id": "oral-glucose-tolerance-test",
+  "url": "http://example.org/fhir/ValueSet/oral-glucose-tolerance-test",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "OralGlucoseToleranceTest",
+  "title": "Oral glucose tolerance test",
+  "compose": {
+    "include": [
+      {
+        "system": "http://snomed.info/sct",
+        "concept": [
+          {
+            "code": "113076002",
+            "display": "Glucose tolerance test"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "compose": {
+    "include": [
+      {
+        "concept": [
+          {
+            "code": "238131007",
+            "display": "Overweight"
+          }
+        ],
+        "system": "http://snomed.info/sct"
+      },
+      {
+        "concept": [
+          {
+            "code": "E66.3",
+            "display": "Overweight"
+          }
+        ],
+        "system": "http://hl7.org/fhir/sid/icd-10-cm"
+      }
+    ]
+  },
+  "date": "2026-06-15",
+  "id": "overweight",
+  "name": "Overweight",
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "title": "Overweight",
+  "url": "http://example.org/fhir/ValueSet/overweight",
+  "version": "0.1.0"
+}

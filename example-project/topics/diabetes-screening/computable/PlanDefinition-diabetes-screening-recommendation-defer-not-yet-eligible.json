@@ -1,0 +1,84 @@
+{
+  "resourceType": "PlanDefinition",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"
+    ]
+  },
+  "id": "diabetes-screening-recommendation-defer-not-yet-eligible",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-defer-not-yet-eligible",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "DiabetesScreeningRecommendationDeferNotYetEligible",
+  "title": "Defer routine screening until criteria are met",
+  "description": "Review age, BMI, pregnancy status, and diabetes risk factors to decide whether screening should be performed.",
+  "type": {
+    "coding": [
+      {
+        "code": "eca-rule",
+        "display": "ECA Rule",
+        "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+      }
+    ]
+  },
+  "library": [
+    "http://example.org/fhir/Library/diabetes-screening-recommendation-logic"
+  ],
+  "action": [
+    {
+      "condition": [
+        {
+          "expression": {
+            "expression": "not Age35YearsOrOlder",
+            "language": "text/cql-expression"
+          },
+          "kind": "applicability"
+        },
+        {
+          "expression": {
+            "expression": "not OverweightOrObesityPresent",
+            "language": "text/cql-expression"
+          },
+          "kind": "applicability"
+        },
+        {
+          "expression": {
+            "expression": "not AtLeastOneAdditionalDiabetesRiskFactorPresent",
+            "language": "text/cql-expression"
+          },
+          "kind": "applicability"
+        },
+        {
+          "expression": {
+            "expression": "not PregnancyPresent",
+            "language": "text/cql-expression"
+          },
+          "kind": "applicability"
+        }
+      ],
+      "definitionCanonical": "http://example.org/fhir/ActivityDefinition/defer-screening-until-criteria-met",
+      "description": "Do not proceed with routine asymptomatic screening when age and risk criteria are not currently met.",
+      "documentation": [
+        {
+          "citation": "Screening should begin at age 35 for all adults. Evidence: ada-guidelines-2024_md: For all patients, testing should begin at age 35.",
+          "label": "claim-001",
+          "type": "citation"
+        },
+        {
+          "citation": "Adults of any age with overweight or obesity and one or more additional risk factors should be considered for testing. Evidence: ada-guidelines-2024_md: Testing should be considered in adults of any age who are overweight or obese and who have one or more additional risk factors.",
+          "label": "claim-002",
+          "type": "citation"
+        }
+      ],
+      "id": "defer-screening-until-criteria-met",
+      "title": "Defer routine screening until criteria are met",
+      "trigger": [
+        {
+          "name": "adult-diabetes-screening-review",
+          "type": "named-event"
+        }
+      ]
+    }
+  ]
+}

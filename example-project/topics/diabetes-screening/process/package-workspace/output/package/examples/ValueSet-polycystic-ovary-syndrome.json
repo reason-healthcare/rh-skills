@@ -1,0 +1,32 @@
+{
+  "compose": {
+    "include": [
+      {
+        "concept": [
+          {
+            "code": "237055002",
+            "display": "Polycystic ovary syndrome"
+          }
+        ],
+        "system": "http://snomed.info/sct"
+      },
+      {
+        "concept": [
+          {
+            "code": "E28.2",
+            "display": "Polycystic ovarian syndrome"
+          }
+        ],
+        "system": "http://hl7.org/fhir/sid/icd-10-cm"
+      }
+    ]
+  },
+  "date": "2026-06-15",
+  "id": "polycystic-ovary-syndrome",
+  "name": "PolycysticOvarySyndrome",
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "title": "Polycystic ovary syndrome",
+  "url": "http://example.org/fhir/ValueSet/polycystic-ovary-syndrome",
+  "version": "0.1.0"
+}

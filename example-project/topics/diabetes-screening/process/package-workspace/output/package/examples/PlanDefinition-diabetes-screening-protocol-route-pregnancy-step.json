@@ -1,0 +1,40 @@
+{
+  "action": [
+    {
+      "definitionCanonical": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-route-pregnancy",
+      "description": "Use gestational diabetes screening criteria at 24-28 weeks for pregnant patients.",
+      "documentation": [
+        {
+          "citation": "Pregnancy uses different criteria with gestational diabetes screening at 24-28 weeks. Evidence: ada-guidelines-2024_md: Pregnant women use different criteria (GDM screening at 24-28 weeks).",
+          "label": "claim-003",
+          "type": "citation"
+        }
+      ],
+      "id": "route-pregnancy-step",
+      "title": "Route pregnancy to gestational diabetes criteria"
+    }
+  ],
+  "date": "2026-06-15",
+  "description": "Use gestational diabetes screening criteria at 24-28 weeks for pregnant patients.",
+  "id": "diabetes-screening-protocol-route-pregnancy-step",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition"
+    ]
+  },
+  "name": "DiabetesScreeningProtocolRoutePregnancyStep",
+  "resourceType": "PlanDefinition",
+  "status": "draft",
+  "title": "Route pregnancy to gestational diabetes criteria",
+  "type": {
+    "coding": [
+      {
+        "code": "workflow-definition",
+        "display": "Workflow Definition",
+        "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+      }
+    ]
+  },
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-route-pregnancy-step",
+  "version": "0.1.0"
+}

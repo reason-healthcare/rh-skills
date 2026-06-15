@@ -1,0 +1,32 @@
+{
+  "compose": {
+    "include": [
+      {
+        "concept": [
+          {
+            "code": "38341003",
+            "display": "Hypertensive disorder"
+          }
+        ],
+        "system": "http://snomed.info/sct"
+      },
+      {
+        "concept": [
+          {
+            "code": "I10",
+            "display": "Essential (primary) hypertension"
+          }
+        ],
+        "system": "http://hl7.org/fhir/sid/icd-10-cm"
+      }
+    ]
+  },
+  "date": "2026-06-15",
+  "id": "hypertension",
+  "name": "Hypertension",
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "title": "Hypertension",
+  "url": "http://example.org/fhir/ValueSet/hypertension",
+  "version": "0.1.0"
+}

@@ -1,0 +1,346 @@
+{
+  "definition": {
+    "resource": [
+      {
+        "description": "Route pregnant patients to gestational diabetes screening at 24-28 weeks rather than the general adult pathway.",
+        "exampleBoolean": true,
+        "name": "ApplyPregnancySpecificCriteria",
+        "reference": {
+          "reference": "ActivityDefinition/apply-pregnancy-specific-criteria"
+        }
+      },
+      {
+        "description": "Review age, BMI, and additional risk factors before ordering screening tests.",
+        "exampleBoolean": true,
+        "name": "AssessScreeningEligibility",
+        "reference": {
+          "reference": "ActivityDefinition/assess-screening-eligibility"
+        }
+      },
+      {
+        "description": "Do not proceed with routine asymptomatic screening when age and risk criteria are not currently met.",
+        "exampleBoolean": true,
+        "name": "DeferScreeningUntilCriteriaMet",
+        "reference": {
+          "reference": "ActivityDefinition/defer-screening-until-criteria-met"
+        }
+      },
+      {
+        "description": "Classify the patient as having diabetes when any ADA diabetes threshold is met.",
+        "exampleBoolean": true,
+        "name": "DiagnoseDiabetes",
+        "reference": {
+          "reference": "ActivityDefinition/diagnose-diabetes"
+        }
+      },
+      {
+        "description": "Classify the patient as having prediabetes when ADA prediabetes thresholds are met without diabetes thresholds.",
+        "exampleBoolean": true,
+        "name": "DiagnosePrediabetes",
+        "reference": {
+          "reference": "ActivityDefinition/diagnose-prediabetes"
+        }
+      },
+      {
+        "description": "Order or review fasting plasma glucose, A1C, OGTT, or random glucose with symptoms as clinically appropriate.",
+        "exampleBoolean": true,
+        "name": "PerformScreeningTests",
+        "reference": {
+          "reference": "ActivityDefinition/perform-screening-tests"
+        }
+      },
+      {
+        "description": "Refer patients with prediabetes to a DPP-modeled intensive behavioral lifestyle intervention program.",
+        "exampleBoolean": true,
+        "name": "ReferLifestyleIntervention",
+        "reference": {
+          "reference": "ActivityDefinition/refer-lifestyle-intervention"
+        }
+      },
+      {
+        "description": "Repeat screening no less frequently than every 3 years after a normal result.",
+        "exampleBoolean": true,
+        "name": "RepeatScreeningThreeYears",
+        "reference": {
+          "reference": "ActivityDefinition/repeat-screening-three-years"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "EvidenceSummaryCitation",
+        "reference": {
+          "reference": "Citation/evidence-summary-citation"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "EvidenceSummary",
+        "reference": {
+          "reference": "Evidence/evidence-summary"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "EvidenceSummaryEvidencevariable",
+        "reference": {
+          "reference": "EvidenceVariable/evidence-summary-evidencevariable"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationLogic",
+        "reference": {
+          "reference": "Library/diabetes-screening-recommendation-logic"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocol",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol"
+        }
+      },
+      {
+        "description": "Perform the general eligibility review before branching to testing, pregnancy-specific criteria, or deferral.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolAssessEligibilityStep",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-assess-eligibility-step"
+        }
+      },
+      {
+        "description": "Defer routine asymptomatic screening until ADA eligibility criteria are met.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolDeferScreeningStep",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-defer-screening-step"
+        }
+      },
+      {
+        "description": "Diagnose diabetes when a screening result meets ADA diabetes thresholds.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolDiagnoseDiabetesStep",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-diagnose-diabetes-step"
+        }
+      },
+      {
+        "description": "Assess age, weight status, risk factors, and pregnancy status.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolEligibilityPhase",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-eligibility-phase"
+        }
+      },
+      {
+        "description": "Apply ADA diabetes and prediabetes thresholds after testing.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolInterpretationPhase",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-interpretation-phase"
+        }
+      },
+      {
+        "description": "Schedule repeat screening after a normal result.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolNormalFollowupStep",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-normal-followup-step"
+        }
+      },
+      {
+        "description": "Identify prediabetes and refer to a DPP-modeled lifestyle intervention program.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolPrediabetesFollowupStep",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-prediabetes-followup-step"
+        }
+      },
+      {
+        "description": "Screen when age-based or weight-risk-based ADA criteria are met.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolProceedToScreeningStep",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-proceed-to-screening-step"
+        }
+      },
+      {
+        "description": "Use gestational diabetes screening criteria at 24-28 weeks for pregnant patients.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningProtocolRoutePregnancyStep",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-route-pregnancy-step"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendation",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation"
+        }
+      },
+      {
+        "description": "Review age, BMI, pregnancy status, and diabetes risk factors to decide whether screening should be performed.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationAssessGeneralEligibility",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-assess-general-eligibility"
+        }
+      },
+      {
+        "description": "Review age, BMI, pregnancy status, and diabetes risk factors to decide whether screening should be performed.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationDeferNotYetEligible",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-defer-not-yet-eligible"
+        }
+      },
+      {
+        "description": "Interpret fasting glucose, A1C, OGTT, and symptom-triggered random glucose results.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationDiagnoseDiabetes",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-diagnose-diabetes"
+        }
+      },
+      {
+        "description": "Interpret fasting glucose, A1C, OGTT, and symptom-triggered random glucose results.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationDiagnosePrediabetes",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-diagnose-prediabetes"
+        }
+      },
+      {
+        "description": "Interpret fasting glucose, A1C, OGTT, and symptom-triggered random glucose results.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationRepeatNormalScreen",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-repeat-normal-screen"
+        }
+      },
+      {
+        "description": "Review age, BMI, pregnancy status, and diabetes risk factors to decide whether screening should be performed.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationRoutePregnancy",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-route-pregnancy"
+        }
+      },
+      {
+        "description": "Review age, BMI, pregnancy status, and diabetes risk factors to decide whether screening should be performed.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationScreenAgeBased",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-screen-age-based"
+        }
+      },
+      {
+        "description": "Review age, BMI, pregnancy status, and diabetes risk factors to decide whether screening should be performed.",
+        "exampleBoolean": true,
+        "name": "DiabetesScreeningRecommendationScreenRiskBased",
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-screen-risk-based"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "FastingPlasmaGlucose",
+        "reference": {
+          "reference": "ValueSet/fasting-plasma-glucose"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "HemoglobinA1c",
+        "reference": {
+          "reference": "ValueSet/hemoglobin-a1c"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "HumanImmunodeficiencyVirusInfection",
+        "reference": {
+          "reference": "ValueSet/human-immunodeficiency-virus-infection"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "Hypertension",
+        "reference": {
+          "reference": "ValueSet/hypertension"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "Obesity",
+        "reference": {
+          "reference": "ValueSet/obesity"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "OralGlucoseToleranceTest",
+        "reference": {
+          "reference": "ValueSet/oral-glucose-tolerance-test"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "Overweight",
+        "reference": {
+          "reference": "ValueSet/overweight"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "PolycysticOvarySyndrome",
+        "reference": {
+          "reference": "ValueSet/polycystic-ovary-syndrome"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "Prediabetes",
+        "reference": {
+          "reference": "ValueSet/prediabetes"
+        }
+      },
+      {
+        "exampleBoolean": true,
+        "name": "Type2DiabetesMellitus",
+        "reference": {
+          "reference": "ValueSet/type-2-diabetes-mellitus"
+        }
+      }
+    ]
+  },
+  "dependsOn": [
+    {
+      "id": "hl7_fhir_us_core",
+      "packageId": "hl7.fhir.us.core",
+      "version": "6.1.0"
+    },
+    {
+      "id": "hl7_fhir_uv_cql",
+      "packageId": "hl7.fhir.uv.cql",
+      "version": "2.0.0"
+    },
+    {
+      "id": "hl7_fhir_uv_crmi",
+      "packageId": "hl7.fhir.uv.crmi",
+      "version": "1.0.0"
+    }
+  ],
+  "fhirVersion": [
+    "4.0.1"
+  ],
+  "id": "diabetes-screening",
+  "name": "DiabetesScreening",
+  "packageId": "reason.diabetes-screening",
+  "resourceType": "ImplementationGuide",
+  "status": "draft",
+  "title": "Diabetes Screening",
+  "url": "http://example.org/fhir/ImplementationGuide/diabetes-screening",
+  "version": "0.1.0"
+}

@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "hl7.fhir.r4.core": "4.0.1",
+    "hl7.fhir.us.core": "6.1.0",
+    "hl7.fhir.uv.cql": "2.0.0",
+    "hl7.fhir.uv.crmi": "1.0.0"
+  },
+  "fhirVersions": [
+    "4.0.1"
+  ],
+  "license": "CC0-1.0",
+  "name": "reason.diabetes-screening",
+  "url": "http://example.org/fhir",
+  "version": "0.1.0"
+}

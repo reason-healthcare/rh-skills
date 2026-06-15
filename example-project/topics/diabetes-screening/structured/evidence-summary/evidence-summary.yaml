@@ -1,0 +1,82 @@
+id: evidence-summary
+name: evidence-summary
+title: Evidence Summary
+version: 1.0.0
+status: draft
+domain: evidence summary
+description: What does the evidence say, including risk factors and clinical 
+  framing?
+derived_from:
+- ada-guidelines-2024_md
+artifact_type: evidence-summary
+clinical_question: What does the evidence say, including risk factors and 
+  clinical framing?
+sections:
+  summary: ADA 2024 recommends screening asymptomatic adults beginning at age 
+    35, or earlier when overweight or obesity is present with additional 
+    diabetes risk factors. The source also defines diagnostic thresholds for 
+    diabetes and prediabetes and specifies follow-up actions for normal and 
+    prediabetic results.
+  summary_points:
+  - finding_id: f-001
+    statement: Screening should begin at age 35 for all adults and earlier for 
+      adults with overweight or obesity plus at least one additional diabetes 
+      risk factor.
+    grade: guideline
+  - finding_id: f-002
+    statement: Additional risk factors include first-degree family history, 
+      high-risk race or ethnicity, cardiovascular disease, hypertension, low 
+      HDL, hypertriglyceridemia, PCOS, physical inactivity, and insulin 
+      resistance syndromes such as acanthosis nigricans.
+    grade: guideline
+  - finding_id: f-003
+    statement: Diabetes can be diagnosed by fasting plasma glucose >=126 mg/dL, 
+      2-hour plasma glucose during OGTT >=200 mg/dL, A1C >=6.5 percent, or 
+      random plasma glucose >=200 mg/dL with classic hyperglycemia symptoms.
+    grade: guideline
+  - finding_id: f-004
+    statement: Prediabetes is defined by fasting plasma glucose 100-125 mg/dL, 
+      2-hour plasma glucose during OGTT 140-199 mg/dL, or A1C 5.7-6.4 percent.
+    grade: guideline
+  - finding_id: f-005
+    statement: Normal results should trigger repeat screening at a minimum 
+      3-year interval, while prediabetes should trigger referral to an intensive
+      behavioral lifestyle intervention program.
+    grade: guideline
+  evidence_traceability:
+  - claim_id: claim-001
+    statement: Universal age-based adult screening begins at age 35.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Screening for Prediabetes and Diabetes: testing should begin at age
+        35."
+  - claim_id: claim-002
+    statement: Earlier screening is recommended for adults with overweight or 
+      obesity plus one or more additional diabetes risk factors.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Screening for Prediabetes and Diabetes: overweight or obese adults
+        with additional risk factors should be considered for testing."
+  - claim_id: claim-003
+    statement: Diabetes diagnostic thresholds include fasting plasma glucose, 
+      2-hour OGTT glucose, A1C, and random plasma glucose with symptoms.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Diagnostic Criteria: fasting plasma glucose, 2-hour plasma glucose,
+        A1C, and random plasma glucose criteria."
+  - claim_id: claim-004
+    statement: Prediabetes thresholds are explicitly defined for fasting 
+      glucose, 2-hour OGTT glucose, and A1C.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Prediabetes Criteria: FPG 100-125, 2-h PG 140-199, A1C 5.7-6.4 percent."
+  - claim_id: claim-005
+    statement: Prediabetes should prompt referral to an intensive behavioral 
+      lifestyle intervention program and normal screening should be repeated at 
+      least every 3 years.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Recommendation to refer to a DPP-modeled program and repeat normal
+        testing at minimum 3-year intervals."
+concerns: []
+

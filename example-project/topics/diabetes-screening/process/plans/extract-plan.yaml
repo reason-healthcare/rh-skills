@@ -1,0 +1,102 @@
+topic: diabetes-screening
+plan_type: extract
+status: approved
+reviewer: Codex
+reviewed_at: '2026-06-15T17:35:54Z'
+review_summary: Plan regenerated from the refreshed ADA 2024 normalized source. 
+  Assessment was intentionally replaced with care-pathway because the source 
+  defines screening workflow and follow-up transitions, not an assessment 
+  instrument. Terminology review was finalized with focused approvals for core 
+  disorders and diagnostic tests.
+cross_artifact_issues: []
+artifacts:
+- name: evidence-summary
+  artifact_type: evidence-summary
+  custom_artifact_type:
+  source_files:
+  - sources/normalized/ada-guidelines-2024_md.md
+  purpose: Synthesizes evidence on clinical outcomes for downstream advisory 
+    content and guideline alignment.
+  rationale: Synthesizes 1 normalized source(s) contributing to evidence-summary
+    for review and downstream formalization.
+  key_questions:
+  - What does the evidence say, including risk factors and clinical framing?
+  required_sections:
+  - summary
+  - summary_points
+  - evidence_traceability
+  concerns: []
+  reviewer_decision: approved
+  approval_notes: Approved as a narrow narrative evidence companion to the 
+    screening logic.
+- name: decision-table
+  artifact_type: decision-table
+  custom_artifact_type:
+  source_files:
+  - sources/normalized/ada-guidelines-2024_md.md
+  purpose: Encodes event-condition-action clinical decision logic for CDS rule 
+    formalization.
+  rationale: Synthesizes 1 normalized source(s) contributing to decision-table 
+    for review and downstream formalization.
+  key_questions:
+  - What recommendation-scoped triggers, local conditions, and actions form the 
+    decision logic?
+  required_sections:
+  - summary
+  - events
+  - conditions
+  - data_elements
+  - actions
+  - rules
+  - evidence_traceability
+  concerns: []
+  reviewer_decision: approved
+  approval_notes: Primary recommendation logic artifact for ADA screening 
+    eligibility, testing, and follow-up.
+- name: care-pathway
+  artifact_type: care-pathway
+  custom_artifact_type:
+  source_files:
+  - sources/normalized/ada-guidelines-2024_md.md
+  purpose: Organizes the screening workflow, transitions, and follow-up steps 
+    for downstream protocol formalization.
+  rationale: Synthesizes 1 normalized source(s) contributing to care-pathway for
+    review and downstream formalization.
+  key_questions:
+  - What clinical phases, transitions, and follow-up steps define the screening 
+    pathway?
+  required_sections:
+  - summary
+  - steps
+  - evidence_traceability
+  concerns: []
+  reviewer_decision: approved
+  approval_notes: Approved as the workflow companion to the decision table, 
+    covering sequencing and follow-up transitions.
+- name: concepts
+  artifact_type: terminology
+  custom_artifact_type:
+  source_files: &id001
+  - sources/normalized/ada-guidelines-2024_md.md
+  purpose: Defines the reviewed terminology package for downstream ValueSet and 
+    ConceptMap formalization.
+  rationale: Packages 1 normalized source(s) worth of reviewed concept coding 
+    into an explicit L2 terminology artifact.
+  key_questions:
+  - What reviewed codes and terminology define the clinical concepts for this 
+    topic?
+  required_sections:
+  - summary
+  - value_sets
+  concerns: []
+  reviewer_decision: approved
+  approval_notes: Approved reviewed terminology package anchored to screening 
+    disorders and tests.
+concept_review:
+  source_files: *id001
+  status: approved
+  concept_count: 23
+  review_artifact: topics/diabetes-screening/process/plans/concepts/
+  final_artifact: topics/diabetes-screening/structured/concepts/concepts.yaml
+  reviewer: Codex
+  reviewed_at: '2026-06-15T17:35:13Z'

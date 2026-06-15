@@ -1,0 +1,21 @@
+{
+  "certainty": [
+    {
+      "rating": {
+        "coding": [
+          {
+            "code": "moderate"
+          }
+        ]
+      }
+    }
+  ],
+  "date": "2026-06-15",
+  "id": "evidence-summary",
+  "name": "EvidenceSummary",
+  "resourceType": "Evidence",
+  "status": "draft",
+  "title": "Evidence Summary",
+  "url": "http://example.org/fhir/Evidence/evidence-summary",
+  "version": "0.1.0"
+}
