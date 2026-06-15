@@ -634,8 +634,9 @@ rules:
 
 1. **Extract from "then" clauses** in recommendations
 2. **Map to FHIR resource types** (ServiceRequest, Procedure, MedicationRequest, CommunicationRequest, etc.)
-3. **Derive fhir_activity_definition ID** from action name
-4. **Include ALL guideline recommendations** — if guideline says "surgeon should X", create an action for X
+3. **Attach terminology at L2 for executable leaf actions** via `concept_refs[]` and/or `codings[]`
+4. **Derive fhir_activity_definition ID** from action name
+5. **Include ALL guideline recommendations** — if guideline says "surgeon should X", create an action for X
 
 ### Example: Conditional Action
 
@@ -650,6 +651,11 @@ actions:
     type: "MedicationRequest"
     description: "Initiate metformin therapy"
     details: "Start metformin 500mg twice daily with meals"
+    concept_refs: ["metformin"]
+    codings:
+      - system: "http://www.nlm.nih.gov/research/umls/rxnorm"
+        code: "6809"
+        display: "Metformin"
     fhir_activity_definition: "diabetes-initiate-metformin"
 
 rules:
@@ -672,6 +678,11 @@ actions:
     type: "ServiceRequest"
     description: "Obtain CT imaging"
     details: "Fine-cut CT for surgical planning and anatomy definition"
+    concept_refs: ["computed-tomography-of-paranasal-sinuses"]
+    codings:
+      - system: "http://snomed.info/sct"
+        code: "241526005"
+        display: "Computed tomography of paranasal sinuses"
     fhir_activity_definition: "surgical-ct-imaging"
 
 rules:
@@ -694,6 +705,11 @@ rules:
 | "verify diagnosis" | Diagnostic | DiagnosticReport |
 | "educate patient" | Education | CommunicationRequest |
 | "refer to specialist" | Referral | ServiceRequest |
+
+For terminology attachment at L2:
+- Apply coding expectations to **actions without children**.
+- Parent grouping actions may omit coding when they only organize child tasks.
+- If the parent action is itself a recommendation that could stand alone, code it too.
 
 ---
 
