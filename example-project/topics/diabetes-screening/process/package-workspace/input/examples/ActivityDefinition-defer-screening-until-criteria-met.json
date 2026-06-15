@@ -1,0 +1,17 @@
+{
+  "resourceType": "ActivityDefinition",
+  "id": "defer-screening-until-criteria-met",
+  "url": "http://example.org/fhir/ActivityDefinition/defer-screening-until-criteria-met",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "DeferScreeningUntilCriteriaMet",
+  "title": "Defer routine screening until criteria are met",
+  "description": "Do not proceed with routine asymptomatic screening when age and risk criteria are not currently met.",
+  "kind": "ServiceRequest",
+  "intent": "proposal",
+  "doNotPerform": true,
+  "code": {
+    "text": "Defer routine screening until criteria are met"
+  }
+}

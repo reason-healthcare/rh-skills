@@ -1,0 +1,40 @@
+{
+  "resourceType": "PlanDefinition",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition"
+    ]
+  },
+  "id": "diabetes-screening-protocol-normal-followup-step",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-normal-followup-step",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "DiabetesScreeningProtocolNormalFollowupStep",
+  "title": "Repeat normal screening in at least 3 years",
+  "description": "Schedule repeat screening after a normal result.",
+  "type": {
+    "coding": [
+      {
+        "code": "workflow-definition",
+        "display": "Workflow Definition",
+        "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+      }
+    ]
+  },
+  "action": [
+    {
+      "definitionCanonical": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-repeat-normal-screen",
+      "description": "Schedule repeat screening after a normal result.",
+      "documentation": [
+        {
+          "citation": "Prediabetes requires lifestyle intervention referral and normal results require repeat screening at a minimum 3-year interval. Evidence: ada-guidelines-2024_md: Prediabetes recommendation and repeat screening interval.",
+          "label": "claim-005",
+          "type": "citation"
+        }
+      ],
+      "id": "normal-followup-step",
+      "title": "Repeat normal screening in at least 3 years"
+    }
+  ]
+}

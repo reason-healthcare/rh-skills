@@ -1,0 +1,16 @@
+{
+  "code": {
+    "text": "Repeat screening at least every 3 years"
+  },
+  "date": "2026-06-15",
+  "description": "Repeat screening no less frequently than every 3 years after a normal result.",
+  "id": "repeat-screening-three-years",
+  "intent": "proposal",
+  "kind": "ServiceRequest",
+  "name": "RepeatScreeningThreeYears",
+  "resourceType": "ActivityDefinition",
+  "status": "draft",
+  "title": "Repeat screening at least every 3 years",
+  "url": "http://example.org/fhir/ActivityDefinition/repeat-screening-three-years",
+  "version": "0.1.0"
+}

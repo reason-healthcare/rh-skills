@@ -1,0 +1,5 @@
+name: DiabetesScreening
+id: diabetes-screening
+canonical: http://example.org/fhir
+status: draft
+version: 0.1.0

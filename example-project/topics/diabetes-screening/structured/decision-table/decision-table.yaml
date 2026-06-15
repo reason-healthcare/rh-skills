@@ -1,0 +1,375 @@
+id: decision-table
+name: decision-table
+title: Decision Table
+version: 1.0.0
+status: draft
+domain: decision table
+description: What recommendation-scoped triggers, local conditions, and actions 
+  form the decision logic?
+derived_from:
+- ada-guidelines-2024_md
+artifact_type: decision-table
+clinical_question: What recommendation-scoped triggers, local conditions, and 
+  actions form the decision logic?
+sections:
+  summary: ADA 2024 screening logic starts with screening eligibility review, 
+    moves to test selection and interpretation, then branches to repeat 
+    screening, diabetes diagnosis, prediabetes referral, or pregnancy-specific 
+    criteria.
+  pathway_phases:
+  - id: eligibility
+    label: Screening eligibility assessment
+    description: Determine whether screening should occur now.
+  - id: testing
+    label: Screening test execution
+    description: Perform fasting glucose, A1C, OGTT, or random glucose testing.
+  - id: interpretation
+    label: Result interpretation
+    description: Apply diabetes and prediabetes thresholds to screening results.
+  - id: followup
+    label: Follow-up planning
+    description: Repeat normal screening or refer prediabetes for intervention.
+  events:
+  - id: eligibility-review
+    label: Screening eligibility review
+    description: Review age, BMI, pregnancy status, and diabetes risk factors to
+      decide whether screening should be performed.
+    trigger:
+      type: named-event
+      name: adult-diabetes-screening-review
+    phase: eligibility
+  - id: result-review
+    label: Screening result review
+    description: Interpret fasting glucose, A1C, OGTT, and symptom-triggered 
+      random glucose results.
+    trigger:
+      type: named-event
+      name: diabetes-screening-result-review
+    phase: interpretation
+  conditions:
+  - id: age-35-or-older
+    label: Age 35 years or older
+    values:
+    - Yes
+    - No
+  - id: overweight-or-obese
+    label: Overweight or obesity present
+    values:
+    - Yes
+    - No
+  - id: has-additional-risk-factor
+    label: At least one additional diabetes risk factor present
+    values:
+    - Yes
+    - No
+  - id: pregnant
+    label: Pregnancy present
+    values:
+    - Yes
+    - No
+  - id: diabetes-threshold-met
+    label: Diabetes diagnostic threshold met
+    values:
+    - Yes
+    - No
+  - id: prediabetes-threshold-met
+    label: Prediabetes threshold met
+    values:
+    - Yes
+    - No
+  - id: normal-screen
+    label: Screening result normal
+    values:
+    - Yes
+    - No
+  data_elements:
+  - id: de-age
+    condition_id: age-35-or-older
+    label: Age
+    description: Adult age at time of screening eligibility review.
+    data_type: demographic
+  - id: de-bmi-risk
+    condition_id: overweight-or-obese
+    label: BMI-based weight category
+    description: BMI threshold meeting overweight or obesity criteria, including
+      lower threshold for Asian American adults.
+    data_type: finding
+  - id: de-risk-factors
+    condition_id: has-additional-risk-factor
+    label: Additional diabetes risk factors
+    description: Family history, race-ethnicity risk, cardiovascular disease, 
+      hypertension, lipid abnormalities, PCOS, inactivity, or insulin resistance
+      syndromes.
+    data_type: finding
+  - id: de-pregnancy
+    condition_id: pregnant
+    label: Pregnancy status
+    description: Determine whether gestational diabetes criteria should be used 
+      instead of the adult asymptomatic screening pathway.
+    data_type: finding
+  - id: de-screening-result
+    condition_id: diabetes-threshold-met
+    label: Screening laboratory result
+    description: Fasting plasma glucose, A1C, 2-hour OGTT glucose, or random 
+      glucose result with symptoms.
+    data_type: laboratory
+  - id: de-prediabetes-threshold
+    condition_id: prediabetes-threshold-met
+    label: Prediabetes threshold result
+    description: Result pattern consistent with ADA prediabetes thresholds when 
+      diabetes thresholds are not met.
+    data_type: laboratory
+  - id: de-normal-screen
+    condition_id: normal-screen
+    label: Normal screening result
+    description: Screening result that does not meet ADA diabetes or prediabetes
+      thresholds.
+    data_type: laboratory
+  actions:
+  - id: assess-screening-eligibility
+    label: Assess diabetes screening eligibility
+    description: Review age, BMI, and additional risk factors before ordering 
+      screening tests.
+    kind: ServiceRequest
+    evidence_traceability_ids:
+    - claim-001
+    - claim-002
+    provenance:
+      source: source_direct
+  - id: perform-screening-tests
+    label: Perform ADA diabetes screening tests
+    description: Order or review fasting plasma glucose, A1C, OGTT, or random 
+      glucose with symptoms as clinically appropriate.
+    kind: ServiceRequest
+    parent_action_id: assess-screening-eligibility
+    produces_data_elements:
+    - de-screening-result
+    evidence_traceability_ids:
+    - claim-003
+    provenance:
+      source: source_direct
+  - id: apply-pregnancy-specific-criteria
+    label: Apply gestational diabetes screening criteria
+    description: Route pregnant patients to gestational diabetes screening at 
+      24-28 weeks rather than the general adult pathway.
+    kind: ServiceRequest
+    evidence_traceability_ids:
+    - claim-006
+    provenance:
+      source: source_direct
+  - id: diagnose-diabetes
+    label: Diagnose diabetes
+    description: Classify the patient as having diabetes when any ADA diabetes 
+      threshold is met.
+    kind: ServiceRequest
+    evidence_traceability_ids:
+    - claim-003
+    provenance:
+      source: source_direct
+  - id: diagnose-prediabetes
+    label: Diagnose prediabetes
+    description: Classify the patient as having prediabetes when ADA prediabetes
+      thresholds are met without diabetes thresholds.
+    kind: ServiceRequest
+    evidence_traceability_ids:
+    - claim-004
+    provenance:
+      source: source_direct
+  - id: refer-lifestyle-intervention
+    label: Refer to intensive behavioral lifestyle intervention
+    description: Refer patients with prediabetes to a DPP-modeled intensive 
+      behavioral lifestyle intervention program.
+    kind: ServiceRequest
+    evidence_traceability_ids:
+    - claim-005
+    provenance:
+      source: source_direct
+  - id: repeat-screening-three-years
+    label: Repeat screening at least every 3 years
+    description: Repeat screening no less frequently than every 3 years after a 
+      normal result.
+    kind: ServiceRequest
+    evidence_traceability_ids:
+    - claim-005
+    provenance:
+      source: source_direct
+  - id: defer-screening-until-criteria-met
+    label: Defer routine screening until criteria are met
+    description: Do not proceed with routine asymptomatic screening when age and
+      risk criteria are not currently met.
+    kind: ServiceRequest
+    do_not_perform: true
+    evidence_traceability_ids:
+    - claim-001
+    - claim-002
+    provenance:
+      source: inferred
+      rationale: ADA specifies screening beginning at age 35 or earlier only 
+        when weight and risk-factor criteria are met.
+  rules:
+  - id: rule-assess-general-eligibility
+    event: eligibility-review
+    phase: eligibility
+    action: assess-screening-eligibility
+    rationale: Eligibility review is the first step before any diabetes 
+      screening test is selected.
+    then:
+    - assess-screening-eligibility
+    evidence_traceability_ids:
+    - claim-001
+    - claim-002
+    provenance:
+      source: source_direct
+  - id: rule-screen-age-based
+    event: eligibility-review
+    phase: eligibility
+    when:
+      age-35-or-older: Yes
+    action: perform-screening-tests
+    rationale: ADA recommends testing beginning at age 35 for all adults.
+    then:
+    - perform-screening-tests
+    evidence_traceability_ids:
+    - claim-001
+    provenance:
+      source: source_direct
+  - id: rule-screen-risk-based
+    event: eligibility-review
+    phase: eligibility
+    when:
+      overweight-or-obese: Yes
+      has-additional-risk-factor: Yes
+    action: perform-screening-tests
+    rationale: Adults of any age who are overweight or obese with additional 
+      risk factors should be screened.
+    then:
+    - perform-screening-tests
+    evidence_traceability_ids:
+    - claim-002
+    provenance:
+      source: source_direct
+  - id: rule-route-pregnancy
+    event: eligibility-review
+    phase: eligibility
+    when:
+      pregnant: Yes
+    action: apply-pregnancy-specific-criteria
+    rationale: Pregnancy routes the patient to gestational diabetes screening 
+      criteria.
+    then:
+    - apply-pregnancy-specific-criteria
+    evidence_traceability_ids:
+    - claim-006
+    provenance:
+      source: source_direct
+  - id: rule-defer-not-yet-eligible
+    event: eligibility-review
+    phase: eligibility
+    when:
+      age-35-or-older: No
+      overweight-or-obese: No
+      has-additional-risk-factor: No
+      pregnant: No
+    action: defer-screening-until-criteria-met
+    rationale: Routine asymptomatic screening is deferred when ADA eligibility 
+      triggers are absent.
+    then:
+    - defer-screening-until-criteria-met
+    evidence_traceability_ids:
+    - claim-001
+    - claim-002
+    provenance:
+      source: inferred
+      rationale: Routine asymptomatic screening is framed around age 35 or 
+        earlier screening only when weight and risk-factor criteria are present.
+  - id: rule-diagnose-diabetes
+    event: result-review
+    phase: interpretation
+    when:
+      diabetes-threshold-met: Yes
+    action: diagnose-diabetes
+    rationale: Any ADA diabetes threshold is sufficient to diagnose diabetes.
+    then:
+    - diagnose-diabetes
+    evidence_traceability_ids:
+    - claim-003
+    provenance:
+      source: source_direct
+  - id: rule-diagnose-prediabetes
+    event: result-review
+    phase: interpretation
+    when:
+      diabetes-threshold-met: No
+      prediabetes-threshold-met: Yes
+    action: diagnose-prediabetes
+    rationale: Prediabetes requires classification and referral when prediabetes
+      thresholds are met without diabetes thresholds.
+    then:
+    - diagnose-prediabetes
+    - refer-lifestyle-intervention
+    evidence_traceability_ids:
+    - claim-004
+    - claim-005
+    provenance:
+      source: source_direct
+  - id: rule-repeat-normal-screen
+    event: result-review
+    phase: followup
+    when:
+      normal-screen: Yes
+    action: repeat-screening-three-years
+    rationale: ADA recommends repeat screening at a minimum 3-year interval 
+      after a normal result.
+    then:
+    - repeat-screening-three-years
+    evidence_traceability_ids:
+    - claim-005
+    provenance:
+      source: source_direct
+  evidence_traceability:
+  - claim_id: claim-001
+    statement: Screening should begin at age 35 for all adults.
+    strength: consensus
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "For all patients, testing should begin at age 35."
+  - claim_id: claim-002
+    statement: Adults of any age with overweight or obesity and one or more 
+      additional risk factors should be considered for testing.
+    strength: consensus
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Testing should be considered in adults of any age who are overweight
+        or obese and who have one or more additional risk factors."
+  - claim_id: claim-003
+    statement: Diabetes diagnostic thresholds include fasting plasma glucose 
+      >=126 mg/dL, 2-hour OGTT glucose >=200 mg/dL, A1C >=6.5 percent, or random
+      glucose >=200 mg/dL with classic symptoms.
+    strength: consensus
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Diagnostic Criteria section."
+  - claim_id: claim-004
+    statement: Prediabetes thresholds include fasting plasma glucose 100-125 
+      mg/dL, 2-hour OGTT glucose 140-199 mg/dL, or A1C 5.7-6.4 percent.
+    strength: consensus
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Prediabetes Criteria section."
+  - claim_id: claim-005
+    statement: Prediabetes should trigger referral to an intensive behavioral 
+      lifestyle intervention program and normal results should trigger repeat 
+      screening at least every 3 years.
+    strength: consensus
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "Prediabetes recommendation and screening interval statement."
+  - claim_id: claim-006
+    statement: Pregnant women use different criteria with gestational diabetes 
+      screening at 24-28 weeks.
+    strength: consensus
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: "High-Risk Populations section: pregnant women use different criteria."
+concerns: []
+

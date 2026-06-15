@@ -1,0 +1,295 @@
+{
+  "resourceType": "ImplementationGuide",
+  "id": "diabetes-screening",
+  "url": "http://example.org/fhir/ImplementationGuide/diabetes-screening",
+  "version": "0.1.0",
+  "name": "DiabetesScreening",
+  "title": "Diabetes Screening",
+  "status": "draft",
+  "packageId": "reason.diabetes-screening",
+  "fhirVersion": [
+    "4.0.1"
+  ],
+  "dependsOn": [
+    {
+      "id": "hl7fhirr4core",
+      "packageId": "hl7.fhir.r4.core",
+      "uri": "http://hl7.org/fhir/4.0.1",
+      "version": "4.0.1"
+    },
+    {
+      "id": "hl7fhiruscore",
+      "packageId": "hl7.fhir.us.core",
+      "uri": "https://packages.fhir.org/hl7.fhir.us.core/6.1.0",
+      "version": "6.1.0"
+    },
+    {
+      "id": "hl7fhiruvcrmi",
+      "packageId": "hl7.fhir.uv.crmi",
+      "uri": "https://packages.fhir.org/hl7.fhir.uv.crmi/1.0.0",
+      "version": "1.0.0"
+    },
+    {
+      "id": "hl7fhiruvcql",
+      "packageId": "hl7.fhir.uv.cql",
+      "uri": "https://packages.fhir.org/hl7.fhir.uv.cql/2.0.0",
+      "version": "2.0.0"
+    }
+  ],
+  "definition": {
+    "resource": [
+      {
+        "reference": {
+          "reference": "ActivityDefinition/apply-pregnancy-specific-criteria"
+        },
+        "name": "ActivityDefinition-apply-pregnancy-specific-criteria"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/assess-screening-eligibility"
+        },
+        "name": "ActivityDefinition-assess-screening-eligibility"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/defer-screening-until-criteria-met"
+        },
+        "name": "ActivityDefinition-defer-screening-until-criteria-met"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/diagnose-diabetes"
+        },
+        "name": "ActivityDefinition-diagnose-diabetes"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/diagnose-prediabetes"
+        },
+        "name": "ActivityDefinition-diagnose-prediabetes"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/perform-screening-tests"
+        },
+        "name": "ActivityDefinition-perform-screening-tests"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/refer-lifestyle-intervention"
+        },
+        "name": "ActivityDefinition-refer-lifestyle-intervention"
+      },
+      {
+        "reference": {
+          "reference": "ActivityDefinition/repeat-screening-three-years"
+        },
+        "name": "ActivityDefinition-repeat-screening-three-years"
+      },
+      {
+        "reference": {
+          "reference": "Citation/evidence-summary-citation"
+        },
+        "name": "Citation-evidence-summary-citation"
+      },
+      {
+        "reference": {
+          "reference": "DiabetesScreeningRecommendationLogic"
+        },
+        "name": "DiabetesScreeningRecommendationLogic"
+      },
+      {
+        "reference": {
+          "reference": "Evidence/evidence-summary"
+        },
+        "name": "Evidence-evidence-summary"
+      },
+      {
+        "reference": {
+          "reference": "EvidenceVariable/evidence-summary-evidencevariable"
+        },
+        "name": "EvidenceVariable-evidence-summary-evidencevariable"
+      },
+      {
+        "reference": {
+          "reference": "Library/diabetes-screening-recommendation-logic"
+        },
+        "name": "Library-diabetes-screening-recommendation-logic"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-assess-eligibility-step"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-assess-eligibility-step"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-defer-screening-step"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-defer-screening-step"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-diagnose-diabetes-step"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-diagnose-diabetes-step"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-eligibility-phase"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-eligibility-phase"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-interpretation-phase"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-interpretation-phase"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-normal-followup-step"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-normal-followup-step"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-prediabetes-followup-step"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-prediabetes-followup-step"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-proceed-to-screening-step"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-proceed-to-screening-step"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol-route-pregnancy-step"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol-route-pregnancy-step"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-protocol"
+        },
+        "name": "PlanDefinition-diabetes-screening-protocol"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-assess-general-eligibility"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation-assess-general-eligibility"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-defer-not-yet-eligible"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation-defer-not-yet-eligible"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-diagnose-diabetes"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation-diagnose-diabetes"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-diagnose-prediabetes"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation-diagnose-prediabetes"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-repeat-normal-screen"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation-repeat-normal-screen"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-route-pregnancy"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation-route-pregnancy"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-screen-age-based"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation-screen-age-based"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation-screen-risk-based"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation-screen-risk-based"
+      },
+      {
+        "reference": {
+          "reference": "PlanDefinition/diabetes-screening-recommendation"
+        },
+        "name": "PlanDefinition-diabetes-screening-recommendation"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/fasting-plasma-glucose"
+        },
+        "name": "ValueSet-fasting-plasma-glucose"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/hemoglobin-a1c"
+        },
+        "name": "ValueSet-hemoglobin-a1c"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/human-immunodeficiency-virus-infection"
+        },
+        "name": "ValueSet-human-immunodeficiency-virus-infection"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/hypertension"
+        },
+        "name": "ValueSet-hypertension"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/obesity"
+        },
+        "name": "ValueSet-obesity"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/oral-glucose-tolerance-test"
+        },
+        "name": "ValueSet-oral-glucose-tolerance-test"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/overweight"
+        },
+        "name": "ValueSet-overweight"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/polycystic-ovary-syndrome"
+        },
+        "name": "ValueSet-polycystic-ovary-syndrome"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/prediabetes"
+        },
+        "name": "ValueSet-prediabetes"
+      },
+      {
+        "reference": {
+          "reference": "ValueSet/type-2-diabetes-mellitus"
+        },
+        "name": "ValueSet-type-2-diabetes-mellitus"
+      }
+    ]
+  }
+}

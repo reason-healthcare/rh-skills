@@ -1,0 +1,197 @@
+id: concepts
+name: concepts
+title: Diabetes Screening Concept Catalog
+version: 1.0.0
+status: draft
+domain: terminology
+description: Deduplicated concept catalog derived from topic concept annotations
+  and reviewed for standardized coding.
+derived_from:
+- ada-guidelines-2024_md
+artifact_type: terminology
+review_status: approved
+sections:
+  summary: Terminology review output derived from topic concept annotations. 
+    Each concept was deduplicated across sources before human review.
+  value_sets:
+  - id: fasting-plasma-glucose
+    name: Fasting plasma glucose
+    concept_refs:
+    - fasting-plasma-glucose
+  - id: hemoglobin-a1c
+    name: Hemoglobin A1c
+    concept_refs:
+    - hemoglobin-a1c
+  - id: human-immunodeficiency-virus-infection
+    name: Human immunodeficiency virus infection
+    concept_refs:
+    - human-immunodeficiency-virus-infection
+  - id: hypertension
+    name: Hypertension
+    concept_refs:
+    - hypertension
+  - id: obesity
+    name: Obesity
+    concept_refs:
+    - obesity
+  - id: oral-glucose-tolerance-test
+    name: Oral glucose tolerance test
+    concept_refs:
+    - oral-glucose-tolerance-test
+  - id: overweight
+    name: Overweight
+    concept_refs:
+    - overweight
+  - id: polycystic-ovary-syndrome
+    name: Polycystic ovary syndrome
+    concept_refs:
+    - polycystic-ovary-syndrome
+  - id: prediabetes
+    name: Prediabetes
+    concept_refs:
+    - prediabetes
+  - id: type-2-diabetes-mellitus
+    name: Type 2 diabetes mellitus
+    concept_refs:
+    - type-2-diabetes-mellitus
+concepts:
+- id: fasting-plasma-glucose
+  name: Fasting plasma glucose
+  type: lab
+  role:
+  - outcome
+  context: 'is diagnosed by any one of the following criteria: 1. **Fasting plasma
+    glucose (FPG)** ≥126 mg/dL (7.0 mmol/L) — fasting defined as no'
+  codes:
+  - system: http://loinc.org
+    code: 1558-6
+    display: Fasting glucose [Mass/volume] in Serum or Plasma
+- id: hemoglobin-a1c
+  name: Hemoglobin A1c
+  type: lab
+  role:
+  - outcome
+  codes:
+  - system: http://loinc.org
+    code: 4548-4
+    display: HbA1c/Total Hgb, Blood
+- id: human-immunodeficiency-virus-infection
+  name: Human immunodeficiency virus infection
+  type: condition
+  role:
+  - comorbidity
+  - risk-factor
+  codes:
+  - system: http://snomed.info/sct
+    code: '86406008'
+    display: Human immunodeficiency virus infection
+- id: hypertension
+  name: Hypertension
+  type: condition
+  role:
+  - comorbidity
+  - risk-factor
+  context: Asian American, Pacific Islander) - History of cardiovascular disease
+    - Hypertension (≥140/90 mmHg or on therapy for hypertension) - HDL 
+    cholesterol
+  codes:
+  - system: http://snomed.info/sct
+    code: '38341003'
+    display: Hypertensive disorder
+  - system: http://hl7.org/fhir/sid/icd-10-cm
+    code: I10
+    display: Essential (primary) hypertension
+- id: obesity
+  name: Obesity
+  type: condition
+  role:
+  - risk-factor
+  context: '- Other clinical conditions associated with insulin resistance (e.g.,
+    severe obesity, acanthosis nigricans) For all patients, testing should begin at
+    age'
+  codes:
+  - system: http://snomed.info/sct
+    code: '414916001'
+    display: Obesity
+  - system: http://hl7.org/fhir/sid/icd-10-cm
+    code: E66
+    display: Overweight and obesity
+- id: oral-glucose-tolerance-test
+  name: Oral glucose tolerance test
+  type: procedure
+  role:
+  - outcome
+  context: 2. **2-hour plasma glucose** ≥200 mg/dL (11.1 mmol/L) during an oral 
+    glucose tolerance test (OGTT) using a glucose load of 75 g anhydrous glucose
+  codes:
+  - system: http://snomed.info/sct
+    code: '113076002'
+    display: Glucose tolerance test
+- id: overweight
+  name: Overweight
+  type: condition
+  role:
+  - risk-factor
+  context: should be considered in adults of any age who are overweight or obese
+    (BMI ≥25 kg/m² or ≥23 kg/m² in Asian
+  codes:
+  - system: http://snomed.info/sct
+    code: '238131007'
+    display: Overweight
+  - system: http://hl7.org/fhir/sid/icd-10-cm
+    code: E66.3
+    display: Overweight
+- id: polycystic-ovary-syndrome
+  name: Polycystic ovary syndrome
+  type: condition
+  role:
+  - comorbidity
+  - risk-factor
+  context: a triglyceride level >250 mg/dL (2.82 mmol/L) - Women with polycystic
+    ovary syndrome (PCOS) - Physical inactivity - Other clinical conditions 
+    associated with
+  codes:
+  - system: http://snomed.info/sct
+    code: '237055002'
+    display: Polycystic ovary syndrome
+  - system: http://hl7.org/fhir/sid/icd-10-cm
+    code: E28.2
+    display: Polycystic ovarian syndrome
+- id: prediabetes
+  name: Prediabetes
+  type: condition
+  role:
+  - inclusion-criterion
+  context: 'Section 2: Classification and Diagnosis of Diabetes ### Screening for
+    Prediabetes and Diabetes **Who should be screened:** Testing for prediabetes and/or'
+  codes:
+  - system: http://snomed.info/sct
+    code: '714628002'
+    display: Prediabetes
+  - system: http://hl7.org/fhir/sid/icd-10-cm
+    code: R73.03
+    display: Prediabetes
+  expansions:
+  - system: http://snomed.info/sct
+    relation: is_a
+    code: '714628002'
+    rationale: Capture narrower prediabetes findings when present in downstream 
+      terminology expansion.
+- id: type-2-diabetes-mellitus
+  name: Type 2 diabetes mellitus
+  type: condition
+  role:
+  - inclusion-criterion
+  codes:
+  - system: http://snomed.info/sct
+    code: '44054006'
+    display: Type 2 diabetes mellitus
+  - system: http://hl7.org/fhir/sid/icd-10-cm
+    code: E11
+    display: Type 2 diabetes mellitus
+  expansions:
+  - system: http://snomed.info/sct
+    relation: is_a
+    code: '44054006'
+    rationale: Capture descendant type 2 diabetes concepts for screening logic 
+      and downstream value-set reuse.

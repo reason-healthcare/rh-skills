@@ -1,0 +1,12 @@
+{
+  "files": [
+    {
+      "filename": "ImplementationGuide.json",
+      "id": "diabetes-screening",
+      "resourceType": "ImplementationGuide",
+      "url": "http://example.org/fhir/ImplementationGuide/diabetes-screening",
+      "version": "0.1.0"
+    }
+  ],
+  "index-version": 2
+}

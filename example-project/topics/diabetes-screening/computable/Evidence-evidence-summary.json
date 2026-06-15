@@ -1,0 +1,21 @@
+{
+  "resourceType": "Evidence",
+  "id": "evidence-summary",
+  "url": "http://example.org/fhir/Evidence/evidence-summary",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "EvidenceSummary",
+  "title": "Evidence Summary",
+  "certainty": [
+    {
+      "rating": {
+        "coding": [
+          {
+            "code": "moderate"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+# packager.toml — rh package configuration
+id = "reason.diabetes-screening"
+version = "0.1.0"
+canonical = "http://example.org/fhir"
+fhir_version = "4.0.1"
+license = "CC0-1.0"
+status = "draft"
+
+[dependencies]
+"hl7.fhir.r4.core" = "4.0.1"
+"hl7.fhir.us.core" = "6.1.0"
+"hl7.fhir.uv.crmi" = "1.0.0"
+"hl7.fhir.uv.cql" = "2.0.0"
+
+[hooks]
+before_build = []
+after_build  = []
+before_pack  = []
+after_pack   = []

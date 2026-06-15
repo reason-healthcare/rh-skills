@@ -1,0 +1,300 @@
+{
+  "files": [
+    {
+      "filename": "ActivityDefinition-apply-pregnancy-specific-criteria.json",
+      "id": "apply-pregnancy-specific-criteria",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/apply-pregnancy-specific-criteria",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-assess-screening-eligibility.json",
+      "id": "assess-screening-eligibility",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/assess-screening-eligibility",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-defer-screening-until-criteria-met.json",
+      "id": "defer-screening-until-criteria-met",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/defer-screening-until-criteria-met",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-diagnose-diabetes.json",
+      "id": "diagnose-diabetes",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/diagnose-diabetes",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-diagnose-prediabetes.json",
+      "id": "diagnose-prediabetes",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/diagnose-prediabetes",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-perform-screening-tests.json",
+      "id": "perform-screening-tests",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/perform-screening-tests",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-refer-lifestyle-intervention.json",
+      "id": "refer-lifestyle-intervention",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/refer-lifestyle-intervention",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ActivityDefinition-repeat-screening-three-years.json",
+      "id": "repeat-screening-three-years",
+      "kind": "ServiceRequest",
+      "resourceType": "ActivityDefinition",
+      "url": "http://example.org/fhir/ActivityDefinition/repeat-screening-three-years",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "Citation-evidence-summary-citation.json",
+      "id": "evidence-summary-citation",
+      "resourceType": "Citation",
+      "url": "http://example.org/fhir/Citation/evidence-summary-citation",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "Evidence-evidence-summary.json",
+      "id": "evidence-summary",
+      "resourceType": "Evidence",
+      "url": "http://example.org/fhir/Evidence/evidence-summary",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "EvidenceVariable-evidence-summary-evidencevariable.json",
+      "id": "evidence-summary-evidencevariable",
+      "resourceType": "EvidenceVariable",
+      "url": "http://example.org/fhir/EvidenceVariable/evidence-summary-evidencevariable",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "Library-diabetes-screening-recommendation-logic.json",
+      "id": "diabetes-screening-recommendation-logic",
+      "resourceType": "Library",
+      "url": "http://example.org/fhir/Library/diabetes-screening-recommendation-logic",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-assess-eligibility-step.json",
+      "id": "diabetes-screening-protocol-assess-eligibility-step",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-assess-eligibility-step",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-defer-screening-step.json",
+      "id": "diabetes-screening-protocol-defer-screening-step",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-defer-screening-step",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-diagnose-diabetes-step.json",
+      "id": "diabetes-screening-protocol-diagnose-diabetes-step",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-diagnose-diabetes-step",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-eligibility-phase.json",
+      "id": "diabetes-screening-protocol-eligibility-phase",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-eligibility-phase",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-interpretation-phase.json",
+      "id": "diabetes-screening-protocol-interpretation-phase",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-interpretation-phase",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-normal-followup-step.json",
+      "id": "diabetes-screening-protocol-normal-followup-step",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-normal-followup-step",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-prediabetes-followup-step.json",
+      "id": "diabetes-screening-protocol-prediabetes-followup-step",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-prediabetes-followup-step",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-proceed-to-screening-step.json",
+      "id": "diabetes-screening-protocol-proceed-to-screening-step",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-proceed-to-screening-step",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol-route-pregnancy-step.json",
+      "id": "diabetes-screening-protocol-route-pregnancy-step",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol-route-pregnancy-step",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-protocol.json",
+      "id": "diabetes-screening-protocol",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-protocol",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation-assess-general-eligibility.json",
+      "id": "diabetes-screening-recommendation-assess-general-eligibility",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-assess-general-eligibility",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation-defer-not-yet-eligible.json",
+      "id": "diabetes-screening-recommendation-defer-not-yet-eligible",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-defer-not-yet-eligible",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation-diagnose-diabetes.json",
+      "id": "diabetes-screening-recommendation-diagnose-diabetes",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-diagnose-diabetes",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation-diagnose-prediabetes.json",
+      "id": "diabetes-screening-recommendation-diagnose-prediabetes",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-diagnose-prediabetes",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation-repeat-normal-screen.json",
+      "id": "diabetes-screening-recommendation-repeat-normal-screen",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-repeat-normal-screen",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation-route-pregnancy.json",
+      "id": "diabetes-screening-recommendation-route-pregnancy",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-route-pregnancy",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation-screen-age-based.json",
+      "id": "diabetes-screening-recommendation-screen-age-based",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-screen-age-based",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation-screen-risk-based.json",
+      "id": "diabetes-screening-recommendation-screen-risk-based",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-screen-risk-based",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "PlanDefinition-diabetes-screening-recommendation.json",
+      "id": "diabetes-screening-recommendation",
+      "resourceType": "PlanDefinition",
+      "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-fasting-plasma-glucose.json",
+      "id": "fasting-plasma-glucose",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/fasting-plasma-glucose",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-hemoglobin-a1c.json",
+      "id": "hemoglobin-a1c",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/hemoglobin-a1c",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-human-immunodeficiency-virus-infection.json",
+      "id": "human-immunodeficiency-virus-infection",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/human-immunodeficiency-virus-infection",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-hypertension.json",
+      "id": "hypertension",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/hypertension",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-obesity.json",
+      "id": "obesity",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/obesity",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-oral-glucose-tolerance-test.json",
+      "id": "oral-glucose-tolerance-test",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/oral-glucose-tolerance-test",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-overweight.json",
+      "id": "overweight",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/overweight",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-polycystic-ovary-syndrome.json",
+      "id": "polycystic-ovary-syndrome",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/polycystic-ovary-syndrome",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-prediabetes.json",
+      "id": "prediabetes",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/prediabetes",
+      "version": "0.1.0"
+    },
+    {
+      "filename": "ValueSet-type-2-diabetes-mellitus.json",
+      "id": "type-2-diabetes-mellitus",
+      "resourceType": "ValueSet",
+      "url": "http://example.org/fhir/ValueSet/type-2-diabetes-mellitus",
+      "version": "0.1.0"
+    }
+  ],
+  "index-version": 2
+}

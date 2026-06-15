@@ -1,0 +1,58 @@
+{
+  "resourceType": "PlanDefinition",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"
+    ]
+  },
+  "id": "diabetes-screening-recommendation-route-pregnancy",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-route-pregnancy",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "DiabetesScreeningRecommendationRoutePregnancy",
+  "title": "Apply gestational diabetes screening criteria",
+  "description": "Review age, BMI, pregnancy status, and diabetes risk factors to decide whether screening should be performed.",
+  "type": {
+    "coding": [
+      {
+        "code": "eca-rule",
+        "display": "ECA Rule",
+        "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+      }
+    ]
+  },
+  "library": [
+    "http://example.org/fhir/Library/diabetes-screening-recommendation-logic"
+  ],
+  "action": [
+    {
+      "condition": [
+        {
+          "expression": {
+            "expression": "PregnancyPresent",
+            "language": "text/cql-identifier"
+          },
+          "kind": "applicability"
+        }
+      ],
+      "definitionCanonical": "http://example.org/fhir/ActivityDefinition/apply-pregnancy-specific-criteria",
+      "description": "Route pregnant patients to gestational diabetes screening at 24-28 weeks rather than the general adult pathway.",
+      "documentation": [
+        {
+          "citation": "Pregnant women use different criteria with gestational diabetes screening at 24-28 weeks. Evidence: ada-guidelines-2024_md: High-Risk Populations section: pregnant women use different criteria.",
+          "label": "claim-006",
+          "type": "citation"
+        }
+      ],
+      "id": "apply-pregnancy-specific-criteria",
+      "title": "Apply gestational diabetes screening criteria",
+      "trigger": [
+        {
+          "name": "adult-diabetes-screening-review",
+          "type": "named-event"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "resourceType": "ActivityDefinition",
+  "id": "diagnose-diabetes",
+  "url": "http://example.org/fhir/ActivityDefinition/diagnose-diabetes",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "DiagnoseDiabetes",
+  "title": "Diagnose diabetes",
+  "description": "Classify the patient as having diabetes when any ADA diabetes threshold is met.",
+  "kind": "ServiceRequest",
+  "intent": "proposal",
+  "code": {
+    "coding": [
+      {
+        "code": "44054006",
+        "display": "Type 2 diabetes mellitus",
+        "system": "http://snomed.info/sct"
+      },
+      {
+        "code": "E11",
+        "display": "Type 2 diabetes mellitus",
+        "system": "http://hl7.org/fhir/sid/icd-10-cm"
+      }
+    ],
+    "text": "Type 2 diabetes mellitus"
+  }
+}

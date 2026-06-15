@@ -1,0 +1,28 @@
+{
+  "resourceType": "ActivityDefinition",
+  "id": "apply-pregnancy-specific-criteria",
+  "url": "http://example.org/fhir/ActivityDefinition/apply-pregnancy-specific-criteria",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "ApplyPregnancySpecificCriteria",
+  "title": "Apply gestational diabetes screening criteria",
+  "description": "Route pregnant patients to gestational diabetes screening at 24-28 weeks rather than the general adult pathway.",
+  "kind": "ServiceRequest",
+  "intent": "proposal",
+  "code": {
+    "coding": [
+      {
+        "code": "44054006",
+        "display": "Type 2 diabetes mellitus",
+        "system": "http://snomed.info/sct"
+      },
+      {
+        "code": "E11",
+        "display": "Type 2 diabetes mellitus",
+        "system": "http://hl7.org/fhir/sid/icd-10-cm"
+      }
+    ],
+    "text": "Type 2 diabetes mellitus"
+  }
+}

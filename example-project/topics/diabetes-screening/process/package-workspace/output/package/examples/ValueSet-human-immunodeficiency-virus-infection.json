@@ -1,0 +1,23 @@
+{
+  "compose": {
+    "include": [
+      {
+        "concept": [
+          {
+            "code": "86406008",
+            "display": "Human immunodeficiency virus infection"
+          }
+        ],
+        "system": "http://snomed.info/sct"
+      }
+    ]
+  },
+  "date": "2026-06-15",
+  "id": "human-immunodeficiency-virus-infection",
+  "name": "HumanImmunodeficiencyVirusInfection",
+  "resourceType": "ValueSet",
+  "status": "draft",
+  "title": "Human immunodeficiency virus infection",
+  "url": "http://example.org/fhir/ValueSet/human-immunodeficiency-virus-infection",
+  "version": "0.1.0"
+}

@@ -1,0 +1,65 @@
+platforms:
+- generic
+- claude
+- cursor
+- gemini
+source: /Users/taylorkingston/projects/rh-skills/skills/.curated
+skills:
+  rh-inf-cql:
+    version: 1.1.0
+    checksums:
+      generic: 1ca744232d70344696ce62cebd0855d1c741d6eb90b107ce48ea712de750cc99
+      claude: c17ab18642ba0723becaf7a90e469d17f3ae5d047414f2c1f78de1404949d4b9
+      cursor: 484864c210eecb3883204d763e2a405ad5b4c5e74bc4b90090c56164b0d9a926
+      gemini: 8d8d2d3179a6fbbaca5a5a21c9e27589f59b5424d143b848244413eb9623d56a
+  rh-inf-discovery:
+    version: 1.0.0
+    checksums:
+      generic: 0e64d7a2d32402e601a73e40bdbc7e6f07af5b678dc7a2834c1712f38a8ba997
+      claude: 0c46472bdbb1fd6641a092cb59337e289944880f43f4276414083cf5b098442d
+      cursor: 1bd55cc0fade3dc97899d298866539f382b6efd8d71bdeca3622428c06fe5169
+      gemini: fd784fd82827094199a54d535015ed0436b595c47b893141947b4a431e3ef174
+  rh-inf-extract:
+    version: 1.1.0
+    checksums:
+      generic: c4d49cd4db5b484ae252f305bc2d092156e6f2f8a20689b6b6084c7c8d552cd5
+      claude: 89e9f34072b741360e3bcabd7e1df8af0e9acc6a8fdb7347669712b0d12464fc
+      cursor: 5b19df290040ed0662a98d6ed6b9f12d9ead9305029fcf350ba83d858e5f9444
+      gemini: 38dd6c459599cb20305a4116673ca4549313b44e6885244be932fc7716d803d7
+  rh-inf-formalize:
+    version: 2.0.0
+    checksums:
+      generic: 70cbb3686ddf0de1de10384511edc1907be5b99de3f96be5b36c362422c1c671
+      claude: c2f7ba0a1a49a3c49a5a7b0301a1baf87674467f6a02891bf1f814f0585bf188
+      cursor: 7ca2852b2a1f068eabc9911fa0e4f084d4a86dbdc7e8c86cbed2082b63b03a12
+      gemini: 036cc3f85b0c0fb056be08be066c7ddeac009d6cc391d1b7dfe8aa7ca11df771
+  rh-inf-ingest:
+    version: 1.0.0
+    checksums:
+      generic: 63a92ca808ee46ead7069e40692b51126382080c22ad6373e2775b9ca80e750a
+      claude: 849a8163d8fb1d6f475c43503799f872282f6914bbdf971cf48cd1b90d2462cc
+      cursor: 8b2dcfdfede3cfc0628accf81edef3993ca2c602981bf7fb2eae65ec4b65a1dd
+      gemini: 44407dc0481e85a3730810bf83d200cef6f62c4afc262d0f2d97953c5209add4
+  rh-inf-resolve:
+    version: 1.0.0
+    checksums:
+      generic: 0196ae1acb0ff91ebdfa63c643274a07f214c786d017a757b0ae60c748e05f8b
+      claude: 982e587d4c1a4c2fd8c1e7d8fc8211cd746bbc4e0642f404fcca3f33cff03398
+      cursor: d56b62ee50ad36289354a3861c9bbf273ecd4f0a2525e73023ba72b0bf5028f8
+      gemini: cfe74c452e2d01a42fa961b4beab7fb71dce10313041a7257dbd4e44c1bf1d9a
+  rh-inf-status:
+    version: 1.0.0
+    checksums:
+      generic: 24562c8379487fcb86302808d41da7deb12c92c7d10ba2ea36db0889f465753d
+      claude: b3774c5376c9158bcde5e9fdfb827be38e381bb3a3813c2f6c46e504f905ffc5
+      cursor: e33bd40acc0bed27fe7ebb06b93ca08650b058132afc578e7f311025a2c0c058
+      gemini: b2c56c901520407179d389b8d7d15b6f99c22ab710a6bcb98129da764e982894
+  rh-inf-verify:
+    version: 1.0.0
+    checksums:
+      generic: 0ae5a450c9462039226bfd08735324425afec65b405dbcc2db2ec53860015516
+      claude: e8b5a00e7972bbbba1485b11ac42ce57a0e8c2e2382331b699503666da113e09
+      cursor: 90ae59096715bc47c7701e5788bfa6db5b49b31244959f0ae73d0ffbb22cc69f
+      gemini: 2d56e19cfa74edf3d6c27bfe98bf029ee7840234f5d34be1a9d8f04725007ea5
+rh_skills_version: 0.1.0
+locked_at: '2026-06-15T17:25:30+00:00'

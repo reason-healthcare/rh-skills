@@ -1,0 +1,15 @@
+{
+  "characteristic": [
+    {
+      "description": "Population/intervention/outcome criteria to be refined from the evidence summary"
+    }
+  ],
+  "date": "2026-06-15",
+  "id": "evidence-summary-evidencevariable",
+  "name": "EvidenceSummaryEvidencevariable",
+  "resourceType": "EvidenceVariable",
+  "status": "draft",
+  "title": "Evidence Summary Evidencevariable",
+  "url": "http://example.org/fhir/EvidenceVariable/evidence-summary-evidencevariable",
+  "version": "0.1.0"
+}

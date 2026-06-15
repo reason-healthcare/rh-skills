@@ -1,0 +1,75 @@
+topic: diabetes-screening
+plan_type: formalize
+status: approved
+reviewer: Codex
+reviewed_at: '2026-06-15T17:41:47Z'
+artifacts:
+- name: diabetes-screening-evidence-summary
+  source_artifact: evidence-summary
+  artifact_type: evidence-summary
+  strategy: evidence-summary
+  l3_targets:
+  - Evidence
+  - EvidenceVariable
+  - Citation
+  input_artifacts:
+  - evidence-summary
+  rationale: Formalizes 1 'evidence-summary' artifact(s) → Evidence, 
+    EvidenceVariable, Citation.
+  required_sections:
+  - evidence
+  implementation_target: false
+  reviewer_decision: approved
+  approval_notes: ''
+- name: diabetes-screening-decision-table
+  source_artifact: decision-table
+  artifact_type: decision-table
+  strategy: decision-table
+  l3_targets:
+  - PlanDefinition (eca-rule)
+  - ActivityDefinition
+  - Library (CQL)
+  input_artifacts:
+  - decision-table
+  rationale: Formalizes 1 'decision-table' artifact(s) → PlanDefinition 
+    (eca-rule), ActivityDefinition, Library (CQL). ⚠ Overlaps with care-pathway 
+    on PlanDefinition.
+  required_sections:
+  - actions
+  - libraries
+  implementation_target: true
+  reviewer_decision: approved
+  approval_notes: ''
+- name: diabetes-screening-care-pathway
+  source_artifact: care-pathway
+  artifact_type: care-pathway
+  strategy: care-pathway
+  l3_targets:
+  - PlanDefinition (clinical-protocol)
+  - ActivityDefinition
+  input_artifacts:
+  - care-pathway
+  rationale: Formalizes 1 'care-pathway' artifact(s) → PlanDefinition 
+    (clinical-protocol), ActivityDefinition. ⚠ Overlaps with decision-table on 
+    PlanDefinition.
+  required_sections:
+  - pathways
+  - actions
+  implementation_target: false
+  reviewer_decision: approved
+  approval_notes: ''
+- name: concepts
+  source_artifact: concepts
+  artifact_type: terminology
+  strategy: terminology
+  l3_targets:
+  - ValueSet
+  - ConceptMap
+  input_artifacts:
+  - concepts
+  rationale: Formalizes 1 'terminology' artifact(s) → ValueSet, ConceptMap.
+  required_sections:
+  - value_sets
+  implementation_target: false
+  reviewer_decision: approved
+  approval_notes: ''

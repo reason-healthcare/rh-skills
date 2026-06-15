@@ -1,0 +1,23 @@
+{
+  "code": {
+    "coding": [
+      {
+        "code": "113076002",
+        "display": "Glucose tolerance test",
+        "system": "http://snomed.info/sct"
+      }
+    ],
+    "text": "Oral glucose tolerance test"
+  },
+  "date": "2026-06-15",
+  "description": "Review age, BMI, and additional risk factors before ordering screening tests.",
+  "id": "assess-screening-eligibility",
+  "intent": "proposal",
+  "kind": "ServiceRequest",
+  "name": "AssessScreeningEligibility",
+  "resourceType": "ActivityDefinition",
+  "status": "draft",
+  "title": "Assess diabetes screening eligibility",
+  "url": "http://example.org/fhir/ActivityDefinition/assess-screening-eligibility",
+  "version": "0.1.0"
+}

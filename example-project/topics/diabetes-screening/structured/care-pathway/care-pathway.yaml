@@ -1,0 +1,165 @@
+id: care-pathway
+name: care-pathway
+title: Care Pathway
+version: 1.0.0
+status: draft
+domain: care pathway
+description: What clinical phases, transitions, and follow-up steps define the 
+  screening pathway?
+derived_from:
+- ada-guidelines-2024_md
+artifact_type: care-pathway
+clinical_question: What clinical phases, transitions, and follow-up steps define
+  the screening pathway?
+sections:
+  summary: The ADA screening pathway begins with eligibility review, branches to
+    testing when age or weight-risk criteria are met, routes pregnant patients 
+    to gestational criteria, and ends with diabetes diagnosis, prediabetes 
+    referral, or repeat screening after normal results.
+  steps:
+  - id: adult-diabetes-screening-pathway
+    label: Adult diabetes screening pathway
+    description: Overall ADA 2024 pathway for adult diabetes and prediabetes 
+      screening.
+    actor: clinician
+  - id: eligibility-phase
+    label: Review screening eligibility
+    description: Assess age, weight status, risk factors, and pregnancy status.
+    actor: clinician
+    parent_id: adult-diabetes-screening-pathway
+  - id: assess-eligibility-step
+    label: Assess age, weight, and risk factors
+    description: Perform the general eligibility review before branching to 
+      testing, pregnancy-specific criteria, or deferral.
+    actor: clinician
+    parent_id: eligibility-phase
+    rule_id: rule-assess-general-eligibility
+    action_labels:
+    - Assess diabetes screening eligibility
+    evidence_traceability_ids:
+    - claim-001
+    - claim-002
+    provenance:
+      source: source_direct
+  - id: route-pregnancy-step
+    label: Route pregnancy to gestational diabetes criteria
+    description: Use gestational diabetes screening criteria at 24-28 weeks for 
+      pregnant patients.
+    actor: clinician
+    parent_id: eligibility-phase
+    rule_id: rule-route-pregnancy
+    action_labels:
+    - Apply gestational diabetes screening criteria
+    evidence_traceability_ids:
+    - claim-003
+    provenance:
+      source: source_direct
+  - id: proceed-to-screening-step
+    label: Proceed to adult screening testing
+    description: Screen when age-based or weight-risk-based ADA criteria are 
+      met.
+    actor: clinician
+    parent_id: eligibility-phase
+    rule_ids:
+    - rule-screen-age-based
+    - rule-screen-risk-based
+    action_labels:
+    - Perform ADA diabetes screening tests
+    evidence_traceability_ids:
+    - claim-001
+    - claim-002
+    provenance:
+      source: source_direct
+  - id: defer-screening-step
+    label: Defer routine screening
+    description: Defer routine asymptomatic screening until ADA eligibility 
+      criteria are met.
+    actor: clinician
+    parent_id: eligibility-phase
+    rule_id: rule-defer-not-yet-eligible
+    action_labels:
+    - Defer routine screening until criteria are met
+    evidence_traceability_ids:
+    - claim-001
+    - claim-002
+    provenance:
+      source: inferred
+      rationale: The general screening pathway is only activated once age or 
+        weight-risk criteria apply.
+  - id: interpretation-phase
+    label: Interpret screening results
+    description: Apply ADA diabetes and prediabetes thresholds after testing.
+    actor: clinician
+    parent_id: adult-diabetes-screening-pathway
+  - id: diagnose-diabetes-step
+    label: Diagnose diabetes
+    description: Diagnose diabetes when a screening result meets ADA diabetes 
+      thresholds.
+    actor: clinician
+    parent_id: interpretation-phase
+    rule_id: rule-diagnose-diabetes
+    action_labels:
+    - Diagnose diabetes
+    evidence_traceability_ids:
+    - claim-004
+    provenance:
+      source: source_direct
+  - id: prediabetes-followup-step
+    label: Diagnose prediabetes and refer lifestyle intervention
+    description: Identify prediabetes and refer to a DPP-modeled lifestyle 
+      intervention program.
+    actor: clinician
+    parent_id: interpretation-phase
+    rule_id: rule-diagnose-prediabetes
+    action_labels:
+    - Diagnose prediabetes
+    - Refer to intensive behavioral lifestyle intervention
+    evidence_traceability_ids:
+    - claim-005
+    provenance:
+      source: source_direct
+  - id: normal-followup-step
+    label: Repeat normal screening in at least 3 years
+    description: Schedule repeat screening after a normal result.
+    actor: clinician
+    parent_id: interpretation-phase
+    rule_id: rule-repeat-normal-screen
+    action_labels:
+    - Repeat screening at least every 3 years
+    evidence_traceability_ids:
+    - claim-005
+    provenance:
+      source: source_direct
+  evidence_traceability:
+  - claim_id: claim-001
+    statement: Age-based screening begins at 35 years.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: For all patients, testing should begin at age 35.
+  - claim_id: claim-002
+    statement: Earlier screening is supported for overweight or obese adults 
+      with additional diabetes risk factors.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: Testing should be considered in adults of any age who are 
+        overweight or obese and who have one or more additional risk factors.
+  - claim_id: claim-003
+    statement: Pregnancy uses different criteria with gestational diabetes 
+      screening at 24-28 weeks.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: Pregnant women use different criteria (GDM screening at 24-28 
+        weeks).
+  - claim_id: claim-004
+    statement: Diabetes diagnostic thresholds are explicitly defined for fasting
+      glucose, 2-hour OGTT glucose, A1C, and symptom-triggered random glucose.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: Diagnostic Criteria section.
+  - claim_id: claim-005
+    statement: Prediabetes requires lifestyle intervention referral and normal 
+      results require repeat screening at a minimum 3-year interval.
+    evidence:
+    - source: ada-guidelines-2024_md
+      locator: Prediabetes recommendation and repeat screening interval.
+concerns: []

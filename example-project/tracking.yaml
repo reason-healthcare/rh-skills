@@ -6,6 +6,23 @@ sources:
   checksum: "7a0d2d4d7057b7f4d10046f08b7fdfe35ecff374717c507215679b9b4853a8e9"
   ingested_at: "2026-04-03T00:00:00Z"
   text_extracted: false
+- name: ada-guidelines-2024_md
+  file: sources/ada-guidelines-2024.md
+  type: clinical-guideline
+  checksum: 5ab36f57b47ab616df818db58467fcf594042b454d357866756dd80929d5e944
+  ingested_at: '2026-06-15T17:27:19Z'
+  text_extracted: true
+  topic: diabetes-screening
+  normalized: sources/normalized/ada-guidelines-2024_md.md
+  evidence_level: v
+  domain_tags:
+  - diabetes-screening
+  - prediabetes
+  - diagnosis
+  - preventive-care
+  classified_at: '2026-06-15T17:27:43Z'
+  annotated_at: '2026-06-15T17:27:57Z'
+  concept_count: 23
 topics:
 - name: diabetes-screening
   title: "Diabetes Screening"
@@ -14,19 +31,36 @@ topics:
   author: "Clinical Informatics Team"
   created_at: "2026-04-03T00:00:00Z"
   structured:
-  - name: screening-criteria
+  - name: concepts
+    file: topics/diabetes-screening/structured/concepts/concepts.yaml
+    created_at: '2026-06-15T17:38:40Z'
+    checksum: c0b86d07037cb487e992d318e2388905fe4714e6afb6dbd8e4cdfd7bb576c54d
+    derived_from:
+    - ada-guidelines-2024_md
+    artifact_type: terminology
+  - name: evidence-summary
     file: 
-      topics/diabetes-screening/structured/screening-criteria/screening-criteria.yaml
-    created_at: "2026-04-03T00:00:00Z"
-    checksum: "b61662af23fa7b93b679055389aaa5fb2a7efa8b668225c7fff618fa2792ee10"
+      topics/diabetes-screening/structured/evidence-summary/evidence-summary.yaml
+    created_at: '2026-06-15T17:38:45Z'
+    checksum: 47b9bb74acc2facdec82b492d527ccb0c70b4572ab14dc9eb4f34db87d97d27a
     derived_from:
-    - ada-guidelines-2024
-  - name: risk-factors
-    file: topics/diabetes-screening/structured/risk-factors/risk-factors.yaml
-    created_at: "2026-04-03T00:00:00Z"
-    checksum: "9a295b631ca73c257eabbf2dbbcfb0d42befad2c83327c1280792c821e9c7ab7"
+    - ada-guidelines-2024_md
+    artifact_type: evidence-summary
+  - name: decision-table
+    file: 
+      topics/diabetes-screening/structured/decision-table/decision-table.yaml
+    created_at: '2026-06-15T17:40:26Z'
+    checksum: e83c6749e3609b53f8f9c151535a82c920385b635af581cd7de9f130a0fa2804
     derived_from:
-    - ada-guidelines-2024
+    - ada-guidelines-2024_md
+    artifact_type: decision-table
+  - name: care-pathway
+    file: topics/diabetes-screening/structured/care-pathway/care-pathway.yaml
+    created_at: '2026-06-15T17:40:57Z'
+    checksum: 3940b7b963bb0c6eda6a3a0d2a1df489bffe32564868d5695eb6c5ab2b6cee69
+    derived_from:
+    - ada-guidelines-2024_md
+    artifact_type: care-pathway
   computable:
   - name: diabetes-screening-computable
     file: 
@@ -36,17 +70,151 @@ topics:
     converged_from:
     - screening-criteria
     - risk-factors
+  - name: care-pathway
+    files:
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-eligibility-phase.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-interpretation-phase.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-assess-eligibility-step.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-route-pregnancy-step.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-proceed-to-screening-step.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-defer-screening-step.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-diagnose-diabetes-step.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-prediabetes-followup-step.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-normal-followup-step.json
+    created_at: '2026-06-15T17:42:57Z'
+    checksums:
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol.json: 
+        3e64ac4e9274a16a228fb425ddf7a46b7726a96ec9d448e78f8141278232b2ec
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-eligibility-phase.json: 
+        1b15fc572aa17ed1ea410ad0ba2a53e5d713d7798e4e72227d40eabab0aebf22
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-interpretation-phase.json: 
+        91e1ba605414c794926b9d6196c062024708170ae182a3d3220e95ab66f061ef
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-assess-eligibility-step.json: 
+        0c919e0286497bf0e53c535cccb277917015c9121d113c13b9c72ad346961355
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-route-pregnancy-step.json: 
+        1c4fc99408f7077a6e8dff53883b434fcec4c68d60d993cd6b3ab32dd07689c1
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-proceed-to-screening-step.json: 
+        2dc6ec96883ca344283831e685274dcfd820eeee1da263b5802310414fb70bac
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-defer-screening-step.json: 
+        fdc8e4e2c19b5a49f16b63438384b40b5bf57cab015ff90e8e0e9e7af18f0f2f
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-diagnose-diabetes-step.json: 
+        3e9b046bbd23d3808a302b5b5d7aa7d82d91f6c46801dc739600cda242cdf62b
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-prediabetes-followup-step.json: 
+        430527284e4f775493190d7996a24e69bc230d946181421c87b44af63cc49ba9
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-protocol-normal-followup-step.json: 
+        283215f921e74ce7608ee225b51340d8a001591a91473022f2303686d249201a
+    converged_from:
+    - care-pathway
+    strategy: care-pathway
+  - name: decision-table
+    files:
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-assess-general-eligibility.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-screen-age-based.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-screen-risk-based.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-route-pregnancy.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-defer-not-yet-eligible.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-diagnose-diabetes.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-diagnose-prediabetes.json
+    - topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-repeat-normal-screen.json
+    - topics/diabetes-screening/computable/ActivityDefinition-assess-screening-eligibility.json
+    - topics/diabetes-screening/computable/ActivityDefinition-perform-screening-tests.json
+    - topics/diabetes-screening/computable/ActivityDefinition-apply-pregnancy-specific-criteria.json
+    - topics/diabetes-screening/computable/ActivityDefinition-diagnose-diabetes.json
+    - topics/diabetes-screening/computable/ActivityDefinition-diagnose-prediabetes.json
+    - topics/diabetes-screening/computable/ActivityDefinition-refer-lifestyle-intervention.json
+    - topics/diabetes-screening/computable/ActivityDefinition-repeat-screening-three-years.json
+    - topics/diabetes-screening/computable/ActivityDefinition-defer-screening-until-criteria-met.json
+    - topics/diabetes-screening/computable/Library-diabetes-screening-recommendation-logic.json
+    created_at: '2026-06-15T17:45:16Z'
+    checksums:
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation.json: 
+        f9bcd14ce448fd9ddf2a28c776205d020ade810fff10c8db9a1814357b8f2aba
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-assess-general-eligibility.json: 
+        eaf72fd31ee47f8449a3518e7009cd9150eec010520d4b7e8785722246535496
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-screen-age-based.json: 
+        e7ee434cf9d43ec608da12656b1dc3bca271bfd77c108dc05f1164877a9d8e00
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-screen-risk-based.json: 
+        4586e28c2adb0dbd75bd533d77fdf60b763a39f597ea670dc135cf63141a0c3c
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-route-pregnancy.json: 
+        765c87e35e4775f9fba9c2c93d6c6fdc10da710f1d49fc392d9763cebd5be8d2
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-defer-not-yet-eligible.json: 
+        3af0a114b459061dd730b1fc190445a34f3081122ebcdf7bd2cf3a512c5e0ea6
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-diagnose-diabetes.json: 
+        6890fefb3478082386b534b9eba1a590ad69ce56cf7db4c4462e02fd37f0d24b
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-diagnose-prediabetes.json: 
+        22b2610d3c35a5dd40bd765b50c62437558d102801ecae82da3465c8ea5c5139
+      topics/diabetes-screening/computable/PlanDefinition-diabetes-screening-recommendation-repeat-normal-screen.json: 
+        83f9debfbd49b616f8bbfe69f8e7ce8a285a1afe1c3390a54b11c813f4ab3c76
+      topics/diabetes-screening/computable/ActivityDefinition-assess-screening-eligibility.json: 
+        7a2a50b281bfb4ded1b76c55209d8238b211de2fb7aaf3ae16e7ee1f5490e2ab
+      topics/diabetes-screening/computable/ActivityDefinition-perform-screening-tests.json: 
+        c7740c43dd5a942ad69bf978e8fd7ff113653d5c373792806a806d7c091109ec
+      topics/diabetes-screening/computable/ActivityDefinition-apply-pregnancy-specific-criteria.json: 
+        6ed7618dc6234c40c972f7e4f9af15228de0a3cb20271ea2591d853f65856f72
+      topics/diabetes-screening/computable/ActivityDefinition-diagnose-diabetes.json: 
+        b6a0a9b46e9bb00ca226f17369bbf105fef3b6a7702a40e3c71ded18c3bbffa5
+      topics/diabetes-screening/computable/ActivityDefinition-diagnose-prediabetes.json: 
+        60170bdea89708a564ac596c1376de18393b420350227a2a0c012fbd9b3d2567
+      topics/diabetes-screening/computable/ActivityDefinition-refer-lifestyle-intervention.json: 
+        49532601da1c86a3781e8f9d017878b05f240a6a4581466f61ef70a9b369c5c7
+      topics/diabetes-screening/computable/ActivityDefinition-repeat-screening-three-years.json: 
+        eb0e7f4b8a80cf8f47777136254161b02ebb92fab0d10845f37958d45a5a6677
+      topics/diabetes-screening/computable/ActivityDefinition-defer-screening-until-criteria-met.json: 
+        029fd11ac54476a4dc626ea9d8dc4e8971b54c2422a878ecab42726fc7f6bf8e
+      topics/diabetes-screening/computable/Library-diabetes-screening-recommendation-logic.json: 
+        f70de8ab921858498109b81efc0099d9b028ce23673a3ed77a584ab163263be9
+    converged_from:
+    - decision-table
+    strategy: decision-table
   events:
-  - timestamp: "2026-04-03T00:05:00Z"
+  - timestamp: '2026-06-15T17:28:04Z'
+    type: extract_planned
+    description: 'Wrote extract plan: topics/diabetes-screening/process/plans/extract-plan.yaml'
+  - timestamp: '2026-06-15T17:35:13Z'
+    type: concept_review_approved
+    description: Concept review finalized by 'Codex'
+  - timestamp: '2026-06-15T17:38:40Z'
+    type: concepts_written
+    description: Derived concepts terminology artifact from CSV review
+  - timestamp: '2026-06-15T17:38:45Z'
     type: structured_derived
-    description: Derived screening-criteria from ada-guidelines-2024
-  - timestamp: "2026-04-03T00:06:00Z"
+    description: Derived evidence-summary from ada-guidelines-2024_md
+  - timestamp: '2026-06-15T17:38:55Z'
     type: structured_derived
-    description: Derived risk-factors from ada-guidelines-2024
-  - timestamp: "2026-04-03T00:15:00Z"
+    description: Derived decision-table from ada-guidelines-2024_md
+  - timestamp: '2026-06-15T17:40:10Z'
+    type: structured_derived
+    description: Re-derived decision-table from ada-guidelines-2024_md
+  - timestamp: '2026-06-15T17:40:26Z'
+    type: structured_derived
+    description: Re-derived decision-table from ada-guidelines-2024_md
+  - timestamp: '2026-06-15T17:40:37Z'
+    type: structured_derived
+    description: Derived care-pathway from ada-guidelines-2024_md
+  - timestamp: '2026-06-15T17:40:57Z'
+    type: structured_derived
+    description: Re-derived care-pathway from ada-guidelines-2024_md
+  - timestamp: '2026-06-15T17:41:18Z'
+    type: formalize_planned
+    description: 'Wrote formalize plan: topics/diabetes-screening/process/plans/formalize-plan.yaml'
+  - timestamp: '2026-06-15T17:42:57Z'
     type: computable_converged
-    description: Converged diabetes-screening-computable from 
-      screening-criteria, risk-factors
+    description: Formalized 'care-pathway' using care-pathway strategy → 10 
+      resources
+  - timestamp: '2026-06-15T17:43:03Z'
+    type: computable_converged
+    description: Formalized 'decision-table' using decision-table strategy → 18 
+      resources
+  - timestamp: '2026-06-15T17:45:16Z'
+    type: computable_converged
+    description: Formalized 'decision-table' using decision-table strategy → 18 
+      resources
+  - timestamp: '2026-06-15T17:45:34Z'
+    type: package_created
+    description: Packaged 'diabetes-screening' → reason.diabetes-screening 
+      v0.1.0 (43 resources)
 events:
 - timestamp: "2026-04-03T00:00:00Z"
   type: topic_created
@@ -60,3 +228,15 @@ events:
 - timestamp: '2026-06-08T19:44:02Z'
   type: source_normalized
   description: 'Normalized: clinical-doc_pdf'
+- timestamp: '2026-06-15T17:27:19Z'
+  type: source_added
+  description: 'Ingested source: ada-guidelines-2024_md'
+- timestamp: '2026-06-15T17:27:26Z'
+  type: source_normalized
+  description: 'Normalized: ada-guidelines-2024_md'
+- timestamp: '2026-06-15T17:27:43Z'
+  type: source_classified
+  description: 'Classified: ada-guidelines-2024_md'
+- timestamp: '2026-06-15T17:27:57Z'
+  type: source_annotated
+  description: 'Annotated: ada-guidelines-2024_md (23 concepts)'

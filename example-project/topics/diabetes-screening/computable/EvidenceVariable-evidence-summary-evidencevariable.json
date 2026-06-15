@@ -1,0 +1,15 @@
+{
+  "resourceType": "EvidenceVariable",
+  "id": "evidence-summary-evidencevariable",
+  "url": "http://example.org/fhir/EvidenceVariable/evidence-summary-evidencevariable",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "EvidenceSummaryEvidencevariable",
+  "title": "Evidence Summary Evidencevariable",
+  "characteristic": [
+    {
+      "description": "Population/intervention/outcome criteria to be refined from the evidence summary"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "resourceType": "Citation",
+  "id": "evidence-summary-citation",
+  "url": "http://example.org/fhir/Citation/evidence-summary-citation",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "EvidenceSummaryCitation",
+  "title": "Evidence Summary Citation"
+}

@@ -1,0 +1,83 @@
+{
+  "resourceType": "PlanDefinition",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"
+    ]
+  },
+  "id": "diabetes-screening-recommendation-diagnose-prediabetes",
+  "url": "http://example.org/fhir/PlanDefinition/diabetes-screening-recommendation-diagnose-prediabetes",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "DiabetesScreeningRecommendationDiagnosePrediabetes",
+  "title": "Screening result review — Diagnose prediabetes",
+  "description": "Interpret fasting glucose, A1C, OGTT, and symptom-triggered random glucose results.",
+  "type": {
+    "coding": [
+      {
+        "code": "eca-rule",
+        "display": "ECA Rule",
+        "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type"
+      }
+    ]
+  },
+  "library": [
+    "http://example.org/fhir/Library/diabetes-screening-recommendation-logic"
+  ],
+  "action": [
+    {
+      "action": [
+        {
+          "definitionCanonical": "http://example.org/fhir/ActivityDefinition/diagnose-prediabetes",
+          "description": "Classify the patient as having prediabetes when ADA prediabetes thresholds are met without diabetes thresholds.",
+          "id": "diagnose-prediabetes",
+          "title": "Diagnose prediabetes"
+        },
+        {
+          "definitionCanonical": "http://example.org/fhir/ActivityDefinition/refer-lifestyle-intervention",
+          "description": "Refer patients with prediabetes to a DPP-modeled intensive behavioral lifestyle intervention program.",
+          "id": "refer-lifestyle-intervention",
+          "title": "Refer to intensive behavioral lifestyle intervention"
+        }
+      ],
+      "condition": [
+        {
+          "expression": {
+            "expression": "not DiabetesDiagnosticThresholdMet",
+            "language": "text/cql-expression"
+          },
+          "kind": "applicability"
+        },
+        {
+          "expression": {
+            "expression": "PrediabetesThresholdMet",
+            "language": "text/cql-identifier"
+          },
+          "kind": "applicability"
+        }
+      ],
+      "description": "Interpret fasting glucose, A1C, OGTT, and symptom-triggered random glucose results.",
+      "documentation": [
+        {
+          "citation": "Prediabetes thresholds include fasting plasma glucose 100-125 mg/dL, 2-hour OGTT glucose 140-199 mg/dL, or A1C 5.7-6.4 percent. Evidence: ada-guidelines-2024_md: Prediabetes Criteria section.",
+          "label": "claim-004",
+          "type": "citation"
+        },
+        {
+          "citation": "Prediabetes should trigger referral to an intensive behavioral lifestyle intervention program and normal results should trigger repeat screening at least every 3 years. Evidence: ada-guidelines-2024_md: Prediabetes recommendation and screening interval statement.",
+          "label": "claim-005",
+          "type": "citation"
+        }
+      ],
+      "id": "rule-diagnose-prediabetes",
+      "title": "Screening result review — Diagnose prediabetes",
+      "trigger": [
+        {
+          "name": "diabetes-screening-result-review",
+          "type": "named-event"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "resourceType": "ValueSet",
+  "id": "hemoglobin-a1c",
+  "url": "http://example.org/fhir/ValueSet/hemoglobin-a1c",
+  "version": "0.1.0",
+  "status": "draft",
+  "date": "2026-06-15",
+  "name": "HemoglobinA1c",
+  "title": "Hemoglobin A1c",
+  "compose": {
+    "include": [
+      {
+        "system": "http://loinc.org",
+        "concept": [
+          {
+            "code": "4548-4",
+            "display": "HbA1c/Total Hgb, Blood"
+          }
+        ]
+      }
+    ]
+  }
+}
