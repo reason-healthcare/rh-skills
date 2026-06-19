@@ -1627,6 +1627,71 @@ concerns: []
     assert "leaf action 'assess-candidacy' is missing recommended concept_refs[] or code/codings[] terminology linkage" in result.output
 
 
+def test_validate_decision_table_warns_when_leaf_regimen_even_when_kind_is_task(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: oncology
+description: "Artifact with broad regimen leaf action"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which neoadjuvant regimen is offered?"
+sections:
+  summary: "Use regimen selection."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Offer neoadjuvant regimen"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 5.1"
+  events:
+    - id: regimen-selection
+      label: Regimen selection
+      trigger:
+        type: named-event
+        name: regimen-selection
+  conditions:
+    - id: high-risk
+      label: High risk
+      values: [Yes, No]
+  data_elements:
+    - id: risk-status
+      condition_id: high-risk
+      label: Risk status
+  actions:
+    - id: offer-anthracycline-taxane
+      label: Offer anthracycline and taxane neoadjuvant regimen
+      kind: Task
+      codings:
+        - system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "8812"
+          display: Anthracycline
+  rules:
+    - id: offer-regimen
+      event: regimen-selection
+      when:
+        high-risk: Yes
+      evidence_traceability_ids: [rec-001]
+      then:
+        - offer-anthracycline-taxane
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert (
+        "leaf action 'offer-anthracycline-taxane' appears to represent a regimen/order set"
+        in result.output
+    )
+
+
 def test_validate_decision_table_parent_action_without_coding_does_not_warn_when_only_grouping(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
@@ -1667,8 +1732,7 @@ sections:
       label: Diagnostic support
   actions:
     - id: assess-candidacy
-      label: Assess candidacy
-      kind: ServiceRequest
+      label: Offer anthracycline and taxane neoadjuvant regimen
     - id: administer-snot-22
       label: Administer SNOT-22
       kind: Task
@@ -1689,6 +1753,246 @@ concerns: []
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
     assert result.exit_code == 0, result.output
     assert "leaf action 'assess-candidacy'" not in result.output
+    assert "leaf action 'assess-candidacy' appears to represent a regimen/order set" not in result.output
+
+
+def test_validate_decision_table_warns_when_parent_action_has_executable_kind(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: oncology
+description: "Artifact with parent executable kind"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How is the regimen decomposed?"
+sections:
+  summary: "Use component medication actions."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Offer regimen"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 1"
+  events:
+    - id: regimen-selection
+      label: Regimen selection
+      trigger:
+        type: named-event
+        name: regimen-selection
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+  actions:
+    - id: offer-regimen
+      label: Offer anthracycline and taxane regimen
+      kind: Task
+    - id: order-anthracycline
+      label: Order anthracycline
+      kind: MedicationRequest
+      parent_action_id: offer-regimen
+      concept_refs: [anthracycline]
+  rules:
+    - id: offer
+      event: regimen-selection
+      when:
+        eligible: Yes
+      evidence_traceability_ids: [rec-001]
+      then:
+        - offer-regimen
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "parent action 'offer-regimen' has executable kind" in result.output
+
+
+def test_validate_decision_table_rejects_leaf_action_missing_kind(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: oncology
+description: "Artifact with leaf action missing kind"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which therapy is ordered?"
+sections:
+  summary: "Order medication."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Order medication"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 1"
+  events:
+    - id: therapy-selection
+      label: Therapy selection
+      trigger:
+        type: named-event
+        name: therapy-selection
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+  actions:
+    - id: order-anthracycline
+      label: Order anthracycline
+      concept_refs: [anthracycline]
+  rules:
+    - id: order
+      event: therapy-selection
+      when:
+        eligible: Yes
+      evidence_traceability_ids: [rec-001]
+      then:
+        - order-anthracycline
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "leaf action 'order-anthracycline' missing required 'kind' field" in result.output
+
+
+def test_validate_decision_table_warns_for_task_leaf_kind(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: oncology
+description: "Artifact with generic task action"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which action is performed?"
+sections:
+  summary: "Perform action."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Perform action"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 1"
+  events:
+    - id: action-selection
+      label: Action selection
+      trigger:
+        type: named-event
+        name: action-selection
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+  actions:
+    - id: review-care-plan
+      label: Review care plan
+      kind: Task
+      concept_refs: [care-plan-review]
+  rules:
+    - id: review
+      event: action-selection
+      when:
+        eligible: Yes
+      evidence_traceability_ids: [rec-001]
+      then:
+        - review-care-plan
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "uses kind 'Task', which is too generic" in result.output
+
+
+def test_validate_decision_table_warns_for_unknown_leaf_kind(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: oncology
+description: "Artifact with unknown action kind"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which action is performed?"
+sections:
+  summary: "Perform action."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Perform action"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 1"
+  events:
+    - id: action-selection
+      label: Action selection
+      trigger:
+        type: named-event
+        name: action-selection
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+  actions:
+    - id: perform-thing
+      label: Perform thing
+      kind: CustomAction
+      concept_refs: [thing]
+  rules:
+    - id: perform
+      event: action-selection
+      when:
+        eligible: Yes
+      evidence_traceability_ids: [rec-001]
+      then:
+        - perform-thing
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "uses unknown kind 'CustomAction'" in result.output
 
 
 def test_validate_decision_table_rejects_unknown_evidence_traceability_links(tmp_repo):

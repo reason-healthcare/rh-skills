@@ -1770,7 +1770,6 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "id": "broader-action",
                     "label": "<stub: broader recommended action>",
                     "description": "<stub: overall recommendation that may contain broken-down tasks>",
-                    "kind": "ServiceRequest",
                     "evidence_traceability_ids": ["claim-001"],
                     "provenance": {"source": "source_direct"},
                 },
@@ -1778,7 +1777,7 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "id": "review-supporting-data",
                     "label": "<stub: child task to review or obtain supporting data>",
                     "description": "<stub: distinct operational task under the broader recommendation>",
-                    "kind": "ServiceRequest",
+                    "kind": "service",
                     "parent_action_id": "broader-action",
                     "produces_data_elements": ["de-001"],
                     "evidence_traceability_ids": ["claim-001"],
@@ -1788,7 +1787,7 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "id": "perform-structured-task",
                     "label": "<stub: child task using a structured instrument or other discrete workflow step>",
                     "description": "<stub: separate child task that produces a concrete result>",
-                    "kind": "ServiceRequest",
+                    "kind": "questionnaire",
                     "parent_action_id": "broader-action",
                     "produces_data_elements": ["de-002"],
                     "assessment_artifact": "<stub: linked assessment artifact when applicable>",
@@ -1799,7 +1798,7 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "id": "recommend-action",
                     "label": "<stub: recommended action>",
                     "description": "<stub: what should be done when the rule applies>",
-                    "kind": "ServiceRequest",
+                    "kind": "service",
                     "evidence_traceability_ids": ["claim-001"],
                     "provenance": {"source": "source_direct"},
                 },
@@ -1807,7 +1806,7 @@ def _stub_section_value(section_name: str, artifact_type: str | None) -> object:
                     "id": "do-not-perform-action",
                     "label": "<stub: action to avoid or withhold>",
                     "description": "<stub: what should not be done when the rule applies>",
-                    "kind": "ServiceRequest",
+                    "kind": "service",
                     "do_not_perform": True,
                     "evidence_traceability_ids": ["claim-001"],
                     "provenance": {"source": "inferred", "rationale": "<stub: why withholding action is inferred from evidence>"},
@@ -2357,12 +2356,30 @@ Decision-table extraction guidance:
   operational tasks, model the broader recommendation as the parent action and
   add separate child actions for the broken-down tasks when the source treats
   them as operationally separate.
+- Parent actions are grouping nodes for PlanDefinition only. Do not assign
+  `kind: task` or any other executable `kind` to a parent action that has child
+  actions. Put `kind` only on executable leaf actions.
+- For executable leaf action `kind`, use this vocabulary: `medication`
+  (formalizes to MedicationRequest), `service`, `procedure`, `referral`, or
+  `assessment` (formalize to ServiceRequest), `questionnaire` (formalizes to
+  CollectInformation), and `communication` (formalizes to CommunicationRequest).
+  Avoid `task`; it is too generic and should only appear in legacy content.
+- Deconstruct grouped concepts before using them as action terminology:
+  if a concept/action phrase combines named components with "and", "with",
+  "plus", "combination", "bundle", "regimen", "protocol", "panel", or
+  "order set", keep the grouped concept only as context when useful and create
+  component concepts/actions for the executable leaves.
 - When the source describes an order set, regimen, or medication bundle,
   model it explicitly in the decision-table at extract time using the same
   nesting pattern: parent rule/action context for the grouped recommendation
-  when useful, child `MedicationRequest` leaf actions for each named
-  medication order, and separate child rules when the source expresses
+  when useful, with no parent `kind`, and child `kind: medication` leaf actions for each named
+  medication or medication-class order, and separate child rules when the source expresses
   distinct conditional or staged component recommendations.
+- For example, "offer anthracycline- and taxane-containing regimen" is not one
+  leaf medication action. Model `offer-anthracycline-taxane-regimen` as the
+  parent action with no `kind`, then add child leaf actions such as
+  `order-anthracycline` and `order-taxane`, each with `kind: medication`
+  and RxNorm-first terminology linkage.
 - Use a child action for distinct tasks such as administering a questionnaire,
   reviewing imaging, reviewing prior therapy history, ordering a prerequisite
   study, or carrying out a separate counseling step. Group closely related work
@@ -2390,7 +2407,7 @@ Decision-table extraction guidance:
 - Deconstruct distinct recommendations into separate rules and actions even
   when they happen during the same broad visit, phase, or workflow moment.
   Shared timing is not, by itself, a reason to merge recommendation logic.
-- Use canonical `kind` for actions; do not emit legacy action `type`.
+- Use the supported `kind` vocabulary for executable leaf actions; do not emit legacy action `type`.
 - Keep `events[]` at the level of major workflow contexts or decision moments.
   Do not create a separate event for every child task or narrow sub-step when
   those activities still belong to the same broader staged context.

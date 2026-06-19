@@ -607,7 +607,7 @@ sections:
             computable = topic_dir / "computable"
             activity = json.loads((computable / "ActivityDefinition-complete-qol-assessment.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
-            assert activity["kind"] == "Task"
+            assert activity["kind"] == "CollectInformation"
             assert activity["meta"]["profile"][0] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity"
             assert activity["profile"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
             assert activity["code"]["coding"][0]["system"] == "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs"
@@ -629,6 +629,88 @@ sections:
             questionnaire = json.loads((computable / "Questionnaire-qol-assessment.json").read_text())
             assert questionnaire["resourceType"] == "Questionnaire"
             assert questionnaire["item"][0]["linkId"] == "q1"
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_decision_table_regimen_parent_expands_to_child_medication_actions(self, tmp_repo):
+        topic = "regimen-link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+
+        (structured_dir / "dt.yaml").write_text(
+            """\
+artifact_type: decision-table
+sections:
+  events:
+    - id: neoadjuvant-selection
+      label: Neoadjuvant regimen selection
+      trigger:
+        type: named-event
+        name: regimen-selection
+  actions:
+    - id: offer-anthracycline-taxane
+      label: Offer anthracycline and taxane neoadjuvant regimen
+    - id: anthracycline-taxane-orders
+      label: Anthracycline and taxane medication orders
+      parent_action_id: offer-anthracycline-taxane
+    - id: order-anthracycline
+      label: Order anthracycline
+      kind: MedicationRequest
+      parent_action_id: anthracycline-taxane-orders
+      codings:
+        - system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "8812"
+          display: Anthracycline
+    - id: order-taxane
+      label: Order taxane
+      kind: MedicationRequest
+      parent_action_id: anthracycline-taxane-orders
+      codings:
+        - system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "10379"
+          display: Taxane
+  rules:
+    - id: offer-regimen
+      event: neoadjuvant-selection
+      then: [offer-anthracycline-taxane]
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [{"name": "dt", "artifact_type": "decision-table", "status": "approved"}],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            result = runner.invoke(formalize, [topic, "dt"])
+            assert result.exit_code == 0, result.output
+
+            computable = topic_dir / "computable"
+            assert not (computable / "ActivityDefinition-offer-anthracycline-taxane.json").exists()
+            assert not (computable / "ActivityDefinition-anthracycline-taxane-orders.json").exists()
+            anthracycline_activity = json.loads((computable / "ActivityDefinition-order-anthracycline.json").read_text())
+            taxane_activity = json.loads((computable / "ActivityDefinition-order-taxane.json").read_text())
+            child_plan = json.loads((computable / "PlanDefinition-dt-offer-regimen.json").read_text())
+
+            assert anthracycline_activity["kind"] == "MedicationRequest"
+            assert anthracycline_activity["code"]["coding"][0]["system"] == "http://www.nlm.nih.gov/research/umls/rxnorm"
+            assert anthracycline_activity["code"]["coding"][0]["display"] == "Anthracycline"
+            assert taxane_activity["code"]["coding"][0]["display"] == "Taxane"
+            parent_action = child_plan["action"][0]
+            assert parent_action["id"] == "offer-anthracycline-taxane"
+            assert "definitionCanonical" not in parent_action
+            middle_action = parent_action["action"][0]
+            assert middle_action["id"] == "anthracycline-taxane-orders"
+            assert "definitionCanonical" not in middle_action
+            assert [child["id"] for child in middle_action["action"]] == ["order-anthracycline", "order-taxane"]
+            assert middle_action["action"][0]["definitionCanonical"].endswith("/ActivityDefinition/order-anthracycline")
+            assert middle_action["action"][1]["definitionCanonical"].endswith("/ActivityDefinition/order-taxane")
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1549,7 +1631,7 @@ sections:
       kind: ServiceRequest
     - id: administer-snot-22-assessment
       label: Administer or review SNOT-22 assessment
-      kind: Task
+      kind: questionnaire
   rules:
     - id: r1
       event: event-assess-candidacy

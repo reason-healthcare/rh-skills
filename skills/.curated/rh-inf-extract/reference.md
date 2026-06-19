@@ -206,6 +206,24 @@ When normalized source front matter contains `concepts[]`, extract planning writ
 
 The explicit extract artifact row named `concepts` is the reviewer-facing terminology package. `rh-skills promote concept write <topic>` materializes that row to `topics/<topic>/structured/concepts/concepts.yaml`. Only concepts with at least one approved candidate code or approved expansion are emitted into the final artifact. Custom concepts not extracted from source documents can be added with `concept add`.
 
+Concept deconstruction rule:
+- Do not approve a broad grouped concept as the only actionable concept when
+  the source names component concepts that will later drive actions, rules, or
+  pathway steps.
+- Keep the grouped concept only as context when useful, and add/review the
+  smallest reusable component concepts separately.
+- For medication regimens, protocols, bundles, or order sets, decompose to the
+  named medications or medication classes. Example: "anthracycline and taxane
+  regimen" should not be the only executable concept; review "anthracycline"
+  and "taxane" as separate medication or medication-class concepts, and use the
+  regimen concept only for grouping context.
+- Apply the same pattern outside medications: if a concept combines distinct
+  tasks, actors, timing, outputs, tests, procedures, or decisions, annotate the
+  components independently so later artifacts can point to the right leaf unit.
+- When a source phrase uses "and", "with", "plus", "combination", "bundle",
+  "regimen", "protocol", or "order set", actively check whether the phrase
+  should be split before finalizing concept review.
+
 ### Care-pathway structure
 
 Care-pathway artifacts use a flat `steps[]` shape with optional `parent_id`
@@ -292,7 +310,9 @@ rh-skills promote concept enrich <topic> "<name>" \
 # Before finalize checklist:
 # 1) Every candidate row has include/exclude set to include or exclude
 # 2) Concepts that should emit codes have at least one include candidate row
-# 3) Related and expansion rows are optional — may remain blank
+# 3) Grouped concepts have been deconstructed into component concepts when
+#    their components will drive actions, rules, pathway steps, or codings
+# 4) Related and expansion rows are optional — may remain blank
 
 # Finalize (after CLI-only approvals, --force bypasses checksum unchanged soft-block):
 rh-skills promote concept review <topic> --finalize --reviewer "<name>" --force
@@ -535,7 +555,7 @@ sections:
   actions:
     - id: a1
       label: <action name>
-      kind: <ServiceRequest|CommunicationRequest|MedicationRequest|Procedure|Task>
+      kind: <medication|service|procedure|referral|assessment|questionnaire|communication>
       intent: <optional intent label>
       concept_refs: [<approved concept id>]    # recommended for executable leaf actions
       codings:                                 # recommended for executable leaf actions
@@ -599,17 +619,29 @@ operational tasks, model the broader recommendation as the parent action and
 add separate child actions for the broken-down tasks when the source treats
 them as operationally separate.
 
+Parent actions are grouping nodes for PlanDefinition only. Do not assign
+`kind: task`, `kind: medication`, or any other executable `kind` to a
+parent action that has child actions. Put `kind` only on executable leaf actions.
+
+For executable leaf action `kind`, use this vocabulary:
+- `medication` formalizes to ActivityDefinition.kind `MedicationRequest`
+- `service`, `procedure`, `referral`, and `assessment` formalize to `ServiceRequest`
+- `questionnaire` formalizes to `CollectInformation`
+- `communication` formalizes to `CommunicationRequest`
+
+Avoid `task`; it is too generic and should only appear in legacy content.
+
 When the source describes an order set, regimen, or protocolized medication
 bundle, model it explicitly at extract time using the existing nesting pattern:
 keep the regimen/order set as a parent recommendation context, represent the
 bundle action as a parent action when useful, and decompose the executable
 content to the smallest clinically executable units possible. Represent each
-individual medication order as its own child leaf action with
-`kind: MedicationRequest`. If the source names distinct recommendation branches
+individual medication or medication-class order as its own child leaf action with
+`kind: medication`. If the source names distinct recommendation branches
 or stages within the bundle, keep those as separate recommendation-scoped rules
 under the same staged event model rather than collapsing the whole regimen into
 one broad rule. Do not leave a multi-medication regimen as one uncoded or broad
-medication action when the source names the component drugs.
+medication action when the source names the component drugs or drug classes.
 
 Use a child action for distinct tasks such as administering a questionnaire,
 reviewing imaging, reviewing prior therapy history, ordering a prerequisite
@@ -636,20 +668,33 @@ broader parent action rather than standing alone.
 
 For executable leaf actions, routinely populate `actions[].concept_refs[]`
 and/or explicit `code` / `codings[]` at L2. Parent grouping actions that exist
-only to organize child tasks do not need their own coding unless the source
-treats the parent itself as an independently executable recommendation.
+only to organize child tasks should omit `kind` and do not need their own coding
+or terminology coding. If a grouped recommendation has child actions, keep the
+parent non-executable and put any executable action semantics on the leaves.
+
+Do not use a broad grouped concept as the `concept_refs[]` value for an
+executable leaf action when component concepts exist or can be derived. If the
+available concept is a bundle, regimen, order set, multi-test panel,
+multi-procedure intervention, or combined care process, deconstruct first:
+create a parent action for the grouping context and child leaf actions with
+component-level `concept_refs[]`/`codings[]`.
 
 For medication regimens and order sets, apply that rule at the component-drug
-level: each child `MedicationRequest` leaf action should carry the terminology
-linkage, typically with RxNorm-first coding.
+or component-class level: each child `MedicationRequest` leaf action should
+carry the terminology linkage, typically with RxNorm-first coding.
+
+Example: do not model "offer anthracycline- and taxane-containing regimen" as
+one leaf `MedicationRequest`. Model it as a parent action with no `kind`, then
+add child leaf actions for `order-anthracycline` and `order-taxane`, each with
+`kind: medication` and RxNorm-first terminology linkage.
 
 For regimen/order-set logic, prefer extract-time structure over formalize-time
 reconstruction:
 - one parent rule when the source expresses a single bundled recommendation
 - separate child rules when the source expresses distinct conditional or staged
   component recommendations
-- parent action for the grouping construct when it helps readability
-- child medication leaf actions for each executable medication order
+- parent action with no `kind` for the grouping construct when it helps readability
+- child medication leaf actions for each executable medication or medication-class order
 
 Use `actions[].assessment_artifact` when a named questionnaire or assessment
 instrument is explicitly administered or reviewed as part of a broader

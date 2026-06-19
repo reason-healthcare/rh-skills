@@ -15,6 +15,7 @@ from click.testing import CliRunner
 from ruamel.yaml import YAML
 
 from rh_skills.commands.formalize import (
+    _activity_definition_kind,
     _normalize_activity_codeable_concept,
     formalize,
 )
@@ -23,6 +24,19 @@ from rh_skills.commands.formalize import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def test_activity_definition_kind_normalizes_supported_l2_action_kinds():
+    assert _activity_definition_kind("medication") == "MedicationRequest"
+    assert _activity_definition_kind("MedicationRequest") == "MedicationRequest"
+    assert _activity_definition_kind("service") == "ServiceRequest"
+    assert _activity_definition_kind("procedure") == "ServiceRequest"
+    assert _activity_definition_kind("referral") == "ServiceRequest"
+    assert _activity_definition_kind("assessment") == "ServiceRequest"
+    assert _activity_definition_kind("questionnaire") == "CollectInformation"
+    assert _activity_definition_kind("CollectInformation") == "CollectInformation"
+    assert _activity_definition_kind("communication") == "CommunicationRequest"
+    assert _activity_definition_kind("Task") == "Task"
 
 def _make_tracking_yaml(topic_dir: Path, topic_name: str, artifact: str, artifact_type: str = "measure"):
     """Write a minimal tracking.yaml with a formalize-ready artifact."""

@@ -204,16 +204,22 @@ artifact_type_sections:
         A data element may already exist in the record or may be produced by an
         action during the pathway.
       actions: >
-        Action definitions: {id, label, description?, kind, intent?,
-        parent_action_id?, concept_refs[]?, code?, codings[]?,
+        Action definitions: {id, label, description?, kind?,
+        intent?, parent_action_id?, concept_refs[]?, code?, codings[]?,
         produces_conditions[]?, produces_data_elements[]?,
         assessment_artifact?, evidence_traceability_ids[]?, provenance?}.
         Actions represent clinical recommendations or workflow consequences.
         Use parent_action_id when a supporting action belongs under a broader
-        assessment action. Leaf executable actions (actions without child
-        actions) should routinely carry concept_refs[] and/or explicit coding
-        via code or codings[] so formalize can reuse reviewed terminology
-        rather than re-inferring it. Use produces_conditions[] when an action establishes
+        parent action. Parent actions with children are PlanDefinition grouping
+        nodes only: omit kind and put executable kind on their child leaf
+        actions. Leaf executable actions (actions without child actions) MUST
+        carry kind. Use medication for MedicationRequest; service, procedure,
+        referral, or assessment for ServiceRequest; questionnaire for
+        CollectInformation; and communication for CommunicationRequest. Avoid
+        Task because it is too generic. Leaf executable actions should
+        routinely carry concept_refs[] and/or explicit coding via code or
+        codings[] so formalize can reuse reviewed
+        terminology rather than re-inferring it. Use produces_conditions[] when an action establishes
         one or more later branch conditions. Use produces_data_elements[] when
         an action produces concrete findings, scores, or other evidence items
         that later logic consumes. Use assessment_artifact when an action

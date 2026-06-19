@@ -42,6 +42,25 @@ Use the existing concept types consistently when annotating normalized clinical 
 Keep the generic term and also add the specific form when the source supports it.
 Capture subtypes and exclusions separately when they affect scope or eligibility.
 
+### Deconstruct Grouped Concepts
+
+When annotating concepts, do not let a broad joined phrase become the only
+concept if its components will later drive rules, actions, pathway steps, or
+codings. Keep the grouped concept as context when useful, but also annotate the
+smallest reusable component concepts.
+
+Use join words as deconstruction cues: `and`, `with`, `plus`, `combination`,
+`bundle`, `regimen`, `protocol`, `panel`, and `order set`.
+
+Examples:
+- For `Anthracycline and taxane regimen`, annotate `Anthracycline` and `Taxane`
+  as separate `medication` concepts; keep the regimen concept only as grouping
+  context if needed.
+- For a named lab panel, annotate the panel if relevant and also annotate each
+  named lab that can drive logic or actions.
+- For a combined intervention such as counseling plus medication initiation,
+  annotate the counseling concept and medication concept separately.
+
 | Generic (keep) | Also add when source supports it |
 |----------------|----------------------------------|
 | `Sinus surgery` | `Functional endoscopic sinus surgery`, `Revision endoscopic sinus surgery` |
@@ -179,3 +198,7 @@ appends concepts already present for the source; pass `--overwrite` to replace
 the source's existing concept list. Downstream extract planning is responsible
 for deduplicating concepts across normalized sources and producing any review
 packets or terminology artifacts.
+
+`rh-skills ingest annotate` warns when a concept name appears grouped. Treat the
+warning as a prompt to add component concepts in the same command or a follow-up
+annotation call; it is not a blocking validation failure.
