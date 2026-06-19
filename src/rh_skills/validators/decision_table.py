@@ -35,6 +35,42 @@ _EVIDENCE_STRENGTH_VALUES = {
 }
 _PROVENANCE_SOURCES = {"source_direct", "inferred"}
 
+_REGIMEN_GROUPING_TERMS = (
+    "regimen",
+    "order set",
+    "orderset",
+    "medication bundle",
+    "drug bundle",
+    "protocolized medication",
+    "combination therapy",
+    "combination chemotherapy",
+    "multi-agent",
+)
+
+_ACTION_KIND_ALIASES = {
+    "service": "ServiceRequest",
+    "referral": "ServiceRequest",
+    "procedure": "ServiceRequest",
+    "assessment": "ServiceRequest",
+    "questionnaire": "CollectInformation",
+    "communication": "CommunicationRequest",
+    "medication": "MedicationRequest",
+    "task": "Task",
+}
+
+
+def _normalized_text(*values: Any) -> str:
+    return " ".join(str(value or "").lower() for value in values if value is not None)
+
+
+def _looks_like_regimen_leaf_action(action: dict) -> bool:
+    text = _normalized_text(
+        action.get("id"),
+        action.get("label"),
+        action.get("description"),
+    )
+    return any(term in text for term in _REGIMEN_GROUPING_TERMS)
+
 
 def _check_fhir_field_leakage(data: dict, path: str = "") -> List[str]:
     """Recursively check for FHIR-specific fields at L2 level."""
@@ -364,8 +400,6 @@ def validate_decision_table(
         action_id = action.get("id", f"#{idx}")
         if action.get("type") is not None:
             report_error(f"  decision-table: action '{action_id}' uses forbidden 'type' — use canonical 'kind'")
-        if not action.get("kind"):
-            report_error(f"  decision-table: action '{action_id}' missing required 'kind' field")
         parent_action_id = action.get("parent_action_id")
         if parent_action_id:
             if parent_action_id == action_id:
@@ -404,7 +438,24 @@ def validate_decision_table(
                 f"  decision-table: action '{action_id}' assessment_artifact must be a string when present"
             )
         has_children = child_action_counts.get(str(action_id), 0) > 0
-        if not has_children:
+        if has_children:
+            if action.get("kind"):
+                report_warn(
+                    f"  decision-table: parent action '{action_id}' has executable kind; omit kind on grouping actions and put executable kind on child leaf actions"
+                )
+        else:
+            raw_kind = str(action.get("kind") or "").strip()
+            normalized_kind = raw_kind.lower()
+            if not raw_kind:
+                report_error(f"  decision-table: leaf action '{action_id}' missing required 'kind' field")
+            elif normalized_kind == "task":
+                report_warn(
+                    f"  decision-table: leaf action '{action_id}' uses kind 'Task', which is too generic; use medication, service/procedure/referral/assessment, questionnaire, or communication"
+                )
+            elif normalized_kind not in _ACTION_KIND_ALIASES:
+                report_warn(
+                    f"  decision-table: leaf action '{action_id}' uses unknown kind '{raw_kind}'; expected medication, service/procedure/referral/assessment, questionnaire, or communication"
+                )
             concept_refs = action.get("concept_refs")
             code = action.get("code")
             codings = action.get("codings")
@@ -421,6 +472,10 @@ def validate_decision_table(
             if not (has_concept_refs or has_code or has_codings):
                 report_warn(
                     f"  decision-table: leaf action '{action_id}' is missing recommended concept_refs[] or code/codings[] terminology linkage"
+                )
+            if _looks_like_regimen_leaf_action(action):
+                report_warn(
+                    f"  decision-table: leaf action '{action_id}' appears to represent a regimen/order set; model it as a parent action with child MedicationRequest leaf actions for each named medication or drug class"
                 )
         _validate_traceability_links(
             owner_label=str(action_id),

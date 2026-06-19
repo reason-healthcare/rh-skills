@@ -147,10 +147,10 @@ Executable activity coding rule:
 - If it does not, implement mode must call ReasonHub MCP to find a real code before writing JSON.
 - Choose the target terminology by action kind:
   `MedicationRequest` → prefer RxNorm;
-  `Procedure` → prefer SNOMED CT;
   `ServiceRequest` → prefer LOINC for lab/observable/instrument orders, otherwise SNOMED CT for procedural/imaging/referral orders;
+  `CollectInformation` → prefer LOINC when a questionnaire/instrument code exists, otherwise SNOMED CT;
   `CommunicationRequest` → usually SNOMED CT;
-  `Task` → prefer the same system you would choose for the underlying clinical action.
+  `Task` → legacy only; prefer a more specific action kind before coding.
 - Do not use recommendation prose or text-only `code.text` as a substitute for coding.
 - If MCP is unavailable, emit an explicit `TODO:MCP-UNREACHABLE` placeholder coding so verify fails visibly.
 

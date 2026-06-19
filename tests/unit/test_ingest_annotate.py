@@ -106,6 +106,25 @@ def test_annotate_writes_concepts_to_frontmatter_only(tmp_repo):
     assert not (tmp_repo / "topics" / "test-topic" / "process" / "concepts.yaml").exists()
 
 
+def test_annotate_warns_for_grouped_concept_that_may_need_deconstruction(tmp_repo):
+    _register_source(tmp_repo, "src-regimen")
+    _create_normalized_md(tmp_repo, "src-regimen")
+
+    runner = CliRunner()
+    result = runner.invoke(ingest, [
+        "annotate", "src-regimen",
+        "--topic", "test-topic",
+        "--concept", "Anthracycline and taxane regimen:medication",
+    ])
+
+    assert result.exit_code == 0, result.output
+    assert "may be grouped" in result.output
+    assert "also annotate the smallest component concepts separately" in result.output
+    norm = tmp_repo / "sources" / "normalized" / "src-regimen.md"
+    fm = _parse_frontmatter(norm.read_text())
+    assert fm["concepts"][0]["name"] == "Anthracycline and taxane regimen"
+
+
 def test_annotate_append_across_calls(tmp_repo):
     """Annotate same source twice; concepts accumulate in front matter (no dedup)."""
     _register_source(tmp_repo, "src-c")

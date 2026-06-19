@@ -245,10 +245,10 @@ Executable action coding rule:
 - Fallback only on MCP failure, using an explicit `TODO:MCP-UNREACHABLE` placeholder coding in the likely target system so verification catches the gap.
 - Preferred final coding by FHIR activity kind:
   `MedicationRequest` → RxNorm first;
-  `Procedure` → SNOMED CT first;
   `ServiceRequest` → LOINC first for lab/observable/instrument orders, otherwise SNOMED CT first for procedural/imaging/referral orders;
+  `CollectInformation` → LOINC first for questionnaire/instrument collection when available, otherwise SNOMED CT first;
   `CommunicationRequest` → SNOMED CT first;
-  `Task` → keep CPG collect-information coding for questionnaire collection tasks, otherwise align to the underlying clinical action.
+  `Task` → legacy only; prefer a more specific action kind before coding.
 
 ### care-pathway → Clinical Protocol
 

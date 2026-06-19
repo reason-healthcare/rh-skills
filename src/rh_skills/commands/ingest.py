@@ -72,6 +72,32 @@ _ANNOTATE_ROLE_VOCAB = {
     "other",
 }
 
+_GROUPED_CONCEPT_JOIN_CUES = (
+    "and",
+    "with",
+    "plus",
+    "combination",
+    "bundle",
+    "regimen",
+    "protocol",
+    "panel",
+    "order set",
+    "orderset",
+)
+
+
+def _concept_deconstruction_warning(name: str) -> str | None:
+    """Return a warning when a concept likely needs component annotation."""
+    normalized = f" {name.lower().replace('-', ' ')} "
+    for cue in _GROUPED_CONCEPT_JOIN_CUES:
+        if (" " in cue and cue in normalized) or (f" {cue} " in normalized):
+            return (
+                f"Concept '{name}' may be grouped; if the source names components, "
+                "also annotate the smallest component concepts separately so downstream "
+                "actions/rules can deconstruct executable leaves."
+            )
+    return None
+
 
 class _HTMLMetaParser(HTMLParser):
     """Extracts <title>, <meta>, and <script type="application/ld+json"> from HTML."""
@@ -779,6 +805,11 @@ def annotate(name, topic, concepts, roles, overwrite):
         if role_list:
             entry["role"] = role_list
         parsed_concepts.append(entry)
+
+    for concept in parsed_concepts:
+        warning = _concept_deconstruction_warning(str(concept.get("name") or ""))
+        if warning:
+            log_warn(warning)
 
     # Update normalized.md frontmatter
     raw = normalized_md.read_text()

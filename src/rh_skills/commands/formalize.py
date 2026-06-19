@@ -416,7 +416,7 @@ def _activity_preferred_systems(
         return [rxnorm, snomed]
     if kind == "Procedure":
         return [snomed]
-    if kind == "ServiceRequest":
+    if kind in {"ServiceRequest", "CollectInformation"}:
         if any(token in text for token in lab_tokens):
             return [loinc, snomed]
         return [snomed, loinc]
@@ -895,20 +895,18 @@ def _build_evidence_variable_characteristics(
 
 
 def _activity_definition_kind(raw_type: str | None) -> str:
-    """Map L2 care-pathway action types to ActivityDefinition.kind."""
+    """Map L2 action kind labels to ActivityDefinition.kind."""
     normalized = str(raw_type or "").strip().lower()
     mapping = {
         "order": "ServiceRequest",
-        "servicerequest": "ServiceRequest",
+        "service": "ServiceRequest",
         "referral": "ServiceRequest",
+        "procedure": "ServiceRequest",
         "assessment": "ServiceRequest",
-        "questionnaire": "ServiceRequest",
+        "questionnaire": "CollectInformation",
         "communication": "CommunicationRequest",
-        "communicationrequest": "CommunicationRequest",
         "medication": "MedicationRequest",
-        "medicationrequest": "MedicationRequest",
         "task": "Task",
-        "procedure": "Procedure",
     }
     return mapping.get(normalized, "ServiceRequest")
 
@@ -1300,7 +1298,7 @@ def _activity_preferred_concept_types(kind: str, action_id: str, title: str, des
     preferred: list[str] = []
     if kind == "MedicationRequest" or any(t in text for t in ("antibiotic", "antibacterial", "medication", "drug")):
         preferred.append("medication")
-    if kind in {"Procedure", "ServiceRequest", "Task"} or any(
+    if kind in {"ServiceRequest", "CollectInformation", "Task"} or any(
         t in text for t in ("surgery", "procedure", "ct", "tomography", "scan", "endoscopy", "irrigation", "debridement", "dilation")
     ):
         preferred.append("procedure")
@@ -1545,7 +1543,7 @@ def _resolve_activity_code(action_def: dict[str, Any], *, action_id: str, title:
 def _is_assessment_action(action_def: dict[str, Any]) -> bool:
     """Heuristic for actions that should request a Questionnaire-backed assessment."""
     kind = str(action_def.get("kind") or "").strip().lower()
-    if kind in {"assessment", "questionnaire"}:
+    if kind in {"assessment", "questionnaire", "collectinformation"}:
         return True
     text = " ".join(
         str(action_def.get(field) or "")
@@ -1721,11 +1719,18 @@ def _build_decision_table_activity_definitions(
     assessment_lookup: dict[str, dict[str, Any]] | None = None,
     concept_candidates: list[dict[str, Any]] | None = None,
 ) -> list[dict]:
-    """Build one ActivityDefinition per L2 decision-table action."""
+    """Build one ActivityDefinition per executable L2 decision-table leaf action."""
     sections = (l2_data or {}).get("sections") or {}
     actions = sections.get("actions") or []
     if not isinstance(actions, list):
         actions = []
+
+    parent_action_ids = {
+        to_kebab_case(str(action.get("parent_action_id") or ""))
+        for action in actions
+        if isinstance(action, dict) and str(action.get("parent_action_id") or "").strip()
+    }
+    parent_action_ids = {action_id for action_id in parent_action_ids if action_id}
 
     resources: list[dict] = []
     canonical = cfg["canonical"]
@@ -1737,6 +1742,8 @@ def _build_decision_table_activity_definitions(
         if not isinstance(action_def, dict):
             continue
         action_id = to_kebab_case(str(action_def.get("id") or f"action-{idx}")) or f"action-{idx}"
+        if action_id in parent_action_ids:
+            continue
         title = _decision_table_action_title(action_def)
         kind = _activity_definition_kind(action_def.get("kind"))
         description = str(action_def.get("description") or title)
@@ -1817,7 +1824,7 @@ def _build_decision_table_activity_definitions(
             )
             questionnaire_canonical = f"{canonical}/Questionnaire/{questionnaire_id}"
             template_variant_is_questionnaire = True
-            template_context["kind"] = "Task"
+            template_context["kind"] = "CollectInformation"
             template_context["meta_profile"] = [
                 "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
             ]
@@ -1862,37 +1869,91 @@ def _build_decision_table_referenced_actions(
     action_index: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """Build nested referenced ActivityDefinition actions from a rule's then-ids."""
-    child_map: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    root_entries: list[dict[str, Any]] = []
-    valid_then_ids = {to_kebab_case(str(x)) for x in then_ids if str(x or "").strip()}
-
-    for action_ref in then_ids:
-        action_def = action_index.get(str(action_ref))
-        action_id = to_kebab_case(str(action_ref))
-        if not action_id:
+    normalized_action_index: dict[str, dict[str, Any]] = {}
+    for action_key, action_def in action_index.items():
+        if not isinstance(action_def, dict):
             continue
+        raw_id = str(action_def.get("id") or action_key or "").strip()
+        action_id = to_kebab_case(raw_id)
+        if action_id:
+            normalized_action_index[action_id] = action_def
+
+    def action_for_ref(action_ref: Any) -> dict[str, Any] | None:
+        raw_ref = str(action_ref or "").strip()
+        if not raw_ref:
+            return None
+        action_def = action_index.get(raw_ref)
+        if isinstance(action_def, dict):
+            return action_def
+        return normalized_action_index.get(to_kebab_case(raw_ref))
+
+    def action_id_for_ref(action_ref: Any, action_def: dict[str, Any] | None = None) -> str:
+        if isinstance(action_def, dict):
+            raw_id = str(action_def.get("id") or action_ref or "").strip()
+        else:
+            raw_id = str(action_ref or "").strip()
+        return to_kebab_case(raw_id)
+
+    def parent_id_for_action(action_def: dict[str, Any] | None) -> str | None:
+        if not isinstance(action_def, dict):
+            return None
+        parent_raw = action_def.get("parent_action_id")
+        if isinstance(parent_raw, str) and parent_raw.strip():
+            return to_kebab_case(parent_raw)
+        return None
+
+    def build_entry(action_ref: Any, action_def: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        action_id = action_id_for_ref(action_ref, action_def)
+        if not action_id:
+            return None
         title = _decision_table_action_title(action_def or {"id": action_ref})
-        entry = {
+        return {
             "id": action_id,
             "title": title,
             "description": str((action_def or {}).get("description") or title),
         }
-        parent_id = None
-        if isinstance(action_def, dict):
-            parent_raw = action_def.get("parent_action_id")
-            if isinstance(parent_raw, str) and parent_raw.strip():
-                parent_id = to_kebab_case(parent_raw)
-        if parent_id and parent_id in valid_then_ids:
-            child_map[parent_id].append(entry)
-        else:
-            root_entries.append(entry)
 
-    def attach_children(entry: dict[str, Any]) -> None:
+    child_map: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for action_key, action_def in action_index.items():
+        if not isinstance(action_def, dict):
+            continue
+        parent_id = parent_id_for_action(action_def)
+        child_entry = build_entry(action_key, action_def)
+        if parent_id and child_entry:
+            child_map[parent_id].append(child_entry)
+
+    root_entries: list[dict[str, Any]] = []
+    valid_then_ids = {to_kebab_case(str(x)) for x in then_ids if str(x or "").strip()}
+
+    for action_ref in then_ids:
+        action_def = action_for_ref(action_ref)
+        entry = build_entry(action_ref, action_def)
+        if not entry:
+            continue
+        parent_id = parent_id_for_action(action_def)
+        if parent_id and parent_id in valid_then_ids:
+            continue
+        root_entries.append(entry)
+
+    def attach_children(entry: dict[str, Any], ancestor_ids: set[str] | None = None) -> None:
+        ancestor_ids = set(ancestor_ids or set())
+        entry_id = str(entry.get("id") or "")
+        if entry_id:
+            ancestor_ids.add(entry_id)
         children = child_map.get(str(entry.get("id") or ""), [])
         if children:
-            entry["action"] = children
+            child_entries = []
             for child in children:
-                attach_children(child)
+                child_id = str(child.get("id") or "")
+                if child_id and child_id in ancestor_ids:
+                    continue
+                child_copy = dict(child)
+                attach_children(child_copy, ancestor_ids)
+                child_entries.append(child_copy)
+            if child_entries:
+                entry["action"] = child_entries
+                return
+            entry["definitionCanonical"] = f"{canonical}/ActivityDefinition/{entry['id']}"
         else:
             entry["definitionCanonical"] = (
                 f"{canonical}/ActivityDefinition/{entry['id']}"
@@ -3520,7 +3581,7 @@ def _build_decision_table_action_reference_map(
     canonical: str,
     decision_table_data: dict[str, Any] | None,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Map decision-table rule ids to referenced ActivityDefinition canonicals."""
+    """Map decision-table rule ids to referenced leaf ActivityDefinition canonicals."""
     if not isinstance(decision_table_data, dict):
         return {}
 
@@ -3535,6 +3596,24 @@ def _build_decision_table_action_reference_map(
         for action in actions
         if isinstance(action, dict) and str(action.get("id") or "").strip()
     }
+    normalized_action_index = {
+        to_kebab_case(str(action_id)): action
+        for action_id, action in action_index.items()
+        if to_kebab_case(str(action_id))
+    }
+
+    def leaf_entries(action_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        leaves: list[dict[str, Any]] = []
+        for action_entry in action_entries:
+            if not isinstance(action_entry, dict):
+                continue
+            children = action_entry.get("action")
+            if isinstance(children, list) and children:
+                leaves.extend(leaf_entries(children))
+            elif action_entry.get("definitionCanonical"):
+                leaves.append(action_entry)
+        return leaves
+
     reference_map: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for rule in rules:
         if not isinstance(rule, dict):
@@ -3545,12 +3624,17 @@ def _build_decision_table_action_reference_map(
         then_ids = rule.get("then") or []
         if not isinstance(then_ids, list):
             continue
-        for action_id in then_ids:
-            action_key = str(action_id or "").strip()
+        referenced_actions = _build_decision_table_referenced_actions(
+            then_ids,
+            canonical,
+            action_index,
+        )
+        for action_entry in leaf_entries(referenced_actions):
+            action_key = str(action_entry.get("id") or "").strip()
             if not action_key:
                 continue
-            action_def = action_index.get(action_key) or {}
-            label = str(action_def.get("label") or action_key).strip()
+            action_def = normalized_action_index.get(to_kebab_case(action_key)) or {}
+            label = str(action_def.get("label") or action_entry.get("title") or action_key).strip()
             reference_map[rule_id].append({
                 "canonical": f"{canonical}/ActivityDefinition/{to_kebab_case(action_key)}",
                 "label": label,

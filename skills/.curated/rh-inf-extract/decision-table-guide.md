@@ -633,7 +633,7 @@ rules:
 ### Extraction Strategy
 
 1. **Extract from "then" clauses** in recommendations
-2. **Map to FHIR resource types** (ServiceRequest, Procedure, MedicationRequest, CommunicationRequest, etc.)
+2. **Map to executable action kinds** (`medication`, `service`, `procedure`, `referral`, `assessment`, `questionnaire`, `communication`)
 3. **Attach terminology at L2 for executable leaf actions** via `concept_refs[]` and/or `codings[]`
 4. **Derive fhir_activity_definition ID** from action name
 5. **Include ALL guideline recommendations** — if guideline says "surgeon should X", create an action for X
@@ -695,27 +695,38 @@ rules:
 
 ### Common Action Types
 
-| Guideline Language | Action Type | FHIR Type |
+| Guideline Language | Action Type | L2 kind |
 |-------------------|-------------|-----------|
-| "offer surgery" | Recommendation | ServiceRequest |
-| "perform procedure" | Intervention | Procedure |
-| "prescribe medication" | Prescription | MedicationRequest |
-| "counsel patient" | Communication | CommunicationRequest |
-| "assess/evaluate" | Assessment | Observation/Assessment |
-| "verify diagnosis" | Diagnostic | DiagnosticReport |
-| "educate patient" | Education | CommunicationRequest |
-| "refer to specialist" | Referral | ServiceRequest |
+| "offer surgery" | Recommendation | service |
+| "perform procedure" | Intervention | procedure |
+| "prescribe medication" | Prescription | medication |
+| "counsel patient" | Communication | communication |
+| "administer questionnaire" | Information collection | questionnaire |
+| "assess/evaluate" | Assessment | assessment |
+| "verify diagnosis" | Diagnostic | service |
+| "educate patient" | Education | communication |
+| "refer to specialist" | Referral | referral |
 
 For terminology attachment at L2:
 - Apply coding expectations to **actions without children**.
-- Parent grouping actions may omit coding when they only organize child tasks.
-- If the parent action is itself a recommendation that could stand alone, code it too.
+- Parent grouping actions with children are not executable activities: omit
+  `kind` and omit executable activity coding on the parent.
+- Never use `kind: task` to make a parent/grouping action fit the action schema.
+  Put executable `kind` only on the child leaf actions.
+- Avoid `kind: task` on leaf actions too; it is too generic. Use the specific
+  kind that describes the clinical activity.
+- Do not attach a broad grouped concept to an executable leaf action when the
+  source phrase contains named components. Deconstruct the concept/action pair
+  first, then attach component concepts to child leaf actions.
+- Treat phrases containing "and", "with", "plus", "combination", "bundle",
+  "regimen", "protocol", "panel", or "order set" as a cue to check for
+  component concepts and child actions.
 - If the source describes an order set or regimen, model it in the extract
   artifact as a parent recommendation context using the existing nesting
   pattern: keep the regimen/order set as the parent rule/action context when
   useful, and break the executable medication content into separate child
-  `MedicationRequest` leaf actions, one per medication order whenever the
-  source names the components.
+  `MedicationRequest` leaf actions, one per medication or medication-class
+  order whenever the source names the components.
 
 ### Regimens And Order Sets
 
@@ -726,16 +737,23 @@ medication bundle, or other order set:
   formalize-only inference
 - use a parent rule and/or parent action for the grouping construct when that
   matches the recommendation structure
+- omit `kind` from the parent action; it is a PlanDefinition grouping node, not
+  a `Task` or medication activity
 - use separate child rules when the source gives distinct conditional or staged
   component recommendations inside the regimen
-- extract each named medication order as its own child action
+- extract each named medication or medication-class order as its own child action
 - attach RxNorm-first coding to each child medication action
+- use any broad regimen concept only on the parent grouping action or in
+  rationale/traceability, not as the terminology for a leaf executable action
 - avoid a single broad child like `"start-antibiotic-regimen"` when the source
   explicitly names amoxicillin, clavulanate, prednisone, etc.
+- avoid one broad leaf like `"offer-anthracycline-taxane-regimen"` when the
+  source names anthracycline and taxane components; use a parent action with no
+  `kind` and child `kind: medication` leaf actions instead.
 
 If downstream formalization needs a computable grouping artifact, that extract
 structure can later map to an order-set-style `PlanDefinition`, while the leaf
-executable actions remain individual `MedicationRequest` activities.
+executable medication actions formalize to individual `MedicationRequest` activities.
 
 ---
 
