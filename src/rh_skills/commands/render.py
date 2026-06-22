@@ -111,8 +111,62 @@ def _care_pathway_transition_rows(sections: dict) -> list[dict]:
         rows.append({
             "from_label": from_label,
             "to_label": to_label,
-            "condition": transition.get("condition") or "-",
             "description": transition.get("description") or "",
+        })
+    return rows
+
+
+def _format_condition_value(value) -> str:
+    """Render L2 condition/applicability fields as compact report text."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, dict):
+        condition_id = value.get("condition_id") or value.get("condition") or value.get("id")
+        expected = value.get("value") or value.get("expected") or value.get("equals")
+        if condition_id and expected:
+            return f"{condition_id} = {expected}"
+        if condition_id:
+            return str(condition_id)
+        return ", ".join(
+            f"{key}={_format_condition_value(item)}"
+            for key, item in value.items()
+            if _format_condition_value(item)
+        )
+    if isinstance(value, list):
+        return "; ".join(
+            formatted
+            for item in value
+            if (formatted := _format_condition_value(item))
+        )
+    return str(value)
+
+
+def _care_pathway_step_condition(step: dict) -> str:
+    """Return the canonical care-pathway step applicability condition."""
+    return _format_condition_value(step.get("applicability_condition")) or "-"
+
+
+def _care_pathway_step_rows(sections: dict) -> list[dict]:
+    """Build normalized rows for the care-pathway step report table."""
+    steps = (sections or {}).get("steps") or []
+    if not isinstance(steps, list):
+        return []
+    rows: list[dict] = []
+    for idx, step in enumerate(steps, start=1):
+        if not isinstance(step, dict):
+            continue
+        rows.append({
+            "label": step.get("label") or step.get("title") or step.get("id") or idx,
+            "description": step.get("description") or "",
+            "condition": _care_pathway_step_condition(step),
+            "actor": step.get("actor") or "",
+            "parent_id": step.get("parent_id") or "-",
+            "rule_id": step.get("rule_id") or ", ".join(str(value) for value in step.get("rule_ids") or []) or "-",
+            "action_labels": step.get("action_labels") or [],
         })
     return rows
 
@@ -323,8 +377,10 @@ def _render_from_templates(data: dict, artifact_dir: Path, artifact_name: str) -
             sections.get("rules", []),
         )
     elif artifact_type == "care-pathway":
-        extra["pathway_tree"] = _care_pathway_tree((data.get("sections") or {}).get("steps") or [])
-        extra["transition_rows"] = _care_pathway_transition_rows(data.get("sections") or {})
+        sections = data.get("sections") or {}
+        extra["pathway_tree"] = _care_pathway_tree(sections.get("steps") or [])
+        extra["step_rows"] = _care_pathway_step_rows(sections)
+        extra["transition_rows"] = _care_pathway_transition_rows(sections)
 
     written: list[str] = []
     for tmpl_path in sorted(type_dir.glob("*.j2")):

@@ -147,8 +147,10 @@ artifact_type_sections:
         Actions are defined in decision-table artifacts, not in care pathways;
         use care-pathway only for sequencing and orchestration.
       transitions: >
-        Optional sequencing rules between steps or phases: {from_id, to_id,
-        condition?, description?}. Captures dependencies and branching logic.
+        Optional sequencing links between steps or phases:
+        {from_id, to_id, description?}. Captures pathway order. Put step
+        applicability or branch gates on the destination step with
+        applicability_condition rather than on the transition.
 
   decision-table:
     description: >
@@ -179,15 +181,23 @@ artifact_type_sections:
         and keep events[].phase and rules[].phase aligned to
         pathway_phases[].id values.
       events: >
-        ECA workflow event definitions: {id, label, description?, phase?, trigger?}.
+        ECA workflow event definitions:
+        {id, label, description?, phase?, trigger?, applicability[]?}.
         Events are primary. trigger is optional when the workflow context alone
         is enough. When present, trigger must be an object with a
         FHIR-compatible type such as named-event | periodic | data-changed |
         data-added | data-modified | data-removed | data-accessed |
         data-access-ended. trigger may also carry optional fields such as
         name, source, resource, moment, resource_criteria, and timing_window
-        when the source supports them. Use events[] for trigger semantics, not
-        for care-pathway step applicability or sequencing.
+        when the source supports them. Use applicability[] for event-wide
+        condition ids that apply to all or most rules at that event so those
+        conditions do not repeat in rules.when{}. Use events[] for trigger
+        semantics, not for care-pathway step applicability or sequencing.
+      applicability: >
+        Optional artifact-wide applicability condition ids for scope shared by
+        the decision table, such as adult population, diagnosis scope, or topic
+        inclusion. Use this to hoist repeated guideline-wide conditions out of
+        per-rule rules.when{} clauses.
       conditions: >
         Condition definitions: {id, label, description?, values[]}.
         values[] MUST use canonical Yes/No values. When the source describes

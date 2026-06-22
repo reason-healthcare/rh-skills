@@ -2340,6 +2340,24 @@ _ARTIFACT_PROMPT_GUIDANCE: dict[str, str] = {
 Decision-table extraction guidance:
 - Use recommendation-scoped events, not broad pathway phases, as the primary trigger units.
 - Keep `when` values local to the recommendation being evaluated rather than restating general pathway progression.
+- Hoist guideline-wide applicability such as adult population, diagnosis scope,
+  or topic inclusion into `sections.applicability[]`, the event description,
+  artifact description, or care-pathway context instead of repeating those
+  conditions in every rule. Hoist event-wide applicability into
+  `events[].applicability[]`. Use `rules.when{}` only for differentiating
+  criteria that change which action applies at that specific decision point.
+- Do not invent a `when` condition just because the recommendation is negative
+  or phrased as "do not". If the source states a broad negative recommendation
+  such as "do not require a fixed prerequisite regimen", model the rule as
+  unconditional for that event (`when: {}` or omit `when`). Do not gate it on
+  "fixed prerequisite regimen is being required" unless the source explicitly
+  limits the recommendation to that observed state.
+- Negative recommendations should be gated only by real clinical applicability
+  criteria from the source. For example, "if purulent nasal discharge is absent,
+  do not prescribe antibacterial therapy" should use
+  `purulent-discharge-present: No`; "do not require one-size-fits-all therapy"
+  should not require a condition that the one-size-fits-all requirement is
+  already present.
 - Use canonical `Yes` / `No` values in `conditions.values[]` and `rules.when{}`.
 - For every condition/question in `conditions[]`, add one or more `data_elements[]`
   entries that name the patient features or clinical data needed to answer it.

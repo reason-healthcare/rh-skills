@@ -518,6 +518,8 @@ event-condition-action clinical decision logic.
 ```yaml
 sections:
   summary: <string>
+  applicability:                     # optional artifact-wide scope condition ids
+    - <condition-id>
   pathway_phases:                     # optional canonical phase model when narrative is phase-organized
     - id: assessment
       label: <phase label>
@@ -525,6 +527,8 @@ sections:
   events:
     - id: e1
       label: <recommendation-scoped evaluation trigger>
+      applicability:                  # optional event-wide condition ids hoisted out of rules.when{}
+        - <condition-id>
       trigger:                          # optional when there is no formal trigger
         type: named-event
         name: <event-name>
@@ -610,6 +614,28 @@ those activities still belong to the same broader staged context.
 If several recommendations share the same workflow moment, keep one event and
 express the finer distinction through separate recommendation-scoped rules and
 child actions rather than proliferating near-duplicate events.
+
+Hoist guideline-wide applicability such as adult population, diagnosis scope,
+topic inclusion, or general pathway eligibility into `sections.applicability[]`,
+the event description, artifact description, care-pathway context, or a
+higher-level plan context instead of repeating those criteria in every
+`rules.when{}`. Hoist event-wide applicability into
+`events[].applicability[]`. Use `rules.when{}` only for local differentiating
+criteria that change which action applies at that specific decision point.
+
+Do not invent a `when` condition just because the recommendation is negative or
+phrased as "do not". If the source states a broad negative recommendation such
+as "do not require a fixed prerequisite regimen", model the rule as
+unconditional for that event (`when: {}` or omit `when`). Do not gate it on a
+condition that the prohibited action is already being done or required unless
+the source explicitly limits the recommendation to that observed state.
+
+Negative recommendations should be gated only by real clinical applicability
+criteria from the source. For example, "if purulent nasal discharge is absent,
+do not prescribe antibacterial therapy" should use
+`purulent-discharge-present: No`; "do not require one-size-fits-all therapy"
+should not require a condition that the one-size-fits-all requirement is already
+present.
 
 Do not gate verification, assessment, review, or evidence-gathering actions on
 the same confirmed state they are intended to establish.
@@ -710,8 +736,10 @@ Phase 1 guidance for a single decision-table artifact:
 - deconstruct distinct recommendations into separate `rules[]` and `actions[]`
   even when they happen during the same broad visit, phase, or workflow moment
 - keep `when` values local to the recommendation being evaluated
+- hoist repeated guideline-wide scope criteria out of individual rules
 - when the source describes a routine workflow-step action, prefer `event + then`
   with no `when`
+- do not invent conditions for universal or broad negative recommendations
 - do not restate prior pathway progression in downstream rules unless that
   prerequisite is clinically required by the recommendation itself
 - do not make a confirmed state the prerequisite for an action whose purpose is
