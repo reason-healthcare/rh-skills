@@ -903,9 +903,13 @@ def _activity_definition_kind(raw_type: str | None) -> str:
         "referral": "ServiceRequest",
         "procedure": "ServiceRequest",
         "assessment": "ServiceRequest",
+        "servicerequest": "ServiceRequest",
         "questionnaire": "CollectInformation",
+        "collectinformation": "CollectInformation",
         "communication": "CommunicationRequest",
+        "communicationrequest": "CommunicationRequest",
         "medication": "MedicationRequest",
+        "medicationrequest": "MedicationRequest",
         "task": "Task",
     }
     return mapping.get(normalized, "ServiceRequest")
@@ -1005,14 +1009,6 @@ def _build_phase_style_actions(
         )
         if phase_evidence_related:
             phase_action["documentation"] = phase_evidence_related
-        
-        # Add trigger to first phase if triggers exist
-        if phase_idx == 1 and triggers:
-            trigger = triggers[0] if isinstance(triggers[0], dict) else {}
-            phase_action["trigger"] = [{
-                "type": "named-event",
-                "name": str(trigger.get("id") or "pathway-entry"),
-            }]
         
         actions.append(phase_action)
     
@@ -1121,10 +1117,18 @@ def _build_care_pathway_actions(
                 grouped_actions = []
                 for ref_idx, ref in enumerate(available_refs, start=1):
                     used_recommendation_refs.add(ref)
+                    child_title, child_description = _recommendation_child_action_display(
+                        ref,
+                        step,
+                        recommendation_plan_map or {},
+                        action_reference_map or {},
+                        title,
+                        description,
+                    )
                     grouped_actions.append({
                         "id": f"{step_id}-recommendation-{ref_idx}",
-                        "title": title,
-                        "description": description,
+                        "title": child_title,
+                        "description": child_description,
                         "definitionCanonical": ref,
                     })
                 action["action"] = grouped_actions
@@ -1632,84 +1636,6 @@ def _decision_table_action_title(action_def: dict) -> str:
     )
 
 
-def _default_trigger_must_support(resource_type: str) -> list[str]:
-    """Return scaffold mustSupport fields for common trigger resource types."""
-    mapping = {
-        "ServiceRequest": ["status", "code", "authoredOn"],
-        "Procedure": ["status", "code", "performed"],
-        "Encounter": ["class", "period"],
-        "QuestionnaireResponse": ["status", "authored", "questionnaire"],
-        "Task": ["status", "code", "authoredOn"],
-    }
-    return list(mapping.get(resource_type, []))
-
-
-def _build_trigger_definition(event: dict[str, Any], *, fallback_name: str) -> dict[str, Any]:
-    """Build a FHIR-like TriggerDefinition from an L2 event."""
-    trigger_raw = event.get("trigger")
-    if not isinstance(trigger_raw, dict):
-        trigger_type = str(event.get("trigger_type") or "named-event")
-        return {
-            "type": trigger_type,
-            "name": str(event.get("id") or fallback_name),
-        }
-
-    trigger: dict[str, Any] = {
-        "type": str(trigger_raw.get("type") or "named-event"),
-        "name": str(trigger_raw.get("name") or event.get("id") or fallback_name),
-    }
-    for field in ("source", "resource", "moment", "timing_window"):
-        value = trigger_raw.get(field)
-        if value is not None:
-            trigger[field] = value
-    resource_criteria_raw = trigger_raw.get("resource_criteria")
-    if isinstance(resource_criteria_raw, dict):
-        trigger["resource_criteria"] = {
-            key: str(value)
-            for key, value in resource_criteria_raw.items()
-            if value is not None and str(value).strip()
-        }
-
-    resource_type = str(trigger_raw.get("resource") or "").strip()
-    if not resource_type:
-        return trigger
-
-    data_requirement: dict[str, Any] = {"type": resource_type}
-    profile = trigger_raw.get("profile")
-    if isinstance(profile, list) and profile:
-        data_requirement["profile"] = [str(value) for value in profile if value]
-    elif isinstance(profile, str) and profile.strip():
-        data_requirement["profile"] = [profile.strip()]
-    else:
-        data_requirement["profile"] = [f"http://hl7.org/fhir/StructureDefinition/{resource_type}"]
-
-    must_support = _default_trigger_must_support(resource_type)
-    resource_criteria = resource_criteria_raw if isinstance(resource_criteria_raw, dict) else None
-    if isinstance(resource_criteria, dict):
-        code_value = resource_criteria.get("code")
-        code_system = resource_criteria.get("system")
-        code_display = resource_criteria.get("display")
-        if code_value:
-            coding: dict[str, Any] = {"code": str(code_value)}
-            if code_system:
-                coding["system"] = str(code_system)
-            if code_display:
-                coding["display"] = str(code_display)
-            data_requirement["codeFilter"] = [{
-                "path": str(resource_criteria.get("path") or "code"),
-                "code": [coding],
-            }]
-            for field in ("code", "status"):
-                if field not in must_support:
-                    must_support.append(field)
-
-    if must_support:
-        data_requirement["mustSupport"] = must_support
-
-    trigger["data"] = [data_requirement]
-    return trigger
-
-
 def _build_decision_table_activity_definitions(
     topic: str,
     cfg: dict,
@@ -2019,12 +1945,6 @@ def _build_decision_table_rule_plan_actions(
         else []
     )
     condition_entries = _build_decision_table_rule_conditions(rule, condition_index)
-    trigger_entries = (
-        [_build_trigger_definition(event, fallback_name=fallback_name)]
-        if isinstance(event, dict) and event
-        else []
-    )
-
     if len(child_actions) == 1:
         root_action = child_actions[0]
         recommendation_ext = _build_strength_of_recommendation_extension(
@@ -2034,8 +1954,6 @@ def _build_decision_table_rule_plan_actions(
         if recommendation_ext:
             existing_ext = root_action.get("extension") or []
             root_action["extension"] = [*existing_ext, recommendation_ext]
-        if trigger_entries:
-            root_action["trigger"] = trigger_entries
         if condition_entries:
             root_action["condition"] = condition_entries
         evidence_ids = rule.get("evidence_traceability_ids")
@@ -2067,8 +1985,6 @@ def _build_decision_table_rule_plan_actions(
         evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
         if evidence_related:
             wrapper["documentation"] = evidence_related
-        if trigger_entries:
-            wrapper["trigger"] = trigger_entries
         if condition_entries:
             wrapper["condition"] = condition_entries
         return [wrapper]
@@ -2088,8 +2004,6 @@ def _build_decision_table_rule_plan_actions(
     evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
     if evidence_related:
         fallback_action["documentation"] = evidence_related
-    if trigger_entries:
-        fallback_action["trigger"] = trigger_entries
     if condition_entries:
         fallback_action["condition"] = condition_entries
     return [fallback_action]
@@ -2388,10 +2302,18 @@ def _build_care_pathway_stub_plan_definitions(
                 grouped_actions = []
                 for ref_idx, ref in enumerate(available_refs, start=1):
                     used_recommendation_refs.add(ref)
+                    child_title, child_description = _recommendation_child_action_display(
+                        ref,
+                        step,
+                        recommendation_plan_map or {},
+                        action_reference_map or {},
+                        title,
+                        description,
+                    )
                     grouped_actions.append({
                         "id": f"{step_id}-recommendation-{ref_idx}",
-                        "title": title,
-                        "description": description,
+                        "title": child_title,
+                        "description": child_description,
                         "definitionCanonical": ref,
                     })
                 action["action"] = grouped_actions
@@ -3780,6 +3702,56 @@ def _step_rule_refs(step: dict[str, Any]) -> list[str]:
             seen.add(ref)
             deduped.append(ref)
     return deduped
+
+
+def _recommendation_child_action_display(
+    recommendation_ref: str,
+    step: dict[str, Any],
+    recommendation_plan_map: dict[str, str],
+    action_reference_map: dict[str, list[dict[str, Any]]],
+    fallback_title: str,
+    fallback_description: str,
+) -> tuple[str, str]:
+    """Return display text for synthetic child actions under grouped pathway steps."""
+    rule_refs = _step_rule_refs(step)
+    action_labels = [
+        str(label).strip()
+        for label in (step.get("action_labels") or [])
+        if isinstance(label, str) and label.strip()
+    ]
+
+    matched_rule: str | None = None
+    matched_index: int | None = None
+    for idx, rule_ref in enumerate(rule_refs):
+        if recommendation_plan_map.get(rule_ref) == recommendation_ref:
+            matched_rule = rule_ref
+            matched_index = idx
+            break
+
+    title = ""
+    if matched_index is not None and matched_index < len(action_labels):
+        title = action_labels[matched_index]
+
+    if not title and matched_rule:
+        labels: list[str] = []
+        seen: set[str] = set()
+        for candidate in action_reference_map.get(matched_rule) or []:
+            label = str(candidate.get("label") or "").strip()
+            if label and label not in seen:
+                seen.add(label)
+                labels.append(label)
+        if len(labels) == 1:
+            title = labels[0]
+        elif len(labels) > 1:
+            title = "; ".join(labels)
+
+    if not title and matched_rule:
+        title = matched_rule
+    if not title:
+        title = fallback_title
+
+    description = title if title != fallback_title else fallback_description
+    return title, description
 
 
 def _resolve_recommendation_references(
