@@ -1995,6 +1995,183 @@ concerns: []
     assert "uses unknown kind 'CustomAction'" in result.output
 
 
+def test_validate_decision_table_warns_for_repeated_unhoisted_event_condition(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: surgery
+description: "Artifact with repeated unhoisted condition"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which surgical actions apply?"
+sections:
+  summary: "Use scoped surgical recommendations."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Use recommendations for adults"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 1"
+  events:
+    - id: surgical-planning
+      label: Surgical planning
+      trigger:
+        type: named-event
+        name: surgical-planning
+  conditions:
+    - id: adult-patient
+      label: Adult patient
+      values: [Yes, No]
+    - id: ct-available
+      label: CT available
+      values: [Yes, No]
+    - id: advanced-disease
+      label: Advanced disease
+      values: [Yes, No]
+  data_elements:
+    - id: patient-age
+      condition_id: adult-patient
+      label: Patient age
+    - id: ct-status
+      condition_id: ct-available
+      label: CT status
+    - id: disease-features
+      condition_id: advanced-disease
+      label: Disease features
+  actions:
+    - id: obtain-ct
+      label: Obtain CT
+      kind: service
+      concept_refs: [computed-tomography]
+    - id: plan-extent
+      label: Plan extent
+      kind: service
+      concept_refs: [surgical-planning]
+  rules:
+    - id: obtain-ct
+      event: surgical-planning
+      when:
+        adult-patient: Yes
+        ct-available: No
+      action: Obtain CT
+      rationale: "Obtain CT when unavailable."
+      evidence_traceability_ids: [rec-001]
+      then:
+        - obtain-ct
+    - id: plan-extent
+      event: surgical-planning
+      when:
+        adult-patient: Yes
+        advanced-disease: Yes
+      action: Plan extent
+      rationale: "Plan extent for advanced disease."
+      evidence_traceability_ids: [rec-001]
+      then:
+        - plan-extent
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "condition 'adult-patient: Yes' repeats across 2 rules for event 'surgical-planning'" in result.output
+    assert "event.applicability[]" in result.output
+
+
+def test_validate_decision_table_allows_repeated_condition_when_hoisted_to_event_applicability(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: surgery
+description: "Artifact with hoisted condition"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "Which surgical actions apply?"
+sections:
+  summary: "Use scoped surgical recommendations."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Use recommendations for adults"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 1"
+  events:
+    - id: surgical-planning
+      label: Surgical planning
+      applicability:
+        - adult-patient
+      trigger:
+        type: named-event
+        name: surgical-planning
+  conditions:
+    - id: adult-patient
+      label: Adult patient
+      values: [Yes, No]
+    - id: ct-available
+      label: CT available
+      values: [Yes, No]
+    - id: advanced-disease
+      label: Advanced disease
+      values: [Yes, No]
+  data_elements:
+    - id: patient-age
+      condition_id: adult-patient
+      label: Patient age
+    - id: ct-status
+      condition_id: ct-available
+      label: CT status
+    - id: disease-features
+      condition_id: advanced-disease
+      label: Disease features
+  actions:
+    - id: obtain-ct
+      label: Obtain CT
+      kind: service
+      concept_refs: [computed-tomography]
+    - id: plan-extent
+      label: Plan extent
+      kind: service
+      concept_refs: [surgical-planning]
+  rules:
+    - id: obtain-ct
+      event: surgical-planning
+      when:
+        ct-available: No
+      action: Obtain CT
+      rationale: "Obtain CT when unavailable."
+      evidence_traceability_ids: [rec-001]
+      then:
+        - obtain-ct
+    - id: plan-extent
+      event: surgical-planning
+      when:
+        advanced-disease: Yes
+      action: Plan extent
+      rationale: "Plan extent for advanced disease."
+      evidence_traceability_ids: [rec-001]
+      then:
+        - plan-extent
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+    assert "condition 'adult-patient'" not in result.output
+
+
 def test_validate_decision_table_rejects_unknown_evidence_traceability_links(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"

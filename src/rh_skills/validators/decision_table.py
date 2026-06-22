@@ -72,6 +72,17 @@ def _looks_like_regimen_leaf_action(action: dict) -> bool:
     return any(term in text for term in _REGIMEN_GROUPING_TERMS)
 
 
+def _applicability_condition_id(entry: Any) -> str | None:
+    if isinstance(entry, str) and entry.strip():
+        return entry.strip()
+    if isinstance(entry, dict):
+        for key in ("condition_id", "condition", "id"):
+            value = entry.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return None
+
+
 def _check_fhir_field_leakage(data: dict, path: str = "") -> List[str]:
     """Recursively check for FHIR-specific fields at L2 level."""
     fhir_fields = []
@@ -146,6 +157,7 @@ def validate_decision_table(
     actions = sections.get("actions", [])
     rules = sections.get("rules", [])
     pathway_phases = sections.get("pathway_phases")
+    artifact_applicability = sections.get("applicability") or []
     evidence_traceability = sections.get("evidence_traceability") or []
     
     if not events or len(events) == 0:
@@ -266,6 +278,21 @@ def validate_decision_table(
     event_ids = {e["id"] for e in events if isinstance(e, dict) and "id" in e}
     condition_ids = {c["id"] for c in conditions if isinstance(c, dict) and "id" in c}
     action_ids = {a["id"] for a in actions if isinstance(a, dict) and "id" in a}
+    hoisted_artifact_conditions: set[str] = set()
+    if artifact_applicability:
+        if not isinstance(artifact_applicability, list):
+            report_error("  decision-table: sections.applicability must be a list when present")
+        else:
+            for entry in artifact_applicability:
+                condition_id = _applicability_condition_id(entry)
+                if not condition_id:
+                    report_error("  decision-table: sections.applicability entries must reference a condition id")
+                elif condition_id not in condition_ids:
+                    report_error(
+                        f"  decision-table: sections.applicability references unknown condition '{condition_id}'"
+                    )
+                else:
+                    hoisted_artifact_conditions.add(condition_id)
     
     # Validate pathway_phases if present
     phase_ids: Set[str] = set()
@@ -297,11 +324,30 @@ def validate_decision_table(
                     )
 
     # Validate event contract
+    hoisted_event_conditions: dict[str, set[str]] = {}
     for idx, event in enumerate(events, start=1):
         if not isinstance(event, dict):
             report_error(f"  decision-table: event #{idx} is not a dict")
             continue
         event_id = event.get("id", f"#{idx}")
+        applicability = event.get("applicability") or []
+        if applicability:
+            if not isinstance(applicability, list):
+                report_error(f"  decision-table: event '{event_id}' applicability must be a list when present")
+            else:
+                event_conditions = hoisted_event_conditions.setdefault(str(event_id), set())
+                for entry in applicability:
+                    condition_id = _applicability_condition_id(entry)
+                    if not condition_id:
+                        report_error(
+                            f"  decision-table: event '{event_id}' applicability entries must reference a condition id"
+                        )
+                    elif condition_id not in condition_ids:
+                        report_error(
+                            f"  decision-table: event '{event_id}' applicability references unknown condition '{condition_id}'"
+                        )
+                    else:
+                        event_conditions.add(condition_id)
         if event.get("phase_order") is not None:
             report_error(f"  decision-table: event '{event_id}' uses legacy 'phase_order' — remove it")
         if event.get("trigger_type") is not None:
@@ -490,7 +536,14 @@ def validate_decision_table(
         )
     
     # Validate rules reference valid events, conditions, actions
-    condition_usage: Dict[str, int] = {}  # Track how often each condition is used
+    condition_usage: Dict[str, int] = {
+        cond_id: 1
+        for cond_id in (
+            set(hoisted_artifact_conditions)
+            | {cond_id for event_conditions in hoisted_event_conditions.values() for cond_id in event_conditions}
+        )
+    }
+    event_condition_value_usage: dict[tuple[str, str, str], list[str]] = {}
     rules_with_phase = 0  # Track how many rules have phase assignments
     
     for idx, rule in enumerate(rules, start=1):
@@ -517,13 +570,17 @@ def validate_decision_table(
             when_clause = {}
         if isinstance(when_clause, dict):
             # Empty dict {} is valid for unconditional rules (always applies)
-            for cond_id in when_clause.keys():
+            for cond_id, value in when_clause.items():
                 if cond_id not in condition_ids:
                     report_error(
                         f"  decision-table: rule '{rule_id}' references unknown condition '{cond_id}'"
                     )
                 else:
                     condition_usage[cond_id] = condition_usage.get(cond_id, 0) + 1
+                    if isinstance(event, str) and event in event_ids:
+                        normalized_value = str(value).strip()
+                        key = (event, str(cond_id), normalized_value)
+                        event_condition_value_usage.setdefault(key, []).append(str(rule_id))
         
         # Check required 'then' clause
         then_clause = rule.get("then")
@@ -572,6 +629,17 @@ def validate_decision_table(
                 f"  decision-table: rule '{rule_id}' has no phase assignment "
                 f"(pathway_phases present but rule.phase missing)"
             )
+
+    for (event_id, cond_id, value), rule_ids in sorted(event_condition_value_usage.items()):
+        if len(rule_ids) < 2:
+            continue
+        if cond_id in hoisted_artifact_conditions or cond_id in hoisted_event_conditions.get(event_id, set()):
+            continue
+        display_value = f": {value}" if value else ""
+        report_warn(
+            f"  decision-table: condition '{cond_id}{display_value}' repeats across {len(rule_ids)} rules for event '{event_id}' "
+            f"({', '.join(rule_ids)}); consider hoisting it to event.applicability[] or sections.applicability[]"
+        )
     
     # Check for orphaned conditions (defined but never used)
     for cond_id in condition_ids:

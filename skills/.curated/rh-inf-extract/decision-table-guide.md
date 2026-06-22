@@ -132,6 +132,8 @@ Before finalizing extraction, verify:
 - [ ] **ALL Key Action Statements extracted** (not just conditional ones)
 - [ ] **Distinct recommendations deconstructed** into separate rules/actions even when they share the same visit, phase, or workflow moment
 - [ ] **Unconditional recommendations captured** as rules with `when: {}`
+- [ ] **Guideline-wide scope criteria hoisted** out of per-rule `when{}` clauses
+- [ ] **Negative recommendations not self-gated** on the prohibited action already being done, unless the source explicitly says so
 - [ ] **Paired care-pathway coverage preserved** when a care-pathway artifact also exists: every recommendation-scoped rule remains linkable to at least one care-pathway leaf step, singly or via grouped `rule_ids[]`
 - [ ] **Every action** has corresponding entry in `actions` section
 - [ ] **Every rule** references valid action IDs in `then: [...]`
@@ -166,6 +168,13 @@ When the source provides activation metadata, keep it on `event.trigger`
 instead of splitting the event. Use `type`, `name`, `source`, `resource`,
 `moment`, `resource_criteria`, and `timing_window` when the source supports
 those details.
+
+When many recommendations share the same population, diagnosis scope, or topic
+eligibility, capture that shared applicability in `sections.applicability[]`,
+the event description, artifact description, care-pathway context, or
+higher-level plan context rather than repeating it as a `when{}` condition on
+every rule. Use `events[].applicability[]` for applicability shared by all or
+most rules at one event.
 
 **Example** (synthetic surgical protocol):
 ```yaml
@@ -494,13 +503,21 @@ rules:
 
 ---
 
-### Persistent Prerequisites (Workflow Pattern)
+### Hoisted Applicability (Workflow Pattern)
 
-**Definition**: Clinical state established at an earlier event that remains true for later sequential steps  
-**Pattern**: Condition appears at event N and should be repeated in ALL downstream events N+1, N+2, etc.  
-**When to use**: Procedural/workflow guidelines with temporal sequencing
+**Definition**: Guideline-wide scope, diagnosis context, population context, or
+pathway eligibility that applies to many recommendations but does not determine
+which action applies at a specific decision point.
+**Pattern**: Shared applicability appears in `sections.applicability[]`,
+`events[].applicability[]`, the event description, artifact description,
+care-pathway context, or higher-level plan context instead of being repeated in
+every downstream `rules.when{}`.
+**When to use**: Procedural/workflow guidelines with temporal sequencing where
+many recommendations share the same population or diagnosis scope.
 
-**Critical Rule**: If an earlier event establishes a prerequisite clinical state that remains true for later steps, downstream rules should repeat that state explicitly in `when`, unless the later step intentionally re-evaluates or relaxes it.
+**Critical Rule**: Do not repeat shared scope conditions in every downstream
+rule. A `when{}` clause should contain local branch criteria that distinguish
+which action applies at that recommendation point.
 
 **Example** (surgical workflow):
 ```yaml
@@ -511,10 +528,12 @@ events:
     
   - id: e2
     label: "Surgical Decision Point"
+    description: "Surgical decision point for adults with confirmed CRS in guideline scope"
     phase: "planning"
     
   - id: e3
     label: "Pre-Operative Clearance"
+    description: "Pre-operative clearance for adults with confirmed CRS proceeding toward surgery"
     phase: "planning"
 
 conditions:
@@ -522,13 +541,13 @@ conditions:
     label: "CRS diagnosis confirmed"
     description: "Patient meets diagnostic criteria for chronic rhinosinusitis"
     values: ["Yes", "No"]
-    role: "persistent-prerequisite"  # Established at e1, required through e3
+    role: "branch-condition"  # Used only when diagnosis is being evaluated
     
   - id: objective-inflammation-present
     label: "Objective inflammation documented"
     description: "Endoscopic or imaging evidence of inflammation"
     values: ["Yes", "No"]
-    role: "persistent-prerequisite"  # Established at e1, required through e3
+    role: "branch-condition"  # Used only when diagnosis is being evaluated
     
   - id: surgical-criteria-met
     label: "Surgical candidacy criteria met"
@@ -544,25 +563,27 @@ rules:
     then: [verify-diagnostic-workup]
     rationale: "Confirm diagnosis before proceeding"
     
-  # Event 2: Prerequisites CARRIED FORWARD + new branch condition
+  # Event 2: shared diagnosis context is hoisted to the event; only local branch remains
   - id: r2
     event: e2
-    when: {crs-diagnosis-confirmed: "Yes", objective-inflammation-present: "Yes", surgical-criteria-met: "Yes"}
+    when: {surgical-criteria-met: "Yes"}
     then: [offer-surgery]
-    rationale: "Offer surgery when persistent prerequisites confirmed AND surgical criteria met"
+    rationale: "Offer surgery when local surgical criteria are met"
     
-  # Event 3: Prerequisites CARRIED FORWARD again
+  # Event 3: unconditional action at this event; no duplicated diagnosis scope in when
   - id: r3
     event: e3
-    when: {crs-diagnosis-confirmed: "Yes", objective-inflammation-present: "Yes"}
+    when: {}
     then: [obtain-pre-op-clearance]
-    rationale: "Clearance requires confirmed diagnosis and inflammation"
+    rationale: "Clearance is part of pre-operative workflow"
 ```
 
-**Why carry forward?** Prevents logic gaps where formalization might assume prerequisites persist implicitly, when the L2 artifact should be explicit.
+**Why hoist?** Repeating guideline-wide scope criteria in every rule creates
+duplicate conditions, noisy CQL, and apparent gating where the guideline only
+describes the population or workflow context.
 
-**Abstraction vs. Carry-Forward**:
-- **Prefer** explicit carry-forward of original conditions (e.g., `crs-diagnosis-confirmed`, `objective-inflammation-present`)
+**Hoisting vs. Branching**:
+- **Prefer** event or artifact context for shared applicability that applies to most or all rules
 - **Avoid** creating abstract summary conditions (e.g., `diagnosis-confirmed-and-meets-criteria`) unless reviewer-approved
 - **Do** allow diagnosis-confirmation conditions as branch criteria when the execution context is evaluating whether diagnosis is present
 - **Do not** use diagnosis as a prerequisite to assess whether diagnosis is present; treat that as the branch logic itself, not upstream context
@@ -629,6 +650,14 @@ rules:
 - **Conditional recommendations** → actions with `when: {condition: value}`
 - **Unconditional recommendations** → actions with `when: {}` (triggered/always-applicable)
 - **Don't skip** recommendations that "should always be done" — those are triggered actions
+- **Negative recommendations are not automatically conditional**. Do not invent
+  a `when{}` condition that the prohibited action is already being done or
+  required.
+- **Use a `when{}` for negative recommendations only when the source names a
+  real clinical applicability criterion**. Example: `purulent-discharge: "No"`
+  is a correct condition for "do not prescribe antibiotics when purulence is
+  absent"; `fixed-prerequisite-regimen-required: "Yes"` is not needed for a
+  broad recommendation that says not to require a fixed prerequisite regimen.
 
 ### Extraction Strategy
 

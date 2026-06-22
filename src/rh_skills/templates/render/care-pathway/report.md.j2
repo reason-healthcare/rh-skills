@@ -5,6 +5,7 @@
 
 {% set sections = data.sections or {} %}
 {% set steps = sections.steps or [] %}
+{% set step_rows = step_rows or [] %}
 {% set transition_rows = transition_rows or [] %}
 
 {% if pathway_tree %}
@@ -15,33 +16,33 @@
 ```
 
 {% endif %}
-{% if steps %}
+{% if step_rows %}
 ## Steps
 
-| Step | Description | Actor | Parent |
-|------|-------------|-------|--------|
-{% for s in steps -%}
-| {{ s.label or s.title or s.id or loop.index }} | {{ s.description or '' }} | {{ s.actor or '' }} | {{ s.parent_id or '-' }} |
+| Step | Description | Condition | Actor | Parent |
+|------|-------------|-----------|-------|--------|
+{% for s in step_rows -%}
+| {{ s.label }} | {{ s.description }} | {{ s.condition }} | {{ s.actor }} | {{ s.parent_id }} |
 {% endfor %}
 
 {% endif %}
-{% if steps %}
+{% if step_rows %}
 ## Rule Links
 
 | Step | Rule ID | Action Labels |
 |------|---------|---------------|
-{% for s in steps -%}
-| {{ s.label or s.title or s.id or loop.index }} | {{ s.rule_id or '-' }} | {{ (s.action_labels or [])|join(', ') if s.action_labels else '-' }} |
+{% for s in step_rows -%}
+| {{ s.label }} | {{ s.rule_id }} | {{ (s.action_labels or [])|join(', ') if s.action_labels else '-' }} |
 {% endfor %}
 
 {% endif %}
 {% if transition_rows %}
 ## Transitions
 
-| From | To | Condition | Description |
-|------|----|-----------|-------------|
+| From | To | Description |
+|------|----|-------------|
 {% for t in transition_rows -%}
-| {{ t.from_label }} | {{ t.to_label }} | {{ t.condition }} | {{ t.description }} |
+| {{ t.from_label }} | {{ t.to_label }} | {{ t.description }} |
 {% endfor %}
 
 {% endif %}
