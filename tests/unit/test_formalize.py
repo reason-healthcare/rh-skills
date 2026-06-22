@@ -16,6 +16,7 @@ from ruamel.yaml import YAML
 
 from rh_skills.commands.formalize import (
     _activity_definition_kind,
+    _build_care_pathway_stub_plan_definitions,
     _normalize_activity_codeable_concept,
     formalize,
 )
@@ -87,6 +88,49 @@ version: 0.1.0
 
 def _to_pascal(slug: str) -> str:
     return "".join(w.capitalize() for w in slug.split("-"))
+
+
+def test_grouped_care_pathway_recommendation_actions_use_recommendation_titles():
+    l2_data = {
+        "sections": {
+            "steps": [
+                {
+                    "id": "protocol",
+                    "label": "Clinical Protocol",
+                    "description": "Overall protocol.",
+                },
+                {
+                    "id": "evaluate-candidacy",
+                    "label": "Evaluate candidacy",
+                    "description": "Evaluate several candidacy concerns.",
+                    "parent_id": "protocol",
+                    "rule_ids": ["rule-a", "rule-b"],
+                    "action_labels": ["Verify diagnosis", "Assess candidacy"],
+                },
+            ],
+        },
+    }
+    recommendation_plan_map = {
+        "rule-a": "http://example.org/fhir/PlanDefinition/test-recommendation-a",
+        "rule-b": "http://example.org/fhir/PlanDefinition/test-recommendation-b",
+    }
+
+    resources, _ = _build_care_pathway_stub_plan_definitions(
+        "test-protocol",
+        "http://example.org/fhir",
+        {"version": "0.1.0", "status": "draft"},
+        l2_data,
+        recommendation_plan_map=recommendation_plan_map,
+    )
+
+    child_plan = next(resource for resource in resources if resource["id"] == "test-protocol-evaluate-candidacy")
+    parent_action = child_plan["action"][0]
+
+    assert parent_action["title"] == "Evaluate candidacy"
+    assert [action["title"] for action in parent_action["action"]] == [
+        "Verify diagnosis",
+        "Assess candidacy",
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -274,7 +318,7 @@ sections:
         assert activity_json["title"] == "Refer to specialist"
         assert activity_json["kind"] == "CommunicationRequest"
 
-    def test_decision_table_event_trigger_propagates_trigger_metadata(self, tmp_repo):
+    def test_decision_table_event_trigger_does_not_emit_action_trigger(self, tmp_repo):
         topic = "trigger-topic"
         artifact = "triggered-decision"
         topic_dir = tmp_repo / "topics" / topic
@@ -325,17 +369,9 @@ sections:
         assert result.exit_code == 0, result.output
 
         child_plan = json.loads((computable_dir / "PlanDefinition-triggered-decision-postsurgical-review.json").read_text())
-        trigger = child_plan["action"][0]["trigger"][0]
-        assert trigger["type"] == "named-event"
-        assert trigger["name"] == "endoscopic-sinus-surgery-completed"
-        assert trigger["data"][0]["type"] == "Procedure"
-        assert trigger["data"][0]["profile"] == ["http://hl7.org/fhir/StructureDefinition/Procedure"]
-        assert "performed" in trigger["data"][0]["mustSupport"]
-        assert trigger["data"][0]["codeFilter"][0]["path"] == "code"
-        assert trigger["data"][0]["codeFilter"][0]["code"][0]["code"] == "312999006"
-        assert trigger["data"][0]["codeFilter"][0]["code"][0]["system"] == "http://snomed.info/sct"
+        assert "trigger" not in child_plan["action"][0]
 
-    def test_decision_table_event_trigger_keeps_timing_window_and_context(self, tmp_repo):
+    def test_decision_table_event_trigger_context_is_not_written_to_action_trigger(self, tmp_repo):
         topic = "trigger-window-topic"
         artifact = "timing-window-decision"
         topic_dir = tmp_repo / "topics" / topic
@@ -391,16 +427,7 @@ sections:
         assert result.exit_code == 0, result.output
 
         child_plan = json.loads((computable_dir / "PlanDefinition-timing-window-decision-postsurgical-review.json").read_text())
-        trigger = child_plan["action"][0]["trigger"][0]
-        assert trigger["source"] == "procedure-status"
-        assert trigger["resource"] == "Procedure"
-        assert trigger["moment"] == "completed"
-        assert trigger["resource_criteria"]["code"] == "312999006"
-        assert trigger["timing_window"]["start_after"] == "3 months"
-        assert trigger["timing_window"]["end_after"] == "12 months"
-        assert trigger["data"][0]["type"] == "Procedure"
-        assert trigger["data"][0]["profile"] == ["http://hl7.org/fhir/StructureDefinition/Procedure"]
-        assert "performed" in trigger["data"][0]["mustSupport"]
+        assert "trigger" not in child_plan["action"][0]
 
     def test_decision_table_without_conditions_falls_back_to_generic_action(self, tmp_repo):
         """If L2 artifact has no conditions, fall back to generic stub action."""
