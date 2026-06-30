@@ -1569,6 +1569,301 @@ concerns: []
     assert result.exit_code == 0, result.output
 
 
+def test_validate_decision_table_case_feature_resolution_fields(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: rhinology
+description: "Artifact with neutral case-feature resolution metadata"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How is advanced disease handled?"
+sections:
+  summary: "Use advanced disease feature resolution."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Review advanced disease features"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 1"
+  events:
+    - id: review
+      label: Review
+  conditions:
+    - id: advanced-disease-feature-present
+      label: Advanced disease feature present
+      values: [Yes, No]
+      resolution:
+        operator: any_of
+        inputs: [bony-erosion, osteitis]
+        summary: "Yes when any supporting advanced disease feature is documented."
+        unknown_policy: unknown_if_no_evaluable_evidence
+  data_elements:
+    - id: bony-erosion
+      condition_id: advanced-disease-feature-present
+      label: Bony erosion
+      role: assessment_output
+      value_type: presence
+      data_type: imaging_finding
+      produced_by: [review-sinus-ct]
+      evidence_source: [imaging, operative_note]
+      temporal_scope: current_surgical_evaluation
+    - id: osteitis
+      condition_id: advanced-disease-feature-present
+      label: Osteitis
+      role: inference_input
+      value_type: presence
+      data_type: imaging_finding
+      produced_by: [review-sinus-ct]
+  actions:
+    - id: review-sinus-ct
+      label: Review sinus CT
+      kind: assessment
+      concept_refs: [sinus-ct-review]
+      produces_data_elements: [bony-erosion, osteitis]
+    - id: plan-surgery
+      label: Plan surgery
+      kind: procedure
+      concept_refs: [sinus-surgery]
+  rules:
+    - id: plan
+      event: review
+      when:
+        advanced-disease-feature-present: Yes
+      action: Plan surgery
+      rationale: "Advanced disease affects planning."
+      evidence_traceability_ids: [rec-001]
+      then:
+        - plan-surgery
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_decision_table_rejects_unknown_data_element_role(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: testing
+description: "Artifact with invalid role"
+derived_from: [source-l1]
+artifact_type: decision-table
+clinical_question: "Who qualifies?"
+sections:
+  summary: "Invalid role."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Act"
+      evidence: [{source: source-l1, locator: "1"}]
+  events: [{id: review, label: Review}]
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+      role: raw_input
+  actions:
+    - id: act
+      label: Act
+      kind: service
+      concept_refs: [act]
+  rules:
+    - id: act-rule
+      event: review
+      when: {eligible: Yes}
+      action: Act
+      rationale: "Eligibility supports action."
+      evidence_traceability_ids: [rec-001]
+      then: [act]
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "data element 'eligibility' role 'raw_input' is invalid" in result.output
+
+
+def test_validate_decision_table_rejects_unknown_produced_by_action(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: testing
+description: "Artifact with invalid produced_by"
+derived_from: [source-l1]
+artifact_type: decision-table
+clinical_question: "Who qualifies?"
+sections:
+  summary: "Invalid produced_by."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Act"
+      evidence: [{source: source-l1, locator: "1"}]
+  events: [{id: review, label: Review}]
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+      produced_by: [missing-action]
+  actions:
+    - id: act
+      label: Act
+      kind: service
+      concept_refs: [act]
+  rules:
+    - id: act-rule
+      event: review
+      when: {eligible: Yes}
+      action: Act
+      rationale: "Eligibility supports action."
+      evidence_traceability_ids: [rec-001]
+      then: [act]
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "data element 'eligibility' produced_by references unknown action 'missing-action'" in result.output
+
+
+def test_validate_decision_table_rejects_unknown_resolution_input(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: testing
+description: "Artifact with invalid resolution input"
+derived_from: [source-l1]
+artifact_type: decision-table
+clinical_question: "Who qualifies?"
+sections:
+  summary: "Invalid resolution input."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Act"
+      evidence: [{source: source-l1, locator: "1"}]
+  events: [{id: review, label: Review}]
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+      resolution:
+        operator: any_of
+        inputs: [missing-data]
+        summary: "Yes when data supports eligibility."
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+      role: inference_input
+  actions:
+    - id: act
+      label: Act
+      kind: service
+      concept_refs: [act]
+  rules:
+    - id: act-rule
+      event: review
+      when: {eligible: Yes}
+      action: Act
+      rationale: "Eligibility supports action."
+      evidence_traceability_ids: [rec-001]
+      then: [act]
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "condition 'eligible' resolution.inputs references unknown data element 'missing-data'" in result.output
+
+
+def test_validate_decision_table_requires_resolution_summary_for_inference_only_inputs(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: testing
+description: "Artifact missing resolution summary"
+derived_from: [source-l1]
+artifact_type: decision-table
+clinical_question: "Who qualifies?"
+sections:
+  summary: "Missing summary."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Act"
+      evidence: [{source: source-l1, locator: "1"}]
+  events: [{id: review, label: Review}]
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+      resolution:
+        operator: any_of
+        inputs: [eligibility]
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+      role: inference_input
+  actions:
+    - id: act
+      label: Act
+      kind: service
+      concept_refs: [act]
+  rules:
+    - id: act-rule
+      event: review
+      when: {eligible: Yes}
+      action: Act
+      rationale: "Eligibility supports action."
+      evidence_traceability_ids: [rec-001]
+      then: [act]
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "condition 'eligible' requires resolution.summary" in result.output
+
+
 def test_validate_decision_table_warns_when_leaf_action_lacks_terminology_linkage(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"

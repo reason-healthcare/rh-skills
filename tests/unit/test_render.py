@@ -210,13 +210,17 @@ def test_render_decision_table_shows_event_column_when_present(tmp_repo):
     content = (artifact_dir / "good-dt-report.md").read_text()
     assert "Decision Table" in content
     assert "## Event Tree" in content
-    assert "## Features And Data Elements" in content
+    assert "## Case Feature Definitions" in content
     assert "## Rules" in content
     assert "Event: Screening encounter" in content
     assert "Rule: r1" in content
     assert "When: High risk = Yes" in content
     assert "a2 Review questionnaire" in content
     assert "High-risk clinical profile" in content
+    assert "### c1 High risk" in content
+    assert "- Values: Yes, No" in content
+    assert "- Description: -" in content
+    assert "  - de1 High-risk clinical profile" in content
     assert "| Event Pattern | c1 High risk | Actions |" in content
     assert "| ev1 Screening encounter | Yes | a1 Order test, a2 Review questionnaire |" in content
     assert "Order test" in content
@@ -558,9 +562,102 @@ def test_render_decision_table_moves_global_applicability_out_of_rule_matrix(tmp
     report = report_path.read_text()
     assert "### Global Applicability" in report
     assert "- adult-age-criterion-met Adult age criterion met = Yes" in report
+    assert "### Global Applicability\n\n- adult-age-criterion-met Adult age criterion met = Yes\n\n### Decision Table" in report
     assert "| Event Pattern | diagnosis-confirmed Diagnosis confirmed | Actions |" in report
     assert "| Event Pattern | adult-age-criterion-met Adult age criterion met |" not in report
     assert "| ev1 Review |  | a1 Act |" not in report
+
+
+def test_render_decision_table_shows_case_feature_resolution_and_produced_data(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "dt-case-features", {
+        "id": "dt-case-features",
+        "title": "Case Feature Decision Table",
+        "artifact_type": "decision-table",
+        "sections": {
+            "events": [{"id": "ev1", "label": "Review"}],
+            "conditions": [
+                {
+                    "id": "advanced-sinus-disease-feature-present",
+                    "label": "Advanced sinus disease feature present",
+                    "values": ["Yes", "No"],
+                    "resolution": {
+                        "operator": "any_of",
+                        "inputs": ["de-bony-erosion", "de-osteitis"],
+                        "summary": "Yes when any supporting advanced disease feature is documented.",
+                        "unknown_policy": "unknown_if_no_evaluable_evidence",
+                    },
+                },
+            ],
+            "data_elements": [
+                {
+                    "id": "de-bony-erosion",
+                    "condition_id": "advanced-sinus-disease-feature-present",
+                    "label": "Bony erosion",
+                    "description": "Bony erosion documented during CT review.",
+                    "data_type": "imaging_finding",
+                    "role": "assessment_output",
+                    "value_type": "presence",
+                    "produced_by": ["review-sinus-ct"],
+                    "evidence_source": ["imaging", "operative_note"],
+                    "temporal_scope": "current_surgical_evaluation",
+                },
+                {
+                    "id": "de-osteitis",
+                    "condition_id": "advanced-sinus-disease-feature-present",
+                    "label": "Osteitis",
+                    "description": "Osteitis documented during CT review.",
+                    "data_type": "imaging_finding",
+                    "role": "inference_input",
+                    "value_type": "presence",
+                    "produced_by": ["review-sinus-ct"],
+                    "evidence_source": "imaging",
+                    "temporal_scope": "current_surgical_evaluation",
+                },
+            ],
+            "actions": [
+                {
+                    "id": "review-sinus-ct",
+                    "label": "Review sinus CT",
+                    "kind": "assessment",
+                    "concept_refs": ["sinus-ct-review"],
+                    "produces_data_elements": ["de-bony-erosion", "de-osteitis"],
+                },
+                {"id": "a1", "label": "Plan surgery", "kind": "procedure", "concept_refs": ["sinus-surgery"]},
+            ],
+            "rules": [
+                {
+                    "id": "r1",
+                    "event": "ev1",
+                    "when": {"advanced-sinus-disease-feature-present": "Yes"},
+                    "then": ["a1"],
+                },
+            ],
+        },
+    })
+
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "dt-case-features"])
+
+    assert result.exit_code == 0
+    report = (
+        tmp_repo
+        / "topics"
+        / "my-skill"
+        / "structured"
+        / "dt-case-features"
+        / "dt-case-features-report.md"
+    ).read_text()
+    assert "## Case Feature Definitions" in report
+    assert "### advanced-sinus-disease-feature-present Advanced sinus disease feature present" in report
+    assert "- Values: Yes, No" in report
+    assert "- Data elements:" in report
+    assert "Yes when any supporting advanced disease feature is documented." in report
+    assert "  - de-bony-erosion Bony erosion" in report
+    assert "  - de-osteitis Osteitis" in report
+    assert "unknown_if_no_evaluable_evidence" not in report
+    assert "imaging, operative_note" not in report
+    assert "| Event Pattern | advanced-sinus-disease-feature-present Advanced sinus disease feature present | Actions |" in report
+    assert "review-sinus-ct Review sinus CT | Actions |" not in report
 
 
 # ── Idempotent re-render ────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@
 {% set actions = sections.actions or [] %}
 {% set rules = sections.rules or [] %}
 {% set applicability_rows = applicability_rows or [] %}
+{% set case_feature_rows = case_feature_rows or [] %}
 {% set rule_conditions = rule_conditions or conditions %}
 {% set event_map = namespace(d={}) %}
 {% for e in events %}{% set _ = event_map.d.update({e.id: ((e.id ~ ' ' ~ (e.label or e.description or e.id)) if e.id else (e.label or e.description or '?'))}) %}{% endfor %}
@@ -34,16 +35,23 @@
 ```
 
 {% endif %}
-{% if data_elements %}
-## Features And Data Elements
+{% if case_feature_rows %}
+## Case Feature Definitions
 
-| Condition | Data Element | Type | Description |
-|---|---|---|---|
-{% for c in conditions -%}
-{% set matching = data_elements | selectattr('condition_id', 'equalto', c.id) | list -%}
-{% for de in matching -%}
-| {{ cond_map.d.get(c.id, c.id or '?') }} | {{ (de.id or '?') ~ ' ' ~ (de.label or '') }} | {{ de.data_type or '-' }} | {{ de.description or '-' }} |
-{% endfor -%}
+{% for feature in case_feature_rows %}
+### {{ feature.label }}
+
+- Values: {{ feature.value_text }}
+- Description: {{ feature.resolution_summary or '-' }}
+{% if feature.support_rows %}
+- Data elements:
+{% for row in feature.support_rows %}
+  - {{ row.label }}
+{% endfor %}
+{% else %}
+- Data elements: -
+{% endif %}
+
 {% endfor %}
 
 {% endif %}
@@ -57,6 +65,8 @@
 {% endfor %}
 
 {% endif %}
+### Decision Table
+
 |{% if events %} Event Pattern |{% endif %}{% for c in rule_conditions %} {{ cond_map.d[c.id] }} |{% endfor %} Actions |
 |{% if events %}---|{% endif %}{% for c in rule_conditions %}---|{% endfor %}---|
 {% for rule in rules -%}
