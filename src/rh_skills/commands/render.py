@@ -225,6 +225,100 @@ def _decision_table_rule_conditions(sections: dict) -> list[dict]:
     ]
 
 
+def _format_reference_list(value) -> str:
+    """Render references or scalar metadata in compact report text."""
+    if value is None:
+        return "-"
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value if str(item).strip()) or "-"
+    if isinstance(value, dict):
+        return _format_condition_value(value) or "-"
+    text = str(value).strip()
+    return text or "-"
+
+
+def _display_role(value) -> str:
+    """Render data-element roles in human-readable form."""
+    role = str(value or "direct_evidence").strip()
+    return role.replace("_", " ")
+
+
+def _decision_table_case_feature_rows(sections: dict) -> list[dict]:
+    """Build case-feature rows with supporting data element details."""
+    conditions = sections.get("conditions") or []
+    data_elements = sections.get("data_elements") or []
+    actions = sections.get("actions") or []
+    if not isinstance(conditions, list):
+        return []
+
+    action_map = {
+        str(action.get("id") or ""): _display_label(action, include_id=True)
+        for action in actions
+        if isinstance(action, dict) and str(action.get("id") or "").strip()
+    }
+    data_by_condition: dict[str, list[dict]] = defaultdict(list)
+    if isinstance(data_elements, list):
+        for data_element in data_elements:
+            if not isinstance(data_element, dict):
+                continue
+            condition_id = str(data_element.get("condition_id") or "").strip()
+            if condition_id:
+                data_by_condition[condition_id].append(data_element)
+
+    rows: list[dict] = []
+    for condition in conditions:
+        if not isinstance(condition, dict):
+            continue
+        condition_id = str(condition.get("id") or "").strip()
+        if not condition_id:
+            continue
+        resolution = condition.get("resolution") or {}
+        if not isinstance(resolution, dict):
+            resolution = {}
+        support_rows: list[dict] = []
+        for data_element in data_by_condition.get(condition_id, []):
+            produced_by = data_element.get("produced_by") or []
+            if not isinstance(produced_by, list):
+                produced_by = []
+            support_rows.append({
+                "label": _display_label(data_element, include_id=True),
+                "role": _display_role(data_element.get("role")),
+                "data_type": _format_reference_list(data_element.get("data_type")),
+                "value_type": _format_reference_list(data_element.get("value_type")),
+                "produced_by": ", ".join(action_map.get(str(action_id), str(action_id)) for action_id in produced_by) or "-",
+                "evidence_source": _format_reference_list(data_element.get("evidence_source")),
+                "temporal_scope": _format_reference_list(data_element.get("temporal_scope")),
+                "description": data_element.get("description") or "-",
+            })
+        metadata_rows = [
+            {"field": "Values", "value": _format_reference_list(condition.get("values"))},
+        ]
+        resolution_operator = _format_reference_list(resolution.get("operator"))
+        if resolution_operator != "-":
+            metadata_rows.append({"field": "Resolution", "value": resolution_operator})
+        resolution_summary = resolution.get("summary") or ""
+        if resolution_summary:
+            metadata_rows.append({"field": "Resolution Summary", "value": resolution_summary})
+        resolution_inputs = _format_reference_list(resolution.get("inputs"))
+        if resolution_inputs != "-":
+            metadata_rows.append({"field": "Resolution Inputs", "value": resolution_inputs})
+        unknown_policy = _format_reference_list(resolution.get("unknown_policy"))
+        if unknown_policy != "-":
+            metadata_rows.append({"field": "Unknown Policy", "value": unknown_policy})
+        rows.append({
+            "id": condition_id,
+            "label": _display_label(condition, include_id=True),
+            "value_text": _format_reference_list(condition.get("values")),
+            "metadata_rows": metadata_rows,
+            "resolution_operator": resolution_operator,
+            "resolution_summary": resolution_summary,
+            "resolution_inputs": resolution_inputs,
+            "unknown_policy": unknown_policy,
+            "support_rows": support_rows,
+        })
+    return rows
+
+
 def _care_pathway_step_condition(step: dict) -> str:
     """Return the canonical care-pathway step applicability condition."""
     return _format_condition_value(step.get("applicability_condition")) or "-"
@@ -558,6 +652,7 @@ def _render_from_templates(data: dict, artifact_dir: Path, artifact_name: str) -
         sections = data.get("sections", {})
         rule_conditions = _decision_table_rule_conditions(sections)
         extra["applicability_rows"] = _decision_table_applicability_rows(sections)
+        extra["case_feature_rows"] = _decision_table_case_feature_rows(sections)
         extra["rule_conditions"] = rule_conditions
     elif artifact_type == "care-pathway":
         sections = data.get("sections") or {}

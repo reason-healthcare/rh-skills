@@ -147,8 +147,10 @@ artifact_type_sections:
         Actions are defined in decision-table artifacts, not in care pathways;
         use care-pathway only for sequencing and orchestration.
       transitions: >
-        Optional sequencing rules between steps or phases: {from_id, to_id,
-        condition?, description?}. Captures dependencies and branching logic.
+        Optional sequencing links between steps or phases:
+        {from_id, to_id, description?}. Captures pathway order. Put step
+        applicability or branch gates on the destination step with
+        applicability_condition rather than on the transition.
 
   decision-table:
     description: >
@@ -179,40 +181,71 @@ artifact_type_sections:
         and keep events[].phase and rules[].phase aligned to
         pathway_phases[].id values.
       events: >
-        ECA workflow event definitions: {id, label, description?, phase?, trigger?}.
+        ECA workflow event definitions:
+        {id, label, description?, phase?, trigger?, applicability[]?}.
         Events are primary. trigger is optional when the workflow context alone
         is enough. When present, trigger must be an object with a
         FHIR-compatible type such as named-event | periodic | data-changed |
         data-added | data-modified | data-removed | data-accessed |
         data-access-ended. trigger may also carry optional fields such as
         name, source, resource, moment, resource_criteria, and timing_window
-        when the source supports them. Use events[] for trigger semantics, not
-        for care-pathway step applicability or sequencing.
+        when the source supports them. Use applicability[] for event-wide
+        condition ids that apply to all or most rules at that event so those
+        conditions do not repeat in rules.when{}. Use events[] for trigger
+        semantics, not for care-pathway step applicability or sequencing.
+      applicability: >
+        Optional artifact-wide applicability condition ids for scope shared by
+        the decision table, such as adult population, diagnosis scope, or topic
+        inclusion. Use this to hoist repeated guideline-wide conditions out of
+        per-rule rules.when{} clauses.
       conditions: >
-        Condition definitions: {id, label, description?, values[]}.
-        values[] MUST use canonical Yes/No values. When the source describes
-        multi-part criteria (for example, symptom threshold + duration +
-        objective evidence), represent each criterion as its own condition and
-        reference those condition ids explicitly in rules.when{}.
+        Case feature / condition definitions:
+        {id, label, description?, values[], resolution?}. values[] MUST use
+        canonical Yes/No values. A condition is the resolved case feature that
+        rules consume; it is not itself classified as observed or inferred.
+        Use optional resolution metadata when the feature value is resolved from
+        supporting data elements: {operator?, inputs[]?, summary?,
+        unknown_policy?}. Supported neutral operators include exists, any_of,
+        all_of, count_at_least, threshold, comparison, classification, and
+        calculation. inputs[] references data_elements[].id values for the same
+        condition. Keep this L2 logic clinical and implementation-neutral; do
+        not encode FHIR resource assumptions here.
       data_elements: >
-        Data requirements for answering each decision condition:
-        {id, condition_id, label, description?, data_type?}.
+        Supporting data elements for resolving each case feature:
+        {id, condition_id, label, description?, data_type?, role?,
+        value_type?, produced_by[]?, evidence_source?, temporal_scope?}.
         Every condition in conditions[] MUST have at least one corresponding
-        data_elements[] entry via condition_id. Use data_type for
-        clinically-oriented categories such as symptom, diagnosis, imaging,
-        history, patient-reported, finding, procedure, or assessment.
-        A data element may already exist in the record or may be produced by an
-        action during the pathway.
+        data_elements[] entry via condition_id. Use role to describe how the
+        data participates in feature resolution: direct_evidence,
+        inference_input, assessment_output, context, calculation_input, or
+        derived_value. Missing role defaults to direct_evidence. Use value_type
+        for implementation-neutral value shape: presence, quantity,
+        codeable_concept, date_time, interval, ordinal, or text. Use
+        produced_by[] to reference action ids that produce this data element.
+        evidence_source and temporal_scope remain clinical descriptions, not
+        FHIR mapping hints.
       actions: >
-        Action definitions: {id, label, description?, kind, intent?,
-        parent_action_id?, produces_conditions[]?, produces_data_elements[]?,
+        Action definitions: {id, label, description?, kind?,
+        intent?, parent_action_id?, concept_refs[]?, code?, codings[]?,
+        produces_conditions[]?, produces_data_elements[]?,
         assessment_artifact?, evidence_traceability_ids[]?, provenance?}.
         Actions represent clinical recommendations or workflow consequences.
         Use parent_action_id when a supporting action belongs under a broader
-        assessment action. Use produces_conditions[] when an action establishes
-        one or more later branch conditions. Use produces_data_elements[] when
-        an action produces concrete findings, scores, or other evidence items
-        that later logic consumes. Use assessment_artifact when an action
+        parent action. Parent actions with children are PlanDefinition grouping
+        nodes only: omit kind and put executable kind on their child leaf
+        actions. Leaf executable actions (actions without child actions) MUST
+        carry kind. Use medication for MedicationRequest; service, procedure,
+        referral, or assessment for ServiceRequest; questionnaire for
+        CollectInformation; and communication for CommunicationRequest. Avoid
+        Task because it is too generic. Leaf executable actions should
+        routinely carry concept_refs[] and/or explicit coding via code or
+        codings[] so formalize can reuse reviewed
+        terminology rather than re-inferring it. Use produces_data_elements[]
+        when an action produces concrete findings, scores, assessments, or
+        other evidence items that later logic consumes. Avoid using
+        produces_conditions[] for new artifacts; task/action output should be
+        modeled as produced data elements, and conditions should resolve from
+        those data elements. Use assessment_artifact when an action
         explicitly administers or reviews a structured assessment instrument
         that should formalize to a Questionnaire. Include
         evidence_traceability_ids[] to link each action to one or more

@@ -58,6 +58,43 @@ _ACTION_KIND_ALIASES = {
     "task": "Task",
 }
 
+_DATA_ELEMENT_ROLES = {
+    "direct_evidence",
+    "inference_input",
+    "assessment_output",
+    "context",
+    "calculation_input",
+    "derived_value",
+}
+
+_DATA_ELEMENT_VALUE_TYPES = {
+    "presence",
+    "quantity",
+    "codeable_concept",
+    "date_time",
+    "interval",
+    "ordinal",
+    "text",
+}
+
+_RESOLUTION_OPERATORS = {
+    "exists",
+    "any_of",
+    "all_of",
+    "count_at_least",
+    "threshold",
+    "comparison",
+    "classification",
+    "calculation",
+}
+
+_SUMMARY_REQUIRED_ROLES = {
+    "inference_input",
+    "context",
+    "calculation_input",
+    "derived_value",
+}
+
 
 def _normalized_text(*values: Any) -> str:
     return " ".join(str(value or "").lower() for value in values if value is not None)
@@ -429,6 +466,65 @@ def validate_decision_table(
                         f"  decision-table: event '{event_id}' trigger.timing_window must be an object when present"
                     )
 
+    # Validate data element contract
+    condition_data_map: Dict[str, int] = {}
+    data_elements_by_condition: dict[str, list[dict]] = {}
+    data_element_ids: set[str] = set()
+    data_element_condition_map: dict[str, str] = {}
+    for idx, data_element in enumerate(data_elements, start=1):
+        if not isinstance(data_element, dict):
+            report_error(f"  decision-table: data element #{idx} is not a dict")
+            continue
+        data_element_id = data_element.get("id", f"#{idx}")
+        data_element_ids.add(data_element_id)
+        condition_id = data_element.get("condition_id")
+        if not condition_id:
+            report_error(f"  decision-table: data element '{data_element_id}' missing required condition_id")
+        elif condition_id not in condition_ids:
+            report_error(
+                f"  decision-table: data element '{data_element_id}' references unknown condition '{condition_id}'"
+            )
+        else:
+            condition_data_map[condition_id] = condition_data_map.get(condition_id, 0) + 1
+            data_elements_by_condition.setdefault(str(condition_id), []).append(data_element)
+            data_element_condition_map[str(data_element_id)] = str(condition_id)
+        if not data_element.get("label"):
+            report_error(f"  decision-table: data element '{data_element_id}' missing required label")
+        role = data_element.get("role")
+        if role is not None and role not in _DATA_ELEMENT_ROLES:
+            report_error(
+                f"  decision-table: data element '{data_element_id}' role '{role}' is invalid "
+                f"(allowed: {', '.join(sorted(_DATA_ELEMENT_ROLES))})"
+            )
+        value_type = data_element.get("value_type")
+        if value_type is not None and value_type not in _DATA_ELEMENT_VALUE_TYPES:
+            report_error(
+                f"  decision-table: data element '{data_element_id}' value_type '{value_type}' is invalid "
+                f"(allowed: {', '.join(sorted(_DATA_ELEMENT_VALUE_TYPES))})"
+            )
+        produced_by = data_element.get("produced_by")
+        if produced_by is not None:
+            if not isinstance(produced_by, list) or not produced_by:
+                report_error(
+                    f"  decision-table: data element '{data_element_id}' produced_by must be a non-empty list when present"
+                )
+            else:
+                for action_ref in produced_by:
+                    if not isinstance(action_ref, str) or not action_ref.strip():
+                        report_error(
+                            f"  decision-table: data element '{data_element_id}' produced_by entries must be non-empty strings"
+                        )
+                    elif action_ref not in action_ids:
+                        report_error(
+                            f"  decision-table: data element '{data_element_id}' produced_by references unknown action '{action_ref}'"
+                        )
+
+    for cond_id in condition_ids:
+        if condition_data_map.get(cond_id, 0) == 0:
+            report_error(
+                f"  decision-table: condition '{cond_id}' has no corresponding data_elements entry"
+            )
+
     # Validate condition contract
     for idx, condition in enumerate(conditions, start=1):
         if not isinstance(condition, dict):
@@ -446,35 +542,55 @@ def validate_decision_table(
 
         if condition.get("derivation") is not None:
             report_error(
-                f"  decision-table: condition '{cond_id}' uses unsupported 'derivation' — list decomposed criteria explicitly in rules.when{{}}"
+                f"  decision-table: condition '{cond_id}' uses unsupported 'derivation' — use conditions[].resolution for case-feature resolution"
             )
 
-    # Validate data element contract
-    condition_data_map: Dict[str, int] = {}
-    data_element_ids: set[str] = set()
-    for idx, data_element in enumerate(data_elements, start=1):
-        if not isinstance(data_element, dict):
-            report_error(f"  decision-table: data element #{idx} is not a dict")
-            continue
-        data_element_id = data_element.get("id", f"#{idx}")
-        data_element_ids.add(data_element_id)
-        condition_id = data_element.get("condition_id")
-        if not condition_id:
-            report_error(f"  decision-table: data element '{data_element_id}' missing required condition_id")
-        elif condition_id not in condition_ids:
-            report_error(
-                f"  decision-table: data element '{data_element_id}' references unknown condition '{condition_id}'"
-            )
-        else:
-            condition_data_map[condition_id] = condition_data_map.get(condition_id, 0) + 1
-        if not data_element.get("label"):
-            report_error(f"  decision-table: data element '{data_element_id}' missing required label")
+        resolution = condition.get("resolution")
+        condition_data_elements = data_elements_by_condition.get(str(cond_id), [])
+        if resolution is not None:
+            if not isinstance(resolution, dict):
+                report_error(f"  decision-table: condition '{cond_id}' resolution must be an object when present")
+            else:
+                operator = resolution.get("operator")
+                if operator is not None and operator not in _RESOLUTION_OPERATORS:
+                    report_error(
+                        f"  decision-table: condition '{cond_id}' resolution.operator '{operator}' is invalid "
+                        f"(allowed: {', '.join(sorted(_RESOLUTION_OPERATORS))})"
+                    )
+                inputs = resolution.get("inputs")
+                if inputs is not None:
+                    if not isinstance(inputs, list) or not inputs:
+                        report_error(
+                            f"  decision-table: condition '{cond_id}' resolution.inputs must be a non-empty list when present"
+                        )
+                    else:
+                        for data_element_id in inputs:
+                            if not isinstance(data_element_id, str) or not data_element_id.strip():
+                                report_error(
+                                    f"  decision-table: condition '{cond_id}' resolution.inputs entries must be non-empty strings"
+                                )
+                                continue
+                            if data_element_id not in data_element_ids:
+                                report_error(
+                                    f"  decision-table: condition '{cond_id}' resolution.inputs references unknown data element '{data_element_id}'"
+                                )
+                            elif data_element_condition_map.get(data_element_id) != str(cond_id):
+                                report_error(
+                                    f"  decision-table: condition '{cond_id}' resolution.inputs references data element '{data_element_id}' for condition '{data_element_condition_map.get(data_element_id)}'"
+                                )
 
-    for cond_id in condition_ids:
-        if condition_data_map.get(cond_id, 0) == 0:
-            report_error(
-                f"  decision-table: condition '{cond_id}' has no corresponding data_elements entry"
-            )
+        if condition_data_elements:
+            roles = {
+                str(data_element.get("role") or "direct_evidence")
+                for data_element in condition_data_elements
+                if isinstance(data_element, dict)
+            }
+            if roles and roles.issubset(_SUMMARY_REQUIRED_ROLES):
+                summary = resolution.get("summary") if isinstance(resolution, dict) else None
+                if not isinstance(summary, str) or not summary.strip():
+                    report_error(
+                        f"  decision-table: condition '{cond_id}' requires resolution.summary because its data elements are inference/calculation/context inputs"
+                    )
 
     child_action_counts: Dict[str, int] = {}
     for action in actions:
