@@ -1819,6 +1819,76 @@ concerns: []
     assert "parent action 'offer-regimen' has executable kind" in result.output
 
 
+def test_validate_decision_table_rejects_parent_action_cycle(tmp_repo):
+    write_extract_plan(tmp_repo)
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "test-artifact.yaml").write_text("""\
+id: test-artifact
+name: test-artifact
+title: "Test Artifact Title"
+version: "1.0.0"
+status: draft
+domain: oncology
+description: "Artifact with cyclic parent actions"
+derived_from:
+  - source-l1
+artifact_type: decision-table
+clinical_question: "How should cyclic action hierarchy be handled?"
+sections:
+  summary: "Reject cyclic action hierarchy."
+  evidence_traceability:
+    - claim_id: rec-001
+      statement: "Offer regimen"
+      evidence:
+        - source: source-l1
+          locator: "Recommendation 1"
+  events:
+    - id: regimen-selection
+      label: Regimen selection
+      trigger:
+        type: named-event
+        name: regimen-selection
+  conditions:
+    - id: eligible
+      label: Eligible
+      values: [Yes, No]
+  data_elements:
+    - id: eligibility
+      condition_id: eligible
+      label: Eligibility
+  actions:
+    - id: offer-regimen
+      label: Offer regimen
+      parent_action_id: order-medication
+      evidence_traceability_ids: [rec-001]
+      provenance:
+        source: source_direct
+    - id: order-medication
+      label: Order medication
+      parent_action_id: offer-regimen
+      evidence_traceability_ids: [rec-001]
+      provenance:
+        source: source_direct
+  rules:
+    - id: offer
+      event: regimen-selection
+      when:
+        eligible: Yes
+      action: Offer regimen
+      rationale: "Eligibility triggers treatment."
+      evidence_traceability_ids: [rec-001]
+      then:
+        - offer-regimen
+concerns: []
+""")
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "test-artifact"])
+    assert result.exit_code == 1
+    assert "actions contain parent_action_id cycle" in result.output
+    assert "offer-regimen -> order-medication -> offer-regimen" in result.output
+
+
 def test_validate_decision_table_rejects_leaf_action_missing_kind(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "test-artifact"

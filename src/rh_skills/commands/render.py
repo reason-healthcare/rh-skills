@@ -145,6 +145,86 @@ def _format_condition_value(value) -> str:
     return str(value)
 
 
+def _applicability_condition_id(entry) -> str | None:
+    """Return a condition id from a table/event applicability entry."""
+    if isinstance(entry, str) and entry.strip():
+        return entry.strip()
+    if isinstance(entry, dict):
+        for key in ("condition_id", "condition", "id"):
+            value = entry.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return None
+
+
+def _applicability_expected_value(entry) -> str:
+    """Return the expected value for a global applicability condition."""
+    if isinstance(entry, dict):
+        for key in ("value", "expected", "equals"):
+            value = entry.get(key)
+            if value is not None and str(value).strip():
+                return str(value).strip()
+    return "Yes"
+
+
+def _decision_table_applicability_rows(sections: dict) -> list[dict]:
+    """Build display rows for decision-table table-level applicability."""
+    conditions = sections.get("conditions") or []
+    applicability = sections.get("applicability") or []
+    if not isinstance(conditions, list) or not isinstance(applicability, list):
+        return []
+
+    condition_map = {
+        str(condition.get("id") or ""): condition
+        for condition in conditions
+        if isinstance(condition, dict) and str(condition.get("id") or "").strip()
+    }
+    rows: list[dict] = []
+    for entry in applicability:
+        condition_id = _applicability_condition_id(entry)
+        if not condition_id:
+            continue
+        condition = condition_map.get(condition_id, {"id": condition_id})
+        rows.append({
+            "condition_id": condition_id,
+            "label": _display_label(condition, include_id=True),
+            "value": _applicability_expected_value(entry),
+        })
+    return rows
+
+
+def _decision_table_rule_conditions(sections: dict) -> list[dict]:
+    """Return conditions that belong in the per-rule condition matrix."""
+    conditions = sections.get("conditions") or []
+    rules = sections.get("rules") or []
+    applicability = sections.get("applicability") or []
+    if not isinstance(conditions, list):
+        return []
+
+    applicability_ids = {
+        condition_id
+        for entry in applicability
+        if (condition_id := _applicability_condition_id(entry))
+    } if isinstance(applicability, list) else set()
+
+    rule_condition_ids: set[str] = set()
+    if isinstance(rules, list):
+        for rule in rules:
+            if not isinstance(rule, dict):
+                continue
+            when_clause = rule.get("when") or {}
+            if isinstance(when_clause, dict):
+                rule_condition_ids.update(str(condition_id) for condition_id in when_clause.keys())
+
+    return [
+        condition
+        for condition in conditions
+        if isinstance(condition, dict)
+        and str(condition.get("id") or "") not in applicability_ids
+        and str(condition.get("id") or "") in rule_condition_ids
+    ]
+
+
 def _care_pathway_step_condition(step: dict) -> str:
     """Return the canonical care-pathway step applicability condition."""
     return _format_condition_value(step.get("applicability_condition")) or "-"
@@ -206,15 +286,33 @@ def _decision_table_tree(sections: dict) -> str:
         if event_id:
             rules_by_event[event_id].append(rule)
 
-    def action_in_scope(action_id: str, scoped_ids: set[str]) -> bool:
+    def action_in_scope(action_id: str, scoped_ids: set[str], visiting: set[str] | None = None) -> bool:
         if action_id in scoped_ids:
             return True
-        return any(action_in_scope(child_id, scoped_ids) for child_id in child_actions.get(action_id, []))
+        if visiting is None:
+            visiting = set()
+        if action_id in visiting:
+            return False
+        visiting.add(action_id)
+        try:
+            return any(
+                action_in_scope(child_id, scoped_ids, visiting)
+                for child_id in child_actions.get(action_id, [])
+            )
+        finally:
+            visiting.remove(action_id)
 
-    def build_action_node(action_id: str, scoped_ids: set[str]) -> dict:
+    def build_action_node(action_id: str, scoped_ids: set[str], path: list[str] | None = None) -> dict:
+        path = path or []
+        if action_id in path:
+            return {
+                "label": f"{action_id} [cycle omitted]",
+                "children": [],
+            }
         action = action_map[action_id]
+        next_path = path + [action_id]
         children = [
-            build_action_node(child_id, scoped_ids)
+            build_action_node(child_id, scoped_ids, next_path)
             for child_id in child_actions.get(action_id, [])
             if action_in_scope(child_id, scoped_ids)
         ]
@@ -303,11 +401,71 @@ def _validate_sections(sections: dict | None, artifact_type: str) -> None:
 # ── Completeness algorithm (pure logic, not a template) ─────────────────────
 
 
-def _check_completeness(conditions: list[dict], rules: list[dict]) -> dict:
+def _rule_action_signature(rule: dict) -> tuple[str, ...]:
+    """Return a stable action signature for conflict comparisons."""
+    then_clause = rule.get("then") or []
+    if not isinstance(then_clause, list):
+        return ()
+    return tuple(str(action_id) for action_id in then_clause)
+
+
+def _rule_conditions_overlap(rule_a: dict, rule_b: dict, cond_ids: list[str]) -> bool:
+    """Return whether two sparse rule predicates can match the same case."""
+    event_a = str(rule_a.get("event") or "").strip()
+    event_b = str(rule_b.get("event") or "").strip()
+    if event_a and event_b and event_a != event_b:
+        return False
+
+    when_a = rule_a.get("when") or {}
+    when_b = rule_b.get("when") or {}
+    if not isinstance(when_a, dict):
+        when_a = {}
+    if not isinstance(when_b, dict):
+        when_b = {}
+
+    for cond_id in cond_ids:
+        value_a = when_a.get(cond_id, "-")
+        value_b = when_b.get(cond_id, "-")
+        if value_a != "-" and value_b != "-" and value_a != value_b:
+            return False
+    return True
+
+
+def _sparse_contradictions(conditions: list[dict], rules: list[dict]) -> list[dict]:
+    """Find rule pairs with overlapping predicates and different actions."""
+    cond_ids = [str(c.get("id") or "") for c in conditions if isinstance(c, dict) and c.get("id")]
+    contradictions: list[dict] = []
+    for left_idx, rule_a in enumerate(rules):
+        if not isinstance(rule_a, dict):
+            continue
+        for rule_b in rules[left_idx + 1:]:
+            if not isinstance(rule_b, dict):
+                continue
+            if _rule_action_signature(rule_a) == _rule_action_signature(rule_b):
+                continue
+            if not _rule_conditions_overlap(rule_a, rule_b, cond_ids):
+                continue
+            contradictions.append({
+                "rules": [rule_a.get("id", "?"), rule_b.get("id", "?")],
+                "actions": [
+                    list(_rule_action_signature(rule_a)),
+                    list(_rule_action_signature(rule_b)),
+                ],
+            })
+    return contradictions
+
+
+def _check_completeness(
+    conditions: list[dict],
+    rules: list[dict],
+    *,
+    max_combinations: int = 10_000,
+) -> dict:
     """Compute decision-table completeness per Shiffman model."""
     if not conditions:
         return {"total_space": 0, "covered": 0, "complete": True,
-                "missing": [], "contradictions": [], "large_table_warning": False}
+                "missing": [], "contradictions": [], "large_table_warning": False,
+                "exhaustive": True, "max_combinations": max_combinations}
 
     cond_ids = [c["id"] for c in conditions]
     cond_values = {c["id"]: c["values"] for c in conditions}
@@ -316,30 +474,54 @@ def _check_completeness(conditions: list[dict], rules: list[dict]) -> dict:
         total_space *= len(vals)
     large_warning = total_space > 1024
 
-    expanded: dict[tuple, list[str]] = {}
     total_covered = 0
     for rule in rules:
         when = rule.get("when", {})
-        rule_id = rule.get("id", "?")
-        per_cond: list[list[str]] = []
+        if not isinstance(when, dict):
+            when = {}
         coverage = 1
         for cid in cond_ids:
             val = when.get(cid, "-")
             if val == "-":
-                per_cond.append(cond_values[cid])
                 coverage *= len(cond_values[cid])
+        total_covered += coverage
+
+    if total_space > max_combinations:
+        return {
+            "total_space": total_space,
+            "covered": total_covered,
+            "complete": None,
+            "missing": [],
+            "contradictions": _sparse_contradictions(conditions, rules),
+            "large_table_warning": large_warning,
+            "exhaustive": False,
+            "max_combinations": max_combinations,
+        }
+
+    expanded: dict[tuple, list[dict]] = {}
+    for rule in rules:
+        when = rule.get("when", {})
+        if not isinstance(when, dict):
+            when = {}
+        per_cond: list[list[str]] = []
+        for cid in cond_ids:
+            val = when.get(cid, "-")
+            if val == "-":
+                per_cond.append(cond_values[cid])
             else:
                 per_cond.append([val])
-        total_covered += coverage
         for combo in itertools_product(*per_cond):
-            expanded.setdefault(combo, []).append(rule_id)
+            expanded.setdefault(combo, []).append(rule)
 
     all_combos = list(itertools_product(*[cond_values[cid] for cid in cond_ids]))
     missing = [dict(zip(cond_ids, combo)) for combo in all_combos if combo not in expanded]
     contradictions = [
-        {"combination": dict(zip(cond_ids, combo)), "rules": rule_ids}
-        for combo, rule_ids in expanded.items()
-        if len(rule_ids) > 1
+        {
+            "combination": dict(zip(cond_ids, combo)),
+            "rules": [rule.get("id", "?") for rule in combo_rules],
+        }
+        for combo, combo_rules in expanded.items()
+        if len({_rule_action_signature(rule) for rule in combo_rules}) > 1
     ]
 
     return {
@@ -349,6 +531,8 @@ def _check_completeness(conditions: list[dict], rules: list[dict]) -> dict:
         "missing": missing,
         "contradictions": contradictions,
         "large_table_warning": large_warning,
+        "exhaustive": True,
+        "max_combinations": max_combinations,
     }
 
 
@@ -372,10 +556,9 @@ def _render_from_templates(data: dict, artifact_dir: Path, artifact_name: str) -
     extra: dict = {}
     if artifact_type == "decision-table":
         sections = data.get("sections", {})
-        extra["completeness"] = _check_completeness(
-            sections.get("conditions", []),
-            sections.get("rules", []),
-        )
+        rule_conditions = _decision_table_rule_conditions(sections)
+        extra["applicability_rows"] = _decision_table_applicability_rows(sections)
+        extra["rule_conditions"] = rule_conditions
     elif artifact_type == "care-pathway":
         sections = data.get("sections") or {}
         extra["pathway_tree"] = _care_pathway_tree(sections.get("steps") or [])
