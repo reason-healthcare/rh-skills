@@ -9,6 +9,7 @@ from ruamel.yaml import YAML
 from rh_skills.commands.render import (
     render,
     _check_completeness,
+    _decision_table_tree,
     REQUIRED_SECTIONS,
 )
 
@@ -219,6 +220,22 @@ def test_render_decision_table_shows_event_column_when_present(tmp_repo):
     assert "| Event Pattern | c1 High risk | Actions |" in content
     assert "| ev1 Screening encounter | Yes | a1 Order test, a2 Review questionnaire |" in content
     assert "Order test" in content
+
+
+def test_decision_table_tree_omits_parent_action_cycle():
+    sections = {
+        "events": [{"id": "ev1", "label": "Review"}],
+        "conditions": [],
+        "actions": [
+            {"id": "a1", "label": "Action 1", "parent_action_id": "a2"},
+            {"id": "a2", "label": "Action 2", "parent_action_id": "a1"},
+        ],
+        "rules": [{"id": "r1", "event": "ev1", "then": ["a1"]}],
+    }
+
+    tree = _decision_table_tree(sections)
+
+    assert "a1 [cycle omitted]" in tree
 
 
 # ── Evidence-summary ────────────────────────────────────────────────────────────
@@ -452,6 +469,100 @@ def test_render_decision_table_shows_full_long_labels(tmp_repo):
     assert "| ev1 Review | yes |" in report
 
 
+def test_render_decision_table_omits_completeness_readout_for_large_space(tmp_repo):
+    conditions = [
+        {"id": f"c{i}", "label": f"Condition {i}", "values": ["Yes", "No"]}
+        for i in range(14)
+    ]
+    data_elements = [
+        {"id": f"de{i}", "condition_id": f"c{i}", "label": f"Data element {i}"}
+        for i in range(14)
+    ]
+    _write_artifact(tmp_repo, "my-skill", "dt-large", {
+        "id": "dt-large",
+        "title": "Large Decision Table",
+        "artifact_type": "decision-table",
+        "sections": {
+            "events": [{"id": "ev1", "label": "Review"}],
+            "conditions": conditions,
+            "data_elements": data_elements,
+            "actions": [{"id": "a1", "label": "Act"}],
+            "rules": [
+                {
+                    "id": "r1",
+                    "event": "ev1",
+                    "when": {f"c{i}": "Yes" for i in range(14)},
+                    "then": ["a1"],
+                },
+            ],
+        },
+    })
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "dt-large"])
+    assert result.exit_code == 0
+    report_path = tmp_repo / "topics" / "my-skill" / "structured" / "dt-large" / "dt-large-report.md"
+    report = report_path.read_text()
+    assert "## Completeness" not in report
+    assert "Potential Contradictions" not in report
+    assert "Exhaustive check" not in report
+
+
+def test_render_decision_table_moves_global_applicability_out_of_rule_matrix(tmp_repo):
+    _write_artifact(tmp_repo, "my-skill", "dt-applicability", {
+        "id": "dt-applicability",
+        "title": "Applicability Decision Table",
+        "artifact_type": "decision-table",
+        "sections": {
+            "applicability": ["adult-age-criterion-met"],
+            "events": [{"id": "ev1", "label": "Review"}],
+            "conditions": [
+                {
+                    "id": "adult-age-criterion-met",
+                    "label": "Adult age criterion met",
+                    "values": ["Yes", "No"],
+                },
+                {
+                    "id": "diagnosis-confirmed",
+                    "label": "Diagnosis confirmed",
+                    "values": ["Yes", "No"],
+                },
+            ],
+            "data_elements": [
+                {"id": "de-age", "condition_id": "adult-age-criterion-met", "label": "Age"},
+                {"id": "de-dx", "condition_id": "diagnosis-confirmed", "label": "Diagnosis"},
+            ],
+            "actions": [{"id": "a1", "label": "Act"}],
+            "rules": [
+                {
+                    "id": "r1",
+                    "event": "ev1",
+                    "when": {"diagnosis-confirmed": "Yes"},
+                    "then": ["a1"],
+                },
+            ],
+        },
+    })
+
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "dt-applicability"])
+
+    assert result.exit_code == 0
+    report_path = (
+        tmp_repo
+        / "topics"
+        / "my-skill"
+        / "structured"
+        / "dt-applicability"
+        / "dt-applicability-report.md"
+    )
+    report = report_path.read_text()
+    assert "### Global Applicability" in report
+    assert "- adult-age-criterion-met Adult age criterion met = Yes" in report
+    assert "| Event Pattern | diagnosis-confirmed Diagnosis confirmed | Actions |" in report
+    assert "| Event Pattern | adult-age-criterion-met Adult age criterion met |" not in report
+    assert "| ev1 Review |  | a1 Act |" not in report
+
+
 # ── Idempotent re-render ────────────────────────────────────────────────────────
 
 
@@ -558,3 +669,21 @@ def test_completeness_large_table_warning():
     assert result["total_space"] == 2048
     assert result["large_table_warning"] is True
     assert result["complete"] is False
+
+
+def test_completeness_skips_exhaustive_check_above_max_combinations():
+    conditions = [{"id": f"c{i}", "values": ["yes", "no"]} for i in range(14)]
+    rules = [
+        {"id": "r1", "when": {"c0": "yes"}, "then": ["a1"]},
+        {"id": "r2", "when": {"c1": "yes"}, "then": ["a2"]},
+    ]
+
+    result = _check_completeness(conditions, rules)
+
+    assert result["total_space"] == 16384
+    assert result["exhaustive"] is False
+    assert result["complete"] is None
+    assert result["missing"] == []
+    assert result["contradictions"] == [
+        {"rules": ["r1", "r2"], "actions": [["a1"], ["a2"]]},
+    ]

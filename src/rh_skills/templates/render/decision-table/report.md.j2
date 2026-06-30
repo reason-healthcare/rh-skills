@@ -4,6 +4,8 @@
 {% set data_elements = sections.data_elements or [] %}
 {% set actions = sections.actions or [] %}
 {% set rules = sections.rules or [] %}
+{% set applicability_rows = applicability_rows or [] %}
+{% set rule_conditions = rule_conditions or conditions %}
 {% set event_map = namespace(d={}) %}
 {% for e in events %}{% set _ = event_map.d.update({e.id: ((e.id ~ ' ' ~ (e.label or e.description or e.id)) if e.id else (e.label or e.description or '?'))}) %}{% endfor %}
 {% set action_map = namespace(d={}) %}
@@ -47,10 +49,18 @@
 {% endif %}
 ## Rules
 
-|{% if events %} Event Pattern |{% endif %}{% for c in conditions %} {{ cond_map.d[c.id] }} |{% endfor %} Actions |
-|{% if events %}---|{% endif %}{% for c in conditions %}---|{% endfor %}---|
+{% if applicability_rows %}
+### Global Applicability
+
+{% for row in applicability_rows %}
+- {{ row.label }} = {{ row.value }}
+{% endfor %}
+
+{% endif %}
+|{% if events %} Event Pattern |{% endif %}{% for c in rule_conditions %} {{ cond_map.d[c.id] }} |{% endfor %} Actions |
+|{% if events %}---|{% endif %}{% for c in rule_conditions %}---|{% endfor %}---|
 {% for rule in rules -%}
-|{% if events %} {{ event_map.d.get(rule.event, rule.event or '-') }} |{% endif %}{% for c in conditions %} {{ rule.when.get(c.id, '-') if rule.when is mapping else '-' }} |{% endfor %} {% for aid in (rule.then or []) %}{{ action_map.d.get(aid, aid) }}{% if not loop.last %}, {% endif %}{% endfor %} |
+|{% if events %} {{ event_map.d.get(rule.event, rule.event or '-') }} |{% endif %}{% for c in rule_conditions %} {{ rule.when.get(c.id, '-') if rule.when is mapping else '-' }} |{% endfor %} {% for aid in (rule.then or []) %}{{ action_map.d.get(aid, aid) }}{% if not loop.last %}, {% endif %}{% endfor %} |
 {% endfor %}
 
 {% set traceability = sections.evidence_traceability or [] %}

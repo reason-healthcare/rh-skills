@@ -83,6 +83,52 @@ def _applicability_condition_id(entry: Any) -> str | None:
     return None
 
 
+def _find_action_parent_cycles(actions: list) -> list[list[str]]:
+    """Return parent_action_id cycles as closed action-id paths."""
+    action_ids = {
+        str(action.get("id") or "").strip()
+        for action in actions
+        if isinstance(action, dict) and str(action.get("id") or "").strip()
+    }
+    parent_by_action: dict[str, str] = {}
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        action_id = str(action.get("id") or "").strip()
+        parent_id = str(action.get("parent_action_id") or "").strip()
+        if action_id and parent_id and parent_id in action_ids:
+            parent_by_action[action_id] = parent_id
+
+    color: dict[str, str] = {}
+    stack: list[str] = []
+    cycles: list[list[str]] = []
+    seen_cycles: set[tuple[str, ...]] = set()
+
+    def visit(action_id: str) -> None:
+        color[action_id] = "visiting"
+        stack.append(action_id)
+        parent_id = parent_by_action.get(action_id)
+        if parent_id:
+            state = color.get(parent_id)
+            if state is None:
+                visit(parent_id)
+            elif state == "visiting":
+                start = stack.index(parent_id)
+                cycle_nodes = stack[start:]
+                key = tuple(sorted(cycle_nodes))
+                if key not in seen_cycles:
+                    seen_cycles.add(key)
+                    cycles.append(cycle_nodes + [parent_id])
+        stack.pop()
+        color[action_id] = "visited"
+
+    for action_id in parent_by_action:
+        if color.get(action_id) is None:
+            visit(action_id)
+
+    return cycles
+
+
 def _check_fhir_field_leakage(data: dict, path: str = "") -> List[str]:
     """Recursively check for FHIR-specific fields at L2 level."""
     fhir_fields = []
@@ -437,6 +483,12 @@ def validate_decision_table(
         parent_action_id = action.get("parent_action_id")
         if isinstance(parent_action_id, str) and parent_action_id.strip():
             child_action_counts[parent_action_id.strip()] = child_action_counts.get(parent_action_id.strip(), 0) + 1
+
+    for cycle in _find_action_parent_cycles(actions):
+        report_error(
+            "  decision-table: actions contain parent_action_id cycle: "
+            f"{' -> '.join(cycle)}"
+        )
 
     # Validate action contract
     for idx, action in enumerate(actions, start=1):
