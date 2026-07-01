@@ -647,6 +647,126 @@ def test_validate_l3_decision_table_rejects_inline_negated_condition_expression(
     assert "uses inline negation; reference a named CQL define instead" in result.output
 
 
+def test_validate_l3_activitydefinition_dynamic_value_rejects_bare_cql_identifier(tmp_repo):
+    topic = "my-skill"
+    artifact = "activity-dynamic-values"
+    computable_dir = tmp_repo / "topics" / topic / "computable"
+    computable_dir.mkdir(parents=True, exist_ok=True)
+    import json
+    activity_file = computable_dir / "ActivityDefinition-collect-information.json"
+    activity_file.write_text(json.dumps({
+        "resourceType": "ActivityDefinition",
+        "id": "collect-information",
+        "status": "draft",
+        "kind": "Task",
+        "code": {"coding": [{"system": "http://snomed.info/sct", "code": "386053000", "display": "Evaluation procedure"}]},
+        "dynamicValue": [{
+            "path": "input.type",
+            "expression": {
+                "language": "text/cql-identifier",
+                "expression": "code",
+            },
+        }],
+    }))
+
+    y = YAML()
+    tracking = {
+        "schema_version": "1.0",
+        "sources": [],
+        "topics": [{
+            "name": topic,
+            "structured": [],
+            "computable": [{
+                "name": artifact,
+                "files": [f"topics/{topic}/computable/{activity_file.name}"],
+                "checksums": {},
+                "converged_from": ["decision-table"],
+                "strategy": "decision-table",
+            }],
+            "events": [],
+        }],
+    }
+    with open(tmp_repo / "tracking.yaml", "w") as f:
+        y.dump(tracking, f)
+
+    runner = CliRunner()
+    result = runner.invoke(validate, [topic, "l3", artifact])
+    assert result.exit_code == 1
+    assert "references CQL identifier 'code' without ActivityDefinition.library" in result.output
+
+
+def test_validate_l3_activitydefinition_dynamic_value_accepts_referenced_library_define(tmp_repo):
+    topic = "my-skill"
+    artifact = "activity-dynamic-values"
+    computable_dir = tmp_repo / "topics" / topic / "computable"
+    computable_dir.mkdir(parents=True, exist_ok=True)
+    import base64
+    import json
+    cql_source = """\
+library MyLogic version '0.1.0'
+using FHIR version '4.0.1'
+
+define CollectInformationTaskInput:
+  null
+"""
+    activity_file = computable_dir / "ActivityDefinition-collect-information.json"
+    library_file = computable_dir / "Library-my-logic.json"
+    activity_file.write_text(json.dumps({
+        "resourceType": "ActivityDefinition",
+        "id": "collect-information",
+        "status": "draft",
+        "kind": "Task",
+        "code": {"coding": [{"system": "http://snomed.info/sct", "code": "386053000", "display": "Evaluation procedure"}]},
+        "library": ["http://example.org/fhir/Library/my-logic"],
+        "dynamicValue": [{
+            "path": "input",
+            "expression": {
+                "language": "text/cql-identifier",
+                "expression": "CollectInformationTaskInput",
+            },
+        }],
+    }))
+    library_file.write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "my-logic",
+        "url": "http://example.org/fhir/Library/my-logic",
+        "name": "MyLogic",
+        "status": "draft",
+        "type": {"coding": [{"code": "logic-library"}]},
+        "content": [{
+            "contentType": "text/cql",
+            "data": base64.b64encode(cql_source.encode("utf-8")).decode("ascii"),
+        }],
+    }))
+
+    y = YAML()
+    tracking = {
+        "schema_version": "1.0",
+        "sources": [],
+        "topics": [{
+            "name": topic,
+            "structured": [],
+            "computable": [{
+                "name": artifact,
+                "files": [
+                    f"topics/{topic}/computable/{activity_file.name}",
+                    f"topics/{topic}/computable/{library_file.name}",
+                ],
+                "checksums": {},
+                "converged_from": ["decision-table"],
+                "strategy": "decision-table",
+            }],
+            "events": [],
+        }],
+    }
+    with open(tmp_repo / "tracking.yaml", "w") as f:
+        y.dump(tracking, f)
+
+    runner = CliRunner()
+    result = runner.invoke(validate, [topic, "l3", artifact])
+    assert result.exit_code == 0, result.output
+
+
 def test_validate_l3_decision_table_warns_when_condition_define_looks_parameter_based(tmp_repo):
     topic = "my-skill"
     artifact = "decision-table"
