@@ -267,6 +267,72 @@ def _parse_cql_parameters(cql_source: str) -> set[str]:
     return names
 
 
+def _embedded_cql_source_from_library(resource: dict) -> str | None:
+    for item in resource.get("content") or []:
+        if not isinstance(item, dict) or item.get("contentType") != "text/cql":
+            continue
+        data = item.get("data")
+        if not data:
+            continue
+        try:
+            return base64.b64decode(data).decode("utf-8")
+        except Exception:
+            continue
+    return None
+
+
+def _library_reference_keys(resource: dict) -> set[str]:
+    keys: set[str] = set()
+    url = str(resource.get("url") or "").strip()
+    if url:
+        keys.add(url.split("|", 1)[0])
+    library_id = str(resource.get("id") or "").strip()
+    if library_id:
+        keys.add(library_id)
+        keys.add(f"Library/{library_id}")
+    name = str(resource.get("name") or "").strip()
+    if name:
+        keys.add(name)
+    return keys
+
+
+def _load_library_cql_source(topic: str, resource: dict) -> str | None:
+    embedded = _embedded_cql_source_from_library(resource)
+    if embedded:
+        return embedded
+
+    computable_dir = topic_dir(topic) / "computable"
+    cql_files = sorted(computable_dir.glob("*.cql")) if computable_dir.exists() else []
+    for candidate_name in (resource.get("name"), resource.get("id")):
+        library_name = str(candidate_name or "").strip()
+        if not library_name:
+            continue
+        cql_path = _find_best_cql_path(cql_files, library_name)
+        if cql_path is None:
+            continue
+        try:
+            return cql_path.read_text()
+        except OSError:
+            continue
+    return None
+
+
+def _library_define_index_for_topic(topic: str, artifact_data: dict | None = None) -> dict[str, set[str]]:
+    index: dict[str, set[str]] = {}
+    for json_file in _tracked_json_files_for_topic(topic, artifact_data):
+        try:
+            resource = _json.loads(json_file.read_text())
+        except (ValueError, OSError):
+            continue
+        if resource.get("resourceType") != "Library":
+            continue
+        source = _load_library_cql_source(topic, resource)
+        defines = set(_parse_cql_defines(source).keys()) if source else set()
+        for key in _library_reference_keys(resource):
+            index[key] = defines
+    return index
+
+
 def _condition_expression_define_refs(language: str, expr_text: str) -> list[str]:
     normalized = expr_text.strip()
     if language == "text/cql-identifier":
@@ -386,6 +452,72 @@ def _validate_l3_decision_table_condition_expressions(
                                 emit=emit,
                             )
                             warnings += 1
+
+    return errors, warnings
+
+
+def _validate_l3_activitydefinition_dynamic_values(
+    topic: str,
+    artifact_data: dict | None = None,
+    *,
+    emit: bool = True,
+) -> tuple[int, int]:
+    """Validate generated ActivityDefinition.dynamicValue expression usage."""
+    errors = 0
+    warnings = 0
+    library_defines = _library_define_index_for_topic(topic, artifact_data)
+
+    for json_file in _tracked_json_files_for_topic(topic, artifact_data):
+        try:
+            resource = _json.loads(json_file.read_text())
+        except (ValueError, OSError):
+            continue
+        if resource.get("resourceType") != "ActivityDefinition":
+            continue
+
+        library_refs = [
+            str(ref or "").strip().split("|", 1)[0]
+            for ref in resource.get("library") or []
+            if str(ref or "").strip()
+        ]
+        for idx, dynamic_value in enumerate(resource.get("dynamicValue") or [], start=1):
+            if not isinstance(dynamic_value, dict):
+                continue
+            expression = dynamic_value.get("expression")
+            if not isinstance(expression, dict):
+                continue
+            language = str(expression.get("language") or "").strip()
+            expr_text = str(expression.get("expression") or "").strip()
+            if language == "text/cql":
+                _report_error(
+                    f"  {json_file.name}: dynamicValue[{idx}] uses inline text/cql; use text/cql-identifier with a referenced Library define or text/fhirpath for ActivityDefinition self-copy",
+                    emit=emit,
+                )
+                errors += 1
+                continue
+            if language != "text/cql-identifier":
+                continue
+            if not expr_text:
+                _report_error(
+                    f"  {json_file.name}: dynamicValue[{idx}] uses text/cql-identifier without an expression",
+                    emit=emit,
+                )
+                errors += 1
+                continue
+            if not library_refs:
+                _report_error(
+                    f"  {json_file.name}: dynamicValue[{idx}] references CQL identifier '{expr_text}' without ActivityDefinition.library",
+                    emit=emit,
+                )
+                errors += 1
+                continue
+            define_name = expr_text.rsplit(".", 1)[-1]
+            if not any(define_name in library_defines.get(ref, set()) for ref in library_refs):
+                _report_error(
+                    f"  {json_file.name}: dynamicValue[{idx}] references CQL identifier '{expr_text}' but no referenced Library defines it",
+                    emit=emit,
+                )
+                errors += 1
 
     return errors, warnings
 
@@ -1094,6 +1226,12 @@ def validate_artifact_file(
         )
         errors += fhir_errors
         warnings += fhir_warnings
+
+        dynamic_value_errors, dynamic_value_warnings = _validate_l3_activitydefinition_dynamic_values(
+            topic, artifact_data, emit=emit,
+        )
+        errors += dynamic_value_errors
+        warnings += dynamic_value_warnings
         return errors, warnings
 
     else:

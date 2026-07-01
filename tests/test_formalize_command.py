@@ -617,11 +617,13 @@ sections:
             assert activity["extension"][0]["url"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
             assert activity["extension"][0]["valueCanonical"].endswith("/Questionnaire/qol-assessment")
             dynamic_values = {dv["path"]: dv["expression"] for dv in activity.get("dynamicValue", [])}
-            assert dynamic_values["input.type"]["language"] == "text/cql-identifier"
-            assert dynamic_values["input.type"]["expression"] == "CollectInformationInputType"
-            assert dynamic_values["input.value"]["language"] == "text/cql-identifier"
-            assert dynamic_values["input.value"]["expression"] == "CollectInformationInputValue"
-            assert activity["relatedArtifact"][0]["resource"].endswith("/Questionnaire/qol-assessment")
+            collect_with_url = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
+            expected_collect_with_expr = f"%context.extension.where(url = '{collect_with_url}').value"
+            assert dynamic_values["input.type"]["language"] == "text/fhirpath"
+            assert dynamic_values["input.type"]["expression"] == "%context.code"
+            assert dynamic_values["input.valueCanonical"]["language"] == "text/fhirpath"
+            assert dynamic_values["input.valueCanonical"]["expression"] == expected_collect_with_expr
+            assert "relatedArtifact" not in activity
             assert not (computable / "Questionnaire-qol-assessment.json").exists()
             assert child_plan["action"][0]["id"] == "assess-surgical-candidacy"
             assert child_plan["action"][0]["action"][0]["id"] == "complete-qol-assessment"

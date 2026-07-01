@@ -302,7 +302,15 @@ ECA guidance for decision-table and care-pathway conversions:
 - Rules must reference action IDs only; action definitions carry executable details.
 - Conditions must be emitted as named CQL references (text/cql-identifier), not free-text prose logic or inline negation.
 - For negative conditions, reference a named polarity-aware define such as NoFindingPresent; put the negation inside the CQL define, not in PlanDefinition.action.condition.expression.
-- Keep pathway/protocol orchestration separate from executable action definitions (PlanDefinition orchestrates, ActivityDefinition executes)."""
+- Keep pathway/protocol orchestration separate from executable action definitions (PlanDefinition orchestrates, ActivityDefinition executes).
+
+ActivityDefinition.dynamicValue guidance only:
+- When dynamicValue copies or navigates data already present on the containing ActivityDefinition, use the containing-resource evaluation context. In FHIRPath, that means %context. In CQL-backed dynamic values, use a named Library define that evaluates against the same containing-resource context.
+- For collect-information Task ActivityDefinitions with cpg-collectWith, the direct expression form is text/fhirpath with %context.code for input.type and %context.extension.where(url = 'http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value for input.valueCanonical.
+- Do not emit bare identifiers such as code as text/cql-identifier dynamic values unless they are named Library defines.
+- Use text/cql-identifier for ActivityDefinition.dynamicValue only when the expression is a named CQL expression resolvable from a Library in scope for that ActivityDefinition or another explicitly supported evaluation context.
+- If ActivityDefinition.dynamicValue uses text/cql-identifier, the ActivityDefinition must reference the Library that defines it. Do not emit inline text/cql for generated ActivityDefinition.dynamicValue.
+"""
 
     return f"""\
 You are a healthcare informatics specialist. Your task is to convert a \
@@ -1634,21 +1642,22 @@ def _build_questionnaire_resource(
     )
 
 
-def _collect_information_dynamic_values(questionnaire_canonical: str) -> list[dict[str, Any]]:
+def _collect_information_dynamic_values(_questionnaire_canonical: str) -> list[dict[str, Any]]:
     """Return stub dynamicValue entries for a CPG collect-information activity."""
+    collect_with_url = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
     return [
         {
             "path": "input.type",
             "expression": {
-                "language": "text/cql-identifier",
-                "expression": "CollectInformationInputType",
+                "language": "text/fhirpath",
+                "expression": "%context.code",
             },
         },
         {
-            "path": "input.value",
+            "path": "input.valueCanonical",
             "expression": {
-                "language": "text/cql-identifier",
-                "expression": "CollectInformationInputValue",
+                "language": "text/fhirpath",
+                "expression": f"%context.extension.where(url = '{collect_with_url}').value",
             },
         },
     ]
@@ -1808,16 +1817,6 @@ def _build_decision_table_activity_definitions(
                 "url": "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith",
                 "valueCanonical": questionnaire_canonical,
             }]
-            related_artifacts.append({
-                "type": "depends-on",
-                "resource": questionnaire_canonical,
-                "display": str(
-                    resolved_assessment_data.get("title")
-                    or resolved_assessment_data.get("name")
-                    or resolved_assessment_artifact.replace("-", " ").title()
-                ),
-            })
-            template_context["related_artifact"] = related_artifacts
 
         resource = _render_activity_definition_resource(
             template_context,
