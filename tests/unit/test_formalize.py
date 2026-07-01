@@ -17,6 +17,9 @@ from ruamel.yaml import YAML
 from rh_skills.commands.formalize import (
     _activity_definition_kind,
     _build_care_pathway_stub_plan_definitions,
+    _build_stub_resources,
+    _get_strategy,
+    _hoist_plan_definition_action_conditions,
     _normalize_activity_codeable_concept,
     formalize,
 )
@@ -38,6 +41,68 @@ def test_activity_definition_kind_normalizes_supported_l2_action_kinds():
     assert _activity_definition_kind("CollectInformation") == "CollectInformation"
     assert _activity_definition_kind("communication") == "CommunicationRequest"
     assert _activity_definition_kind("Task") == "Task"
+
+
+def test_plan_definition_condition_hoisting_moves_shared_sibling_conditions_to_parent():
+    shared = {
+        "kind": "applicability",
+        "expression": {
+            "language": "text/cql-identifier",
+            "expression": "CrsDiagnosisVerified",
+        },
+    }
+    branch_only = {
+        "kind": "applicability",
+        "expression": {
+            "language": "text/cql-identifier",
+            "expression": "SurgeryPlanningActive",
+        },
+    }
+    plan = {
+        "resourceType": "PlanDefinition",
+        "action": [{
+            "id": "shared-branch",
+            "action": [
+                {"id": "a", "condition": [shared]},
+                {"id": "b", "condition": [shared, branch_only]},
+            ],
+        }],
+    }
+
+    _hoist_plan_definition_action_conditions(plan)
+
+    parent = plan["action"][0]
+    assert parent["condition"] == [shared]
+    assert "condition" not in parent["action"][0]
+    assert parent["action"][1]["condition"] == [branch_only]
+
+
+def test_plan_definition_condition_hoisting_requires_all_siblings_to_share_condition():
+    shared = {
+        "kind": "applicability",
+        "expression": {
+            "language": "text/cql-identifier",
+            "expression": "CrsDiagnosisVerified",
+        },
+    }
+    plan = {
+        "resourceType": "PlanDefinition",
+        "action": [{
+            "id": "mixed-branch",
+            "action": [
+                {"id": "a", "condition": [shared]},
+                {"id": "b"},
+            ],
+        }],
+    }
+
+    _hoist_plan_definition_action_conditions(plan)
+
+    parent = plan["action"][0]
+    assert "condition" not in parent
+    assert parent["action"][0]["condition"] == [shared]
+    assert "condition" not in parent["action"][1]
+
 
 def _make_tracking_yaml(topic_dir: Path, topic_name: str, artifact: str, artifact_type: str = "measure"):
     """Write a minimal tracking.yaml with a formalize-ready artifact."""
@@ -131,6 +196,186 @@ def test_grouped_care_pathway_recommendation_actions_use_recommendation_titles()
         "Verify diagnosis",
         "Assess candidacy",
     ]
+
+
+def _condition_expressions_by_action_id(resources: list[dict]) -> dict[str, list[tuple[str, ...]]]:
+    expressions_by_id: dict[str, list[tuple[str, ...]]] = {}
+
+    def walk(actions: list[dict] | None) -> None:
+        for action in actions or []:
+            if not isinstance(action, dict):
+                continue
+            action_id = str(action.get("id") or "").strip()
+            condition_expressions = tuple(
+                str(condition.get("expression", {}).get("expression") or "")
+                for condition in action.get("condition") or []
+                if isinstance(condition, dict)
+            )
+            if action_id:
+                expressions_by_id.setdefault(action_id, []).append(condition_expressions)
+            walk(action.get("action"))
+
+    for resource in resources:
+        if resource.get("resourceType") == "PlanDefinition":
+            walk(resource.get("action"))
+    return expressions_by_id
+
+
+def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions(tmp_repo):
+    topic = "mini-crs"
+    topic_dir = tmp_repo / "topics" / topic
+    structured_dir = topic_dir / "structured"
+    structured_dir.mkdir(parents=True)
+    _make_formalize_config(topic_dir, topic)
+
+    decision_table = {
+        "artifact_type": "decision-table",
+        "name": "decision-table",
+        "sections": {
+            "applicability": [{"condition_id": "adult-age-criterion-met", "value": "Yes"}],
+            "events": [{"id": "event", "label": "Clinical review"}],
+            "conditions": [
+                {"id": "adult-age-criterion-met", "label": "Adult age criterion met", "values": ["Yes", "No"]},
+                {"id": "crs-diagnosis-verified", "label": "CRS diagnosis verified", "values": ["Yes", "No"]},
+                {"id": "guideline-exclusion-present", "label": "Guideline exclusion present", "values": ["Yes", "No"]},
+                {"id": "sinus-surgery-planning-active", "label": "Sinus surgery planning active", "values": ["Yes", "No"]},
+                {"id": "fine-cut-ct-available", "label": "Fine cut CT available", "values": ["Yes", "No"]},
+                {"id": "sinus-surgery-order-present", "label": "Sinus surgery order present", "values": ["Yes", "No"]},
+                {"id": "purulent-discharge-present", "label": "Purulent discharge present", "values": ["Yes", "No"]},
+            ],
+            "actions": [
+                {"id": "verify-diagnosis", "label": "Verify diagnosis", "kind": "Task"},
+                {"id": "collect-snot", "label": "Collect SNOT-22", "kind": "Task"},
+                {"id": "obtain-ct", "label": "Obtain CT", "kind": "ServiceRequest"},
+                {"id": "educate-postop", "label": "Educate about postoperative care", "kind": "CommunicationRequest"},
+                {"id": "avoid-antibiotic", "label": "Avoid antibiotic therapy", "kind": "CommunicationRequest"},
+            ],
+            "rules": [
+                {
+                    "id": "rule-verify",
+                    "event": "event",
+                    "when": {"crs-diagnosis-verified": "Yes", "guideline-exclusion-present": "No"},
+                    "then": ["verify-diagnosis"],
+                },
+                {
+                    "id": "rule-snot",
+                    "event": "event",
+                    "when": {"guideline-exclusion-present": "No"},
+                    "then": ["collect-snot"],
+                },
+                {
+                    "id": "rule-ct",
+                    "event": "event",
+                    "when": {
+                        "crs-diagnosis-verified": "Yes",
+                        "guideline-exclusion-present": "No",
+                        "sinus-surgery-planning-active": "Yes",
+                        "fine-cut-ct-available": "No",
+                    },
+                    "then": ["obtain-ct"],
+                },
+                {
+                    "id": "rule-educate",
+                    "event": "event",
+                    "when": {
+                        "crs-diagnosis-verified": "Yes",
+                        "guideline-exclusion-present": "No",
+                        "sinus-surgery-planning-active": "Yes",
+                        "sinus-surgery-order-present": "Yes",
+                    },
+                    "then": ["educate-postop"],
+                },
+                {
+                    "id": "rule-antibiotic",
+                    "event": "event",
+                    "when": {"purulent-discharge-present": "No"},
+                    "then": ["avoid-antibiotic"],
+                },
+            ],
+        },
+    }
+    care_pathway = {
+        "artifact_type": "care-pathway",
+        "name": "care-pathway",
+        "sections": {
+            "steps": [
+                {"id": "protocol", "label": "Protocol", "applicability_condition": "adult-age-criterion-met"},
+                {"id": "eligibility", "label": "Eligibility", "parent_id": "protocol"},
+                {"id": "verify-step", "label": "Verify diagnosis", "parent_id": "eligibility", "rule_id": "rule-verify"},
+                {"id": "snot-step", "label": "Collect SNOT-22", "parent_id": "eligibility", "rule_id": "rule-snot"},
+                {"id": "planning", "label": "Planning", "parent_id": "protocol"},
+                {"id": "ct-step", "label": "Obtain CT", "parent_id": "planning", "rule_id": "rule-ct"},
+                {
+                    "id": "educate-step",
+                    "label": "Educate postoperative care",
+                    "parent_id": "planning",
+                    "applicability_condition": "sinus-surgery-order-present",
+                    "rule_id": "rule-educate",
+                },
+                {"id": "antibiotic-review", "label": "Antibiotic review", "parent_id": "protocol"},
+                {
+                    "id": "avoid-antibiotic-step",
+                    "label": "Avoid antibiotics",
+                    "parent_id": "antibiotic-review",
+                    "rule_id": "rule-antibiotic",
+                },
+            ],
+        },
+    }
+
+    y = YAML()
+    with open(structured_dir / "decision-table.yaml", "w") as f:
+        y.dump(decision_table, f)
+    with open(structured_dir / "care-pathway.yaml", "w") as f:
+        y.dump(care_pathway, f)
+    topic_entry = {
+        "name": topic,
+        "structured": [
+            {"name": "decision-table", "artifact_type": "decision-table"},
+            {"name": "care-pathway", "artifact_type": "care-pathway"},
+        ],
+    }
+
+    cfg = {"canonical": "http://example.org/fhir", "version": "0.1.0", "status": "draft"}
+    decision_strategy, _ = _get_strategy("decision-table")
+    pathway_strategy, _ = _get_strategy("care-pathway")
+
+    decision_resources = _build_stub_resources(
+        "decision-table",
+        "decision-table",
+        decision_strategy,
+        topic,
+        cfg,
+        decision_table,
+        topic_entry=topic_entry,
+    )
+    pathway_resources = _build_stub_resources(
+        "care-pathway",
+        "care-pathway",
+        pathway_strategy,
+        topic,
+        cfg,
+        care_pathway,
+        topic_entry=topic_entry,
+    )
+
+    pathway_conditions = _condition_expressions_by_action_id(pathway_resources)
+    assert ("AdultAgeCriterionMet",) in pathway_conditions["protocol"]
+    assert ("not GuidelineExclusionPresent",) in pathway_conditions["eligibility"]
+    assert (
+        "CrsDiagnosisVerified",
+        "not GuidelineExclusionPresent",
+        "SinusSurgeryPlanningActive",
+    ) in pathway_conditions["planning"]
+    assert ("SinusSurgeryOrderPresent",) in pathway_conditions["educate-step"]
+
+    decision_conditions = _condition_expressions_by_action_id(decision_resources)
+    assert ("CrsDiagnosisVerified",) in decision_conditions["verify-diagnosis"]
+    assert ("not GuidelineExclusionPresent",) not in decision_conditions["verify-diagnosis"]
+    assert decision_conditions["collect-snot"] == [()]
+    assert ("not FineCutCtAvailable",) in decision_conditions["obtain-ct"]
+    assert all("not GuidelineExclusionPresent" not in entry for entry in decision_conditions["obtain-ct"])
+    assert decision_conditions["educate-postop"] == [()]
 
 
 # ---------------------------------------------------------------------------
