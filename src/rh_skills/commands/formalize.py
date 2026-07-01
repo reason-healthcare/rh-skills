@@ -87,8 +87,8 @@ def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
 STRATEGY_REGISTRY: dict[str, dict] = {
     "evidence-summary": {
         "primary": "Evidence",
-        "supporting": ["EvidenceVariable", "Citation"],
-        "description": "Evidence + EvidenceVariable + Citation",
+        "supporting": ["EvidenceVariable"],
+        "description": "Evidence + EvidenceVariable",
     },
     "decision-table": {
         "primary": "PlanDefinition",
@@ -416,7 +416,7 @@ def _activity_preferred_systems(
         return [rxnorm, snomed]
     if kind == "Procedure":
         return [snomed]
-    if kind in {"ServiceRequest", "CollectInformation"}:
+    if kind in {"ServiceRequest", "Task"}:
         if any(token in text for token in lab_tokens):
             return [loinc, snomed]
         return [snomed, loinc]
@@ -832,7 +832,10 @@ def _build_evidence_variable_characteristics(
 
     def add_description(value: str | None) -> None:
         if value:
-            characteristics.append({"description": value})
+            characteristics.append({
+                "description": value,
+                "definitionCodeableConcept": {"text": value},
+            })
 
     frames = sections.get("frames") or []
     if isinstance(frames, list):
@@ -902,17 +905,35 @@ def _activity_definition_kind(raw_type: str | None) -> str:
         "service": "ServiceRequest",
         "referral": "ServiceRequest",
         "procedure": "ServiceRequest",
-        "assessment": "ServiceRequest",
         "servicerequest": "ServiceRequest",
-        "questionnaire": "CollectInformation",
-        "collectinformation": "CollectInformation",
+        "assessment": "Task",
+        "questionnaire": "Task",
+        "collectinformation": "Task",
         "communication": "CommunicationRequest",
         "communicationrequest": "CommunicationRequest",
         "medication": "MedicationRequest",
         "medicationrequest": "MedicationRequest",
         "task": "Task",
     }
-    return mapping.get(normalized, "ServiceRequest")
+    return mapping.get(normalized, "Task")
+
+
+_VALID_ACTIVITY_DEFINITION_INTENTS = {
+    "proposal",
+    "plan",
+    "order",
+    "original-order",
+    "reflex-order",
+    "filler-order",
+    "instance-order",
+    "option",
+}
+
+
+def _activity_definition_intent(raw_intent: Any) -> str:
+    """Return a valid R4 ActivityDefinition.intent code."""
+    intent = str(raw_intent or "").strip().lower()
+    return intent if intent in _VALID_ACTIVITY_DEFINITION_INTENTS else "proposal"
 
 
 def _is_phase_style_pathway(steps: list) -> bool:
@@ -1314,7 +1335,7 @@ def _activity_preferred_concept_types(kind: str, action_id: str, title: str, des
     preferred: list[str] = []
     if kind == "MedicationRequest" or any(t in text for t in ("antibiotic", "antibacterial", "medication", "drug")):
         preferred.append("medication")
-    if kind in {"ServiceRequest", "CollectInformation", "Task"} or any(
+    if kind in {"ServiceRequest", "Task"} or any(
         t in text for t in ("surgery", "procedure", "ct", "tomography", "scan", "endoscopy", "irrigation", "debridement", "dilation")
     ):
         preferred.append("procedure")
@@ -1510,7 +1531,7 @@ def _activity_definition_template_context(
         "title": title,
         "description": description,
         "kind": kind,
-        "intent": intent,
+        "intent": _activity_definition_intent(intent),
         "code": code,
         "do_not_perform": do_not_perform,
         "meta_profile": meta_profile or [],
@@ -1685,7 +1706,7 @@ def _build_decision_table_activity_definitions(
         title = _decision_table_action_title(action_def)
         kind = _activity_definition_kind(action_def.get("kind"))
         description = str(action_def.get("description") or title)
-        intent = str(action_def.get("intent") or "proposal")
+        intent = _activity_definition_intent(action_def.get("intent"))
         do_not_perform = action_def.get("do_not_perform") is True
 
         codeable_concept = _resolve_activity_code(action_def, action_id=action_id, title=title)
@@ -1762,11 +1783,10 @@ def _build_decision_table_activity_definitions(
             )
             questionnaire_canonical = f"{canonical}/Questionnaire/{questionnaire_id}"
             template_variant_is_questionnaire = True
-            template_context["kind"] = "CollectInformation"
+            template_context["kind"] = "Task"
             template_context["meta_profile"] = [
                 "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
             ]
-            template_context["profile"] = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
             if not template_context.get("code"):
                 template_context["code"] = {
                     "coding": [{
@@ -3356,6 +3376,16 @@ def _build_stub_resources(
         primary_resource["compose"] = {"include": [{"system": "http://snomed.info/sct", "concept": [{"code": "TODO:PLACEHOLDER"}]}]}
     elif primary == "Evidence":
         primary_resource["certainty"] = [{"rating": {"coding": [{"code": "moderate"}]}}]
+        primary_resource["exposureBackground"] = {
+            "reference": f"EvidenceVariable/{resource_id}-evidencevariable"
+        }
+        evidence_claim_index = _build_evidence_claim_index(l2_data)
+        related_artifacts = _build_evidence_related_artifacts(
+            list(evidence_claim_index.keys()),
+            evidence_claim_index,
+        )
+        if related_artifacts:
+            primary_resource["relatedArtifact"] = related_artifacts
     elif primary == "EvidenceVariable":
         # Used by eligibility-criteria and risk-factors strategies
         primary_resource["characteristic"] = _build_evidence_variable_characteristics(artifact_type, l2_data)
