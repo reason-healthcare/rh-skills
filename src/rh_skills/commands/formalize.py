@@ -1024,6 +1024,7 @@ def _build_care_pathway_actions(
     recommendation_plan_map: dict[str, str] | None = None,
     recommendation_candidates: list[dict[str, Any]] | None = None,
     action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
+    pathway_condition_context: dict[str, Any] | None = None,
 ) -> list[dict]:
     """Build PlanDefinition.action stubs from L2 care-pathway sections.
     """
@@ -1070,7 +1071,7 @@ def _build_care_pathway_actions(
 
     used_recommendation_refs: set[str] = set()
 
-    def build_action(step: dict) -> list[dict]:
+    def build_action(step: dict, inherited_condition_keys: set[str] | None = None) -> list[dict]:
         step_id = str(step.get("id"))
         title = str(step.get("label") or step.get("title") or step_id or artifact_name.replace("-", " ").title())
         description = str(step.get("description") or title)
@@ -1089,6 +1090,13 @@ def _build_care_pathway_actions(
         evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
         if evidence_related:
             action["documentation"] = evidence_related
+        local_condition_keys = _apply_pathway_step_conditions(
+            action,
+            pathway_condition_context,
+            step_id,
+            inherited_condition_keys or set(),
+        )
+        child_inherited_condition_keys = set(inherited_condition_keys or set()) | local_condition_keys
 
         branch_ref = (branch_plan_map or {}).get(step_id)
         if branch_ref:
@@ -1098,7 +1106,11 @@ def _build_care_pathway_actions(
             children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
 
         if children:
-            action["action"] = [sub_action for child in children for sub_action in build_action(child)]
+            action["action"] = [
+                sub_action
+                for child in children
+                for sub_action in build_action(child, child_inherited_condition_keys)
+            ]
         elif not branch_ref:
             exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_refs = _resolve_recommendation_references(
@@ -1155,7 +1167,7 @@ def _build_care_pathway_actions(
     root_steps = child_map.get(None, [])
     actions: list[dict[str, Any]] = []
     for step in root_steps:
-        actions.extend(build_action(step))
+        actions.extend(build_action(step, set()))
     if actions:
         return actions
 
@@ -1890,6 +1902,320 @@ def _build_decision_table_referenced_actions(
     return root_entries
 
 
+def _condition_fingerprint(condition: dict[str, Any]) -> str:
+    """Return a stable key for comparing PlanDefinition action conditions."""
+    return json.dumps(condition, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def _merge_action_conditions(
+    existing: list[dict[str, Any]],
+    additions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Append conditions without duplicating semantically identical entries."""
+    merged: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for condition in [*existing, *additions]:
+        if not isinstance(condition, dict):
+            continue
+        key = _condition_fingerprint(condition)
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(condition)
+    return merged
+
+
+def _remove_action_conditions(action: dict[str, Any], condition_keys: set[str]) -> None:
+    """Remove matching condition entries from an action in-place."""
+    conditions = action.get("condition")
+    if not isinstance(conditions, list):
+        return
+    remaining = [
+        condition
+        for condition in conditions
+        if not isinstance(condition, dict) or _condition_fingerprint(condition) not in condition_keys
+    ]
+    if remaining:
+        action["condition"] = remaining
+    else:
+        action.pop("condition", None)
+
+
+def _hoist_shared_action_conditions(actions: list[dict[str, Any]]) -> None:
+    """Move conditions common to all sibling actions onto their shared parent."""
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        children = action.get("action")
+        if not isinstance(children, list) or len(children) < 2:
+            if isinstance(children, list):
+                _hoist_shared_action_conditions([child for child in children if isinstance(child, dict)])
+            continue
+
+        child_actions = [child for child in children if isinstance(child, dict)]
+        _hoist_shared_action_conditions(child_actions)
+        if len(child_actions) != len(children):
+            continue
+
+        child_condition_keys: list[set[str]] = []
+        condition_by_key: dict[str, dict[str, Any]] = {}
+        for child in child_actions:
+            conditions = child.get("condition")
+            if not isinstance(conditions, list) or not conditions:
+                child_condition_keys.append(set())
+                continue
+            keys: set[str] = set()
+            for condition in conditions:
+                if not isinstance(condition, dict):
+                    continue
+                key = _condition_fingerprint(condition)
+                keys.add(key)
+                condition_by_key.setdefault(key, condition)
+            child_condition_keys.append(keys)
+
+        if not child_condition_keys:
+            continue
+        shared_keys = set.intersection(*child_condition_keys)
+        if not shared_keys:
+            continue
+
+        first_child_conditions = child_actions[0].get("condition") or []
+        ordered_shared = [
+            condition_by_key[_condition_fingerprint(condition)]
+            for condition in first_child_conditions
+            if isinstance(condition, dict) and _condition_fingerprint(condition) in shared_keys
+        ]
+        action["condition"] = _merge_action_conditions(action.get("condition") or [], ordered_shared)
+        for child in child_actions:
+            _remove_action_conditions(child, shared_keys)
+
+
+def _hoist_plan_definition_action_conditions(resource: dict[str, Any]) -> dict[str, Any]:
+    """Normalize duplicated sibling action conditions within a PlanDefinition."""
+    if resource.get("resourceType") != "PlanDefinition":
+        return resource
+    actions = resource.get("action")
+    if isinstance(actions, list):
+        _hoist_shared_action_conditions([action for action in actions if isinstance(action, dict)])
+    return resource
+
+
+def _condition_keys(conditions: list[dict[str, Any]] | None) -> set[str]:
+    return {
+        _condition_fingerprint(condition)
+        for condition in (conditions or [])
+        if isinstance(condition, dict)
+    }
+
+
+def _filter_conditions(
+    conditions: list[dict[str, Any]],
+    excluded_keys: set[str],
+) -> list[dict[str, Any]]:
+    return [
+        condition
+        for condition in conditions
+        if isinstance(condition, dict) and _condition_fingerprint(condition) not in excluded_keys
+    ]
+
+
+def _condition_entry_for_id(
+    condition_id: str,
+    condition_index: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    condition = condition_index.get(condition_id)
+    if not isinstance(condition, dict):
+        return None
+    entries = _build_decision_table_rule_conditions(
+        {"when": {condition_id: "Yes"}},
+        condition_index,
+    )
+    return entries[0] if entries else None
+
+
+def _build_pathway_condition_context(
+    care_pathway_data: dict[str, Any] | None,
+    decision_table_data: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Return pathway-step condition placement and rule-pruning metadata."""
+    care_sections = (care_pathway_data or {}).get("sections") or {}
+    decision_sections = (decision_table_data or {}).get("sections") or {}
+    steps = care_sections.get("steps") or []
+    rules = decision_sections.get("rules") or []
+    conditions = decision_sections.get("conditions") or []
+    applicability = decision_sections.get("applicability") or []
+    if not isinstance(steps, list):
+        steps = []
+    if not isinstance(rules, list):
+        rules = []
+    if not isinstance(conditions, list):
+        conditions = []
+    if not isinstance(applicability, list):
+        applicability = []
+
+    condition_index = {
+        str(condition.get("id")): condition
+        for condition in conditions
+        if isinstance(condition, dict) and str(condition.get("id") or "").strip()
+    }
+    rule_condition_map: dict[str, list[dict[str, Any]]] = {}
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        rule_id = str(rule.get("id") or "").strip()
+        if not rule_id:
+            continue
+        rule_condition_map[rule_id] = _build_decision_table_rule_conditions(rule, condition_index)
+
+    step_index = {
+        str(step.get("id")): step
+        for step in steps
+        if isinstance(step, dict) and str(step.get("id") or "").strip()
+    }
+    child_map: dict[str | None, list[dict[str, Any]]] = defaultdict(list)
+    parent_by_step: dict[str, str | None] = {}
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        step_id = str(step.get("id") or "").strip()
+        if not step_id:
+            continue
+        parent_id = step.get("parent_id")
+        normalized_parent = str(parent_id).strip() if isinstance(parent_id, str) and parent_id.strip() else None
+        child_map[normalized_parent].append(step)
+        parent_by_step[step_id] = normalized_parent
+
+    def direct_rule_refs(step: dict[str, Any]) -> list[str]:
+        return _step_rule_refs(step)
+
+    descendant_cache: dict[str, list[str]] = {}
+
+    def descendant_rule_refs(step_id: str) -> list[str]:
+        if step_id in descendant_cache:
+            return descendant_cache[step_id]
+        refs: list[str] = []
+        step = step_index.get(step_id) or {}
+        refs.extend(direct_rule_refs(step))
+        for child in child_map.get(step_id) or []:
+            child_id = str(child.get("id") or "").strip()
+            if child_id:
+                refs.extend(descendant_rule_refs(child_id))
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for ref in refs:
+            if ref not in seen:
+                seen.add(ref)
+                deduped.append(ref)
+        descendant_cache[step_id] = deduped
+        return deduped
+
+    def common_rule_conditions(rule_refs: list[str]) -> list[dict[str, Any]]:
+        if not rule_refs:
+            return []
+        condition_lists = [rule_condition_map.get(rule_ref, []) for rule_ref in rule_refs]
+        if any(not condition_list for condition_list in condition_lists):
+            return []
+        common_keys = set.intersection(*[_condition_keys(condition_list) for condition_list in condition_lists])
+        if not common_keys:
+            return []
+        return [
+            condition
+            for condition in condition_lists[0]
+            if _condition_fingerprint(condition) in common_keys
+        ]
+
+    step_conditions: dict[str, list[dict[str, Any]]] = {}
+    for step_id, step in step_index.items():
+        children = [child for child in child_map.get(step_id) or [] if isinstance(child, dict)]
+        placed: list[dict[str, Any]] = []
+        if children:
+            placed.extend(common_rule_conditions(descendant_rule_refs(step_id)))
+
+        applicability_id = str(step.get("applicability_condition") or "").strip()
+        if applicability_id:
+            entry = _condition_entry_for_id(applicability_id, condition_index)
+            if entry is not None:
+                placed = _merge_action_conditions(placed, [entry])
+
+        step_conditions[step_id] = placed
+
+    root_steps = [step for step in child_map.get(None, []) if isinstance(step, dict)]
+    global_conditions = []
+    for entry in applicability:
+        condition_id = ""
+        expected = "Yes"
+        if isinstance(entry, str):
+            condition_id = entry.strip()
+        elif isinstance(entry, dict):
+            condition_id = str(entry.get("condition_id") or entry.get("condition") or entry.get("id") or "").strip()
+            expected = str(entry.get("value") or entry.get("expected") or entry.get("equals") or "Yes").strip()
+        if not condition_id:
+            continue
+        global_conditions.extend(
+            _build_decision_table_rule_conditions({"when": {condition_id: expected}}, condition_index)
+        )
+    if len(root_steps) == 1 and global_conditions:
+        root_id = str(root_steps[0].get("id") or "").strip()
+        if root_id:
+            step_conditions[root_id] = _merge_action_conditions(step_conditions.get(root_id, []), global_conditions)
+
+    ancestor_keys_cache: dict[str, set[str]] = {}
+
+    def ancestor_condition_keys(step_id: str, *, include_self: bool = True) -> set[str]:
+        cache_key = f"{step_id}|{include_self}"
+        if cache_key in ancestor_keys_cache:
+            return ancestor_keys_cache[cache_key]
+        keys: set[str] = set()
+        current = step_id if include_self else parent_by_step.get(step_id)
+        while current:
+            keys.update(_condition_keys(step_conditions.get(current, [])))
+            current = parent_by_step.get(current)
+        ancestor_keys_cache[cache_key] = keys
+        return keys
+
+    rule_hoisted_condition_keys: dict[str, set[str]] = defaultdict(set)
+    for step_id, step in step_index.items():
+        inherited_keys = ancestor_condition_keys(step_id, include_self=True)
+        for rule_ref in direct_rule_refs(step):
+            rule_hoisted_condition_keys[rule_ref].update(inherited_keys)
+
+    return {
+        "step_conditions": step_conditions,
+        "ancestor_condition_keys": ancestor_condition_keys,
+        "rule_hoisted_condition_keys": dict(rule_hoisted_condition_keys),
+    }
+
+
+def _conditions_for_pathway_step_action(
+    pathway_condition_context: dict[str, Any] | None,
+    step_id: str,
+    inherited_condition_keys: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    if not pathway_condition_context:
+        return []
+    step_conditions = pathway_condition_context.get("step_conditions") or {}
+    conditions = step_conditions.get(step_id, [])
+    if not isinstance(conditions, list):
+        return []
+    return _filter_conditions(conditions, inherited_condition_keys or set())
+
+
+def _apply_pathway_step_conditions(
+    action: dict[str, Any],
+    pathway_condition_context: dict[str, Any] | None,
+    step_id: str,
+    inherited_condition_keys: set[str] | None = None,
+) -> set[str]:
+    conditions = _conditions_for_pathway_step_action(
+        pathway_condition_context,
+        step_id,
+        inherited_condition_keys,
+    )
+    if conditions:
+        action["condition"] = _merge_action_conditions(action.get("condition") or [], conditions)
+    return _condition_keys(conditions)
+
+
 def _build_decision_table_rule_conditions(
     rule: dict[str, Any],
     condition_index: dict[str, dict[str, Any]],
@@ -1936,6 +2262,7 @@ def _build_decision_table_rule_plan_actions(
     evidence_claim_index: dict[str, dict[str, Any]] | None = None,
     *,
     fallback_name: str,
+    hoisted_condition_keys: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Build the action tree for a single rule-level recommendation PlanDefinition."""
     then_ids = rule.get("then") or []
@@ -1944,7 +2271,10 @@ def _build_decision_table_rule_plan_actions(
         if isinstance(then_ids, list)
         else []
     )
-    condition_entries = _build_decision_table_rule_conditions(rule, condition_index)
+    condition_entries = _filter_conditions(
+        _build_decision_table_rule_conditions(rule, condition_index),
+        hoisted_condition_keys or set(),
+    )
     if len(child_actions) == 1:
         root_action = child_actions[0]
         recommendation_ext = _build_strength_of_recommendation_extension(
@@ -2014,6 +2344,7 @@ def _build_decision_table_plan_actions(
     canonical: str,
     l2_data: dict | None,
     evidence_claim_index: dict[str, dict[str, Any]] | None = None,
+    rule_hoisted_condition_keys: dict[str, set[str]] | None = None,
 ) -> list[dict]:
     """Build PlanDefinition.action entries from L2 decision-table rules."""
     sections = (l2_data or {}).get("sections") or {}
@@ -2053,6 +2384,7 @@ def _build_decision_table_plan_actions(
                 condition_index,
                 evidence_claim_index,
                 fallback_name=f"rule-{idx}",
+                hoisted_condition_keys=(rule_hoisted_condition_keys or {}).get(str(rule.get("id") or "").strip(), set()),
             )
             if rule_plan_actions:
                 plan_actions.extend(rule_plan_actions)
@@ -2072,6 +2404,7 @@ def _build_decision_table_stub_plan_definitions(
     cfg: dict,
     l2_data: dict | None,
     evidence_claim_index: dict[str, dict[str, Any]] | None = None,
+    rule_hoisted_condition_keys: dict[str, set[str]] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Build scaffold child PlanDefinitions for decision-table rules."""
     sections = (l2_data or {}).get("sections") or {}
@@ -2127,6 +2460,7 @@ def _build_decision_table_stub_plan_definitions(
             condition_index,
             evidence_claim_index,
             fallback_name=f"rule-{idx}",
+            hoisted_condition_keys=(rule_hoisted_condition_keys or {}).get(str(rule.get("id") or "").strip(), set()),
         )
         child_title = (
             str(child_actions[0].get("title") or "").strip()
@@ -2213,6 +2547,7 @@ def _build_care_pathway_stub_plan_definitions(
     recommendation_plan_map: dict[str, str] | None = None,
     recommendation_candidates: list[dict[str, Any]] | None = None,
     action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
+    pathway_condition_context: dict[str, Any] | None = None,
 ) -> tuple[list[dict], dict[str, str]]:
     """Build scaffold child PlanDefinitions for likely care-pathway strategy/group nodes."""
     sections = (l2_data or {}).get("sections") or {}
@@ -2242,7 +2577,15 @@ def _build_care_pathway_stub_plan_definitions(
         child_id = f"{resource_id}-{step_id}"
         pre_branch_plan_map[str(step.get("id") or step_id)] = f"{canonical}/PlanDefinition/{child_id}"
 
-    def build_subtree(step: dict) -> list[dict]:
+    def inherited_keys_for_step(step_id: str, *, include_self: bool) -> set[str]:
+        if not pathway_condition_context:
+            return set()
+        ancestor_fn = pathway_condition_context.get("ancestor_condition_keys")
+        if not callable(ancestor_fn):
+            return set()
+        return set(ancestor_fn(step_id, include_self=include_self))
+
+    def build_subtree(step: dict, inherited_condition_keys: set[str] | None = None) -> list[dict]:
         step_id = str(step.get("id") or "pathway-step")
         title = str(step.get("label") or step.get("title") or step_id)
         description = str(step.get("description") or title)
@@ -2255,6 +2598,13 @@ def _build_care_pathway_stub_plan_definitions(
         evidence_related = _build_evidence_related_artifacts(evidence_ids, evidence_claim_index)
         if evidence_related:
             action["documentation"] = evidence_related
+        local_condition_keys = _apply_pathway_step_conditions(
+            action,
+            pathway_condition_context,
+            step_id,
+            inherited_condition_keys or set(),
+        )
+        child_inherited_condition_keys = set(inherited_condition_keys or set()) | local_condition_keys
         children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
         if children:
             child_actions: list[dict] = []
@@ -2280,9 +2630,15 @@ def _build_care_pathway_stub_plan_definitions(
                     child_evidence_related = _build_evidence_related_artifacts(child_evidence_ids, evidence_claim_index)
                     if child_evidence_related:
                         child_action["documentation"] = child_evidence_related
+                    _apply_pathway_step_conditions(
+                        child_action,
+                        pathway_condition_context,
+                        child_step_id,
+                        child_inherited_condition_keys,
+                    )
                     child_actions.append(child_action)
                 else:
-                    child_actions.extend(build_subtree(child))
+                    child_actions.extend(build_subtree(child, child_inherited_condition_keys))
             action["action"] = child_actions
         else:
             exact_ref = (recommendation_plan_map or {}).get(step_id)
@@ -2328,8 +2684,9 @@ def _build_care_pathway_stub_plan_definitions(
         """Start child PlanDefinitions at the first unique descendant action."""
         step_id = str(step.get("id") or "pathway-step")
         children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
+        inherited_condition_keys = inherited_keys_for_step(step_id, include_self=True)
         if not children:
-            return build_subtree(step)
+            return build_subtree(step, inherited_condition_keys)
 
         branch_actions: list[dict] = []
         for child in children:
@@ -2352,9 +2709,15 @@ def _build_care_pathway_stub_plan_definitions(
                 child_evidence_related = _build_evidence_related_artifacts(child_evidence_ids, evidence_claim_index)
                 if child_evidence_related:
                     child_action["documentation"] = child_evidence_related
+                _apply_pathway_step_conditions(
+                    child_action,
+                    pathway_condition_context,
+                    child_step_id,
+                    inherited_condition_keys,
+                )
                 branch_actions.append(child_action)
             else:
-                branch_actions.extend(build_subtree(child))
+                branch_actions.extend(build_subtree(child, inherited_condition_keys))
         return branch_actions
 
     resources: list[dict] = []
@@ -2857,12 +3220,20 @@ def _build_stub_resources(
             lib_id = _deterministic_library_id(resource_id)
             primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
         if artifact_type == "decision-table" and l2_data:
+            related_care_pathway_data = None
+            if topic_entry is not None:
+                _, related_care_pathway_data = _resolve_related_care_pathway(topic, topic_entry, l2_data)
+            pathway_condition_context = _build_pathway_condition_context(
+                related_care_pathway_data,
+                l2_data,
+            ) if related_care_pathway_data else {}
             root_actions, child_plan_definitions = _build_decision_table_stub_plan_definitions(
                 resource_id,
                 canonical,
                 cfg,
                 l2_data,
                 evidence_claim_index,
+                rule_hoisted_condition_keys=pathway_condition_context.get("rule_hoisted_condition_keys", {}),
             )
             primary_resource = _render_decision_table_plan_definition_resource(
                 {
@@ -2881,6 +3252,7 @@ def _build_stub_resources(
                         canonical,
                         l2_data,
                         evidence_claim_index,
+                        rule_hoisted_condition_keys=pathway_condition_context.get("rule_hoisted_condition_keys", {}),
                     ),
                 },
             )
@@ -2909,6 +3281,10 @@ def _build_stub_resources(
                 decision_table_name or "decision-table",
                 decision_table_data,
             )
+            pathway_condition_context = _build_pathway_condition_context(
+                l2_data,
+                decision_table_data,
+            ) if decision_table_data else {}
             child_plan_definitions, branch_plan_map = _build_care_pathway_stub_plan_definitions(
                 resource_id,
                 canonical,
@@ -2918,6 +3294,7 @@ def _build_stub_resources(
                 recommendation_plan_map=recommendation_plan_map,
                 recommendation_candidates=recommendation_candidates,
                 action_reference_map=action_reference_map,
+                pathway_condition_context=pathway_condition_context,
             )
             root_branch_plan_map = branch_plan_map if _care_pathway_has_hierarchy(l2_data or {}) else {}
             primary_resource = _render_care_pathway_plan_definition_resource(
@@ -2940,6 +3317,7 @@ def _build_stub_resources(
                         recommendation_plan_map=recommendation_plan_map,
                         recommendation_candidates=recommendation_candidates,
                         action_reference_map=action_reference_map,
+                        pathway_condition_context=pathway_condition_context,
                     ),
                 },
             )
@@ -3216,6 +3594,46 @@ def _resolve_related_decision_table(
     ]
     if len(decision_table_artifacts) == 1:
         candidate = decision_table_artifacts[0].get("name")
+        if isinstance(candidate, str) and candidate:
+            data = _load_structured_artifact_yaml(topic, topic_entry, candidate)
+            if data:
+                return candidate, data
+
+    return None, None
+
+
+def _resolve_related_care_pathway(
+    topic: str,
+    topic_entry: dict,
+    decision_table_data: dict[str, Any],
+) -> tuple[str | None, dict[str, Any] | None]:
+    """Resolve and load care-pathway data related to a decision-table artifact."""
+    metadata = decision_table_data.get("metadata", {}) if isinstance(decision_table_data, dict) else {}
+    candidate_names: list[str] = []
+
+    explicit = decision_table_data.get("care_pathway") if isinstance(decision_table_data, dict) else None
+    if isinstance(explicit, str) and explicit.strip():
+        candidate_names.append(explicit.strip())
+
+    meta_explicit = metadata.get("care_pathway")
+    if isinstance(meta_explicit, str) and meta_explicit.strip():
+        candidate_names.append(meta_explicit.strip())
+
+    seen: set[str] = set()
+    for candidate in candidate_names:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        data = _load_structured_artifact_yaml(topic, topic_entry, candidate)
+        if data and data.get("artifact_type") == "care-pathway":
+            return candidate, data
+
+    care_pathway_artifacts = [
+        a for a in (topic_entry.get("structured", []) or [])
+        if a.get("artifact_type") == "care-pathway"
+    ]
+    if len(care_pathway_artifacts) == 1:
+        candidate = care_pathway_artifacts[0].get("name")
         if isinstance(candidate, str) and candidate:
             data = _load_structured_artifact_yaml(topic, topic_entry, candidate)
             if data:
@@ -3969,6 +4387,9 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
         if not resources:
             click.echo("Error: Failed to parse LLM response as FHIR JSON", err=True)
             sys.exit(2)
+
+    for resource in resources:
+        _hoist_plan_definition_action_conditions(resource)
 
     # Ensure Measure.library references companion Library resources
     _patch_measure_library_references(resources)
