@@ -300,7 +300,8 @@ Artifact authoring contract (applies to all provider-backed generations):
 ECA guidance for decision-table and care-pathway conversions:
 - Model rule logic as Event-Condition-Action (ECA): explicit trigger/event context, explicit condition set, explicit action references.
 - Rules must reference action IDs only; action definitions carry executable details.
-- Conditions should be emitted as named CQL references where possible (text/cql-identifier), not free-text prose logic.
+- Conditions must be emitted as named CQL references (text/cql-identifier), not free-text prose logic or inline negation.
+- For negative conditions, reference a named polarity-aware define such as NoFindingPresent; put the negation inside the CQL define, not in PlanDefinition.action.condition.expression.
 - Keep pathway/protocol orchestration separate from executable action definitions (PlanDefinition orchestrates, ActivityDefinition executes)."""
 
     return f"""\
@@ -905,8 +906,11 @@ def _activity_definition_kind(raw_type: str | None) -> str:
         "service": "ServiceRequest",
         "referral": "ServiceRequest",
         "procedure": "ServiceRequest",
+        "diagnostic-test": "ServiceRequest",
+        "diagnostic test": "ServiceRequest",
+        "diagnostictest": "ServiceRequest",
         "servicerequest": "ServiceRequest",
-        "assessment": "Task",
+        "assessment": "ServiceRequest",
         "questionnaire": "Task",
         "collectinformation": "Task",
         "communication": "CommunicationRequest",
@@ -1636,15 +1640,15 @@ def _collect_information_dynamic_values(questionnaire_canonical: str) -> list[di
         {
             "path": "input.type",
             "expression": {
-                "language": "text/cql",
-                "expression": "code",
+                "language": "text/cql-identifier",
+                "expression": "CollectInformationInputType",
             },
         },
         {
             "path": "input.value",
             "expression": {
-                "language": "text/cql",
-                "expression": "extension('http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value",
+                "language": "text/cql-identifier",
+                "expression": "CollectInformationInputValue",
             },
         },
     ]
@@ -1704,7 +1708,10 @@ def _build_decision_table_activity_definitions(
         if action_id in parent_action_ids:
             continue
         title = _decision_table_action_title(action_def)
-        kind = _activity_definition_kind(action_def.get("kind"))
+        raw_kind = action_def.get("kind")
+        if raw_kind is None:
+            raw_kind = action_def.get("type")
+        kind = _activity_definition_kind(raw_kind)
         description = str(action_def.get("description") or title)
         intent = _activity_definition_intent(action_def.get("intent"))
         do_not_perform = action_def.get("do_not_perform") is True
@@ -2254,17 +2261,10 @@ def _build_decision_table_rule_conditions(
         condition_label = str(condition.get("label") or cond_id or "Condition")
 
         cql_name = _generate_polarity_aware_define_name(condition_label, expected)
-        if normalized_expected in {"no", "false"}:
-            base_name = _condition_label_to_cql_name(condition_label)
-            expression = {
-                "language": "text/cql-expression",
-                "expression": f"not {base_name}",
-            }
-        else:
-            expression = {
-                "language": "text/cql-identifier",
-                "expression": cql_name,
-            }
+        expression = {
+            "language": "text/cql-identifier",
+            "expression": cql_name,
+        }
 
         condition_entries.append({
             "kind": "applicability",

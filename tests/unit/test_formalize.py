@@ -37,6 +37,7 @@ def test_activity_definition_kind_normalizes_supported_l2_action_kinds():
     assert _activity_definition_kind("service") == "ServiceRequest"
     assert _activity_definition_kind("procedure") == "ServiceRequest"
     assert _activity_definition_kind("referral") == "ServiceRequest"
+    assert _activity_definition_kind("diagnostic-test") == "ServiceRequest"
     assert _activity_definition_kind("assessment") == "ServiceRequest"
     assert _activity_definition_kind("questionnaire") == "Task"
     assert _activity_definition_kind("CollectInformation") == "Task"
@@ -369,20 +370,20 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
 
     pathway_conditions = _condition_expressions_by_action_id(pathway_resources)
     assert ("AdultAgeCriterionMet",) in pathway_conditions["protocol"]
-    assert ("not GuidelineExclusionPresent",) in pathway_conditions["eligibility"]
+    assert ("NoGuidelineExclusionPresent",) in pathway_conditions["eligibility"]
     assert (
         "CrsDiagnosisVerified",
-        "not GuidelineExclusionPresent",
+        "NoGuidelineExclusionPresent",
         "SinusSurgeryPlanningActive",
     ) in pathway_conditions["planning"]
     assert ("SinusSurgeryOrderPresent",) in pathway_conditions["educate-step"]
 
     decision_conditions = _condition_expressions_by_action_id(decision_resources)
     assert ("CrsDiagnosisVerified",) in decision_conditions["verify-diagnosis"]
-    assert ("not GuidelineExclusionPresent",) not in decision_conditions["verify-diagnosis"]
+    assert ("NoGuidelineExclusionPresent",) not in decision_conditions["verify-diagnosis"]
     assert decision_conditions["collect-snot"] == [()]
-    assert ("not FineCutCtAvailable",) in decision_conditions["obtain-ct"]
-    assert all("not GuidelineExclusionPresent" not in entry for entry in decision_conditions["obtain-ct"])
+    assert ("NoFineCutCtAvailable",) in decision_conditions["obtain-ct"]
+    assert all("NoGuidelineExclusionPresent" not in entry for entry in decision_conditions["obtain-ct"])
     assert decision_conditions["educate-postop"] == [()]
 
 
@@ -708,8 +709,8 @@ sections:
         assert len(actions) == 1
         assert actions[0]["title"] == "Initial action"
 
-    def test_decision_table_rule_with_negative_condition_uses_negated_expression(self, tmp_repo):
-        """A rule condition with No should emit a negated applicability expression."""
+    def test_decision_table_rule_with_negative_condition_uses_named_negative_define(self, tmp_repo):
+        """A rule condition with No should reference a named CQL define."""
         topic = "bells-palsy"
         artifact = "negative-decision"
         topic_dir = tmp_repo / "topics" / topic
@@ -758,8 +759,8 @@ sections:
 
         plan_json = json.loads((computable_dir / "PlanDefinition-negative-decision-ev1.json").read_text())
         condition = plan_json["action"][0]["condition"][0]["expression"]
-        assert condition["language"] == "text/cql-expression"
-        assert condition["expression"] == "not PurulentDischargePresent"
+        assert condition["language"] == "text/cql-identifier"
+        assert condition["expression"] == "NoPurulentDischargePresent"
 
         activity_json = json.loads((computable_dir / "ActivityDefinition-a1.json").read_text())
         assert activity_json["kind"] == "MedicationRequest"

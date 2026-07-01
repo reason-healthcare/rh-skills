@@ -617,10 +617,10 @@ sections:
             assert activity["extension"][0]["url"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
             assert activity["extension"][0]["valueCanonical"].endswith("/Questionnaire/qol-assessment")
             dynamic_values = {dv["path"]: dv["expression"] for dv in activity.get("dynamicValue", [])}
-            assert dynamic_values["input.type"]["language"] == "text/cql"
-            assert dynamic_values["input.type"]["expression"] == "code"
-            assert dynamic_values["input.value"]["language"] == "text/cql"
-            assert dynamic_values["input.value"]["expression"] == "extension('http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value"
+            assert dynamic_values["input.type"]["language"] == "text/cql-identifier"
+            assert dynamic_values["input.type"]["expression"] == "CollectInformationInputType"
+            assert dynamic_values["input.value"]["language"] == "text/cql-identifier"
+            assert dynamic_values["input.value"]["expression"] == "CollectInformationInputValue"
             assert activity["relatedArtifact"][0]["resource"].endswith("/Questionnaire/qol-assessment")
             assert not (computable / "Questionnaire-qol-assessment.json").exists()
             assert child_plan["action"][0]["id"] == "assess-surgical-candidacy"

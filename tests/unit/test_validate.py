@@ -557,6 +557,96 @@ define "DifferentCondition":
     assert "references missing CQL define 'EligiblePatient'" in result.output
 
 
+def test_validate_l3_decision_table_rejects_inline_negated_condition_expression(tmp_repo):
+    topic = "my-skill"
+    artifact = "decision-table"
+    computable_dir = tmp_repo / "topics" / topic / "computable"
+    computable_dir.mkdir(parents=True, exist_ok=True)
+    import json
+    (computable_dir / "PlanDefinition-decision-table-event-verify.json").write_text(json.dumps({
+        "resourceType": "PlanDefinition",
+        "id": "decision-table-event-verify",
+        "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/plan-definition-type", "code": "eca-rule"}]},
+        "status": "draft",
+        "action": [{
+            "id": "rule-verify",
+            "title": "Verify diagnosis",
+            "condition": [{
+                "kind": "applicability",
+                "expression": {
+                    "language": "text/cql-expression",
+                    "expression": "not {PurulentDischargePresent}",
+                },
+            }],
+        }],
+    }))
+    (computable_dir / "ActivityDefinition-action-verify.json").write_text(json.dumps({
+        "resourceType": "ActivityDefinition",
+        "id": "action-verify",
+        "kind": "ServiceRequest",
+        "code": {"coding": [{"system": "http://snomed.info/sct", "code": "185349003", "display": "Encounter for check up"}]},
+        "status": "draft",
+    }))
+    (computable_dir / "Library-my-skill.json").write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "my-skill",
+        "status": "draft",
+        "type": {"text": "logic-library"},
+    }))
+
+    y = YAML()
+    tracking = {
+        "schema_version": "1.0",
+        "sources": [],
+        "topics": [{
+            "name": topic,
+            "structured": [],
+            "computable": [{
+                "name": artifact,
+                "files": [
+                    f"topics/{topic}/computable/PlanDefinition-decision-table-event-verify.json",
+                    f"topics/{topic}/computable/ActivityDefinition-action-verify.json",
+                    f"topics/{topic}/computable/Library-my-skill.json",
+                ],
+                "checksums": {},
+                "converged_from": ["decision-table"],
+                "strategy": "decision-table",
+            }],
+            "events": [],
+        }],
+    }
+    with open(tmp_repo / "tracking.yaml", "w") as f:
+        y.dump(tracking, f)
+
+    plan_path = tmp_repo / "topics" / topic / "process" / "plans" / "formalize-plan.yaml"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan = {
+        "topic": topic,
+        "plan_type": "formalize",
+        "status": "approved",
+        "reviewer": "Tester",
+        "reviewed_at": "2026-04-14T00:00:00Z",
+        "artifacts": [{
+            "name": artifact,
+            "source_artifact": artifact,
+            "artifact_type": "decision-table",
+            "strategy": "decision-table",
+            "input_artifacts": [artifact],
+            "l3_targets": ["PlanDefinition (eca-rule)", "ActivityDefinition", "Library (CQL)"],
+            "required_sections": ["actions", "libraries"],
+            "reviewer_decision": "approved",
+            "implementation_target": True,
+        }],
+    }
+    with open(plan_path, "w") as f:
+        y.dump(plan, f)
+
+    runner = CliRunner()
+    result = runner.invoke(validate, [topic, "l3", artifact])
+    assert result.exit_code == 1
+    assert "uses inline negation; reference a named CQL define instead" in result.output
+
+
 def test_validate_l3_decision_table_warns_when_condition_define_looks_parameter_based(tmp_repo):
     topic = "my-skill"
     artifact = "decision-table"
