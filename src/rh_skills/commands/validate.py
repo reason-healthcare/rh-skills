@@ -270,13 +270,7 @@ def _parse_cql_parameters(cql_source: str) -> set[str]:
 def _condition_expression_define_refs(language: str, expr_text: str) -> list[str]:
     normalized = expr_text.strip()
     if language == "text/cql-identifier":
-        if normalized.lower().startswith("not "):
-            normalized = normalized[4:].strip()
         return [normalized] if normalized else []
-    if language == "text/cql-expression":
-        match = re.fullmatch(r'not\s+("?)([A-Za-z_][A-Za-z0-9_]*)\1', normalized, re.IGNORECASE)
-        if match:
-            return [match.group(2)]
     return []
 
 
@@ -352,6 +346,13 @@ def _validate_l3_decision_table_condition_expressions(
                 if language not in _CQL_CONDITION_LANGUAGES:
                     _report_error(
                         f"  {json_file.name}: action '{action_id}' condition[{idx}] uses unsupported expression language '{language}'",
+                        emit=emit,
+                    )
+                    errors += 1
+                    continue
+                if re.match(r"not\b", expr_text, re.IGNORECASE):
+                    _report_error(
+                        f"  {json_file.name}: action '{action_id}' condition[{idx}] uses inline negation; reference a named CQL define instead",
                         emit=emit,
                     )
                     errors += 1
