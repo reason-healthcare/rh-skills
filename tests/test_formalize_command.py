@@ -559,6 +559,7 @@ sections:
     - id: complete-qol-assessment
       label: Complete quality of life assessment
       kind: assessment
+      intent: Collect quality of life score before candidacy review.
       parent_action_id: assess-surgical-candidacy
       assessment_artifact: qol-assessment
       produces_conditions: [burden]
@@ -607,9 +608,10 @@ sections:
             computable = topic_dir / "computable"
             activity = json.loads((computable / "ActivityDefinition-complete-qol-assessment.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
-            assert activity["kind"] == "CollectInformation"
+            assert activity["kind"] == "Task"
+            assert activity["intent"] == "proposal"
             assert activity["meta"]["profile"][0] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity"
-            assert activity["profile"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
+            assert "profile" not in activity
             assert activity["code"]["coding"][0]["system"] == "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs"
             assert activity["code"]["coding"][0]["code"] == "collect-information"
             assert activity["extension"][0]["url"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"

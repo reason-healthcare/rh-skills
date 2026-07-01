@@ -16,6 +16,7 @@ from ruamel.yaml import YAML
 
 from rh_skills.commands.formalize import (
     _activity_definition_kind,
+    _activity_definition_intent,
     _build_care_pathway_stub_plan_definitions,
     _build_stub_resources,
     _get_strategy,
@@ -37,10 +38,17 @@ def test_activity_definition_kind_normalizes_supported_l2_action_kinds():
     assert _activity_definition_kind("procedure") == "ServiceRequest"
     assert _activity_definition_kind("referral") == "ServiceRequest"
     assert _activity_definition_kind("assessment") == "ServiceRequest"
-    assert _activity_definition_kind("questionnaire") == "CollectInformation"
-    assert _activity_definition_kind("CollectInformation") == "CollectInformation"
+    assert _activity_definition_kind("questionnaire") == "Task"
+    assert _activity_definition_kind("CollectInformation") == "Task"
     assert _activity_definition_kind("communication") == "CommunicationRequest"
     assert _activity_definition_kind("Task") == "Task"
+
+
+def test_activity_definition_intent_normalizes_to_r4_request_intent_codes():
+    assert _activity_definition_intent("order") == "order"
+    assert _activity_definition_intent("Plan") == "plan"
+    assert _activity_definition_intent("collect quality of life score") == "proposal"
+    assert _activity_definition_intent(None) == "proposal"
 
 
 def test_plan_definition_condition_hoisting_moves_shared_sibling_conditions_to_parent():

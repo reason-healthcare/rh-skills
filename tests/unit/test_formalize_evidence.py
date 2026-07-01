@@ -5,6 +5,8 @@ from rh_skills.commands.formalize import (
     _build_evidence_related_artifacts,
     _build_strength_of_recommendation_extension,
     _build_decision_table_rule_plan_actions,
+    _build_stub_resources,
+    _get_strategy,
 )
 
 
@@ -55,6 +57,58 @@ class TestEvidenceTraceabilityArtifacts:
 
     def test_build_strength_of_recommendation_extension_rejects_unknown(self):
         assert _build_strength_of_recommendation_extension("maybe") is None
+
+    def test_evidence_summary_stub_uses_r4_valid_evidence_shapes(self):
+        strategy, _ = _get_strategy("evidence-summary")
+        resources = _build_stub_resources(
+            "evidence-summary",
+            "evidence-summary",
+            strategy,
+            "test-topic",
+            {
+                "canonical": "http://example.org/fhir",
+                "version": "0.1.0",
+                "status": "draft",
+            },
+            {
+                "sections": {
+                    "frames": [{
+                        "population": "Adults with CRS",
+                        "intervention": "Sinus surgery",
+                        "outcomes": ["Quality of life"],
+                    }],
+                    "evidence_traceability": [{
+                        "claim_id": "claim-001",
+                        "statement": "Surgery improves quality of life in selected adults with CRS.",
+                        "strength": "moderate",
+                        "evidence": [{"source": "guideline", "locator": "KAS 1"}],
+                    }],
+                },
+            },
+        )
+
+        resource_types = {resource["resourceType"] for resource in resources}
+        assert "Citation" not in resource_types
+
+        evidence = next(resource for resource in resources if resource["resourceType"] == "Evidence")
+        evidence_variable = next(resource for resource in resources if resource["resourceType"] == "EvidenceVariable")
+
+        assert evidence["exposureBackground"]["reference"] == f"EvidenceVariable/{evidence_variable['id']}"
+        assert evidence["relatedArtifact"] == [{
+            "type": "citation",
+            "label": "claim-001",
+            "citation": (
+                "Surgery improves quality of life in selected adults with CRS. "
+                "Evidence: guideline: KAS 1"
+            ),
+        }]
+        assert evidence_variable["characteristic"]
+        assert all(
+            characteristic["definitionCodeableConcept"]["text"] == characteristic["description"]
+            for characteristic in evidence_variable["characteristic"]
+        )
+
+
 class TestPlanDefinitionRuleEvidenceLinks:
     """Test evidence linking in PlanDefinition rule actions."""
 
