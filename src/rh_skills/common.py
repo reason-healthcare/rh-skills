@@ -242,6 +242,101 @@ def topic_dir(name: str) -> Path:
     return topics_root() / name
 
 
+_STRUCTURED_ARTIFACT_LAYOUTS: dict[str, tuple[str, str]] = {
+    "assessment": ("assessments", "assessment.yaml"),
+    "care-pathway": ("care-pathways", "care-pathway.yaml"),
+    "decision-table": ("decision-tables", "decision-table.yaml"),
+    "eligibility-criteria": ("eligibility-criteria", "eligibility-criteria.yaml"),
+    "evidence-summary": ("evidence-summaries", "evidence-summary.yaml"),
+    "measure": ("measures", "measure.yaml"),
+    "policy": ("policies", "policy.yaml"),
+    "risk-factors": ("risk-factors", "risk-factors.yaml"),
+    "terminology": ("terminologies", "terminology.yaml"),
+}
+
+
+def structured_artifact_default_file(
+    topic_path: Path,
+    artifact_name: str,
+    artifact_type: str | None = None,
+) -> Path:
+    """Return the canonical structured YAML path for a new artifact."""
+    if artifact_type:
+        layout = _STRUCTURED_ARTIFACT_LAYOUTS.get(artifact_type)
+        if layout:
+            type_dir, filename = layout
+            return topic_path / "structured" / type_dir / artifact_name / filename
+    return topic_path / "structured" / "artifacts" / artifact_name / f"{artifact_name}.yaml"
+
+
+def structured_artifact_tracking_file(
+    topic: str,
+    artifact_name: str,
+    artifact_type: str | None = None,
+) -> str:
+    """Return the canonical tracking.yaml file value for a structured artifact."""
+    path = structured_artifact_default_file(
+        Path("topics") / topic,
+        artifact_name,
+        artifact_type,
+    )
+    return path.as_posix()
+
+
+def structured_artifact_candidates(
+    topic_path: Path,
+    artifact_name: str,
+    artifact_type: str | None = None,
+) -> list[Path]:
+    """Return preferred and legacy structured YAML paths for an artifact."""
+    candidates: list[Path] = []
+
+    def add(path: Path) -> None:
+        if path not in candidates:
+            candidates.append(path)
+
+    if artifact_type:
+        add(structured_artifact_default_file(topic_path, artifact_name, artifact_type))
+    else:
+        for known_type in _STRUCTURED_ARTIFACT_LAYOUTS:
+            add(structured_artifact_default_file(topic_path, artifact_name, known_type))
+        add(structured_artifact_default_file(topic_path, artifact_name))
+
+    add(topic_path / "structured" / artifact_name / f"{artifact_name}.yaml")
+    add(topic_path / "structured" / f"{artifact_name}.yaml")
+    return candidates
+
+
+def resolve_structured_artifact_file(
+    topic_path: Path,
+    artifact_name: str,
+    artifact_type: str | None = None,
+    registered_file: str | None = None,
+) -> Path:
+    """Resolve a structured artifact file, returning the best candidate path.
+
+    Registered tracking paths win when they exist. Otherwise this falls back to
+    the current type-specific layout and then legacy layouts.
+    """
+    candidates: list[Path] = []
+
+    if registered_file:
+        tracked = Path(registered_file)
+        candidates.append(tracked if tracked.is_absolute() else repo_root() / tracked)
+
+    candidates.extend(structured_artifact_candidates(topic_path, artifact_name, artifact_type))
+
+    seen: set[Path] = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if candidate.exists():
+            return candidate
+
+    return candidates[0]
+
+
 def bundled_skills_dir() -> Path:
     """Return path to bundled curated skills.
 

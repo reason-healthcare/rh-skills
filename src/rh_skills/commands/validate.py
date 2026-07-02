@@ -15,6 +15,7 @@ from rh_skills.common import (
     log_warn,
     require_topic,
     require_tracking,
+    resolve_structured_artifact_file,
     schemas_dir,
     topic_dir,
 )
@@ -155,13 +156,17 @@ def _find_structured_pair_for_topic(topic: str) -> tuple[tuple[str, dict] | None
     for artifact_dir in structured_dir.iterdir():
         if not artifact_dir.is_dir():
             continue
-        artifact_file = artifact_dir / f"{artifact_dir.name}.yaml"
-        if not artifact_file.exists():
-            continue
-        artifact_data = _load_yaml_file(artifact_file)
-        artifact_type = str(artifact_data.get("artifact_type") or "").strip()
-        if artifact_type in typed_artifacts:
-            typed_artifacts[artifact_type].append((artifact_dir.name, artifact_data))
+        artifact_files = [artifact_dir / f"{artifact_dir.name}.yaml"]
+        for nested_dir in artifact_dir.iterdir():
+            if nested_dir.is_dir():
+                artifact_files.extend(sorted(nested_dir.glob("*.yaml")))
+        for artifact_file in artifact_files:
+            if not artifact_file.exists():
+                continue
+            artifact_data = _load_yaml_file(artifact_file)
+            artifact_type = str(artifact_data.get("artifact_type") or "").strip()
+            if artifact_type in typed_artifacts:
+                typed_artifacts[artifact_type].append((artifact_file.parent.name, artifact_data))
 
     decision_tables = typed_artifacts["decision-table"]
     care_pathways = typed_artifacts["care-pathway"]
@@ -976,7 +981,7 @@ def validate_artifact_file(
         if not td.exists():
             raise click.UsageError(f"Topic '{topic}' not found")
 
-        artifact_file = td / "structured" / artifact / f"{artifact}.yaml"
+        artifact_file = resolve_structured_artifact_file(td, artifact)
         if not artifact_file.exists():
             raise click.UsageError(f"Artifact not found: {artifact_file}")
 
@@ -1131,7 +1136,7 @@ def validate(topic, level, artifact, plan_path, check_urls):
     click.echo(f"Validating {topic}/{level}/{artifact}...")
     errors, warnings = validate_artifact_file(topic, level, artifact, emit=True)
     if level in ("l2", "structured"):
-        artifact_display = topic_dir(topic) / "structured" / artifact / f"{artifact}.yaml"
+        artifact_display = resolve_structured_artifact_file(topic_dir(topic), artifact)
     else:
         artifact_display = topic_dir(topic) / "computable" / f"*{artifact}*.json"
     if errors > 0:

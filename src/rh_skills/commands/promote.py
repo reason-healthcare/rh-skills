@@ -21,9 +21,12 @@ from rh_skills.common import (
     now_iso,
     require_topic,
     require_tracking,
+    resolve_structured_artifact_file,
     save_tracking,
     sha256_file,
     sources_root,
+    structured_artifact_default_file,
+    structured_artifact_tracking_file,
     today_date,
     topic_dir,
     unlock_file,
@@ -141,7 +144,11 @@ def _concept_review_meta_path(topic: str) -> Path:
 
 
 def _concept_artifact_path(topic: str) -> Path:
-    return topic_dir(topic) / "structured" / "concepts" / "concepts.yaml"
+    return structured_artifact_default_file(topic_dir(topic), "concepts", "terminology")
+
+
+def _concept_artifact_tracking_path(topic: str) -> str:
+    return structured_artifact_tracking_file(topic, "concepts", "terminology")
 
 
 _CONCEPT_CSV_FIELDNAMES = [
@@ -498,8 +505,7 @@ def _approved_concepts_formalize_artifact(
 ) -> dict | None:
     """Return the legacy concept-review terminology artifact when it should formalize.
 
-    `concept write` produces a valid L2 terminology artifact at
-    `structured/concepts/concepts.yaml`, but that artifact is derived from the
+    `concept write` produces a valid L2 terminology artifact, but that artifact is derived from the
     approved concept review rather than from an explicit extract-plan artifact
     row. New extract plans should include an explicit `concepts` terminology
     artifact; this fallback preserves compatibility for older plans.
@@ -1012,9 +1018,7 @@ def _passes_minimal_formalize_input_checks(topic: str, artifact_name: str) -> bo
     - artifact file resolves and parses as YAML mapping
     - sections contains summary and evidence_traceability
     """
-    artifact_path = topic_dir(topic) / "structured" / artifact_name / f"{artifact_name}.yaml"
-    if not artifact_path.exists():
-        artifact_path = topic_dir(topic) / "structured" / f"{artifact_name}.yaml"
+    artifact_path = resolve_structured_artifact_file(topic_dir(topic), artifact_name)
 
     if not artifact_path.exists():
         return False
@@ -1169,10 +1173,10 @@ def _load_related_structured_context(topic: str, artifact_type: str | None) -> l
     if not related_types:
         return []
 
-    td = topic_dir(topic) / "structured"
+    td = topic_dir(topic)
     contexts: list[tuple[str, dict]] = []
     for related_type in related_types:
-        path = td / related_type / f"{related_type}.yaml"
+        path = resolve_structured_artifact_file(td, related_type, related_type)
         if not path.exists():
             continue
         try:
@@ -1986,7 +1990,7 @@ def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
         "status": "pending-review",
         "concept_count": len(concepts),
         "review_artifact": f"topics/{topic}/process/plans/concepts/",
-        "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
+        "final_artifact": _concept_artifact_tracking_path(topic),
     }
 
 
@@ -2052,14 +2056,14 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
         "reviewer": "",
         "checksums": checksums,
         "source_files": source_files,
-        "final_artifact": f"topics/{topic}/structured/concepts/concepts.yaml",
+        "final_artifact": _concept_artifact_tracking_path(topic),
     }
     meta_path = _write_concept_review_meta(topic, meta)
     return concepts_dir, meta_path
 
 
 def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
-    """Build and write concepts.yaml from per-concept CSVs."""
+    """Build and write the terminology artifact from per-concept CSVs."""
     concepts_dir = _concepts_csv_dir(topic)
     meta = _load_concept_review_meta(topic)
 
@@ -2226,7 +2230,7 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
     entry = next((item for item in structured if item.get("name") == "concepts"), None)
     payload = {
         "name": "concepts",
-        "file": f"topics/{topic}/structured/concepts/concepts.yaml",
+        "file": _concept_artifact_tracking_path(topic),
         "created_at": now_iso(),
         "checksum": checksum,
         "derived_from": derived_from,
@@ -3057,7 +3061,7 @@ def plan(topic, force):
         click.echo(f"  2. Enrich concepts    : rh-skills promote concept enrich {topic} <name> --candidate <system|code|display>")
         click.echo(f"  3. Edit the CSVs      : open topics/{topic}/process/plans/concepts/")
         click.echo(f"  4. Finalize review    : rh-skills promote concept review {topic} --finalize --reviewer <name>")
-        click.echo(f"  5. Write concepts.yaml: rh-skills promote concept write {topic}  (during implement)")
+        click.echo(f"  5. Write terminology artifact: rh-skills promote concept write {topic}  (during implement)")
         click.echo(f"  6. Approve artifacts  : rh-inf-extract approve {topic}")
         click.echo(f"  7. Run extraction     : rh-inf-extract implement {topic}")
     else:
@@ -3973,14 +3977,14 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
         save_tracking(tracking)
         log_info(
             f"Concept review finalized by '{reviewer}'. "
-            f"Run 'rh-skills promote concept write {topic}' during implement to write concepts.yaml."
+            f"Run 'rh-skills promote concept write {topic}' during implement to write the terminology artifact."
         )
 
 
 @concept.command("write")
 @click.argument("topic")
 def write_concepts(topic):
-    """Write topics/<topic>/structured/concepts/concepts.yaml from the approved concept review CSV.
+    """Write the terminology artifact from the approved concept review CSV.
 
     Requires concept review to be finalized (status: approved).
     Call this during implement mode after the extract plan is approved.
@@ -4581,7 +4585,7 @@ Rules:
                 f"Consider using '{artifact_type}' as the artifact name for consistency."
             )
 
-        l2_file = td / "structured" / artifact_name / f"{artifact_name}.yaml"
+        l2_file = structured_artifact_default_file(td, artifact_name, effective_artifact_type)
         l2_file.parent.mkdir(parents=True, exist_ok=True)
 
         if l2_file.exists() and not force:
@@ -4626,7 +4630,7 @@ Rules:
         structured_entries = topic_entry.setdefault("structured", [])
         record = {
             "name": artifact_name,
-            "file": f"topics/{topic}/structured/{artifact_name}/{artifact_name}.yaml",
+            "file": structured_artifact_tracking_file(topic, artifact_name, effective_artifact_type),
             "created_at": timestamp,
             "checksum": checksum,
             "derived_from": list(source),

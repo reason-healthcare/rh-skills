@@ -20,9 +20,9 @@ from rh_skills.common import (
     log_info,
     log_warn,
     now_iso,
-    repo_root,
     require_topic,
     require_tracking,
+    resolve_structured_artifact_file,
     save_tracking,
     sha256_file,
     today_date,
@@ -2967,13 +2967,12 @@ def _load_structured_artifact_yaml(
         return None
 
     td = topic_dir(topic)
-    artifact_file = artifact_entry.get("file")
-    if artifact_file:
-        l2_file = Path(artifact_file) if Path(artifact_file).is_absolute() else (repo_root() / artifact_file)
-        if not l2_file.exists():
-            l2_file = td / "structured" / f"{artifact_name}.yaml"
-    else:
-        l2_file = td / "structured" / f"{artifact_name}.yaml"
+    l2_file = resolve_structured_artifact_file(
+        td,
+        artifact_name,
+        artifact_entry.get("artifact_type"),
+        artifact_entry.get("file"),
+    )
     if not l2_file.exists():
         return None
 
@@ -3717,13 +3716,12 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
         )
 
     # Load L2 YAML content — prefer the registered file path from tracking
-    _artifact_file = artifact_entry.get("file")
-    if _artifact_file:
-        l2_file = Path(_artifact_file) if Path(_artifact_file).is_absolute() else (repo_root() / _artifact_file)
-        if not l2_file.exists():
-            l2_file = td / "structured" / f"{artifact}.yaml"
-    else:
-        l2_file = td / "structured" / f"{artifact}.yaml"
+    l2_file = resolve_structured_artifact_file(
+        td,
+        artifact,
+        artifact_type,
+        artifact_entry.get("file"),
+    )
     l2_content = ""
     l2_data: dict = {}
     if l2_file.exists():

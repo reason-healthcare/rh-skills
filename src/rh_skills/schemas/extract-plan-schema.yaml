@@ -116,7 +116,7 @@ top_level_fields:
       final_artifact:
         type: string
         description: >
-          topics/<topic>/structured/concepts.yaml — written during implement
+          topics/<topic>/structured/terminologies/concepts/terminology.yaml — written during implement
           mode by `rh-skills promote concept write <topic>`.
 
   artifacts:
@@ -139,7 +139,8 @@ artifact_fields:
     guidance: >
       Use a short, descriptive slug that reflects the artifact's clinical role.
       Must be unique across all artifacts in the plan. The derived L2 file will
-      be written to topics/<topic>/structured/<name>/<name>.yaml.
+      be written to the artifact's canonical structured path:
+      topics/<topic>/structured/<type-bucket>/<artifact-name>/<artifact-type>.yaml.
     example: "screening-criteria"
 
   artifact_type:

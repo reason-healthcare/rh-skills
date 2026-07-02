@@ -18,9 +18,9 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 |---------|---------|-----------|
 | `rh-skills promote plan <topic> [--force]` | Generate extract review packet | `extract-plan.yaml`, `extract-plan-readout.md`, tracking event |
 | `rh-skills promote approve <topic> --artifact <name> --decision <approved\|rejected\|needs-revision> [--add-concern TEXT] [--finalize]` | Record reviewer approval decisions | `extract-plan.yaml` (updated), `extract-plan-readout.md` (regenerated) |
-| `rh-skills promote derive <topic> <name> --source <source> [--artifact-type TYPE] [--clinical-question TEXT] [--required-section S] [--evidence-ref REF] [--concern C]` | Create single L2 artifact via LLM | `structured/<name>/<name>.yaml`, tracking event |
+| `rh-skills promote derive <topic> <name> --source <source> [--artifact-type TYPE] [--clinical-question TEXT] [--required-section S] [--evidence-ref REF] [--concern C]` | Create single L2 artifact via LLM | canonical structured artifact path, tracking event |
 | `rh-skills validate <topic> structured <artifact>` | Schema-validate L2 artifact | (read-only) |
-| `rh-skills render <topic> structured <artifact>` | Generate human-readable Markdown report with Mermaid diagrams | `structured/<name>/<name>-report.md` |
+| `rh-skills render <topic> structured <artifact>` | Generate human-readable Markdown report with Mermaid diagrams | report beside the structured YAML |
 
 ---
 
@@ -49,7 +49,7 @@ Decision-table extraction guidance:
 
 ```
 1. PLAN: rh-skills promote plan <topic>
-   ├─ Read tracking.yaml + sources/normalized/*.md + concepts.yaml
+   ├─ Read tracking.yaml + sources/normalized/*.md + terminology artifact
    ├─ Pre-execution checks:
    │   ├─ Verify topic exists
    │   ├─ Identify normalized vs un-normalized sources
@@ -77,7 +77,7 @@ Decision-table extraction guidance:
    ├─ For each approved artifact:
    │   ├─ Map plan entry → CLI arguments
    │   ├─ LLM generates L2 YAML from L1 source(s)
-   │   ├─ Write structured/<name>/<name>.yaml
+   │   ├─ Write the canonical structured artifact YAML
    │   ├─ Event: structured_derived
    │   ├─ Validate: rh-skills validate <topic> structured <name>
    │   │   ├─ Schema: required fields, type-specific sections
@@ -121,9 +121,10 @@ Artifact-level rerun guidance:
 | `skills/.curated/rh-inf-extract/reference.md` | L2 type catalog, validation rules, concern handling |
 | `topics/<topic>/process/plans/extract-plan.yaml` | **Control file**: proposed/approved artifacts, sources, concerns |
 | `topics/<topic>/process/plans/extract-plan-readout.md` | **Derived**: human-friendly narrative (do not edit directly) |
-| `topics/<topic>/structured/<name>/<name>.yaml` | **L2 artifact**: semi-structured clinical content |
-| `topics/<topic>/structured/<name>/<name>-report.md` | **Rendered report**: Mermaid diagrams for SME review |
-| `topics/<topic>/process/plans/concepts-review.csv` | **Review CSV**: concept coding candidates from MCP lookup; use `promote concept review <name> --approve-all/--exclude-all` for candidate rows, `--approve-related "PARENT\|RELATED"` for related rows, `--approve-expansion "SYSTEM\|EXPRESSION"` for expansion rows. `promote concept review --finalize` seals the review (`status: approved`) but does **not** write `concepts.yaml` — run `promote concept write <topic>` during implement for that. Custom concepts not extracted from source documents can be added with `promote concept enrich --source custom <name> --type <type>`. |
+| `topics/<topic>/structured/<type-bucket>/<artifact-name>/<artifact-type>.yaml` | **L2 artifact**: semi-structured clinical content |
+| `topics/<topic>/structured/assessments/<name>/assessment.yaml` | **L2 assessment artifact example**: semi-structured assessment instrument |
+| report beside the structured YAML | **Rendered report**: Mermaid diagrams for SME review |
+| `topics/<topic>/process/plans/concepts-review.csv` | **Review CSV**: concept coding candidates from MCP lookup; use `promote concept review <name> --approve-all/--exclude-all` for candidate rows, `--approve-related "PARENT\|RELATED"` for related rows, `--approve-expansion "SYSTEM\|EXPRESSION"` for expansion rows. `promote concept review --finalize` seals the review (`status: approved`) but does **not** write the terminology artifact — run `promote concept write <topic>` during implement for that. Custom concepts not extracted from source documents can be added with `promote concept enrich --source custom <name> --type <type>`. |
 | `topics/<topic>/process/plans/concepts-review-meta.yaml` | **Finalization metadata**: written by `--finalize`; records reviewer, timestamp, and CSV checksum. Do not edit directly. |
 | `tracking.yaml` | Records extract_planned, structured_derived events |
 
@@ -151,7 +152,7 @@ Artifact-level rerun guidance:
 ### Validation Rules
 
 Post-derive validation checks:
-1. Required top-level fields: id, name, title, version, status, domain, description, derived_from[], artifact_type, clinical_question (`topics/<topic>/structured/concepts/concepts.yaml` is the exception and does not require `clinical_question`)
+1. Required top-level fields: id, name, title, version, status, domain, description, derived_from[], artifact_type, clinical_question (the concept review terminology artifact is the exception and does not require `clinical_question`)
 2. Type-specific required sections (e.g., decision-table MUST have events, conditions, actions, rules)
 3. Evidence traceability: claims have evidence[] entries
 4. Conflict records present when extract-plan listed unresolved concerns

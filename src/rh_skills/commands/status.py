@@ -7,8 +7,10 @@ import click
 from rh_skills.common import (
     load_tracking,
     repo_root,
+    resolve_structured_artifact_file,
     sha256_file,
     sources_root,
+    topics_root,
 )
 
 
@@ -47,8 +49,9 @@ def _has_discovery_plan(topic: str) -> bool:
 
 
 def _has_concepts_yaml(topic: str) -> bool:
-    """Return True if concepts.yaml has been written for this topic."""
-    return (repo_root() / "topics" / topic / "structured" / "concepts" / "concepts.yaml").exists()
+    """Return True if the concept terminology artifact has been written."""
+    topic_path = topics_root() / topic
+    return resolve_structured_artifact_file(topic_path, "concepts", "terminology").exists()
 
 
 def _next_step_options(sources: int, structured: int, computable: int, topic: str) -> list[tuple[str, str | None]]:
@@ -75,7 +78,7 @@ def _next_step_options(sources: int, structured: int, computable: int, topic: st
     if computable == 0:
         options: list[tuple[str, str | None]] = []
         if not _has_concepts_yaml(topic):
-            options.append(("Write concepts.yaml from approved concept review", f"rh-skills promote concept write {topic}"))
+            options.append(("Write terminology artifact from approved concept review", f"rh-skills promote concept write {topic}"))
         options.append(("Formalize structured artifacts into a computable format (L3)", f"rh-inf-formalize plan {topic}"))
         options.append(("Run extract-stage verification for existing structured artifacts", f"rh-inf-extract verify {topic}"))
         options.append(("Check whether any source files have changed since ingest", f"rh-skills status check-changes {topic}"))

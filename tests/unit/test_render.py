@@ -52,6 +52,61 @@ def test_render_generic_summary(tmp_repo):
     assert "Evidence Item" in content
 
 
+def test_render_assessment_from_grouped_layout(tmp_repo):
+    artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "assessments" / "phq9"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    (artifact_dir / "assessment.yaml").write_text(
+        """\
+id: phq9
+name: phq9
+title: PHQ-9
+version: "1.0.0"
+status: draft
+domain: behavioral-health
+description: Depression symptom assessment.
+artifact_type: assessment
+sections:
+  instrument:
+    name: PHQ-9
+  items:
+    - id: q1
+      text: Little interest or pleasure in doing things
+      type: choice
+  scoring:
+    method: Sum item scores.
+"""
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "phq9"])
+    assert result.exit_code == 0, result.output
+    assert (artifact_dir / "assessment-report.md").exists()
+
+
+def test_render_custom_artifact_from_generic_nested_layout(tmp_repo):
+    artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "artifacts" / "local-note"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    (artifact_dir / "local-note.yaml").write_text(
+        """\
+id: local-note
+name: local-note
+title: Local Note
+version: "1.0.0"
+status: draft
+domain: testing
+description: A locally defined structured artifact.
+artifact_type: custom-type
+sections:
+  summary: Local content.
+"""
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(render, ["my-skill", "local-note"])
+    assert result.exit_code == 0, result.output
+    assert (artifact_dir / "local-note-report.md").exists()
+
+
 # ── Missing artifact ────────────────────────────────────────────────────────────
 
 

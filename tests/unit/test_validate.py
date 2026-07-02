@@ -817,6 +817,66 @@ def test_validate_invalid_l2_exits_1(tmp_repo):
     assert "INVALID" in result.output
 
 
+def test_validate_assessment_from_grouped_layout(tmp_repo):
+    artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "assessments" / "phq9"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    (artifact_dir / "assessment.yaml").write_text(
+        """\
+id: phq9
+name: PHQ-9
+title: PHQ-9
+version: "1.0.0"
+status: draft
+domain: behavioral-health
+description: Depression symptom assessment.
+artifact_type: assessment
+derived_from:
+  - source-l1
+sections:
+  instrument:
+    name: PHQ-9
+  items:
+    - id: q1
+      text: Little interest or pleasure in doing things
+      type: choice
+  scoring:
+    method: Sum item scores.
+"""
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "structured", "phq9"])
+    assert result.exit_code == 0, result.output
+    assert "structured/assessments/phq9/assessment.yaml" in result.output
+
+
+def test_validate_custom_artifact_from_generic_nested_layout(tmp_repo):
+    artifact_dir = tmp_repo / "topics" / "my-skill" / "structured" / "artifacts" / "local-note"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    (artifact_dir / "local-note.yaml").write_text(
+        """\
+id: local-note
+name: LocalNote
+title: Local Note
+version: "1.0.0"
+status: draft
+domain: testing
+description: A locally defined structured artifact.
+derived_from:
+  - source-l1
+artifact_type: custom
+clinical_question: What local content should be reviewed?
+sections:
+  summary: Local content.
+"""
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(validate, ["my-skill", "structured", "local-note"])
+    assert result.exit_code == 0, result.output
+    assert "structured/artifacts/local-note/local-note.yaml" in result.output
+
+
 def test_validate_missing_required_field_reported(tmp_repo):
     make_invalid_l2(tmp_repo, artifact="missing-fields")
     runner = CliRunner()

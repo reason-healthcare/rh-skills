@@ -17,6 +17,30 @@ def load_yaml(path):
         return y.load(f)
 
 
+def structured_evidence_summary_path(tmp_repo, topic_name, artifact_name):
+    return (
+        tmp_repo / "topics" / topic_name / "structured" / "evidence-summaries" / artifact_name / "evidence-summary.yaml"
+    )
+
+
+def structured_decision_table_path(tmp_repo, topic_name, artifact_name):
+    return (
+        tmp_repo / "topics" / topic_name / "structured" / "decision-tables" / artifact_name / "decision-table.yaml"
+    )
+
+
+def structured_care_pathway_path(tmp_repo, topic_name, artifact_name):
+    return (
+        tmp_repo / "topics" / topic_name / "structured" / "care-pathways" / artifact_name / "care-pathway.yaml"
+    )
+
+
+def structured_terminology_path(tmp_repo, topic_name="my-skill", artifact_name="concepts"):
+    return (
+        tmp_repo / "topics" / topic_name / "structured" / "terminologies" / artifact_name / "terminology.yaml"
+    )
+
+
 def setup_topic_with_source(tmp_repo, topic_name="my-skill", source_name="ada-guidelines"):
     """Create topic + register a source in tracking.yaml."""
     td = tmp_repo / "topics" / topic_name
@@ -171,7 +195,7 @@ def write_extract_plan(
             "source_files": [f"sources/normalized/{source_name}.md" for source_name in (["ada-screening-guideline", "uspstf-screening-update"] if topic_name == "my-skill" else [])],
             "status": concept_review_status,
             "review_artifact": f"topics/{topic_name}/process/plans/concepts/",
-            "final_artifact": f"topics/{topic_name}/structured/concepts/concepts.yaml",
+            "final_artifact": f"topics/{topic_name}/structured/terminologies/concepts/terminology.yaml",
         },
         "artifacts": artifacts or [],
     }
@@ -302,7 +326,32 @@ def test_derive_creates_l2_artifact_file(tmp_repo, monkeypatch):
     runner = CliRunner()
     result = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
     assert result.exit_code == 0, result.output
-    assert (tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml").exists()
+    assert structured_evidence_summary_path(tmp_repo, "my-skill", "criteria").exists()
+
+
+def test_derive_assessment_uses_grouped_structured_layout(tmp_repo, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "stub")
+    setup_topic_with_source(tmp_repo)
+    runner = CliRunner()
+    result = runner.invoke(
+        promote,
+        [
+            "derive",
+            "my-skill",
+            "phq9",
+            "--source",
+            "ada-guidelines",
+            "--artifact-type",
+            "assessment",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert (
+        tmp_repo / "topics" / "my-skill" / "structured" / "assessments" / "phq9" / "assessment.yaml"
+    ).exists()
+    data = load_yaml(tmp_repo / "tracking.yaml")
+    topic = next(t for t in data["topics"] if t["name"] == "my-skill")
+    assert topic["structured"][0]["file"] == "topics/my-skill/structured/assessments/phq9/assessment.yaml"
 
 
 def test_derive_updates_tracking_structured_list(tmp_repo, monkeypatch):
@@ -332,9 +381,9 @@ def test_derive_count_creates_n_artifacts(tmp_repo, monkeypatch):
     runner = CliRunner()
     result = runner.invoke(promote, ["derive", "my-skill", "risk", "--source", "ada-guidelines", "--count", "3"])
     assert result.exit_code == 0, result.output
-    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-1" / "risk-1.yaml").exists()
-    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-2" / "risk-2.yaml").exists()
-    assert (tmp_repo / "topics" / "my-skill" / "structured" / "risk-3" / "risk-3.yaml").exists()
+    assert structured_evidence_summary_path(tmp_repo, "my-skill", "risk-1").exists()
+    assert structured_evidence_summary_path(tmp_repo, "my-skill", "risk-2").exists()
+    assert structured_evidence_summary_path(tmp_repo, "my-skill", "risk-3").exists()
 
 
 def test_derive_dry_run_does_not_create_file(tmp_repo, monkeypatch):
@@ -343,7 +392,7 @@ def test_derive_dry_run_does_not_create_file(tmp_repo, monkeypatch):
     runner = CliRunner()
     result = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines", "--dry-run"])
     assert result.exit_code == 0
-    assert not (tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml").exists()
+    assert not structured_evidence_summary_path(tmp_repo, "my-skill", "criteria").exists()
     assert "DRY RUN" in result.output
 
 
@@ -397,7 +446,7 @@ sections:
     second = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines", "--force"])
     assert second.exit_code == 0, second.output
 
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "criteria" / "criteria.yaml"
+    artifact_path = structured_evidence_summary_path(tmp_repo, "my-skill", "criteria")
     data = load_yaml(artifact_path)
     assert data["description"] == "Second version."
     assert data["sections"]["summary"] == "Updated summary."
@@ -450,7 +499,7 @@ def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
         "--concern", "Interval differs|ada-guidelines|Annual screening|ada-guidelines|Explicit interval language",
     ])
     assert result.exit_code == 0, result.output
-    data = load_yaml(tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml")
+    data = load_yaml(structured_decision_table_path(tmp_repo, "my-skill", "screening-criteria"))
     assert data["artifact_type"] == "decision-table"
     assert data["clinical_question"] == "Who should be screened?"
     assert "evidence_traceability" in data["sections"]
@@ -484,7 +533,7 @@ def test_derive_concern_same_issue_merges_positions(tmp_repo, monkeypatch):
         "--concern", "HbA1c target|aace-guidelines|AACE recommends ≤6.5%|aace-guidelines|More specific target",
     ])
     assert result.exit_code == 0, result.output
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "hba1c-target" / "hba1c-target.yaml"
+    artifact_path = structured_decision_table_path(tmp_repo, "my-skill", "hba1c-target")
     data = YAML(typ="safe").load(artifact_path.read_text())
     concerns = data.get("concerns", [])
     assert len(concerns) == 1, f"Expected 1 merged concern entry, got {len(concerns)}"
@@ -505,7 +554,7 @@ def test_derive_conflict_alias_still_writes_concerns(tmp_repo, monkeypatch):
         "--conflict", "Interval differs|ada-guidelines|Annual screening",
     ])
     assert result.exit_code == 0, result.output
-    data = load_yaml(tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml")
+    data = load_yaml(structured_evidence_summary_path(tmp_repo, "my-skill", "screening-criteria"))
     assert "concerns" in data
     assert "conflicts" not in data
 
@@ -618,11 +667,11 @@ def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     assert meta["status"] == "approved"
     assert meta["reviewer"] == "test-reviewer"
 
-    # Write concepts.yaml
+    # Write terminology artifact
     result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml"
+    artifact_path = structured_terminology_path(tmp_repo)
     assert artifact_path.exists()
     artifact = YAML(typ="safe").load(artifact_path.read_text())
     assert artifact["artifact_type"] == "terminology"
@@ -687,7 +736,7 @@ def test_review_concepts_can_approve_concept_in_final_artifact(tmp_repo):
     result = runner.invoke(promote, ["concept", "write", "my-skill"])
     assert result.exit_code == 0, result.output
 
-    artifact = YAML(typ="safe").load((tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text())
+    artifact = YAML(typ="safe").load(structured_terminology_path(tmp_repo).read_text())
     concept_names = [c["name"] for c in artifact["concepts"]]
     assert "Blood pressure screening" in concept_names
     assert "Hypertension" not in concept_names
@@ -717,7 +766,7 @@ def _enrich_two_concepts(tmp_repo, runner):
 
 
 def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
-    """Per-concept review calls accumulate decisions; concept write writes concepts.yaml."""
+    """Per-concept review calls accumulate decisions; concept write writes terminology."""
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     result = runner.invoke(promote, ["plan", "my-skill"])
@@ -751,7 +800,7 @@ def test_review_concepts_applies_per_concept_decisions_and_finalizes(tmp_repo):
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text()
+        structured_terminology_path(tmp_repo).read_text()
     )
     concept_names = [c["name"] for c in artifact["concepts"]]
     assert "Hypertension" in concept_names
@@ -849,7 +898,7 @@ def test_review_concepts_standalone_finalize_seals_manually_edited_csv(tmp_repo)
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text()
+        structured_terminology_path(tmp_repo).read_text()
     )
     concept_names = [c["name"] for c in artifact["concepts"]]
     assert "Hypertension" in concept_names
@@ -1008,7 +1057,7 @@ def test_concept_enrich_custom_errors_if_csv_dir_not_found(tmp_repo):
 
 
 def test_concept_enrich_custom_then_mcp_then_write_roundtrip(tmp_repo):
-    """Full flow: enrich --source custom → enrich --source mcp → review → write → appears in concepts.yaml."""
+    """Full flow: enrich --source custom → enrich --source mcp → review → write → appears in terminology."""
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     runner.invoke(promote, ["plan", "my-skill"])
@@ -1058,7 +1107,7 @@ def test_concept_enrich_custom_then_mcp_then_write_roundtrip(tmp_repo):
     assert result.exit_code == 0, result.output
 
     artifact = YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text()
+        structured_terminology_path(tmp_repo).read_text()
     )
     frailty = next((c for c in artifact["concepts"] if c["name"] == "Frailty"), None)
     assert frailty is not None
@@ -1210,7 +1259,7 @@ def test_review_approve_all_covers_related_rows(tmp_repo):
 
 
 def test_write_concepts_includes_related_in_l2(tmp_repo):
-    """Approved related rows appear as related[] under the parent code in concepts.yaml."""
+    """Approved related rows appear as related[] under the parent code in terminology."""
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
     runner.invoke(promote, ["plan", "my-skill"])
@@ -1247,7 +1296,7 @@ def test_write_concepts_includes_related_in_l2(tmp_repo):
 
     from ruamel.yaml import YAML as _YAML
     artifact = _YAML(typ="safe").load(
-        (tmp_repo / "topics" / "my-skill" / "structured" / "concepts" / "concepts.yaml").read_text()
+        structured_terminology_path(tmp_repo).read_text()
     )
     hyp = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
     assert hyp["codes"][0]["code"] == "38341003"
@@ -1545,7 +1594,7 @@ sections:
         "--body-file", str(body_file),
     ])
     assert result.exit_code == 0, result.output
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
+    artifact_path = structured_decision_table_path(tmp_repo, "my-skill", "screening-criteria")
     content = artifact_path.read_text()
     assert "<stub:" not in content
     assert "Completed from normalized source guidance." in content
@@ -1618,9 +1667,7 @@ sections:
         "--body-file", str(body_file),
     ])
     assert result.exit_code == 0, result.output
-    artifact = load_yaml(
-        tmp_repo / "topics" / "my-skill" / "structured" / "care-pathway" / "care-pathway.yaml"
-    )
+    artifact = load_yaml(structured_care_pathway_path(tmp_repo, "my-skill", "care-pathway"))
     assert artifact["artifact_type"] == "care-pathway"
     assert artifact["clinical_question"] == "In what order do things happen in the care process?"
     assert artifact["sections"]["summary"] == "Hierarchical care pathway for CRS surgical management."
@@ -1744,9 +1791,7 @@ sections:
         "--body-file", str(body_file),
     ])
     assert result.exit_code == 0, result.output
-    artifact = load_yaml(
-        tmp_repo / "topics" / "my-skill" / "structured" / "care-pathway" / "care-pathway.yaml"
-    )
+    artifact = load_yaml(structured_care_pathway_path(tmp_repo, "my-skill", "care-pathway"))
     steps = {step["id"]: step for step in artifact["sections"]["steps"]}
     assert "rule_id" not in steps["assessment"]
     assert "action_labels" not in steps["assessment"]
@@ -1897,7 +1942,7 @@ sections:
         "--body-file", str(body_file),
     ])
     assert result.exit_code == 0, result.output
-    artifact_path = tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
+    artifact_path = structured_decision_table_path(tmp_repo, "my-skill", "screening-criteria")
     assert artifact_path.exists()
     # derived_from in tracking should come from the body file
     from ruamel.yaml import YAML as _YAML
@@ -1980,7 +2025,7 @@ def test_derive_offline_mode_writes_stub_scaffold(tmp_repo, monkeypatch):
     ])
     assert result.exit_code == 0, result.output
     content = (
-        tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
+        structured_decision_table_path(tmp_repo, "my-skill", "screening-criteria")
     ).read_text()
     assert "<stub:" in content
 
@@ -2002,7 +2047,7 @@ def test_decision_table_stub_supports_event_condition_action_shape(tmp_repo, mon
     ])
     assert result.exit_code == 0, result.output
     content = (
-        tmp_repo / "topics" / "my-skill" / "structured" / "screening-criteria" / "screening-criteria.yaml"
+        structured_decision_table_path(tmp_repo, "my-skill", "screening-criteria")
     ).read_text()
     assert "events:" in content
     assert "event-001" in content

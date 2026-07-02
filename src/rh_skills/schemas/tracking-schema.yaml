@@ -42,7 +42,7 @@ structure:
 
       structured:                 # Semi-structured artifacts derived from sources (L2)
         - name: string
-          file: string            # topics/<name>/structured/<name>/<name>.yaml
+          file: string            # e.g. topics/<topic>/structured/<type-bucket>/<artifact-name>/<artifact-type>.yaml
           created_at: string
           checksum: string        # SHA-256 hex at creation time
           derived_from: list      # source names (references root sources[].name)
@@ -76,7 +76,7 @@ event_types:
     - tested               # test run completed
     - task_completed       # a workflow task marked done via rh-skills tasks complete
     - concept_review_approved  # concept review finalized (approved) by a human reviewer
-    - concepts_written         # concepts.yaml written from approved concept review CSV
+    - concepts_written         # terminology artifact written from approved concept review CSV
     - concept_relate_complete  # Step 3b semantic expansion completed for all eligible concepts (description: N concepts related)
     - concept_relate_skipped   # deprecated — agent bypassed Step 3b; use concept_relate_complete instead
 

@@ -10,7 +10,10 @@ from jinja2 import Environment, FileSystemLoader, Undefined
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
-from rh_skills.common import topic_dir
+from rh_skills.common import (
+    resolve_structured_artifact_file,
+    topic_dir,
+)
 
 # Type → required section keys (validated at render time)
 REQUIRED_SECTIONS: dict[str, list[str]] = {
@@ -348,7 +351,7 @@ def _render_from_templates(data: dict, artifact_dir: Path, artifact_name: str) -
 def render(topic: str, artifact: str) -> None:
     """Generate human-readable views from an L2 structured artifact."""
     td = topic_dir(topic)
-    artifact_file = td / "structured" / artifact / f"{artifact}.yaml"
+    artifact_file = resolve_structured_artifact_file(td, artifact)
     if not artifact_file.exists():
         click.echo(f"Artifact not found: {artifact_file}", err=True)
         raise SystemExit(1)
@@ -370,8 +373,9 @@ def render(topic: str, artifact: str) -> None:
     _validate_sections(sections, artifact_type)
 
     artifact_dir = artifact_file.parent
+    output_stem = artifact_file.stem
 
-    written = _render_from_templates(data, artifact_dir, artifact)
+    written = _render_from_templates(data, artifact_dir, output_stem)
 
     click.echo(f"Rendered {len(written)} view(s) for '{artifact}' ({artifact_type or 'generic'}):")
     for path in written:

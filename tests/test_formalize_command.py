@@ -566,7 +566,9 @@ sections:
       then: [assess-surgical-candidacy, complete-qol-assessment]
 """
         )
-        (structured_dir / "qol-assessment.yaml").write_text(
+        assessment_dir = structured_dir / "assessments" / "qol-assessment"
+        assessment_dir.mkdir(parents=True, exist_ok=True)
+        (assessment_dir / "assessment.yaml").write_text(
             """\
 artifact_type: assessment
 title: Sinonasal Outcome Test 22

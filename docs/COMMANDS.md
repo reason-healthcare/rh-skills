@@ -187,14 +187,14 @@ Create a structured (L2) artifact scaffold.
 rh-skills promote derive <topic> <name> [--force]
 ```
 
-Creates `topics/<topic>/structured/<name>.yaml` with schema-valid YAML scaffold.
+Creates a schema-valid YAML scaffold at the artifact's canonical structured path.
 When `--body-file` is provided, the YAML body is written verbatim and must
 already contain all required L2 fields. In that mode, repeated content flags
 such as `--clinical-question`, `--required-section`, `--evidence-ref`, and
 `--concern` are treated as consistency checks rather than merge inputs.
 
 Use `--force` to re-derive only a non-terminology artifact in place. This
-overwrites the existing `structured/<name>/<name>.yaml` file and refreshes its
+overwrites the existing canonical structured artifact file and refreshes its
 tracking entry without re-running terminology review/write. The explicit
 terminology package `concepts` is not re-derived with this command; use
 `rh-skills promote concept write <topic>` instead. When terminology has not
@@ -281,7 +281,7 @@ Manage concept coding review for a topic.
 | `add` | Add a custom concept placeholder not extracted from source documents |
 | `enrich` | Record RH MCP code candidates for a concept |
 | `review` | Set approved/excluded decisions per concept or per code; finalize |
-| `write` | Write `concepts.yaml` from the finalized review CSV |
+| `write` | Write the terminology artifact from the finalized review CSV |
 
 #### `rh-skills promote concept enrich <topic>`
 
@@ -323,13 +323,13 @@ rh-skills promote concept review <topic> [OPTIONS]
 - `--approve-expansion SYSTEM|EXPRESSION` — Set `include/exclude = include` on the expansion row identified by system + expression; repeatable
 - `--exclude-expansion SYSTEM|EXPRESSION` — Set `include/exclude = exclude` on the matching expansion row; repeatable
 - `--note TEXT` — Set comment on the first **candidate** row for the concept
-- `--finalize` — Seal the review (`status: approved`). **Does NOT write `concepts.yaml`** — run `concept write` during implement for that. Can be used alone or with a `CONCEPT` argument
+- `--finalize` — Seal the review (`status: approved`). **Does NOT write the terminology artifact** — run `concept write` during implement for that. Can be used alone or with a `CONCEPT` argument
 - `--reviewer NAME` — Reviewer name. Required for `--finalize`
 - `--force` — Bypass the checksum unchanged warning during `--finalize`
 
 **Behavior:**
 - Updates `include/exclude` on code rows in the per-concept CSVs under `topics/<topic>/process/plans/concepts/`
-- `--finalize` seals the packet (`status: approved`) but does **not** write `concepts.yaml`; run `rh-skills promote concept write <topic>` separately during implement
+- `--finalize` seals the packet (`status: approved`) but does **not** write the terminology artifact; run `rh-skills promote concept write <topic>` separately during implement
 - Finalize gate: every **candidate** row must have `include/exclude` set to `include` or `exclude` before finalize succeeds; related and expansion rows may remain blank
 
 **Examples:**
@@ -366,7 +366,7 @@ rh-skills promote concept review diabetes-screening \
 
 #### `rh-skills promote concept write <topic>`
 
-Write `topics/<topic>/structured/concepts.yaml` from the finalized concept review CSV.
+Write `topics/<topic>/structured/terminologies/concepts/terminology.yaml` from the finalized concept review CSV.
 
 ```
 rh-skills promote concept write <topic>
@@ -374,7 +374,7 @@ rh-skills promote concept write <topic>
 
 **Behavior:**
 - Requires concept review to be finalized (`status: approved` in `concepts-review-meta.yaml`)
-- All concepts appear in `concepts.yaml`; only those with at least one `approved (y/n) = y` row get a `codes` list
+- All concepts appear in the terminology artifact; only those with at least one `approved (y/n) = y` row get a `codes` list
 - Registers the artifact in `tracking.yaml`
 - Call this during **implement mode** after the extract plan is approved; it is a **separate step** from `concept review --finalize`
 
