@@ -19,6 +19,11 @@ DEFAULT_DEPENDENCIES: dict[str, str] = {
     "hl7.fhir.us.core": "6.1.0",
     "hl7.fhir.uv.crmi": "1.0.0",
 }
+SUPPORTED_TEST_FIXTURE_INPUT_FILES = (
+    Path("input") / "bundle.json",
+    Path("input") / "patient.json",
+    Path("input") / "parameters.json",
+)
 
 
 def load_packager_toml(path: Path) -> dict[str, str]:
@@ -181,6 +186,83 @@ def collect_computable_files(computable_dir: Path) -> tuple[list[Path], list[Pat
     json_files = sorted(computable_dir.glob("*.json"))
     cql_files = sorted(computable_dir.glob("*.cql"))
     return json_files, cql_files
+
+
+def stage_test_fixture_inputs(
+    fixture_root: Path,
+    workspace_dir: Path,
+    *,
+    library: str | None = None,
+    case: str | None = None,
+) -> dict:
+    """Copy supported CQL fixture input data into the package workspace."""
+    staged_root = workspace_dir / "tests" / "cql"
+    staged_root.mkdir(parents=True, exist_ok=True)
+
+    if not fixture_root.exists():
+        return {
+            "fixture_root": fixture_root,
+            "staged_dir": staged_root,
+            "library_count": 0,
+            "case_count": 0,
+            "file_count": 0,
+        }
+
+    library_dirs = (
+        [fixture_root / library]
+        if library
+        else sorted(p for p in fixture_root.iterdir() if p.is_dir())
+    )
+    missing_library = library and not (fixture_root / library).is_dir()
+    if missing_library:
+        return {
+            "error": f"Fixture library not found: {library}",
+            "fixture_root": fixture_root,
+            "staged_dir": staged_root,
+        }
+
+    selected_libraries: set[str] = set()
+    selected_cases: set[tuple[str, str]] = set()
+    file_count = 0
+
+    for library_dir in library_dirs:
+        case_dirs = (
+            [library_dir / case]
+            if case
+            else sorted(p for p in library_dir.iterdir() if p.is_dir())
+        )
+        if case and not (library_dir / case).is_dir():
+            continue
+
+        for case_dir in case_dirs:
+            copied_for_case = False
+            for relative_input in SUPPORTED_TEST_FIXTURE_INPUT_FILES:
+                source = case_dir / relative_input
+                if not source.exists():
+                    continue
+                destination = staged_root / library_dir.name / case_dir.name / relative_input
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+                copied_for_case = True
+                file_count += 1
+            if copied_for_case:
+                selected_libraries.add(library_dir.name)
+                selected_cases.add((library_dir.name, case_dir.name))
+
+    if case and not selected_cases:
+        return {
+            "error": f"Fixture case not found or has no supported input data: {case}",
+            "fixture_root": fixture_root,
+            "staged_dir": staged_root,
+        }
+
+    return {
+        "fixture_root": fixture_root,
+        "staged_dir": staged_root,
+        "library_count": len(selected_libraries),
+        "case_count": len(selected_cases),
+        "file_count": file_count,
+    }
 
 
 def prepare_package_workspace(
