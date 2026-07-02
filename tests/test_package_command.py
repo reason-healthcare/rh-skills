@@ -164,6 +164,55 @@ class TestPackageCommand:
             ["/fake/rh", "package", "pack", "/tmp/pkg-out"],
         ]
 
+    def test_include_test_fixtures_stages_inputs_and_passes_rh_flag(self, packagable_topic, monkeypatch):
+        fixture_case = packagable_topic / "tests" / "cql" / "TestRulesLogic" / "case-positive"
+        (fixture_case / "input").mkdir(parents=True)
+        (fixture_case / "expected").mkdir()
+        (fixture_case / "input" / "bundle.json").write_text('{"resourceType":"Bundle"}')
+        (fixture_case / "input" / "patient.json").write_text('{"resourceType":"Patient"}')
+        (fixture_case / "expected" / "expression-results.json").write_text("{}")
+        (fixture_case / "notes.md").write_text("# Notes")
+
+        calls = []
+
+        def fake_run(args):
+            calls.append(args)
+            return _ok()
+
+        monkeypatch.setattr("rh_skills.commands.package._resolve_rh_binary", lambda: "/fake/rh")
+        monkeypatch.setattr("rh_skills.commands.package._run_rh_command", fake_run)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            package,
+            [
+                "test-topic",
+                "--include-test-fixtures",
+                "--fixture-library",
+                "TestRulesLogic",
+                "--fixture-case",
+                "case-positive",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+
+        workspace_dir = packagable_topic / "topics" / "test-topic" / "process" / "package-workspace"
+        staged_case = workspace_dir / "tests" / "cql" / "TestRulesLogic" / "case-positive"
+        staged_root = workspace_dir / "tests" / "cql"
+        assert (staged_case / "input" / "bundle.json").exists()
+        assert (staged_case / "input" / "patient.json").exists()
+        assert not (staged_case / "expected" / "expression-results.json").exists()
+        assert not (staged_case / "notes.md").exists()
+        assert calls[1] == [
+            "/fake/rh",
+            "package",
+            "build",
+            str(workspace_dir),
+            "--include-test-fixtures",
+            str(staged_root),
+        ]
+        assert "test fixture input data: 2 files from 1 cases / 1 libraries" in result.output
+
     def test_dry_run_with_output_dir_shows_override_and_out(self, packagable_topic, monkeypatch):
         monkeypatch.setattr("rh_skills.commands.package._resolve_rh_binary", lambda: "/fake/rh")
         runner = CliRunner()

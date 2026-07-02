@@ -12,6 +12,7 @@ from rh_skills.fhir.packaging import (
     generate_packager_toml,
     infer_package_id,
     prepare_package_workspace,
+    stage_test_fixture_inputs,
 )
 
 
@@ -139,3 +140,59 @@ class TestPreparePackageWorkspace:
         workspace_dir = tmp_path / "workspace"
         result = prepare_package_workspace(comp_dir, workspace_dir, "empty-topic")
         assert "error" in result
+
+
+class TestStageTestFixtureInputs:
+    def test_copies_only_supported_fixture_input_files(self, tmp_path):
+        fixture_root = tmp_path / "tests" / "cql"
+        case_dir = fixture_root / "ExampleLogic" / "case-positive"
+        (case_dir / "input").mkdir(parents=True)
+        (case_dir / "expected").mkdir()
+        (case_dir / "input" / "bundle.json").write_text('{"resourceType":"Bundle"}')
+        (case_dir / "input" / "patient.json").write_text('{"resourceType":"Patient"}')
+        (case_dir / "input" / "parameters.json").write_text('{"resourceType":"Parameters"}')
+        (case_dir / "expected" / "expression-results.json").write_text("{}")
+        (case_dir / "notes.md").write_text("# Notes")
+
+        workspace_dir = tmp_path / "workspace"
+        result = stage_test_fixture_inputs(fixture_root, workspace_dir)
+
+        staged_case = workspace_dir / "tests" / "cql" / "ExampleLogic" / "case-positive"
+        assert result["library_count"] == 1
+        assert result["case_count"] == 1
+        assert result["file_count"] == 3
+        assert (staged_case / "input" / "bundle.json").exists()
+        assert (staged_case / "input" / "patient.json").exists()
+        assert (staged_case / "input" / "parameters.json").exists()
+        assert not (staged_case / "expected" / "expression-results.json").exists()
+        assert not (staged_case / "notes.md").exists()
+
+    def test_filters_by_library_and_case(self, tmp_path):
+        fixture_root = tmp_path / "tests" / "cql"
+        selected = fixture_root / "SelectedLogic" / "case-a" / "input"
+        skipped = fixture_root / "OtherLogic" / "case-a" / "input"
+        selected.mkdir(parents=True)
+        skipped.mkdir(parents=True)
+        (selected / "bundle.json").write_text("{}")
+        (skipped / "bundle.json").write_text("{}")
+
+        workspace_dir = tmp_path / "workspace"
+        result = stage_test_fixture_inputs(
+            fixture_root,
+            workspace_dir,
+            library="SelectedLogic",
+            case="case-a",
+        )
+
+        assert result["file_count"] == 1
+        staged_bundle = (
+            workspace_dir
+            / "tests"
+            / "cql"
+            / "SelectedLogic"
+            / "case-a"
+            / "input"
+            / "bundle.json"
+        )
+        assert staged_bundle.exists()
+        assert not (workspace_dir / "tests" / "cql" / "OtherLogic").exists()
