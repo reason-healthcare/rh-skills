@@ -37,6 +37,7 @@ from rh_skills.fhir.validate import validate_resource
 from rh_skills.fhir.packaging import load_packager_toml
 
 _FORMALIZE_TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "formalize"
+FHIR_ID_MAX_LENGTH = 64
 
 
 # ── CQL Content Embedding ─────────────────────────────────────────────────────
@@ -80,6 +81,65 @@ def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
     resource["content"] = content
     library_path.write_text(json.dumps(resource, indent=2, ensure_ascii=False) + "\n")
     return True
+
+
+def _fhir_resource_id(value: str, *, max_len: int = FHIR_ID_MAX_LENGTH) -> str:
+    """Return a deterministic FHIR id within the R4 64-character limit."""
+    base = to_kebab_case(value)
+    if len(base) <= max_len:
+        return base
+    digest = hashlib.sha1(base.encode("utf-8")).hexdigest()[:10]
+    prefix = base[: max_len - len(digest) - 1].rstrip("-")
+    return f"{prefix}-{digest}"
+
+
+def _rewrite_resource_identity_strings(value: Any, replacements: dict[str, str]) -> Any:
+    """Rewrite canonical/reference string fragments in nested generated resources."""
+    if isinstance(value, str):
+        result = value
+        for old, new in replacements.items():
+            result = result.replace(old, new)
+        return result
+    if isinstance(value, list):
+        return [_rewrite_resource_identity_strings(item, replacements) for item in value]
+    if isinstance(value, dict):
+        return {
+            key: _rewrite_resource_identity_strings(item, replacements)
+            for key, item in value.items()
+        }
+    return value
+
+
+def _enforce_generated_fhir_ids(resources: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """Shorten generated root resource ids and update matching references."""
+    rewrites: list[dict[str, str]] = []
+    replacements: dict[str, str] = {}
+
+    for resource in resources:
+        if not isinstance(resource, dict):
+            continue
+        resource_type = str(resource.get("resourceType") or "").strip()
+        old_id = str(resource.get("id") or "").strip()
+        if not resource_type or not old_id:
+            continue
+        new_id = _fhir_resource_id(old_id)
+        if new_id == old_id:
+            continue
+        resource["id"] = new_id
+        old_ref = f"{resource_type}/{old_id}"
+        new_ref = f"{resource_type}/{new_id}"
+        replacements[old_ref] = new_ref
+        rewrites.append({
+            "resourceType": resource_type,
+            "old_id": old_id,
+            "new_id": new_id,
+        })
+
+    if replacements:
+        for idx, resource in enumerate(resources):
+            resources[idx] = _rewrite_resource_identity_strings(resource, replacements)
+
+    return rewrites
 
 
 # ── Strategy Registry ──────────────────────────────────────────────────────────
@@ -4429,6 +4489,17 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
     computable_dir.mkdir(parents=True, exist_ok=True)
     warnings: list[str] = []
 
+    for resource in resources:
+        normalize_resource(resource)
+        norm_warnings = resource.pop("_normalization_warnings", [])
+        warnings.extend(norm_warnings)
+
+    for rewrite in _enforce_generated_fhir_ids(resources):
+        warnings.append(
+            "  ⚠ Shortened FHIR id for "
+            f"{rewrite['resourceType']}/{rewrite['old_id']} -> {rewrite['new_id']}"
+        )
+
     stale_cleanup_files: list[str] = []
     if artifact_type == "decision-table":
         stale_cleanup_files.extend(
@@ -4453,10 +4524,6 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
     failures: list[str] = []
 
     for resource in resources:
-        normalize_resource(resource)
-        norm_warnings = resource.pop("_normalization_warnings", [])
-        warnings.extend(norm_warnings)
-
         validation_errors = validate_resource(resource)
         if validation_errors:
             for e in validation_errors:

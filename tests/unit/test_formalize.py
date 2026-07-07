@@ -19,6 +19,8 @@ from rh_skills.commands.formalize import (
     _activity_definition_intent,
     _build_care_pathway_stub_plan_definitions,
     _build_stub_resources,
+    _enforce_generated_fhir_ids,
+    _fhir_resource_id,
     _get_strategy,
     _hoist_plan_definition_action_conditions,
     _normalize_activity_codeable_concept,
@@ -50,6 +52,62 @@ def test_activity_definition_intent_normalizes_to_r4_request_intent_codes():
     assert _activity_definition_intent("Plan") == "plan"
     assert _activity_definition_intent("collect quality of life score") == "proposal"
     assert _activity_definition_intent(None) == "proposal"
+
+
+def test_fhir_resource_id_preserves_short_ids_and_shortens_long_ids_deterministically():
+    short_id = "adult-crs-recommendation"
+    long_id = "adult-crs-surgical-management-recommendation-for-revision-surgery-candidacy-review"
+
+    assert _fhir_resource_id(short_id) == short_id
+    shortened = _fhir_resource_id(long_id)
+    assert len(shortened) <= 64
+    assert shortened == _fhir_resource_id(long_id)
+    assert shortened.startswith("adult-crs-surgical-management-recommendation")
+
+
+def test_enforce_generated_fhir_ids_rewrites_canonical_and_relative_references():
+    long_plan_id = (
+        "adult-crs-surgical-management-recommendation-for-revision-surgery-"
+        "candidacy-review"
+    )
+    long_library_id = f"{long_plan_id}-logic"
+    resources = [
+        {
+            "resourceType": "PlanDefinition",
+            "id": long_plan_id,
+            "url": f"http://example.org/fhir/PlanDefinition/{long_plan_id}",
+            "library": [f"http://example.org/fhir/Library/{long_library_id}"],
+            "action": [{
+                "definitionCanonical": f"http://example.org/fhir/PlanDefinition/{long_plan_id}",
+            }],
+        },
+        {
+            "resourceType": "Library",
+            "id": long_library_id,
+            "url": f"http://example.org/fhir/Library/{long_library_id}",
+        },
+        {
+            "resourceType": "Evidence",
+            "id": "short-evidence",
+            "exposureBackground": {
+                "reference": f"PlanDefinition/{long_plan_id}",
+            },
+        },
+    ]
+
+    rewrites = _enforce_generated_fhir_ids(resources)
+    plan_id = resources[0]["id"]
+    library_id = resources[1]["id"]
+
+    assert {rewrite["resourceType"] for rewrite in rewrites} == {"PlanDefinition", "Library"}
+    assert len(plan_id) <= 64
+    assert len(library_id) <= 64
+    assert resources[0]["url"] == f"http://example.org/fhir/PlanDefinition/{plan_id}"
+    assert resources[0]["library"] == [f"http://example.org/fhir/Library/{library_id}"]
+    assert resources[0]["action"][0]["definitionCanonical"] == (
+        f"http://example.org/fhir/PlanDefinition/{plan_id}"
+    )
+    assert resources[2]["exposureBackground"]["reference"] == f"PlanDefinition/{plan_id}"
 
 
 def test_plan_definition_condition_hoisting_moves_shared_sibling_conditions_to_parent():
