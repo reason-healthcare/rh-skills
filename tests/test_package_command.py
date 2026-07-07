@@ -164,12 +164,12 @@ class TestPackageCommand:
             ["/fake/rh", "package", "pack", "/tmp/pkg-out"],
         ]
 
-    def test_include_test_fixtures_stages_inputs_and_passes_rh_flag(self, packagable_topic, monkeypatch):
+    def test_include_test_fixtures_copies_inputs_to_examples(self, packagable_topic, monkeypatch):
         fixture_case = packagable_topic / "tests" / "cql" / "TestRulesLogic" / "case-positive"
         (fixture_case / "input").mkdir(parents=True)
         (fixture_case / "expected").mkdir()
-        (fixture_case / "input" / "bundle.json").write_text('{"resourceType":"Bundle"}')
-        (fixture_case / "input" / "patient.json").write_text('{"resourceType":"Patient"}')
+        (fixture_case / "input" / "bundle.json").write_text('{"resourceType":"Bundle","id":"case-positive"}')
+        (fixture_case / "input" / "patient.json").write_text('{"resourceType":"Patient","id":"patient-positive"}')
         (fixture_case / "expected" / "expression-results.json").write_text("{}")
         (fixture_case / "notes.md").write_text("# Notes")
 
@@ -188,6 +188,7 @@ class TestPackageCommand:
             [
                 "test-topic",
                 "--include-test-fixtures",
+                "tests/cql",
                 "--fixture-library",
                 "TestRulesLogic",
                 "--fixture-case",
@@ -197,21 +198,21 @@ class TestPackageCommand:
         assert result.exit_code == 0, result.output
 
         workspace_dir = packagable_topic / "topics" / "test-topic" / "process" / "package-workspace"
-        staged_case = workspace_dir / "tests" / "cql" / "TestRulesLogic" / "case-positive"
-        staged_root = workspace_dir / "tests" / "cql"
-        assert (staged_case / "input" / "bundle.json").exists()
-        assert (staged_case / "input" / "patient.json").exists()
-        assert not (staged_case / "expected" / "expression-results.json").exists()
-        assert not (staged_case / "notes.md").exists()
+        examples_dir = workspace_dir / "input" / "examples"
+        assert (examples_dir / "Bundle-case-positive.json").exists()
+        assert (examples_dir / "Patient-patient-positive.json").exists()
+        assert not (workspace_dir / "tests" / "cql").exists()
         assert calls[1] == [
             "/fake/rh",
             "package",
             "build",
             str(workspace_dir),
-            "--include-test-fixtures",
-            str(staged_root),
         ]
-        assert "test fixture input data: 2 files from 1 cases / 1 libraries" in result.output
+        ig = json.loads((workspace_dir / "ImplementationGuide.json").read_text())
+        refs = {entry["reference"]["reference"] for entry in ig["definition"]["resource"]}
+        assert "Bundle/case-positive" in refs
+        assert "Patient/patient-positive" in refs
+        assert "fixture examples: 2 files from 1 cases / 1 libraries" in result.output
 
     def test_dry_run_with_output_dir_shows_override_and_out(self, packagable_topic, monkeypatch):
         monkeypatch.setattr("rh_skills.commands.package._resolve_rh_binary", lambda: "/fake/rh")

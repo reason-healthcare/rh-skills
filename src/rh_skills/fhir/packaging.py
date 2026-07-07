@@ -8,6 +8,7 @@ L3 artifact directory.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import tomllib
 from pathlib import Path
@@ -188,24 +189,28 @@ def collect_computable_files(computable_dir: Path) -> tuple[list[Path], list[Pat
     return json_files, cql_files
 
 
-def stage_test_fixture_inputs(
+def _filename_token(value: str) -> str:
+    """Return a stable token for generated package example file names."""
+    token = re.sub(r"[^A-Za-z0-9.-]+", "-", value.strip())
+    token = re.sub(r"-{2,}", "-", token).strip("-.")
+    return token or "unnamed"
+
+
+def stage_test_fixture_examples(
     fixture_root: Path,
-    workspace_dir: Path,
+    examples_dir: Path,
     *,
     library: str | None = None,
     case: str | None = None,
 ) -> dict:
-    """Copy supported CQL fixture input data into the package workspace."""
-    staged_root = workspace_dir / "tests" / "cql"
-    staged_root.mkdir(parents=True, exist_ok=True)
-
+    """Copy supported CQL fixture input resources into package examples."""
     if not fixture_root.exists():
         return {
             "fixture_root": fixture_root,
-            "staged_dir": staged_root,
             "library_count": 0,
             "case_count": 0,
             "file_count": 0,
+            "resource_files": [],
         }
 
     library_dirs = (
@@ -218,11 +223,11 @@ def stage_test_fixture_inputs(
         return {
             "error": f"Fixture library not found: {library}",
             "fixture_root": fixture_root,
-            "staged_dir": staged_root,
         }
 
     selected_libraries: set[str] = set()
     selected_cases: set[tuple[str, str]] = set()
+    resource_files: list[str] = []
     file_count = 0
 
     for library_dir in library_dirs:
@@ -240,11 +245,25 @@ def stage_test_fixture_inputs(
                 source = case_dir / relative_input
                 if not source.exists():
                     continue
-                destination = staged_root / library_dir.name / case_dir.name / relative_input
-                destination.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    resource = json.loads(source.read_text())
+                except json.JSONDecodeError as exc:
+                    return {"error": f"Fixture input is not valid JSON: {source} ({exc})"}
+                if not isinstance(resource, dict):
+                    return {"error": f"Fixture input is not a FHIR JSON object: {source}"}
+                resource_type = str(resource.get("resourceType") or "").strip()
+                resource_id = str(resource.get("id") or "").strip()
+                if not resource_type or not resource_id:
+                    return {"error": f"Fixture input must have resourceType and id: {source}"}
+
+                file_name = f"{_filename_token(resource_type)}-{_filename_token(resource_id)}.json"
+                destination = examples_dir / file_name
+                if destination.exists():
+                    return {"error": f"Fixture example destination already exists: {destination}"}
                 shutil.copy2(source, destination)
                 copied_for_case = True
                 file_count += 1
+                resource_files.append(file_name)
             if copied_for_case:
                 selected_libraries.add(library_dir.name)
                 selected_cases.add((library_dir.name, case_dir.name))
@@ -253,15 +272,14 @@ def stage_test_fixture_inputs(
         return {
             "error": f"Fixture case not found or has no supported input data: {case}",
             "fixture_root": fixture_root,
-            "staged_dir": staged_root,
         }
 
     return {
         "fixture_root": fixture_root,
-        "staged_dir": staged_root,
         "library_count": len(selected_libraries),
         "case_count": len(selected_cases),
         "file_count": file_count,
+        "resource_files": resource_files,
     }
 
 
@@ -277,6 +295,9 @@ def prepare_package_workspace(
     status: str = "draft",
     package_id: str | None = None,
     extra_dependencies: dict[str, str] | None = None,
+    test_fixture_root: Path | None = None,
+    fixture_library: str | None = None,
+    fixture_case: str | None = None,
 ) -> dict:
     """Stage a package source workspace for ``rh package`` commands."""
     json_files, cql_files = collect_computable_files(computable_dir)
@@ -305,6 +326,19 @@ def prepare_package_workspace(
     for cql_file in cql_files:
         shutil.copy2(cql_file, cql_dir / cql_file.name)
 
+    staged_fixtures = None
+    fixture_resource_files: list[str] = []
+    if test_fixture_root is not None:
+        staged_fixtures = stage_test_fixture_examples(
+            test_fixture_root,
+            examples_dir,
+            library=fixture_library,
+            case=fixture_case,
+        )
+        if "error" in staged_fixtures:
+            return staged_fixtures
+        fixture_resource_files = list(staged_fixtures["resource_files"])
+
     resolved_package_id = package_id or infer_package_id(topic_slug)
     dependencies = build_dependency_map(
         has_cql=bool(cql_files),
@@ -321,7 +355,7 @@ def prepare_package_workspace(
 
     ig = generate_implementation_guide(
         topic_slug,
-        [resource_file.name for resource_file in json_files],
+        [resource_file.name for resource_file in json_files] + fixture_resource_files,
         version=version,
         name=name,
         ig_id=ig_id,
@@ -340,6 +374,9 @@ def prepare_package_workspace(
         "version": version,
         "json_count": len(json_files),
         "cql_count": len(cql_files),
+        "fixture_count": staged_fixtures["file_count"] if staged_fixtures else 0,
+        "fixture_library_count": staged_fixtures["library_count"] if staged_fixtures else 0,
+        "fixture_case_count": staged_fixtures["case_count"] if staged_fixtures else 0,
         "examples_dir": examples_dir,
         "cql_dir": cql_dir,
     }
