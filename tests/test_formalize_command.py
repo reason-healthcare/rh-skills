@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from rh_skills.commands.formalize import formalize, STRATEGY_REGISTRY
+from rh_skills.commands.formalize import formalize, STRATEGY_REGISTRY, _fhir_resource_id
 from tests.conftest import make_tracking, load_tracking
 
 
@@ -1328,14 +1328,17 @@ sections:
             assert "Using deterministic CPG-on-FHIR builders" not in cp_result.output
 
             computable = topic_dir / "computable"
+            recommendation_id = _fhir_resource_id(
+                "chronic-rhinosinusitis-surgical-management-recommendation-verify-diagnosis"
+            )
             assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-recommendation.json").exists()
-            assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-recommendation-verify-diagnosis.json").exists()
+            assert (computable / f"PlanDefinition-{recommendation_id}.json").exists()
             assert (computable / "Library-chronic-rhinosinusitis-surgical-management-recommendation-logic.json").exists()
             assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol.json").exists()
             assert (computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol-assessment.json").exists()
             assert not (computable / "ActivityDefinition-chronic-rhinosinusitis-surgical-management-protocol-activity.json").exists()
             protocol = json.loads((computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol.json").read_text())
-            recommendation = json.loads((computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-recommendation-verify-diagnosis.json").read_text())
+            recommendation = json.loads((computable / f"PlanDefinition-{recommendation_id}.json").read_text())
             strategy = json.loads((computable / "PlanDefinition-chronic-rhinosinusitis-surgical-management-protocol-assessment.json").read_text())
             assert protocol["type"]["coding"][0]["system"] == "http://terminology.hl7.org/CodeSystem/plan-definition-type"
             assert protocol["type"]["coding"][0]["display"] == "Clinical Protocol"
