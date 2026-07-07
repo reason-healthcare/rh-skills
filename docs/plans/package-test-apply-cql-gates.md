@@ -10,15 +10,15 @@ This plan covers:
 
 - First-class package apply smoke verification.
 - CQL fixture drift as a validation/package gate.
-- Optional package-level inclusion of test fixture input data.
+- Optional package-level promotion of test fixture input resources to examples.
 
 ## Goals
 
 - A generated package can be smoke-tested by posting a bundle and invoking
   `$r5.apply` before it is considered shippable.
 - CQL test fixtures cannot silently drift from the CQL they are meant to cover.
-- rh-skills can prepare package input from both `computable/` and selected
-  test fixture input data, then delegate build/pack to `rh package`.
+- rh-skills can prepare package input from both `computable/` and selected test
+  fixture input resources, then delegate build/pack to `rh package`.
 
 ## Non-Goals
 
@@ -40,8 +40,8 @@ rh-skills.
 |---|---|---|
 | Topic layout, tracking, L2/L3 artifact discovery | rh-skills | This is specific to the skills repository workflow. |
 | Selecting topic computable files for a package workspace | rh-skills | This is repository-layout orchestration before invoking `rh package`. |
-| Selecting and staging test fixture input data into package workspace | rh-skills | Fixture source discovery is repo-layout specific; rh package should only build from the prepared package source directory. |
-| Preserving staged fixture assets in package output/tarball | rh | Once fixtures are under the package source directory, preserving them is package-tool behavior. |
+| Selecting fixture input resources to promote into package examples | rh-skills | Fixture source selection is workflow-specific; promoted examples become normal package examples. |
+| Building and packaging example resources | rh | Once examples are under the package source directory, package build behavior is generic. |
 | FHIR package build/check/pack behavior, including preserving package input folders in the final tarball | rh | This is package-tool behavior and should not be patched by rh-skills after build. |
 | CQL parsing, ELM translation, expression evaluation, model choice-type semantics | rh | This is runtime/toolchain behavior. rh-skills should invoke it and report results. |
 | Fixture discovery, topic-scoped drift reporting, validation gating | rh-skills | This ties runtime results back to topic workflow state. |
@@ -52,28 +52,29 @@ Design rule: rh-skills may stage files, call `rh`, parse machine-readable
 results, and fail workflow gates. It should not compensate for missing generic
 `rh` behavior by duplicating runtime/package internals.
 
-## Phase 1: Optional Test Fixture Input Packaging
+## Phase 1: Optional Test Fixture Example Promotion
 
-Add an opt-in flag to `rh-skills package <topic>` that includes selected CQL
-fixture input data in the package. rh-skills is responsible for preparing the
-package source workspace from `topics/<topic>/computable/` and repo-level
-`tests/cql/**`; `rh package` remains responsible for building, packing, and
-preserving whatever supported fixture assets are staged under the package source
-directory.
+Add an opt-in path option to `rh-skills package <topic>` that copies selected
+CQL fixture input resources into the package workspace's normal
+`input/examples/` directory. rh-skills is responsible for preparing the package
+source workspace from `topics/<topic>/computable/` and the explicitly supplied
+fixture source directory; `rh package` remains responsible for normal
+check/build/pack behavior.
 
 Proposed command:
 
 ```bash
-rh-skills package <topic> --include-test-fixtures [--fixture-library LIBRARY] [--fixture-case CASE]
+rh-skills package <topic> --include-test-fixtures tests/cql [--fixture-library LIBRARY] [--fixture-case CASE]
 ```
 
 rh-skills behavior:
 
 - Keep default behavior as fixture exclusion.
 - Rebuild package workspace from `topics/<topic>/computable/` as today.
-- When `--include-test-fixtures` is supplied, copy only supported fixture input
-  data files from repo-level `tests/cql/**` into the package workspace, for
-  example `package-workspace/tests/cql/**`.
+- Require `--include-test-fixtures DIR` to explicitly identify the fixture
+  source directory.
+- When `--include-test-fixtures DIR` is supplied, copy only supported fixture
+  input resources from that directory into `package-workspace/input/examples/`.
 - Include only:
   - `input/bundle.json`
   - `input/patient.json`, if present
@@ -83,24 +84,28 @@ rh-skills behavior:
   - `notes.md`
   - generated test reports
   - arbitrary fixture helper files
-- Invoke `rh package build <workspace> --include-test-fixtures <workspace>/tests/cql`
-  when fixtures are staged.
-- Report fixture library/case counts and copied input data file counts.
+- Give copied examples normal FHIR package example file names derived from
+  `resourceType` and `id`, such as `Bundle-case-a.json`.
+- Include copied fixture examples in `ImplementationGuide.definition.resource[]`
+  because they are promoted to normal IG examples.
+- Invoke `rh package build <workspace>` without fixture-specific options.
+- Report fixture library/case counts and copied example resource counts.
 
 RH behavior used:
 
-- `rh package build --include-test-fixtures <path-under-package-source>` should
-  preserve the staged fixture data assets in package output and tarball.
+- `rh package build` should build and package normal IG examples from
+  `input/examples/`.
 
 Acceptance:
 
 - `rh-skills package <topic>` without the flag does not package fixture data.
-- `rh-skills package <topic> --include-test-fixtures` stages supported fixture
-  input data under the package workspace and passes the staged path to `rh`.
-- Package output/tarball contains fixture input data assets but not expected
+- `rh-skills package <topic> --include-test-fixtures tests/cql` copies supported
+  fixture input resources into package examples and calls `rh package build`
+  without fixture-specific options.
+- Package output/tarball contains promoted fixture examples but not expected
   assertion files or notes.
-- Fixture data assets are not added to `ImplementationGuide.definition.resource[]`;
-  they are package test assets, not IG-declared FHIR example resources.
+- Promoted fixture examples are added to `ImplementationGuide.definition.resource[]`
+  through the normal example resource path.
 
 ## Phase 2: No Dedicated Case Sync Command
 
@@ -109,12 +114,12 @@ fixture cases are durable authored test inputs under `tests/cql/**`. When a
 fixture changes, rerun:
 
 ```bash
-rh-skills package <topic> --include-test-fixtures
+rh-skills package <topic> --include-test-fixtures tests/cql
 ```
 
-That rebuilds package workspace from `computable/`, restages supported fixture
-input data from `tests/cql/**`, regenerates package IG inputs, and delegates
-build/pack to `rh package`.
+That rebuilds package workspace from `computable/`, promotes supported fixture
+input resources from `tests/cql/**` to package examples, regenerates package IG
+inputs, and delegates build/pack to `rh package`.
 
 If a fixture case is renamed, the author should rename the fixture directory and
 update `input/bundle.json` as part of normal fixture authoring. The subsequent
@@ -123,8 +128,8 @@ workspace is recreated.
 
 Acceptance:
 
-- Package workspace and package output contain no stale fixture paths after
-  rerunning `rh-skills package <topic> --include-test-fixtures`.
+- Package workspace and package output contain no stale promoted fixture
+  examples after rerunning `rh-skills package <topic> --include-test-fixtures tests/cql`.
 - rh-skills does not maintain a second identity-rewrite workflow for fixture
   cases.
 
@@ -258,13 +263,13 @@ Acceptance:
 
 1. Add CQL test runner service and drift reporting.
 2. Wire CQL tests into `validate` and package gates.
-3. Add opt-in fixture input staging to `rh-skills package`.
+3. Add opt-in fixture example promotion to `rh-skills package`.
 4. Add runtime conformance reporting for fixture failures.
 5. Add apply smoke wrapper after the corresponding `rh` primitive exists.
 
-This order makes stale fixtures visible before packaging starts preserving them,
-then adds the heavier apply smoke workflow once the package contents and CQL
-fixtures are reliable.
+This order makes stale fixtures visible before packaging starts promoting them
+to examples, then adds the heavier apply smoke workflow once the package
+contents and CQL fixtures are reliable.
 
 ## Open Questions
 

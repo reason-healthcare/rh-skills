@@ -12,7 +12,7 @@ from rh_skills.fhir.packaging import (
     generate_packager_toml,
     infer_package_id,
     prepare_package_workspace,
-    stage_test_fixture_inputs,
+    stage_test_fixture_examples,
 )
 
 
@@ -142,30 +142,35 @@ class TestPreparePackageWorkspace:
         assert "error" in result
 
 
-class TestStageTestFixtureInputs:
-    def test_copies_only_supported_fixture_input_files(self, tmp_path):
+class TestStageTestFixtureExamples:
+    def test_copies_only_supported_fixture_input_resources_to_examples(self, tmp_path):
         fixture_root = tmp_path / "tests" / "cql"
         case_dir = fixture_root / "ExampleLogic" / "case-positive"
         (case_dir / "input").mkdir(parents=True)
         (case_dir / "expected").mkdir()
-        (case_dir / "input" / "bundle.json").write_text('{"resourceType":"Bundle"}')
-        (case_dir / "input" / "patient.json").write_text('{"resourceType":"Patient"}')
-        (case_dir / "input" / "parameters.json").write_text('{"resourceType":"Parameters"}')
+        (case_dir / "input" / "bundle.json").write_text('{"resourceType":"Bundle","id":"case-positive"}')
+        (case_dir / "input" / "patient.json").write_text('{"resourceType":"Patient","id":"patient-positive"}')
+        (case_dir / "input" / "parameters.json").write_text('{"resourceType":"Parameters","id":"params-positive"}')
         (case_dir / "expected" / "expression-results.json").write_text("{}")
         (case_dir / "notes.md").write_text("# Notes")
 
-        workspace_dir = tmp_path / "workspace"
-        result = stage_test_fixture_inputs(fixture_root, workspace_dir)
+        examples_dir = tmp_path / "workspace" / "input" / "examples"
+        examples_dir.mkdir(parents=True)
+        result = stage_test_fixture_examples(fixture_root, examples_dir)
 
-        staged_case = workspace_dir / "tests" / "cql" / "ExampleLogic" / "case-positive"
         assert result["library_count"] == 1
         assert result["case_count"] == 1
         assert result["file_count"] == 3
-        assert (staged_case / "input" / "bundle.json").exists()
-        assert (staged_case / "input" / "patient.json").exists()
-        assert (staged_case / "input" / "parameters.json").exists()
-        assert not (staged_case / "expected" / "expression-results.json").exists()
-        assert not (staged_case / "notes.md").exists()
+        assert sorted(result["resource_files"]) == [
+            "Bundle-case-positive.json",
+            "Parameters-params-positive.json",
+            "Patient-patient-positive.json",
+        ]
+        assert (examples_dir / "Bundle-case-positive.json").exists()
+        assert (examples_dir / "Patient-patient-positive.json").exists()
+        assert (examples_dir / "Parameters-params-positive.json").exists()
+        assert not (examples_dir / "expression-results.json").exists()
+        assert not (examples_dir / "notes.md").exists()
 
     def test_filters_by_library_and_case(self, tmp_path):
         fixture_root = tmp_path / "tests" / "cql"
@@ -173,26 +178,42 @@ class TestStageTestFixtureInputs:
         skipped = fixture_root / "OtherLogic" / "case-a" / "input"
         selected.mkdir(parents=True)
         skipped.mkdir(parents=True)
-        (selected / "bundle.json").write_text("{}")
-        (skipped / "bundle.json").write_text("{}")
+        (selected / "bundle.json").write_text('{"resourceType":"Bundle","id":"case-a"}')
+        (skipped / "bundle.json").write_text('{"resourceType":"Bundle","id":"case-a"}')
 
-        workspace_dir = tmp_path / "workspace"
-        result = stage_test_fixture_inputs(
+        examples_dir = tmp_path / "workspace" / "input" / "examples"
+        examples_dir.mkdir(parents=True)
+        result = stage_test_fixture_examples(
             fixture_root,
-            workspace_dir,
+            examples_dir,
             library="SelectedLogic",
             case="case-a",
         )
 
         assert result["file_count"] == 1
-        staged_bundle = (
-            workspace_dir
-            / "tests"
-            / "cql"
-            / "SelectedLogic"
-            / "case-a"
-            / "input"
-            / "bundle.json"
+        assert result["resource_files"] == ["Bundle-case-a.json"]
+        assert (examples_dir / "Bundle-case-a.json").exists()
+
+    def test_prepare_workspace_includes_fixture_examples_in_ig(self, tmp_path):
+        comp_dir = tmp_path / "computable"
+        comp_dir.mkdir()
+        (comp_dir / "PlanDefinition-test.json").write_text(json.dumps({"resourceType": "PlanDefinition"}))
+        fixture_root = tmp_path / "tests" / "cql"
+        fixture_input = fixture_root / "ExampleLogic" / "case-a" / "input"
+        fixture_input.mkdir(parents=True)
+        (fixture_input / "bundle.json").write_text('{"resourceType":"Bundle","id":"case-a"}')
+
+        workspace_dir = tmp_path / "workspace"
+        result = prepare_package_workspace(
+            comp_dir,
+            workspace_dir,
+            "test-topic",
+            test_fixture_root=fixture_root,
         )
-        assert staged_bundle.exists()
-        assert not (workspace_dir / "tests" / "cql" / "OtherLogic").exists()
+
+        assert result["fixture_count"] == 1
+        assert (workspace_dir / "input" / "examples" / "Bundle-case-a.json").exists()
+        ig = json.loads((workspace_dir / "ImplementationGuide.json").read_text())
+        refs = {entry["reference"]["reference"] for entry in ig["definition"]["resource"]}
+        assert "PlanDefinition/test" in refs
+        assert "Bundle/case-a" in refs

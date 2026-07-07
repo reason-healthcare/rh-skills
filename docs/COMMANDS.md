@@ -538,7 +538,7 @@ rh-skills formalize-config diabetes-screening --force --version 1.0.0
 Stage computable resources into a package workspace and run `rh package`.
 
 ```
-rh-skills package <topic> [--dry-run] [--check-only] [--pack] [--output-dir PATH] [--workspace-dir PATH]
+rh-skills package <topic> [--dry-run] [--check-only] [--pack] [--output-dir PATH] [--workspace-dir PATH] [--include-test-fixtures DIR]
 ```
 
 **Arguments:**
@@ -550,6 +550,9 @@ rh-skills package <topic> [--dry-run] [--check-only] [--pack] [--output-dir PATH
 - `--pack` — Run `rh package pack <build-output>` after successful build
 - `--workspace-dir PATH` — Override workspace location (default: `topics/<topic>/process/package-workspace`)
 - `--output-dir PATH` — Override build output location (default: `<workspace>/output`)
+- `--include-test-fixtures DIR` — Include supported CQL fixture inputs from `DIR`
+- `--fixture-library NAME` — Limit included fixtures to one fixture library; requires `--include-test-fixtures`
+- `--fixture-case NAME` — Limit included fixtures to one fixture case; requires `--include-test-fixtures`
 
 **Prerequisites:**
 - `formalize-config.yaml` should exist (`rh-skills formalize-config <topic>`); if missing, defaults are used with a warning.
@@ -571,6 +574,7 @@ rh-skills package <topic> [--dry-run] [--check-only] [--pack] [--output-dir PATH
 rh-skills package diabetes-screening
 rh-skills package diabetes-screening --dry-run
 rh-skills package diabetes-screening --output-dir /tmp/pkg-out
+rh-skills package diabetes-screening --include-test-fixtures tests/cql --fixture-library DiabetesScreeningLogic
 ```
 
 ---

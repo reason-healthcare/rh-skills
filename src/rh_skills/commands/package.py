@@ -23,7 +23,6 @@ from rh_skills.fhir.packaging import (
     infer_package_id,
     load_packager_toml,
     prepare_package_workspace,
-    stage_test_fixture_inputs,
 )
 
 
@@ -61,9 +60,15 @@ def _run_rh_command(args: list[str]) -> subprocess.CompletedProcess[str]:
 @click.option("--pack", "pack_tgz", is_flag=True, help="Run `rh package pack` after a successful build")
 @click.option("--output-dir", type=click.Path(), default=None, help="Override build output directory (default: <workspace>/output)")
 @click.option("--workspace-dir", type=click.Path(), default=None, help="Override package workspace directory")
-@click.option("--include-test-fixtures", is_flag=True, help="Stage CQL fixture input data as package test assets")
-@click.option("--fixture-library", default=None, help="Limit staged test fixture input data to one CQL fixture library")
-@click.option("--fixture-case", default=None, help="Limit staged test fixture input data to one CQL fixture case")
+@click.option(
+    "--include-test-fixtures",
+    type=click.Path(file_okay=False, dir_okay=True),
+    default=None,
+    metavar="DIR",
+    help="Include supported CQL fixture inputs from DIR",
+)
+@click.option("--fixture-library", default=None, help="Limit included fixtures to one CQL fixture library")
+@click.option("--fixture-case", default=None, help="Limit included fixtures to one CQL fixture case")
 def package(
     topic,
     dry_run,
@@ -120,6 +125,15 @@ def package(
     build_dir = Path(output_dir) if output_dir else (pkg_workspace / "output")
     output_mode = "overridden (--output-dir)" if output_dir else "defaulted (<workspace>/output)"
 
+    fixture_root = None
+    if include_test_fixtures:
+        fixture_root = Path(include_test_fixtures)
+        if not fixture_root.is_absolute():
+            fixture_root = repo_root() / fixture_root
+        if not fixture_root.is_dir():
+            click.echo(f"Error: Test fixture directory not found: {fixture_root}", err=True)
+            sys.exit(2)
+
     resolved_package_id = infer_package_id(cfg["id"])
     staged = prepare_package_workspace(
         computable_dir,
@@ -131,31 +145,18 @@ def package(
         canonical=canonical,
         status=cfg["status"],
         package_id=resolved_package_id,
+        test_fixture_root=fixture_root,
+        fixture_library=fixture_library,
+        fixture_case=fixture_case,
     )
 
     if "error" in staged:
         click.echo(f"Error: {staged['error']}", err=True)
         sys.exit(2)
 
-    staged_fixtures = None
-    fixture_build_path = None
-    if include_test_fixtures:
-        staged_fixtures = stage_test_fixture_inputs(
-            repo_root() / "tests" / "cql",
-            pkg_workspace,
-            library=fixture_library,
-            case=fixture_case,
-        )
-        if "error" in staged_fixtures:
-            click.echo(f"Error: {staged_fixtures['error']}", err=True)
-            sys.exit(2)
-        fixture_build_path = staged_fixtures["staged_dir"]
-
     rh = _resolve_rh_binary()
     check_cmd = [rh, "package", "check", str(pkg_workspace)]
     build_cmd = [rh, "package", "build", str(pkg_workspace)]
-    if fixture_build_path is not None:
-        build_cmd.extend(["--include-test-fixtures", str(fixture_build_path)])
     if output_dir:
         build_cmd.extend(["--out", str(build_dir)])
     pack_cmd = [rh, "package", "pack", str(build_dir)]
@@ -167,12 +168,12 @@ def package(
         click.echo(f"  Canonical L3 source: {computable_dir}")
         click.echo(f"  Workspace: {pkg_workspace}")
         click.echo(f"  Build output: {build_dir} [{output_mode}]")
-        if staged_fixtures is not None:
+        if fixture_root is not None:
             click.echo(
-                "  Test fixture input data: "
-                f"{staged_fixtures['file_count']} files from "
-                f"{staged_fixtures['case_count']} cases / "
-                f"{staged_fixtures['library_count']} libraries"
+                "  Fixture examples: "
+                f"{staged['fixture_count']} files from "
+                f"{staged['fixture_case_count']} cases / "
+                f"{staged['fixture_library_count']} libraries"
             )
         click.echo(f"  Check command: {' '.join(check_cmd)}")
         if not check_only:
@@ -182,12 +183,12 @@ def package(
         return
 
     click.echo(f"Preparing package workspace from {computable_dir}...")
-    if staged_fixtures is not None:
+    if fixture_root is not None:
         click.echo(
-            "Staged test fixture input data: "
-            f"{staged_fixtures['file_count']} files from "
-            f"{staged_fixtures['case_count']} cases / "
-            f"{staged_fixtures['library_count']} libraries"
+            "Copied fixture examples: "
+            f"{staged['fixture_count']} files from "
+            f"{staged['fixture_case_count']} cases / "
+            f"{staged['fixture_library_count']} libraries"
         )
 
     check_result = _run_rh_command(check_cmd)
@@ -229,12 +230,12 @@ def package(
 
     click.echo(f"\n  package: {staged['package_name']} v{staged['version']}")
     click.echo(f"  resources: {staged['json_count']} FHIR JSON + {staged['cql_count']} CQL")
-    if staged_fixtures is not None:
+    if fixture_root is not None:
         click.echo(
-            "  test fixture input data: "
-            f"{staged_fixtures['file_count']} files from "
-            f"{staged_fixtures['case_count']} cases / "
-            f"{staged_fixtures['library_count']} libraries"
+            "  fixture examples: "
+            f"{staged['fixture_count']} files from "
+            f"{staged['fixture_case_count']} cases / "
+            f"{staged['fixture_library_count']} libraries"
         )
     click.echo(f"  workspace: {pkg_workspace}")
     click.echo(f"  build output: {build_dir}")
