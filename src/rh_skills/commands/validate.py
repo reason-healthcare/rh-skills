@@ -490,7 +490,7 @@ def _validate_l3_activitydefinition_dynamic_values(
             expr_text = str(expression.get("expression") or "").strip()
             if language == "text/cql":
                 _report_error(
-                    f"  {json_file.name}: dynamicValue[{idx}] uses inline text/cql; use text/cql-identifier with a referenced Library define or text/fhirpath for ActivityDefinition self-copy",
+                    f"  {json_file.name}: dynamicValue[{idx}] uses inline text/cql; use text/cql-identifier with %context for ActivityDefinition self-copy or with a referenced Library define",
                     emit=emit,
                 )
                 errors += 1
@@ -503,6 +503,8 @@ def _validate_l3_activitydefinition_dynamic_values(
                     emit=emit,
                 )
                 errors += 1
+                continue
+            if expr_text.startswith("%context"):
                 continue
             if not library_refs:
                 _report_error(

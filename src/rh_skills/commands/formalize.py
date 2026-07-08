@@ -365,11 +365,11 @@ ECA guidance for decision-table and care-pathway conversions:
 - Keep pathway/protocol orchestration separate from executable action definitions (PlanDefinition orchestrates, ActivityDefinition executes).
 
 ActivityDefinition.dynamicValue guidance only:
-- When dynamicValue copies or navigates data already present on the containing ActivityDefinition, use the containing-resource evaluation context. In FHIRPath, that means %context. In CQL-backed dynamic values, use a named Library define that evaluates against the same containing-resource context.
-- For collect-information Task ActivityDefinitions with cpg-collectWith, the direct expression form is text/fhirpath with %context.code for input.type and %context.extension.where(url = 'http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value for input.valueCanonical.
+- When dynamicValue copies or navigates data already present on the containing ActivityDefinition, use the containing-resource evaluation context with %context.
+- For collect-information Task ActivityDefinitions with cpg-collectWith, use text/cql-identifier with %context.code for input.type and %context.extension.where(url = 'http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value for input.valueCanonical.
 - Do not emit bare identifiers such as code as text/cql-identifier dynamic values unless they are named Library defines.
 - Use text/cql-identifier for ActivityDefinition.dynamicValue only when the expression is a named CQL expression resolvable from a Library in scope for that ActivityDefinition or another explicitly supported evaluation context.
-- If ActivityDefinition.dynamicValue uses text/cql-identifier, the ActivityDefinition must reference the Library that defines it. Do not emit inline text/cql for generated ActivityDefinition.dynamicValue.
+- If ActivityDefinition.dynamicValue uses text/cql-identifier for a named Library define, the ActivityDefinition must reference the Library that defines it. Do not emit inline text/cql for generated ActivityDefinition.dynamicValue.
 """
 
     return f"""\
@@ -1709,14 +1709,14 @@ def _collect_information_dynamic_values(_questionnaire_canonical: str) -> list[d
         {
             "path": "input.type",
             "expression": {
-                "language": "text/fhirpath",
+                "language": "text/cql-identifier",
                 "expression": "%context.code",
             },
         },
         {
             "path": "input.valueCanonical",
             "expression": {
-                "language": "text/fhirpath",
+                "language": "text/cql-identifier",
                 "expression": f"%context.extension.where(url = '{collect_with_url}').value",
             },
         },
@@ -2530,7 +2530,7 @@ def _build_decision_table_stub_plan_definitions(
             continue
         event = event_index.get(str(rule.get("event") or "").strip()) or {}
         suffix = suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)
-        child_id = f"{resource_id}-{suffix}"
+        child_id = _fhir_resource_id(f"{resource_id}-{suffix}")
         child_actions = _build_decision_table_rule_plan_actions(
             rule,
             event if isinstance(event, dict) else None,
@@ -3941,6 +3941,11 @@ def _deterministic_library_id(base_id: str) -> str:
     return f"{base_id}-logic"
 
 
+def _canonical_for_generated_resource(canonical: str, resource_type: str, raw_id: str) -> str:
+    """Return the canonical URL after applying generated FHIR id normalization."""
+    return f"{canonical}/{resource_type}/{_fhir_resource_id(raw_id)}"
+
+
 def _build_decision_table_reference_map(
     canonical: str,
     topic: str,
@@ -3982,7 +3987,8 @@ def _build_decision_table_reference_map(
         rule_id = str(rule.get("id") or "").strip()
         event_id = str(rule.get("event") or "").strip()
         phase_id = str(rule.get("phase") or "").strip()
-        canonical_ref = f"{canonical}/PlanDefinition/{base_id}-{suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)}"
+        child_id = f"{base_id}-{suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)}"
+        canonical_ref = _canonical_for_generated_resource(canonical, "PlanDefinition", child_id)
         if rule_id:
             reference_map[rule_id] = canonical_ref
         if event_id and event_id in event_index:
@@ -4065,7 +4071,11 @@ def _build_decision_table_action_reference_map(
             action_def = normalized_action_index.get(to_kebab_case(action_key)) or {}
             label = str(action_def.get("label") or action_entry.get("title") or action_key).strip()
             reference_map[rule_id].append({
-                "canonical": f"{canonical}/ActivityDefinition/{to_kebab_case(action_key)}",
+                "canonical": _canonical_for_generated_resource(
+                    canonical,
+                    "ActivityDefinition",
+                    to_kebab_case(action_key),
+                ),
                 "label": label,
                 "normalized_label": to_kebab_case(label),
                 "tokens": _semantic_tokens(label, action_key, action_def.get("description") or ""),
@@ -4118,7 +4128,8 @@ def _build_decision_table_reference_candidates(
             continue
         event_id = str(rule.get("event") or "").strip()
         event = event_index.get(event_id) or {}
-        canonical_ref = f"{canonical}/PlanDefinition/{base_id}-{suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)}"
+        child_id = f"{base_id}-{suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)}"
+        canonical_ref = _canonical_for_generated_resource(canonical, "PlanDefinition", child_id)
         alias_values = [
             rule.get("id"),
             event_id,

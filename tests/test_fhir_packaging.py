@@ -80,14 +80,16 @@ class TestGenerateImplementationGuide:
 
 
 class TestCollectComputableFiles:
-    def test_collects_json_and_cql(self, tmp_path):
-        (tmp_path / "PlanDefinition-test.json").write_text("{}")
-        (tmp_path / "Library-test.json").write_text("{}")
+    def test_collects_fhir_json_and_cql(self, tmp_path):
+        (tmp_path / "PlanDefinition-test.json").write_text(json.dumps({"resourceType": "PlanDefinition"}))
+        (tmp_path / "Library-test.json").write_text(json.dumps({"resourceType": "Library"}))
+        (tmp_path / "CompiledElm.json").write_text(json.dumps({"library": {"identifier": {"id": "CompiledElm"}}}))
         (tmp_path / "TestLogic.cql").write_text("library TestLogic")
         (tmp_path / "notes.txt").write_text("not a fhir file")
 
         json_files, cql_files = collect_computable_files(tmp_path)
         assert len(json_files) == 2
+        assert {f.name for f in json_files} == {"Library-test.json", "PlanDefinition-test.json"}
         assert len(cql_files) == 1
         assert all(f.suffix == ".json" for f in json_files)
         assert all(f.suffix == ".cql" for f in cql_files)
@@ -103,6 +105,7 @@ class TestPreparePackageWorkspace:
         comp_dir = tmp_path / "computable"
         comp_dir.mkdir()
         (comp_dir / "PlanDefinition-test.json").write_text(json.dumps({"resourceType": "PlanDefinition"}))
+        (comp_dir / "TestLogic.json").write_text(json.dumps({"library": {"identifier": {"id": "TestLogic"}}}))
         (comp_dir / "TestLogic.cql").write_text("library TestLogic version '1.0.0'")
 
         workspace_dir = tmp_path / "workspace"
@@ -115,10 +118,14 @@ class TestPreparePackageWorkspace:
         assert (workspace_dir / "ImplementationGuide.json").exists()
         assert (workspace_dir / "input" / "resources" / "ImplementationGuide.json").exists()
         assert (workspace_dir / "input" / "examples" / "PlanDefinition-test.json").exists()
+        assert not (workspace_dir / "input" / "examples" / "TestLogic.json").exists()
         assert (workspace_dir / "input" / "cql" / "TestLogic.cql").exists()
 
         ig = json.loads((workspace_dir / "ImplementationGuide.json").read_text())
         assert ig["packageId"] == "reason.test-topic"
+        refs = {entry["reference"]["reference"] for entry in ig["definition"]["resource"]}
+        assert "PlanDefinition/test" in refs
+        assert "TestLogic" not in refs
 
         packager = tomllib.loads((workspace_dir / "packager.toml").read_text())
         assert packager["dependencies"]["hl7.fhir.uv.cql"] == "2.0.0"

@@ -182,9 +182,22 @@ def generate_packager_toml(
     return "\n".join(lines)
 
 
+def _is_fhir_json_resource(path: Path) -> bool:
+    """Return True when a JSON file is a FHIR resource object."""
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
+    return isinstance(data, dict) and isinstance(data.get("resourceType"), str) and bool(data["resourceType"].strip())
+
+
 def collect_computable_files(computable_dir: Path) -> tuple[list[Path], list[Path]]:
-    """Collect FHIR JSON and CQL files from a computable directory."""
-    json_files = sorted(computable_dir.glob("*.json"))
+    """Collect FHIR JSON resources and CQL files from a computable directory."""
+    json_files = [
+        path
+        for path in sorted(computable_dir.glob("*.json"))
+        if _is_fhir_json_resource(path)
+    ]
     cql_files = sorted(computable_dir.glob("*.cql"))
     return json_files, cql_files
 
