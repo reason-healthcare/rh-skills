@@ -12,6 +12,14 @@ from rh_skills.commands.formalize import formalize, STRATEGY_REGISTRY, _fhir_res
 from tests.conftest import make_tracking, load_tracking
 
 
+def _walk_actions(actions):
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        yield action
+        yield from _walk_actions(action.get("action") or [])
+
+
 @pytest.fixture
 def formalize_topic(tmp_repo):
     """Create a topic with an approved L2 artifact ready for formalization."""
@@ -619,9 +627,9 @@ sections:
             dynamic_values = {dv["path"]: dv["expression"] for dv in activity.get("dynamicValue", [])}
             collect_with_url = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
             expected_collect_with_expr = f"%context.extension.where(url = '{collect_with_url}').value"
-            assert dynamic_values["input.type"]["language"] == "text/fhirpath"
+            assert dynamic_values["input.type"]["language"] == "text/cql-identifier"
             assert dynamic_values["input.type"]["expression"] == "%context.code"
-            assert dynamic_values["input.valueCanonical"]["language"] == "text/fhirpath"
+            assert dynamic_values["input.valueCanonical"]["language"] == "text/cql-identifier"
             assert dynamic_values["input.valueCanonical"]["expression"] == expected_collect_with_expr
             assert "relatedArtifact" not in activity
             assert not (computable / "Questionnaire-qol-assessment.json").exists()
@@ -1529,6 +1537,104 @@ sections:
             assert assess_plan["type"]["coding"][0]["code"] == "workflow-definition"
             nested = assess_plan["action"][0]["definitionCanonical"]
             assert nested.endswith("/PlanDefinition/semantic-link-topic-recommendation-assess-candidacy")
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_stub_mode_care_pathway_links_shortened_decision_table_plan_ids(self, tmp_repo):
+        topic = "long-canonical-link-topic"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        structured_dir.mkdir(parents=True)
+        (topic_dir / "computable").mkdir()
+        long_rule_id = "r-withhold-antibacterial-without-purulence-for-adult-crs-surgical-management"
+
+        (structured_dir / "decision-table.yaml").write_text(
+            f"""\
+artifact_type: decision-table
+sections:
+  events:
+    - id: antibacterial-review
+      label: Antibacterial review
+      trigger:
+        type: named-event
+        name: antibacterial-review
+  conditions:
+    - id: no-purulence
+      label: No purulence
+      values: [Yes, No]
+  actions:
+    - id: withhold-antibacterial-therapy
+      label: Withhold antibacterial therapy
+      kind: ServiceRequest
+  rules:
+    - id: {long_rule_id}
+      event: antibacterial-review
+      when:
+        no-purulence: Yes
+      then: [withhold-antibacterial-therapy]
+"""
+        )
+        (structured_dir / "care-pathway.yaml").write_text(
+            f"""\
+artifact_type: care-pathway
+metadata:
+  derived_from: [decision-table]
+sections:
+  steps:
+    - id: crs-pathway
+      label: CRS pathway
+    - id: antibacterial-step
+      label: Review antibacterial prescribing
+      parent_id: crs-pathway
+      rule_id: {long_rule_id}
+"""
+        )
+        self._write_topic_config(topic_dir, topic)
+        make_tracking(tmp_repo, topics=[{
+            "name": topic,
+            "structured": [
+                {"name": "decision-table", "artifact_type": "decision-table", "status": "approved"},
+                {"name": "care-pathway", "artifact_type": "care-pathway", "status": "approved"},
+            ],
+            "computable": [],
+            "events": [],
+        }])
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            runner = CliRunner()
+            assert runner.invoke(formalize, [topic, "decision-table"]).exit_code == 0
+            result = runner.invoke(formalize, [topic, "care-pathway"])
+            assert result.exit_code == 0, result.output
+
+            computable = topic_dir / "computable"
+            plan_resources = [
+                json.loads(path.read_text())
+                for path in computable.glob("PlanDefinition-*.json")
+            ]
+            plan_urls = {resource["url"] for resource in plan_resources}
+            raw_rule_plan_id = f"{topic}-recommendation-{long_rule_id}"
+            shortened_rule_plan_id = _fhir_resource_id(raw_rule_plan_id)
+            assert len(shortened_rule_plan_id) <= 64
+            assert shortened_rule_plan_id != raw_rule_plan_id
+            assert f"http://example.org/fhir/PlanDefinition/{shortened_rule_plan_id}" in plan_urls
+            assert f"http://example.org/fhir/PlanDefinition/{raw_rule_plan_id}" not in plan_urls
+
+            broken_refs = []
+            for resource in plan_resources:
+                for action in _walk_actions(resource.get("action") or []):
+                    ref = action.get("definitionCanonical")
+                    if ref and "/PlanDefinition/" in ref and ref not in plan_urls:
+                        broken_refs.append(ref)
+            assert broken_refs == []
+
+            pathway_refs = [
+                action["definitionCanonical"]
+                for resource in plan_resources
+                for action in _walk_actions(resource.get("action") or [])
+                if action.get("definitionCanonical")
+            ]
+            assert f"http://example.org/fhir/PlanDefinition/{shortened_rule_plan_id}" in pathway_refs
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 

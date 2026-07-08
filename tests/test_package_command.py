@@ -33,6 +33,9 @@ def packagable_topic(tmp_repo):
         "type": {"coding": [{"code": "logic-library"}]},
     }
     (computable_dir / "Library-test-rules-library.json").write_text(json.dumps(lib, indent=2))
+    (computable_dir / "TestRulesLogic.json").write_text(json.dumps({
+        "library": {"identifier": {"id": "TestRulesLogic", "version": "1.0.0"}},
+    }, indent=2))
 
     (computable_dir / "TestRulesLogic.cql").write_text(
         "library TestRulesLogic version '1.0.0'\nusing FHIR version '4.0.1'\n"
@@ -94,6 +97,7 @@ class TestPackageCommand:
         assert (workspace_dir / "ImplementationGuide.json").exists()
         assert (workspace_dir / "input" / "resources" / "ImplementationGuide.json").exists()
         assert (workspace_dir / "input" / "examples" / "PlanDefinition-test-rules.json").exists()
+        assert not (workspace_dir / "input" / "examples" / "TestRulesLogic.json").exists()
         assert (workspace_dir / "input" / "cql" / "TestRulesLogic.cql").exists()
 
         assert calls == [
