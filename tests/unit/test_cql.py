@@ -96,9 +96,11 @@ def test_translate_success_echoes_elm_path(tmp_path, monkeypatch):
         mock_run.return_value = MagicMock(returncode=0)
         result = CliRunner().invoke(cql, ["translate", "test-topic", "TestLib"])
     assert result.exit_code == 0
-    assert "TestLib.json" in result.output
+    expected_elm = tmp_path / "topics/test-topic/computable/elm/TestLib.json"
+    assert str(expected_elm) in result.output
     cmd = mock_run.call_args[0][0]
     assert cmd[1:3] == ["cql", "compile"]
+    assert cmd[-1] == str(expected_elm)
 
 
 def test_translate_failure_exits_nonzero(tmp_path, monkeypatch):

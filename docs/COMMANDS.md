@@ -457,17 +457,21 @@ rh-skills formalize <topic> <artifact> [--strategy TYPE] [--dry-run]
 - Applies the type-specific conversion strategy from SKILL.md/reference.md
 - Writes FHIR JSON resources to `topics/<topic>/computable/`
 - Writes CQL libraries as `.cql` files alongside the JSON
+- If a generated FHIR `Library` has a matching `.cql` file, embeds it as
+  `Library.content[]` with `contentType: text/cql`
+- If the same Library has matching compiled ELM JSON under `computable/elm/`, embeds
+  it as `Library.content[]` with `contentType: application/elm+json`
 - Records `computable_converged` event in tracking.yaml
 
 **Strategy → Output:**
 
 | L2 Type | Primary Output | Supporting Output |
 |---------|---------------|-------------------|
-| evidence-summary | Evidence.json | EvidenceVariable.json, Citation.json |
-| decision-table | PlanDefinition.json | ActivityDefinition.json, Library.json, .cql |
+| evidence-summary | Evidence.json | EvidenceVariable.json |
+| decision-table | PlanDefinition.json | ActivityDefinition.json, Library.json, .cql, optional ELM JSON |
 | care-pathway | PlanDefinition.json | ActivityDefinition.json |
 | terminology | ValueSet.json | ConceptMap.json |
-| measure | Measure.json | Library.json, .cql |
+| measure | Measure.json | Library.json, .cql, optional ELM JSON |
 | assessment | Questionnaire.json | Library.json (scoring) |
 | policy | PlanDefinition.json | Questionnaire.json (DTR) |
 
@@ -686,7 +690,10 @@ rh-skills cql translate <topic> <library>
 - `topic` — Topic identifier
 - `library` — CQL library name without extension
 
-**Behavior:** Runs `rh cql compile` against the library. Writes ELM JSON output alongside the source `.cql` file. Exit 0 on success.
+**Behavior:** Runs `rh cql compile` against the library. Writes ELM JSON output
+to `topics/<topic>/computable/elm/<library>.json`. Exit 0 on success. Re-run
+`rh-skills formalize <topic> <artifact> --force` after translation to embed the
+compiled ELM in the generated FHIR Library JSON.
 
 **Example:**
 ```bash

@@ -80,13 +80,15 @@ def validate(topic: str, library: str) -> None:
 @click.argument("topic")
 @click.argument("library")
 def translate(topic: str, library: str) -> None:
-    """Compile a .cql file to ELM JSON using `rh cql compile`."""
+    """Compile CQL to topics/<topic>/computable/elm/<library>.json."""
     rh = _resolve_rh_binary()
     cql_file = _cql_path(topic, library)
     if not cql_file.exists():
         raise click.ClickException(f"CQL file not found: {cql_file}")
 
-    elm_file = cql_file.parent / f"{library}.json"
+    elm_dir = cql_file.parent / "elm"
+    elm_dir.mkdir(exist_ok=True)
+    elm_file = elm_dir / f"{library}.json"
     result = subprocess.run(
         [rh, "cql", "compile", str(cql_file), "--output", str(elm_file)],
         capture_output=False,
