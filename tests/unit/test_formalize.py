@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import base64
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from rh_skills.commands.formalize import (
     _activity_definition_intent,
     _build_care_pathway_stub_plan_definitions,
     _build_stub_resources,
+    _embed_cql_in_library,
     _enforce_generated_fhir_ids,
     _fhir_resource_id,
     _get_strategy,
@@ -108,6 +110,54 @@ def test_enforce_generated_fhir_ids_rewrites_canonical_and_relative_references()
         f"http://example.org/fhir/PlanDefinition/{plan_id}"
     )
     assert resources[2]["exposureBackground"]["reference"] == f"PlanDefinition/{plan_id}"
+
+
+def test_embed_cql_in_library_also_embeds_matching_elm_json(tmp_path):
+    library_path = tmp_path / "Library-example-logic.json"
+    library_path.write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "example-logic",
+        "name": "ExampleLogic",
+        "content": [{"contentType": "text/plain", "data": "keep"}],
+    }))
+    (tmp_path / "ExampleLogic.cql").write_text("library ExampleLogic version '1.0.0'\n")
+    elm_dir = tmp_path / "elm"
+    elm_dir.mkdir()
+    (elm_dir / "ExampleLogic.json").write_text(json.dumps({
+        "library": {"identifier": {"id": "ExampleLogic", "version": "1.0.0"}},
+    }))
+    (tmp_path / "Library-other.json").write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "other",
+    }))
+
+    assert _embed_cql_in_library(library_path, tmp_path) is True
+
+    library = json.loads(library_path.read_text())
+    content_types = [entry["contentType"] for entry in library["content"]]
+    assert content_types == ["text/plain", "text/cql", "application/elm+json"]
+    elm_entry = next(entry for entry in library["content"] if entry["contentType"] == "application/elm+json")
+    decoded = json.loads(base64.b64decode(elm_entry["data"]).decode("utf-8"))
+    assert decoded["library"]["identifier"]["id"] == "ExampleLogic"
+
+
+def test_embed_cql_in_library_ignores_root_level_elm_json(tmp_path):
+    library_path = tmp_path / "Library-example-logic.json"
+    library_path.write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "example-logic",
+        "name": "ExampleLogic",
+    }))
+    (tmp_path / "ExampleLogic.cql").write_text("library ExampleLogic version '1.0.0'\n")
+    (tmp_path / "ExampleLogic.json").write_text(json.dumps({
+        "library": {"identifier": {"id": "ExampleLogic", "version": "1.0.0"}},
+    }))
+
+    assert _embed_cql_in_library(library_path, tmp_path) is True
+
+    library = json.loads(library_path.read_text())
+    content_types = [entry["contentType"] for entry in library["content"]]
+    assert content_types == ["text/cql"]
 
 
 def test_plan_definition_condition_hoisting_moves_shared_sibling_conditions_to_parent():

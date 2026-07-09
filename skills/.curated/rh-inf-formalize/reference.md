@@ -40,7 +40,7 @@ artifacts:
 
 | `artifact_type` | `strategy` | `l3_targets` |
 |-----------------|------------|-------------|
-| `evidence-summary` | `evidence-summary` | Evidence, EvidenceVariable, Citation |
+| `evidence-summary` | `evidence-summary` | Evidence, EvidenceVariable |
 | `decision-table` | `decision-table` | PlanDefinition (eca-rule), ActivityDefinition, Library (CQL) |
 | `care-pathway` | `care-pathway` | PlanDefinition (clinical-protocol), ActivityDefinition |
 | `terminology` | `terminology` | ValueSet, ConceptMap |
@@ -84,7 +84,7 @@ Each L2 artifact type maps to specific FHIR resources via the strategy table:
 
 | Strategy | Output Files |
 |----------|-------------|
-| `evidence-summary` | `Evidence-<id>.json`, `EvidenceVariable-<id>.json`, `Citation-<id>.json` |
+| `evidence-summary` | `Evidence-<id>.json`, `EvidenceVariable-<id>.json` |
 | `decision-table` | `PlanDefinition-<id>.json`, `ActivityDefinition-<action-id>.json`, `Library-<id>.json`, `<Name>Logic.cql` |
 | `care-pathway` | `PlanDefinition-<id>.json`, `ActivityDefinition-<id>.json` |
 | `terminology` | `ValueSet-<id>.json`, `ConceptMap-<id>.json` |
@@ -120,7 +120,7 @@ case the CLI falls back to `name`.
 | Measure | `group[].population[]` (numerator + denominator), `scoring` |
 | Questionnaire | `item[]` with `linkId` per item |
 | ValueSet | `compose.include[]` with at least one entry |
-| Evidence | `certainty[]` with at least one rating |
+| Evidence | R4-valid core Evidence shape, including `exposureBackground` when Evidence is emitted |
 | Library | `type` |
 | ConceptMap | `group[]` with at least one entry |
 | ActivityDefinition | `kind` |
@@ -136,9 +136,11 @@ Additional checks:
 Beyond structural field validation, verify mode checks semantic completeness
 per strategy type:
 
-**evidence-summary**: Each Evidence resource must have at least one `certainty`
-entry with a `rating` value. Each EvidenceVariable must define its role (e.g.,
-population, intervention, outcome) via characteristic criteria.
+**evidence-summary**: Evidence resources must use FHIR R4-valid fields.
+Do not emit R5-only `Citation` resources or R5-only Evidence fields. Source
+citations should be preserved as `Evidence.relatedArtifact[]`. EvidenceVariable
+characteristics must include valid `definition[x]` content, such as
+`definitionCodeableConcept`, rather than description-only characteristics.
 
 **decision-table**: PlanDefinition `action[].condition[]` must include at
 least one `expression` with `language: text/cql-identifier`. At least one
@@ -190,9 +192,9 @@ The strategy summaries below are the active reference for this skill.
 
 | L2 Input | FHIR Output |
 |----------|-------------|
-| `sections.findings[]` | One **Evidence** per finding. `description` from statement, `certainty[].rating` from grade. |
-| `sections.populations[]`, `interventions[]`, `outcomes[]` | One **EvidenceVariable** per PICOTS concept. `characteristic[]` with coded criteria. |
-| `references[]` / `derived_from[]` | One **Citation** per source. Link via `Evidence.relatedArtifact[]`. |
+| `sections.findings[]` | One **Evidence** per finding when enough R4-valid Evidence context is available. `description` from statement; source support via `relatedArtifact[]`. |
+| `sections.populations[]`, `interventions[]`, `outcomes[]` | One **EvidenceVariable** per PICOTS concept. `characteristic[]` entries must include valid R4 `definition[x]`, such as `definitionCodeableConcept`. |
+| `references[]` / `derived_from[]` | Preserve source citations in `Evidence.relatedArtifact[]`; do not emit FHIR R5 `Citation` resources in R4 packages. |
 
 **MCP**: Search for coded criteria in EvidenceVariable characteristics.
 **CQL**: Not applicable.
@@ -248,7 +250,7 @@ Executable action coding rule:
   `ServiceRequest` → LOINC first for lab/observable/instrument orders, otherwise SNOMED CT first for procedural/imaging/referral orders;
   `CollectInformation` → LOINC first for questionnaire/instrument collection when available, otherwise SNOMED CT first;
   `CommunicationRequest` → SNOMED CT first;
-  `Task` → legacy only; prefer a more specific action kind before coding.
+  `Task` → valid for task-oriented activities such as collect-information when the FHIR R4 kind is `Task`.
 
 ### care-pathway → Clinical Protocol
 

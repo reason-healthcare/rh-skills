@@ -109,7 +109,7 @@ During formalization, **ReasonHub MCP** was called again to:
 |---|---|---|
 | `terminology` | terminology.yaml | `ValueSet-vs-htn-dx-icd10.json`, `ValueSet-vs-htn-dx-snomed.json`, `ValueSet-vs-bp-obs-loinc.json`, `ValueSet-vs-antihtn-rxnorm.json`, `ValueSet-vs-ckd-comorbidity.json`, `ValueSet-vs-sdoh-icd10.json`, `ValueSet-vs-bp-screening-snomed.json`, `ConceptMap-terminology-conceptmap.json` |
 | `assessment` | assessment.yaml | `Questionnaire-assessment.json` (9 items with LOINC/SNOMED/ICD-10 codes + UCUM units) |
-| `evidence-summary` | evidence-summary.yaml | `Evidence-evidence-summary.json`, `EvidenceVariable-evidence-summary-evidencevariable.json`, `Citation-evidence-summary-citation.json` |
+| `evidence-summary` | evidence-summary.yaml | `Evidence-evidence-summary.json`, `EvidenceVariable-evidence-summary-evidencevariable.json` |
 | `decision-table` | decision-table.yaml | `PlanDefinition-decision-table.json` (10 ECA rules), `Library-decision-table-library.json` + `DecisionTableLibrary.cql` |
 | `measure` ⭐ | measure.yaml | `Measure-measure.json` (proportional, 4 populations, 3 stratifications), `Library-measure-library.json` + `MeasureLibrary.cql` |
 
@@ -144,7 +144,7 @@ Exits 0 on success. On failure it prints the offending line, column, and a categ
 **Step 2 — Compile to ELM JSON**
 
 ```bash
-# rh-skills wrapper — writes ELM alongside the .cql file
+# rh-skills wrapper — writes ELM under computable/elm/
 rh-skills cql translate hypertension-cms-measure MeasureLibrary
 # output → topics/hypertension-cms-measure/computable/elm/MeasureLibrary.json
 
@@ -161,7 +161,11 @@ rh cql compile topics/hypertension-cms-measure/computable/MeasureLibrary.cql \
 rh cql compile ... --strict
 ```
 
-ELM JSON is what the FHIR Library resource embeds as `content[type=application/elm+json]`. It must be regenerated every time the `.cql` source changes — stale ELM causes silent behavior differences at runtime.
+ELM JSON is what the FHIR Library resource embeds as
+`content[type=application/elm+json]`. It must be regenerated every time the
+`.cql` source changes, then `rh-skills formalize <topic> <artifact> --force`
+must be re-run so the FHIR Library embeds the current CQL and ELM content.
+Stale ELM causes silent behavior differences at runtime.
 
 **Step 3 — Evaluate expressions against fixture data (spot-check / debug)**
 

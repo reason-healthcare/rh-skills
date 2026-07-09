@@ -65,7 +65,7 @@ artifact row named `concepts`, materialized at
 
 | L2 Type | Strategy | Primary Resource | Supporting Resources |
 |---------|----------|------------------|---------------------|
-| `evidence-summary` | evidence-summary | Evidence | EvidenceVariable, Citation |
+| `evidence-summary` | evidence-summary | Evidence | EvidenceVariable |
 | `decision-table` | decision-table | PlanDefinition (eca-rule) | ActivityDefinition, Library (CQL) |
 | `care-pathway` | care-pathway | PlanDefinition (clinical-protocol) | ActivityDefinition |
 | `terminology` | terminology | ValueSet | ConceptMap |
@@ -150,7 +150,7 @@ Executable activity coding rule:
   `ServiceRequest` → prefer LOINC for lab/observable/instrument orders, otherwise SNOMED CT for procedural/imaging/referral orders;
   `CollectInformation` → prefer LOINC when a questionnaire/instrument code exists, otherwise SNOMED CT;
   `CommunicationRequest` → usually SNOMED CT;
-  `Task` → legacy only; prefer a more specific action kind before coding.
+  `Task` → valid for task-oriented activities such as collect-information when the FHIR R4 kind is `Task`.
 - Do not use recommendation prose or text-only `code.text` as a substitute for coding.
 - If MCP is unavailable, emit an explicit `TODO:MCP-UNREACHABLE` placeholder coding so verify fails visibly.
 
@@ -420,16 +420,17 @@ FHIR files directly.
      the authoritative source for logic, populations, conditions, and valuesets
    - **Output**: `topics/<topic>/computable/<LibraryName>.cql`
 
-   After the sub-agent completes, confirm the library compiles and embed it:
+   After the sub-agent completes, confirm the library compiles and embed both
+   CQL and ELM into the FHIR Library resource:
 
    ```sh
    rh-skills cql validate <topic> <LibraryName>   # must exit 0
    rh-skills cql translate <topic> <LibraryName>  # compile to ELM JSON
-   rh-skills formalize <topic> <artifact> --force  # re-run to embed CQL in Library JSON
+   rh-skills formalize <topic> <artifact> --force  # re-run to embed CQL + ELM in Library JSON
    ```
 
    Return here (step 7 — packaging) only after the library validates cleanly
-   and `rh-skills formalize --force` has embedded the CQL.
+   and `rh-skills formalize --force` has embedded the CQL and compiled ELM.
 
    Skip this step for strategies that do not produce CQL
    (`evidence-summary`, `care-pathway`, `terminology`, `assessment`).
@@ -511,7 +512,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    | Questionnaire | `item[]` with `linkId` on every item |
    | ValueSet | `compose.include[]` with at least one entry |
    | ConceptMap | `group[]` with `element[].target[]` |
-   | Evidence | `certainty[]` with at least one entry |
+   | Evidence | R4-valid core Evidence shape, including `exposureBackground` when Evidence is emitted |
    | EvidenceVariable | `characteristic[]` with at least one entry |
    | ActivityDefinition | `kind` |
 

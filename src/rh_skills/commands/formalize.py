@@ -58,26 +58,79 @@ def _find_best_cql(cql_files: list[Path], lib_name: str) -> Path | None:
     return cql_files[0]
 
 
-def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
-    """Embed the best-matching CQL file as a base64 content item in a Library JSON.
+def _elm_identifier(path: Path) -> str | None:
+    """Return the ELM library identifier for a compiled ELM JSON file."""
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    library = data.get("library") if isinstance(data, dict) else None
+    if not isinstance(library, dict):
+        return None
+    identifier = library.get("identifier")
+    if not isinstance(identifier, dict):
+        return None
+    value = identifier.get("id")
+    return str(value).strip() if value else None
 
-    Returns True if a CQL file was found and embedded, False otherwise.
+
+def _find_best_elm_json(computable_dir: Path, lib_name: str) -> Path | None:
+    """Return the compiled ELM JSON file matching a Library resource name."""
+    candidates: list[tuple[Path, str]] = []
+    elm_dir = computable_dir / "elm"
+    if not elm_dir.exists():
+        return None
+    for path in sorted(elm_dir.glob("*.json")):
+        identifier = _elm_identifier(path)
+        if identifier:
+            candidates.append((path, identifier))
+    if not candidates:
+        return None
+
+    for path, identifier in candidates:
+        if path.stem == lib_name or identifier == lib_name:
+            return path
+    lib_lower = lib_name.lower()
+    for path, identifier in candidates:
+        if path.stem.lower() == lib_lower or identifier.lower() == lib_lower:
+            return path
+    lib_kebab = to_kebab_case(lib_name)
+    for path, identifier in candidates:
+        if to_kebab_case(path.stem) == lib_kebab or to_kebab_case(identifier) == lib_kebab:
+            return path
+    return None
+
+
+def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
+    """Embed matching CQL and ELM JSON content items in a Library JSON.
+
+    Returns True if executable content was found and embedded, False otherwise.
     """
     cql_files = sorted(computable_dir.glob("*.cql"))
-    if not cql_files:
-        return False
-
     resource = json.loads(library_path.read_text())
     if resource.get("resourceType") != "Library":
         return False
 
-    cql_file = _find_best_cql(cql_files, resource.get("name", ""))
-    if cql_file is None:
+    lib_name = str(resource.get("name") or "")
+    cql_file = _find_best_cql(cql_files, lib_name)
+    elm_file = _find_best_elm_json(computable_dir, lib_name)
+    if cql_file is None and elm_file is None:
         return False
 
-    b64 = base64.b64encode(cql_file.read_bytes()).decode("ascii")
-    content = [c for c in resource.get("content", []) if c.get("contentType") != "text/cql"]
-    content.append({"contentType": "text/cql", "data": b64})
+    content = [
+        c for c in resource.get("content", [])
+        if c.get("contentType") not in {"text/cql", "application/elm+json"}
+    ]
+    if cql_file is not None:
+        content.append({
+            "contentType": "text/cql",
+            "data": base64.b64encode(cql_file.read_bytes()).decode("ascii"),
+        })
+    if elm_file is not None:
+        content.append({
+            "contentType": "application/elm+json",
+            "data": base64.b64encode(elm_file.read_bytes()).decode("ascii"),
+        })
     resource["content"] = content
     library_path.write_text(json.dumps(resource, indent=2, ensure_ascii=False) + "\n")
     return True
@@ -4367,7 +4420,8 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
     """Convert an L2 structured artifact to FHIR R4 JSON resources.
 
     Reads the L2 artifact, selects a type-specific strategy, generates
-    FHIR JSON + CQL via LLM, normalizes, and writes to computable/.
+    FHIR JSON + CQL via LLM, normalizes, writes to computable/, and embeds
+    matching CQL/ELM content into generated Library resources when available.
     """
     tracking = require_tracking()
     topic_entry = require_topic(tracking, topic)

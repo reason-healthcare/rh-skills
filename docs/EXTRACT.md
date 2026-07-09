@@ -28,7 +28,7 @@ The **rh-inf-extract** skill is the **L2 structured artifact extraction** stage 
 
 | Type | SME Question | L3 FHIR Target | Key Sections |
 |------|-------------|-----------------|--------------|
-| **evidence-summary** | What does the evidence say? | Evidence, EvidenceVariable, Citation | summary_points, risk_factors, evidence_traceability |
+| **evidence-summary** | What does the evidence say? | Evidence, EvidenceVariable | summary_points, risk_factors, evidence_traceability |
 | **decision-table** | What decisions must be made? | PlanDefinition (eca-rule), ActivityDefinition, Library (CQL) | events, conditions, actions, rules, evidence_traceability |
 | **care-pathway** | In what order do things happen? | PlanDefinition (clinical-protocol), ActivityDefinition | steps (flat model with optional `parent_id`, `actor`, `applicability_condition`), transitions |
 | **terminology** | What codes define the concepts? | ValueSet, ConceptMap | value_sets, concept_maps |

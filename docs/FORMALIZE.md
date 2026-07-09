@@ -11,7 +11,7 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 | Command | Purpose | Writes To |
 |---------|---------|-----------|
 | `rh-skills promote formalize-plan <topic>` | Generate review packet with per-type strategies | `process/plans/formalize-plan.yaml` |
-| `rh-skills formalize <topic> <artifact>` | Generate FHIR JSON + CQL from approved L2 artifact | `computable/*.json`, `*.cql` |
+| `rh-skills formalize <topic> <artifact>` | Generate FHIR JSON + CQL from approved L2 artifact; embed matching CQL/ELM in Library resources | `computable/*.json`, `*.cql` |
 | `rh-skills package <topic>` | Bundle into FHIR NPM package | `package/` |
 | `rh-skills validate <topic> l3 <artifact>` | Verify type-specific structural completeness | (read-only) |
 
@@ -21,7 +21,7 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
 
 | L2 Type | Primary FHIR Resource | Supporting | Required Sections |
 |---------|----------------------|-----------|-------------------|
-| evidence-summary | Evidence | EvidenceVariable, Citation | evidence |
+| evidence-summary | Evidence | EvidenceVariable | evidence |
 | decision-table | PlanDefinition (eca-rule) | ActivityDefinition, Library (CQL) | actions, libraries |
 | care-pathway | PlanDefinition (clinical-protocol) | ActivityDefinition | pathways, actions |
 | terminology | ValueSet | ConceptMap | value_sets |
@@ -63,8 +63,9 @@ The formalize workflow converts **L2 structured artifacts** into **L3 FHIR R4 co
    ├─ normalize_resource() → fix ids, urls, dates
    ├─ validate_resource() → per-type required fields
    ├─ Writes ResourceType-id.json + .cql scaffold to computable/
+   ├─ Embeds matching CQL and compiled ELM JSON into generated Library resources
    ├─ If strategy includes CQL (decision-table, measure, policy):
-   │    └─ rh-inf-cql authors full CQL from scaffold → validate + translate
+   │    └─ rh-inf-cql authors full CQL from scaffold → validate + translate → re-run formalize --force
    └─ Event: computable_converged
 
 4. VERIFY: rh-inf-formalize verify (invokes rh-skills validate)
@@ -111,7 +112,16 @@ Two formalize strategies produce a `.cql` source file alongside the FHIR JSON:
 | `decision-table` | Library (CQL) | PlanDefinition (eca-rule), ActivityDefinition |
 | `measure` | Library (CQL) | Measure |
 
-`rh-skills formalize` writes a `.cql` scaffold to `topics/<topic>/computable/<Library>.cql`. The **`rh-inf-cql` skill** is responsible for authoring, reviewing, and validating the CQL content after the scaffold is generated. The FHIR JSON wrapper (Library.json, Measure.json) remains `rh-inf-formalize`'s responsibility.
+`rh-skills formalize` writes a `.cql` scaffold to
+`topics/<topic>/computable/<Library>.cql`. The **`rh-inf-cql` skill** is
+responsible for authoring, reviewing, validating, and translating the CQL
+content after the scaffold is generated. `rh-skills cql translate` writes
+compiled ELM JSON under
+`topics/<topic>/computable/elm/<Library>.json`. Re-run
+`rh-skills formalize <topic> <artifact> --force` after translation so the FHIR
+`Library` resource embeds both `text/cql` and `application/elm+json` content.
+The FHIR JSON wrapper (Library.json, Measure.json) remains
+`rh-inf-formalize`'s responsibility.
 
 **CQL workflow after formalize:**
 
