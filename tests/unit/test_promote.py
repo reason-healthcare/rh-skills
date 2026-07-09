@@ -8,7 +8,15 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from rh_skills.commands.promote import _approved_extract_artifacts, _approved_formalize_target, _sanitize_yaml, _load_concept_csv, _write_concept_csv, promote
+from rh_skills.commands.promote import (
+    _approved_extract_artifacts,
+    _approved_formalize_target,
+    _build_stub_l2_artifact,
+    _load_concept_csv,
+    _sanitize_yaml,
+    _write_concept_csv,
+    promote,
+)
 
 
 def load_yaml(path):
@@ -39,6 +47,24 @@ def structured_terminology_path(tmp_repo, topic_name="my-skill", artifact_name="
     return (
         tmp_repo / "topics" / topic_name / "structured" / "terminologies" / artifact_name / "terminology.yaml"
     )
+
+
+def set_agent_stub_response(monkeypatch, artifact_name="criteria", artifact_type="evidence-summary"):
+    monkeypatch.setenv("RH_STUB_RESPONSE", f"""\
+id: {artifact_name}
+name: {artifact_name}
+title: Test Artifact
+version: "1.0.0"
+status: draft
+domain: testing
+description: Agent-injected test content.
+derived_from:
+  - ada-guidelines
+artifact_type: {artifact_type}
+clinical_question: Test question
+sections:
+  summary: Agent-injected summary.
+""")
 
 
 def setup_topic_with_source(tmp_repo, topic_name="my-skill", source_name="ada-guidelines"):
@@ -322,6 +348,7 @@ def write_formalize_plan(tmp_repo, topic_name="my-skill", status="approved", art
 
 def test_derive_creates_l2_artifact_file(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    set_agent_stub_response(monkeypatch, "criteria")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
@@ -331,6 +358,7 @@ def test_derive_creates_l2_artifact_file(tmp_repo, monkeypatch):
 
 def test_derive_assessment_uses_grouped_structured_layout(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    set_agent_stub_response(monkeypatch, "phq9", "assessment")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(
@@ -356,6 +384,7 @@ def test_derive_assessment_uses_grouped_structured_layout(tmp_repo, monkeypatch)
 
 def test_derive_updates_tracking_structured_list(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    set_agent_stub_response(monkeypatch, "criteria")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
@@ -366,6 +395,7 @@ def test_derive_updates_tracking_structured_list(tmp_repo, monkeypatch):
 
 def test_derive_records_structured_derived_event(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    set_agent_stub_response(monkeypatch, "criteria")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     runner.invoke(promote, ["derive", "my-skill", "criteria", "--source", "ada-guidelines"])
@@ -377,6 +407,7 @@ def test_derive_records_structured_derived_event(tmp_repo, monkeypatch):
 
 def test_derive_count_creates_n_artifacts(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    set_agent_stub_response(monkeypatch, "risk")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, ["derive", "my-skill", "risk", "--source", "ada-guidelines", "--count", "3"])
@@ -398,6 +429,7 @@ def test_derive_dry_run_does_not_create_file(tmp_repo, monkeypatch):
 
 def test_derive_existing_artifact_requires_force(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    set_agent_stub_response(monkeypatch, "criteria")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
 
@@ -484,8 +516,37 @@ def test_derive_fails_exit_2_if_topic_not_found(tmp_repo, monkeypatch):
     assert result.exit_code == 2
 
 
-def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
+def test_derive_agent_response_writes_rich_extract_fields(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.setenv("RH_STUB_RESPONSE", """\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: testing
+description: Agent-injected decision table.
+derived_from:
+  - ada-guidelines
+artifact_type: decision-table
+clinical_question: Who should be screened?
+sections:
+  summary: Screen adults at risk.
+  evidence_traceability:
+    - claim_id: crit-001
+      statement: Screen adults at risk
+      evidence:
+        - source: ada-guidelines
+          locator: Section 2
+concerns:
+  - issue: Interval differs
+    positions:
+      - source: ada-guidelines
+        statement: Annual screening
+    preferred_interpretation:
+      source: ada-guidelines
+      rationale: Explicit interval language
+""")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
@@ -510,31 +571,51 @@ def test_derive_rich_extract_fields_written_in_stub_mode(tmp_repo, monkeypatch):
 
 def test_derive_invalid_evidence_ref_format_exits_2(tmp_repo, monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: criteria
+name: criteria
+title: Criteria
+version: "1.0.0"
+status: draft
+domain: testing
+description: Agent-authored test content.
+derived_from:
+  - ada-guidelines
+artifact_type: evidence-summary
+sections:
+  summary: Content.
+""")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
         "derive", "my-skill", "criteria",
         "--source", "ada-guidelines",
         "--evidence-ref", "broken-format",
+        "--body-file", str(body_file),
     ])
     assert result.exit_code == 2
+    assert "--evidence-ref must use" in result.output
 
 
 def test_derive_concern_same_issue_merges_positions(tmp_repo, monkeypatch):
     """Two --concern flags with the same issue merge into one entry with multiple positions."""
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     setup_topic_with_source(tmp_repo)
-    runner = CliRunner()
-    result = runner.invoke(promote, [
-        "derive", "my-skill", "hba1c-target",
-        "--source", "ada-guidelines",
-        "--artifact-type", "decision-table",
-        "--concern", "HbA1c target|ada-guidelines|ADA recommends <7.0%",
-        "--concern", "HbA1c target|aace-guidelines|AACE recommends ≤6.5%|aace-guidelines|More specific target",
-    ])
-    assert result.exit_code == 0, result.output
-    artifact_path = structured_decision_table_path(tmp_repo, "my-skill", "hba1c-target")
-    data = YAML(typ="safe").load(artifact_path.read_text())
+    content = _build_stub_l2_artifact(
+        artifact_name="hba1c-target",
+        source=("ada-guidelines",),
+        artifact_type="decision-table",
+        clinical_question=None,
+        required_sections=(),
+        evidence_refs=(),
+        concerns=(
+            "HbA1c target|ada-guidelines|ADA recommends <7.0%",
+            "HbA1c target|aace-guidelines|AACE recommends <=6.5%|aace-guidelines|More specific target",
+        ),
+    )
+    data = YAML(typ="safe").load(content)
     concerns = data.get("concerns", [])
     assert len(concerns) == 1, f"Expected 1 merged concern entry, got {len(concerns)}"
     assert len(concerns[0]["positions"]) == 2
@@ -546,12 +627,34 @@ def test_derive_concern_same_issue_merges_positions(tmp_repo, monkeypatch):
 def test_derive_conflict_alias_still_writes_concerns(tmp_repo, monkeypatch):
     """Legacy --conflict remains supported but writes canonical concerns[]."""
     monkeypatch.setenv("LLM_PROVIDER", "stub")
+    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
+    body_file = tmp_repo / "agent-body.yaml"
+    body_file.write_text("""\
+id: screening-criteria
+name: screening-criteria
+title: Screening Criteria
+version: "1.0.0"
+status: draft
+domain: testing
+description: Agent-authored test content.
+derived_from:
+  - ada-guidelines
+artifact_type: evidence-summary
+sections:
+  summary: Content.
+concerns:
+  - issue: Interval differs
+    positions:
+      - source: ada-guidelines
+        statement: Annual screening
+""")
     setup_topic_with_source(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
         "derive", "my-skill", "screening-criteria",
         "--source", "ada-guidelines",
         "--conflict", "Interval differs|ada-guidelines|Annual screening",
+        "--body-file", str(body_file),
     ])
     assert result.exit_code == 0, result.output
     data = load_yaml(structured_evidence_summary_path(tmp_repo, "my-skill", "screening-criteria"))
@@ -2008,8 +2111,8 @@ sections:
     assert "derived_from" in result.output
 
 
-def test_derive_offline_mode_writes_stub_scaffold(tmp_repo, monkeypatch):
-    """Offline mode: no RH_STUB_RESPONSE → scaffold with <stub: ...> placeholders."""
+def test_derive_offline_mode_requires_body_file_or_stub_response(tmp_repo, monkeypatch):
+    """Offline mode: no RH_STUB_RESPONSE -> raw derive fails instead of writing placeholders."""
     monkeypatch.setenv("LLM_PROVIDER", "stub")
     monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
     setup_topic_with_source(tmp_repo)
@@ -2023,31 +2126,20 @@ def test_derive_offline_mode_writes_stub_scaffold(tmp_repo, monkeypatch):
         "--required-section", "evidence_traceability",
         "--required-section", "decision_rules",
     ])
-    assert result.exit_code == 0, result.output
-    content = (
-        structured_decision_table_path(tmp_repo, "my-skill", "screening-criteria")
-    ).read_text()
-    assert "<stub:" in content
+    assert result.exit_code == 2
+    assert "cannot derive clinical L2 content without --body-file" in result.output
+    assert not structured_decision_table_path(tmp_repo, "my-skill", "screening-criteria").exists()
 
 
-def test_decision_table_stub_supports_event_condition_action_shape(tmp_repo, monkeypatch):
-    monkeypatch.setenv("LLM_PROVIDER", "stub")
-    monkeypatch.delenv("RH_STUB_RESPONSE", raising=False)
-    setup_topic_with_source(tmp_repo)
+def test_body_init_decision_table_scaffold_supports_event_condition_action_shape(tmp_repo):
+    _write_plan_for_body_init(tmp_repo)
     runner = CliRunner()
     result = runner.invoke(promote, [
-        "derive", "my-skill", "screening-criteria",
-        "--source", "ada-guidelines",
-        "--artifact-type", "decision-table",
-        "--clinical-question", "Who should be screened?",
-        "--required-section", "events",
-        "--required-section", "conditions",
-        "--required-section", "actions",
-        "--required-section", "rules",
+        "body-init", "my-skill", "screening-criteria",
     ])
     assert result.exit_code == 0, result.output
     content = (
-        structured_decision_table_path(tmp_repo, "my-skill", "screening-criteria")
+        tmp_repo / "topics" / "my-skill" / "process" / "tmp" / "screening-criteria.yaml"
     ).read_text()
     assert "events:" in content
     assert "event-001" in content

@@ -4616,6 +4616,15 @@ Rules:
             click.echo(f"SYSTEM:\n{system_prompt}\n\nUSER:\n{user_prompt}")
             continue
 
+        if offline_mode and body_text is None:
+            raise click.UsageError(
+                "LLM_PROVIDER=stub without RH_STUB_RESPONSE cannot derive clinical L2 "
+                "content without --body-file. Run `rh-skills promote body-init "
+                "<topic> <artifact>` first, fill the generated scaffold, then rerun "
+                "`rh-skills promote derive ... --body-file <path>`, or set "
+                "RH_STUB_RESPONSE for agent-injected content."
+            )
+
         click.echo(f"Deriving L2 artifact: {artifact_name} (from {', '.join(source)})...")
 
         # Warn when artifact-type overrides the plan name — agents should use
@@ -4638,17 +4647,9 @@ Rules:
             # Offline mode: keep passthrough behavior for deterministic scaffold iteration.
             l2_file.write_text(_sanitize_yaml(body_text + "\n"))
         elif offline_mode:
-            # No LLM and no agent-provided body — write a scaffold with placeholders.
-            l2_file.write_text(
-                _build_stub_l2_artifact(
-                    artifact_name,
-                    source,
-                    effective_artifact_type,
-                    clinical_question,
-                    required_sections,
-                    evidence_refs,
-                    concerns,
-                )
+            raise click.UsageError(
+                "LLM_PROVIDER=stub without RH_STUB_RESPONSE cannot derive clinical L2 "
+                "content without --body-file."
             )
         else:
             llm_output = _invoke_llm(system_prompt, user_prompt)
