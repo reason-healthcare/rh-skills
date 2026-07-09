@@ -1027,12 +1027,16 @@ rh-skills render <topic> <artifact-name>
    > difference (punctuation, trailing space, case) causes this error. Regenerate
    > the scaffold with `body-init --force` and re-fill the clinical content.
 
-   Without `--body-file`, the CLI produces a scaffold with `<stub: ...>`
-   placeholders that will **fail** validation.
+   In stub/offline mode, `derive` without `--body-file` fails unless
+   `RH_STUB_RESPONSE` is set by an agent/runtime. Do not run raw stub-mode
+   `derive` expecting the CLI to write placeholder clinical content. Use
+   `body-init`, fill the generated YAML with reasoned clinical content, then
+   pass it back with `--body-file`.
 
-   When running without `--body-file`, keep using `--clinical-question`,
-   `--required-section`, `--evidence-ref`, and `--concern` to shape the
-   generated scaffold content.
+   When running with a real LLM provider, or with agent-injected
+   `RH_STUB_RESPONSE`, use `--clinical-question`, `--required-section`,
+   `--evidence-ref`, and `--concern` to shape the extraction prompt. With
+   `--body-file`, those flags are consistency checks against the YAML.
 
    **Recording concerns with multiple positions**: Pass one `--concern` flag
    per source position, using the **same issue text** for both. The CLI merges

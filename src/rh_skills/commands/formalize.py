@@ -2213,9 +2213,12 @@ def _build_pathway_condition_context(
     step_conditions: dict[str, list[dict[str, Any]]] = {}
     for step_id, step in step_index.items():
         children = [child for child in child_map.get(step_id) or [] if isinstance(child, dict)]
+        direct_refs = direct_rule_refs(step)
         placed: list[dict[str, Any]] = []
         if children:
             placed.extend(common_rule_conditions(descendant_rule_refs(step_id)))
+        elif len(direct_refs) > 1:
+            placed.extend(common_rule_conditions(direct_refs))
 
         applicability_id = str(step.get("applicability_condition") or "").strip()
         if applicability_id:

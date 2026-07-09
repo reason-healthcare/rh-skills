@@ -309,6 +309,8 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
                 {"id": "fine-cut-ct-available", "label": "Fine cut CT available", "values": ["Yes", "No"]},
                 {"id": "sinus-surgery-order-present", "label": "Sinus surgery order present", "values": ["Yes", "No"]},
                 {"id": "purulent-discharge-present", "label": "Purulent discharge present", "values": ["Yes", "No"]},
+                {"id": "crs-subtype-likely-to-benefit", "label": "CRS subtype likely to benefit from surgery", "values": ["Yes", "No"]},
+                {"id": "surgical-candidacy-established", "label": "Surgical candidacy established", "values": ["Yes", "No"]},
             ],
             "actions": [
                 {"id": "verify-diagnosis", "label": "Verify diagnosis", "kind": "Task"},
@@ -316,6 +318,10 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
                 {"id": "obtain-ct", "label": "Obtain CT", "kind": "ServiceRequest"},
                 {"id": "educate-postop", "label": "Educate about postoperative care", "kind": "CommunicationRequest"},
                 {"id": "avoid-antibiotic", "label": "Avoid antibiotic therapy", "kind": "CommunicationRequest"},
+                {"id": "assess-candidacy", "label": "Assess candidacy", "kind": "Task"},
+                {"id": "identify-subtype", "label": "Identify CRS subtype", "kind": "Task"},
+                {"id": "avoid-fixed-therapy", "label": "Do not require fixed medical therapy", "kind": "CommunicationRequest"},
+                {"id": "offer-surgery", "label": "Offer sinus surgery", "kind": "ServiceRequest"},
             ],
             "rules": [
                 {
@@ -358,6 +364,36 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
                     "when": {"purulent-discharge-present": "No"},
                     "then": ["avoid-antibiotic"],
                 },
+                {
+                    "id": "rule-assess-candidacy",
+                    "event": "event",
+                    "when": {"crs-diagnosis-verified": "Yes"},
+                    "then": ["assess-candidacy"],
+                },
+                {
+                    "id": "rule-identify-subtype",
+                    "event": "event",
+                    "when": {
+                        "crs-diagnosis-verified": "Yes",
+                        "crs-subtype-likely-to-benefit": "Yes",
+                    },
+                    "then": ["identify-subtype"],
+                },
+                {
+                    "id": "rule-avoid-fixed-therapy",
+                    "event": "event",
+                    "when": {"crs-diagnosis-verified": "Yes"},
+                    "then": ["avoid-fixed-therapy"],
+                },
+                {
+                    "id": "rule-offer-surgery",
+                    "event": "event",
+                    "when": {
+                        "crs-diagnosis-verified": "Yes",
+                        "surgical-candidacy-established": "Yes",
+                    },
+                    "then": ["offer-surgery"],
+                },
             ],
         },
     }
@@ -385,6 +421,17 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
                     "label": "Avoid antibiotics",
                     "parent_id": "antibiotic-review",
                     "rule_id": "rule-antibiotic",
+                },
+                {
+                    "id": "candidacy",
+                    "label": "Assess surgical candidacy",
+                    "parent_id": "protocol",
+                    "rule_ids": [
+                        "rule-assess-candidacy",
+                        "rule-identify-subtype",
+                        "rule-avoid-fixed-therapy",
+                        "rule-offer-surgery",
+                    ],
                 },
             ],
         },
@@ -435,6 +482,7 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
         "SinusSurgeryPlanningActive",
     ) in pathway_conditions["planning"]
     assert ("SinusSurgeryOrderPresent",) in pathway_conditions["educate-step"]
+    assert ("CrsDiagnosisVerified",) in pathway_conditions["candidacy"]
 
     decision_conditions = _condition_expressions_by_action_id(decision_resources)
     assert ("CrsDiagnosisVerified",) in decision_conditions["verify-diagnosis"]
@@ -443,6 +491,12 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
     assert ("NoFineCutCtAvailable",) in decision_conditions["obtain-ct"]
     assert all("NoGuidelineExclusionPresent" not in entry for entry in decision_conditions["obtain-ct"])
     assert decision_conditions["educate-postop"] == [()]
+    assert all(entry == () for entry in decision_conditions["assess-candidacy"])
+    assert all(entry == () for entry in decision_conditions["avoid-fixed-therapy"])
+    assert ("CrsSubtypeLikelyToBenefitFromSurgery",) in decision_conditions["identify-subtype"]
+    assert all("CrsDiagnosisVerified" not in entry for entry in decision_conditions["identify-subtype"])
+    assert ("SurgicalCandidacyEstablished",) in decision_conditions["offer-surgery"]
+    assert all("CrsDiagnosisVerified" not in entry for entry in decision_conditions["offer-surgery"])
 
 
 # ---------------------------------------------------------------------------
