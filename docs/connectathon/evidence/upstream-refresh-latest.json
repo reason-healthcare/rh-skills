@@ -1,14 +1,14 @@
 {
-  "checkedAt": "2026-09-18T12:19:36.329000+00:00",
-  "method": "Fresh fetch of each implementation main; protected source never fetched",
+  "checkedAt": "2026-09-18T17:21:43.063439+00:00",
+  "method": "Fresh fetch of all four implementation main branches over command-scoped HTTPS; protected source never fetched",
   "repositories": [
     {
       "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
       "remote": "origin",
       "main": "eb280968e8af623b9b30c4175111929e322f696c",
-      "head": "81e976288426f88a2bb6dcc5af9d823d371d005e",
+      "head": "f45ed007abac4387fc22e3be17246e7dee42fb90",
       "branch": "codex/connectathon-live-readiness",
-      "ahead": 22,
+      "ahead": 25,
       "behind": 0,
       "containsLatestMain": true
     },
@@ -16,9 +16,9 @@
       "path": "/Users/bkaney/projects/reason-healthcare/workbench",
       "remote": "origin",
       "main": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
-      "head": "711067c9096202b9cf4c10108a66d601a49bcd4a",
+      "head": "096e4f810922049580897c9c3784f918dc26e913",
       "branch": "codex/connectathon-live-readiness",
-      "ahead": 37,
+      "ahead": 41,
       "behind": 0,
       "containsLatestMain": true
     },
@@ -26,9 +26,9 @@
       "path": "/Users/bkaney/projects/reason-healthcare/rh",
       "remote": "upstream",
       "main": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
-      "head": "04c96d5c589d895e0a96ce809989ef97a51e3495",
+      "head": "ad8fdb413c9389634136ea3626ccfd961e472576",
       "branch": "codex/connectathon-live-readiness",
-      "ahead": 27,
+      "ahead": 29,
       "behind": 0,
       "containsLatestMain": true
     },
@@ -36,9 +36,9 @@
       "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
       "remote": "origin",
       "main": "2e8d91daf360f184e6c98f700031414829c64921",
-      "head": "b4b54e9332a00c46f159f2601dfcadea40259930",
+      "head": "82db811da7adde6971ad7ef4967924d188477f58",
       "branch": "codex/connectathon-live-readiness",
-      "ahead": 13,
+      "ahead": 14,
       "behind": 0,
       "containsLatestMain": true
     }

@@ -1,11 +1,11 @@
 {
-  "checkedAt": "2026-09-18T12:19:36.329000+00:00",
-  "sourcePath": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
-  "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
-  "expectedHead": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+  "checkedAt": "2026-09-18T17:21:43.063439+00:00",
+  "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
+  "readOnly": true,
   "filesChecked": 41,
+  "changedFiles": [],
+  "baselineHead": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+  "currentHead": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
   "gitStatus": "",
-  "scope": "Read-only hashes and no-optional-locks Git status; protected source never fetched or modified",
-  "unchanged": true,
-  "changedFiles": []
+  "passed": true
 }

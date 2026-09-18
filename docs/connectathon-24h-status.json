@@ -383,28 +383,24 @@
   },
   "activeTasks": [
     {
-      "id": "cql-style-guide",
       "owner": "skills_usecase_audit",
-      "status": "in_progress",
-      "scope": "Patient context, typed terminology, model code paths, with/such-that FHIRCommon references; examples translated and tested"
+      "task": "Guide committed1cae534 and24 bundles validated; finish run004 package, fresh isolated installation and current runbook",
+      "status": "in_progress"
     },
     {
-      "id": "cql-context-runtime",
       "owner": "runtime_execution",
-      "status": "in_progress",
-      "scope": "Patient/Unfiltered expression context, mixed-patient retrieves, explicit class code retrieval, official helper execution"
+      "task": "Enforce ExpressionDef Patient context, explicit class code path and included function execution; verify reference ELM and rebuild native/WASM",
+      "status": "in_progress"
     },
     {
-      "id": "fhircommon-dependency",
       "owner": "workbench_audit",
-      "status": "in_progress",
-      "scope": "Authoritative versioned source/ELM/Library, dependency closure, exact helper signature and semantics"
+      "task": "Official FHIRCommon closure, guide reference translation and bounded runtime review complete; included-function context regression remains runtime acceptance gate",
+      "status": "review_complete"
     },
     {
-      "id": "run004-verification",
       "owner": "root",
-      "status": "pending_runtime",
-      "scope": "Independent tests, official FHIR validation, fresh snapshot, Workbench and standalone acceptance"
+      "task": "Review implementations, independently replay final run004 package/API/browser, update journal and source/main checks",
+      "status": "in_progress"
     }
   ],
   "baselineTests": {
@@ -643,19 +639,25 @@
         "docs/connectathon/evidence/sdc-generated-native-comparison.json",
         "docs/connectathon/evidence/sdc-generated-output-fhir-validation.json"
       ]
+    },
+    {
+      "checkedAt": "2026-09-18T14:11:24.503747+00:00",
+      "verifier": "root independent",
+      "result": "869 CQL library tests and64 CPG library tests pass on current runtime working changes; style guide2 complete reference-translated libraries clean; runtime/package final replay pending",
+      "evidence": "docs/connectathon/evidence/cql-style-guide-reference-validation.json"
     }
   ],
   "upstreamRefresh": {
-    "checkedAt": "2026-09-18T03:54:15.787876+00:00",
-    "method": "Fresh fetch of implementation repository main and ancestry; protected Connectathon source repository never fetched",
+    "checkedAt": "2026-09-18T17:21:43.063439+00:00",
+    "method": "Fresh fetch of all four implementation main branches over command-scoped HTTPS; protected source never fetched",
     "repositories": [
       {
         "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
         "remote": "origin",
         "main": "eb280968e8af623b9b30c4175111929e322f696c",
-        "head": "eb96eda20bb7bc4f471d1fedf0785c8324bc0459",
+        "head": "f45ed007abac4387fc22e3be17246e7dee42fb90",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 16,
+        "ahead": 25,
         "behind": 0,
         "containsLatestMain": true
       },
@@ -663,9 +665,9 @@
         "path": "/Users/bkaney/projects/reason-healthcare/workbench",
         "remote": "origin",
         "main": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
-        "head": "4db0e8e69492cee0ac2951f77fe12534e845dced",
+        "head": "096e4f810922049580897c9c3784f918dc26e913",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 28,
+        "ahead": 41,
         "behind": 0,
         "containsLatestMain": true
       },
@@ -673,19 +675,19 @@
         "path": "/Users/bkaney/projects/reason-healthcare/rh",
         "remote": "upstream",
         "main": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
-        "head": "23c69ead34182f7b5859cd1bc66517035ea1235d",
+        "head": "ad8fdb413c9389634136ea3626ccfd961e472576",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 18,
+        "ahead": 29,
         "behind": 0,
         "containsLatestMain": true
       },
       {
-        "path": "/private/tmp/connectathon-reason-framework",
+        "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
         "remote": "origin",
         "main": "2e8d91daf360f184e6c98f700031414829c64921",
-        "head": "f589be2bd8447a59432b06033c1ceccee60aa212",
+        "head": "82db811da7adde6971ad7ef4967924d188477f58",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 7,
+        "ahead": 14,
         "behind": 0,
         "containsLatestMain": true
       }
@@ -704,13 +706,16 @@
       "authoring_runbook": "skills_usecase_audit",
       "sdc_extraction_applications": "workbench_audit",
       "observation_cql_runtime": "runtime_execution",
-      "sdc_skills_cli_tests": "skills_usecase_audit"
+      "sdc_skills_cli_tests": "skills_usecase_audit",
+      "idiomatic_cql_style_and_run004": "skills_usecase_audit",
+      "patient_context_typed_retrieve_fhircommon_runtime": "runtime_execution",
+      "fhircommon_dependency_and_style_review": "workbench_audit"
     },
     "commitPolicy": "Root owns rh-skills index and commits; workers edit owned files unstaged. Other repo owners coordinate changes and commit boundaries. No changes to protected source. Refresh main before final integration; regenerate and replay affected packages.",
     "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed.",
-    "currentMilestone": "Actual extraction 6/6 source and generated Questionnaire comparisons passed; fix generated SDC versionAlgorithm and source text, then finalize Observation CQL, application handoff and browser source inspection."
+    "currentMilestone": "Run004 reference translation and fresh8 skill installation pass; native source-based CLI66 reported passing; root Python1057pass18skip. Final runtime build, regenerated package, FHIR and service/browser replay pending."
   },
-  "updatedAt": "2026-09-18T10:31:29.591469+00:00",
+  "updatedAt": "2026-09-18T17:21:43.063439+00:00",
   "finalReadiness": "docs/connectathon/evidence/final-readiness.json",
-  "sourceIntegrityCheckedAt": "2026-09-18T04:43:32.870673+00:00"
+  "sourceIntegrityCheckedAt": "2026-09-18T17:21:43.063439+00:00"
 }

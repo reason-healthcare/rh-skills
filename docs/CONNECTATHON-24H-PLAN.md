@@ -10,6 +10,8 @@ SDC Observation-based extraction is now part of the required primary workflow: *
 
 ITER-026 owns the remaining sequence: (1) repair generic L2/formalization metadata and source inspection; (2) implement a shared, explicitly scoped Observation-based extractor and resolve actual terminology retrieval; (3) generate a separate run003 package through the framework; (4) prove extraction outputs and all48 source CQL assertions, plus adverse context/completeness/terminology cases, on native and WASM; (5) replay actual Workbench assessment/staging and standalone CPG; (6) update the live runbook, evidence and cold-start instructions. Keep unsupported extraction modes explicit. Only generated resources derived from the exact staged response may be reconciled. Expected fixture extraction files are comparison oracles, never substituted execution output.
 
+ITER-028 adds the user's idiomatic CQL requirements to final acceptance. Create and link a reusable CQL style guide; rely on Patient-context retrieve scoping; use declared typed codes and the explicit FHIR R4 Encounter `class` path; preserve Observation-to-Encounter relationships with pinned `FHIRCommon.references()` and `with ... such that`. Fix runtime conformance defects instead of adding authored subject or string-code workarounds. A separate run004 revision must preserve all 66 clinical assertions and pass mixed-patient, wrong-code/system, wrong-encounter, incomplete and provenance cases through native and public WASM execution. Reference translation, final package validation, Workbench and standalone API/browser replay, and fresh skill installation remain separate gates. Keep run003 and earlier packages/evidence frozen.
+
 ## Outcome and scope
 
 Prepare the skill framework and tools to be used **live at the Connectathon on Saturday, September 19, 2026**. The product of this sprint is a reliable authoring process and toolchain: an operator starts from clinical source material, follows the actual skills to create L2/L3, validates what was just generated, and opens those fresh outputs in Workbench and standalone CPG preview.
@@ -269,7 +271,7 @@ P0 means mandatory; P1 is desirable only after all P0 gates pass.
 | G5 | P0 | Impeccable-guided browser review, keyboard/contrast/responsive checks, and actionable states; no blocking UI defects. |
 | G6 | P0 | Two timed clean-source skill runs, independent replay/input variation, and deterministic rebuild evidence; relevant final-revision tests/build pass. |
 | G7 | P0 | Saturday live-session runbook and recovery exercised; measured source-to-preview duration and final capability/evidence manifest. |
-| X1 | P1 for this sprint; required by full track | Actual SDC extraction passes all completed and incomplete/absent cases with provenance. |
+| X1 | P0 for the declared Boolean extraction subset; broader interoperability remains separate | Actual SDC extraction passes all completed and incomplete/absent cases with provenance. |
 | M1 | P1 | A genuine cohort MeasureReport evaluator emits the verified aggregate; not a mislabeled harness summary. |
 | I1 | P1 for this sprint; required by full track | Two independent CQL engines agree and two FHIR implementations round-trip the artifacts; report separately. |
 
@@ -288,13 +290,6 @@ Handoff includes the tested skill/tool versions, launch and stage commands/promp
 
 ## Execution handoff — September 18
 
-The scoped preparation is implemented and locally verified. Use the [live
-runbook](connectathon/LIVE-RUNBOOK.md), [journal](CONNECTATHON-JOURNAL.md),
-[acceptance command](connectathon/tools/PROVENANCE.md), and
-[final evidence manifest](connectathon/evidence/final-readiness.json).
-Both independent source-authored packages run through Workbench and standalone;
-all three Workbench previews expose the complete package. G2 retains the exact
-zero-denominator validator exception, and G6 records the observed authoring time
-and prior-context limit. The broader X1/M1/I1 track gates remain deferred. The
-protected Connectathon repository is unchanged. Changes are on local task
-branches; no publication, deployment or merge was performed.
+**Final acceptance reopened after user review.** Run001/run002 remain historical QR-based rehearsals. Run003 verifies the actual SDC Observation pipeline and all three complete-package Workbench previews, with the documented zero-denominator MeasureReport validator exception. Run004 is the pending context-correct, idiomatic CQL revision; it must pass the current runtime, package and application gates before becoming the primary demo candidate.
+
+Use the [live runbook](connectathon/LIVE-RUNBOOK.md), [journal](CONNECTATHON-JOURNAL.md), [acceptance tools](connectathon/tools/PROVENANCE.md), and [evidence manifest](connectathon/evidence/final-readiness.json) for current status. The two source authoring rehearsals retain their recorded timing and context-reuse limits; run003/run004 are revisions, not additional independent authoring samples. Clinical approval, cohort Measure execution and independent engine/server interoperability remain open. The protected Connectathon repository is unchanged. Changes remain on local task branches; no publication, deployment or merge was performed.
