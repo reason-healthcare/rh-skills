@@ -141,18 +141,24 @@ Do not transform MCP score fields. If MCP returns `distance` and/or
 `distance = 1 - similarity` and do not map custom confidence thresholds (for
 example, "0.8+ = high").
 
-The `--candidate` format is `system|code|display[|distance[|confidence]]`.
+The `--candidate` format is `system|code|display[|distance[|confidence]][|version]`.
 `confidence` is a string label (`high`, `medium`, `low`) — never a number.
 When MCP returns only a numeric distance with no confidence label, pass it in
 the 4th field: `system|code|display|<distance>`. The CLI auto-detects a numeric
 in position 4 and stores it as `distance`. Do not insert extra `|` characters
 to try to fix a format error — that corrupts the system URI or code field.
 
+Use the final optional `version` field for a code-system release supplied by a
+lookup or source contract. It is preserved as `codes[].version` in the L2
+terminology artifact. With no distance or confidence, retain their empty fields:
+`http://loinc.org|100257-5|Feel unsteady when standing or walking|||2.81`.
+
 Do not de-duplicate candidates across concepts. Within a single concept, the
-CLI automatically deduplicates: if the same `system|code` pair is submitted
-more than once, the CLI keeps the better entry (lower distance wins; tie: higher
-confidence wins; tie: first-write-wins) and a warning is printed when a duplicate
-is skipped or replaced.
+CLI automatically deduplicates by `system|code|version`: if that same identity
+is submitted more than once, the CLI keeps the better entry (lower distance wins;
+tie: higher confidence wins; tie: first-write-wins). Different versions remain
+separate candidates, and a warning is printed when an exact duplicate is skipped
+or replaced.
 
 Do not run `rh-skills promote concept enrich` for different concepts in parallel.
 Execute enrich writes serially, one concept at a time.
@@ -260,7 +266,7 @@ numbering.
 | Goal | Command |
 |------|---------|
 | Add custom concept | `rh-skills promote concept enrich <topic> "<name>" --source custom --type <type>` |
-| Record MCP candidates | `rh-skills promote concept enrich <topic> <name> --candidate "system\|code\|display[...]"` |
+| Record MCP candidates | `rh-skills promote concept enrich <topic> <name> --candidate "system\|code\|display[\|distance[\|confidence]][\|version]"` |
 | Approve all candidate codes | `rh-skills promote concept review <topic> "<name>" --approve-all` |
 | Exclude all candidate codes | `rh-skills promote concept review <topic> "<name>" --exclude-all` |
 | Approve/exclude specific candidate code | `rh-skills promote concept review <topic> "<name>" --approve-code <code> --exclude-code <other-code>` |
@@ -278,7 +284,7 @@ rh-skills promote concept enrich <topic> "<name>" --source custom --type <type>
 
 # Enrich candidates (no decision needed):
 rh-skills promote concept enrich <topic> <name> \
-  --candidate "system|code|display[|distance[|confidence]]"
+  --candidate "system|code|display[|distance[|confidence]][|version]"
 # Omit --candidate when MCP returned no results; still call to record lookup.
 # ... repeat for every concept ...
 

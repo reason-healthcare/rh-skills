@@ -450,7 +450,7 @@ Do not attempt step 7 before step 6 is complete — the CLI will hard-block.
 
 If the plan includes `concept_review`, populate the packet by calling
 `rh-skills promote concept enrich` **once per result, per system searched**:
-`rh-skills promote concept enrich <topic> <name> --candidate "system|code|display[|distance[|confidence]]"`
+`rh-skills promote concept enrich <topic> <name> --candidate "system|code|display[|distance[|confidence]][|version]"`
 
 > Run `rh-skills promote concept enrich --help` for the full option reference and worked examples.
 
@@ -517,10 +517,15 @@ the remaining results from that search are discarded.
 Record MCP metadata exactly as returned. Do not transform similarity to
 distance (`1 - similarity`) and do not map custom confidence thresholds
 (for example, "0.8+ = high") unless MCP already returned that value.
-The `--candidate` format is `system|code|display[|distance[|confidence]]`.
+The `--candidate` format is `system|code|display[|distance[|confidence]][|version]`.
 `distance` is a float (lower = closer match) — returned by MCP tools.
 `confidence` is an optional string label (`high`, `medium`, `low`); place it
 after distance if MCP returned it.
+`version` is an optional code-system release and is the final field. Preserve it
+when the lookup or source contract supplies it; it becomes `codes[].version` in
+the L2 terminology artifact. For a versioned candidate without distance or
+confidence, leave those fields empty, for example
+`http://loinc.org|100257-5|Feel unsteady when standing or walking|||2.81`.
 When MCP returns only a numeric distance with no confidence label, pass it in
 the 4th field: `system|code|display|<distance>`. Do not insert extra `|`
 characters to fix a format error — that corrupts the system URI or code field.

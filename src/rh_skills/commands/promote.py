@@ -153,14 +153,14 @@ def _concept_artifact_tracking_path(topic: str) -> str:
 
 _CONCEPT_CSV_FIELDNAMES = [
     "concept_name", "concept_type", "role", "sources", "context", "lookup_query", "lookup_notes",
-    "system", "code", "display", "distance",
+    "system", "code", "display", "version", "distance",
     "confidence", "include/exclude", "comments",
     "row_type", "relation", "related_code",
 ]
 
 # Core data fields for Individual Codes section of per-concept CSVs.
 _CONCEPT_CODE_CORE_FIELDS = [
-    "include/exclude", "system", "code", "display", "distance",
+    "include/exclude", "system", "code", "display", "version", "distance",
     "confidence", "row_type", "relation", "related_code", "comments",
 ]
 
@@ -204,7 +204,7 @@ def _write_concept_csv(path: Path, meta_dict: dict, rows: list[dict], expansion_
     if expansion_rows is None:
         expansion_rows = []
     _META_KEYS = ["concept_name", "concept_type", "role", "sources", "context", "lookup_query", "lookup_notes"]
-    _PAD_WIDTH = 10  # total columns per metadata row
+    _PAD_WIDTH = max(10, len(_CONCEPT_CODE_CORE_FIELDS))  # total columns per metadata row
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
@@ -319,6 +319,7 @@ def _load_concept_csv(path: Path) -> tuple[dict, list[dict], list[dict]]:
             row["confidence"] = conf_raw
             row.pop("method", None)
             row.setdefault("related_code", "")
+            row.setdefault("version", "")
             for field in _CONCEPT_CODE_CORE_FIELDS:
                 row.setdefault(field, "")
             code_rows.append(row)
@@ -2142,12 +2143,21 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
             if not is_included or not system or not code:
                 continue
 
-            cand_key = (system.casefold(), code.casefold())
+            version = row.get("version", "").strip()
+            cand_key = (system.casefold(), code.casefold(), version.casefold())
             if not any(
-                (e["system"].casefold(), e["code"].casefold()) == cand_key
+                (
+                    e["system"].casefold(),
+                    e["code"].casefold(),
+                    str(e.get("version", "")).casefold(),
+                ) == cand_key
                 for e in approved_by_concept[name]
             ):
-                cand_entry: dict = {k: v for k, v in {"system": system, "code": code, "display": display}.items() if v}
+                cand_entry: dict = {
+                    k: v
+                    for k, v in {"system": system, "code": code, "display": display, "version": version}.items()
+                    if v
+                }
                 cand_entry["_key"] = code.casefold()
                 approved_by_concept[name].append(cand_entry)
                 parent_entries[code.casefold()] = cand_entry
@@ -3388,15 +3398,16 @@ def _confidence_from_distance(distance: float) -> str:
 
 
 def _parse_candidate_flag(value: str) -> dict:
-    """Parse 'system|code|display[|distance[|confidence]]' into a candidate dict.
+    """Parse 'system|code|display[|distance[|confidence]][|version]' into a candidate dict.
 
     distance   — numeric float (lower = closer match); returned by MCP tools
     confidence — optional string label: high | medium | low
+    version    — optional code-system version, preserved into L2 Coding.version
     """
-    parts = value.split("|", 4)
+    parts = value.split("|", 5)
     if len(parts) < 3 or not parts[0].strip() or not parts[1].strip():
         raise click.UsageError(
-            f"--candidate value must be 'system|code|display[|distance[|confidence]]', got: {value!r}"
+            f"--candidate value must be 'system|code|display[|distance[|confidence]][|version]', got: {value!r}"
         )
     system = parts[0].strip()
     _validate_system_uri(system)
@@ -3422,6 +3433,8 @@ def _parse_candidate_flag(value: str) -> dict:
         entry["confidence"] = confidence
     elif "distance" in entry:
         entry["confidence"] = _confidence_from_distance(entry["distance"])
+    if len(parts) >= 6 and parts[5].strip():
+        entry["version"] = parts[5].strip()
     return entry
 
 
@@ -3536,7 +3549,7 @@ def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> li
     multiple=True,
     type=click.STRING,
     metavar="TEXT",
-    help="MCP candidate to record. Format: 'system|code|display[|distance[|confidence]]'. Repeatable. Only valid with --source mcp.",
+    help="MCP candidate to record. Format: 'system|code|display[|distance[|confidence]][|version]'. Repeatable. Only valid with --source mcp.",
 )
 @click.option(
     "--related-candidate",
@@ -3743,6 +3756,7 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
             new_system = norm_new["system"]
             new_code = norm_new["code"]
             new_display = norm_new["display"]
+            new_version = str(entry.get("version", "")).strip()
             new_dist = entry.get("distance")
             new_conf_str = str(entry.get("confidence", "")).lower()
             if not new_conf_str and entry.get("distance") is not None:
@@ -3755,6 +3769,7 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
                     r for r in existing_candidate_rows
                     if r.get("system", "").strip().casefold() == new_system.casefold()
                     and r.get("code", "").strip().casefold() == new_code.casefold()
+                    and r.get("version", "").strip().casefold() == new_version.casefold()
                 ),
                 None,
             )
@@ -3776,6 +3791,7 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
                     new_is_better = True
                 if new_is_better:
                     dup_row["display"] = new_display or dup_row.get("display", "")
+                    dup_row["version"] = new_version
                     dup_row["distance"] = str(new_dist) if new_dist is not None else ""
                     dup_row["confidence"] = new_conf_str
                     log_info(f"Updated candidate {new_system}|{new_code} with better entry.")
@@ -3787,6 +3803,7 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
                     "system": new_system,
                     "code": new_code,
                     "display": new_display,
+                    "version": new_version,
                     "distance": str(new_dist) if new_dist is not None else "",
                     "confidence": new_conf_str,
                     "row_type": "candidate",

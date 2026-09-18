@@ -1300,6 +1300,41 @@ def test_concept_enrich_custom_then_mcp_then_write_roundtrip(tmp_repo):
     assert frailty["codes"][0]["code"] == "248279007"
 
 
+def test_concept_candidate_versions_round_trip_to_l2_and_remain_distinct(tmp_repo):
+    """Candidate versions are preserved and differentiate otherwise identical codes."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    runner.invoke(promote, ["plan", "my-skill"])
+
+    for version in ("2.81", "2.82"):
+        result = runner.invoke(promote, [
+            "concept", "enrich", "my-skill", "Hypertension",
+            "--candidate", f"http://loinc.org|100257-5|Fall-risk screen|||{version}",
+        ])
+        assert result.exit_code == 0, result.output
+    result = runner.invoke(promote, [
+        "concept", "enrich", "my-skill", "Blood pressure screening",
+        "--candidate", "http://snomed.info/sct|171207006|Blood pressure screening (procedure)",
+    ])
+    assert result.exit_code == 0, result.output
+
+    runner.invoke(promote, ["concept", "review", "my-skill", "Hypertension", "--approve-all"])
+    runner.invoke(promote, ["concept", "review", "my-skill", "Blood pressure screening", "--approve-all"])
+    result = runner.invoke(promote, [
+        "concept", "review", "my-skill", "--finalize", "--reviewer", "test-reviewer", "--force",
+    ])
+    assert result.exit_code == 0, result.output
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    artifact = YAML(typ="safe").load(structured_terminology_path(tmp_repo).read_text())
+    hypertension = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
+    assert {(code["code"], code["version"]) for code in hypertension["codes"]} == {
+        ("100257-5", "2.81"),
+        ("100257-5", "2.82"),
+    }
+
+
 def test_write_concepts_requires_approved_packet(tmp_repo):
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
