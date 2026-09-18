@@ -56,6 +56,7 @@ _ACTION_KIND_ALIASES = {
     "communication": "CommunicationRequest",
     "medication": "MedicationRequest",
     "task": "Task",
+    "guidance": "PlanDefinitionAction",
 }
 
 _DATA_ELEMENT_ROLES = {
@@ -667,7 +668,7 @@ def validate_decision_table(
                 )
             elif normalized_kind not in _ACTION_KIND_ALIASES:
                 report_warn(
-                    f"  decision-table: leaf action '{action_id}' uses unknown kind '{raw_kind}'; expected medication, service/procedure/referral/assessment, questionnaire, or communication"
+                    f"  decision-table: leaf action '{action_id}' uses unknown kind '{raw_kind}'; expected medication, service/procedure/referral/assessment, questionnaire, communication, or guidance"
                 )
             concept_refs = action.get("concept_refs")
             code = action.get("code")
@@ -682,7 +683,7 @@ def validate_decision_table(
                 isinstance(entry, dict) and str(entry.get("code") or "").strip()
                 for entry in codings
             )
-            if not (has_concept_refs or has_code or has_codings):
+            if normalized_kind != "guidance" and not (has_concept_refs or has_code or has_codings):
                 report_warn(
                     f"  decision-table: leaf action '{action_id}' is missing recommended concept_refs[] or code/codings[] terminology linkage"
                 )

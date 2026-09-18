@@ -136,12 +136,11 @@ class TestValueSetValidation:
 
 
 class TestEvidenceValidation:
-    def test_missing_certainty(self):
-        errors = validate_resource({
+    def test_evidence_does_not_require_non_r4_certainty(self):
+        assert validate_resource({
             "resourceType": "Evidence",
             "id": "test",
-        })
-        assert any("Evidence.certainty[]" in e for e in errors)
+        }) == []
 
 
 class TestMcpUnreachable:
@@ -245,13 +244,12 @@ class TestNegativeVerifyCases:
         })
         assert any("compose.include" in e for e in errors)
 
-    def test_evidence_missing_certainty(self):
-        errors = validate_resource({
+    def test_evidence_missing_certainty_is_not_an_r4_validation_error(self):
+        assert validate_resource({
             "resourceType": "Evidence",
             "id": "copd-evidence",
             "description": "COPD evidence synthesis",
-        })
-        assert any("certainty" in e.lower() for e in errors)
+        }) == []
 
     def test_evidence_variable_missing_characteristic(self):
         errors = validate_resource({

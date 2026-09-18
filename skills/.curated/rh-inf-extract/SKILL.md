@@ -235,6 +235,22 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    only when the required types need different source sets. The CLI rejects
    unknown or duplicate types, unknown sources, and forced types without sources.
 
+   For a bounded accepted use case, restrict terminology review to explicit
+   front-matter concept names without treating every source annotation as an
+   accepted executable term:
+
+   ```bash
+   rh-skills promote plan <topic> --force \
+     --include-concept "exact source concept name" \
+     --include-concept "another exact source concept name"
+   ```
+
+   `--include-concept` is repeatable and preserves its supplied exact names in
+   the review packet. The CLI rejects unknown names, case changes, and duplicates.
+   Omit it to retain the default behavior of reviewing every discovered concept.
+   Terms outside an explicit scope are documented as outside the accepted use
+   case; they are not clinically rejected.
+
    If normalized front matter contains concepts, this command also writes
    one CSV per concept under `topics/<topic>/process/plans/concepts/` (the review artifacts) and
    `topics/<topic>/process/plans/concepts-review-meta.yaml` (finalization metadata).
@@ -477,6 +493,11 @@ mode via `rh-skills promote concept write` to
 `topics/<topic>/structured/concepts/concepts.yaml`, and the extract plan's
 explicit `concepts` artifact row is the reviewer-facing contract for that
 package.
+
+For verified FHIR `ValueSet.expansion` evidence, use
+`rh-skills promote concept write <topic> --expansions <yaml>`. The YAML may
+only attach `expansion` objects to exact generated `sections.value_sets[].id`
+values; it cannot alter approved candidate coding.
 
 **⚠ Do NOT ask the reviewer how they want to proceed or offer workflow options
 (e.g. "Option A — I drive" vs "Option B — you drive"). The workflow is fixed:

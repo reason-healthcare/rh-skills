@@ -58,6 +58,11 @@ concept_review:                    # present when normalized front matter includ
   status: <pending-review | approved>
   review_artifact: topics/<topic>/process/plans/concepts/
   final_artifact: topics/<topic>/structured/concepts/concepts.yaml
+  scope:                            # present only with explicit --include-concept values
+    mode: explicit
+    included_concepts:
+      - <exact front-matter concept name>
+    excluded_terms_disposition: Outside this accepted use-case terminology scope; not a clinical rejection.
 artifacts:
   - name: <kebab-case>
     artifact_type: <catalog type>
@@ -101,6 +106,24 @@ artifacts:
 ---
 
 ## Terminology Resolution (Plan Mode)
+
+### Bounded concept review
+
+By default, planning emits a review CSV for every deduplicated source
+front-matter concept. When the accepted use case needs only a bounded subset,
+use repeatable `--include-concept` values with the exact source concept names:
+
+```sh
+rh-skills promote plan <topic> --force \
+  --include-concept "exact source concept name" \
+  --include-concept "another exact source concept name"
+```
+
+The CLI rejects unknown names, case changes, and duplicates. It records the
+explicit scope in both `extract-plan.yaml` and `concepts-review-meta.yaml`.
+Omitting the option preserves the default full concept review. An excluded term
+is outside the accepted use-case terminology scope; it is not a clinical
+rejection or a claim that the term is invalid.
 
 When proposing a `terminology` artifact, use reasonhub MCP tools to
 surface candidate codes before the plan is written.
@@ -212,6 +235,13 @@ When normalized source front matter contains `concepts[]`, extract planning writ
 
 The explicit extract artifact row named `concepts` is the reviewer-facing terminology package. `rh-skills promote concept write <topic>` materializes that row to `topics/<topic>/structured/concepts/concepts.yaml`. Only concepts with at least one approved candidate code or approved expansion are emitted into the final artifact. Custom concepts not extracted from source documents can be added with `concept add`.
 
+When a terminology service has produced verified FHIR `ValueSet.expansion`
+evidence, keep that evidence in a YAML terminology body with
+`sections.value_sets[].id` and `expansion`, then run
+`rh-skills promote concept write <topic> --expansions <path>`. The id must
+match a generated ValueSet exactly. This attaches only the verified expansion
+contract; it cannot add, replace, or approve candidate codes.
+
 Concept deconstruction rule:
 - Do not approve a broad grouped concept as the only actionable concept when
   the source names component concepts that will later drive actions, rules, or
@@ -276,6 +306,7 @@ numbering.
 | Record no-match reason | `rh-skills promote concept enrich <topic> "<name>" --lookup-notes "reason"` |
 | Finalize review | `rh-skills promote concept review <topic> --finalize --reviewer "<name>"` |
 | Write concepts artifact | `rh-skills promote concept write <topic>` |
+| Attach verified ValueSet expansions | `rh-skills promote concept write <topic> --expansions verified-expansions.yaml` |
 
 Review workflow:
 ```sh

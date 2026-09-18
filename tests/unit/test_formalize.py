@@ -21,6 +21,8 @@ from rh_skills.commands.formalize import (
     _activity_definition_intent,
     _build_measure_populations,
     _build_care_pathway_stub_plan_definitions,
+    _build_decision_table_activity_definitions,
+    _build_decision_table_referenced_actions,
     _build_decision_table_rule_conditions,
     _build_evidence_variable_characteristics,
     _resolve_activity_code,
@@ -30,6 +32,7 @@ from rh_skills.commands.formalize import (
     _build_stub_resources,
     _collect_information_dynamic_values,
     _embed_cql_in_library,
+    _attach_external_library_dependencies,
     _enforce_generated_fhir_ids,
     _fhir_resource_id,
     _get_strategy,
@@ -60,6 +63,71 @@ def test_activity_definition_kind_normalizes_supported_l2_action_kinds():
     assert _activity_definition_kind("Task") == "Task"
 
 
+def test_decision_guidance_remains_inline_without_activity_definition():
+    cfg = {"canonical": "https://example.org/fhir", "version": "1", "status": "draft"}
+    l2 = {"sections": {
+        "actions": [{
+            "id": "offer-exercise", "label": "Offer exercise intervention",
+            "description": "Recommend exercise when the screen is positive.", "kind": "guidance",
+        }],
+        "events": [{"id": "screen", "label": "Screening"}],
+        "conditions": [{"id": "positive", "label": "Positive screen", "values": ["Yes", "No"]}],
+        "rules": [{"id": "r1", "event": "screen", "when": {"positive": "Yes"}, "then": ["offer-exercise"]}],
+    }}
+    strategy, _ = _get_strategy("decision-table")
+    resources = _build_stub_resources("fall-screen", "decision-table", strategy, "topic", cfg, l2)
+    assert not [r for r in resources if r.get("resourceType") == "ActivityDefinition"]
+    rule_plan = next(r for r in resources if r.get("id") == "fall-screen-screen")
+    action = rule_plan["action"][0]
+    assert action["title"] == "Offer exercise intervention"
+    assert action["description"] == "Recommend exercise when the screen is positive."
+    assert "definitionCanonical" not in action
+    assert action["condition"][0]["expression"]["expression"] == "PositiveScreen"
+    library = next(resource for resource in resources if resource.get("resourceType") == "Library")
+    assert library["type"]["coding"] == [{
+        "system": "http://terminology.hl7.org/CodeSystem/library-type",
+        "code": "logic-library",
+    }]
+
+
+def test_decision_executable_action_requires_authored_or_exact_approved_code():
+    cfg = {"canonical": "https://example.org/fhir", "version": "1", "status": "draft"}
+    l2 = {"sections": {"actions": [{"id": "refer", "label": "Refer", "kind": "referral"}]}}
+    with pytest.raises(ValueError, match="requires an authored code/codings"):
+        _build_decision_table_activity_definitions("topic", cfg, l2)
+
+
+def test_decision_exact_concept_ref_preserves_approved_versioned_code():
+    cfg = {"canonical": "https://example.org/fhir", "version": "1", "status": "draft"}
+    l2 = {"sections": {"actions": [{
+        "id": "screen", "label": "Screen", "kind": "service", "concept_refs": ["fall-screen"],
+    }]}}
+    candidates = [{
+        "normalized_id": "fall-screen",
+        "code": {"coding": [{"system": "http://loinc.org", "version": "2.81", "code": "100257-5"}]},
+    }]
+    resources = _build_decision_table_activity_definitions("topic", cfg, l2, concept_candidates=candidates)
+    assert resources[0]["code"]["coding"] == [{"system": "http://loinc.org", "version": "2.81", "code": "100257-5"}]
+
+
+def test_regenerated_library_keeps_matching_external_dependency(tmp_path):
+    cql = tmp_path / "DecisionLogic.cql"
+    cql.write_text("library DecisionLogic version '1'\ninclude FHIRHelpers version '4.0.1' called FHIRHelpers\n")
+    resources = [{"resourceType": "Library", "id": "decision", "name": "DecisionLogic"}]
+    tracking = {"computable": [{
+        "strategy": "external-dependency",
+        "external_dependency": {
+            "canonical": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers",
+            "name": "FHIRHelpers", "version": "4.0.1",
+        },
+    }]}
+    _attach_external_library_dependencies(resources, tmp_path, tracking)
+    assert resources[0]["relatedArtifact"] == [{
+        "type": "depends-on",
+        "resource": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1",
+    }]
+
+
 def test_evidence_variable_uses_authored_criteria_and_rejects_empty_source():
     characteristics = _build_evidence_variable_characteristics(
         "eligibility-criteria", {"sections": {"criteria": ["Adults age 65 years or older"]}}
@@ -82,6 +150,29 @@ def test_value_set_include_preserves_declared_system_version():
         }]}},
     )
     assert resources[0]["compose"]["include"][0]["version"] == "2.81"
+
+
+def test_value_set_concept_refs_preserve_approved_code_versions():
+    resources = _build_terminology_stub_resources(
+        "screening-items",
+        {"canonical": "https://example.org/fhir", "version": "1", "status": "draft"},
+        {
+            "concepts": [{
+                "id": "unsteady",
+                "codes": [{
+                    "system": "http://loinc.org", "version": "2.81",
+                    "code": "100257-5", "display": "Feel unsteady when standing or walking",
+                }],
+            }],
+            "sections": {"value_sets": [{
+                "id": "screening-items", "concept_refs": ["unsteady"],
+            }]},
+        },
+    )
+    include = resources[0]["compose"]["include"][0]
+    assert include["system"] == "http://loinc.org"
+    assert include["version"] == "2.81"
+    assert include["concept"] == [{"code": "100257-5", "display": "Feel unsteady when standing or walking"}]
 
 
 def _verified_value_set_l2():
@@ -910,6 +1001,12 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
             ],
         },
     }
+    for action in decision_table["sections"]["actions"]:
+        action["code"] = {
+            "system": "http://snomed.info/sct",
+            "code": "385763009",
+            "display": "Clinical action",
+        }
     care_pathway = {
         "artifact_type": "care-pathway",
         "name": "care-pathway",
@@ -1194,6 +1291,7 @@ sections:
     - id: a1
       label: Refer to specialist
       kind: communication
+      code: {{system: http://snomed.info/sct, code: '306206005', display: Refer to specialist}}
   rules:
     - id: r1
       event: ev1
@@ -1326,6 +1424,7 @@ sections:
     - id: a1
       label: Assess outcomes
       kind: ServiceRequest
+      code: {system: http://loinc.org, code: 44261-6, display: Assessment outcomes}
   rules:
     - id: r1
       event: postsurgical-review
@@ -1384,6 +1483,7 @@ sections:
     - id: a1
       label: Assess outcomes
       kind: ServiceRequest
+      code: {system: http://loinc.org, code: 44261-6, display: Assessment outcomes}
   rules:
     - id: r1
       event: postsurgical-review
@@ -1460,6 +1560,7 @@ sections:
       label: Avoid antibiotics
       kind: medication
       do_not_perform: true
+      code: {system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '723', display: Amoxicillin}
   rules:
     - id: r1
       event: ev1

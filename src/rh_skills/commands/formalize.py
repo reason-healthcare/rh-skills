@@ -136,6 +136,64 @@ def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
     return True
 
 
+def _attach_external_library_dependencies(
+    resources: list[dict[str, Any]],
+    computable_dir: Path,
+    topic_entry: dict[str, Any],
+) -> None:
+    """Preserve pinned imported CQL dependencies when a Library is regenerated."""
+    dependencies: dict[tuple[str, str], dict[str, str]] = {}
+    for entry in topic_entry.get("computable", []) or []:
+        if not isinstance(entry, dict) or entry.get("strategy") != "external-dependency":
+            continue
+        dependency = entry.get("external_dependency")
+        if not isinstance(dependency, dict):
+            continue
+        name = str(dependency.get("name") or "").strip()
+        version = str(dependency.get("version") or "").strip()
+        canonical = str(dependency.get("canonical") or "").strip()
+        if name and version and canonical:
+            dependencies[(name, version)] = {
+                "canonical": canonical,
+                "version": version,
+            }
+    if not dependencies:
+        return
+
+    include_pattern = re.compile(
+        r"^\s*include\s+([A-Za-z_][A-Za-z0-9_]*)\s+version\s+['\"]([^'\"]+)['\"]",
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
+    cql_files = sorted(computable_dir.glob("*.cql"))
+    for resource in resources:
+        if resource.get("resourceType") != "Library":
+            continue
+        cql_file = _find_best_cql(cql_files, str(resource.get("name") or ""))
+        if cql_file is None:
+            continue
+        includes = include_pattern.findall(cql_file.read_text())
+        if not includes:
+            continue
+        related = resource.get("relatedArtifact") or []
+        if not isinstance(related, list):
+            raise ValueError(f"Library/{resource.get('id')} relatedArtifact must be an array")
+        existing = {
+            str(item.get("resource") or "")
+            for item in related
+            if isinstance(item, dict) and item.get("type") == "depends-on"
+        }
+        for name, version in includes:
+            dependency = dependencies.get((name, version))
+            if dependency is None:
+                continue
+            reference = f"{dependency['canonical']}|{dependency['version']}"
+            if reference not in existing:
+                related.append({"type": "depends-on", "resource": reference})
+                existing.add(reference)
+        if related:
+            resource["relatedArtifact"] = related
+
+
 def _fhir_resource_id(value: str, *, max_len: int = FHIR_ID_MAX_LENGTH) -> str:
     """Return a deterministic FHIR id within the R4 64-character limit."""
     base = to_kebab_case(value)
@@ -588,7 +646,7 @@ def _ensure_activity_definition_codes(
     resources: list[dict],
     concept_candidates: list[dict[str, Any]] | None = None,
 ) -> None:
-    """Backfill ActivityDefinition.code from reviewed concepts when available."""
+    """Require approved coding for every executable ActivityDefinition."""
     collect_information_profiles = {
         "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
     }
@@ -621,12 +679,10 @@ def _ensure_activity_definition_codes(
         meta_profiles = resource.get("meta", {}).get("profile") or []
         profile = str(resource.get("profile") or "")
 
-        resolved = _resolve_activity_code_from_concepts(
+        resolved = _resolve_activity_code_from_exact_concept_refs(
             resource,
             action_id=action_id,
             title=title,
-            description=description,
-            kind=kind,
             concept_candidates=concept_candidates,
         )
         if resolved:
@@ -653,11 +709,9 @@ def _ensure_activity_definition_codes(
             }
             continue
 
-        resource["code"] = _activity_unresolved_placeholder_code(
-            kind=kind,
-            action_id=action_id,
-            title=title,
-            description=description,
+        raise ValueError(
+            f"ActivityDefinition/{action_id} ({kind}) requires an authored code/codings "
+            "or exact approved concept_refs; no placeholder or token-inferred code is allowed"
         )
 
 
@@ -1544,6 +1598,8 @@ def _activity_code_from_concept(concept: dict[str, Any], title: str) -> dict[str
         coding = {"code": code_value}
         if entry.get("system"):
             coding["system"] = str(entry["system"])
+        if entry.get("version"):
+            coding["version"] = str(entry["version"])
         if entry.get("display"):
             coding["display"] = str(entry["display"])
         resolved.append(coding)
@@ -1722,6 +1778,53 @@ def _resolve_activity_code_from_concepts(
         return resolved_code
     return None
 
+
+def _resolve_activity_code_from_exact_concept_refs(
+    action_def: dict[str, Any],
+    *,
+    action_id: str,
+    title: str,
+    concept_candidates: list[dict[str, Any]] | None,
+) -> dict[str, Any] | None:
+    """Resolve only explicit L2 concept_refs, never labels or token similarity."""
+    raw_refs = action_def.get("concept_refs") or []
+    if not isinstance(raw_refs, list):
+        return None
+    refs = [to_kebab_case(str(ref)) for ref in raw_refs if str(ref or "").strip()]
+    if not refs:
+        return None
+    by_id = {
+        str(candidate.get("normalized_id") or ""): candidate
+        for candidate in (concept_candidates or [])
+        if str(candidate.get("normalized_id") or "")
+    }
+    missing = [ref for ref in refs if ref not in by_id]
+    if missing:
+        raise ValueError(
+            f"Decision action '{action_id}' references unapproved concept_refs: "
+            f"{', '.join(missing)}"
+        )
+    codings: list[dict[str, Any]] = []
+    for ref in refs:
+        resolved = by_id[ref].get("code")
+        if not isinstance(resolved, dict):
+            raise ValueError(
+                f"Decision action '{action_id}' concept_ref '{ref}' has no approved coding"
+            )
+        for coding in resolved.get("coding") or []:
+            if (
+                isinstance(coding, dict)
+                and str(coding.get("code") or "").strip()
+                and str(coding.get("system") or "").strip()
+            ):
+                if coding not in codings:
+                    codings.append(dict(coding))
+    if not codings:
+        raise ValueError(
+            f"Decision action '{action_id}' concept_refs have no approved coding"
+        )
+    return {"coding": codings, "text": title}
+
 def _activity_definition_template_context(
     *,
     resource_id: str,
@@ -1769,13 +1872,16 @@ def _resolve_activity_code(action_def: dict[str, Any], *, action_id: str, title:
     """Return explicit activity coding from L2 when present, otherwise None."""
     code = action_def.get("code")
     if isinstance(code, dict):
+        code_value = str(code.get("code") or "").strip()
+        system = str(code.get("system") or "").strip()
+        if not code_value or not system:
+            return None
         coding = {
-            "code": str(code.get("code") or action_id),
+            "code": code_value,
+            "system": system,
         }
         if code.get("version"):
             coding["version"] = str(code["version"])
-        if code.get("system"):
-            coding["system"] = str(code["system"])
         if code.get("display"):
             coding["display"] = str(code["display"])
         return {"coding": [coding], "text": title}
@@ -1787,13 +1893,12 @@ def _resolve_activity_code(action_def: dict[str, Any], *, action_id: str, title:
             if not isinstance(entry, dict):
                 continue
             code_value = str(entry.get("code") or "").strip()
-            if not code_value:
+            system = str(entry.get("system") or "").strip()
+            if not code_value or not system:
                 continue
-            coding = {"code": code_value}
+            coding = {"code": code_value, "system": system}
             if entry.get("version"):
                 coding["version"] = str(entry["version"])
-            if entry.get("system"):
-                coding["system"] = str(entry["system"])
             if entry.get("display"):
                 coding["display"] = str(entry["display"])
             resolved.append(coding)
@@ -1925,6 +2030,13 @@ def _decision_table_action_title(action_def: dict) -> str:
     )
 
 
+def _is_guidance_action(action_def: dict[str, Any] | None) -> bool:
+    """Return whether an L2 action is inline, non-order PlanDefinition guidance."""
+    if not isinstance(action_def, dict):
+        return False
+    return str(action_def.get("kind") or action_def.get("type") or "").strip().lower() == "guidance"
+
+
 def _build_decision_table_activity_definitions(
     topic: str,
     cfg: dict,
@@ -1963,6 +2075,10 @@ def _build_decision_table_activity_definitions(
         raw_kind = action_def.get("kind")
         if raw_kind is None:
             raw_kind = action_def.get("type")
+        if _is_guidance_action(action_def):
+            # Guidance remains in the PlanDefinition action tree.  It must not
+            # turn recommendation prose into an ActivityDefinition/order.
+            continue
         kind = _activity_definition_kind(raw_kind)
         description = str(action_def.get("description") or title)
         intent = _activity_definition_intent(action_def.get("intent"))
@@ -1970,12 +2086,10 @@ def _build_decision_table_activity_definitions(
 
         codeable_concept = _resolve_activity_code(action_def, action_id=action_id, title=title)
         if codeable_concept is None:
-            codeable_concept = _resolve_activity_code_from_concepts(
+            codeable_concept = _resolve_activity_code_from_exact_concept_refs(
                 action_def,
                 action_id=action_id,
                 title=title,
-                description=description,
-                kind=kind,
                 concept_candidates=concept_candidates,
             )
 
@@ -2066,6 +2180,12 @@ def _build_decision_table_activity_definitions(
                 "valueCanonical": questionnaire_canonical,
             }]
 
+        if not template_variant_is_questionnaire and codeable_concept is None:
+            raise ValueError(
+                f"Decision action '{action_id}' ({kind}) requires an authored code/codings "
+                "or exact approved concept_refs; no title/token code inference is allowed"
+            )
+
         resource = _render_activity_definition_resource(
             template_context,
             questionnaire_task=template_variant_is_questionnaire,
@@ -2080,7 +2200,7 @@ def _build_decision_table_referenced_actions(
     canonical: str,
     action_index: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Build nested referenced ActivityDefinition actions from a rule's then-ids."""
+    """Build nested action entries; guidance is inline and has no ActivityDefinition."""
     normalized_action_index: dict[str, dict[str, Any]] = {}
     for action_key, action_def in action_index.items():
         if not isinstance(action_def, dict):
@@ -2152,6 +2272,7 @@ def _build_decision_table_referenced_actions(
         entry_id = str(entry.get("id") or "")
         if entry_id:
             ancestor_ids.add(entry_id)
+        action_def = action_for_ref(entry_id)
         children = child_map.get(str(entry.get("id") or ""), [])
         if children:
             child_entries = []
@@ -2165,8 +2286,9 @@ def _build_decision_table_referenced_actions(
             if child_entries:
                 entry["action"] = child_entries
                 return
-            entry["definitionCanonical"] = f"{canonical}/ActivityDefinition/{entry['id']}"
-        else:
+            if not _is_guidance_action(action_def):
+                entry["definitionCanonical"] = f"{canonical}/ActivityDefinition/{entry['id']}"
+        elif not _is_guidance_action(action_def):
             entry["definitionCanonical"] = (
                 f"{canonical}/ActivityDefinition/{entry['id']}"
             )
@@ -3733,6 +3855,7 @@ def _build_terminology_stub_resources(
                 if isinstance(entry, dict):
                     codings.append({
                         "system": _normalize_legacy_system(str(entry.get("system") or "")),
+                        "version": str(entry.get("version") or default_version),
                         "code": str(entry.get("code") or ""),
                         "display": str(entry.get("display") or ""),
                     })
@@ -3740,6 +3863,7 @@ def _build_terminology_stub_resources(
                 if isinstance(expansion, dict):
                     codings.append({
                         "system": _normalize_legacy_system(str(expansion.get("system") or default_system)),
+                        "version": str(expansion.get("version") or default_version),
                         "code": str(expansion.get("code") or ""),
                         "display": "",
                     })
@@ -3750,8 +3874,9 @@ def _build_terminology_stub_resources(
             system = _normalize_legacy_system(str(concept.get("system") or default_system))
             code = str(concept.get("code") or "").strip()
             display = str(concept.get("display") or concept.get("term") or "").strip()
+            concept_version = str(concept.get("version") or default_version).strip()
             if code:
-                codings.append({"system": system, "code": code, "display": display})
+                codings.append({"system": system, "version": concept_version, "code": code, "display": display})
             elif display:
                 codings.append({
                     "system": system or "http://snomed.info/sct",
@@ -4086,7 +4211,10 @@ def _build_stub_resources(
         }
         # Required fields for stubs
         if sup_type == "Library":
-            sup_resource["type"] = {"coding": [{"code": "logic-library"}]}
+            sup_resource["type"] = {"coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/library-type",
+                "code": "logic-library",
+            }]}
         elif sup_type == "EvidenceVariable":
             sup_resource["characteristic"] = _build_evidence_variable_characteristics(artifact_type, l2_data)
         elif sup_type == "ActivityDefinition":
@@ -5223,11 +5351,15 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
 
     # Ensure Measure.library references companion Library resources
     _patch_measure_library_references(resources)
-    _ensure_activity_definition_codes(resources, concept_candidates=concept_candidates)
+    try:
+        _ensure_activity_definition_codes(resources, concept_candidates=concept_candidates)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
     # Normalize + validate
     computable_dir = td / "computable"
     computable_dir.mkdir(parents=True, exist_ok=True)
+    _attach_external_library_dependencies(resources, computable_dir, topic_entry)
     warnings: list[str] = []
 
     for resource in resources:

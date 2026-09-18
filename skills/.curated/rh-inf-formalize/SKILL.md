@@ -66,13 +66,13 @@ artifact row named `concepts`, materialized at
 | L2 Type | Strategy | Primary Resource | Supporting Resources |
 |---------|----------|------------------|---------------------|
 | `evidence-summary` | evidence-summary | Evidence | EvidenceVariable |
-| `decision-table` | decision-table | PlanDefinition (eca-rule) | ActivityDefinition, Library (CQL) |
+| `decision-table` | decision-table | PlanDefinition (eca-rule) | ActivityDefinition for coded executable leaves, Library (CQL) |
 | `care-pathway` | care-pathway | PlanDefinition (clinical-protocol) | ActivityDefinition |
 | `terminology` | terminology | ValueSet | ConceptMap |
 | `measure` | measure | Measure | Library (CQL) |
 | `assessment` | assessment | Questionnaire | — |
 | `policy` | policy | PlanDefinition (eca-rule) | Questionnaire (DTR), Library (CQL) |
-| `eligibility-criteria` | eligibility-criteria | EvidenceVariable | ValueSet |
+| `eligibility-criteria` | eligibility-criteria | EvidenceVariable | — |
 | `risk-factors` | risk-factors | EvidenceVariable | ValueSet |
 | `custom` | generic (named fallback) | PlanDefinition | — |
 
@@ -143,8 +143,8 @@ Directionality: `rh-skills formalize` consumes L2 structured artifacts as input
 and emits L3 FHIR JSON artifacts as output.
 
 Executable activity coding rule:
-- If an `ActivityDefinition` already has approved coding in the topic `concepts` artifact, reuse it.
-- If it does not, implement mode must call ReasonHub MCP to find a real code before writing JSON.
+- An executable `ActivityDefinition` must carry an authored `code`/`codings` value or resolve an exact L2 `concept_refs[]` identifier from the approved topic `concepts` artifact.
+- Never infer a code from an action title, label, token similarity, or an unapproved concept. If neither approved source is present, stop formalization with an actionable error.
 - Choose the target terminology by action kind:
   `MedicationRequest` → prefer RxNorm;
   `ServiceRequest` → prefer LOINC for lab/observable/instrument orders, otherwise SNOMED CT for procedural/imaging/referral orders;
@@ -152,7 +152,7 @@ Executable activity coding rule:
   `CommunicationRequest` → usually SNOMED CT;
   `Task` → valid for task-oriented activities such as collect-information when the FHIR R4 kind is `Task`.
 - Do not use recommendation prose or text-only `code.text` as a substitute for coding.
-- If MCP is unavailable, emit an explicit `TODO:MCP-UNREACHABLE` placeholder coding so verify fails visibly.
+- `kind: guidance` is source-faithful non-order recommendation text in the PlanDefinition action tree. It never produces an ActivityDefinition, clinical code, order, or referral.
 
 Questionnaire identity rule:
 - When an approved L2 assessment's `sections.instrument` provides `id`, `canonical`, and `version`, preserve those values on the generated Questionnaire. This keeps QuestionnaireResponses authored from a shared or previously published Questionnaire resolvable by the generated CQL. Generate Questionnaire content from the L2 items; do not replace the generated resource with a copied source Questionnaire. If no identity is supplied, use the topic's formalize configuration defaults.
@@ -521,11 +521,10 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 
    Report each missing field as an error (not a warning).
 
-5. **Unresolved code placeholder detection** — scan all FHIR JSON files for
-   the literal string `TODO:MCP-UNREACHABLE`. Each occurrence indicates a code
-   that the LLM could not resolve via reasonhub MCP tools. Report each as a
-   warning with the file path and field location. If the count exceeds 3 per
-   resource, report it as an error.
+5. **Unresolved executable coding detection** — scan all FHIR JSON files for
+   missing clinical `ActivityDefinition.code` values and the literal string
+   `TODO:MCP-UNREACHABLE`. Treat either result as an error: formalize must
+   stop before creating an uncoded executable activity.
 
 6. For each ValueSet or ConceptMap resource, call
    `reasonhub-codesystem_verify_code` with each coded entry's `system` and
