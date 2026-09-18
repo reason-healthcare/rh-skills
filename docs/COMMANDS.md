@@ -583,6 +583,52 @@ rh-skills package diabetes-screening --include-test-fixtures tests/cql --fixture
 
 ---
 
+## `rh-skills compose-executable`
+
+Build the Workbench execution sidecars from one computable revision. This is a
+separate finalization step after FHIR/CQL generation; it does not run a clinical
+engine or infer missing logic.
+
+```
+rh-skills compose-executable <topic> --root-canonical URL|VERSION \
+  --fixture-manifest PATH --fixture-dir PATH --evaluation-date RFC3339
+```
+
+**Required input:**
+- `--root-canonical` — exact, versioned `PlanDefinition` canonical.
+- `--evaluation-date` — fixed timezone-qualified RFC 3339 clock for every
+  emitted rehearsal fixture.
+
+**Optional path overrides:**
+- `--fixture-manifest` — defaults to
+  `topics/<topic>/process/fixtures/manifest.json`.
+- `--fixture-dir` — defaults to
+  `topics/<topic>/process/fixtures/connectathon-cases`.
+- `--output-dir` — defaults to
+  `topics/<topic>/process/package-workspace/executable`.
+
+**Outputs:**
+```
+process/package-workspace/executable/
+  executable-bundle.json
+  executable-manifest.json
+  fixtures/
+    index.json
+    <fixture-id>.json
+```
+
+The command validates canonical/version closure, embedded Library CQL and ELM,
+pinned complete ValueSet expansions, and all fixture bundle/context fields. It
+rejects missing or ambiguous dependencies, placeholders, malformed fixtures,
+and path escapes. `fixtures/index.json` contains only fixture metadata and
+references full patient bundles using `dataBundlePath`; patient data is never
+placed in the executable knowledge Bundle. The manifest records deterministic
+SHA-256 checksums for the root, resources, Bundle, and fixture index. Output is
+staged and directory-swapped only after validation succeeds, preserving the
+previous executable output on failure.
+
+---
+
 ## `rh-skills validate`
 
 Two modes: discovery-plan validation (L1) and artifact schema validation (L2/L3).
