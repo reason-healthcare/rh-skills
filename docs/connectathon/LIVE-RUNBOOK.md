@@ -1,9 +1,10 @@
 # Saturday live authoring runbook
 
 This runbook is for a fresh STEADI source-to-preview session on September 19,
-2026. It starts from the shared source snapshots and synthetic fixtures; it
-does not use rehearsal L2, CQL/ELM, FHIR resources, packages, or snapshot
-mappings as inputs. Check the [24-hour plan](../CONNECTATHON-24H-PLAN.md),
+2026. The Saturday authoring procedure starts from shared source snapshots and
+synthetic fixtures; run-004 below is a targeted technical revision used to
+validate the Observation/CQL contract, not an input to fresh L2 authoring or an
+independent timing sample. Check the [24-hour plan](../CONNECTATHON-24H-PLAN.md),
 [journal](../CONNECTATHON-JOURNAL.md), and
 [status ledger](../connectathon-24h-status.json) before starting. Those files
 are the current source of truth for open gates and exact application commands.
@@ -16,6 +17,43 @@ agent-authored L2/CQL with `LLM_PROVIDER=stub` for deterministic L3 templates;
 it does not establish provider-backed L3 generation. Record any different
 provider/model used live and keep it distinct from these rehearsal results.
 
+Run-003 first demonstrated the supported Boolean SDC extraction subset.
+Run-004 is a targeted revision of that workspace and the run-002 authoring
+replay, not an independent authoring or timing sample. It demonstrates the
+same bounded workflow with the current Patient-context and encounter-join
+contracts: the generated Questionnaire declares the SDC extraction profile
+and explicit version algorithm, the native RH extractor produces coded
+Observations from completed responses, and generated CQL retrieves those
+Observations through pinned question ValueSets. This does not establish full
+SDC extraction interoperability or two-server conformance; keep those broader
+track gates separate.
+
+Post-run review found that run-003's frozen CQL compares each retrieved
+resource's subject reference to `Patient.id`, masking an engine Patient-context
+scoping defect. Keep the accepted run-003 package and evidence unchanged. The
+isolated run-004 candidate is a targeted revision, not new independent
+authoring or timing: it removes those redundant subject predicates, uses the
+typed `[Encounter: class ~ "Ambulatory"]` filter instead of splitting the
+Coding system/code into strings, and joins Observations to the selected
+Encounter with the pinned `FHIRCommon.references()` function. It retains the
+encounter date, status, selected-encounter and QuestionnaireResponse
+provenance rules and all 66 expected assertions. Normal RH CLI validation,
+translation, and 48 decision plus 18 Measure assertions pass against QR-free
+inputs derived from a fresh native extraction capture. The frozen executable
+knowledge Bundle contains 23 resources, with six separate fixture Bundles in
+its fixture sidecar; official FHIR validation reports zero errors and zero
+unresolved references, plus 66 warnings and 14 information messages under
+offline terminology validation. Runtime-output validation has one narrowly
+documented zero-denominator `MEASURE_MR_SCORE_REQUIRED` validator error
+(`strictValidatorPassed: false`); it is accepted only under the exact
+exception described in section 6. Final Workbench API validation passes 72/72
+checks and standalone raw-QR parity/semantics passes 6/6. Both actual browser
+flows pass: Workbench extracts/stages Observations and updates Measure/CPG;
+standalone loads a separate raw patient Bundle and returns positive or unknown
+guidance. Workbench also decodes Library CQL/ELM for inspection. These are local
+technical rehearsal results, not clinical approval or full Connectathon
+interoperability completion.
+
 ## What the scenario means
 
 The scenario is a community-dwelling adult age 65 or older in ambulatory care.
@@ -27,14 +65,22 @@ fixed encounter/evaluation clock used by the synthetic fixture contract is
 
 The response is complete only when its status is `completed`, it references
 the exact versioned three-question Questionnaire, and all three expected
-linkIds have usable Boolean answers. A completed response is increased risk
-when any answer is true and not increased risk when all are false. Missing,
-incomplete, wrong-version, or unusable answers remain unknown for risk; the
-completion expression and measure numerator are false. Completion is not
-gated by age, so the younger complete fixture can still demonstrate assessment
-completion while remaining outside the screening population. Retain the
-shared fixture's exact measurement-period JSON, including both inclusive
-boundaries.
+linkIds have usable Boolean answers. The SDC extraction step applies that
+contract and emits one final Boolean Observation per coded item; Observation
+CQL then checks exact ValueSet membership, the Patient-context-selected
+qualifying encounter, and common QuestionnaireResponse provenance. Patient
+context filtering depends on the pinned FHIR ModelInfo and evaluator. Do not
+add manual subject-reference predicates to mask a runtime context leak; test
+with a mixed-patient Bundle and treat leakage as an execution blocker. It does
+not read `QuestionnaireResponse.item` to discover terminology because FHIR R4 has no
+item-level code there. A completed screen is increased risk when any extracted
+answer is true and not increased risk when all are false. Missing, incomplete,
+wrong-version, or unusable responses do not produce usable extraction results;
+risk remains unknown, completion is false, and the measure numerator is false.
+Completion is not gated by age, so the younger complete fixture can still
+demonstrate assessment completion while remaining outside the screening
+population. Retain the shared fixture's exact measurement-period JSON,
+including both inclusive boundaries.
 
 ## 1. Pin the workspace and tools
 
@@ -62,19 +108,19 @@ mkdir -p "$WS"
 uv sync --offline --locked --project "$SKILLS_REPO"
 ```
 
-The rehearsal used Python 3.13+ through `uv`, `rh-skills` at commit
-`9f48a46f91bf2407d46394a0e235908baf9fd11b`, and RH CLI `0.2.8` at
-`/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh`. The currently
-frozen RH runtime commit is `2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83`;
-the native CLI SHA-256 is
-`44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d`, and the
-Node/WASM SHA-256 is
-`25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320`. The
-older [runtime-final-artifacts.json](evidence/runtime-final-artifacts.json)
-records a superseded native binary.
-Recheck all revisions and checksums at session start; if any differ, record
-them and rerun the affected acceptance checks. The final API/build readiness
-manifest is still pending. The RH evaluator must expose
+The original run-001/run-002 replays used Python 3.13+ through `uv`,
+`rh-skills` commit `9f48a46f91bf2407d46394a0e235908baf9fd11b`, and RH CLI
+`0.2.8`. The run-003 runtime hashes are historical. The frozen run-004
+technical candidate uses RH commit `26716c9319f50ee71aa8456cc8a0ccefe100d7f5`,
+native SHA-256
+`7b11131a9c748daaedd88a830d1aa39328d2c6ff81908e5176a70fce83d945e6`, and
+WASM SHA-256
+`d936e08fed0ae47bcc30ad75274ec3d1336ec079a7bf97054de4fa80f1081726`; the
+Node wrapper SHA-256 is
+`478033b2ddbcab71dd648a59ccd25c07484113c2ccca381ef200fd3e8027f00b`.
+Recheck revisions and checksums at session start and record them with the
+results; the final readiness ledger remains authoritative for which services
+and preview build were exercised. The RH evaluator must expose
 `--subject`, `--evaluation-date`, `--measurement-period-start`,
 `--measurement-period-end`, `--parameter`, and `--lib-path`:
 
@@ -84,8 +130,8 @@ shasum -a 256 "$RH_CLI_PATH"
 "$RH_CLI_PATH" cql eval --help | rg -- '--subject|--evaluation-date|--measurement-period|--parameter|--lib-path'
 "$UV_PROJECT_ENVIRONMENT/bin/python" -c 'import importlib.metadata as m; print(m.version("rh-skills"))'
 git -C "$SKILLS_REPO" rev-parse HEAD
-test "$(git --no-optional-locks -C "$RH_REPO" rev-parse HEAD)" = 2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83
-test "$(shasum -a 256 "$RH_CLI_PATH" | awk '{print $1}')" = 44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d
+git --no-optional-locks -C "$RH_REPO" rev-parse HEAD
+shasum -a 256 "$RH_CLI_PATH"
 git --no-optional-locks -C "$CORPUS" rev-parse HEAD
 git --no-optional-locks -C "$CORPUS" status --short
 test "$(command -v rh-skills)" = "$UV_PROJECT_ENVIRONMENT/bin/rh-skills"
@@ -120,13 +166,16 @@ Install the agent-native skills into this run workspace before beginning the
 authoring workflow. Choose the generic `.agents/skills/` format with the
 non-interactive menu answer `1`; this keeps the installed files and drift
 lockfile under `$WS`, never in the `rh-skills` source checkout. `skills check`
-compares the installation to that lockfile. The preflight also built a wheel
-from the current checkout, confirmed all eight embedded skill trees match
-`skills/.curated` byte-for-byte, installed the wheel into a separate locked
-offline environment, and passed this same install/check flow. See the
-[agent-skill install evidence](evidence/agent-skills-install-preflight.json)
-for the wheel SHA, both lockfile paths and hashes, and the three skill-content
-comparisons. After installation, start or restart the live authoring agent with
+compares the installation to that lockfile. The run-004 isolated install check
+passed in a fresh offline-locked environment, and the installed CQL style
+guide hash matches the curated source exactly. See the
+[run-004 install evidence](../../dist/connectathon-20260919/live-workspaces/agent-skills-preflight-20260918/run004-final/fresh-install-evidence.json),
+its [lockfile](../../dist/connectathon-20260919/live-workspaces/agent-skills-preflight-20260918/run004-final/fresh-workspace/.rh-skills-lock.yaml),
+the [run-local skill check](../../dist/connectathon-20260919/workspaces/run-004/evidence/fresh-install/skills-check.txt),
+and [content hash comparison](../../dist/connectathon-20260919/workspaces/run-004/evidence/fresh-install/content-hashes.txt).
+The earlier wheel-install check is retained at
+[agent-skill install evidence](evidence/agent-skills-install-preflight.json).
+After installation, start or restart the live authoring agent with
 `$WS` as its working directory so that session loads the installed
 `.agents/skills/` instructions. Installing files does not hot-reload the
 current agent session; use the generic platform contract unless a different
@@ -267,6 +316,17 @@ care pathway, measure, and concepts/terminology. Use the normal approve and
 finalize commands after the actual review; do not mark automated technical
 review as human clinical approval.
 
+For the supported SDC Boolean extraction path, the assessment L2 must preserve
+the source Questionnaire identity/version, each exact question text and
+linkId, and one reviewed Coding per Boolean item with system, version, code,
+and display. Explicitly author `sections.instrument.version_algorithm` when
+`observation_extraction.enabled` is true; the versioned SDC profile requires
+Questionnaire version-algorithm metadata. Also author the supported profile,
+enable flag, and survey category. The L2 validator/formalizer preserves these
+typed fields; it does not run extraction. Ordinary assessments without enabled
+SDC extraction do not inherit the item-Coding or extraction-metadata
+requirements.
+
 The final care-pathway contract in rh-skills `9f48a46` resolves only explicit
 `rule_id`/`rule_ids` bindings; it no longer guesses a recommendation by fuzzy
 title matching. It supports `applicability_conditions[]`, an AND of explicit
@@ -332,22 +392,37 @@ rh-skills formalize "$TOPIC" care-pathway --force --generate-strategies
 ```
 
 Author CQL from the reviewed L2 and source oracle, following the
-`rh-inf-cql` skill. The required patient logic has eight named expressions:
+`rh-inf-cql` skill. For this SDC workflow, derive each observation retrieve
+from an exact, pinned ValueSet alias; never treat QR linkIds as code-system
+membership. The required patient logic has eight named expressions:
 `In Screening Population`, `Completed Three Question Screen`, `At Increased
 Fall Risk`, `Exercise Intervention Applicable`, `Consider Multifactorial
 Intervention`, `Initial Population`, `Denominator`, and `Numerator`. Preserve
-null as a distinct result from false. Bind evaluation to the selected patient,
-qualifying encounter, fixed evaluation clock, and the full measurement-period
-parameter, not just the period start/end CLI bounds.
+null as a distinct result from false. Bind evaluation to the selected patient
+context, qualifying encounter, fixed evaluation clock, and the full
+measurement-period parameter, not just the period start/end CLI bounds. The
+Patient-context retrieves must be scoped by the pinned FHIR ModelInfo and
+evaluator context; never add a manual `subject.reference = Patient.id` guard
+as a workaround. Verify isolation with a mixed-patient Bundle.
 
 The portable CQL uses `FHIRHelpers version '4.0.1'`, helper-based FHIR date
-conversion, and a logical-model cast for FHIR choice elements. For example,
-FHIR `QuestionnaireResponse.answer.value[x]` is read with `(A.value as
-FHIR.boolean).value`; a CodeableConcept status checks the standard code system
-and code in its `.coding` collection. Do not use RH-only JSON member shortcuts
-such as `A.valueBoolean` or `CodeableConcept.value` as portable CQL.
+conversion, and a logical-model cast for FHIR choice elements. The Observation
+retrieves use the three ValueSet aliases backed by the fixture-pinned LOINC
+2.81 expansions. Qualification checks final status, Boolean value, the
+qualifying ambulatory encounter selected through the Patient context, and a shared
+`QuestionnaireResponse/<id>` `derivedFrom` reference. Completion requires
+exactly one usable Observation for each of the three aliases; incomplete or
+absent extraction remains unknown for increased risk. For Coding or
+CodeableConcept terminology, declare a CodeSystem/Code or a reviewed ValueSet
+and use typed equivalence (`~`) or membership (`in`), as shown in the CQL style
+guide. Do not split terminology into raw system/code string predicates.
+Primitive status fields such as `Observation.status = 'final'` remain direct
+status-code comparisons. Do not use RH-only JSON member shortcuts such as `A.valueBoolean` or
+`CodeableConcept.value` as portable CQL. The QR-only baseline remains useful
+for comparison, but it is not the primary SDC execution path.
 
-Copy the pinned, local helper packet and import it only after CQL includes it.
+Copy the pinned local helper packets and import them only after CQL includes
+them.
 The workspace copy is under the ignored rehearsal area
 `$SKILLS_REPO/dist/connectathon-20260919/dependencies/FHIRHelpers-4.0.1/`;
 the RH-skills CLI does not fetch dependencies implicitly. The packet contains
@@ -355,6 +430,11 @@ the CQL, translated ELM, R4 4.0.1 model-info, and import manifest. Check the
 manifest hashes before copying. Its provenance is CQFramework
 `clinical_quality_language` tag `v3.26.0`, Apache-2.0; official Library
 canonical is `http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1`.
+Run-004 also uses official FHIRCommon `hl7.fhir.uv.cql#2.0.0`, compiled to
+derivative ELM against the same pinned helper and FHIR R4 ModelInfo. Its
+`references(Reference, Resource)` function compares only the final reference
+path segment with `Resource.id` and assumes a shared source server; it does not
+validate reference type, base URL, canonical, or history semantics.
 
 ```sh
 mkdir -p "$WS/process/dependencies/FHIRHelpers-4.0.1"
@@ -363,7 +443,22 @@ cp "$SKILLS_REPO/dist/connectathon-20260919/dependencies/FHIRHelpers-4.0.1/"* \
 cd "$WS"
 rh-skills cql import-library "$TOPIC" \
   process/dependencies/FHIRHelpers-4.0.1/import-manifest.json
+mkdir -p "$WS/process/dependencies/FHIRCommon-2.0.0"
+cp "$SKILLS_REPO/dist/connectathon-20260919/dependencies/FHIRCommon-2.0.0/"* \
+   "$WS/process/dependencies/FHIRCommon-2.0.0/"
+rh-skills cql import-library "$TOPIC" \
+  process/dependencies/FHIRCommon-2.0.0/import-manifest.json
+# Re-import so FHIRCommon's transitive FHIRHelpers dependency is linked.
+rh-skills cql import-library "$TOPIC" \
+  process/dependencies/FHIRHelpers-4.0.1/import-manifest.json
 ```
+
+Each import is tracked as an external dependency with source/ELM hashes and a
+versioned FHIR Library. The native RH CQL commands resolve these includes from
+the imported, version-checked ELM sidecar and its provenance record; they do
+not need to parse the full external helper source as ordinary CQL. The
+reference translator separately compiles the authored libraries against the
+pinned source closure, so keep both dependency sources in its input directory.
 
 Expected helper hashes:
 
@@ -373,16 +468,51 @@ Expected helper hashes:
 | `FHIRHelpers-4.0.1.json` | `4f8b5da2c1205afc62a1c3f4d412c87ccaeb9eb4d1196883704060d0863c9554` |
 | `fhir-modelinfo-4.0.1.xml` | `16fa8119e074ebfb6a301b58af72417c2360dca899e89f6e3bd1d9a0e4789722` |
 
-Run the actual CLI sequence for both libraries. The test cases must use the
-complete fixture Bundle plus explicit subject, evaluation date, and exact
-measurement-period parameter JSON (including inclusive ends). Keep the shared
-fixtures and assertions unchanged; put any variations in separate test data.
-The CQL adapter directory has one case folder per manifest case, each with
-`input/bundle.json`, `input/evaluation-context.json`, and
-`expected/expression-results.json`. Derive the adapter mechanically from the
-shared Bundle and assertions; pass the full Bundle, explicit
-`Patient/<id>`, supplied evaluation date, measurement bounds, and the complete
-`Measurement Period` JSON parameter. Do not key logic off fixture ids or
+The FHIRCommon import packet is under
+`$SKILLS_REPO/dist/connectathon-20260919/dependencies/FHIRCommon-2.0.0/`.
+Its important pinned hashes are:
+
+| File | SHA-256 |
+| --- | --- |
+| `FHIRCommon-2.0.0.cql` | `40ed15194eb5f436c9fdeec9267a74f1ef5f93b3755f431b3bf687d4cf4da28c` |
+| `FHIRCommon-2.0.0.json` (ELM) | `5b735bf1807df3518d365206797b7c1693cacc996d9e022eab5bd6ca11264817` |
+| Published package `hl7.fhir.uv.cql#2.0.0` | `a7c201465e98a7a528bf0ce1fff55e3d6f974efc8e19f99f476d88b3a063c35a` |
+
+Its canonical is `http://hl7.org/fhir/uv/cql/Library/FHIRCommon|2.0.0`.
+
+Before CQL tests, use the extraction capture tool against the immutable source
+Bundles. It invokes the native extractor only for completed responses, using
+the generated Questionnaire and the Patient/Encounter references from each
+case; incomplete and absent responses are recorded as not invoked. It captures
+the native transaction output and never reads `extracted-bundle.json` as runtime
+output. Then compare the captured output with the source extraction oracle.
+
+```sh
+python "$SKILLS_REPO/docs/connectathon/tools/run-sdc-source-extraction.py" \
+  --rh "$RH_CLI_PATH" \
+  --oracle-root "$WS/test-bundles" \
+  --questionnaire "$WS/topics/$TOPIC/computable/Questionnaire-steadi-three-question-screen.json" \
+  --output-dir "$WS/process/observation-extraction"
+python "$SKILLS_REPO/docs/connectathon/tools/verify-sdc-extraction.py" \
+  --oracle-root "$WS/test-bundles" \
+  --manifest "$WS/process/observation-extraction/manifest.json" \
+  --output "$WS/evidence/sdc-extraction-verification.json"
+```
+
+Run the actual CLI sequence for both libraries. The CQL test adapter uses
+QR-free Bundle views made from actual captured extractor outputs: retain the
+captured Patient, Encounter, and generated Observations unchanged, and remove
+only the QuestionnaireResponse entry so the test proves CQL reads Observations.
+Record this adapter transformation and the source capture manifest. Each test
+case has `input/bundle.json`, `input/terminology.json`,
+`input/evaluation-context.json`, and `expected/expression-results.json`. The
+terminology sidecar is a Bundle of complete, version-pinned ValueSet resources;
+`rh-skills cql test` passes it to RH as `--terminology`. The decision library
+has 48 assertions (eight expressions times six cases); the Measure library
+tests the three population expressions for 18 assertions. Preserve the
+original 48-expression source oracle unchanged. Pass the explicit
+`Patient/<id>`, evaluation date, both period bounds, and full `Measurement
+Period` JSON including inclusivity. Do not key logic off fixture ids or
 silently treat a missing response as false.
 
 ```sh
@@ -394,14 +524,36 @@ rh-skills cql translate "$TOPIC" MeasureMeasure
 rh-skills cql test "$TOPIC" MeasureMeasure
 ```
 
+The run-004 authoring and packaging commands have been executed. Their exact
+command list, tool/runtime pins, CQL/ELM/package hashes, fixture hashes, and
+supporting evidence links are recorded in the
+[run-004 authoring manifest](../../dist/connectathon-20260919/workspaces/run-004/evidence/authoring-manifest.json).
+The four RH CLI validation/test logs are saved beside that manifest. The
+fresh native extraction capture uses the final generated Questionnaire; four
+completed responses were extracted and the incomplete/absent response cases
+were not invoked. The six CQL test Bundles retain the captured Patient,
+Encounter, and any extracted Observation resources, while omitting only the
+QuestionnaireResponse resource so the expressions must read the Observations.
+Those inputs are evaluation-only derivatives, not extraction outputs or new
+clinical fixtures. The test oracle remains byte-identical to the inherited
+48 decision and 18 Measure assertions.
+
 Also translate through the pinned CQFramework 3.26.0 reference translator with
 the FHIR R4 4.0.1 model-info and overload signatures. A zero-error reference
 translation plus RH execution is required for portable-source evidence, but it
 is not two independent execution engines. Record translator options and
-diagnostics. Re-formalize affected decision-table, measure, and care-pathway
-artifacts after successful translation so the generated Libraries contain the
-actual CQL/ELM and the `FHIRHelpers` dependency link; then rerun validation and
-all fixture tests.
+diagnostics. Include pinned FHIRCommon 2.0.0 and FHIRHelpers 4.0.1 sources in
+the reference translator input closure. Re-formalize the CQL-dependent
+decision-table and measure artifacts after successful translation so their
+generated Libraries contain the actual CQL/ELM and both dependency links; only
+re-formalize the care pathway if its own L2 content changed. Then rerun
+validation and all fixture tests. Reference translation of the corrected
+run-004 Libraries is recorded in the
+[reference translation manifest](../../dist/connectathon-20260919/workspaces/run-004/evidence/reference-cqf-run004-20260918T143000Z/manifest.json).
+Normal RH CLI validation, translation, and evaluation also pass with the
+imported FHIRCommon/FHIRHelpers dependency closure; the composer includes the
+matching versioned Library resources and `depends-on` references in the
+23-resource Bundle.
 
 The six source cases are younger-than-65, eligible-all-no,
 eligible-unsteady-yes, eligible-prior-fall-yes,
@@ -415,14 +567,14 @@ Questionnaire version, duplicate answers, changed patient/resource IDs, and
 Boolean/null typing. Never edit the shared source assertions to make a failed
 implementation pass.
 
-After successful translation, re-formalize the CQL-dependent artifacts so
-the generated Libraries contain the actual CQL/ELM and the `FHIRHelpers`
-dependency link; then rerun validation and all fixture tests:
+After successful translation, re-formalize only the CQL-dependent artifacts
+so the generated Libraries contain the actual CQL/ELM and `FHIRHelpers` plus
+`FHIRCommon` dependency links. Use the actual provider explicitly; this
+rehearsal used `stub` for deterministic templates:
 
 ```sh
-rh-skills formalize "$TOPIC" decision-table --force
-rh-skills formalize "$TOPIC" measure --force
-rh-skills formalize "$TOPIC" care-pathway --force --generate-strategies
+LLM_PROVIDER=stub rh-skills formalize "$TOPIC" decision-table --force
+LLM_PROVIDER=stub rh-skills formalize "$TOPIC" measure --force
 ```
 
 ## 5. Formalize, package, and compose the executable Bundle
@@ -442,8 +594,7 @@ revision. Use a disposable package build directory: `rh-skills package`
 recreates its `--workspace-dir`, so pointing it at the standard
 `process/package-workspace` would remove the composer's `executable/` output.
 Keep the six synthetic fixture Bundles in fixture examples and the executable
-fixture index; do not merge patient Bundles into the 22-resource knowledge
-Bundle.
+fixture index; do not merge patient Bundles into the knowledge Bundle.
 
 ```sh
 PACKAGE_BUILD="$WS/topics/$TOPIC/process/package-build-$RUN_ID"
@@ -498,28 +649,31 @@ Import the Workbench snapshot built from the NPM output and executable Bundle
 from this same revision. Confirm the package inventory, L2/L3 source links,
 Questionnaire response handoff, selected subject/encounter, measure period,
 and named fixture selector. Exercise guideline, measure, and Questionnaire
-previews in the browser, then repeat through the standalone CPG preview using
-the identical Bundle and fixture index. Capture their API/browser evidence
-and compare results to the six source assertions. A successful CLI run,
-package build, or snapshot import alone is not a preview pass. For the durable
+previews in the browser. Repeat through the standalone CPG preview only after
+its separate raw patient-Bundle upload flow is available. Capture their
+API/browser evidence and compare results to the six source assertions. A
+successful CLI run, package build, or snapshot import alone is not a preview
+pass. For the durable
 required-core and optional service command, see
 [the tools provenance and invocation](tools/PROVENANCE.md).
 
 The runtime represents non-coded text guidance in the RequestGroup notes; it
 does not create a coded order or referral. With a zero measure denominator,
-retain complete counts and omit the mathematically undefined score. For both
-recorded runs, runtime-output validation is `strictValidatorPassed: false`:
-among the 12 validated outputs, the only accepted error is one
+retain complete counts and omit the mathematically undefined score. In
+run-004, runtime-output validation is `strictValidatorPassed: false`: among
+the 12 validated outputs, the only accepted error is one
 `MEASURE_MR_SCORE_REQUIRED` at `MeasureReport.group[0]` in
 `younger-than-65--MeasureReport-measure.json`. That fixture has a zero
 denominator, so the FHIR R4 score is undefined and omitted; validator 6.10.2
-still reports it as required. Accept this exception only when the run-specific
-validation record identifies that exact input and error, preserves the raw
-OperationOutcome, and has `unacceptedErrors: []` plus
-`acceptedForCoreRehearsal: true`. Any additional or different error fails the
-gate; do not fabricate a score or suppress the validator result. Record
-standards-server round trips and engine identity separately from
-Workbench/standalone smoke tests.
+still reports it as required. The run-004 summary has those exact values; see
+[knowledge Bundle validation](evidence/run004-knowledge-fhir-validation.json)
+and [runtime-output validation](evidence/run004-runtime-fhir-validation.json).
+Accept this exception only when the run-specific validation record identifies
+that exact input and error, preserves the raw OperationOutcome, and has
+`unacceptedErrors: []` plus `acceptedForCoreRehearsal: true`. Any additional or
+different error fails the gate; do not fabricate a score or suppress the
+validator result. Record standards-server round trips and engine identity
+separately from Workbench/standalone smoke tests.
 
 ## 7. Timing, gates, and limits
 
@@ -553,13 +707,26 @@ guidance and an explicit unresolved-response AND screening-population gate.
 Treat these as distinct authoring choices requiring review, not byte-identical
 independent outputs. Clinical review remains pending for both.
 
-The track's broader interoperability baseline still requires two independent
-CQL implementations and round-trips through two independent FHIR servers.
-Native and WASM builds of the same RH engine do not satisfy the two-engine
-requirement. SDC `$extract` is also a separate gate from the assessment and
-guideline preview. Keep these gates open until their actual evidence is in the
-status ledger. Do not equate technical schema/ELM/FHIR validation with
-clinical approval.
+The historical run-003 replay verified the local native extractor for the
+bounded Boolean SDC profile. Run-004 repeated native extraction and
+Observation-driven CQL over six cases: four completed responses were
+extracted, while incomplete and absent responses were not invoked. The final
+generated Questionnaire and actual extracted resources were validated, and
+the package passed knowledge Bundle validation with zero errors and zero
+unresolved references. Workbench API validation passed 72/72 checks, and the
+captured browser staging flow passed on the reported Workbench build. Standalone
+raw-QR API parity passed 6/6, and the separate patient-file browser Apply flow
+passes on standalone `6227080`. Decoded Measure/FHIRCommon CQL and ELM are
+browser-verified in Workbench `f79a632`; shared Source keyboard handling passes
+its existing Measure dialog regression. See the
+[run-004 browser report](evidence/run004-browser-verification.json) and
+[runtime/API report](evidence/run004-final-runtime-app-verification.json).
+These results do not establish full standard SDC `$extract`
+interoperability. The track still requires two independent CQL
+implementations and round-trips through two independent FHIR servers; native
+and WASM builds of the same RH engine do not satisfy the two-engine
+requirement. Keep any still-open gate in the status ledger. Do not equate
+technical schema/ELM/FHIR validation with clinical approval.
 
 The two formalization-replay comparisons are recorded in
 [`run001-9f48a46-deterministic-rebuild.json`](evidence/run001-9f48a46-deterministic-rebuild.json)
@@ -570,11 +737,14 @@ the executable manifest.
 
 ## Preview service launch and recovery
 
-The local preview services use the final RH runtime
-`2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83`. Their native binary SHA-256 is
-`44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d`; each
-of the browser, Node, and bundler WASM outputs has SHA-256
-`25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320`.
+The frozen run-004 technical candidate uses RH runtime
+`26716c9319f50ee71aa8456cc8a0ccefe100d7f5`, native SHA-256
+`7b11131a9c748daaedd88a830d1aa39328d2c6ff81908e5176a70fce83d945e6`, and
+WASM SHA-256
+`d936e08fed0ae47bcc30ad75274ec3d1336ec079a7bf97054de4fa80f1081726`.
+These pins identify the code used for current local checks; they do not
+substitute for the final readiness ledger or an application/browser acceptance
+result.
 Use the durable archived workspaces, never an ephemeral `/private/tmp` run:
 
 ```sh
@@ -585,9 +755,14 @@ export STANDALONE_APP="$STANDALONE_ROOT/packages/cpg-review"
 export WORKBENCH_REPO=/Users/bkaney/projects/reason-healthcare/workbench
 export WORKBENCH_DATABASE_URL='postgres://workbench:workbench@127.0.0.1:55432/workbench'
 
-test "$(git -C "$RH_REPO" rev-parse HEAD)" = 2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83
-test "$(shasum -a 256 "$RH_REPO/packages/cpg/wasm-node/rh_cpg_bg.wasm" | awk '{print $1}')" = 25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320
+git --no-optional-locks -C "$RH_REPO" rev-parse HEAD
+shasum -a 256 "$RH_REPO/packages/cpg/wasm-node/rh_cpg_bg.wasm"
 ```
+
+Before starting either application, compare these values with the current
+readiness ledger and record any later runtime rebuild. Stop if the application
+does not use the intended native/WASM hash; a local candidate pin is not a
+release or full-track conformance claim.
 
 Build each production application from its checked-out final revision. The
 Workbench build needs the task database at port `55432` only when it starts;
@@ -624,24 +799,44 @@ curl -fsS -o /dev/null -w 'workbench %{http_code}\n' http://127.0.0.1:9090/
 
 Then load the actual browser interfaces. An HTTP 200 alone is insufficient:
 the final standalone build's `postbuild` copies both `.next/static` and
-`public` into its generated server tree. Its final probe checked all 31
-referenced local scripts, styles, fonts, logo and favicon successfully. A
+`public` into its generated server tree. The final root-document probe checked
+12 Workbench sign-in assets and 29 standalone assets with zero failures. This
+is an initial-page asset check; actual preview navigation was also tested. A
 permanent Loading screen or missing logo means the asset check failed; run
 the production build again before using the preview.
 
-The accepted Workbench snapshots are available at
-[rehearsal 1](http://localhost:9090/projects/connectathon-steadi/snapshots/snap_connectathon-steadi_run001-08a666000842)
-and [rehearsal 2](http://localhost:9090/projects/connectathon-steadi-replay/snapshots/snap_connectathon-steadi-replay_run002-3e6a1fde4db9).
-For the [standalone preview](http://localhost:9091), upload
-`dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/output/reason.steadi-live-replay-0.2.0.tgz`,
-select **STEADI fall-risk screening care pathway**, then **Add Context**.
-Choose a packaged synthetic patient Bundle and the local pinned runtime.
-Use evaluation date `2026-06-15T09:20:00Z`, period
-`2026-01-01T00:00:00Z` through `2026-12-31T23:59:59Z`, and the matching
-`Encounter/encounter-<fixture-id>` from the fixture index. Click **Apply**.
-Positive cases display the authored guidance; incomplete or absent responses
-retain the unknown-response stop note. Patient examples remain separate from
-the executable knowledge Bundle.
+Workbench browser verification passed against snapshot
+`snap_connectathon-steadi-observations_run004-d412006a1f1a`; the report records
+the extraction staging flow, positive guidance, and restored unknown-response
+path. Earlier snapshot links remain historical rehearsals:
+[run-001](http://localhost:9090/projects/connectathon-steadi/snapshots/snap_connectathon-steadi_run001-08a666000842)
+and [run-002](http://localhost:9090/projects/connectathon-steadi-replay/snapshots/snap_connectathon-steadi-replay_run002-3e6a1fde4db9).
+
+To inspect decoded Libraries in Workbench, open **Inspect package contents**,
+expand a **Library**, then **Inspect Library content**. CQL is readable by
+default; expand `application/elm+json` for formatted ELM, or **Original FHIR
+Library JSON** for the encoded source. The **Authored artifacts** Library list
+uses the same viewer. Canonical, version and content type remain visible.
+Malformed/unsupported attachments show an explicit status; URL-only
+attachments are not fetched automatically.
+
+The [standalone preview](http://localhost:9091) runs the knowledge-only run-004
+package with a separate raw patient fixture:
+
+1. Upload `dist/connectathon-20260919/workspaces/run-004/topics/steadi-live-replay/process/package-workspace/output/reason.steadi-live-replay-0.2.0.tgz`.
+2. Select **STEADI fall-risk screening care pathway**, **View Content**, then **Add Context**.
+3. Expand **FHIR Endpoints Configuration** and choose **Local pinned RH CPG runtime**. Set evaluation date `2026-06-15T09:20:00Z` and period `2026-01-01T00:00:00Z` through `2026-12-31T23:59:59Z`.
+4. Choose **Local file** and **Choose local FHIR Bundle file**. Upload `dist/connectathon-20260919/workspaces/run-004/topics/steadi-live-replay/process/package-workspace/executable/fixtures/eligible-unsteady-yes.json`; set encounter `Encounter/encounter-eligible-unsteady-yes`. The selected Patient is read from the file.
+5. Click **Apply**. Verify exercise and individualized multifactorial guidance. **Edit Context**, load `eligible-no-response.json` from the same directory, and set `Encounter/encounter-eligible-no-response`; Apply must show the unknown-response stop note without positive guidance.
+
+The file must be a FHIR Bundle containing exactly one Patient with a valid id.
+An invalid file produces an inline error; loading a valid file clears it.
+Patient data stays separate from the knowledge package, and external endpoint
+search is disabled in local mode. Use these raw fixtures, never the expected
+`extracted-bundle.json` oracle: completed responses invoke actual extraction;
+absent/incomplete responses do not create Observations. The standalone
+Task-based pathway does not expose an interactive Questionnaire editor; use
+Workbench for the live assessment completion demonstration.
 
 If Workbench returns a database aggregate error, check that the process was
 started with `WORKBENCH_DATABASE_URL` above and that the task database at

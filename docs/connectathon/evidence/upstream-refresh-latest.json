@@ -1,14 +1,14 @@
 {
-  "checkedAt": "2026-09-18T17:21:43.063439+00:00",
+  "checkedAt": "2026-09-18T18:24:06.301342+00:00",
   "method": "Fresh fetch of all four implementation main branches over command-scoped HTTPS; protected source never fetched",
   "repositories": [
     {
       "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
       "remote": "origin",
       "main": "eb280968e8af623b9b30c4175111929e322f696c",
-      "head": "f45ed007abac4387fc22e3be17246e7dee42fb90",
+      "head": "5aace52f12afadcadf51806b17cd5ad699b37900",
       "branch": "codex/connectathon-live-readiness",
-      "ahead": 25,
+      "ahead": 28,
       "behind": 0,
       "containsLatestMain": true
     },
@@ -16,9 +16,9 @@
       "path": "/Users/bkaney/projects/reason-healthcare/workbench",
       "remote": "origin",
       "main": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
-      "head": "096e4f810922049580897c9c3784f918dc26e913",
+      "head": "f79a63282e69a5ff5805f2b7cf28a0dfd1bd0729",
       "branch": "codex/connectathon-live-readiness",
-      "ahead": 41,
+      "ahead": 43,
       "behind": 0,
       "containsLatestMain": true
     },
@@ -26,9 +26,9 @@
       "path": "/Users/bkaney/projects/reason-healthcare/rh",
       "remote": "upstream",
       "main": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
-      "head": "ad8fdb413c9389634136ea3626ccfd961e472576",
+      "head": "26716c9319f50ee71aa8456cc8a0ccefe100d7f5",
       "branch": "codex/connectathon-live-readiness",
-      "ahead": 29,
+      "ahead": 30,
       "behind": 0,
       "containsLatestMain": true
     },
@@ -36,9 +36,9 @@
       "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
       "remote": "origin",
       "main": "2e8d91daf360f184e6c98f700031414829c64921",
-      "head": "82db811da7adde6971ad7ef4967924d188477f58",
+      "head": "6227080ff9667f34d6a9944036c7bba972f75253",
       "branch": "codex/connectathon-live-readiness",
-      "ahead": 14,
+      "ahead": 16,
       "behind": 0,
       "containsLatestMain": true
     }

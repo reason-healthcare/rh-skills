@@ -6,35 +6,41 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 
 ## Current checkpoint
 
-**Final acceptance is open for the idiomatic CQL revision (run004).** Run003 verified the actual SDC QuestionnaireResponse → Observations → ValueSet-based CQL pipeline: 66 native assertions, 60 public Node PlanDefinition applications, 6 MeasureReports, 72 Workbench API calls, 6 standalone API cases, and the browser assessment → Measure → CPG → restore flow. Its 22 knowledge resources have no FHIR validation errors. That package and its evidence are frozen.
+**Ready to attempt the live STEADI core with the documented limits.** The final run004 package passes actual SDC QuestionnaireResponse → Observations → versioned ValueSet CQL, with Patient-context retrieves, typed Encounter class filtering, and pinned FHIRCommon joins. Workbench assessment, Measure and CPG previews and standalone CPG all execute the frozen package.
 
-**Current work:** the CQL style guide requires Patient context, typed terminology filters, and versioned FHIRCommon reference joins. Both complete guide examples translate without warnings. Runtime work fixes patient isolation and official ELM function/query handling; root independently passed 869 CQL library tests and 64 CPG library tests. Final native/WASM execution, run004 packaging, application builds and browser replay are still required. The rh-skills suite now passes 1,057 tests with 18 skipped; fresh installation confirms all eight skills current. See ITER-028 below for the active corrections.
+**The latest user request is complete:** Workbench decodes Library CQL, ELM JSON, XML and text in its package and authored Library inspectors. It retains original FHIR JSON and shows canonical/version/type, malformed-data errors and URL-only status. Root inspected complete Measure and FHIRCommon attachments. Shared Source dialog focus handling includes disclosures; the existing Measure dialog passes keyboard entry, containment, Escape and focus restoration.
 
-**Repository state:** all four implementation branches include their freshly fetched main as of September 18, 17:22 UTC. The protected Connectathon source remains unchanged: all 41 baseline files, revision, and clean Git status match. No changes have been pushed or deployed.
+**Verified:** 66 native assertions; 12 adverse CQL cases; 60 public Node PlanDefinition applications and 6 MeasureReports; final Workbench API 72/72 and standalone API 6/6. The browser assessment produces 3 final Observations and changes Measure 1/1/0 → 1/1/1 with positive CPG guidance; restoring source returns unknown risk and 1/1/0. Standalone accepts separate raw patient files, returns positive/unknown guidance, and visibly rejects invalid files. Package: 23 knowledge resources, 34 Workbench artifacts. Official knowledge validation has 0 errors; 12 actual runtime outputs retain exactly one documented zero-denominator validator exception (strict validation remains false).
 
-**Limits:** support is for the demonstrated flat Boolean SDC extraction subset. First executable Bundles took 3h 26m and 2h 29m including repairs and waits; a clean 60–90-minute authoring duration is not demonstrated. Run002 reused integration context; run003/run004 are declared revisions. Clinical approval, cohort Measure execution, a second independent CQL engine, and two-server interoperability remain open. The exact zero-denominator MeasureReport validator exception is recorded separately; no full-track or strict-validator-green claim is made.
+**Framework:** mandatory CQL style guide; 24 distribution bundles validated; two complete guide examples reference-translated; eight freshly installed skills current. Root verified 1,062 Python tests (18 skipped), 877 CQL library tests and 64 CPG library tests. Final Workbench decoder checks and type/build pass; standalone local-file tests 20/20 and production build pass. Whole-repo Workbench lint and standalone test-file type checks retain separately recorded pre-existing findings; these are not labeled clean.
+
+**Frozen implementations:** RH `26716c93`, Workbench `f79a632`, standalone `6227080`; rh-skills implementation `5aace52`, followed by this documentation/evidence checkpoint. All four include freshly fetched main as of September 18, 18:24 UTC. All 41 protected source hashes, original revision and clean status remain unchanged. No pushes, merges or deployments. Demo services remain running on 9090/9091; the isolated database is on 55432.
+
+**Limits:** flat Boolean SDC extraction and individual Measure evaluation only. Clinical approval, a second independent CQL engine, two-server interoperability and full-track conformance remain open. First authoring Bundles took 3h 26m and 2h 29m including repairs/waits; a fresh 60–90-minute authoring duration is not demonstrated. Run002 reused context; run003/run004 are declared revisions. Standalone interactive assessment editing remains a Workbench demonstration. The final Workbench matrix does not claim a new missing-dependency negative snapshot test.
 
 - [Implementation plan](CONNECTATHON-24H-PLAN.md)
 - [Machine-readable status](connectathon-24h-status.json)
 - [Saturday live runbook](connectathon/LIVE-RUNBOOK.md)
 - [Final readiness and exact evidence](connectathon/evidence/final-readiness.json)
 - [Reusable acceptance command](connectathon/tools/PROVENANCE.md)
-- [Initial revisions and protected source inventory](connectathon/evidence/baseline.json)
-- Durable rehearsal workspaces: `dist/connectathon-20260919/workspaces/run-001` through `run-004`; run004 is in progress. Earlier workspaces remain preserved.
+- [CQL style guide](../skills/.curated/rh-inf-cql/docs/cql-style-guide.md)
+- [Final Workbench Measure preview](http://localhost:9090/projects/connectathon-steadi-observations/snapshots/snap_connectathon-steadi-observations_run004-d412006a1f1a/artifacts/connectathon-steadi-observations--measure-measure/preview/measure)
+- [Standalone CPG](http://localhost:9091)
+- Durable workspaces: `dist/connectathon-20260919/workspaces/run-001` through `run-004`; earlier packages and evidence remain frozen.
 
 ## Task board
 
-| Task | Status | Owner | Scope / next evidence |
+| Task | Status | Owner | Final evidence / scope |
 | --- | --- | --- | --- |
-| BASE-01 | Complete; refreshed | Coordinator | Latest main included; protected source hashes and Git state unchanged |
-| RT-01 | In progress | Terra / runtime_execution | Native FHIRCommon probe and focused tests pass; final context boundary checks and WASM build pending |
-| SK-01 | Guide, distribution and fresh install verified | Luna / skills_usecase_audit | 1,057 framework tests pass; all 8 installed skills current; 2 complete guide libraries reference-translate cleanly |
-| PKG-01 | Run003 passed; run004 in progress | Skills/runtime | Run003 has 22 validated knowledge resources; run004 adds idiomatic CQL and pinned FHIRCommon |
-| WB-01 | Run003 flow passed; final build/replay pending | Terra / workbench_audit + Coordinator | 72 API calls and browser staging/restore passed; new runtime and final package still to verify |
-| SA-01 | Run003 API/browser passed; run004 pending | Runtime + Coordinator | 6 raw-QR cases and positive/unknown package Apply passed; interactive assessment remains in Workbench |
-| UX-01 | Earlier scoped checks passed; final checkpoint pending | Workbench + Coordinator | Complete package/source inspection and narrow layout verified; final staged Observation notice still to inspect |
-| REPLAY-01 | Historical evidence preserved | Skills/runtime + Coordinator | Two source authoring replays; run003/run004 are targeted revisions, not new independent authoring samples |
-| FINAL-01 | Open | Coordinator | Await final runtime, package validation, application/API/browser replay, runbook and evidence updates |
+| BASE-01 | Complete | Coordinator | Fresh main included in all four repositories; source 41/41 unchanged |
+| RT-01 | Complete | Runtime + Coordinator | Final native/Node/WASM bound to acceptance; reference-ELM context 6/6; Rust 877+64 |
+| SK-01 | Complete | Skills + Coordinator | Mandatory guide, fresh eight-skill install, Python 1062/18; normal CLI 66/66 |
+| PKG-01 | Complete | Skills/runtime | Run004 23-resource Bundle `d412006a…`; knowledge FHIR 0 errors; runtime exception recorded |
+| WB-01 | Complete | Runtime/Workbench + Coordinator | API 72/72; browser extraction → Measure → CPG → restore; decoded CQL/ELM |
+| SA-01 | Complete | Workbench + Coordinator | API 6/6; raw local patient file → positive/unknown Apply; invalid-file recovery |
+| UX-01 | Complete for scoped checks | Workbench/runtime + Coordinator | Full content inspection, staged Observation count, keyboard checks and observed narrow layouts |
+| REPLAY-01 | Complete with limits | Skills/runtime + Coordinator | Two source authoring replays; later targeted revisions; timing/context limits retained |
+| FINAL-01 | Complete for core rehearsal | Coordinator | Final builds/services, browser/API/FHIR evidence, exact pins and runbook; broader track gates remain open |
 
 ## Iteration log
 
@@ -421,3 +427,33 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 **Application and repository checkpoint — 2026-09-18T17:21:43.063439+00:00:** Workbench production build at `096e4f8` passes and is running on localhost:9090 against the isolated database at55432. The browser confirms the complete run003 package and the explicit custom Encounter input. All four implementation repositories were freshly fetched and remain zero behind main; the protected source still has all41 original hashes, revision and clean status unchanged. Runtime review identified arity-only imported overload selection: run004 currently selects the correct Reference/Resource overload, but the generic compiler must resolve or reject alternatives safely before final freezing.
 
 **Framework correction saved and compatibility review — 2026-09-18T17:28:01.392136+00:00:** local commit `f45ed00` contains the imported-dependency provenance gate and root full-suite evidence (**1,057 passed, 18 skipped**). Review of frozen run003 with the new reader found that older native ELM omits statement-type tags; runtime must retain bounded read compatibility while emitting standard tags for new output. Luna is also fixing normal dependency re-import after the importer itself adds a legitimate transitive Library link. Cached FHIRCommon derivative translator metadata now matches3.26.0; published source artifacts remain unchanged. These are active acceptance blockers, not source-oracle changes.
+
+### ITER-029 — Final idiomatic package accepted in Workbench; standalone input gap — 2026-09-18T17:59:01.597537+00:00
+
+**Runtime and skills:** RH `26716c93` resolves typed FHIRCommon fluent overloads, preserves Patient context and supports older untagged statement input while emitting standard ELM type tags. Root independently passed 877 CQL and 64 CPG library tests, six reference-ELM Patient/Encounter probes, and frozen run003 compatibility. The imported dependency provenance gate and bounded idempotent Library re-import fix are saved in rh-skills; the full suite passes 1,062 tests with 18 skipped. No authored patient-string workaround was added.
+
+**Actual run004:** the normal authoring CLI validates/translates/tests both libraries with 48 decision plus 18 Measure assertions. Final knowledge Bundle SHA `d412006a1f1af22054a2a32b0d9a8f8ae88a41e24cbd6f5bb486d71e7b2b4ce0` contains 23 resources; `.tgz` SHA `6e62711f1366a28c8f6bfa5a5d88c38c6494f1655fe2d7237845db9a840aa24c`. The shared oracle remains unchanged. Official validator 6.10.2 returns zero knowledge errors/unresolved references. Twelve actual runtime outputs contain only the exact younger-patient zero-denominator `MEASURE_MR_SCORE_REQUIRED` exception; strict-validator status remains false. [Knowledge](connectathon/evidence/run004-knowledge-fhir-validation.json), [outputs](connectathon/evidence/run004-runtime-fhir-validation.json).
+
+**Independent final execution:** root acceptance checks all 66 native assertions, actual extraction for six scenarios, 12 adverse CQL cases, 60 public Node applications and six MeasureReports. Workbench API 72/72 and standalone API 6/6 pass with actual semantics, final binary/wrapper/WASM hashes and fixture integrity verified. A worker independently audited the reports and byte-compared all 27 test-bundle oracle files. The separate missing-dependency Workbench negative snapshot was not rerun in this final matrix; earlier negative/unit evidence is not relabeled as a new test. [Audit](connectathon/evidence/run004-final-runtime-app-verification.json).
+
+**Browser:** the final snapshot exposes 23 resources, 34 artifacts, three population definitions, full CQL and three versioned ValueSets. Completing the no-response form with Yes/No/No produces three final Observations and clears missing-answer warnings. Measure changes 1/1/0 → 1/1/1; CPG returns both positive guidance actions. Restore returns explicit unknown guidance and Measure 1/1/0. At 390×844 both Measure and CPG retain 390px document width; viewport reset. Screenshots were emitted, not claimed as saved PNGs. [Browser evidence](connectathon/evidence/run004-browser-verification.json).
+
+**New demonstrated blocker SA-INPUT-001:** standalone loads the final package graph but disables FHIR Bundle context because it only indexes patient Bundles embedded in the package. The final knowledge-only package intentionally keeps six raw patient fixtures in a sidecar. Reset/runtime selection does not resolve this. Workbench Terra owns a generic separate local patient Bundle input, preserving the frozen package and runtime; root will replay actual positive/unknown Apply after its production rebuild. API parity alone is not browser acceptance.
+
+### ITER-030 — Decoded Library attachments in Workbench — 2026-09-18T18:01:30.751002+00:00
+
+**User requirement:** make base64-encoded Library content viewable in Workbench. The population viewer already exposes resolved CQL, but the general Library source/package path must also decode every supported text attachment, including ELM JSON. Runtime Terra owns the shared Workbench Library viewer; Workbench Terra continues standalone patient-file input in its separate repository. Root owns final build/restart, browser verification and evidence. The knowledge package, CQL/ELM bytes and RH runtime remain frozen.
+
+**Acceptance:** decoded CQL and formatted ELM JSON show attachment type/title and Library identity, raw JSON remains available, invalid data produces an explicit error, and unsupported binary or URL-only content is not silently interpreted or fetched. Reuse the source dialog so package and authored Library inspection share the same behavior. Validate narrow layout and dialog keyboard behavior after the addition.
+
+### ITER-031 — Final UI repairs, verified replay and core handoff — 2026-09-18T18:27:06.369098+00:00
+
+**Standalone repaired:** `5ee141f` adds local raw FHIR Bundle input separate from the knowledge package. Root browser testing caught invisible transient invalid-file feedback; `6227080` replaces it with a persistent accessible error and verifies valid-file recovery. Focused Jest20/20 and production build pass. Root actually uploaded the final `.tgz`, selected local runtime/date/period/encounter, and ran positive and absent-response raw fixtures with correct guidance. This is independent of Workbench's session/database.
+
+**Library decoding complete:** Workbench `0e5ea0a` adds the shared attachment viewer; review-driven `f79a632` makes malformed content/errors visible, clarifies Library labels, and includes native disclosure controls in modal focus cycling. Root verified Measure CQL (4,090 characters), formatted ELM (86,208), and complete FHIRCommon CQL/ELM through package inspection; the authored Library path uses the same viewer. Original JSON remains accessible. Library detail pages are not exposed by this snapshot, so the Library-specific Source modal branch is code-reviewed rather than claimed as a browser path. Existing Measure Source keyboard behavior passes. [Browser](connectathon/evidence/run004-browser-verification.json), [review and test scope](connectathon/evidence/run004-final-ui-code-review.json).
+
+**Rejected verifier result explained:** one new72-call replay returned53/72 because an older generic verifier bypassed run004 SDC extraction on its direct comparison side. Its raw outputs are retained as rejected evidence. The correct raw-QR verifier against final Workbench `f79a632` returns72/72 with unchanged fixtures; standalone `6227080` returns6/6. No clinical oracle or runtime was changed to fix a test. [Final API audit](connectathon/evidence/run004-final-runtime-app-verification.json).
+
+**Final applications/source:** both production builds pass and services remain running. Initial-document asset probes pass12/12 Workbench sign-in assets and29/29 standalone assets, with actual preview navigation separately verified. Fresh18:24UTC fetches show all implementation branches include current main; the protected source was never fetched and still matches all41 original file hashes, HEAD and clean status. [Builds](connectathon/evidence/run004-final-app-builds.json), [source](connectathon/evidence/source-integrity-latest.json).
+
+**Handoff:** normal authoring commands, actual retained logs/hashes, fresh installed skills, the unchanged66-assertion oracle, package/dependency identity, validation warnings/exception, final demo steps and recovery commands are in the live runbook and run004 authoring manifest. Scoped technical core is ready to attempt live. Timing/context reuse, clinical approval, broader SDC/cohort support, independent engines/servers, and strict zero-denominator validation remain explicitly unclaimed. No remote publication or protected-source mutation occurred.

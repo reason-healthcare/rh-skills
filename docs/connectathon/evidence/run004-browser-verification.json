@@ -1,0 +1,126 @@
+{
+  "checkedAt": "2026-09-18T18:22:27.318223+00:00",
+  "runId": "run004",
+  "knowledgeBundleSha256": "d412006a1f1af22054a2a32b0d9a8f8ae88a41e24cbd6f5bb486d71e7b2b4ce0",
+  "packageSha256": "6e62711f1366a28c8f6bfa5a5d88c38c6494f1655fe2d7237845db9a840aa24c",
+  "workbenchCommit": "f79a63282e69a5ff5805f2b7cf28a0dfd1bd0729",
+  "snapshotId": "snap_connectathon-steadi-observations_run004-d412006a1f1a",
+  "workbench": {
+    "passed": true,
+    "packageResources": 23,
+    "authoredArtifacts": 34,
+    "populationDefinitions": [
+      "Initial Population",
+      "Denominator",
+      "Numerator"
+    ],
+    "completeLibraryCqlVisible": true,
+    "versionedValueSetsVisible": 3,
+    "idiomaticCqlVisible": [
+      "context Patient",
+      "[Encounter: class ~ \"Ambulatory\"]",
+      "with \"Screening Encounters\" E such that O.encounter.references(E)"
+    ],
+    "stagingFlow": {
+      "fixture": "eligible-no-response",
+      "baselineCounts": [
+        1,
+        1,
+        0
+      ],
+      "baselineScore": 0,
+      "explicitAnswers": [
+        true,
+        false,
+        false
+      ],
+      "extractedFinalObservations": 3,
+      "missingAnswerWarningsCleared": true,
+      "stagedCounts": [
+        1,
+        1,
+        1
+      ],
+      "stagedScore": 1,
+      "positiveCpg": [
+        "exercise-guidance",
+        "multifactorial-guidance"
+      ],
+      "restoreCpg": "await-complete-response; no positive guidance",
+      "restoredCounts": [
+        1,
+        1,
+        0
+      ],
+      "restoredScore": 0
+    },
+    "responsive": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "measureDocumentWidth": 390,
+      "measureScrollWidth": 390,
+      "cpgDocumentWidth": 390,
+      "cpgScrollWidth": 390,
+      "screenshots": "Emitted in task; not saved PNG files",
+      "viewportReset": true
+    }
+  },
+  "standalone": {
+    "commit": "6227080ff9667f34d6a9944036c7bba972f75253",
+    "packageUpload": true,
+    "planGraphLoaded": true,
+    "applyBrowserPassed": true,
+    "rawFixtures": [
+      "eligible-unsteady-yes",
+      "eligible-no-response"
+    ],
+    "positiveGuidance": [
+      "refer-exercise-intervention",
+      "individualize-multifactorial-decision"
+    ],
+    "unknownGuidance": [
+      "await-complete-response"
+    ],
+    "unknownHasNoPositiveGuidance": true,
+    "patientInput": "Separate local raw FHIR Bundle file, exactly one Patient; no pre-extracted Observations in input",
+    "invalidFileRejectedVisibly": "Inline role=alert: Selected file must be a FHIR Bundle",
+    "validFileClearsError": true,
+    "externalDataEndpointDisabledInLocalMode": true,
+    "desktopDocumentWidth": 1280,
+    "desktopScrollWidth": 1280,
+    "limitation": "Task-based pathway does not provide a standalone interactive Questionnaire editor; interactive assessment is demonstrated in Workbench."
+  },
+  "scope": "Actual user-interface actions through CUA; API parity and official FHIR validation are separate reports. No clinical approval or independent-engine execution inferred.",
+  "libraryAttachments": {
+    "passed": true,
+    "entryPathsBrowserVerified": [
+      "Executable package Library inspector",
+      "Authored Library source inventory"
+    ],
+    "sharedSourceModalIntegration": "Code-reviewed; Library artifact detail route is not available in this snapshot, so no Library-modal browser claim",
+    "measureCqlCharacters": 4090,
+    "measureElmJsonCharacters": 86208,
+    "fhircommonCqlCharacters": 40653,
+    "fhircommonFormattedElmCharacters": 525885,
+    "originalFhirJsonAvailable": true,
+    "canonicalVersionAndContentTypeVisible": true,
+    "contentNotTruncated": true,
+    "sourceDialogKeyboardRegression": {
+      "resource": "Measure",
+      "initialFocus": "Close",
+      "tabAndShiftTabContained": true,
+      "escapeRestores": "Source"
+    },
+    "newViewerObservedNarrowWidth": 539,
+    "documentScrollWidth": 539,
+    "screenshots": "Emitted in task; not saved PNG files",
+    "codeReview": "docs/connectathon/evidence/run004-final-ui-code-review.json",
+    "additionalNarrowObservation": {
+      "clientWidth": 352,
+      "scrollWidth": 352,
+      "source": "Actual final Workbench browser viewport; decoded Library and population sections expanded"
+    }
+  }
+}

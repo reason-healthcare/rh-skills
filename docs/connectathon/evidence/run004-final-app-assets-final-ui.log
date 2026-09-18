@@ -1,0 +1,12 @@
+{
+  "workbench": {
+    "assets": 12,
+    "failures": 0,
+    "root": 200
+  },
+  "standalone": {
+    "assets": 29,
+    "failures": 0,
+    "root": 200
+  }
+}

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "plan": "docs/CONNECTATHON-24H-PLAN.md",
-  "status": "in_progress_cql_style_and_context_conformance",
+  "status": "ready_to_attempt_live_core_with_documented_limits",
   "preparedAt": "2026-09-17",
   "executionStartedAt": "2026-09-17T23:35:32Z",
   "deadline": "2026-09-18T23:35:32Z",
@@ -47,7 +47,7 @@
     },
     {
       "id": "G2",
-      "status": "reopened_for_sdc_observation_pipeline",
+      "status": "passed_with_documented_validator_exception",
       "owner": "skills_usecase_audit + runtime_execution",
       "evidence": [
         "docs/connectathon/evidence/run001-final-fhir-summary.json",
@@ -55,85 +55,106 @@
         "docs/connectathon/evidence/run001-final-runtime-execution.json",
         "docs/connectathon/evidence/run002-final-runtime-execution.json",
         "docs/connectathon/evidence/run001-runtime-final-validation.json",
-        "docs/connectathon/evidence/run002-runtime-final-validation.json"
+        "docs/connectathon/evidence/run002-runtime-final-validation.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json"
       ],
-      "passedAt": "2026-09-18T04:11:13.798453+00:00",
+      "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "scope": "Both actual source-authored knowledge packages and current runtime operation outputs; exact zero-denominator validator limitation remains explicit",
       "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
       "note": "Each runtime12-output batch has one raw MEASURE_MR_SCORE_REQUIRED diagnostic only for the zero-denominator younger fixture. Core R4 permits absent undefined score. No strict-validator pass is claimed.",
       "previousScopeStatus": "passed_with_documented_validator_exception",
-      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
+      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed.",
+      "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G3",
-      "status": "reopened_for_sdc_observation_pipeline",
+      "status": "passed",
       "owner": "workbench_audit",
       "evidence": [
         "docs/connectathon/evidence/run001-workbench-final-matrix.json",
         "docs/connectathon/evidence/run002-workbench-final-matrix.json",
-        "docs/connectathon/evidence/final-browser-verification.json"
+        "docs/connectathon/evidence/final-browser-verification.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json"
       ],
-      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "scope": "Both source-authored snapshots, all three previews, complete package inspection and assessment staging/restoration",
       "previousScopeStatus": "passed",
       "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
+      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed.",
+      "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G4",
-      "status": "reopened_for_sdc_observation_pipeline",
+      "status": "passed",
       "owner": "runtime_execution + root",
       "evidence": [
         "docs/connectathon/evidence/run001-standalone-final-parity.json",
         "docs/connectathon/evidence/run002-standalone-final-parity.json",
-        "docs/connectathon/evidence/final-browser-verification.json"
+        "docs/connectathon/evidence/final-browser-verification.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json"
       ],
-      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "previousScopeStatus": "passed",
       "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
+      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed."
     },
     {
       "id": "G5",
-      "status": "reopened_for_sdc_observation_pipeline",
+      "status": "passed",
       "owner": "workbench_audit + root",
       "evidence": [
-        "docs/connectathon/evidence/final-browser-verification.json"
+        "docs/connectathon/evidence/final-browser-verification.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json"
       ],
-      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "previousScopeStatus": "passed",
       "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
+      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed.",
+      "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G6",
-      "status": "reopened_for_sdc_observation_pipeline",
+      "status": "passed_with_rehearsal_timing_and_context_limits",
       "owner": "workbench_audit + root",
       "evidence": [
         "docs/connectathon/evidence/run001-durable-final-acceptance.json",
         "docs/connectathon/evidence/run002-durable-final-acceptance.json",
         "docs/connectathon/evidence/run001-9f48a46-deterministic-rebuild.json",
-        "docs/connectathon/evidence/run002-9f48a46-deterministic-rebuild.json"
+        "docs/connectathon/evidence/run002-9f48a46-deterministic-rebuild.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json"
       ],
       "note": "Second author reused integration context. Two separate source-authored workspaces and deterministic regeneration pass; observed wall times include repairs/waits and miss the unproven60\u201390minute target.",
-      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "previousScopeStatus": "passed_with_rehearsal_limits",
       "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
+      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed.",
+      "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G7",
-      "status": "reopened_for_sdc_observation_pipeline",
+      "status": "passed",
       "owner": "root + runtime_execution + skills_usecase_audit",
       "evidence": [
         "docs/connectathon/evidence/standalone-production-final-02e2b5b.json",
         "docs/connectathon/evidence/workbench-production-coldstart-557cd5b.json",
-        "docs/connectathon/evidence/final-readiness.json"
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json"
       ],
-      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "previousScopeStatus": "passed",
       "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
+      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed."
     },
     {
       "id": "X1",
@@ -154,7 +175,7 @@
       "evidence": []
     }
   ],
-  "nextAction": "Finish idiomatic CQL style guide, enforce Patient retrieve context in native/WASM, validate explicit class Code retrieve and FHIRCommon relationship helper, then package/import/replay separate run004 candidate.",
+  "nextAction": "Use the final live runbook for a fresh source-authoring session; preserve measured timing/context limits and separate clinical/interoperability gates.",
   "iterations": [
     {
       "id": "ITER-001",
@@ -332,11 +353,32 @@
     {
       "id": "ITER-026",
       "startedAt": "2026-09-18T10:12:52.950045+00:00",
-      "status": "in_progress",
-      "summary": "User identified missing Measure definition display and unused packaged ValueSets; requires actual SDC extraction -> Observation CQL as the main live workflow. Baseline QR packages preserved; source and application gates reopened."
+      "status": "complete",
+      "summary": "User identified missing Measure definition display and unused packaged ValueSets; requires actual SDC extraction -> Observation CQL as the main live workflow. Baseline QR packages preserved; source and application gates reopened.",
+      "completedAt": "2026-09-18T18:27:06.369098+00:00"
+    },
+    {
+      "id": "ITER-029",
+      "status": "complete",
+      "startedAt": "2026-09-18T17:59:01.597537+00:00",
+      "summary": "Final idiomatic run004 package passes runtime/FHIR/Workbench; standalone separate patient Bundle input gap being repaired.",
+      "completedAt": "2026-09-18T18:27:06.369098+00:00"
+    },
+    {
+      "id": "ITER-030",
+      "status": "complete",
+      "startedAt": "2026-09-18T18:01:30.751002+00:00",
+      "summary": "User requests decoded base64 Library attachment views in Workbench.",
+      "completedAt": "2026-09-18T18:27:06.369098+00:00"
+    },
+    {
+      "id": "ITER-031",
+      "status": "complete",
+      "completedAt": "2026-09-18T18:27:06.369098+00:00",
+      "summary": "Final Library decoding and standalone file input accepted; correct raw-QR API72/6, source/main refresh and scoped handoff."
     }
   ],
-  "lastUpdatedAt": "2026-09-18T12:48:39.781340+00:00",
+  "lastUpdatedAt": "2026-09-18T18:27:06.369098+00:00",
   "journal": "docs/CONNECTATHON-JOURNAL.md",
   "constraints": [
     "Do not modify hl7-agentic-knowledge-connectathon; all source files and git state are read-only.",
@@ -346,61 +388,64 @@
   "repositories": {
     "rh-skills": {
       "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
-      "head": "088e403015af4976ec054e176a175f99157b18fd",
+      "head": "5aace52f12afadcadf51806b17cd5ad699b37900",
       "branch": "codex/connectathon-live-readiness",
-      "checkedAt": "2026-09-18T04:41:44.014623+00:00",
-      "status": "M docs/CONNECTATHON-JOURNAL.md\n M docs/connectathon-24h-status.json\n M docs/connectathon/LIVE-RUNBOOK.md\n M docs/connectathon/evidence/native-final-context-verification.json\n M docs/connectathon/evidence/source-integrity-latest.json\n M docs/connectathon/evidence/upstream-refresh-latest.json\n M docs/connectathon/tools/PROVENANCE.md\n M docs/connectathon/tools/run-durable-acceptance.py\n D docs/connectathon/tools/vendor/workbench-api-matrix.config.template.json\n?? docs/connectathon/evidence/durable-snapshot-build.json\n?? docs/connectathon/evidence/durable-snapshot-import.json\n?? docs/connectathon/evidence/durable-tool-cache.json\n?? docs/connectathon/evidence/durable-workspace-archive.json\n?? docs/connectathon/evidence/final-browser-verification.json\n?? docs/connectathon/evidence/final-readiness.json\n?? docs/connectathon/evidence/run001-durable-final-acceptance.json\n?? docs/connectathon/evidence/run001-durable-final-semantic.json\n?? docs/connectathon/evidence/run001-final-runtime-execution.json\n?? docs/connectathon/evidence/run001-runtime-final-operationoutcome.json\n?? docs/connectathon/evidence/run001-runtime-final-validation.json\n?? docs/connectathon/evidence/run001-standalone-final-parity.json\n?? docs/connectathon/evidence/run001-workbench-final-matrix.json\n?? docs/connectathon/evidence/run002-9f48a46-deterministic-rebuild.json\n?? docs/connectathon/evidence/run002-durable-final-acceptance.json\n?? docs/connectathon/evidence/run002-durable-final-semantic.json\n?? docs/connectathon/evidence/run002-final-runtime-execution.json\n?? docs/connectathon/evidence/run002-runtime-final-operationoutcome.json\n?? docs/connectathon/evidence/run002-runtime-final-validation.json\n?? docs/connectathon/evidence/run002-standalone-final-parity.json\n?? docs/connectathon/evidence/run002-workbench-final-matrix.json\n?? docs/connectathon/evidence/runtime-2917cba6-root-regressions.json\n?? docs/connectathon/evidence/standalone-production-asset-probe-49a7177.json\n?? docs/connectathon/evidence/standalone-production-final-02e2b5b.json\n?? docs/connectathon/evidence/standalone-production-public-asset-probe-1e3b4ab.json\n?? docs/connectathon/evidence/workbench-production-coldstart-557cd5b.json",
-      "statusNote": "Implementation verified at recorded revision; final documentation checkpoint follows. Inspect Git for current documentation HEAD."
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00",
+      "behindMain": 0,
+      "statusNote": "Final implementation pin; rh-skills documentation/evidence commit follows."
     },
     "workbench": {
       "path": "/Users/bkaney/projects/reason-healthcare/workbench",
-      "head": "557cd5b4e62a57e521b43c1e433a0d08878182ff",
+      "head": "f79a63282e69a5ff5805f2b7cf28a0dfd1bd0729",
       "branch": "codex/connectathon-live-readiness",
-      "checkedAt": "2026-09-18T04:41:44.014623+00:00",
-      "status": ""
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00",
+      "behindMain": 0,
+      "statusNote": "Clean final implementation worktree."
     },
     "rh": {
       "path": "/Users/bkaney/projects/reason-healthcare/rh",
-      "head": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+      "head": "26716c9319f50ee71aa8456cc8a0ccefe100d7f5",
       "branch": "codex/connectathon-live-readiness",
-      "checkedAt": "2026-09-18T04:41:44.014623+00:00",
-      "status": ""
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00",
+      "behindMain": 0,
+      "statusNote": "Clean final implementation worktree."
     },
     "standalone": {
       "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
-      "head": "02e2b5bc2bc8fa7563ea0fb213208d0ccc714351",
+      "head": "6227080ff9667f34d6a9944036c7bba972f75253",
       "branch": "codex/connectathon-live-readiness",
-      "checkedAt": "2026-09-18T04:41:44.014623+00:00",
-      "status": ""
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00",
+      "behindMain": 0,
+      "statusNote": "Clean final implementation worktree."
     },
     "connectathon-read-only": {
       "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
       "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
       "branch": "main",
       "status": "",
-      "checkedAt": "2026-09-18T04:43:32.870673+00:00"
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00"
     }
   },
   "activeTasks": [
     {
       "owner": "skills_usecase_audit",
-      "task": "Guide committed1cae534 and24 bundles validated; finish run004 package, fresh isolated installation and current runbook",
-      "status": "in_progress"
+      "task": "Finalize exact authoring manifest and live runbook",
+      "status": "complete"
     },
     {
       "owner": "runtime_execution",
-      "task": "Enforce ExpressionDef Patient context, explicit class code path and included function execution; verify reference ELM and rebuild native/WASM",
-      "status": "in_progress"
+      "task": "Decode CQL/ELM Library attachments in shared Workbench inspector; tests/build",
+      "status": "complete"
     },
     {
       "owner": "workbench_audit",
-      "task": "Official FHIRCommon closure, guide reference translation and bounded runtime review complete; included-function context regression remains runtime acceptance gate",
-      "status": "review_complete"
+      "task": "SA-INPUT-001 separate local patient Bundle input, tests and production build",
+      "status": "complete"
     },
     {
       "owner": "root",
-      "task": "Review implementations, independently replay final run004 package/API/browser, update journal and source/main checks",
-      "status": "in_progress"
+      "task": "Final browser verification, evidence journal and repository handoff",
+      "status": "complete"
     }
   ],
   "baselineTests": {
@@ -417,7 +462,7 @@
     "artifactRoot": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919",
     "validatorCache": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/validator-home",
     "referenceTranslator": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/reference-translator",
-    "applicationStatus": "Final production services running on loopback; actual browser, complete assets and API semantics verified",
+    "applicationStatus": "Workbenchf79a632 and standalone6227080 production services running; final rawQR API72/6 and browser paths verified.",
     "workbench": "http://localhost:9090",
     "standalone": "http://localhost:9091"
   },
@@ -533,13 +578,27 @@
     },
     {
       "id": "WB-MEASURE-SOURCE-001",
-      "status": "implemented_under_review",
-      "description": "Measure preview exposed expression identifiers without their definitions or dependent logic; e7141b3 pending source resolver and browser verification."
+      "status": "fixed_final_run004_browser_verified",
+      "description": "All three population definition bodies, complete Library CQL and terminology dependencies visible.",
+      "evidence": "docs/connectathon/evidence/run004-browser-verification.json"
     },
     {
       "id": "SDC-OBS-CQL-001",
-      "status": "in_progress",
-      "description": "Primary authored CQL reads QuestionnaireResponse linkIds, leaving packaged ValueSets unexecuted; user requires actual SDC extraction and terminology-filtered Observation CQL."
+      "status": "fixed_final_run004_extraction_runtime_and_workbench_verified",
+      "description": "Primary authored CQL reads QuestionnaireResponse linkIds, leaving packaged ValueSets unexecuted; user requires actual SDC extraction and terminology-filtered Observation CQL.",
+      "evidence": "docs/connectathon/evidence/run004-final-runtime-app-verification.json"
+    },
+    {
+      "id": "SA-INPUT-001",
+      "status": "fixed_final_browser_build_and_focused_tests_verified",
+      "description": "Standalone package context requires embedded patient Bundle; add separate local fixture-file input for knowledge-only packages.",
+      "evidence": "docs/connectathon/evidence/run004-browser-verification.json"
+    },
+    {
+      "id": "WB-LIBRARY-DECODE-001",
+      "status": "fixed_final_browser_build_and_focused_tests_verified",
+      "description": "General Library inspector must decode base64 CQL/ELM attachments while retaining raw JSON.",
+      "evidence": "docs/connectathon/evidence/run004-browser-verification.json"
     }
   ],
   "checks": [
@@ -645,19 +704,31 @@
       "verifier": "root independent",
       "result": "869 CQL library tests and64 CPG library tests pass on current runtime working changes; style guide2 complete reference-translated libraries clean; runtime/package final replay pending",
       "evidence": "docs/connectathon/evidence/cql-style-guide-reference-validation.json"
+    },
+    {
+      "checkedAt": "2026-09-18T17:59:01.597537+00:00",
+      "verifier": "root plus independent worker audit",
+      "result": "Native66; adverse12; Node60+6; Workbench72; standaloneAPI6; Python1062/18; Rust877+64; knowledgeFHIR0errors; runtimeFHIRone exact exception",
+      "evidence": "docs/connectathon/evidence/run004-final-runtime-app-verification.json"
+    },
+    {
+      "checkedAt": "2026-09-18T18:27:06.369098+00:00",
+      "verifier": "root browser/report inspection + independent workers",
+      "result": "FinalWB72/72,standalone6/6; LibrarydecodedCQL/ELM; standaloneinvalidfile recovery; asset12/29; source41/41",
+      "evidence": "docs/connectathon/evidence/run004-final-app-builds.json"
     }
   ],
   "upstreamRefresh": {
-    "checkedAt": "2026-09-18T17:21:43.063439+00:00",
+    "checkedAt": "2026-09-18T18:24:06.301342+00:00",
     "method": "Fresh fetch of all four implementation main branches over command-scoped HTTPS; protected source never fetched",
     "repositories": [
       {
         "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
         "remote": "origin",
         "main": "eb280968e8af623b9b30c4175111929e322f696c",
-        "head": "f45ed007abac4387fc22e3be17246e7dee42fb90",
+        "head": "5aace52f12afadcadf51806b17cd5ad699b37900",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 25,
+        "ahead": 28,
         "behind": 0,
         "containsLatestMain": true
       },
@@ -665,9 +736,9 @@
         "path": "/Users/bkaney/projects/reason-healthcare/workbench",
         "remote": "origin",
         "main": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
-        "head": "096e4f810922049580897c9c3784f918dc26e913",
+        "head": "f79a63282e69a5ff5805f2b7cf28a0dfd1bd0729",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 41,
+        "ahead": 43,
         "behind": 0,
         "containsLatestMain": true
       },
@@ -675,9 +746,9 @@
         "path": "/Users/bkaney/projects/reason-healthcare/rh",
         "remote": "upstream",
         "main": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
-        "head": "ad8fdb413c9389634136ea3626ccfd961e472576",
+        "head": "26716c9319f50ee71aa8456cc8a0ccefe100d7f5",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 29,
+        "ahead": 30,
         "behind": 0,
         "containsLatestMain": true
       },
@@ -685,9 +756,9 @@
         "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
         "remote": "origin",
         "main": "2e8d91daf360f184e6c98f700031414829c64921",
-        "head": "82db811da7adde6971ad7ef4967924d188477f58",
+        "head": "6227080ff9667f34d6a9944036c7bba972f75253",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 14,
+        "ahead": 16,
         "behind": 0,
         "containsLatestMain": true
       }
@@ -713,9 +784,9 @@
     },
     "commitPolicy": "Root owns rh-skills index and commits; workers edit owned files unstaged. Other repo owners coordinate changes and commit boundaries. No changes to protected source. Refresh main before final integration; regenerate and replay affected packages.",
     "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed.",
-    "currentMilestone": "Run004 reference translation and fresh8 skill installation pass; native source-based CLI66 reported passing; root Python1057pass18skip. Final runtime build, regenerated package, FHIR and service/browser replay pending."
+    "currentMilestone": "Scoped live core preparation complete with finalrun004; broader clinical/timing/interoperability limits remain."
   },
-  "updatedAt": "2026-09-18T17:21:43.063439+00:00",
+  "updatedAt": "2026-09-18T18:27:06.369098+00:00",
   "finalReadiness": "docs/connectathon/evidence/final-readiness.json",
-  "sourceIntegrityCheckedAt": "2026-09-18T17:21:43.063439+00:00"
+  "sourceIntegrityCheckedAt": "2026-09-18T18:24:06.301342+00:00"
 }

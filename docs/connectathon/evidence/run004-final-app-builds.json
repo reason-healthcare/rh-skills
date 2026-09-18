@@ -1,0 +1,50 @@
+{
+  "checkedAt": "2026-09-18T18:23:31.292839+00:00",
+  "scope": "Final restarted-service production-build provenance and initial root-document static asset probe. This is not a browser interaction or full lazy-route asset claim.",
+  "bundle": {
+    "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-004/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+    "sha256": "d412006a1f1af22054a2a32b0d9a8f8ae88a41e24cbd6f5bb486d71e7b2b4ce0"
+  },
+  "applications": {
+    "workbench": {
+      "commit": "f79a63282e69a5ff5805f2b7cf28a0dfd1bd0729",
+      "buildCommand": "DATABASE_URL='postgres://workbench:workbench@127.0.0.1:55432/workbench' npm run build --workspace @reasonhealth/workbench",
+      "startLog": "docs/connectathon/evidence/run004-final-workbench-service.log",
+      "startLogSha256": "e9044d3496c7276e0d66bfaa36b2a03ffe5857b4629d2e31838c4c761f0d2f51",
+      "root": {
+        "requestedUrl": "http://127.0.0.1:9090/",
+        "finalUrl": "http://127.0.0.1:9090/sign-in",
+        "status": 200,
+        "contentType": "text/html",
+        "bytes": 10191,
+        "sha256": "d81e5bf84ded6a0ce5671815ee96d52aa8c432ae56e42773007e337986a21214"
+      },
+      "assetCount": 12,
+      "assetFailures": 0
+    },
+    "standalone": {
+      "commit": "6227080ff9667f34d6a9944036c7bba972f75253",
+      "buildCommand": "npm run build",
+      "startLog": "docs/connectathon/evidence/run004-final-standalone-service.log",
+      "startLogSha256": "d60fe8c9d3ad61702a681ded6d8cf2931bdd7bdbc0d012292ad0c556f1e1bbf7",
+      "root": {
+        "requestedUrl": "http://127.0.0.1:9091/",
+        "finalUrl": "http://127.0.0.1:9091/",
+        "status": 200,
+        "contentType": "text/html",
+        "bytes": 10512,
+        "sha256": "0f3095f0d7efd48215dd360c687360f7acc18fe2cf185a21459e253cf60145fd"
+      },
+      "assetCount": 29,
+      "assetFailures": 0
+    }
+  },
+  "assetProbe": {
+    "command": "python3 /private/tmp/probe-final-app-assets.py http://127.0.0.1:9090/ http://127.0.0.1:9091/ dist/connectathon-20260919/verification/root-final-run004-app-assets-final-ui.json",
+    "commandLog": "docs/connectathon/evidence/run004-final-app-assets-final-ui.log",
+    "commandLogSha256": "2237dab5d324ad7993bd12d598818b40fd4650807fa4bcc3a04c675c99fce15e",
+    "fullOutput": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004-app-assets-final-ui.json",
+    "fullOutputSha256": "0b07b7d6f17bc53246737d267dab4d80a70957c0e95e420e2e1164401bac0c59",
+    "passed": true
+  }
+}

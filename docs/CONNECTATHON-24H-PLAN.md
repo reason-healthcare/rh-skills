@@ -4,6 +4,10 @@ Prepared 2026-09-17. Status: execution started 2026-09-17 at 23:35 UTC / 19:35 E
 
 **User constraint:** do not modify `hl7-agentic-knowledge-connectathon`, including its source files, fixtures and Git state. Treat it as a read-only source/oracle. All generated work, fixture adapters, logs and iteration artifacts belong in separate rehearsal workspaces or implementation repositories. Verify its source inventory remains unchanged at handoff.
 
+## Execution checkpoint — 2026-09-18T18:27:06.369098+00:00
+
+Core preparation is complete: final run004 executes actual SDC Observation extraction and idiomatic CQL in Workbench and standalone; complete packages and decoded Library attachments are inspectable. Final API checks pass72/72 and6/6. The source/authoring timing, clinical, zero-denominator validator, broader SDC/cohort and independent-engine/server limits remain explicit. [Current journal and task board](CONNECTATHON-JOURNAL.md) and [live runbook](connectathon/LIVE-RUNBOOK.md) contain final evidence and commands. The audit tables and schedule below are the original plan, not current capability claims.
+
 ## Required follow-up from user review — September 18
 
 SDC Observation-based extraction is now part of the required primary workflow: **completed QuestionnaireResponse → actual SDC extraction → Observations → versioned ValueSet CQL → Measure and CPG results**. The earlier QR-reading run001/run002 packages remain frozen compatibility baselines. Their successful execution is not evidence for this new requirement. The generated Questionnaire must preserve the source SDC profile and extraction/category extensions through typed L2 metadata. Measure preview must expose the population definitions and their supporting logic, not only expression names.

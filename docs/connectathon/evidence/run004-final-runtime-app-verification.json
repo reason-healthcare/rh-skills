@@ -1,0 +1,150 @@
+{
+  "checkedAt": "2026-09-18T18:23:31.291510+00:00",
+  "scope": "Independent report audit of final run004 direct runtime, authenticated Workbench raw-QuestionnaireResponse API replay, and standalone raw-QuestionnaireResponse API parity. The Workbench direct side and both service APIs use the shared SDC extraction and reconciliation contract. Browser acceptance, reference-engine execution, and missing-dependency negative are outside this report.",
+  "finalArtifacts": {
+    "bundle": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-004/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+      "sha256": "d412006a1f1af22054a2a32b0d9a8f8ae88a41e24cbd6f5bb486d71e7b2b4ce0"
+    },
+    "rhCommit": "26716c9319f50ee71aa8456cc8a0ccefe100d7f5",
+    "native": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+      "sha256": "7b11131a9c748daaedd88a830d1aa39328d2c6ff81908e5176a70fce83d945e6"
+    },
+    "nodeWrapper": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+      "sha256": "478033b2ddbcab71dd648a59ccd25c07484113c2ccca381ef200fd3e8027f00b"
+    },
+    "wasm": {
+      "targets": [
+        "wasm",
+        "wasm-node",
+        "wasm-bundler"
+      ],
+      "sha256": "d936e08fed0ae47bcc30ad75274ec3d1336ec079a7bf97054de4fa80f1081726"
+    }
+  },
+  "sourceFixtures": {
+    "unchanged": true,
+    "testBundles": {
+      "fileCount": 27,
+      "sha256": "7f037de6f51c00ae96ecd85df5a3293b41fdf1f78e1aa6946b27a8f6d71da950"
+    },
+    "frozenOracle": {
+      "fileCount": 27,
+      "sha256": "7f037de6f51c00ae96ecd85df5a3293b41fdf1f78e1aa6946b27a8f6d71da950"
+    }
+  },
+  "reports": {
+    "coreAcceptance": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/acceptance-report.json",
+      "sha256": "27cac2ed4e08818aa5c79795874ec9e89e13760d7cac388b3b96e4fc6a080d3f",
+      "passed": true,
+      "nativeCqlAssertions": {
+        "decision": {
+          "passed": true,
+          "actual": 48,
+          "expected": 48
+        },
+        "measure": {
+          "passed": true,
+          "actual": 18,
+          "expected": 18
+        }
+      },
+      "publicNodeExtraction": {
+        "passed": true,
+        "cases": 6,
+        "extracted": 4,
+        "notInvoked": 2
+      },
+      "adversarialCql": {
+        "passed": true,
+        "cases": 12,
+        "falseOrNullRejected": 10,
+        "missingTerminologyErrors": 2
+      },
+      "directNodeWasm": {
+        "passed": true,
+        "applyCalls": 60,
+        "measureCalls": 6,
+        "semanticPredicateFailures": []
+      }
+    },
+    "workbenchApiMatrix": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004-workbench-raw-qr-final-ui/workbench-api-matrix-report.json",
+      "sha256": "2ec792c103b625bbad80d33d8b81c250f1bf114c7f966968eec5ae0de7d8b8c8",
+      "authenticated": true,
+      "passed": true,
+      "counts": {
+        "fixtures": 6,
+        "applyCalls": 60,
+        "measureCalls": 6,
+        "questionnaireCalls": 6,
+        "totalArtifactCalls": 72,
+        "parityPassed": 72,
+        "parityFailed": 0
+      },
+      "sourceFixturesUnchangedReported": true,
+      "extraction": {
+        "extractedThreeObservations": 4,
+        "notInvoked": 2
+      }
+    },
+    "standaloneRawQrParity": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004-standalone-final-ui/standalone-raw-qr-parity-report.json",
+      "sha256": "aa20f8a6ec7882907718e922b2d49cdda2807b13fe6398e136c8b17564b021e3",
+      "passed": true,
+      "counts": {
+        "fixtures": 6,
+        "http200DirectParityAndSemanticPass": 6
+      },
+      "extraction": {
+        "extractedThreeObservations": 4,
+        "notInvoked": 2
+      }
+    }
+  },
+  "limitations": [
+    "The Workbench report records its isolated missing-dependency negative as not-run; this audit does not claim it.",
+    "Browser interaction and console checks are root-owned and not inferred from API responses.",
+    "Reference translation establishes CQL well-formedness only; these reports do not claim reference-engine execution parity.",
+    "Official FHIR validation is reported separately in run004-knowledge-fhir-validation.json and run004-runtime-fhir-validation.json; the latter remains strict-false for the documented zero-denominator MeasureReport validator diagnostic."
+  ],
+  "auditPassed": true,
+  "finalApplications": {
+    "workbench": {
+      "commit": "f79a63282e69a5ff5805f2b7cf28a0dfd1bd0729",
+      "service": "http://127.0.0.1:9090",
+      "serviceLog": "docs/connectathon/evidence/run004-final-workbench-service.log",
+      "serviceLogSha256": "e9044d3496c7276e0d66bfaa36b2a03ffe5857b4629d2e31838c4c761f0d2f51"
+    },
+    "standalone": {
+      "commit": "6227080ff9667f34d6a9944036c7bba972f75253",
+      "service": "http://127.0.0.1:9091",
+      "serviceLog": "docs/connectathon/evidence/run004-final-standalone-service.log",
+      "serviceLogSha256": "d60fe8c9d3ad61702a681ded6d8cf2931bdd7bdbc0d012292ad0c556f1e1bbf7"
+    }
+  },
+  "rejectedNonAcceptanceRuns": [
+    {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004-workbench-final-ui/workbench-api-matrix-report.json",
+      "sha256": "331335320a126c85d14e9295a66756f41143643065df483424c645c7ae304d33",
+      "reason": "The historical generic vendor verifier does not apply run004 raw-QuestionnaireResponse extraction/reconciliation before its direct Node comparison. Its 53/72 result is retained for audit but is not a run004 acceptance result."
+    }
+  ],
+  "appAssetProbe": {
+    "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004-app-assets-final-ui.json",
+    "sha256": "0b07b7d6f17bc53246737d267dab4d80a70957c0e95e420e2e1164401bac0c59",
+    "workbench": {
+      "rootStatus": 200,
+      "assetCount": 12,
+      "assetFailures": 0
+    },
+    "standalone": {
+      "rootStatus": 200,
+      "assetCount": 29,
+      "assetFailures": 0
+    }
+  }
+}

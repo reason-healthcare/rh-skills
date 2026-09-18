@@ -52,6 +52,29 @@ exact project/snapshot/artifact identities after importing the final package.
 application. Set the Workbench cookie only in the environment, never in a
 committed config or report. Both require the final running service and runtime.
 
+Use the raw-response Workbench verifier for run003/run004. The older generic
+`vendor/verify-workbench-api-matrix.mjs` does not prepare extracted Observations for its
+direct comparison and is only appropriate to its historical QR-reading
+contract; using it for run004 produced a rejected 53/72 comparison. Do not
+replace extraction output with the expected fixture oracle to make it pass.
+
+```sh
+REPO_ROOT=/Users/bkaney/projects/reason-healthcare \
+WORKBENCH_BASE_URL=http://127.0.0.1:9090 \
+node docs/connectathon/tools/verify-run003-workbench-api.mjs \
+  --config docs/connectathon/tools/runs/run004-observation-workbench.json \
+  --output dist/connectathon-20260919/verification/operator-run004-workbench
+
+node docs/connectathon/tools/verify-run003-standalone-raw-qr.mjs \
+  --run-id run004 \
+  --content dist/connectathon-20260919/workspaces/run-004/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json \
+  --runtime /Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js \
+  --fixtures dist/connectathon-20260919/workspaces/run-004/topics/steadi-live-replay/process/package-workspace/executable/fixtures/index.json \
+  --assertion-root dist/connectathon-20260919/workspaces/run-004/oracle/test-bundles/cases \
+  --standalone http://127.0.0.1:9091 \
+  --output dist/connectathon-20260919/verification/operator-run004-standalone
+```
+
 `verify-patient-context-fhircommon-node.mjs` independently tests the official
 reference-translated helper through the public WASM module. It includes
 wrong-patient-only and wrong-encounter-only data; a positive Measure membership
