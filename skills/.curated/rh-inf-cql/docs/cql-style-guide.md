@@ -157,9 +157,13 @@ and its cited source, not from the Observation's mere existence.
 Keep this boundary independent of the score producer. CQL must not retrieve
 `Questionnaire` or `QuestionnaireResponse`, recompute from answer items, or
 require response identifiers or `Observation.derivedFrom` links. A separately
-produced Observation with the same reviewed score code/version, integral value,
-and required encounter/time context must be eligible for the same downstream
-logic. Test that alternate Observation-only input explicitly.
+produced Observation with the same reviewed immutable score system/code, a
+final status, an integral value that satisfies the declared range and validity
+rules, and the required encounter/time context must be eligible for the same
+downstream logic even if its input `Coding.version` is absent or different.
+Preserve any supplied version as provenance; it is not a membership filter.
+Test alternate Observation-only inputs with omitted and differing
+`Coding.version` explicitly.
 
 For unscored or item-level assessments, evaluate the extracted, item-coded
 Observations directly; do not read QuestionnaireResponse answers in clinical
