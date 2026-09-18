@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-09-18T20:55:17.427950+00:00",
+  "scope": "Fresh recheck of pre-run005 frozen baseline (run-001 through run-004 computable resources, oracle, evidence, package-workspace, and test files). Run-005 generated files are outside this baseline.",
+  "baselineEvidence": "docs/connectathon/evidence/run005-frozen-baseline.json",
+  "baselineEvidenceSha256": "c526e6f13cf74804e30a12d991ad97ab5bba2f053d1083f133feac510b9bbc00",
+  "baselineCapturedAt": "2026-09-18T19:20:29.187488+00:00",
+  "filesChecked": 1473,
+  "missingFiles": [],
+  "changedFiles": [],
+  "passed": true,
+  "networkFetchPerformed": false
+}

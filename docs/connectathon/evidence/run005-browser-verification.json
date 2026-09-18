@@ -1,0 +1,91 @@
+{
+  "checkedAt": "2026-09-18T21:00:13.809664+00:00",
+  "status": "passed",
+  "runId": "run005",
+  "contentSha256": "e05c9760c1c900c672ad9345699004ac8ba52f14c362f6095429a196ad502e60",
+  "snapshotId": "snap_connectathon-steadi-scores_run005-e05c9760c1c9",
+  "workbenchCommitTested": "ea85b474e944deafd1b442556ba7f270567649e1",
+  "runtimeCommit": "d49c6275beb5ed2cbe9e212d48124135ce1a25b0",
+  "method": "Actual CUA browser interactions with final built local applications; no DOM injection",
+  "checks": [
+    {
+      "name": "package_and_sources",
+      "passed": true,
+      "observed": "25 resources including CodeSystem,4Libraries,4ValueSets;36artifacts; all3exact population definitions; decodedCQLv0.3.0 andELM JSON with ValueSetRef visible"
+    },
+    {
+      "name": "no_response_measure",
+      "passed": true,
+      "counts": [
+        1,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "zero_score_staged_same_tab",
+      "passed": true,
+      "observed": "All3explicitNo answers -> score0 in calculated results,4finalObservations; Measure1/1/1; CPG no positive-risk or await-complete guidance"
+    },
+    {
+      "name": "one_yes_score",
+      "passed": true,
+      "observed": "Yes/No/No -> score1,4Observations; both exercise and multifactorial guidance"
+    },
+    {
+      "name": "restore_missing_score",
+      "passed": true,
+      "observed": "Restored source scenario -> explicit await-complete-response guidance; positive recommendations absent"
+    },
+    {
+      "name": "narrow_cpg",
+      "passed": true,
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "viewportReset": true
+    },
+    {
+      "name": "standalone_final_tarball",
+      "passed": true,
+      "package": "reason.steadi-live-replay-0.3.0.tgz",
+      "sha256": "f11afb984bc723d202645cedf0cf3a34f0983da22cb9d389358672f4c08add3d",
+      "observed": "Uploaded actual tgz, selected rootcarepathway, renderedgraph"
+    },
+    {
+      "name": "standalone_alternate_producer",
+      "passed": true,
+      "input": "dist/connectathon-20260919/verification/root-run005-score/score-1-no-questionnaire-provenance.json",
+      "observed": "OneObservation, noQuestionnaire/QuestionnaireResponse/derivedFrom; Apply -> bothpositiveguidance"
+    },
+    {
+      "name": "standalone_missing_score",
+      "passed": true,
+      "input": "dist/connectathon-20260919/verification/root-run005-score/missing-score.json",
+      "observed": "Apply -> await-complete-responseguidance; positiveabsent"
+    },
+    {
+      "name": "final_score_and_staging_regression",
+      "passed": true,
+      "commit": "8bcae98e37a3f0f854e7bdd74e75c09c133548e3",
+      "observed": "All-No validates to 4 Observations with valueInteger:0 in rendered summary and 0 in readonly calculated results. Changing unsteady to Unanswered clears score and disables staging. Same-tab matching Measure then has no staged banner and counts1/1/0. Completing Yes/No/No again calculates1 and same-tab Measure returns1/1/1."
+    }
+  ],
+  "limitations": [
+    "Assessment staging is scoped to the same browser tab (sessionStorage).",
+    "Standalone graph branch labels are authored diagram labels, not individual evaluated Boolean findings; applied guidance is separately inspected.",
+    "Screenshots were emitted in the conversation; no saved PNG is claimed.",
+    "Late-response edit/unmount protection was code-reviewed; no browser network-delay injection or dedicated deferred-response component test is claimed."
+  ],
+  "pending": [],
+  "workbenchFinalCommit": "8bcae98e37a3f0f854e7bdd74e75c09c133548e3",
+  "resolvedFailures": [
+    "partial_edit_clears_saved_staging failed on dd60f13 and passed in final_score_and_staging_regression on8bcae98"
+  ],
+  "historicalFailures": [
+    {
+      "name": "partial_edit_clears_saved_staging",
+      "passed": false,
+      "observed": "Displayed calculated score removed and staging button disabled, but same-tab Measure still received4priorObservations and numerator1."
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-09-18T20:47:50.029315+00:00",
+  "guide": {
+    "path": "skills/.curated/rh-inf-cql/docs/cql-style-guide.md",
+    "sha256": "b439e883997d2b95bf03dd648d80643d004382a0aa473d0bca7fa441f4ef86a5"
+  },
+  "scope": "Current guide complete CQL examples are byte-identical to already reference-translated examples. New assessment scoring prose introduces no additional complete CQL block. Final run005 libraries require their own fresh reference translation.",
+  "priorTranslationManifest": "dist/connectathon-20260919/verification/style-guide-reference-translation/final-47ce0be8/manifest.json",
+  "checks": [
+    {
+      "library": "EncounterClassFilter",
+      "currentSourceSha256": "bb021f71b0446641f1f1141872537228ffcb02c01674d385a6561f68fd1b7944",
+      "matchesReferenceTranslatedSource": true
+    },
+    {
+      "library": "ScreeningReferenceJoin",
+      "currentSourceSha256": "066e1e88f4e9cc83b4fe70cbb7b34273ddf3cd4fb20bbee4f681f2c76ce6dab9",
+      "matchesReferenceTranslatedSource": true
+    }
+  ],
+  "passed": true,
+  "proseClarificationCommit": "19ebef3ab2e001fb66a4948237f7475c9581d723"
+}

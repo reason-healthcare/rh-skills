@@ -1,14 +1,17 @@
 # Durable acceptance tools
 
-## Current Observation-based workflow
+The current score-based candidate uses the run005 tools described below.
+The older commands are retained to reproduce their frozen baselines.
 
-The current Connectathon workflow is QuestionnaireResponse → actual SDC
+## Historical run003/run004 Observation workflow
+
+The run003/run004 workflow is QuestionnaireResponse → actual SDC
 extraction → Observations → versioned ValueSet CQL. The run003 package is a
 frozen accepted baseline. Run004 is the declared idiomatic-CQL revision, with
 Patient-context isolation and pinned FHIRCommon reference relationships; its
 final acceptance is recorded in the journal and readiness manifest.
 
-`run-run003-observation-acceptance.py` is the required local entrypoint for this
+`run-run003-observation-acceptance.py` is the historical local entrypoint for this
 Observation contract. Its historical filename is retained; supply the exact
 candidate workspace/content paths and a new output directory for every replay.
 The command verifies:
@@ -44,6 +47,39 @@ python3 docs/connectathon/tools/run-run003-observation-acceptance.py \
   --rh-skills-bin "$PWD/.venv/bin/rh-skills" \
   --output dist/connectathon-20260919/verification/operator-run004
 ```
+
+## Run005 score Observation acceptance
+
+Run005 is a declared revision of the frozen run004 workspace. Its raw response
+fixtures are adapted to the new Questionnaire version; the original 66 clinical
+expectations remain unchanged. The following tools are authored in this branch
+and do not modify source fixtures or the protected Connectathon repository:
+
+- `verify-run005-score-contract.mjs` performs actual public Node/WASM extraction,
+  writes QR-free prepared data, and checks 22 explicitly expected alternate-source
+  score cases through both native CQL libraries and public Node Measure/CPG.
+  It binds every alternate input by SHA-256. Input Coding.version remains
+  provenance; immutable system/code identifies the algorithm.
+- `verify-run005-observation-node.mjs` checks the original 60 PlanDefinition
+  applications and six MeasureReports using that hash-bound prepared data.
+- `verify-run005-score-apps.mjs` replays the same 22 score-only inputs through
+  Workbench Measure, Workbench CPG, and standalone CPG. It requires the accepted
+  core report, package hash, snapshot manifest and artifact identity/checksums.
+  A separate coordinator check compares all snapshot L3 resources with the
+  candidate Bundle before import evidence is accepted.
+- `verify-run003-workbench-api.mjs` and
+  `verify-run003-standalone-raw-qr.mjs` remain usable with explicit run005 paths
+  and versioned canonicals. They exercise the actual raw-response preparation
+  path. The older generic vendor Workbench verifier does not prepare SDC
+  Observations and must not be used for these revised packages.
+- `run-run005-fhir-validation.py` invokes the pinned official validator for
+  knowledge resources, actual extraction transactions/clinical Bundles, or
+  actual runtime outputs. It records raw diagnostics and does not suppress or
+  automatically accept the known zero-denominator MeasureReport diagnostic.
+
+Reference CQFramework translation, application builds, fresh skill installation,
+and browser interaction are separate evidence. Translation is not claimed as
+execution by an independent CQL engine. Run001–004 evidence remains frozen.
 
 Service checks are separate: `verify-run003-workbench-api.mjs` sends raw
 QuestionnaireResponse inputs to every imported preview endpoint; configure the

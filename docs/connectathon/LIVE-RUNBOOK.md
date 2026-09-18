@@ -54,6 +54,98 @@ guidance. Workbench also decodes Library CQL/ELM for inspection. These are local
 technical rehearsal results, not clinical approval or full Connectathon
 interoperability completion.
 
+### Current run-005 scored assessment rehearsal
+
+Run-005 is accepted for the local technical rehearsal. See the [final readiness
+record](evidence/final-readiness.json), [runtime/API evidence](evidence/run005-final-runtime-app-verification.json),
+and [browser evidence](evidence/run005-browser-verification.json). The exact
+younger-patient zero-denominator validator exception remains documented.
+
+For review, open the snapshot below, then the assessment preview. Select
+**Eligible adult with no response**, populate, answer the three questions, and
+validate. All No produces score 0; one Yes produces score 1. Open Measure or CPG
+in the same tab and select the same scenario. Editing an answer invalidates the
+staged result until it is validated again. Library attachments can be read under
+**Inspect package contents → Library → Inspect Library content**.
+
+Run-005 extends the bounded extraction rehearsal with a local, immutable
+three-question yes-count Observation. Its frozen executable Bundle is
+`e05c9760c1c900c672ad9345699004ac8ba52f14c362f6095429a196ad502e60` and
+the imported Workbench snapshot is
+[run-005 score observations](http://localhost:9090/projects/connectathon-steadi-scores/snapshots/snap_connectathon-steadi-scores_run005-e05c9760c1c9).
+Do not represent the package or import alone as accepted preview or
+interoperability evidence; retain the run-specific API, browser, and FHIR
+validation records. The authored score code is
+`https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/CodeSystem/steadi-assessment-score|1.0.0`
+with code `steadi-three-question-yes-answer-count-v1`. Algorithm v1 emits an
+integer from 0 through 3 only when all three required Boolean inputs are
+usable. Zero means all three answers are No; incomplete or invalid input emits
+no score. A later algorithm revision must use a new code, not reinterpret this
+one.
+
+Run-005 CQL is Observation-only: it selects final score Observations for the
+current Patient that reference any qualifying ambulatory encounter in the
+Measurement Period and have an in-period effective time. It does not require
+a QuestionnaireResponse or `derivedFrom`, so another instrument can satisfy
+the same published score contract. Exactly one valid score is completed, including a score value of zero. No
+matching score or multiple valid candidates leaves the result unknown. The native runtime's Boolean count is a bounded
+implementation of this declared algorithm, not a general scoring engine.
+
+For run-005, use the score-aware replay, which invokes the public Node/WASM
+extractor on the immutable raw QR fixtures, writes actual QR-free prepared
+Bundles, checks alternate score inputs through native CQL and public Node,
+and then runs the complete public Node/WASM CPG and Measure matrix. Do not use
+`verify-sdc-extraction.py` here: its historical Boolean-only oracle requires
+three Observations and cannot validate the run-005 fourth score Observation.
+
+```sh
+export SKILLS_REPO=/Users/bkaney/projects/reason-healthcare/rh-skills
+export RH_REPO=/Users/bkaney/projects/reason-healthcare/rh
+export RUN005_WS="$SKILLS_REPO/dist/connectathon-20260919/workspaces/run-005"
+export RUN005_TOPIC=steadi-live-replay
+export RUN005_BUNDLE="$RUN005_WS/topics/$RUN005_TOPIC/process/package-workspace/executable/executable-bundle.json"
+export RUN005_FIXTURES="$RUN005_WS/topics/$RUN005_TOPIC/process/package-workspace/executable/fixtures/index.json"
+export RUN005_ORACLE="$RUN005_WS/oracle/test-bundles"
+export RUN005_COMPUTABLE="$RUN005_WS/topics/$RUN005_TOPIC/computable"
+export RUN005_TERMINOLOGY="$RUN005_WS/tests/cql/score-terminology.json"
+export RUN005_OUT="$SKILLS_REPO/dist/connectathon-20260919/verification/operator-run005-score-$(date -u +%Y%m%dT%H%M%SZ)"
+
+node "$SKILLS_REPO/docs/connectathon/tools/verify-run005-score-contract.mjs" \
+  --content "$RUN005_BUNDLE" \
+  --runtime "$RH_REPO/packages/cpg/dist/node.js" \
+  --fixtures "$RUN005_FIXTURES" \
+  --oracle-root "$RUN005_ORACLE" \
+  --output "$RUN005_OUT" \
+  --rh-cli "$RH_REPO/target/debug/rh" \
+  --computable "$RUN005_COMPUTABLE" \
+  --terminology "$RUN005_TERMINOLOGY"
+
+node "$SKILLS_REPO/docs/connectathon/tools/verify-run005-observation-node.mjs" \
+  --content "$RUN005_BUNDLE" \
+  --runtime "$RH_REPO/packages/cpg/dist/node.js" \
+  --prepared-root "$RUN005_OUT/prepared" \
+  --oracle-root "$RUN005_ORACLE" \
+  --output "$RUN005_OUT/direct-node" \
+  --run-id run005
+```
+
+The first command requires four extracted Observations for each complete usable
+response (three Boolean answers and one `valueInteger` score), and no extracted
+Observations for incomplete or absent responses. A complete score of `0` is
+valid and is not increased fall risk; only a score of at least `1` is risk.
+Both reports bind the Bundle, fixture index, native CLI, public Node runtime,
+prepared inputs, and frozen six-case oracle by SHA-256. Preserve those reports
+and their hash-bound inputs as run-specific evidence.
+
+Workbench staging is deliberately scoped to the same browser tab: the validated
+QuestionnaireResponse and extracted Observations are held in `sessionStorage`.
+Select the matching named scenario in the CPG or Measure preview in that tab.
+A new tab, browser session, or source-scenario restore does not carry staged
+assessment data forward. Stage a complete all-No response in that same tab to
+confirm the valid score-0, non-risk path; a complete response with one or more
+Yes answers is the at-least-one risk path. This is operating guidance, not a
+browser-acceptance claim.
+
 ## What the scenario means
 
 The scenario is a community-dwelling adult age 65 or older in ambulatory care.
@@ -66,10 +158,10 @@ fixed encounter/evaluation clock used by the synthetic fixture contract is
 The response is complete only when its status is `completed`, it references
 the exact versioned three-question Questionnaire, and all three expected
 linkIds have usable Boolean answers. The SDC extraction step applies that
-contract and emits one final Boolean Observation per coded item; Observation
-CQL then checks exact ValueSet membership, the Patient-context-selected
-qualifying encounter, and common QuestionnaireResponse provenance. Patient
-context filtering depends on the pinned FHIR ModelInfo and evaluator. Do not
+contract and emits one final Boolean Observation per coded item. Run-005 also
+emits its declared local integer count; its CQL selects that score directly,
+without a QuestionnaireResponse or `derivedFrom` predicate. Patient context
+filtering depends on the pinned FHIR ModelInfo and evaluator. Do not
 add manual subject-reference predicates to mask a runtime context leak; test
 with a mixed-patient Bundle and treat leakage as an execution blocker. It does
 not read `QuestionnaireResponse.item` to discover terminology because FHIR R4 has no
@@ -406,13 +498,13 @@ evaluator context; never add a manual `subject.reference = Patient.id` guard
 as a workaround. Verify isolation with a mixed-patient Bundle.
 
 The portable CQL uses `FHIRHelpers version '4.0.1'`, helper-based FHIR date
-conversion, and a logical-model cast for FHIR choice elements. The Observation
-retrieves use the three ValueSet aliases backed by the fixture-pinned LOINC
-2.81 expansions. Qualification checks final status, Boolean value, the
-qualifying ambulatory encounter selected through the Patient context, and a shared
-`QuestionnaireResponse/<id>` `derivedFrom` reference. Completion requires
-exactly one usable Observation for each of the three aliases; incomplete or
-absent extraction remains unknown for increased risk. For Coding or
+conversion, and a logical-model cast for FHIR choice elements. Run-005's
+primary retrieve uses the reviewed local score ValueSet: final status, integer
+value in the declared range, an in-period effective time, and a reference to a
+qualifying ambulatory encounter in the Patient context. It does not require a
+QuestionnaireResponse or `derivedFrom`; exactly one matching score is
+completed, while missing or multiple scores are unknown. The earlier Boolean
+per-question retrieve is retained only as historical run-004 evidence. For Coding or
 CodeableConcept terminology, declare a CodeSystem/Code or a reviewed ValueSet
 and use typed equivalence (`~`) or membership (`in`), as shown in the CQL style
 guide. Do not split terminology into raw system/code string predicates.
@@ -480,12 +572,16 @@ Its important pinned hashes are:
 
 Its canonical is `http://hl7.org/fhir/uv/cql/Library/FHIRCommon|2.0.0`.
 
-Before CQL tests, use the extraction capture tool against the immutable source
-Bundles. It invokes the native extractor only for completed responses, using
-the generated Questionnaire and the Patient/Encounter references from each
-case; incomplete and absent responses are recorded as not invoked. It captures
-the native transaction output and never reads `extracted-bundle.json` as runtime
-output. Then compare the captured output with the source extraction oracle.
+### Historical run-004 Boolean-only extraction replay
+
+The following commands are retained only to reproduce the historical run-004
+Boolean-only rehearsal. They invoke the native extractor only for completed
+responses, using the generated Questionnaire and the Patient/Encounter
+references from each case; incomplete and absent responses are recorded as not
+invoked. The capture never reads `extracted-bundle.json` as runtime output.
+They compare to the run-004 source extraction oracle, which expects three
+Boolean Observations. Do not apply this replay or its oracle to run-005; use
+the score-aware sequence in the current run-005 section instead.
 
 ```sh
 python "$SKILLS_REPO/docs/connectathon/tools/run-sdc-source-extraction.py" \

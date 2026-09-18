@@ -12,11 +12,28 @@ const write = (p,v) => writeFileSync(p,JSON.stringify(v,null,2)+'\n');
 const sha = p => createHash('sha256').update(readFileSync(p)).digest('hex');
 const resources = b => (b?.entry??[]).map(e=>e.resource).filter(Boolean);
 const clone = x => JSON.parse(JSON.stringify(x));
+const EXPECTED_CASE_IDS = [
+ 'score-0-no-questionnaire-provenance','score-1-no-questionnaire-provenance','score-2-no-questionnaire-provenance','score-3-no-questionnaire-provenance',
+ 'missing-score','missing-value','string-value','boolean-value','negative-score','above-range-score','preliminary-score','entered-in-error-score',
+ 'wrong-code','wrong-system','same-algorithm-code-without-version','same-algorithm-code-different-version-metadata','wrong-patient','wrong-encounter',
+ 'missing-effective-time','out-of-period-score','duplicate-valid-score','valid-with-unrelated-patient',
+];
+const EXPECTED_CASE_SET = new Set(EXPECTED_CASE_IDS);
 const out = resolve(args.output); mkdirSync(out,{recursive:true});
 const contentPath=resolve(args.content), runtimePath=resolve(args.runtime), indexPath=resolve(args.fixtures);
 const content=read(contentPath), index=read(indexPath), oracle=read(resolve(args['oracle-root'],'manifest.json'));
+if (index.fixtures?.length !== 6 || oracle.cases?.length !== 6
+ || new Set(index.fixtures.map(f=>f.id)).size !== 6
+ || index.fixtures.some(f=>!oracle.cases.some(c=>c.id===f.id))) {
+ throw Error('Exactly the six original fixture identities are required');
+}
 const all=resources(content), questionnaire=all.find(r=>r.resourceType==='Questionnaire'), measure=all.find(r=>r.resourceType==='Measure'), plan=all.find(r=>r.resourceType==='PlanDefinition' && r.id==='steadi-fall-risk-screening-protocol');
 if(!questionnaire||!measure||!plan) throw Error('Required package resources missing');
+if (all.filter(r=>r.resourceType==='Questionnaire').length!==1
+ || all.filter(r=>r.resourceType==='Measure').length!==1
+ || all.filter(r=>r.resourceType==='PlanDefinition'&&r.id===plan.id).length!==1) {
+ throw Error('Package must have unique required resource identities');
+}
 const calculatedItems=questionnaire.item.filter(i=>i.extension?.some(e=>e.url==='http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression'));
 if(calculatedItems.length!==1) throw Error('This declared run005 contract needs one calculated score');
 const scoreItem=calculatedItems[0];
@@ -77,15 +94,42 @@ add('missing-effective-time',s=>{delete s.effectiveDateTime;},false,null);
 add('out-of-period-score',s=>{s.effectiveDateTime='2025-01-01T00:00:00Z';},false,null);
 add('duplicate-valid-score',(s,list)=>{const other=clone(s);other.id='ambiguous-second-score';other.valueInteger=0;list.push(other);},false,null);
 add('valid-with-unrelated-patient',(s,list)=>{const other=clone(s);other.id='unrelated-patient-score';other.subject.reference='Patient/some-other-patient';list.push(other);},true,true);
+if (synthetic.length !== EXPECTED_CASE_IDS.length || new Set(synthetic.map(test => test.id)).size !== EXPECTED_CASE_IDS.length || synthetic.some(test => !EXPECTED_CASE_SET.has(test.id)) || EXPECTED_CASE_IDS.some(id => !synthetic.some(test => test.id === id))) {
+ throw Error('Score contract generator must produce exactly the accepted 22 alternate-source cases');
+}
+if (typeof plan.url !== 'string' || typeof plan.version !== 'string') {
+  throw new Error('Root PlanDefinition must declare url and version for RequestGroup provenance checks');
+}
+const rootPlanCanonical = `${plan.url}|${plan.version}`;
+function canonicalValues(value) { return Array.isArray(value) ? value : typeof value === 'string' ? [value] : []; }
+function sourceActionIds(bundle) {
+ return resources(bundle).filter(resource => resource.resourceType === 'RequestGroup').flatMap(resource => resource.note ?? []).map(note => note?.text).filter(text => typeof text === 'string').map(text => text.match(/^Source action:\s+(\S+)/)?.[1]).filter(Boolean);
+}
+function rootApplyChecks(bundle, subject, encounter, risk, succeeded) {
+ const groups=resources(bundle).filter(resource => resource.resourceType === 'RequestGroup');
+ const roots=groups.filter(group => canonicalValues(group.instantiatesCanonical).includes(rootPlanCanonical));
+ const root=roots[0];
+ const sourceActions=sourceActionIds(bundle);
+ const has=id=>sourceActions.includes(id);
+ return {
+  applySucceeded:succeeded===true&&bundle?.resourceType==='Bundle',
+  rootRequestGroup:roots.length===1,
+  rootCanonical:canonicalValues(root?.instantiatesCanonical).includes(rootPlanCanonical),
+  rootSubject:root?.subject?.reference===subject,
+  rootEncounter:root?.encounter?.reference===encounter,
+  rootNonempty:Boolean(root&&((root.action??[]).length>0||(root.note??[]).some(note=>typeof note?.text==='string'&&note.text.trim().length>0))),
+  exercise:has('refer-exercise-intervention')===(risk===true),
+  multifactorial:has('individualize-multifactorial-decision')===(risk===true),
+  unknown:has('await-complete-response')===(risk===null),
+ };
+}
 const cases=[];
 for(const test of synthetic){
  const file=resolve(out,`${test.id}.json`);write(file,test.data);
  const options={data:test.data,encounter:originalFixture.encounter,evaluationDate:originalFixture.evaluationDate,measurementPeriod:originalFixture.measurementPeriod};
  const m=runtime.evaluateMeasure(measure,originalFixture.subject,content,options), p=runtime.applyPlanDefinition(plan,originalFixture.subject,content,options);
  const counts=Object.fromEntries((m.value?.group?.[0]?.population??[]).map(x=>[x.code?.coding?.[0]?.code,x.count]));
- const notes=resources(p.value).filter(r=>r.resourceType==='RequestGroup').flatMap(r=>r.note??[]).map(n=>n.text??'');
- const has=id=>notes.some(n=>n.startsWith(`Source action: ${id} `)||n===`Source action: ${id}`);
- const checks={observationOnlyInput:!resources(test.data).some(r=>['Questionnaire','QuestionnaireResponse'].includes(r.resourceType))&&resources(test.data).filter(r=>r.resourceType==='Observation').every(r=>r.derivedFrom===undefined),measureSucceeded:m.success===true&&m.value?.status==='complete',population:counts['initial-population']===1&&counts.denominator===1,completion:counts.numerator===Number(test.completed),applySucceeded:p.success===true,exercise:has('refer-exercise-intervention')===(test.risk===true),multifactorial:has('individualize-multifactorial-decision')===(test.risk===true),unknown:has('await-complete-response')===(test.risk===null)};
+ const checks={observationOnlyInput:!resources(test.data).some(r=>['Questionnaire','QuestionnaireResponse'].includes(r.resourceType))&&resources(test.data).filter(r=>r.resourceType==='Observation').every(r=>r.derivedFrom===undefined),measureSucceeded:m.success===true&&m.value?.status==='complete',population:counts['initial-population']===1&&counts.denominator===1,completion:counts.numerator===Number(test.completed),...rootApplyChecks(p.value,originalFixture.subject,originalFixture.encounter,test.risk,p.success)};
  const native=[];
  for(const library of ['FallRiskScreeningRecommendationLogic','MeasureMeasure'])for(const [expression,expected] of [['Completed Three Question Screen',test.completed],['At Increased Fall Risk',test.risk]]){
   const command=[resolve(args.computable,`${library}.cql`),expression,'--data',file,'--terminology',resolve(args.terminology),'--subject',originalFixture.subject,'--evaluation-date',originalFixture.evaluationDate,'--measurement-period-start',originalFixture.measurementPeriod.start,'--measurement-period-end',originalFixture.measurementPeriod.end,'--lib-path',resolve(args.computable)];
@@ -94,9 +138,9 @@ for(const test of synthetic){
  }
  checks.native=native.every(x=>x.passed);
  write(resolve(out,`${test.id}--MeasureReport.json`),m);write(resolve(out,`${test.id}--apply.json`),p);
- cases.push({id:test.id,expected:{completed:test.completed,risk:test.risk},checks,native,passed:Object.values(checks).every(Boolean)});
+ cases.push({id:test.id,inputSha256:sha(file),expected:{completed:test.completed,risk:test.risk},checks,native,passed:Object.values(checks).every(Boolean)});
 }
-const report={runId:'run005',scope:'Actual public Node/WASM extraction from six frozen raw cases; independent alternate-source score-only data with no Questionnaire/QuestionnaireResponse/derivedFrom; both native CQL libraries and public Node Measure/CPG semantics.',inputs:{content:{path:contentPath,sha256:sha(contentPath)},runtime:{path:runtimePath,sha256:sha(runtimePath)},wasm:{sha256:sha(resolve(dirname(runtimePath),'../wasm-node/rh_cpg_bg.wasm'))},native:{path:resolve(args['rh-cli']),sha256:sha(resolve(args['rh-cli']))},fixtures:{path:indexPath,sha256:sha(indexPath)},scoreCoding:coding},extraction,cases,passed:extraction.every(x=>x.passed)&&cases.every(x=>x.passed)};
+const report={runId:'run005',scope:'Actual public Node/WASM extraction from six frozen raw cases; exactly 22 hash-bound alternate-source score-only data cases with no Questionnaire/QuestionnaireResponse/derivedFrom; both native CQL libraries and public Node Measure/CPG semantics.',inputs:{content:{path:contentPath,sha256:sha(contentPath)},runtime:{path:runtimePath,sha256:sha(runtimePath)},wasm:{sha256:sha(resolve(dirname(runtimePath),'../wasm-node/rh_cpg_bg.wasm'))},native:{path:resolve(args['rh-cli']),sha256:sha(resolve(args['rh-cli']))},fixtures:{path:indexPath,sha256:sha(indexPath)},scoreCoding:coding,inputCodingVersionSelection:'Input Coding.version is preserved provenance, not a score-selection predicate; stable system plus code select the algorithm.'},expectedCaseIds:EXPECTED_CASE_IDS,extraction,cases,passed:extraction.every(x=>x.passed)&&cases.length===EXPECTED_CASE_IDS.length&&cases.every(x=>x.passed)};
 write(resolve(out,'score-contract.json'),report);
 console.log(JSON.stringify({passed:report.passed,extraction:extraction.filter(x=>!x.passed),cases:cases.filter(x=>!x.passed)},null,2));
 if(!report.passed)process.exitCode=1;

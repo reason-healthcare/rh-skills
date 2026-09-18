@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "plan": "docs/CONNECTATHON-24H-PLAN.md",
-  "status": "in_progress_run005_score_revision",
+  "status": "complete_local_technical_rehearsal",
   "preparedAt": "2026-09-17",
   "executionStartedAt": "2026-09-17T23:35:32Z",
   "deadline": "2026-09-18T23:35:32Z",
@@ -47,7 +47,7 @@
     },
     {
       "id": "G2",
-      "status": "reopened_for_run005",
+      "status": "passed_with_documented_validator_exception",
       "owner": "skills_usecase_audit + runtime_execution",
       "evidence": [
         "docs/connectathon/evidence/run001-final-fhir-summary.json",
@@ -58,19 +58,21 @@
         "docs/connectathon/evidence/run002-runtime-final-validation.json",
         "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
         "docs/connectathon/evidence/run004-browser-verification.json",
-        "docs/connectathon/evidence/final-readiness.json"
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
       ],
-      "passedAt": "2026-09-18T18:27:06.369098+00:00",
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
       "scope": "Both actual source-authored knowledge packages and current runtime operation outputs; exact zero-denominator validator limitation remains explicit",
       "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
       "note": "Each runtime12-output batch has one raw MEASURE_MR_SCORE_REQUIRED diagnostic only for the zero-denominator younger fixture. Core R4 permits absent undefined score. No strict-validator pass is claimed.",
       "previousScopeStatus": "passed_with_documented_validator_exception",
-      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs.",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run.",
       "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G3",
-      "status": "reopened_for_run005",
+      "status": "passed",
       "owner": "workbench_audit",
       "evidence": [
         "docs/connectathon/evidence/run001-workbench-final-matrix.json",
@@ -78,18 +80,20 @@
         "docs/connectathon/evidence/final-browser-verification.json",
         "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
         "docs/connectathon/evidence/run004-browser-verification.json",
-        "docs/connectathon/evidence/final-readiness.json"
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
       ],
-      "passedAt": "2026-09-18T18:27:06.369098+00:00",
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
       "scope": "Both source-authored snapshots, all three previews, complete package inspection and assessment staging/restoration",
       "previousScopeStatus": "passed",
       "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
-      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs.",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run.",
       "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G4",
-      "status": "reopened_for_run005",
+      "status": "passed",
       "owner": "runtime_execution + root",
       "evidence": [
         "docs/connectathon/evidence/run001-standalone-final-parity.json",
@@ -97,32 +101,36 @@
         "docs/connectathon/evidence/final-browser-verification.json",
         "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
         "docs/connectathon/evidence/run004-browser-verification.json",
-        "docs/connectathon/evidence/final-readiness.json"
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
       ],
-      "passedAt": "2026-09-18T18:27:06.369098+00:00",
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
       "previousScopeStatus": "passed",
       "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
-      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs."
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run."
     },
     {
       "id": "G5",
-      "status": "reopened_for_run005",
+      "status": "passed",
       "owner": "workbench_audit + root",
       "evidence": [
         "docs/connectathon/evidence/final-browser-verification.json",
         "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
         "docs/connectathon/evidence/run004-browser-verification.json",
-        "docs/connectathon/evidence/final-readiness.json"
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
       ],
-      "passedAt": "2026-09-18T18:27:06.369098+00:00",
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
       "previousScopeStatus": "passed",
       "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
-      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs.",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run.",
       "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G6",
-      "status": "reopened_for_run005",
+      "status": "passed",
       "owner": "workbench_audit + root",
       "evidence": [
         "docs/connectathon/evidence/run001-durable-final-acceptance.json",
@@ -131,30 +139,34 @@
         "docs/connectathon/evidence/run002-9f48a46-deterministic-rebuild.json",
         "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
         "docs/connectathon/evidence/run004-browser-verification.json",
-        "docs/connectathon/evidence/final-readiness.json"
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
       ],
       "note": "Second author reused integration context. Two separate source-authored workspaces and deterministic regeneration pass; observed wall times include repairs/waits and miss the unproven60\u201390minute target.",
-      "passedAt": "2026-09-18T18:27:06.369098+00:00",
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
       "previousScopeStatus": "passed_with_rehearsal_timing_and_context_limits",
       "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
-      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs.",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run.",
       "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G7",
-      "status": "reopened_for_run005",
+      "status": "passed",
       "owner": "root + runtime_execution + skills_usecase_audit",
       "evidence": [
         "docs/connectathon/evidence/standalone-production-final-02e2b5b.json",
         "docs/connectathon/evidence/workbench-production-coldstart-557cd5b.json",
         "docs/connectathon/evidence/final-readiness.json",
         "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
-        "docs/connectathon/evidence/run004-browser-verification.json"
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
       ],
-      "passedAt": "2026-09-18T18:27:06.369098+00:00",
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
       "previousScopeStatus": "passed",
       "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
-      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs."
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run."
     },
     {
       "id": "X1",
@@ -175,7 +187,7 @@
       "evidence": []
     }
   ],
-  "nextAction": "Generate and verify run005 using extracted assessment score Observations; retain accepted run004 baseline.",
+  "nextAction": "Review run005 in Workbench; use LIVE-RUNBOOK for Saturday fresh authoring. No open implementation blocker in the tested scope.",
   "iterations": [
     {
       "id": "ITER-001",
@@ -376,9 +388,16 @@
       "status": "complete",
       "completedAt": "2026-09-18T18:27:06.369098+00:00",
       "summary": "Final Library decoding and standalone file input accepted; correct raw-QR API72/6, source/main refresh and scoped handoff."
+    },
+    {
+      "id": "ITER-032",
+      "status": "complete",
+      "startedAt": "2026-09-18T18:59:32.750168+00:00",
+      "summary": "General score authoring contract and run005 accepted through native, Node, Workbench and standalone; final browser stale staging defect corrected.",
+      "completedAt": "2026-09-18T21:00:13.809664+00:00"
     }
   ],
-  "lastUpdatedAt": "2026-09-18T19:18:06.407657+00:00",
+  "lastUpdatedAt": "2026-09-18T21:00:13.809664+00:00",
   "journal": "docs/CONNECTATHON-JOURNAL.md",
   "constraints": [
     "Do not modify hl7-agentic-knowledge-connectathon; all source files and git state are read-only.",
@@ -430,22 +449,22 @@
     {
       "owner": "skills_usecase_audit",
       "task": "Optional structured scoring contract, skill/CQL guidance, formalizer and run005 package",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "owner": "runtime_execution",
       "task": "Metadata-driven SDC calculated integer score extraction with native/WASM/Node tests",
-      "status": "implementation_complete_pending_final_run005_package_acceptance"
+      "status": "complete"
     },
     {
       "owner": "workbench_audit",
       "task": "Primary standards review and calculated-score Workbench UI",
-      "status": "implementation_complete_pending_final_run005_package_acceptance"
+      "status": "complete"
     },
     {
       "owner": "root",
       "task": "Journal, upstream checks, independent package/runtime/app/browser acceptance",
-      "status": "in_progress"
+      "status": "complete"
     }
   ],
   "baselineTests": {
@@ -599,6 +618,24 @@
       "status": "fixed_final_browser_build_and_focused_tests_verified",
       "description": "General Library inspector must decode base64 CQL/ELM attachments while retaining raw JSON.",
       "evidence": "docs/connectathon/evidence/run004-browser-verification.json"
+    },
+    {
+      "id": "RT-SCORE-EFFECTIVE-001",
+      "status": "fixed_final_native_node_and_apps_verified",
+      "description": "Observation.effective choice resolution returns null for effectiveDateTime, discarding valid score Observations; integer cast and ValueSet retrieval work.",
+      "evidence": "docs/connectathon/evidence/run005-final-runtime-app-verification.json"
+    },
+    {
+      "id": "RT-SCORE-TERM-PROVENANCE-001",
+      "status": "fixed_final_native_node_and_apps_verified",
+      "description": "Native terminology loader rejects standard nonfiltering used-codesystem expansion parameter as a filter; bounded provenance support under repair.",
+      "evidence": "docs/connectathon/evidence/run005-final-runtime-app-verification.json"
+    },
+    {
+      "id": "WB-SCORE-STALE-STAGING-001",
+      "status": "fixed_final_browser_verified",
+      "description": "Clearing a required form answer removes visual score but leaves previously validated sessionStorage Observations for Measure/CPG.",
+      "evidence": "docs/connectathon/evidence/run005-browser-verification.json"
     }
   ],
   "checks": [
@@ -726,53 +763,125 @@
         "docs/connectathon/evidence/run005-app-builds.json",
         "docs/connectathon/evidence/run005-run004-compatibility.json"
       ]
+    },
+    {
+      "checkedAt": "2026-09-18T19:30:24.350370+00:00",
+      "verifier": "root independent",
+      "result": "Full Python suite: 1082 passed, 18 skipped, 8 existing warnings; schema copies match",
+      "evidence": "docs/connectathon/evidence/run005-rh-skills-full-suite.json"
+    },
+    {
+      "checkedAt": "2026-09-18T20:01:39.063337+00:00",
+      "verifier": "root plus independent workers",
+      "result": "Run005 source reference translation passes; Python1082/18; final83dbbbd skill install8/8 and bundles24/24; protected41/41 and prior-run1473/1473 unchanged; final candidate package acceptance pending",
+      "evidence": [
+        "docs/connectathon/evidence/run005-reference-cql-validation.json",
+        "docs/connectathon/evidence/run005-rh-skills-full-suite.json",
+        "docs/connectathon/evidence/run005-frozen-integrity.json"
+      ]
     }
   ],
   "upstreamRefresh": {
-    "checkedAt": "2026-09-18T18:59:32.750168+00:00",
-    "method": "Root fresh fetch via command-scoped HTTPS; protected source excluded",
+    "checkedAt": "2026-09-18T20:55:17.427950+00:00",
+    "method": "Fresh fetch of four implementation-repository remotes followed by local tracking-ref and worktree inspection.",
+    "networkFetchPerformed": true,
+    "fetchedRepositories": [
+      "rh-skills:origin",
+      "rh:upstream",
+      "workbench:origin",
+      "standalone:origin"
+    ],
+    "excludedRepositories": [
+      "protected source checkout hl7-agentic-knowledge-connectathon"
+    ],
+    "remoteFreshness": "Tracking refs refreshed at checkedAt for the four listed remotes; freshness is as of fetch completion.",
     "repositories": [
       {
+        "name": "rh-skills",
         "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
-        "remote": "origin",
-        "main": "eb280968e8af623b9b30c4175111929e322f696c",
-        "head": "70959875dfee29aaf7e78515bff2a22166d6b16a",
-        "branch": "codex/connectathon-live-readiness",
-        "ahead": 29,
+        "fetchRemote": "origin",
+        "trackingRemoteRef": "origin/main",
+        "localTrackingMain": "eb280968e8af623b9b30c4175111929e322f696c",
+        "head": "19ebef3ab2e001fb66a4948237f7475c9581d723",
+        "ahead": 34,
         "behind": 0,
-        "containsLatestMain": true
+        "trackingRefFetchedAt": "2026-09-18T20:55:17.427950+00:00",
+        "worktreeStatus": "## codex/connectathon-live-readiness...origin/main [ahead 34]\n M docs/CONNECTATHON-JOURNAL.md\n M docs/connectathon-24h-status.json\n M docs/connectathon/LIVE-RUNBOOK.md\n M docs/connectathon/evidence/final-readiness.json\n M docs/connectathon/evidence/run005-app-builds.json\n M docs/connectathon/evidence/run005-scoring-standards.json\n M docs/connectathon/evidence/source-integrity-latest.json\n M docs/connectathon/evidence/source-manifest-check.json\n M docs/connectathon/evidence/upstream-refresh-latest.json\n M docs/connectathon/tools/PROVENANCE.md\n M docs/connectathon/tools/verify-run005-score-contract.mjs\n?? docs/connectathon/evidence/run005-browser-verification.json\n?? docs/connectathon/evidence/run005-final-runtime-app-verification.json\n?? docs/connectathon/evidence/run005-frozen-integrity.json\n?? docs/connectathon/evidence/run005-reference-cql-validation.json\n?? docs/connectathon/evidence/run005-style-guide-example-check.json\n?? docs/connectathon/tools/run-run005-fhir-validation.py\n?? docs/connectathon/tools/runs/run005-score-workbench.json\n?? docs/connectathon/tools/verify-run005-score-apps.mjs",
+        "dirtyPaths": [
+          " M docs/CONNECTATHON-JOURNAL.md",
+          " M docs/connectathon-24h-status.json",
+          " M docs/connectathon/LIVE-RUNBOOK.md",
+          " M docs/connectathon/evidence/final-readiness.json",
+          " M docs/connectathon/evidence/run005-app-builds.json",
+          " M docs/connectathon/evidence/run005-scoring-standards.json",
+          " M docs/connectathon/evidence/source-integrity-latest.json",
+          " M docs/connectathon/evidence/source-manifest-check.json",
+          " M docs/connectathon/evidence/upstream-refresh-latest.json",
+          " M docs/connectathon/tools/PROVENANCE.md",
+          " M docs/connectathon/tools/verify-run005-score-contract.mjs",
+          "?? docs/connectathon/evidence/run005-browser-verification.json",
+          "?? docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+          "?? docs/connectathon/evidence/run005-frozen-integrity.json",
+          "?? docs/connectathon/evidence/run005-reference-cql-validation.json",
+          "?? docs/connectathon/evidence/run005-style-guide-example-check.json",
+          "?? docs/connectathon/tools/run-run005-fhir-validation.py",
+          "?? docs/connectathon/tools/runs/run005-score-workbench.json",
+          "?? docs/connectathon/tools/verify-run005-score-apps.mjs"
+        ],
+        "worktreeClean": false
       },
       {
-        "path": "/Users/bkaney/projects/reason-healthcare/workbench",
-        "remote": "origin",
-        "main": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
-        "head": "f79a63282e69a5ff5805f2b7cf28a0dfd1bd0729",
-        "branch": "codex/connectathon-live-readiness",
-        "ahead": 43,
-        "behind": 0,
-        "containsLatestMain": true
-      },
-      {
+        "name": "rh",
         "path": "/Users/bkaney/projects/reason-healthcare/rh",
-        "remote": "upstream",
-        "main": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
-        "head": "26716c9319f50ee71aa8456cc8a0ccefe100d7f5",
-        "branch": "codex/connectathon-live-readiness",
-        "ahead": 30,
+        "fetchRemote": "upstream",
+        "trackingRemoteRef": "upstream/main",
+        "localTrackingMain": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
+        "head": "d49c6275beb5ed2cbe9e212d48124135ce1a25b0",
+        "ahead": 32,
         "behind": 0,
-        "containsLatestMain": true
+        "trackingRefFetchedAt": "2026-09-18T20:55:17.427950+00:00",
+        "worktreeStatus": "## codex/connectathon-live-readiness",
+        "dirtyPaths": [],
+        "worktreeClean": true
       },
       {
+        "name": "workbench",
+        "path": "/Users/bkaney/projects/reason-healthcare/workbench",
+        "fetchRemote": "origin",
+        "trackingRemoteRef": "origin/main",
+        "localTrackingMain": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
+        "head": "8bcae98e37a3f0f854e7bdd74e75c09c133548e3",
+        "ahead": 46,
+        "behind": 0,
+        "trackingRefFetchedAt": "2026-09-18T20:55:17.427950+00:00",
+        "worktreeStatus": "## codex/connectathon-live-readiness",
+        "dirtyPaths": [],
+        "worktreeClean": true
+      },
+      {
+        "name": "standalone",
         "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
-        "remote": "origin",
-        "main": "2e8d91daf360f184e6c98f700031414829c64921",
+        "fetchRemote": "origin",
+        "trackingRemoteRef": "origin/main",
+        "localTrackingMain": "2e8d91daf360f184e6c98f700031414829c64921",
         "head": "6227080ff9667f34d6a9944036c7bba972f75253",
-        "branch": "codex/connectathon-live-readiness",
         "ahead": 16,
         "behind": 0,
-        "containsLatestMain": true
+        "trackingRefFetchedAt": "2026-09-18T20:55:17.427950+00:00",
+        "worktreeStatus": "## codex/connectathon-live-readiness",
+        "dirtyPaths": [],
+        "worktreeClean": true
       }
-    ]
+    ],
+    "protectedSource": {
+      "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
+      "excludedFromFetch": true,
+      "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+      "tree": "e1d07a071961dabe54c6409ba7e717723fdede6f",
+      "baselineHead": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+      "clean": true,
+      "matchesBaseline": true
+    }
   },
   "coordination": {
     "implementationOwnership": {
@@ -794,9 +903,9 @@
     },
     "commitPolicy": "Root owns rh-skills index and commits; workers edit owned files unstaged. Other repo owners coordinate changes and commit boundaries. No changes to protected source. Refresh main before final integration; regenerate and replay affected packages.",
     "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed.",
-    "currentMilestone": "Run005 requested score revision underway; run004 baseline remains accepted and frozen."
+    "currentMilestone": "Run005 accepted locally with the exact documented zero-denominator validator exception."
   },
-  "updatedAt": "2026-09-18T19:18:06.407657+00:00",
+  "updatedAt": "2026-09-18T21:00:13.809664+00:00",
   "finalReadiness": "docs/connectathon/evidence/final-readiness.json",
-  "sourceIntegrityCheckedAt": "2026-09-18T18:24:06.301342+00:00"
+  "sourceIntegrityCheckedAt": "2026-09-18T20:55:17.427950+00:00"
 }
