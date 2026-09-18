@@ -1,0 +1,75 @@
+{
+  "checkedAt": "2026-09-18T12:59:03.093824+00:00",
+  "status": "dependency_cache_and_reference_translation_verified_runtime_pending",
+  "verifier": "root inspected source/ELM manifest, independently checked all16 recorded file hashes and reference translator log",
+  "dependencyManifest": "dist/connectathon-20260919/dependencies/FHIRCommon-2.0.0/manifest.json",
+  "publishedLibrary": {
+    "canonical": "http://hl7.org/fhir/uv/cql/Library/FHIRCommon|2.0.0",
+    "url": "https://hl7.org/fhir/uv/cql/Library-FHIRCommon.json",
+    "resource_file": "Library-FHIRCommon.published.json",
+    "resource_sha256": "c90eb9b775f074bebb7a2be747bfd49238e02944926ff71f8f74971931ab675f",
+    "cql_file": "FHIRCommon-2.0.0.cql",
+    "cql_sha256": "40ed15194eb5f436c9fdeec9267a74f1ef5f93b3755f431b3bf687d4cf4da28c",
+    "elm_json_file": "FHIRCommon-2.0.0.published.elm.json",
+    "elm_json_sha256": "dcd586ea03267bb920a63eaf9d420917698f4f1e33f135bc59879df149888619"
+  },
+  "compatibleClosure": {
+    "rationale": "The published FHIRCommon package declares FHIRHelpers|4.0.1, but its bundled FHIRHelpers CQL and ELM bytes differ from the Connectathon-pinned CQFramework v3.26.0 FHIRHelpers dependency. FHIRCommon was therefore compiled from untouched published CQL against the exact pinned helper CQL, ELM, and R4 ModelInfo. The compatible Library is a locally compiled derivative; the published Library and ELM remain cached above for provenance.",
+    "fhirhelpers": {
+      "canonical": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1",
+      "source": {
+        "url": "https://raw.githubusercontent.com/cqframework/clinical_quality_language/v3.26.0/Src/java/quick/src/main/resources/org/hl7/fhir/FHIRHelpers-4.0.1.cql",
+        "tag": "v3.26.0"
+      },
+      "cql_file": "FHIRHelpers-4.0.1.cql",
+      "cql_sha256": "6748661c16fe66dd07a68f07f77f7fea44e8b933d265dcc3c575964ba8329591",
+      "elm_json_file": "FHIRHelpers-4.0.1.pinned.elm.json",
+      "elm_json_sha256": "4f8b5da2c1205afc62a1c3f4d412c87ccaeb9eb4d1196883704060d0863c9554",
+      "library_file": "Library-FHIRHelpers.pinned.json",
+      "library_sha256": "0c5e58b599f014e25d834329162530f3dbaa1539cf270a70f5cd7492429ecd17"
+    },
+    "fhir_modelinfo": {
+      "version": "4.0.1",
+      "file": "fhir-modelinfo-4.0.1.xml",
+      "sha256": "16fa8119e074ebfb6a301b58af72417c2360dca899e89f6e3bd1d9a0e4789722"
+    },
+    "fhircommon": {
+      "library_file": "Library-FHIRCommon.pinned-fhirhelpers.json",
+      "library_sha256": "fb119b4834e3f057c81043c936d1cbf21599ade0295c95028ad9f64812b51d56",
+      "elm_json_file": "FHIRCommon-2.0.0.pinned-fhirhelpers.elm.json",
+      "elm_json_sha256": "5b735bf1807df3518d365206797b7c1693cacc996d9e022eab5bd6ca11264817"
+    },
+    "reference_translation": {
+      "coordinate": "info.cqframework:cql-to-elm-cli:3.26.0",
+      "model": "FHIR R4 4.0.1",
+      "signatures": "Overloads",
+      "stdout": "reference-translate.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "reference-translate.stderr",
+      "stderr_sha256": "29bdee1bd76bd48ed5e44cca555f68eed97f1e023200a7532c35c198b6419c4e",
+      "result": "success with source identifier-shadowing warnings and zero errors"
+    }
+  },
+  "requestedFunction": {
+    "include": "include FHIRCommon version '2.0.0'",
+    "signature": "define fluent function references(reference FHIR.Reference, resource FHIR.Resource): resource.id = Last(Split(reference.reference, '/'))",
+    "intended_usage": "with \"Screening Encounters\" E such that O.encounter.references(E)",
+    "semantics": "Matches the referenced resource tail to resource.id. The published source says it assumes resources from the same source server. It does not validate resource type, base URL, canonical identity, or history/version segments.",
+    "reference_translation_probe": {
+      "source_file": "FHIRCommonReferencesProbe.cql",
+      "source_sha256": "347f6d21e2e422209b808204eabbf557812c364cf6f3bc5dbd0ddcf5cf1f1045",
+      "elm_file": "FHIRCommonReferencesProbe.elm.json",
+      "elm_sha256": "0a335cfa8cc8a4b5d2effd79da3478f8ce4969d5878449c1c4112cac82351044",
+      "stdout": "probe-translate.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "probe-translate.stderr",
+      "stderr_sha256": "0ace8289257fc874998130bba311139194debf8969da23a21c6b1206d40931f4",
+      "result": "success with zero translator warnings/errors for the probe"
+    }
+  },
+  "limits": [
+    "Actual native/WASM helper execution pending runtime worker",
+    "FHIRCommon helper compares final reference segment to resource id and assumes same source server",
+    "Not a claim that every FHIRCommon function is supported"
+  ]
+}

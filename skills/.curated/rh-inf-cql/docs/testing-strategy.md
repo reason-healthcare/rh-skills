@@ -36,6 +36,14 @@ to version drift.
 ### Multi-event case
 Verify whether earliest, latest, first, or any-match semantics work as intended.
 
+### Patient-context isolation case
+When testing an engine's Patient context, include a second patient's Encounter
+and clinical resources in the same Bundle, set `--subject` to the intended
+patient, and verify those foreign resources do not affect the result. A failure
+is a runtime context-scoping blocker; do not make the CQL pass by adding
+`subject.reference = 'Patient/' + Patient.id` predicates. Keep legitimate
+encounter, date, status, and provenance joins in the expression.
+
 ## Folder Pattern
 
 ```text

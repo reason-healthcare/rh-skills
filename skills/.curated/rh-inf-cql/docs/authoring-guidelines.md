@@ -36,6 +36,19 @@ Prefer this shape:
 - Encapsulate repeated retrieve filters in helpers when they represent a reusable
   semantic concept.
 - Keep terminology-based filters close to the retrieve unless there is strong reuse value.
+- In `context Patient`, rely on the context to scope retrieves when the pinned
+  FHIR ModelInfo declares the relevant Patient-to-resource relationship and the
+  engine honors it; do not repeat the intended scope with
+  `resource.subject.reference` comparisons against `Patient.id`. Preserve
+  separate code, status, date, encounter, and provenance constraints that define
+  the clinical relationship. The CQL
+  [Context](https://cql.hl7.org/02-authorsguide.html#context) and
+  [Retrieve Context](https://cql.hl7.org/02-authorsguide.html#retrieve-context)
+  sections describe this scoping behavior; the model and engine must implement
+  the relevant Patient-to-resource context relationship.
+- If a runtime leaks another patient's resources through a `Patient`-context
+  retrieve, treat it as an engine defect and block that runtime path; do not add
+  a CQL subject-reference workaround.
 - Do not replace unresolved clinical evidence with Boolean input parameters.
   Parameters are for runtime context such as `"Measurement Period"` or other
   explicitly external inputs, not for patient findings like diagnosis status,
@@ -80,8 +93,14 @@ The `rh` evaluator does not inject helper calls. For portable FHIR CQL, include
 the versioned helper explicitly and make choice/primitive conversions through
 FHIR logical types. For example, use
 `FHIRHelpers.ToDateTime(E.period.start)` for a FHIR dateTime primitive and
-`(A.value as FHIR.boolean).value` for a Boolean choice answer. Compare coded
-concepts through `coding` and constrain both `system.value` and `code.value`.
+`(A.value as FHIR.boolean).value` for a Boolean choice answer. For coded
+concepts, declare a CodeSystem and Code or ValueSet and use a typed CQL
+terminology operator; do not rebuild code identity with separate
+`Coding.system`/`Coding.code` string comparisons. Name a non-primary code path
+in the retrieve filter. Primitive status codes such as
+`Observation.status = 'final'` remain ordinary status filters. See the focused
+[CQL Style Guide](cql-style-guide.md) for before/after examples and model-path
+checks.
 
 Resolve the include through the topic's checked-in dependency files. For a
 pinned external library, use `rh-skills cql import-library <topic>

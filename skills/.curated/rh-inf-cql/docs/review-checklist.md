@@ -1,6 +1,8 @@
 # Review Checklist
 
 Use this checklist for pull requests, library reviews, and agent-generated change proposals.
+Read the [CQL Style Guide](cql-style-guide.md) for Patient-context and typed
+terminology examples before reviewing those patterns.
 
 ## Environment and Packaging
 
@@ -21,7 +23,19 @@ Use this checklist for pull requests, library reviews, and agent-generated chang
 
 ## Retrieves and Terminology
 
-- [ ] Are retrieves scoped appropriately? (valueset or code filter at the retrieve)
+- [ ] Are retrieves scoped appropriately? Use a ValueSet/code filter when a
+      coded concept defines selection; document and test intentional
+      context/relationship retrieves.
+- [ ] Do terminology comparisons use declared CodeSystem/Code or ValueSet with
+      typed CQL operators instead of split system/code string checks?
+- [ ] Does a retrieve filter target the intended model code path, especially
+      when it is not the resource's `primaryCodePath`?
+- [ ] When using `context Patient`, does CQL rely on context scoping instead of
+      duplicating it with `subject.reference = Patient.id` predicates?
+- [ ] Are independent date, encounter-linkage, and provenance constraints
+      preserved when redundant patient-scope predicates are removed?
+- [ ] If the runtime fails a selected-patient context-isolation case, is that
+      reported as a runtime blocker instead of worked around in CQL?
 - [ ] Are value sets and codes declared explicitly?
 - [ ] Are terminology versions pinned where reproducibility matters?
 - [ ] Is value set membership assumed too loosely anywhere?

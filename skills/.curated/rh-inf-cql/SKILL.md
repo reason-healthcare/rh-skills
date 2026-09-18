@@ -91,13 +91,18 @@ Parameter-only decision-table libraries are scaffold artifacts and are not accep
 | `date from M.authoredOn` | `FHIRHelpers.ToDateTime(M.authoredOn)` | Convert the FHIR primitive explicitly; use a matching interval type |
 | `ToDateTime(E.period.start)` | `FHIRHelpers.ToDateTime(E.period.start)` | FHIR primitive conversion must use the declared helper |
 | `A.valueBoolean = true` | `(A.value as FHIR.boolean).value = true` | QuestionnaireResponse answer is a choice; use its FHIR logical type for portable translation |
-| `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Manual expansion is unnecessary; engine resolves by name |
-| `C.clinicalStatus.value = 'active'` | `exists (C.clinicalStatus.coding S where S.system.value = 'http://terminology.hl7.org/CodeSystem/condition-clinical' and S.code.value = 'active')` | CodeableConcept contains Coding values; constrain both system and code |
+| `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Use typed membership; separately supply the complete pinned expansion through the runtime's terminology input or packaged knowledge Bundle |
+| `[Encounter: "Ambulatory"]` | `[Encounter: class ~ "Ambulatory"]` | The FHIR R4 Encounter retrieve's primary code path is `type`; name the non-primary `class` path explicitly |
+| `C.clinicalStatus.value = 'active'` | `exists (C.clinicalStatus.coding S where S ~ "Active")` | Compare the typed Coding with a declared Code and CodeSystem; do not split terminology identity into string predicates |
 | `define function "F"(p Interval<DateTime>): ... p ...` | `define "F": Interval[ToDate(start of ...), ToDate(end of ...)]` | Typed function parameters with complex types (`Interval<>`, `FHIR.*`) fail to resolve in the `rh` translator; use named `define` expressions instead |
-| `[Condition] C where C.recordedDate is not null` | `[Condition: "BellsPalsyValueSet"] C` | Retrieve without a code or valueset filter returns ALL records of that resource type — always scope at the retrieve |
-| `[Condition] C where exists(C.code.coding Coding where Coding.system = 'http://hl7.org/fhir/sid/icd-10-cm' and Coding.code = 'G51.0')` | `[Condition: "BellsPalsyValueSet"] C` | Inline code-system matching is brittle, misses synonymous codes across systems, and bypasses the terminology pipeline — pre-coordinate a multi-system valueset and use retrieve-level scoping |
+| `[Condition] C where C.recordedDate is not null` | `[Condition: "BellsPalsyValueSet"] C` when the coded concept defines selection | Broad retrieves can include unrelated resources. A terminology filter is appropriate when code membership defines the concept; a narrow context/relationship retrieve may be intentional if its scope is explicit and tested |
+| `[Condition] C where exists(C.code.coding S where S ~ "BellsPalsy")` | `[Condition: "BellsPalsyValueSet"] C` | Prefer a complete, reviewed ValueSet when the clinical concept includes synonyms or multiple codes; for one named code, declare its CodeSystem and use a typed terminology comparison |
 
-**Do not read secondary docs files** (`authoring-guidelines.md`, `engine-notes/README.md`, `translator-options/README.md`, `cli/usage.md`, etc.) before writing CQL. The information above and the anti-pattern catalog (search for `Anti-pattern catalog` in this file) covers the critical cases. Read those files only if a specific gap arises.
+Before writing CQL, read the required [CQL Style Guide](docs/cql-style-guide.md).
+Other secondary docs (`authoring-guidelines.md`, `engine-notes/README.md`,
+`translator-options/README.md`, `cli/usage.md`, and similar files) are
+on-demand: consult them when a specific runtime or workflow question arises.
+The critical authoring patterns and anti-pattern catalog below still apply.
 
 ---
 
@@ -273,7 +278,7 @@ Apply every time unless the user asks for something narrower. See
 - [ ] Are helper definitions used where they increase clarity?
 
 ### Retrieves and Terminology
-- [ ] Are retrieves scoped appropriately? (valueset or code filter at the retrieve)
+- [ ] Are retrieves scoped appropriately? Use a ValueSet/code filter when a coded concept defines the selection; document and test intentional context or relationship retrieves.
 - [ ] Are value sets and codes declared explicitly?
 - [ ] Is each declared ValueSet used by the evaluated resource path, or is its non-use justified (for example, QR linkIds before SDC extraction)?
 - [ ] Are terminology versions pinned where reproducibility matters?
@@ -440,8 +445,10 @@ details, unknown terminology expansions, unverified fixture assumptions.
    alone to change standard CQL code membership; assert those fields separately
    when they are part of the extraction contract.
 
-2. **Apply the CQL style guide** (see Style Guide section below) and the
-   **authoring rubric** (see Authoring Rubric section below) before writing any code.
+2. **Read the [CQL Style Guide](docs/cql-style-guide.md)** and apply the
+   **authoring rubric** (see Authoring Rubric below) before writing or reviewing
+   code. The guide is the source of truth for Patient-context retrieval,
+   terminology operators, FHIR primitive handling, and provenance joins.
 
 3. **Draft the CQL library** using the template for the artifact type:
 
@@ -838,8 +845,8 @@ guidance on preferred alternatives.
 | Unpinned valueset or code system version | `terminology-resolution` | BLOCKING |
 | Hidden timezone or precision assumption (`Today()`, `Now()` without explicit context) | `temporal-precision` | ADVISORY |
 | Quantity comparison without unit normalization on both sides | `unit-conversion` | BLOCKING |
-| Retrieve without code or valueset filter — returns ALL records of that resource type | `retrieve-scope` | BLOCKING |
-| Retrieve too broad — correct code/valueset filter present but `where` clause applied downstream instead of at the retrieve | `retrieve-scope` | ADVISORY |
+| Broad retrieve without explained clinical scope | `retrieve-scope` | HOUSE POLICY: BLOCKING unless documented exception |
+| Code/ValueSet filter that defines the concept is applied only downstream | `retrieve-scope` | ADVISORY |
 | Duplicate logic instead of a named helper definition | Style | ADVISORY |
 | Ambiguous null handling — assuming null is false without explicit `is null` check | `null-propagation` | ADVISORY |
 | Dependence on implicit engine behavior not documented in `context/runtime/` | `engine-behavior` | ADVISORY |
@@ -896,7 +903,7 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 | 1 | Unpinned terminology | BLOCKING | `valueset "X": 'urn:oid:...'` without version pinning where reproducibility matters |
 | 2 | Hidden timezone/precision assumptions | ADVISORY | `Today()` or `Now()` without explicit context clock; date arithmetic without `ToDate()` |
 | 3 | Quantity comparison without unit normalization | BLOCKING | `obs.value > 5 'mg'` where source unit may differ |
-| 4 | Retrieve without code/valueset filter | BLOCKING | `[Condition]`, `[Observation]`, `[MedicationRequest]` etc. with no code or valueset at the retrieve — returns ALL records of that type regardless of clinical meaning |
+| 4 | Broad retrieve without an explained clinical scope | HOUSE POLICY: BLOCKING unless documented exception | Prefer a retrieve-level ValueSet/code filter when terminology defines the selection. A context or relationship retrieve may be appropriate without one when its intended scope and joins are explicit and tested. |
 | 5 | Duplicate logic instead of helper definitions | ADVISORY | Same expression repeated in 3+ defines without extraction |
 | 6 | Ambiguous null handling | BLOCKING | `if X then Y` without `else null` where null branch matters; comparing null to a value without `~` |
 | 7 | Dependence on implicit engine behavior | ADVISORY | Logic that relies on FHIRHelpers auto-injection, implicit conversions, or unspecified operator overloads |
@@ -904,6 +911,10 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 ---
 
 ## CQL Style Guide
+
+Read the [CQL Style Guide](docs/cql-style-guide.md) before authoring or
+reviewing CQL. The key constraints are repeated below because violations can
+change patient scope or coded clinical meaning.
 
 ### Library naming and versioning
 - Library identifiers use PascalCase: `LipidManagementLogic`, `PHQ9AssessmentLogic`
@@ -919,9 +930,34 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
   finalizing the library. See the valueset sourcing rule in the author workflow.
 
 ### Retrieve patterns
-- One `define` per resource type retrieve; name it `"<Resource> by <filter>"`
-- Apply status filters in the retrieve define, not in derived defines
-- Do not retrieve inside functions; retrieves belong at the library expression level
+- Prefer named retrieve definitions when they clarify or reuse resource filters;
+  name them for the resource and meaningful filter.
+- Prefer keeping status filters with their retrieve when that makes the result
+  easier to review.
+- Keep a retrieve in a helper function only when the function improves reuse
+  and the configured translator supports it.
+- With `context Patient`, rely on Patient context to scope each retrieve when
+  the pinned FHIR ModelInfo declares the relevant context relationship and the
+  engine honors it; do not
+  repeat it with `subject.reference = Patient.id`. If the runtime leaks another
+  patient's resource, block that engine path rather than adding a CQL workaround.
+- Declare a `valueset`, `codesystem`, or `code` and use typed terminology
+  operators (`in`, `~`, or exact `=`). Do not decompose a `Coding` or
+  `CodeableConcept` comparison into separate system/code string checks.
+- Name non-primary coded paths in the retrieve filter. FHIR R4 Encounter's
+  primary code path is `type`; `class` is a separate `Coding`, so
+  `[Encounter: "Ambulatory"]` does not filter `class`.
+- Preserve independent status, date, encounter-linkage, and `derivedFrom`
+  provenance conditions. Patient context does not replace these joins.
+- For an Observation-to-Encounter reference join, prefer the pinned
+  `FHIRCommon.references()` fluent function when its same-source-server,
+  resource-id semantics match the input contract. Include and package the
+  versioned Library/ELM dependency; do not replace the relationship with a
+  manually assembled reference string.
+- Explicit patient-reference checks may be valid in `context Unfiltered` or a
+  deliberate cross-patient query; state that context and purpose. See the
+  [CQL context guidance](https://cql.hl7.org/02-authorsguide.html#context) and
+  [retrieve scoping](https://cql.hl7.org/02-authorsguide.html#retrieve-context).
 
 ### Null and interval conventions
 - Use `~` (equivalent) for concept comparisons, `=` for exact equality
@@ -944,9 +980,9 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 - ❌ `First([Condition])` without an ordering expression
 - ❌ Comparing dates with `=` instead of `same day as` or interval operators
 - ❌ Compare FHIR primitive date/time fields directly to CQL system values — convert with the pinned FHIRHelpers function matching the field and interval type
-- ❌ Compare `.clinicalStatus.value` to a string — traverse `coding` and match both the standard system and code
+- ❌ Reconstruct a CodeableConcept/Coding terminology comparison with separate system/code string predicates — declare the CodeSystem and Code and compare with `~`, or use a reviewed ValueSet
 - ❌ Manual ValueSet expansion matching (`V.expansion.contains E where E.system = ... and E.code = ...`) — use `code in "ValueSetName"` instead
-- ❌ Match only a code or display while ignoring its coding system — use a verified ValueSet for a concept set, or compare both `Coding.system.value` and `Coding.code.value` when a rule explicitly names one code
+- ❌ Match only a code or display while ignoring its coding system — use a verified ValueSet for a concept set, or a declared CodeSystem/Code with a typed terminology operator for one named code
 - ❌ `define function "F"(p Interval<DateTime>): ...` — typed function parameters with `Interval<>` or `FHIR.*` types fail to compile; use a named `define` expression with inline logic instead
 
 ---

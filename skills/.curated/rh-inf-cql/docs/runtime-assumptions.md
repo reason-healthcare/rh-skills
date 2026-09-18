@@ -12,6 +12,24 @@ explicitly before reasoning about CQL correctness or test failures.
 - CLI flags: see `context/runtime/cli/flags.md`
 - timezone / date precision: pass an explicit evaluation date when logic uses the clock; document date precision
 
+## Patient Context Scoping
+
+With `context Patient`, retrieves are scoped to the selected patient when the
+pinned FHIR ModelInfo defines the Patient-to-resource context relationship and
+the evaluator honors that relationship. Do not encode the intended scope again as
+`resource.subject.reference = 'Patient/' + Patient.id`; that hides a runtime
+context-scoping failure and makes otherwise portable logic depend on a
+workaround. Keep independent constraints for the selected encounter, dates,
+status, and provenance. The official CQL Author's Guide describes the
+[Patient context](https://cql.hl7.org/02-authorsguide.html#context) and
+[retrieve scoping](https://cql.hl7.org/02-authorsguide.html#retrieve-context).
+
+When validating an engine or investigating suspected leakage, evaluate with a
+Bundle containing a second patient's Encounter/clinical resources and an
+explicit `--subject`. Results for the selected patient must be unchanged by
+those foreign resources. If they change, report and block the runtime path; do
+not add subject-reference predicates to the authored library.
+
 ## FHIRHelpers and Portable FHIR Types
 
 The runtime does not inject helper calls. When converting FHIR primitive values,
@@ -28,8 +46,12 @@ helper through a network lookup or auto-inject conversions.
 
 For FHIR choice elements, use the FHIR logical type so ELM remains portable;
 for example, `(A.value as FHIR.boolean).value` for a Boolean
-`QuestionnaireResponse.answer.value[x]`. For a CodeableConcept, traverse
-`coding` and compare both `system.value` and `code.value`.
+`QuestionnaireResponse.answer.value[x]`. For a CodeableConcept or Coding,
+declare the relevant CodeSystem/Code or ValueSet and use typed CQL terminology
+operators on the intended model path. Do not split a coded comparison into
+independent system/code string tests. This rule does not prohibit ordinary
+FHIR primitive status checks such as `Observation.status = 'final'`; see the
+[CQL Style Guide](cql-style-guide.md).
 
 ## FHIR dateTime Strings and Date Comparison
 
@@ -66,8 +88,13 @@ Rules:
 
 ## ValueSet Membership
 
-Use `code in "ValueSetName"` for membership testing. The engine resolves
-ValueSets by name without requiring expanded ValueSet resources in the bundle.
+Use `code in "ValueSetName"` for membership testing. The CQL declaration names
+the terminology dependency; it does not supply the membership expansion. For
+the `rh` runtime, provide the matching complete, versioned expansion through
+the `--terminology` sidecar or the packaged knowledge Bundle. The runtime
+resolves the declared canonical and version from that input and fails closed
+when the expansion is absent, incomplete, or version-mismatched. Treat this as
+a terminology availability/contract error, not clinical `null` evidence.
 
 ```cql
 // ✓ correct
@@ -89,8 +116,10 @@ define "Has ASCVD":
   )
 ```
 
-Test bundles do NOT need to include ValueSet resources. The engine uses the
-declared `valueset` URL/name from the CQL library header.
+The patient-data Bundle and terminology input are separate: a fixture may keep
+its Bundle focused on clinical data while its `terminology.json` sidecar
+contains the required expanded ValueSets. Packaged evaluation must carry the
+same verified expansion in the knowledge Bundle.
 
 ## Why This Matters
 
