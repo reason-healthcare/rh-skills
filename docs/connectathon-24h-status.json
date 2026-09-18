@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "plan": "docs/CONNECTATHON-24H-PLAN.md",
-  "status": "ready_to_attempt_live_core_with_documented_limits",
+  "status": "in_progress_sdc_observation_pipeline",
   "preparedAt": "2026-09-17",
   "executionStartedAt": "2026-09-17T23:35:32Z",
   "deadline": "2026-09-18T23:35:32Z",
   "scenario": "steadi-fall-screening",
   "eventDate": "2026-09-19",
-  "objective": "Prepare the skills and tools for live source-to-L2/L3 authoring and fresh-output previews at Saturday's Connectathon",
+  "objective": "Prepare live source-to-L2/L3 authoring with actual SDC QuestionnaireResponse extraction to Observations, ValueSet-based CQL, and complete Workbench/standalone previews for Saturday",
   "scenarioSourceRevision": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
   "planningEvidence": {
     "repositoryAudit": "complete",
@@ -47,7 +47,7 @@
     },
     {
       "id": "G2",
-      "status": "passed_with_documented_validator_exception",
+      "status": "reopened_for_sdc_observation_pipeline",
       "owner": "skills_usecase_audit + runtime_execution",
       "evidence": [
         "docs/connectathon/evidence/run001-final-fhir-summary.json",
@@ -59,12 +59,14 @@
       ],
       "passedAt": "2026-09-18T04:11:13.798453+00:00",
       "scope": "Both actual source-authored knowledge packages and current runtime operation outputs; exact zero-denominator validator limitation remains explicit",
-      "reopenedAt": "2026-09-18T03:44:17.521881+00:00",
-      "note": "Each runtime12-output batch has one raw MEASURE_MR_SCORE_REQUIRED diagnostic only for the zero-denominator younger fixture. Core R4 permits absent undefined score. No strict-validator pass is claimed."
+      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
+      "note": "Each runtime12-output batch has one raw MEASURE_MR_SCORE_REQUIRED diagnostic only for the zero-denominator younger fixture. Core R4 permits absent undefined score. No strict-validator pass is claimed.",
+      "previousScopeStatus": "passed_with_documented_validator_exception",
+      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
     },
     {
       "id": "G3",
-      "status": "passed",
+      "status": "reopened_for_sdc_observation_pipeline",
       "owner": "workbench_audit",
       "evidence": [
         "docs/connectathon/evidence/run001-workbench-final-matrix.json",
@@ -72,31 +74,40 @@
         "docs/connectathon/evidence/final-browser-verification.json"
       ],
       "passedAt": "2026-09-18T04:41:44.014623+00:00",
-      "scope": "Both source-authored snapshots, all three previews, complete package inspection and assessment staging/restoration"
+      "scope": "Both source-authored snapshots, all three previews, complete package inspection and assessment staging/restoration",
+      "previousScopeStatus": "passed",
+      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
+      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
     },
     {
       "id": "G4",
-      "status": "passed",
+      "status": "reopened_for_sdc_observation_pipeline",
       "owner": "runtime_execution + root",
       "evidence": [
         "docs/connectathon/evidence/run001-standalone-final-parity.json",
         "docs/connectathon/evidence/run002-standalone-final-parity.json",
         "docs/connectathon/evidence/final-browser-verification.json"
       ],
-      "passedAt": "2026-09-18T04:41:44.014623+00:00"
+      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "previousScopeStatus": "passed",
+      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
+      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
     },
     {
       "id": "G5",
-      "status": "passed",
+      "status": "reopened_for_sdc_observation_pipeline",
       "owner": "workbench_audit + root",
       "evidence": [
         "docs/connectathon/evidence/final-browser-verification.json"
       ],
-      "passedAt": "2026-09-18T04:41:44.014623+00:00"
+      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "previousScopeStatus": "passed",
+      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
+      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
     },
     {
       "id": "G6",
-      "status": "passed_with_rehearsal_limits",
+      "status": "reopened_for_sdc_observation_pipeline",
       "owner": "workbench_audit + root",
       "evidence": [
         "docs/connectathon/evidence/run001-durable-final-acceptance.json",
@@ -105,18 +116,24 @@
         "docs/connectathon/evidence/run002-9f48a46-deterministic-rebuild.json"
       ],
       "note": "Second author reused integration context. Two separate source-authored workspaces and deterministic regeneration pass; observed wall times include repairs/waits and miss the unproven60\u201390minute target.",
-      "passedAt": "2026-09-18T04:41:44.014623+00:00"
+      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "previousScopeStatus": "passed_with_rehearsal_limits",
+      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
+      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
     },
     {
       "id": "G7",
-      "status": "passed",
+      "status": "reopened_for_sdc_observation_pipeline",
       "owner": "root + runtime_execution + skills_usecase_audit",
       "evidence": [
         "docs/connectathon/evidence/standalone-production-final-02e2b5b.json",
         "docs/connectathon/evidence/workbench-production-coldstart-557cd5b.json",
         "docs/connectathon/evidence/final-readiness.json"
       ],
-      "passedAt": "2026-09-18T04:41:44.014623+00:00"
+      "passedAt": "2026-09-18T04:41:44.014623+00:00",
+      "previousScopeStatus": "passed",
+      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
+      "followup": "Actual SDC extraction, Observation/ValueSet CQL, regenerated candidate package and application replay; G5 additionally requires readable Measure definitions and dependencies."
     },
     {
       "id": "X1",
@@ -311,6 +328,12 @@
       "status": "complete",
       "completedAt": "2026-09-18T04:41:44.014623+00:00",
       "summary": "Production asset recovery, final browser verification, durable acceptance rerun and readiness handoff."
+    },
+    {
+      "id": "ITER-026",
+      "startedAt": "2026-09-18T10:12:52.950045+00:00",
+      "status": "in_progress",
+      "summary": "User identified missing Measure definition display and unused packaged ValueSets; requires actual SDC extraction -> Observation CQL as the main live workflow. Baseline QR packages preserved; source and application gates reopened."
     }
   ],
   "lastUpdatedAt": "2026-09-18T04:11:13.798453+00:00",
@@ -523,6 +546,16 @@
       "status": "fixed_guidance_notes_target_intents_and_reference_closure; final_actual_outputs_verified",
       "description": "Text-only RequestGroup action has neither resource nor nested action and violates R4 rqg-1; preserve guidance without inventing clinical orders",
       "evidence": "docs/connectathon/evidence/run002-runtime-final-validation.json"
+    },
+    {
+      "id": "WB-MEASURE-SOURCE-001",
+      "status": "implemented_under_review",
+      "description": "Measure preview exposed expression identifiers without their definitions or dependent logic; e7141b3 pending source resolver and browser verification."
+    },
+    {
+      "id": "SDC-OBS-CQL-001",
+      "status": "in_progress",
+      "description": "Primary authored CQL reads QuestionnaireResponse linkIds, leaving packaged ValueSets unexecuted; user requires actual SDC extraction and terminology-filtered Observation CQL."
     }
   ],
   "checks": [
@@ -670,13 +703,15 @@
       "run002_L2_CQL": "workbench_audit",
       "run002_formalization": "root",
       "runtime_acceptance_runbook": "runtime_execution",
-      "authoring_runbook": "skills_usecase_audit"
+      "authoring_runbook": "skills_usecase_audit",
+      "sdc_extraction_applications": "workbench_audit",
+      "observation_cql_runtime": "runtime_execution",
+      "sdc_skills_cli_tests": "skills_usecase_audit"
     },
-    "commitPolicy": "One staging/commit slot per shared repository; announce boundaries and handoffs; refresh main before final integration; rerun affected checks; rebuild generated skill bundle before final replay.",
+    "commitPolicy": "Root owns rh-skills index and commits; workers edit owned files unstaged. Other repo owners coordinate changes and commit boundaries. No changes to protected source. Refresh main before final integration; regenerate and replay affected packages.",
     "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed."
   },
-  "updatedAt": "2026-09-18T04:11:13.798453+00:00",
-  "completedAt": "2026-09-18T04:41:44.014623+00:00",
+  "updatedAt": "2026-09-18T10:12:52.950045+00:00",
   "finalReadiness": "docs/connectathon/evidence/final-readiness.json",
   "sourceIntegrityCheckedAt": "2026-09-18T04:43:32.870673+00:00"
 }
