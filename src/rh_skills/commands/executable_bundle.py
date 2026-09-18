@@ -8,7 +8,7 @@ import json
 import re
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -98,6 +98,16 @@ def _collect_resource_references(resource: dict[str, Any]) -> list[tuple[str, st
                 value = artifact.get("resource")
                 if isinstance(value, str):
                     refs.append((value, "Library.relatedArtifact[type=depends-on].resource"))
+        requirements = resource.get("dataRequirement", [])
+        if isinstance(requirements, list):
+            for requirement in requirements:
+                filters = requirement.get("codeFilter", []) if isinstance(requirement, dict) else []
+                if not isinstance(filters, list):
+                    continue
+                for code_filter in filters:
+                    value = code_filter.get("valueSet") if isinstance(code_filter, dict) else None
+                    if isinstance(value, str):
+                        refs.append((value, "Library.dataRequirement.codeFilter.valueSet"))
 
     if resource_type == "ValueSet":
         compose = resource.get("compose", {})
@@ -127,27 +137,29 @@ def _collect_resource_references(resource: dict[str, Any]) -> list[tuple[str, st
     return refs
 
 
+def _decoded_elm_documents(resource: dict[str, Any]) -> list[dict[str, Any]]:
+    documents: list[dict[str, Any]] = []
+    for content in _decode_library_content(resource, "application/elm+json"):
+        try:
+            document = json.loads(content)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ExecutableBundleError(
+                f"Library/{resource.get('id')}: embedded ELM JSON is invalid: {exc}"
+            ) from exc
+        if not isinstance(document, dict):
+            raise ExecutableBundleError(
+                f"Library/{resource.get('id')}: embedded ELM JSON must be an object"
+            )
+        documents.append(document)
+    return documents
+
+
 def _elm_includes(resource: dict[str, Any]) -> list[tuple[str, str | None, str]]:
     """Read include declarations from FHIR Library.content Attachment elements."""
     if resource.get("resourceType") != "Library":
         return []
     result: list[tuple[str, str | None, str]] = []
-    for content in resource.get("content", []):
-        if not isinstance(content, dict):
-            continue
-        if "elm+json" not in str(content.get("contentType", "")):
-            continue
-        encoded = content.get("data")
-        if not isinstance(encoded, str):
-            raise ExecutableBundleError(
-                f"Library/{resource.get('id')}: ELM content is missing base64 data"
-            )
-        try:
-            elm = json.loads(base64.b64decode(encoded, validate=True))
-        except (ValueError, json.JSONDecodeError) as exc:
-            raise ExecutableBundleError(
-                f"Library/{resource.get('id')}: embedded ELM JSON is invalid: {exc}"
-            ) from exc
+    for elm in _decoded_elm_documents(resource):
         library = elm.get("library", {}) if isinstance(elm, dict) else {}
         includes = library.get("includes", {}) if isinstance(library, dict) else {}
         definitions = includes.get("def", []) if isinstance(includes, dict) else []
@@ -160,6 +172,30 @@ def _elm_includes(resource: dict[str, Any]) -> list[tuple[str, str | None, str]]
             if isinstance(path, str) and path:
                 version = definition.get("version")
                 result.append((path, version if isinstance(version, str) and version else None, "ELM include"))
+    return result
+
+
+def _elm_value_sets(resource: dict[str, Any]) -> list[tuple[str, str | None, str]]:
+    if resource.get("resourceType") != "Library":
+        return []
+    result: list[tuple[str, str | None, str]] = []
+    for elm in _decoded_elm_documents(resource):
+        library = elm.get("library", {})
+        value_sets = library.get("valueSets", {}) if isinstance(library, dict) else {}
+        definitions = value_sets.get("def", []) if isinstance(value_sets, dict) else []
+        if not isinstance(definitions, list):
+            continue
+        for definition in definitions:
+            if not isinstance(definition, dict) or not isinstance(definition.get("id"), str):
+                continue
+            version = definition.get("version")
+            result.append(
+                (
+                    definition["id"],
+                    version if isinstance(version, str) and version else None,
+                    "ELM value set",
+                )
+            )
     return result
 
 
@@ -189,16 +225,26 @@ def _elm_definition_names(elm: dict[str, Any]) -> set[str]:
     library = elm.get("library", {}) if isinstance(elm, dict) else {}
     statements = library.get("statements", {}) if isinstance(library, dict) else {}
     definitions = statements.get("def", []) if isinstance(statements, dict) else []
-    return {
-        str(definition.get("name"))
-        for definition in definitions
-        if isinstance(definition, dict) and isinstance(definition.get("name"), str)
-    }
+    names: set[str] = set()
+    for definition in definitions if isinstance(definitions, list) else []:
+        if not isinstance(definition, dict) or not isinstance(definition.get("name"), str):
+            continue
+        expression = definition.get("expression")
+        if not isinstance(expression, dict) or not expression:
+            raise ExecutableBundleError(
+                f"ELM definition {definition['name']} is missing an executable expression"
+            )
+        names.add(definition["name"])
+    if not names:
+        raise ExecutableBundleError("Embedded ELM contains no executable definitions")
+    return names
 
 
-def _validate_library_content(resources: list[dict[str, Any]]) -> dict[str, tuple[set[str], set[str]]]:
+def _validate_library_content(
+    resources: list[dict[str, Any]],
+) -> dict[tuple[str, str], tuple[set[str], set[str]]]:
     """Check CQL and ELM identity/content and return their define names by Library URL."""
-    result: dict[str, tuple[set[str], set[str]]] = {}
+    result: dict[tuple[str, str], tuple[set[str], set[str]]] = {}
     for resource in resources:
         if resource.get("resourceType") != "Library":
             continue
@@ -246,12 +292,7 @@ def _validate_library_content(resources: list[dict[str, Any]]) -> dict[str, tupl
                 flags=re.MULTILINE | re.IGNORECASE,
             ))
         if elm_contents:
-            try:
-                elm = json.loads(elm_contents[0])
-            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-                raise ExecutableBundleError(
-                    f"Library/{resource.get('id')}: embedded ELM JSON is invalid: {exc}"
-                ) from exc
+            elm = _decoded_elm_documents(resource)[0]
             library = elm.get("library", {}) if isinstance(elm, dict) else {}
             identifier = library.get("identifier", {}) if isinstance(library, dict) else {}
             elm_name = identifier.get("id") if isinstance(identifier, dict) else None
@@ -267,19 +308,90 @@ def _validate_library_content(resources: list[dict[str, Any]]) -> dict[str, tupl
                 raise ExecutableBundleError(
                     f"Library/{resource.get('id')}: compiled ELM is missing CQL definitions: {', '.join(missing)}"
                 )
-        if isinstance(url, str):
-            result[url] = (cql_names, elm_names)
+        identity = _resource_identity(resource)
+        if identity:
+            result[identity] = (cql_names, elm_names)
     return result
 
 
-def _expansion_concept_count(contains: Any) -> int:
+def _expansion_membership(contains: Any, resource_id: str) -> set[tuple[str, str, str]]:
     if not isinstance(contains, list):
-        return 0
-    return sum(
-        1 + _expansion_concept_count(item.get("contains"))
-        for item in contains
-        if isinstance(item, dict)
-    )
+        raise ExecutableBundleError(
+            f"ValueSet/{resource_id}: executable terminology requires expansion.contains"
+        )
+    membership: set[tuple[str, str, str]] = set()
+    for item in contains:
+        if not isinstance(item, dict):
+            raise ExecutableBundleError(
+                f"ValueSet/{resource_id}: expansion.contains must contain objects"
+            )
+        code = item.get("code")
+        nested = item.get("contains")
+        if code is None:
+            if not isinstance(nested, list):
+                raise ExecutableBundleError(
+                    f"ValueSet/{resource_id}: expansion entry is missing code"
+                )
+        else:
+            system = item.get("system")
+            version = item.get("version")
+            if not all(isinstance(value, str) and value for value in (system, version, code)):
+                raise ExecutableBundleError(
+                    f"ValueSet/{resource_id}: expansion code must include system, version, and code"
+                )
+            key = (system, version, code)
+            if key in membership:
+                raise ExecutableBundleError(
+                    f"ValueSet/{resource_id}: duplicate expansion membership {system}|{version}#{code}"
+                )
+            membership.add(key)
+        if nested is not None:
+            nested_membership = _expansion_membership(nested, resource_id)
+            duplicate = membership.intersection(nested_membership)
+            if duplicate:
+                raise ExecutableBundleError(
+                    f"ValueSet/{resource_id}: duplicate nested expansion membership"
+                )
+            membership.update(nested_membership)
+    return membership
+
+
+def _explicit_compose_membership(
+    entries: list[Any], resource_id: str, direction: str
+) -> set[tuple[str, str, str]] | None:
+    membership: set[tuple[str, str, str]] = set()
+    has_explicit_concepts = False
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            raise ExecutableBundleError(
+                f"ValueSet/{resource_id}: compose.{direction}[{index}] must be an object"
+            )
+        if entry.get("filter"):
+            raise ExecutableBundleError(
+                f"ValueSet/{resource_id}: filtered compose.{direction} cannot prove a complete local expansion"
+            )
+        concepts = entry.get("concept")
+        if concepts is None:
+            continue
+        if not isinstance(concepts, list):
+            raise ExecutableBundleError(
+                f"ValueSet/{resource_id}: compose.{direction}[{index}].concept must be an array"
+            )
+        has_explicit_concepts = True
+        system = entry.get("system")
+        version = entry.get("version")
+        if not isinstance(system, str) or not isinstance(version, str):
+            raise ExecutableBundleError(
+                f"ValueSet/{resource_id}: explicit compose.{direction} membership must be version-pinned"
+            )
+        for concept in concepts:
+            code = concept.get("code") if isinstance(concept, dict) else None
+            if not isinstance(code, str) or not code:
+                raise ExecutableBundleError(
+                    f"ValueSet/{resource_id}: compose.{direction} concept is missing code"
+                )
+            membership.add((system, version, code))
+    return membership if has_explicit_concepts else None
 
 
 def _validate_value_set_expansions(resources: list[dict[str, Any]]) -> None:
@@ -306,14 +418,31 @@ def _validate_value_set_expansions(resources: list[dict[str, Any]]) -> None:
         expansion = resource.get("expansion")
         contains = expansion.get("contains") if isinstance(expansion, dict) else None
         total = expansion.get("total") if isinstance(expansion, dict) else None
+        offset = expansion.get("offset") if isinstance(expansion, dict) else None
         if not isinstance(total, int) or total < 0 or not isinstance(contains, list):
             raise ExecutableBundleError(
                 f"ValueSet/{resource_id}: executable terminology requires expansion.total and expansion.contains"
             )
-        if _expansion_concept_count(contains) != total:
+        if offset not in (None, 0):
+            raise ExecutableBundleError(
+                f"ValueSet/{resource_id}: expansion.offset indicates a partial expansion"
+            )
+        actual = _expansion_membership(contains, str(resource_id))
+        if len(actual) != total:
             raise ExecutableBundleError(
                 f"ValueSet/{resource_id}: expansion is incomplete; total {total} does not match local membership"
             )
+        expected_include = _explicit_compose_membership(includes, str(resource_id), "include")
+        excludes = compose.get("exclude", []) if isinstance(compose, dict) else []
+        expected_exclude = _explicit_compose_membership(
+            excludes if isinstance(excludes, list) else [], str(resource_id), "exclude"
+        )
+        if expected_include is not None:
+            expected = expected_include.difference(expected_exclude or set())
+            if actual != expected:
+                raise ExecutableBundleError(
+                    f"ValueSet/{resource_id}: expansion membership does not match version-pinned compose membership"
+                )
 
 
 def _sha256_json(value: Any) -> str:
@@ -336,6 +465,32 @@ def _validate_evaluation_date(value: str | None) -> str:
     return value
 
 
+def _parse_period_bound(value: str, label: str) -> datetime | date:
+    try:
+        if "T" not in value:
+            return date.fromisoformat(value)
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ExecutableBundleError(f"Fixture measurement period {label} is not an ISO date or datetime") from exc
+    if parsed.tzinfo is None:
+        raise ExecutableBundleError(
+            f"Fixture measurement period {label} datetime must include a timezone"
+        )
+    return parsed
+
+
+def _validate_measurement_period(period: Any, case_id: str) -> dict[str, Any]:
+    if not isinstance(period, dict) or not isinstance(period.get("start"), str) or not isinstance(period.get("end"), str):
+        raise ExecutableBundleError(f"Fixture {case_id} is missing measurementPeriod.start/end")
+    if not isinstance(period.get("startInclusive"), bool) or not isinstance(period.get("endInclusive"), bool):
+        raise ExecutableBundleError(f"Fixture {case_id} must declare measurement-period inclusivity")
+    start = _parse_period_bound(period["start"], "start")
+    end = _parse_period_bound(period["end"], "end")
+    if type(start) is not type(end) or start > end:
+        raise ExecutableBundleError(f"Fixture {case_id} has a reversed or mixed-format measurement period")
+    return period
+
+
 def _ensure_within(path: Path, root: Path, label: str) -> Path:
     resolved = path.resolve()
     try:
@@ -345,17 +500,29 @@ def _ensure_within(path: Path, root: Path, label: str) -> Path:
     return resolved
 
 
-def _plan_cql_identifiers(resource: dict[str, Any]) -> set[str]:
+def _resource_cql_identifiers(resource: dict[str, Any]) -> set[str]:
     names: set[str] = set()
+    def collect(expression: Any) -> None:
+        if (
+            isinstance(expression, dict)
+            and expression.get("language") == "text/cql-identifier"
+            and isinstance(expression.get("expression"), str)
+        ):
+            names.add(expression["expression"].strip())
+
+    def collect_dynamic_values(value: Any) -> None:
+        for dynamic_value in value.get("dynamicValue", []) if isinstance(value, dict) else []:
+            if isinstance(dynamic_value, dict):
+                collect(dynamic_value.get("expression"))
+
+    collect_dynamic_values(resource)
     for action in _iter_actions(resource.get("action")):
         for condition in action.get("condition", []) if isinstance(action.get("condition"), list) else []:
-            expression = condition.get("expression", {}) if isinstance(condition, dict) else {}
-            if (
-                isinstance(expression, dict)
-                and expression.get("language") == "text/cql-identifier"
-                and isinstance(expression.get("expression"), str)
-            ):
-                names.add(expression["expression"].strip())
+            collect(condition.get("expression") if isinstance(condition, dict) else None)
+        collect_dynamic_values(action)
+    for group in resource.get("group", []) if resource.get("resourceType") == "Measure" and isinstance(resource.get("group"), list) else []:
+        for population in group.get("population", []) if isinstance(group, dict) and isinstance(group.get("population"), list) else []:
+            collect(population.get("criteria") if isinstance(population, dict) else None)
     return names
 
 
@@ -423,29 +590,37 @@ def _validate_closure(resources: list[dict[str, Any]], root_canonical: str) -> d
             if not matches:
                 version_text = f"|{version}" if version else ""
                 raise ExecutableBundleError(f"Unresolved {source} dependency: {path}{version_text}")
-            if version is None and len(matches) > 1:
-                raise ExecutableBundleError(f"Ambiguous unversioned {source} dependency: {path}")
+            if len(matches) != 1:
+                version_text = f"|{version}" if version else ""
+                raise ExecutableBundleError(
+                    f"Ambiguous {source} dependency: {path}{version_text}"
+                )
+        for canonical, version, source in _elm_value_sets(resource):
+            reference = f"{canonical}|{version}" if version else canonical
+            resolve(reference, source)
 
-        if resource.get("resourceType") == "PlanDefinition":
-            identifiers = _plan_cql_identifiers(resource)
-            if identifiers:
-                library_refs = resource.get("library", [])
-                if isinstance(library_refs, str):
-                    library_refs = [library_refs]
-                available: set[str] = set()
-                if isinstance(library_refs, list):
-                    for reference in library_refs:
-                        url, _ = _canonical_parts(reference) if isinstance(reference, str) else ("", None)
-                        definitions = library_definitions.get(url)
-                        if definitions:
-                            available.update(definitions[0])
-                            available.update(definitions[1])
-                missing = identifiers - available
-                if missing:
-                    raise ExecutableBundleError(
-                        f"PlanDefinition/{resource.get('id')} references CQL identifiers not defined "
-                        f"by its linked Library: {', '.join(sorted(missing))}"
-                    )
+        identifiers = _resource_cql_identifiers(resource)
+        if identifiers:
+            library_refs = resource.get("library", [])
+            if isinstance(library_refs, str):
+                library_refs = [library_refs]
+            available: set[str] = set()
+            if isinstance(library_refs, list):
+                for reference in library_refs:
+                    if not isinstance(reference, str):
+                        continue
+                    library = resolve(reference, f"{resource.get('resourceType')}.library")
+                    identity = _resource_identity(library)
+                    if identity and identity in library_definitions:
+                        definitions = library_definitions[identity]
+                        available.update(definitions[0])
+                        available.update(definitions[1])
+            missing = identifiers - available
+            if missing:
+                raise ExecutableBundleError(
+                    f"{resource.get('resourceType')}/{resource.get('id')} references CQL identifiers not defined "
+                    f"by its linked Library: {', '.join(sorted(missing))}"
+                )
 
     def reject_placeholders(value: Any, resource_type: str, resource_id: str, path: str = "$") -> None:
         if isinstance(value, str) and "TODO:MCP-UNREACHABLE" in value:
@@ -511,12 +686,17 @@ def _write_executable_output_atomically(
     """Publish a fully composed output directory only after all validation succeeds."""
     output_parent = output_dir.parent
     output_parent.mkdir(parents=True, exist_ok=True)
+    if output_dir.exists() and not _is_composer_owned_output(output_dir):
+        raise ExecutableBundleError(
+            f"Refusing to replace non-composer-owned executable output: {output_dir}"
+        )
     staging = Path(
         tempfile.mkdtemp(prefix=f".{output_dir.name}.staging-", dir=output_parent)
     )
-    previous = output_parent / f".{output_dir.name}.previous"
-    if previous.exists():
-        shutil.rmtree(previous)
+    previous = Path(
+        tempfile.mkdtemp(prefix=f".{output_dir.name}.previous-", dir=output_parent)
+    )
+    previous.rmdir()
 
     try:
         _write_json(staging / "executable-bundle.json", bundle_resource)
@@ -537,6 +717,21 @@ def _write_executable_output_atomically(
             shutil.rmtree(staging)
         if previous.exists():
             shutil.rmtree(previous)
+
+
+def _is_composer_owned_output(output_dir: Path) -> bool:
+    if not output_dir.is_dir():
+        return False
+    allowed_top_level = {"executable-bundle.json", "executable-manifest.json", "fixtures"}
+    if any(path.name not in allowed_top_level for path in output_dir.iterdir()):
+        return False
+    fixtures = output_dir / "fixtures"
+    if fixtures.exists():
+        if not fixtures.is_dir():
+            return False
+        if any(not path.is_file() or path.suffix != ".json" for path in fixtures.iterdir()):
+            return False
+    return True
 
 
 def compose_executable_bundle(
@@ -605,10 +800,7 @@ def compose_executable_bundle(
         period = context.get("measurementPeriod") if isinstance(context, dict) else None
         if not isinstance(patient_id, str) or not patient_id:
             raise ExecutableBundleError(f"Fixture {case_id} is missing evaluationContext.patientId")
-        if not isinstance(period, dict) or not isinstance(period.get("start"), str) or not isinstance(period.get("end"), str):
-            raise ExecutableBundleError(f"Fixture {case_id} is missing measurementPeriod.start/end")
-        if not isinstance(period.get("startInclusive"), bool) or not isinstance(period.get("endInclusive"), bool):
-            raise ExecutableBundleError(f"Fixture {case_id} must declare measurement-period inclusivity")
+        period = _validate_measurement_period(period, case_id)
 
         bundle = _validate_fixture_bundle(source_bundle_path, patient_id)
         resources_in_fixture = _fixture_resources(bundle)
@@ -719,11 +911,27 @@ def compose_executable_bundle(
             for resource in sorted(resources, key=lambda item: (str(item.get("resourceType", "")), str(item.get("id", ""))))
         ],
     }
+    implementation_guides = [
+        resource for resource in resources if resource.get("resourceType") == "ImplementationGuide"
+    ]
+    if len(implementation_guides) == 1:
+        guide = implementation_guides[0]
+        fhir_versions = guide.get("fhirVersion")
+        if isinstance(fhir_versions, list) and len(fhir_versions) == 1 and isinstance(fhir_versions[0], str):
+            manifest_output["fhirVersion"] = fhir_versions[0]
+        if isinstance(guide.get("packageId"), str):
+            manifest_output["package"] = {
+                "id": guide["packageId"],
+                "version": guide.get("version"),
+            }
+    root_meta = root_resource.get("meta")
+    if isinstance(root_meta, dict) and isinstance(root_meta.get("source"), str):
+        manifest_output["sourceProvenance"] = root_meta["source"]
     manifest_output["checksums"] = {
-        "algorithm": "sha256",
-        "bundle": _sha256_json(bundle_resource),
-        "fixtureIndex": _sha256_json(fixture_index),
-        "rootResource": _sha256_json(root_resource),
+        "algorithm": "sha256-canonical-json",
+        "bundleCanonicalJson": _sha256_json(bundle_resource),
+        "fixtureIndexCanonicalJson": _sha256_json(fixture_index),
+        "rootResourceCanonicalJson": _sha256_json(root_resource),
         "resources": [
             {
                 "resourceType": resource["resourceType"],
@@ -734,6 +942,13 @@ def compose_executable_bundle(
                 resources,
                 key=lambda item: (str(item.get("resourceType", "")), str(item.get("id", ""))),
             )
+        ],
+        "fixtureBundles": [
+            {
+                "path": f"fixtures/{case_id}.json",
+                "canonicalJsonSha256": _sha256_json(bundle),
+            }
+            for case_id, bundle in sorted(fixture_payloads.items())
         ],
     }
     _write_executable_output_atomically(
