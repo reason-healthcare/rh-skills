@@ -168,6 +168,21 @@ def _load_manifest(path: Path) -> dict:
         raise click.ClickException(
             f"ELM library identifier/version mismatch: expected {(name, version)}, got {elm_identity}"
         )
+    elm_includes_block = elm_document["library"].get("includes")
+    elm_includes: set[tuple[str, str]] = set()
+    if elm_includes_block is not None:
+        if not isinstance(elm_includes_block, dict) or not isinstance(elm_includes_block.get("def"), list):
+            raise click.ClickException("ELM library.includes.def must be an array when present")
+        for index, include in enumerate(elm_includes_block["def"]):
+            if not isinstance(include, dict):
+                raise click.ClickException(f"ELM library.includes.def[{index}] must be an object")
+            include_name = include.get("path")
+            include_version = include.get("version")
+            if not isinstance(include_name, str) or not include_name.strip():
+                raise click.ClickException(f"ELM library.includes.def[{index}].path must be a non-empty string")
+            if not isinstance(include_version, str) or not include_version.strip():
+                raise click.ClickException(f"ELM library.includes.def[{index}].version must be a non-empty string")
+            elm_includes.add((include_name.strip(), include_version.strip()))
     expected_cql_name = f"{name}-{version}.cql"
     expected_elm_name = f"{name}-{version}.json"
     if cql_path.name != expected_cql_name:
@@ -184,6 +199,7 @@ def _load_manifest(path: Path) -> dict:
         "elm_path": elm_path,
         "elm_bytes": elm_path.read_bytes(),
         "elm_sha256": elm_digest,
+        "includes": elm_includes,
     }
 
 
@@ -298,6 +314,92 @@ def _update_tracking_checksum(topic_entry: dict, relative_path: str, digest: str
         checksums[relative_path] = digest
 
 
+def _tracked_external_dependency_references(
+    topic_entry: dict,
+    excluding: tuple[str, str],
+    declared_includes: set[tuple[str, str]],
+) -> set[str]:
+    """Return tracked canonicals that are declared as versioned CQL/ELM includes."""
+    references: set[str] = set()
+    for entry in topic_entry.get("computable", []) or []:
+        if not isinstance(entry, dict) or entry.get("strategy") != "external-dependency":
+            continue
+        dependency = entry.get("external_dependency")
+        if not isinstance(dependency, dict):
+            continue
+        canonical = dependency.get("canonical")
+        name = dependency.get("name")
+        version = dependency.get("version")
+        if not all(isinstance(value, str) and value.strip() for value in (canonical, name, version)):
+            continue
+        if (name, version) == excluding or (name, version) not in declared_includes or "|" in canonical:
+            continue
+        references.add(f"{canonical}|{version}")
+    return references
+
+
+def _existing_tracked_dependency_library_matches(
+    path: Path,
+    existing_bytes: bytes,
+    expected_library: dict,
+    topic_entry: dict,
+    entry_name: str,
+    allowed_dependency_references: set[str],
+) -> None:
+    """Allow only tracked, byte-intact import Libraries with valid dependency links."""
+    existing_entry = next(
+        (
+            entry for entry in topic_entry.get("computable", []) or []
+            if isinstance(entry, dict) and entry.get("name") == entry_name
+        ),
+        None,
+    )
+    relative_path = _relative_repo_path(path)
+    if not isinstance(existing_entry, dict) or relative_path not in (existing_entry.get("files") or []):
+        raise click.ClickException(f"Refusing to preserve untracked dependency Library {path}")
+    tracked_digest = (existing_entry.get("checksums") or {}).get(relative_path)
+    actual_digest = hashlib.sha256(existing_bytes).hexdigest()
+    if not isinstance(tracked_digest, str) or tracked_digest != actual_digest:
+        raise click.ClickException(
+            f"Tracked dependency Library checksum mismatch for {path}: "
+            f"expected {tracked_digest}, got {actual_digest}"
+        )
+    try:
+        existing = json.loads(existing_bytes)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise click.ClickException(f"Existing dependency Library {path} is not valid JSON: {exc}") from exc
+    if not isinstance(existing, dict):
+        raise click.ClickException(f"Existing dependency Library {path} must be an object")
+
+    related = existing.get("relatedArtifact", [])
+    if not isinstance(related, list):
+        raise click.ClickException(f"Existing dependency Library {path} has invalid relatedArtifact")
+    seen_references: set[str] = set()
+    for item in related:
+        if (
+            not isinstance(item, dict)
+            or set(item) != {"type", "resource"}
+            or item.get("type") != "depends-on"
+            or not isinstance(item.get("resource"), str)
+        ):
+            raise click.ClickException(
+                f"Existing dependency Library {path} has a non-importer relatedArtifact; refusing to overwrite"
+            )
+        reference = item["resource"]
+        if reference not in allowed_dependency_references or reference in seen_references:
+            raise click.ClickException(
+                f"Existing dependency Library {path} has an undeclared or duplicate dependency {reference!r}"
+            )
+        seen_references.add(reference)
+
+    comparable = dict(existing)
+    comparable.pop("relatedArtifact", None)
+    if comparable != expected_library:
+        raise click.ClickException(
+            f"Existing dependency Library {path} identity or CQL/ELM attachments differ from its import manifest"
+        )
+
+
 @click.command("import-library")
 @click.argument("topic")
 @click.argument("manifest", type=click.Path(exists=True, dir_okay=False, path_type=Path))
@@ -321,10 +423,49 @@ def import_library(topic: str, manifest: Path) -> None:
         ).encode("utf-8") + b"\n",
     }
 
+    entry_name = f"external-library-{resource_identity['name']}-{resource_identity['version']}"
+    prior_entries = topic_entry.get("computable", []) or []
+    existing_entry = next(
+        (entry for entry in prior_entries if isinstance(entry, dict) and entry.get("name") == entry_name),
+        None,
+    )
+    expected_external_dependency = {
+        "canonical": resource_identity["url"],
+        "name": resource_identity["name"],
+        "version": resource_identity["version"],
+        "manifest": _relative_repo_path(manifest),
+        "source": imported["source"],
+        "cql_sha256": imported["cql_sha256"],
+        "elm_sha256": imported["elm_sha256"],
+    }
+    if existing_entry and existing_entry.get("external_dependency") != expected_external_dependency:
+        raise click.ClickException(f"Tracking entry {entry_name!r} conflicts with this manifest")
+
+    library_path = computable_dir / library_name
+    allowed_dependencies = _tracked_external_dependency_references(
+        topic_entry,
+        excluding=(resource_identity["name"], resource_identity["version"]),
+        declared_includes=imported["includes"],
+    )
+
     # Fail before writing if any destination is already owned by different content.
     for path, content in destinations.items():
-        if path.exists() and path.read_bytes() != content:
-            raise click.ClickException(f"Refusing to overwrite non-matching dependency output: {path}")
+        if not path.exists():
+            continue
+        existing_bytes = path.read_bytes()
+        if existing_bytes == content:
+            continue
+        if path == library_path:
+            _existing_tracked_dependency_library_matches(
+                path,
+                existing_bytes,
+                _fhir_library(imported),
+                topic_entry,
+                entry_name,
+                allowed_dependencies,
+            )
+            continue
+        raise click.ClickException(f"Refusing to overwrite non-matching dependency output: {path}")
 
     linked_resources = _library_identities(computable_dir, imported)
     linked_updates: list[tuple[Path, bytes]] = []
@@ -339,7 +480,6 @@ def import_library(topic: str, manifest: Path) -> None:
                 json.dumps(library, indent=2, ensure_ascii=False).encode("utf-8") + b"\n",
             ))
 
-    entry_name = f"external-library-{resource_identity['name']}-{resource_identity['version']}"
     imported_entry = {
         "name": entry_name,
         "files": [_relative_repo_path(path) for path in destinations],
@@ -360,13 +500,6 @@ def import_library(topic: str, manifest: Path) -> None:
             "elm_sha256": imported["elm_sha256"],
         },
     }
-    prior_entries = topic_entry.get("computable", []) or []
-    existing_entry = next(
-        (entry for entry in prior_entries if isinstance(entry, dict) and entry.get("name") == entry_name),
-        None,
-    )
-    if existing_entry and existing_entry.get("external_dependency") != imported_entry["external_dependency"]:
-        raise click.ClickException(f"Tracking entry {entry_name!r} conflicts with this manifest")
     if not existing_entry:
         topic_entry.setdefault("computable", []).append(imported_entry)
 

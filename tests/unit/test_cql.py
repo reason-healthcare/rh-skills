@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import json
 import hashlib
+import base64
 import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
+from ruamel.yaml import YAML
 
 from rh_skills.commands.cql import _strict_json_equal, _versioned_includes, cql
 
@@ -33,10 +35,20 @@ def _make_fixture(tmp_path: Path, library: str, case: str, expected: dict) -> No
     (case_dir / "expected" / "expression-results.json").write_text(json.dumps(expected))
 
 
-def _make_library_import_workspace(tmp_path: Path, *, name: str = "FHIRHelpers", version: str = "4.0.1") -> Path:
+def _make_library_import_workspace(
+    tmp_path: Path,
+    *,
+    name: str = "FHIRHelpers",
+    version: str = "4.0.1",
+    resource_id: str = "fhir-helpers-4-0-1",
+    canonical: str = "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers",
+    cql_source: str | None = None,
+    primary_includes: tuple[tuple[str, str], ...] | None = None,
+    manifest_name: str = "import.json",
+) -> Path:
     topic = "test-topic"
     computable = tmp_path / "topics" / topic / "computable"
-    computable.mkdir(parents=True)
+    computable.mkdir(parents=True, exist_ok=True)
     (tmp_path / "tracking.yaml").write_text(
         "topics:\n"
         "  - name: test-topic\n"
@@ -47,10 +59,15 @@ def _make_library_import_workspace(tmp_path: Path, *, name: str = "FHIRHelpers",
         "        checksums:\n"
         "          topics/test-topic/computable/Library-Primary.json: initial\n"
     )
+    includes = primary_includes or ((name, version),)
+    include_lines = "".join(
+        f"include {include_name} version '{include_version}' called Dependency{index}\n"
+        for index, (include_name, include_version) in enumerate(includes)
+    )
     (computable / "Primary.cql").write_text(
         "library Primary version '1.0.0'\n"
         "using FHIR version '4.0.1'\n"
-        f"include {name} version '{version}' called Helper\n"
+        + include_lines
     )
     (computable / "Library-Primary.json").write_text(json.dumps({
         "resourceType": "Library",
@@ -64,9 +81,25 @@ def _make_library_import_workspace(tmp_path: Path, *, name: str = "FHIRHelpers",
     }, indent=2) + "\n")
 
     manifest_dir = tmp_path / "dependencies"
-    manifest_dir.mkdir()
-    cql = f"library {name} version '{version}'\nusing FHIR version '4.0.1'\n"
-    elm = {"library": {"identifier": {"id": name, "version": version}}}
+    manifest_dir.mkdir(exist_ok=True)
+    cql = cql_source or f"library {name} version '{version}'\nusing FHIR version '4.0.1'\n"
+    elm_include_defs = [
+        {
+            "type": "IncludeDef",
+            "localIdentifier": match.group(1),
+            "path": match.group(1),
+            "version": match.group(2),
+        }
+        for match in re.finditer(
+            r"^\s*include\s+([A-Za-z][A-Za-z0-9_.]*)\s+version\s+['\"]([^'\"]+)['\"]",
+            cql,
+            re.IGNORECASE | re.MULTILINE,
+        )
+    ]
+    elm = {"library": {
+        "identifier": {"id": name, "version": version},
+        "includes": {"type": "Library$Includes", "def": elm_include_defs},
+    }}
     cql_path = manifest_dir / f"{name}-{version}.cql"
     elm_path = manifest_dir / f"{name}-{version}.json"
     cql_path.write_text(cql)
@@ -75,13 +108,13 @@ def _make_library_import_workspace(tmp_path: Path, *, name: str = "FHIRHelpers",
 
     manifest = {
         "resource": {
-            "id": "fhir-helpers-4-0-1",
-            "url": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers",
+            "id": resource_id,
+            "url": canonical,
             "name": name,
             "version": version,
         },
         "source": {
-            "url": "https://example.org/source/FHIRHelpers.cql",
+            "url": f"https://example.org/source/{name}.cql",
             "tag": "v3.26.0",
             "license": "Apache-2.0",
             "compile_tool": {"name": "CQFramework cql-to-elm-cli", "version": "3.26.0", "options": ["--format", "JSON"]},
@@ -89,7 +122,7 @@ def _make_library_import_workspace(tmp_path: Path, *, name: str = "FHIRHelpers",
         "cql": {"path": cql_path.name, "sha256": hashlib.sha256(cql_path.read_bytes()).hexdigest()},
         "elm": {"path": elm_path.name, "sha256": hashlib.sha256(elm_path.read_bytes()).hexdigest()},
     }
-    manifest_path = manifest_dir / "import.json"
+    manifest_path = manifest_dir / manifest_name
     manifest_path.write_text(json.dumps(manifest, indent=2))
     return manifest_path
 
@@ -602,6 +635,125 @@ def test_import_library_pins_identity_links_primary_and_is_idempotent(tmp_path, 
     assert repeated.exit_code == 0, repeated.output
     assert "already imported" in repeated.output
     assert all(path.read_bytes() == content for path, content in before.items())
+
+
+def _import_fhircommon_dependency_chain(tmp_path: Path, monkeypatch) -> tuple[Path, Path, Path]:
+    primary_includes = (
+        ("FHIRCommon", "2.0.0"),
+        ("FHIRHelpers", "4.0.1"),
+        ("Unrelated", "1.0.0"),
+    )
+    helper_manifest = _make_library_import_workspace(
+        tmp_path,
+        primary_includes=primary_includes,
+        manifest_name="fhirhelpers-import.json",
+    )
+    common_manifest = _make_library_import_workspace(
+        tmp_path,
+        name="FHIRCommon",
+        version="2.0.0",
+        resource_id="fhircommon-2-0-0",
+        canonical="http://hl7.org/fhir/uv/cql/Library/FHIRCommon",
+        cql_source=(
+            "library FHIRCommon version '2.0.0'\n"
+            "using FHIR version '4.0.1'\n"
+            "include FHIRHelpers version '4.0.1' called FHIRHelpers\n"
+            "define fluent function references(reference FHIR.Reference, resource FHIR.Resource):\n"
+            "  resource.id = Last(Split(reference.reference, '/'))\n"
+        ),
+        primary_includes=primary_includes,
+        manifest_name="fhircommon-import.json",
+    )
+    unrelated_manifest = _make_library_import_workspace(
+        tmp_path,
+        name="Unrelated",
+        version="1.0.0",
+        resource_id="unrelated-1-0-0",
+        canonical="https://example.org/fhir/Library/Unrelated",
+        primary_includes=primary_includes,
+        manifest_name="unrelated-import.json",
+    )
+    monkeypatch.chdir(tmp_path)
+    for manifest in (helper_manifest, common_manifest, helper_manifest, unrelated_manifest):
+        result = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+        assert result.exit_code == 0, result.output
+    common_library = tmp_path / "topics/test-topic/computable/Library-fhircommon-2-0-0.json"
+    return helper_manifest, common_manifest, common_library
+
+
+def _update_tracked_file_checksum(workspace: Path, path: Path, entry_name: str) -> None:
+    tracking_path = workspace / "tracking.yaml"
+    yaml = YAML(typ="safe")
+    tracking = yaml.load(tracking_path.read_text())
+    topic_entry = next(item for item in tracking["topics"] if item["name"] == "test-topic")
+    entry = next(item for item in topic_entry["computable"] if item["name"] == entry_name)
+    relative_path = path.relative_to(workspace).as_posix()
+    entry["checksums"][relative_path] = hashlib.sha256(path.read_bytes()).hexdigest()
+    with tracking_path.open("w") as stream:
+        YAML().dump(tracking, stream)
+
+
+def test_import_library_reimport_preserves_tracked_transitive_dependency_link(tmp_path, monkeypatch):
+    _, common_manifest, common_library = _import_fhircommon_dependency_chain(tmp_path, monkeypatch)
+    resource = json.loads(common_library.read_text())
+    assert resource["relatedArtifact"] == [{
+        "type": "depends-on",
+        "resource": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1",
+    }]
+    library_bytes = common_library.read_bytes()
+    tracking_bytes = (tmp_path / "tracking.yaml").read_bytes()
+
+    repeated = CliRunner().invoke(
+        cql, ["import-library", "test-topic", str(common_manifest)]
+    )
+
+    assert repeated.exit_code == 0, repeated.output
+    assert "already imported" in repeated.output
+    assert common_library.read_bytes() == library_bytes
+    assert (tmp_path / "tracking.yaml").read_bytes() == tracking_bytes
+
+
+@pytest.mark.parametrize("tampered_part", ["cql", "elm", "undeclared-dependency", "unrelated-tracked-dependency"])
+def test_import_library_reimport_rejects_tampered_or_untracked_library_changes(
+    tmp_path, monkeypatch, tampered_part
+):
+    _, common_manifest, common_library = _import_fhircommon_dependency_chain(tmp_path, monkeypatch)
+    resource = json.loads(common_library.read_text())
+    if tampered_part == "cql":
+        attachment = next(item for item in resource["content"] if item["contentType"] == "text/cql")
+        attachment["data"] = base64.b64encode(
+            base64.b64decode(attachment["data"]) + b"\n// changed"
+        ).decode("ascii")
+    elif tampered_part == "elm":
+        attachment = next(item for item in resource["content"] if item["contentType"] == "application/elm+json")
+        elm = json.loads(base64.b64decode(attachment["data"]))
+        elm["library"]["identifier"]["version"] = "9.9.9"
+        attachment["data"] = base64.b64encode(json.dumps(elm).encode()).decode("ascii")
+    elif tampered_part == "undeclared-dependency":
+        resource["relatedArtifact"] = [{
+            "type": "depends-on",
+            "resource": "https://untracked.example/Library/Unknown|1.0.0",
+        }]
+    else:
+        # This dependency has a valid external-dependency tracking entry, but is
+        # not included by FHIRCommon's own CQL/ELM and therefore is not allowed.
+        resource["relatedArtifact"] = [{
+            "type": "depends-on",
+            "resource": "https://example.org/fhir/Library/Unrelated|1.0.0",
+        }]
+    common_library.write_text(json.dumps(resource, indent=2) + "\n")
+    _update_tracked_file_checksum(
+        tmp_path,
+        common_library,
+        "external-library-FHIRCommon-2.0.0",
+    )
+
+    result = CliRunner().invoke(
+        cql, ["import-library", "test-topic", str(common_manifest)]
+    )
+
+    assert result.exit_code != 0
+    assert "undeclared or duplicate dependency" in result.output or "identity or CQL/ELM attachments differ" in result.output
 
 
 def test_import_library_rejects_bad_hash_before_writing(tmp_path, monkeypatch):
