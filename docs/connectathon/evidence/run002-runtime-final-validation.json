@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-09-18T04:09:50.877665+00:00",
+  "runtimeCommit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+  "wasmSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320",
+  "knowledgeBundleSha256": "3e6a1fde4db9b4e83d73d56ce388b2777883236f5748e05fd61e7b9025b6023e",
+  "inputCount": 12,
+  "scope": "Six actual main-pathway apply Bundles and six individual MeasureReports; officialFHIR4.0.1+SDC4.0.0+CPG2.0.0, exact knowledge dependencies, offline terminology",
+  "rawCounts": {
+    "warning": 48,
+    "information": 5,
+    "error": 1
+  },
+  "strictValidatorPassed": false,
+  "documentedExceptions": [
+    {
+      "input": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/run002-runtime-fhir-inputs/younger-than-65--MeasureReport-measure.json",
+      "inputSha256": "391ab41abef8889cbe0375f8000a5d8bcdf7b40156c751ab94808f1fdedeb4ba",
+      "code": "MEASURE_MR_SCORE_REQUIRED",
+      "expression": [
+        "MeasureReport.group[0]"
+      ],
+      "reason": "R4 optional score is undefined for a zero denominator; validator6.10.2 requires it regardless of population. No score or absent-reason is fabricated."
+    }
+  ],
+  "unacceptedErrors": [],
+  "acceptedForCoreRehearsal": true,
+  "warningCounts": {
+    "Constraint failed: dom-6: 'A resource should have narrative for robust management' (defined in http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)": 26,
+    "The code provided (text/cql-identifier) could not be validated against the maximum value set http://www.rfc-editor.org/bcp/bcp13.txt(which actually refers to 'MimeType' (http://hl7.org/fhir/ValueSet/mimetypes|4.0.1)), (error = No_Service)": 22
+  },
+  "operationOutcomeSha256": "55b250fe293cb3b255271b3c978b4e33cafb3e81c65f88264afdc56fefa20ab6",
+  "inputSha256": {
+    "younger-than-65--steadi-fall-risk-screening-protocol.json": "1af8be3d69eb76f92e66c9a065895d61344c00bde332934d73e0569136d4d301",
+    "eligible-no-response--MeasureReport-measure.json": "ae42638d61ac6b3306b6ee4acbcfcaca576f139fc466229e40ab1917c5fcb8a5",
+    "eligible-incomplete-response--MeasureReport-measure.json": "e8ebdbc8135836012dfe66fafe2f5c8412440517216603768ed486e9d5bdeb9d",
+    "eligible-prior-fall-yes--steadi-fall-risk-screening-protocol.json": "b9cb5151887858b4e38af4ced90e7762614e7c526e5f9546805df1eed3baae11",
+    "eligible-incomplete-response--steadi-fall-risk-screening-protocol.json": "389e0c0228e8f88efc7fb7c607c3fb87d6185bf7e0a2645dbd152e67df3ea9dd",
+    "eligible-all-no--steadi-fall-risk-screening-protocol.json": "2af24f8222c3fce876170ae14a7b76c98f57fdefed0d45c3fb27afd27537fdaf",
+    "eligible-no-response--steadi-fall-risk-screening-protocol.json": "1348165108b394c558edb1e51bce7d50f1f10b79c5c3242180eb76e3bf579f77",
+    "eligible-prior-fall-yes--MeasureReport-measure.json": "2c1da6bf04c32a9e1f7e4bb8a3e438eed6a2c8b630c54160d38857c732f130b2",
+    "younger-than-65--MeasureReport-measure.json": "391ab41abef8889cbe0375f8000a5d8bcdf7b40156c751ab94808f1fdedeb4ba",
+    "eligible-unsteady-yes--steadi-fall-risk-screening-protocol.json": "f2ecfd23c8ba1afdeb7c3def32db58f3ca7dca2cfad00f4accbbd94c3b381005",
+    "eligible-all-no--MeasureReport-measure.json": "f748f67f036b2680dde0c61e1dc3fa9496ad3b6ee778d564ae4989c5b5a1e0b2",
+    "eligible-unsteady-yes--MeasureReport-measure.json": "68fe9397dec36aefc1e3af3cfb46f96588b6b8968bfd6e8b970c6631384532b8"
+  },
+  "standardsReview": "docs/connectathon/evidence/runtime-output-r4-standards-review.md"
+}

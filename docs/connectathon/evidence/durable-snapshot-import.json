@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-09-18T03:58:08.691830+00:00",
+  "database": "isolated localhost55432/workbench",
+  "results": [
+    {
+      "command": [
+        "node",
+        "scripts/load-aao-snapshot.mjs",
+        "--snapshot",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/snapshots/connectathon-steadi-run001-08a666000842-snapshot",
+        "--actor-id",
+        "usr_local_admin_vermonster_com",
+        "--actor-email",
+        "admin@vermonster.com",
+        "--actor-name",
+        "Local admin"
+      ],
+      "exitCode": 0,
+      "stdout": "Loaded snapshot: snap_connectathon-steadi_run001-08a666000842\nProject: connectathon-steadi\nSnapshot root: ../rh-skills/dist/connectathon-20260919/snapshots/connectathon-steadi-run001-08a666000842-snapshot\nArtifacts: 28\nSources: 8\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "scripts/load-aao-snapshot.mjs",
+        "--snapshot",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/snapshots/connectathon-steadi-replay-run002-3e6a1fde4db9-snapshot",
+        "--actor-id",
+        "usr_local_admin_vermonster_com",
+        "--actor-email",
+        "admin@vermonster.com",
+        "--actor-name",
+        "Local admin"
+      ],
+      "exitCode": 0,
+      "stdout": "Loaded snapshot: snap_connectathon-steadi-replay_run002-3e6a1fde4db9\nProject: connectathon-steadi-replay\nSnapshot root: ../rh-skills/dist/connectathon-20260919/snapshots/connectathon-steadi-replay-run002-3e6a1fde4db9-snapshot\nArtifacts: 31\nSources: 8\n",
+      "stderr": ""
+    }
+  ]
+}

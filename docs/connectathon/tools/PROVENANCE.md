@@ -6,7 +6,10 @@ package verifier. The native tool is pinned to `--runtime-root/target/debug/rh`;
 it does not silently use a PATH binary. Its report binds the durable executable bundle, fixture index, runtime
 module, commands, and exit statuses by SHA-256.
 
-The `runs/` configurations keep the two demonstration contracts distinct:
+The `runs/` configurations keep the two demonstration contracts distinct. Use a
+fresh local skill installation such as `"$PWD/.venv/bin/rh-skills"`; do not use
+the historical `/private/tmp` virtual environment in a replay.
+
 
 - `run001.json` expects a coded `CommunicationRequest` guidance output.
 - `run002.json` expects informational `RequestGroup.note[]` guidance. It is
@@ -40,7 +43,7 @@ python3 docs/connectathon/tools/run-durable-acceptance.py \
   --config docs/connectathon/tools/runs/run002.json \
   --repo-root "$PWD" \
   --runtime-root /path/to/rh \
-  --rh-skills-bin /path/to/rh-skills \
+  --rh-skills-bin "$PWD/.venv/bin/rh-skills" \
   --oracle-root /path/to/test-bundles \
   --output /path/to/evidence/run002
 ```
@@ -53,7 +56,7 @@ child verifier:
 WORKBENCH_COOKIE='session=…' python3 docs/connectathon/tools/run-durable-acceptance.py \
   --config docs/connectathon/tools/runs/run002.json \
   --repo-root "$PWD" --runtime-root /path/to/rh \
-  --rh-skills-bin /path/to/rh-skills \
+  --rh-skills-bin "$PWD/.venv/bin/rh-skills" \
   --oracle-root /path/to/test-bundles \
   --with-standalone http://127.0.0.1:9091 \
   --with-workbench http://127.0.0.1:9090 \

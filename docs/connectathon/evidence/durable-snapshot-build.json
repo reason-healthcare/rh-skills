@@ -1,0 +1,63 @@
+{
+  "checkedAt": "2026-09-18T03:58:02.567005+00:00",
+  "results": [
+    {
+      "command": [
+        "node",
+        "scripts/build-aao-snapshot.mjs",
+        "--workspace",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-001",
+        "--topic",
+        "steadi-fall-screening",
+        "--project-id",
+        "connectathon-steadi",
+        "--project-title",
+        "STEADI Live Skills Rehearsal",
+        "--topic-title",
+        "Older Adult Fall Screening",
+        "--customer",
+        "ReasonHealth",
+        "--source-commit",
+        "run001-08a666000842",
+        "--created-at",
+        "2026-09-18T03:13:00Z",
+        "--out",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/snapshots",
+        "--label",
+        "Source-to-L3 rehearsal 1"
+      ],
+      "exitCode": 0,
+      "stdout": "Snapshot directory: ../rh-skills/dist/connectathon-20260919/snapshots/connectathon-steadi-run001-08a666000842-snapshot\nSnapshot ZIP: ../rh-skills/dist/connectathon-20260919/snapshots/connectathon-steadi-run001-08a666000842-snapshot.zip\nSnapshot ID: snap_connectathon-steadi_run001-08a666000842\nArtifacts: 28\nSources: 8\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "scripts/build-aao-snapshot.mjs",
+        "--workspace",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-002",
+        "--topic",
+        "steadi-live-replay",
+        "--project-id",
+        "connectathon-steadi-replay",
+        "--project-title",
+        "STEADI Independent Skills Replay",
+        "--topic-title",
+        "Older Adult Fall Screening",
+        "--customer",
+        "ReasonHealth",
+        "--source-commit",
+        "run002-3e6a1fde4db9",
+        "--created-at",
+        "2026-09-18T03:40:00Z",
+        "--out",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/snapshots",
+        "--label",
+        "Source-to-L3 rehearsal 2"
+      ],
+      "exitCode": 0,
+      "stdout": "Snapshot directory: ../rh-skills/dist/connectathon-20260919/snapshots/connectathon-steadi-replay-run002-3e6a1fde4db9-snapshot\nSnapshot ZIP: ../rh-skills/dist/connectathon-20260919/snapshots/connectathon-steadi-replay-run002-3e6a1fde4db9-snapshot.zip\nSnapshot ID: snap_connectathon-steadi-replay_run002-3e6a1fde4db9\nArtifacts: 31\nSources: 8\n",
+      "stderr": ""
+    }
+  ]
+}

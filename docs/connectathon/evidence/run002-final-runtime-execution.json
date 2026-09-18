@@ -1,0 +1,1893 @@
+{
+  "checkedAt": "2026-09-18T04:05:33.356Z",
+  "scope": "Independent actual embedded ELM execution via public Node/WASM package; all generated PlanDefinition roots, six individual MeasureReports, supplied QuestionnaireResponses. No aggregate or SDC extraction claim.",
+  "input": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+  "bundleSha256": "3e6a1fde4db9b4e83d73d56ce388b2777883236f5748e05fd61e7b9025b6023e",
+  "stableInput": true,
+  "wasmSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320",
+  "counts": {
+    "total": 71,
+    "passed": 71,
+    "failed": 0
+  },
+  "results": [
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "fall-risk-screening-recommendation",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--fall-risk-screening-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "fall-risk-screening-recommendation-collect-screen",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--fall-risk-screening-recommendation-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "fall-risk-screening-recommendation-exercise-for-increased-risk",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--fall-risk-screening-recommendation-exercise-for-increased-risk.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--fall-risk-screening-recommendation-individualize-mult-0cf8535f51.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "steadi-fall-risk-screening-protocol",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "unresolvedResponseStep": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--steadi-fall-risk-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "steadi-fall-risk-screening-protocol-await-complete-response",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--steadi-fall-risk-screening-protocol-await-complete-response.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "steadi-fall-risk-screening-protocol-collect-screen",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--steadi-fall-risk-screening-protocol-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "steadi-fall-risk-screening-protocol-confirm-population",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--steadi-fall-risk-screening-protocol-confirm-population.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "steadi-fall-risk-screening-protocol-exercise-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--steadi-fall-risk-screening-protocol-exercise-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "steadi-fall-risk-screening-protocol-multifactorial-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noTitledActionsOutsidePopulation": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--steadi-fall-risk-screening-protocol-multifactorial-guidance.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "younger-than-65",
+      "root": "measure",
+      "populations": {
+        "initial-population": 0,
+        "denominator": 0,
+        "numerator": 0
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctMeasureCanonical": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "younger-than-65--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "younger-than-65",
+      "root": "steadi-three-question-screen",
+      "expectedValid": true,
+      "valid": true,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[]}",
+        "value": {
+          "issues": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "fall-risk-screening-recommendation",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect the three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--fall-risk-screening-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "fall-risk-screening-recommendation-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--fall-risk-screening-recommendation-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "fall-risk-screening-recommendation-exercise-for-increased-risk",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--fall-risk-screening-recommendation-exercise-for-increased-risk.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--fall-risk-screening-recommendation-individualize-mult-0cf8535f51.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "steadi-fall-risk-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class."
+      ],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "unresolvedResponseStep": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--steadi-fall-risk-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "steadi-fall-risk-screening-protocol-await-complete-response",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--steadi-fall-risk-screening-protocol-await-complete-response.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "steadi-fall-risk-screening-protocol-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--steadi-fall-risk-screening-protocol-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "steadi-fall-risk-screening-protocol-confirm-population",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class."
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--steadi-fall-risk-screening-protocol-confirm-population.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "steadi-fall-risk-screening-protocol-exercise-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--steadi-fall-risk-screening-protocol-exercise-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "steadi-fall-risk-screening-protocol-multifactorial-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--steadi-fall-risk-screening-protocol-multifactorial-guidance.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-all-no",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 1
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctMeasureCanonical": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "eligible-all-no",
+      "root": "steadi-three-question-screen",
+      "expectedValid": true,
+      "valid": true,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[]}",
+        "value": {
+          "issues": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "fall-risk-screening-recommendation",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: refer-exercise-intervention\n\nRefer to exercise intervention\n\nRefer an older adult at increased fall risk to an exercise intervention.\n\nSource (exercise-grade-b): Recommend exercise interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 162 and 175-179",
+        "Source action: individualize-multifactorial-decision\n\nIndividualize multifactorial intervention decision\n\nConsider benefits, harms, prior falls, comorbidities, and patient values and preferences before offering a multifactorial intervention.\n\nSource (multifactorial-grade-c): Individualize the decision to offer multifactorial interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 163 and 175-179"
+      ],
+      "actionTitles": [
+        "Collect the three-question screen",
+        "Refer to exercise intervention",
+        "Individualize multifactorial intervention decision",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "explicitEncounter": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--fall-risk-screening-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "fall-risk-screening-recommendation-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--fall-risk-screening-recommendation-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "fall-risk-screening-recommendation-exercise-for-increased-risk",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: refer-exercise-intervention\n\nRefer to exercise intervention\n\nRefer an older adult at increased fall risk to an exercise intervention.\n\nSource (exercise-grade-b): Recommend exercise interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 162 and 175-179"
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--fall-risk-screening-recommendation-exercise-for-increased-risk.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: individualize-multifactorial-decision\n\nIndividualize multifactorial intervention decision\n\nConsider benefits, harms, prior falls, comorbidities, and patient values and preferences before offering a multifactorial intervention.\n\nSource (multifactorial-grade-c): Individualize the decision to offer multifactorial interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 163 and 175-179"
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--fall-risk-screening-recommendation-individualize-mult-0cf8535f51.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "steadi-fall-risk-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class.",
+        "Source action: refer-exercise-intervention\n\nRefer to exercise intervention\n\nRefer an older adult at increased fall risk to an exercise intervention.\n\nSource (exercise-grade-b): Recommend exercise interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 162 and 175-179",
+        "Source action: individualize-multifactorial-decision\n\nIndividualize multifactorial intervention decision\n\nConsider benefits, harms, prior falls, comorbidities, and patient values and preferences before offering a multifactorial intervention.\n\nSource (multifactorial-grade-c): Individualize the decision to offer multifactorial interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 163 and 175-179"
+      ],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Refer to exercise intervention",
+        "Individualize multifactorial intervention decision",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "unresolvedResponseStep": true,
+        "explicitEncounter": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--steadi-fall-risk-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "steadi-fall-risk-screening-protocol-await-complete-response",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--steadi-fall-risk-screening-protocol-await-complete-response.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "steadi-fall-risk-screening-protocol-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--steadi-fall-risk-screening-protocol-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "steadi-fall-risk-screening-protocol-confirm-population",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class."
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--steadi-fall-risk-screening-protocol-confirm-population.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "steadi-fall-risk-screening-protocol-exercise-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: refer-exercise-intervention\n\nRefer to exercise intervention\n\nRefer an older adult at increased fall risk to an exercise intervention.\n\nSource (exercise-grade-b): Recommend exercise interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 162 and 175-179"
+      ],
+      "actionTitles": [
+        "Refer to exercise intervention"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--steadi-fall-risk-screening-protocol-exercise-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "steadi-fall-risk-screening-protocol-multifactorial-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: individualize-multifactorial-decision\n\nIndividualize multifactorial intervention decision\n\nConsider benefits, harms, prior falls, comorbidities, and patient values and preferences before offering a multifactorial intervention.\n\nSource (multifactorial-grade-c): Individualize the decision to offer multifactorial interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 163 and 175-179"
+      ],
+      "actionTitles": [
+        "Individualize multifactorial intervention decision"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--steadi-fall-risk-screening-protocol-multifactorial-guidance.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-unsteady-yes",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 1
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctMeasureCanonical": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "eligible-unsteady-yes",
+      "root": "steadi-three-question-screen",
+      "expectedValid": true,
+      "valid": true,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[]}",
+        "value": {
+          "issues": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "fall-risk-screening-recommendation",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: refer-exercise-intervention\n\nRefer to exercise intervention\n\nRefer an older adult at increased fall risk to an exercise intervention.\n\nSource (exercise-grade-b): Recommend exercise interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 162 and 175-179",
+        "Source action: individualize-multifactorial-decision\n\nIndividualize multifactorial intervention decision\n\nConsider benefits, harms, prior falls, comorbidities, and patient values and preferences before offering a multifactorial intervention.\n\nSource (multifactorial-grade-c): Individualize the decision to offer multifactorial interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 163 and 175-179"
+      ],
+      "actionTitles": [
+        "Collect the three-question screen",
+        "Refer to exercise intervention",
+        "Individualize multifactorial intervention decision",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "explicitEncounter": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--fall-risk-screening-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "fall-risk-screening-recommendation-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--fall-risk-screening-recommendation-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "fall-risk-screening-recommendation-exercise-for-increased-risk",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: refer-exercise-intervention\n\nRefer to exercise intervention\n\nRefer an older adult at increased fall risk to an exercise intervention.\n\nSource (exercise-grade-b): Recommend exercise interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 162 and 175-179"
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--fall-risk-screening-recommendation-exercise-for-increased-risk.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: individualize-multifactorial-decision\n\nIndividualize multifactorial intervention decision\n\nConsider benefits, harms, prior falls, comorbidities, and patient values and preferences before offering a multifactorial intervention.\n\nSource (multifactorial-grade-c): Individualize the decision to offer multifactorial interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 163 and 175-179"
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--fall-risk-screening-recommendation-individualize-mult-0cf8535f51.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "steadi-fall-risk-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class.",
+        "Source action: refer-exercise-intervention\n\nRefer to exercise intervention\n\nRefer an older adult at increased fall risk to an exercise intervention.\n\nSource (exercise-grade-b): Recommend exercise interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 162 and 175-179",
+        "Source action: individualize-multifactorial-decision\n\nIndividualize multifactorial intervention decision\n\nConsider benefits, harms, prior falls, comorbidities, and patient values and preferences before offering a multifactorial intervention.\n\nSource (multifactorial-grade-c): Individualize the decision to offer multifactorial interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 163 and 175-179"
+      ],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Refer to exercise intervention",
+        "Individualize multifactorial intervention decision",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "unresolvedResponseStep": true,
+        "explicitEncounter": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--steadi-fall-risk-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "steadi-fall-risk-screening-protocol-await-complete-response",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--steadi-fall-risk-screening-protocol-await-complete-response.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "steadi-fall-risk-screening-protocol-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--steadi-fall-risk-screening-protocol-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "steadi-fall-risk-screening-protocol-confirm-population",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class."
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--steadi-fall-risk-screening-protocol-confirm-population.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "steadi-fall-risk-screening-protocol-exercise-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: refer-exercise-intervention\n\nRefer to exercise intervention\n\nRefer an older adult at increased fall risk to an exercise intervention.\n\nSource (exercise-grade-b): Recommend exercise interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 162 and 175-179"
+      ],
+      "actionTitles": [
+        "Refer to exercise intervention"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--steadi-fall-risk-screening-protocol-exercise-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "steadi-fall-risk-screening-protocol-multifactorial-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: individualize-multifactorial-decision\n\nIndividualize multifactorial intervention decision\n\nConsider benefits, harms, prior falls, comorbidities, and patient values and preferences before offering a multifactorial intervention.\n\nSource (multifactorial-grade-c): Individualize the decision to offer multifactorial interventions for community-dwelling adults age 65 years or older at increased fall risk. Evidence: uspstf-falls-recommendation-2024_html: normalized source lines 163 and 175-179"
+      ],
+      "actionTitles": [
+        "Individualize multifactorial intervention decision"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "explicitEncounter": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--steadi-fall-risk-screening-protocol-multifactorial-guidance.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 1
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctMeasureCanonical": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "steadi-three-question-screen",
+      "expectedValid": true,
+      "valid": true,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[]}",
+        "value": {
+          "issues": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "fall-risk-screening-recommendation",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect the three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--fall-risk-screening-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "fall-risk-screening-recommendation-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--fall-risk-screening-recommendation-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "fall-risk-screening-recommendation-exercise-for-increased-risk",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--fall-risk-screening-recommendation-exercise-for-increased-risk.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--fall-risk-screening-recommendation-individualize-mult-0cf8535f51.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "steadi-fall-risk-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class.",
+        "Source action: await-complete-response\n\nAwait a complete screen response\n\nWhen a response is incomplete or absent, retain unknown risk and stop recommendation evaluation.\n\nSource (unknown-stop): Incomplete or absent screen responses leave risk unknown and do not invoke extraction or guidance. Evidence: fixture-contract-readme_md: Coded Questionnaire contract and SDC extraction contract"
+      ],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "unresolvedResponseStep": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--steadi-fall-risk-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "steadi-fall-risk-screening-protocol-await-complete-response",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: await-complete-response\n\nAwait a complete screen response\n\nWhen a response is incomplete or absent, retain unknown risk and stop recommendation evaluation.\n\nSource (unknown-stop): Incomplete or absent screen responses leave risk unknown and do not invoke extraction or guidance. Evidence: fixture-contract-readme_md: Coded Questionnaire contract and SDC extraction contract"
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--steadi-fall-risk-screening-protocol-await-complete-response.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "steadi-fall-risk-screening-protocol-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--steadi-fall-risk-screening-protocol-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "steadi-fall-risk-screening-protocol-confirm-population",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class."
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--steadi-fall-risk-screening-protocol-confirm-population.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "steadi-fall-risk-screening-protocol-exercise-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--steadi-fall-risk-screening-protocol-exercise-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "steadi-fall-risk-screening-protocol-multifactorial-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--steadi-fall-risk-screening-protocol-multifactorial-guidance.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-incomplete-response",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 0
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctMeasureCanonical": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "eligible-incomplete-response",
+      "root": "steadi-three-question-screen",
+      "expectedValid": false,
+      "valid": false,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[\"Item fallen-in-past-year is required but has no answer\"]}",
+        "value": {
+          "issues": [
+            "Item fallen-in-past-year is required but has no answer"
+          ]
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "fall-risk-screening-recommendation",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect the three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--fall-risk-screening-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "fall-risk-screening-recommendation-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--fall-risk-screening-recommendation-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "fall-risk-screening-recommendation-exercise-for-increased-risk",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--fall-risk-screening-recommendation-exercise-for-increased-risk.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--fall-risk-screening-recommendation-individualize-mult-0cf8535f51.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "steadi-fall-risk-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class.",
+        "Source action: await-complete-response\n\nAwait a complete screen response\n\nWhen a response is incomplete or absent, retain unknown risk and stop recommendation evaluation.\n\nSource (unknown-stop): Incomplete or absent screen responses leave risk unknown and do not invoke extraction or guidance. Evidence: fixture-contract-readme_md: Coded Questionnaire contract and SDC extraction contract"
+      ],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "exerciseGuidanceWhenApplicable": true,
+        "multifactorialGuidanceWhenApplicable": true,
+        "unresolvedResponseStep": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "noFabricatedCommunications": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--steadi-fall-risk-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "steadi-fall-risk-screening-protocol-await-complete-response",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: await-complete-response\n\nAwait a complete screen response\n\nWhen a response is incomplete or absent, retain unknown risk and stop recommendation evaluation.\n\nSource (unknown-stop): Incomplete or absent screen responses leave risk unknown and do not invoke extraction or guidance. Evidence: fixture-contract-readme_md: Coded Questionnaire contract and SDC extraction contract"
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--steadi-fall-risk-screening-protocol-await-complete-response.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "steadi-fall-risk-screening-protocol-collect-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [
+        "Collect three-question screen",
+        "Collect the three-question screen"
+      ],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--steadi-fall-risk-screening-protocol-collect-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "steadi-fall-risk-screening-protocol-confirm-population",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [
+        "Source action: confirm-population\n\nConfirm screening population\n\nConfirm the supplied community-dwelling scenario precondition and evaluate age 65 years or older with an ambulatory encounter. Do not infer community dwelling from encounter class."
+      ],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--steadi-fall-risk-screening-protocol-confirm-population.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "steadi-fall-risk-screening-protocol-exercise-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--steadi-fall-risk-screening-protocol-exercise-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "steadi-fall-risk-screening-protocol-multifactorial-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "guidanceNotes": [],
+      "actionTitles": [],
+      "checks": {
+        "succeeds": true,
+        "textGuidanceDoesNotCreateOrders": true,
+        "noInappropriateInlineGuidance": true,
+        "explicitEncounter": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--steadi-fall-risk-screening-protocol-multifactorial-guidance.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-no-response",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 0
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctMeasureCanonical": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--MeasureReport-measure.json"
+    }
+  ]
+}

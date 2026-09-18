@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-18T04:40:38.515111+00:00",
+  "decision": "ready_to_attempt_live_core_with_documented_limits",
+  "eventDate": "2026-09-19",
+  "scope": "Live STEADI source-to-L2/L3 skills and Workbench assessment, Measure, CPG plus standalone local CPG",
+  "repositories": {
+    "rh-skills": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
+      "headAtVerification": "088e403015af4976ec054e176a175f99157b18fd",
+      "implementationRevision": "9f48a46f91bf2407d46394a0e235908baf9fd11b",
+      "branch": "codex/connectathon-live-readiness",
+      "mainRemote": "origin",
+      "mainRevision": "eb280968e8af623b9b30c4175111929e322f696c",
+      "behindMain": 0
+    },
+    "workbench": {
+      "path": "/Users/bkaney/projects/reason-healthcare/workbench",
+      "headAtVerification": "557cd5b4e62a57e521b43c1e433a0d08878182ff",
+      "implementationRevision": "557cd5b4e62a57e521b43c1e433a0d08878182ff",
+      "branch": "codex/connectathon-live-readiness",
+      "mainRemote": "origin",
+      "mainRevision": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
+      "behindMain": 0
+    },
+    "rh": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh",
+      "headAtVerification": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+      "implementationRevision": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+      "branch": "codex/connectathon-live-readiness",
+      "mainRemote": "upstream",
+      "mainRevision": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
+      "behindMain": 0
+    },
+    "standalone": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
+      "headAtVerification": "02e2b5bc2bc8fa7563ea0fb213208d0ccc714351",
+      "implementationRevision": "02e2b5bc2bc8fa7563ea0fb213208d0ccc714351",
+      "branch": "codex/connectathon-live-readiness",
+      "mainRemote": "origin",
+      "mainRevision": "2e8d91daf360f184e6c98f700031414829c64921",
+      "behindMain": 0
+    }
+  },
+  "rehearsals": {
+    "run001": {
+      "acceptance": "docs/connectathon/evidence/run001-durable-final-acceptance.json",
+      "bundleSha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a",
+      "nativeAssertions": 48,
+      "semanticChecks": 53,
+      "workbenchCalls": 54,
+      "standaloneParityAndSemanticCases": 6
+    },
+    "run002": {
+      "acceptance": "docs/connectathon/evidence/run002-durable-final-acceptance.json",
+      "bundleSha256": "3e6a1fde4db9b4e83d73d56ce388b2777883236f5748e05fd61e7b9025b6023e",
+      "nativeAssertions": 48,
+      "semanticChecks": 71,
+      "workbenchCalls": 72,
+      "standaloneParityAndSemanticCases": 6
+    }
+  },
+  "runtime": {
+    "nativeSha256": "44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d",
+    "nodeSha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0",
+    "wasmSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320"
+  },
+  "browserEvidence": "docs/connectathon/evidence/final-browser-verification.json",
+  "skillInstallation": "docs/connectathon/evidence/agent-skills-install-preflight.json",
+  "frameworkTests": {
+    "passed": 1030,
+    "skipped": 18,
+    "evidence": "docs/connectathon/evidence/rh-skills-9f48a46-full.json"
+  },
+  "knowledgeValidation": {
+    "run001": {
+      "errors": 0,
+      "warnings": 37,
+      "information": 8
+    },
+    "run002": {
+      "errors": 0,
+      "warnings": 65,
+      "information": 12
+    },
+    "unresolvedReferences": 0
+  },
+  "runtimeOutputValidation": {
+    "outputsPerRun": 12,
+    "strictValidatorPassed": false,
+    "acceptedForCoreRehearsal": true,
+    "onlyException": "One MEASURE_MR_SCORE_REQUIRED at MeasureReport.group[0] per younger-than-65 zero-denominator individual report; raw diagnostics retained; all other errors fail",
+    "evidence": [
+      "docs/connectathon/evidence/run001-runtime-final-validation.json",
+      "docs/connectathon/evidence/run002-runtime-final-validation.json"
+    ]
+  },
+  "timing": {
+    "run001ToFirstBundle": "3h26m31s",
+    "run002ToFirstBundle": "2h28m59s",
+    "includesRepairsAndWaits": true,
+    "target60To90MinutesMet": false,
+    "fullyFreshContextReplay": false
+  },
+  "terminology": {
+    "localFull": "LOINC 2.82 search and exact expansion verified",
+    "pinned2_81": "ReasonHub verified fallback; exact three-code expansion bundled",
+    "previewRequiresLiveTerminology": false
+  },
+  "notClaimed": [
+    "Clinical approval",
+    "SDC extraction",
+    "Cohort Measure evaluation",
+    "Second independent CQL engine",
+    "Two independent FHIR server round-trips",
+    "Full track conformance",
+    "Strict validator-green zero-denominator outputs",
+    "Demonstrated 60\u201390-minute live authoring"
+  ],
+  "sourceIntegrity": "docs/connectathon/evidence/source-integrity-latest.json",
+  "upstreamRefresh": "docs/connectathon/evidence/upstream-refresh-latest.json",
+  "runbook": "docs/connectathon/LIVE-RUNBOOK.md",
+  "rerunTools": "docs/connectathon/tools/PROVENANCE.md",
+  "services": {
+    "workbench": "http://localhost:9090",
+    "standalone": "http://localhost:9091",
+    "database": "127.0.0.1:55432/workbench"
+  },
+  "publishing": "Local branches only; no push, merge, deployment or protected source mutation"
+}

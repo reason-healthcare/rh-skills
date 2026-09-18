@@ -1,0 +1,32 @@
+{
+  "archivedAt": "2026-09-18T03:59:24.956539+00:00",
+  "archives": [
+    {
+      "source": "/private/tmp/connectathon-live/tools",
+      "archive": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/tools",
+      "fileCount": 1,
+      "bytes": 187697077
+    },
+    {
+      "source": "/private/tmp/connectathon-live/validator-home",
+      "archive": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/validator-home",
+      "fileCount": 52721,
+      "bytes": 934633901
+    },
+    {
+      "source": "/private/tmp/connectathon-live/uv-cache",
+      "archive": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/uv-cache",
+      "fileCount": 1163,
+      "bytes": 13615632
+    },
+    {
+      "source": "/private/tmp/connectathon-cql-translator",
+      "archive": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/reference-translator",
+      "fileCount": 1648,
+      "bytes": 162815146
+    }
+  ],
+  "validatorSha256": "a3addadfa18dfa23146a0a243b6ede68eaad92157a5407738c468bb3d7e4ccd6",
+  "javaPath": "/Users/bkaney/.asdf/installs/java/adoptopenjdk-17.0.6+10/bin/java",
+  "referenceTranslatorNote": "Copied cache and evidence; archived classpath text files retargeted to their own archive path. No authored CQL changed."
+}

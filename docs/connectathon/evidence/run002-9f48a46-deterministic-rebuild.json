@@ -1,0 +1,70 @@
+{
+  "clinicalReview": "pending; no human clinical approval is claimed",
+  "commands": [
+    "rh-skills formalize steadi-live-replay assessment --force",
+    "rh-skills formalize steadi-live-replay eligibility-criteria --force",
+    "rh-skills formalize steadi-live-replay evidence-summary --force",
+    "rh-skills formalize steadi-live-replay decision-table --force",
+    "rh-skills formalize steadi-live-replay measure --force",
+    "rh-skills formalize steadi-live-replay concepts --force",
+    "rh-skills formalize steadi-live-replay care-pathway --force --generate-strategies",
+    "rh-skills compose-executable steadi-live-replay --root-canonical 'https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0' --fixture-manifest test-bundles/manifest.json --fixture-dir test-bundles/cases --evaluation-date '2026-06-15T09:20:00Z'"
+  ],
+  "comparison": {
+    "acceptedPackageSha256": "6228b5fd6f4a8c2d8948da2fe92175b7b0362d5e3684cd69d4b6e29897260f21",
+    "bundle": {
+      "canonicalJsonSha256": "36bdfed7903ba98dc3b90b70c2f6f4e5e1d65334c50332afc8c76960e958a14f",
+      "rawSha256Original": "3e6a1fde4db9b4e83d73d56ce388b2777883236f5748e05fd61e7b9025b6023e",
+      "rawSha256Replay": "3e6a1fde4db9b4e83d73d56ce388b2777883236f5748e05fd61e7b9025b6023e",
+      "resourceCount": 22,
+      "resourceIdentitiesAndJsonIdentical": true
+    },
+    "computableFiles": {
+      "byteIdentical": true,
+      "count": 28
+    },
+    "fixtureIndexSha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc",
+    "manifest": {
+      "difference": "Only per-resource sourcePath absolute workspace root differs.",
+      "originalRawSha256": "23e31e21be7fbde659729b7660b2e86d22555429ccec8390fe357998a4afb3ad",
+      "replayRawSha256": "d164e1f28627dbb4846deeaeea3df53804b99a50ffbbffec9c2e3869a0e73a0e",
+      "resourceAndChecksumContentIdenticalAfterIgnoringAbsoluteSourcePath": true
+    },
+    "structuredFiles": {
+      "byteIdentical": true,
+      "count": 7
+    }
+  },
+  "formalizedL2ArtifactIds": [
+    "assessment",
+    "eligibility-criteria",
+    "evidence-summary",
+    "decision-table",
+    "measure",
+    "concepts",
+    "care-pathway"
+  ],
+  "frameworkCommit": "9f48a46f91bf2407d46394a0e235908baf9fd11b",
+  "isolationCorrection": {
+    "beforeReplayTrackingSha256": "fceb9ec6aa75e609bf12b707736448fdd263e3b0608dae5916d3524a67026df1",
+    "incident": "The first copied .rh-skills.toml still named the original run-002 root. That first call only updated source tracking event/checksum metadata; all generated resource JSON, source/L2 files, Bundle, manifest, fixture index, and package bytes remained unchanged.",
+    "remediation": "Restored source tracking.yaml from the exact copied pre-replay backup; changed replay .rh-skills.toml repo_root to run-002-compare-9f48a46; reran all seven formalizations and composition only in the clone.",
+    "replayConfigCorrectedBeforeFullReplay": true,
+    "sourceTrackingRestoredToCapturedSha256": "fceb9ec6aa75e609bf12b707736448fdd263e3b0608dae5916d3524a67026df1"
+  },
+  "provider": "stub (deterministic L3 template generation; this is not provider-backed L3 evidence)",
+  "purpose": "Repeat the final run-002 L2-to-FHIR formalization and executable-Bundle composition in a separate clone using rh-skills 9f48a46; compare against accepted Bundle 3e6a.",
+  "replayWorkspace": "/private/tmp/connectathon-live/run-002-compare-9f48a46",
+  "rhCli": {
+    "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+    "sha256": "ca2d5db8e5811d1fd761ba468a6fab312080cab4e32996bfa3a57a3264ad5ecf",
+    "version": "0.2.8"
+  },
+  "scopeNote": "The literal artifact id terminology is not registered; its terminology catalog L2 id is concepts, which formalizes as ValueSet + ConceptMap.",
+  "sourceWorkspace": "/private/tmp/connectathon-live/run-002",
+  "verifiedAt": "2026-09-18T03:52:22Z",
+  "workspaceConfig": {
+    "replayRoot": "/private/tmp/connectathon-live/run-002-compare-9f48a46",
+    "verifiedBeforeReplay": true
+  }
+}

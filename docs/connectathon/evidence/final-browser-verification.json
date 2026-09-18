@@ -1,0 +1,118 @@
+{
+  "checkedAt": "2026-09-18T04:40:38.515111+00:00",
+  "verifier": "Root actual authenticated in-app browser interactions",
+  "workbenchHead": "557cd5b4e62a57e521b43c1e433a0d08878182ff",
+  "standaloneHead": "02e2b5bc2bc8fa7563ea0fb213208d0ccc714351",
+  "runtimeHead": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+  "workbench": {
+    "packageInventory": {
+      "run001": {
+        "resources": 18,
+        "artifacts": 28
+      },
+      "run002": {
+        "resources": 22,
+        "artifacts": 31
+      }
+    },
+    "FHIRHelpersCanonicalAndVersionInspected": true,
+    "positiveIncompleteAndYoungerScenariosPassed": true,
+    "assessmentStaging": {
+      "case": "eligible-no-response",
+      "answers": [
+        true,
+        false,
+        false
+      ],
+      "measureCountsBefore": [
+        1,
+        1,
+        0
+      ],
+      "measureCountsStaged": [
+        1,
+        1,
+        1
+      ],
+      "measureCountsRestored": [
+        1,
+        1,
+        0
+      ],
+      "cpgStaged": "Task plus authored positive guidance",
+      "cpgRestored": "Task plus population and await-complete-response notes"
+    },
+    "zeroDenominatorDisplay": "Not applicable \u2014 denominator is zero",
+    "sourceKeyboard": [
+      "Enter focuses Close",
+      "Tab and Shift+Tab contained",
+      "Escape restores Source trigger"
+    ],
+    "responsive": [
+      {
+        "width": 1440,
+        "height": 900,
+        "documentWidth": 1440
+      },
+      {
+        "width": 1024,
+        "height": 768,
+        "documentWidth": 1024
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "previews": [
+          "Measure",
+          "CPG",
+          "Questionnaire"
+        ]
+      }
+    ],
+    "allSixGraphNodesFit": true,
+    "resultCanonical": {
+      "clientWidth": 134,
+      "scrollWidth": 134,
+      "wordBreak": "break-all"
+    },
+    "stageClearsStaleAnswerWarnings": true,
+    "freshConsoleErrorsAndWarnings": 0
+  },
+  "standalone": {
+    "package": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/output/reason.steadi-live-replay-0.2.0.tgz",
+    "positiveAndUnknownActualApplyPassed": true,
+    "finalUnknownNotes": [
+      "confirm-population",
+      "await-complete-response"
+    ],
+    "localMode": true,
+    "explicitDate": "2026-06-15T09:20:00Z",
+    "explicitPeriod": [
+      "2026-01-01T00:00:00Z",
+      "2026-12-31T23:59:59Z"
+    ],
+    "explicitEncounters": true,
+    "logoLoaded": true,
+    "responsive": [
+      {
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appliedAlertWidth": 346
+      }
+    ],
+    "narrowEditContextReachable": true,
+    "freshConsoleErrorsAndWarnings": 0
+  },
+  "screenshots": "Native browser screenshots emitted in task: all three Workbench previews, package contents, standalone desktop/narrow. No saved PNG artifact claimed.",
+  "limits": [
+    "No full WCAG certification",
+    "API reports separately cover all six scenarios",
+    "Clinical review pending"
+  ]
+}

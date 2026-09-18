@@ -501,16 +501,25 @@ and named fixture selector. Exercise guideline, measure, and Questionnaire
 previews in the browser, then repeat through the standalone CPG preview using
 the identical Bundle and fixture index. Capture their API/browser evidence
 and compare results to the six source assertions. A successful CLI run,
-package build, or snapshot import alone is not a preview pass.
+package build, or snapshot import alone is not a preview pass. For the durable
+required-core and optional service command, see
+[the tools provenance and invocation](tools/PROVENANCE.md).
 
 The runtime represents non-coded text guidance in the RequestGroup notes; it
 does not create a coded order or referral. With a zero measure denominator,
-retain complete counts and omit the mathematically undefined score. The
-validator 6.10.2 zero-denominator MeasureReport diagnostic has a documented
-false-positive beyond the FHIR R4 base cardinality; if encountered, preserve
-the OperationOutcome and verify the generated report's exact structure rather
-than suppressing the validator result. Record standards-server round trips and
-engine identity separately from Workbench/standalone smoke tests.
+retain complete counts and omit the mathematically undefined score. For both
+recorded runs, runtime-output validation is `strictValidatorPassed: false`:
+among the 12 validated outputs, the only accepted error is one
+`MEASURE_MR_SCORE_REQUIRED` at `MeasureReport.group[0]` in
+`younger-than-65--MeasureReport-measure.json`. That fixture has a zero
+denominator, so the FHIR R4 score is undefined and omitted; validator 6.10.2
+still reports it as required. Accept this exception only when the run-specific
+validation record identifies that exact input and error, preserves the raw
+OperationOutcome, and has `unacceptedErrors: []` plus
+`acceptedForCoreRehearsal: true`. Any additional or different error fails the
+gate; do not fabricate a score or suppress the validator result. Record
+standards-server round trips and engine identity separately from
+Workbench/standalone smoke tests.
 
 ## 7. Timing, gates, and limits
 
@@ -598,6 +607,11 @@ RH_CPG_WASM_NODE_MODULE="$RH_REPO/packages/cpg/wasm-node/rh_cpg.js" \
   node .next/standalone/packages/cpg-review/server.js
 ```
 
+Run these two server commands in separate terminals; each remains in the
+foreground. If Docker was restarted, start the existing task database with
+`docker start connectathon-workbench-postgres-20260917`. Do not recreate or
+reset it. Workbench's local demo login is `admin@vermonster.com` / `password`.
+
 The services are intentionally local-only. In separate shells, verify the
 actual routes before opening a browser: the unauthenticated Workbench root may
 return its normal sign-in redirect, while standalone must render its upload
@@ -607,6 +621,27 @@ page directly.
 curl -fsS -o /dev/null -w 'standalone %{http_code}\n' http://127.0.0.1:9091/
 curl -fsS -o /dev/null -w 'workbench %{http_code}\n' http://127.0.0.1:9090/
 ```
+
+Then load the actual browser interfaces. An HTTP 200 alone is insufficient:
+the final standalone build's `postbuild` copies both `.next/static` and
+`public` into its generated server tree. Its final probe checked all 31
+referenced local scripts, styles, fonts, logo and favicon successfully. A
+permanent Loading screen or missing logo means the asset check failed; run
+the production build again before using the preview.
+
+The accepted Workbench snapshots are available at
+[rehearsal 1](http://localhost:9090/projects/connectathon-steadi/snapshots/snap_connectathon-steadi_run001-08a666000842)
+and [rehearsal 2](http://localhost:9090/projects/connectathon-steadi-replay/snapshots/snap_connectathon-steadi-replay_run002-3e6a1fde4db9).
+For the [standalone preview](http://localhost:9091), upload
+`dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/output/reason.steadi-live-replay-0.2.0.tgz`,
+select **STEADI fall-risk screening care pathway**, then **Add Context**.
+Choose a packaged synthetic patient Bundle and the local pinned runtime.
+Use evaluation date `2026-06-15T09:20:00Z`, period
+`2026-01-01T00:00:00Z` through `2026-12-31T23:59:59Z`, and the matching
+`Encounter/encounter-<fixture-id>` from the fixture index. Click **Apply**.
+Positive cases display the authored guidance; incomplete or absent responses
+retain the unknown-response stop note. Patient examples remain separate from
+the executable knowledge Bundle.
 
 If Workbench returns a database aggregate error, check that the process was
 started with `WORKBENCH_DATABASE_URL` above and that the task database at

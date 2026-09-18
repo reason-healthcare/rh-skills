@@ -57,16 +57,29 @@ def main() -> int:
     parser.add_argument("--workbench-cookie-env", default="WORKBENCH_COOKIE")
     parser.add_argument("--oracle-root", required=True, type=Path)
     args = parser.parse_args()
+    # Child checks run from the durable workspace. Normalize all filesystem
+    # arguments before composing child commands so relative operator paths stay
+    # anchored to the invocation directory rather than the child cwd.
+    args.config = args.config.resolve()
+    args.repo_root = args.repo_root.resolve()
+    args.runtime_root = args.runtime_root.resolve()
+    args.oracle_root = args.oracle_root.resolve()
+    args.output = args.output.resolve()
+    if args.workbench_config:
+        args.workbench_config = args.workbench_config.resolve()
     config = json.loads(args.config.read_text())
-    roots = {"REPO_ROOT": str(args.repo_root.resolve()), "RUNTIME_ROOT": str(args.runtime_root.resolve())}
+    roots = {"REPO_ROOT": str(args.repo_root), "RUNTIME_ROOT": str(args.runtime_root)}
     workspace = Path(expand(config["workspace"], roots))
     content = Path(expand(config["content"], roots))
     fixtures = Path(expand(config["fixtures"], roots))
     runtime = Path(expand(config["runtime"], roots))
+    native_runtime = args.runtime_root.resolve() / "target/debug/rh"
+    if not native_runtime.is_file():
+        parser.error(f"native runtime is missing: {native_runtime}")
     args.output.mkdir(parents=True, exist_ok=True)
     checks: list[dict[str, Any]] = []
     native_environment = os.environ.copy()
-    native_environment["RH_CLI_PATH"] = str(args.runtime_root.resolve() / "target/debug/rh")
+    native_environment["RH_CLI_PATH"] = str(native_runtime)
     for matrix in config["nativeCql"]:
         command = [args.rh_skills_bin, "cql", "test", config["topic"], matrix["library"]]
         result = run_command(
@@ -85,10 +98,10 @@ def main() -> int:
     checks.append({"name": "direct-public-node-wasm-semantic", "status": "pass" if direct_passed else "fail", "report": str(direct_report_path), **direct})
     optional = []
     if args.with_standalone:
-            report_dir = args.output / "standalone-api-parity"
-            command = [args.node_bin, str(args.repo_root / "docs/connectathon/tools/vendor/verify-standalone-api-parity.mjs"), "--content", str(content), "--plan", config["plan"], "--fixtures", str(fixtures), "--assertion-root", str(args.oracle_root / "cases"), "--evaluation-date", "2026-06-15T09:20:00Z", "--output", str(report_dir), "--standalone", args.with_standalone, "--runtime", str(runtime), "--guidance-json", json.dumps(config["guidance"])]
-            result = run_command(command, workspace, args.output / "standalone-api-parity.log")
-            optional.append({"name": "standalone-api-parity", "status": "pass" if result["exitCode"] == 0 else "fail", **result})
+        report_dir = args.output / "standalone-api-parity"
+        command = [args.node_bin, str(args.repo_root / "docs/connectathon/tools/vendor/verify-standalone-api-parity.mjs"), "--content", str(content), "--plan", config["plan"], "--fixtures", str(fixtures), "--assertion-root", str(args.oracle_root / "cases"), "--evaluation-date", "2026-06-15T09:20:00Z", "--output", str(report_dir), "--standalone", args.with_standalone, "--runtime", str(runtime), "--guidance-json", json.dumps(config["guidance"])]
+        result = run_command(command, workspace, args.output / "standalone-api-parity.log")
+        optional.append({"name": "standalone-api-parity", "status": "pass" if result["exitCode"] == 0 else "fail", **result})
     else:
         optional.append({"name": "standalone-api-parity", "status": "not_run", "reason": "pass --with-standalone URL to rerun"})
     if args.with_workbench:
@@ -114,7 +127,7 @@ def main() -> int:
             optional.append({"name": "workbench-api-matrix", "status": "pass" if result["exitCode"] == 0 else "fail", **result})
     else:
         optional.append({"name": "workbench-api-matrix", "status": "not_run", "reason": "pass --with-workbench URL, --workbench-config, and an authenticated cookie to rerun"})
-    report = {"checkedAt": dt.datetime.now(dt.timezone.utc).isoformat(), "run": config["run"], "scope": "Required core invokes native CQL and direct Node/WASM only. Optional service replays and external evidence are not converted into a full-track pass.", "inputs": {"workspace": str(workspace), "content": {"path": str(content), "sha256": sha256(content)}, "fixtures": {"path": str(fixtures), "sha256": sha256(fixtures)}, "runtime": {"path": str(runtime), "sha256": sha256(runtime)}}, "core": checks, "corePassed": all(item["status"] == "pass" for item in checks), "optional": optional, "external": [{"name": "authenticated-browser", "status": "not_run"}, {"name": "official-fhir-validation", "status": "not_run"}, {"name": "manual-clinical-review", "status": "not_run"}, {"name": "SDC-extraction", "status": "unsupported"}, {"name": "second-engine-parity", "status": "unsupported"}]}
+    report = {"checkedAt": dt.datetime.now(dt.timezone.utc).isoformat(), "run": config["run"], "scope": "Required core invokes native CQL and direct Node/WASM only. Optional service replays and external evidence are not converted into a full-track pass.", "inputs": {"workspace": str(workspace), "content": {"path": str(content), "sha256": sha256(content)}, "fixtures": {"path": str(fixtures), "sha256": sha256(fixtures)}, "runtime": {"path": str(runtime), "sha256": sha256(runtime)}, "nativeRuntime": {"path": str(native_runtime), "sha256": sha256(native_runtime)}}, "core": checks, "corePassed": all(item["status"] == "pass" for item in checks), "optional": optional, "external": [{"name": "authenticated-browser", "status": "not_run"}, {"name": "official-fhir-validation", "status": "not_run"}, {"name": "manual-clinical-review", "status": "not_run"}, {"name": "SDC-extraction", "status": "unsupported"}, {"name": "second-engine-parity", "status": "unsupported"}]}
     report_path = args.output / "acceptance-report.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))

@@ -279,3 +279,16 @@ Handoff includes the tested skill/tool versions, launch and stage commands/promp
 - Terminology API: `/Users/bkaney/projects/reason-healthcare/hub-distribution/terminology-api/docs/FHIR-R4.md`, `AUTHORIZATION.md`, and `contracts/v1.openapi.json`.
 - HL7's [artifact packaging guidance](https://hl7.org/fhir/uv/cpg/packaging.html) distinguishes knowledge artifacts, dependencies and test content, including target-environment packaging. Resolve exact IG package versions before validation; do not use an unversioned web page as the dependency lock.
 - The supplied extraction fixtures target the [SDC Observation extraction profile](https://hl7.org/fhir/uv/sdc/STU4/en/StructureDefinition-sdc-questionnaire-extr-obsn.html); preserve their normalized comparison contract and pin `hl7.fhir.uv.sdc#4.0.0`.
+
+## Execution handoff — September 18
+
+The scoped preparation is implemented and locally verified. Use the [live
+runbook](connectathon/LIVE-RUNBOOK.md), [journal](CONNECTATHON-JOURNAL.md),
+[acceptance command](connectathon/tools/PROVENANCE.md), and
+[final evidence manifest](connectathon/evidence/final-readiness.json).
+Both independent source-authored packages run through Workbench and standalone;
+all three Workbench previews expose the complete package. G2 retains the exact
+zero-denominator validator exception, and G6 records the observed authoring time
+and prior-context limit. The broader X1/M1/I1 track gates remain deferred. The
+protected Connectathon repository is unchanged. Changes are on local task
+branches; no publication, deployment or merge was performed.

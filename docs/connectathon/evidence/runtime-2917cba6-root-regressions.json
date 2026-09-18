@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-09-18T04:11:13.798453+00:00",
+  "runtimeCommit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+  "verifier": "root independent rerun",
+  "checks": [
+    {
+      "command": "cargo test -p rh-cpg --lib",
+      "passed": 60,
+      "failed": 0,
+      "logSha256": "66f9b284ef4fc3db791a15b0b2a197f6e1286e2c7573a53af355798da9841edb"
+    },
+    {
+      "command": "cargo test -p rh-cpg --test apply_plan_definition",
+      "passed": 4,
+      "failed": 0,
+      "logSha256": "628e7c6149b09042b167a3051828896c693481556bef7687ceeec026e5478e77"
+    }
+  ]
+}
