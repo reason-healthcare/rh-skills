@@ -1,0 +1,534 @@
+{
+  "checkedAt": "2026-09-18T04:18:45.267Z",
+  "scope": "Actual standalone API versus direct public Node/WASM PlanDefinition $apply parity. Guidance expectations are supplied explicitly in --guidance-json; source fixture manifest and case files are read-only.",
+  "inputs": {
+    "contentPath": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+    "contentSha256": "3e6a1fde4db9b4e83d73d56ce388b2777883236f5748e05fd61e7b9025b6023e",
+    "planSelector": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+    "resolvedPlanCanonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+    "fixtureManifestPath": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/executable/fixtures/index.json",
+    "fixtureManifestSha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc",
+    "evaluationDate": "2026-06-15T09:20:00Z",
+    "standaloneBase": "http://127.0.0.1:9091",
+    "runtimePath": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+    "runtimeSha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0",
+    "guidanceContract": {
+      "mode": "informational-guidance-notes",
+      "positiveActionIds": [
+        "refer-exercise-intervention",
+        "individualize-multifactorial-decision"
+      ]
+    },
+    "wasmPath": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-node/rh_cpg_bg.wasm",
+    "wasmSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320",
+    "ignoredForParity": [
+      "generated response Bundle id",
+      "output Bundle entry resource id",
+      "references to those generated entry resources",
+      "entry fullUrl for those generated resources",
+      "meta.lastUpdated",
+      "meta.versionId",
+      "Bundle.timestamp"
+    ]
+  },
+  "sourceFixturesUnchanged": true,
+  "cases": [
+    {
+      "fixtureId": "younger-than-65",
+      "context": {
+        "subject": "Patient/patient-younger-than-65",
+        "encounter": "Encounter/encounter-younger-than-65",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": false,
+        "At Increased Fall Risk": false
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/younger-than-65.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/younger-than-65.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": false,
+            "taskCount": 0,
+            "communicationCount": 0,
+            "requestGroupActionCount": 0,
+            "informationalGuidanceNoteCount": 0,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "younger-than-65",
+            "matchingGuidance": [],
+            "informationalGuidanceNoteCount": 0,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": false,
+            "taskCount": 0,
+            "communicationCount": 0,
+            "requestGroupActionCount": 0,
+            "informationalGuidanceNoteCount": 0,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "younger-than-65",
+            "matchingGuidance": [],
+            "informationalGuidanceNoteCount": 0,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-all-no",
+      "context": {
+        "subject": "Patient/patient-eligible-all-no",
+        "encounter": "Encounter/encounter-eligible-all-no",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": false
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-all-no.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-all-no.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 2,
+            "informationalGuidanceNoteCount": 1,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-all-no",
+            "matchingGuidance": [],
+            "informationalGuidanceNoteCount": 1,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 2,
+            "informationalGuidanceNoteCount": 1,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-all-no",
+            "matchingGuidance": [],
+            "informationalGuidanceNoteCount": 1,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-unsteady-yes",
+      "context": {
+        "subject": "Patient/patient-eligible-unsteady-yes",
+        "encounter": "Encounter/encounter-eligible-unsteady-yes",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": true
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-unsteady-yes.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-unsteady-yes.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "informationalGuidanceNoteCount": 3,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": true,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-unsteady-yes",
+            "matchingGuidance": [
+              "refer-exercise-intervention",
+              "individualize-multifactorial-decision"
+            ],
+            "informationalGuidanceNoteCount": 3,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "informationalGuidanceNoteCount": 3,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": true,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-unsteady-yes",
+            "matchingGuidance": [
+              "refer-exercise-intervention",
+              "individualize-multifactorial-decision"
+            ],
+            "informationalGuidanceNoteCount": 3,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-prior-fall-yes",
+      "context": {
+        "subject": "Patient/patient-eligible-prior-fall-yes",
+        "encounter": "Encounter/encounter-eligible-prior-fall-yes",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": true
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-prior-fall-yes.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-prior-fall-yes.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "informationalGuidanceNoteCount": 3,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": true,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-prior-fall-yes",
+            "matchingGuidance": [
+              "refer-exercise-intervention",
+              "individualize-multifactorial-decision"
+            ],
+            "informationalGuidanceNoteCount": 3,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "informationalGuidanceNoteCount": 3,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": true,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-prior-fall-yes",
+            "matchingGuidance": [
+              "refer-exercise-intervention",
+              "individualize-multifactorial-decision"
+            ],
+            "informationalGuidanceNoteCount": 3,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-incomplete-response",
+      "context": {
+        "subject": "Patient/patient-eligible-incomplete-response",
+        "encounter": "Encounter/encounter-eligible-incomplete-response",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": null
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-incomplete-response.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-incomplete-response.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 2,
+            "informationalGuidanceNoteCount": 2,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-incomplete-response",
+            "matchingGuidance": [],
+            "informationalGuidanceNoteCount": 2,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 2,
+            "informationalGuidanceNoteCount": 2,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-incomplete-response",
+            "matchingGuidance": [],
+            "informationalGuidanceNoteCount": 2,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-no-response",
+      "context": {
+        "subject": "Patient/patient-eligible-no-response",
+        "encounter": "Encounter/encounter-eligible-no-response",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": null
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-no-response.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production-final/eligible-no-response.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 2,
+            "informationalGuidanceNoteCount": 2,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-no-response",
+            "matchingGuidance": [],
+            "informationalGuidanceNoteCount": 2,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 2,
+            "informationalGuidanceNoteCount": 2,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "guidanceContract": {
+              "mode": "informational-guidance-notes",
+              "positiveActionIds": [
+                "refer-exercise-intervention",
+                "individualize-multifactorial-decision"
+              ]
+            },
+            "fixtureId": "eligible-no-response",
+            "matchingGuidance": [],
+            "informationalGuidanceNoteCount": 2,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    }
+  ],
+  "counts": {
+    "total": 6,
+    "parityPassed": 6,
+    "semanticPassed": 6
+  }
+}

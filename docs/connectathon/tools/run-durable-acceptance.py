@@ -55,7 +55,7 @@ def main() -> int:
     parser.add_argument("--with-workbench", metavar="URL")
     parser.add_argument("--workbench-config", type=Path)
     parser.add_argument("--workbench-cookie-env", default="WORKBENCH_COOKIE")
-    parser.add_argument("--oracle-root", type=Path)
+    parser.add_argument("--oracle-root", required=True, type=Path)
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
     roots = {"REPO_ROOT": str(args.repo_root.resolve()), "RUNTIME_ROOT": str(args.runtime_root.resolve())}
@@ -65,38 +65,40 @@ def main() -> int:
     runtime = Path(expand(config["runtime"], roots))
     args.output.mkdir(parents=True, exist_ok=True)
     checks: list[dict[str, Any]] = []
+    native_environment = os.environ.copy()
+    native_environment["RH_CLI_PATH"] = str(args.runtime_root.resolve() / "target/debug/rh")
     for matrix in config["nativeCql"]:
         command = [args.rh_skills_bin, "cql", "test", config["topic"], matrix["library"]]
-        result = run_command(command, workspace, args.output / f"native-{matrix['library']}.log")
+        result = run_command(
+            command, workspace, args.output / f"native-{matrix['library']}.log", native_environment
+        )
         observed_total = sum(total for _, total in result["counts"])
         observed_passed = sum(passed for passed, _ in result["counts"])
         passed = result["exitCode"] == 0 and observed_total == matrix["expected"] and observed_passed == matrix["expected"]
         checks.append({"name": f"native-cql:{matrix['library']}", "status": "pass" if passed else "fail", "expected": matrix["expected"], "observed": {"passed": observed_passed, "total": observed_total}, **result})
-    direct_output = args.output / "direct-node.json"
-    direct_command = [args.node_bin, str(args.repo_root / "docs/connectathon/tools/verify-direct-node.mjs"), "--content", str(content), "--fixtures", str(fixtures), "--runtime", str(runtime), "--plan", config["plan"], "--measure", config["measure"], "--questionnaire", config["questionnaire"], "--output", str(direct_output)]
+    direct_output = args.output / "direct-node"
+    direct_command = [args.node_bin, str(args.repo_root / "docs/connectathon/tools/verify-direct-node.mjs"), "--content", str(content), "--runtime", str(runtime), "--oracle-root", str(args.oracle_root), "--profile", config["run"], "--output", str(direct_output)]
     direct = run_command(direct_command, workspace, args.output / "direct-node.log")
-    direct_report = json.loads(direct_output.read_text()) if direct_output.exists() else {}
-    direct_passed = direct["exitCode"] == 0 and direct_report.get("counts") == {"total": 6, "passed": 6, "failed": 0}
-    checks.append({"name": "direct-public-node-wasm", "status": "pass" if direct_passed else "fail", "report": str(direct_output), **direct})
+    direct_report_path = direct_output / "results.json"
+    direct_report = json.loads(direct_report_path.read_text()) if direct_report_path.exists() else {}
+    direct_passed = direct["exitCode"] == 0 and direct_report.get("counts", {}).get("failed") == 0 and direct_report.get("counts", {}).get("total") == direct_report.get("expectedChecks")
+    checks.append({"name": "direct-public-node-wasm-semantic", "status": "pass" if direct_passed else "fail", "report": str(direct_report_path), **direct})
     optional = []
     if args.with_standalone:
-        if not args.oracle_root:
-            optional.append({"name": "standalone-api-parity", "status": "fail", "reason": "--oracle-root is required for the requested standalone replay"})
-        else:
             report_dir = args.output / "standalone-api-parity"
-            command = [args.node_bin, str(args.repo_root / "docs/connectathon/tools/vendor/verify-standalone-api-parity.mjs"), "--content", str(content), "--plan", config["plan"], "--fixtures", str(fixtures), "--assertion-root", str(args.oracle_root), "--evaluation-date", "2026-06-15T09:20:00Z", "--output", str(report_dir), "--standalone", args.with_standalone, "--runtime", str(runtime), "--guidance-json", json.dumps(config["guidance"])]
+            command = [args.node_bin, str(args.repo_root / "docs/connectathon/tools/vendor/verify-standalone-api-parity.mjs"), "--content", str(content), "--plan", config["plan"], "--fixtures", str(fixtures), "--assertion-root", str(args.oracle_root / "cases"), "--evaluation-date", "2026-06-15T09:20:00Z", "--output", str(report_dir), "--standalone", args.with_standalone, "--runtime", str(runtime), "--guidance-json", json.dumps(config["guidance"])]
             result = run_command(command, workspace, args.output / "standalone-api-parity.log")
             optional.append({"name": "standalone-api-parity", "status": "pass" if result["exitCode"] == 0 else "fail", **result})
     else:
-        optional.append({"name": "standalone-api-parity", "status": "not_run", "reason": "pass --with-standalone URL and --oracle-root to rerun"})
+        optional.append({"name": "standalone-api-parity", "status": "not_run", "reason": "pass --with-standalone URL to rerun"})
     if args.with_workbench:
-        if not args.workbench_config or not args.oracle_root:
-            optional.append({"name": "workbench-api-matrix", "status": "fail", "reason": "--workbench-config and --oracle-root are required for the requested Workbench replay"})
+        if not args.workbench_config:
+            optional.append({"name": "workbench-api-matrix", "status": "fail", "reason": "--workbench-config is required for the requested Workbench replay"})
         elif not os.environ.get(args.workbench_cookie_env):
             optional.append({"name": "workbench-api-matrix", "status": "fail", "reason": f"{args.workbench_cookie_env} is required and is never written to evidence"})
         else:
             workbench_config = json.loads(args.workbench_config.read_text())
-            workbench_config.update({"baseUrl": args.with_workbench, "contentPath": str(content), "fixtureIndexPath": str(fixtures), "assertionRoot": str(args.oracle_root), "runtimePath": str(runtime)})
+            workbench_config.update({"baseUrl": args.with_workbench, "contentPath": str(content), "fixtureIndexPath": str(fixtures), "assertionRoot": str(args.oracle_root / "cases"), "runtimePath": str(runtime)})
             generated_config = args.output / "workbench-api-matrix-config.json"
             generated_config.write_text(json.dumps(workbench_config, indent=2) + "\n")
             verifier_environment = os.environ.copy()
@@ -111,12 +113,13 @@ def main() -> int:
             )
             optional.append({"name": "workbench-api-matrix", "status": "pass" if result["exitCode"] == 0 else "fail", **result})
     else:
-        optional.append({"name": "workbench-api-matrix", "status": "not_run", "reason": "pass --with-workbench URL, --workbench-config, --oracle-root, and an authenticated cookie to rerun"})
+        optional.append({"name": "workbench-api-matrix", "status": "not_run", "reason": "pass --with-workbench URL, --workbench-config, and an authenticated cookie to rerun"})
     report = {"checkedAt": dt.datetime.now(dt.timezone.utc).isoformat(), "run": config["run"], "scope": "Required core invokes native CQL and direct Node/WASM only. Optional service replays and external evidence are not converted into a full-track pass.", "inputs": {"workspace": str(workspace), "content": {"path": str(content), "sha256": sha256(content)}, "fixtures": {"path": str(fixtures), "sha256": sha256(fixtures)}, "runtime": {"path": str(runtime), "sha256": sha256(runtime)}}, "core": checks, "corePassed": all(item["status"] == "pass" for item in checks), "optional": optional, "external": [{"name": "authenticated-browser", "status": "not_run"}, {"name": "official-fhir-validation", "status": "not_run"}, {"name": "manual-clinical-review", "status": "not_run"}, {"name": "SDC-extraction", "status": "unsupported"}, {"name": "second-engine-parity", "status": "unsupported"}]}
     report_path = args.output / "acceptance-report.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
-    return 0 if report["corePassed"] else 1
+    requested_service_failed = any(item["status"] == "fail" for item in optional)
+    return 0 if report["corePassed"] and not requested_service_failed else 1
 
 
 if __name__ == "__main__":

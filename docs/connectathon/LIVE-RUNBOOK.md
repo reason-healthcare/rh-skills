@@ -559,6 +559,64 @@ The run-002 record includes the clone-root isolation correction and identifies
 the only workspace-dependent difference as absolute `sourcePath` values in
 the executable manifest.
 
+## Preview service launch and recovery
+
+The local preview services use the final RH runtime
+`2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83`. Their native binary SHA-256 is
+`44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d`; each
+of the browser, Node, and bundler WASM outputs has SHA-256
+`25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320`.
+Use the durable archived workspaces, never an ephemeral `/private/tmp` run:
+
+```sh
+export SKILLS_REPO=/Users/bkaney/projects/reason-healthcare/rh-skills
+export RH_REPO=/Users/bkaney/projects/reason-healthcare/rh
+export STANDALONE_ROOT="$SKILLS_REPO/dist/connectathon-20260919/standalone"
+export STANDALONE_APP="$STANDALONE_ROOT/packages/cpg-review"
+export WORKBENCH_REPO=/Users/bkaney/projects/reason-healthcare/workbench
+export WORKBENCH_DATABASE_URL='postgres://workbench:workbench@127.0.0.1:55432/workbench'
+
+test "$(git -C "$RH_REPO" rev-parse HEAD)" = 2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83
+test "$(shasum -a 256 "$RH_REPO/packages/cpg/wasm-node/rh_cpg_bg.wasm" | awk '{print $1}')" = 25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320
+```
+
+Build each production application from its checked-out final revision. The
+Workbench build needs the task database at port `55432` only when it starts;
+do not substitute a default local PostgreSQL port. Stop an existing local
+listener only after identifying it, then start one instance of each service:
+
+```sh
+cd "$WORKBENCH_REPO"
+npm run build --workspace @reasonhealth/workbench
+DATABASE_URL="$WORKBENCH_DATABASE_URL" PORT=9090 HOSTNAME=127.0.0.1 \
+  npm run start --workspace @reasonhealth/workbench
+
+cd "$STANDALONE_APP"
+npm run build
+RH_CPG_WASM_NODE_MODULE="$RH_REPO/packages/cpg/wasm-node/rh_cpg.js" \
+  PORT=9091 HOSTNAME=127.0.0.1 \
+  node .next/standalone/packages/cpg-review/server.js
+```
+
+The services are intentionally local-only. In separate shells, verify the
+actual routes before opening a browser: the unauthenticated Workbench root may
+return its normal sign-in redirect, while standalone must render its upload
+page directly.
+
+```sh
+curl -fsS -o /dev/null -w 'standalone %{http_code}\n' http://127.0.0.1:9091/
+curl -fsS -o /dev/null -w 'workbench %{http_code}\n' http://127.0.0.1:9090/
+```
+
+If Workbench returns a database aggregate error, check that the process was
+started with `WORKBENCH_DATABASE_URL` above and that the task database at
+`127.0.0.1:55432` is available; preserve the database and restart the process
+with the same URL. If standalone reports a missing local runtime module, check
+`RH_CPG_WASM_NODE_MODULE`, its exact WASM hash, and rebuild the standalone
+application. Do not fall back to an external engine, HAPI server, or an
+unversioned package. Rerun the API parity entrypoint after either restart and
+record the new build/runtime/content hashes alongside its result.
+
 ## Recovery checks
 
 - **CLI uses the wrong binary or rejects subject/period flags:** inspect

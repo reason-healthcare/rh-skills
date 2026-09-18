@@ -1,0 +1,49 @@
+{
+  "checkedAt": "2026-09-18T04:23:44.503532+00:00",
+  "supersedes": "runtime-app-final-2917cba6-manifest-rev2.json; preserved prior report paths and hashes remain part of history",
+  "runtime": {
+    "commit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+    "nativeSha256": "44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d",
+    "wasmNodeSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320"
+  },
+  "finalApplicationCommits": {
+    "workbench": "f00e223",
+    "standalone": "c120708674c4b22bb110ff865eec87b467ae99a8"
+  },
+  "reports": [
+    {
+      "path": "docs/connectathon/evidence/final-app-coldstart-2917cba6.json",
+      "sha256": "a78b492d653f7e20ff989c14af738b6d80c1b4b5656153e0a979b10ff541c8f4"
+    },
+    {
+      "path": "docs/connectathon/evidence/final-app-coldstart-f00e223-2917cba6.json",
+      "sha256": "ad956346451b34ad6638a27d05d3dc0b322228517b7c23c946caaa044568b5cf"
+    },
+    {
+      "path": "docs/connectathon/evidence/workbench-api-run001-2917cba6.json",
+      "sha256": "b8fcc510a77acec402d4a7610aa2b656560eca51749c8d4d901a8207dd7a127b"
+    },
+    {
+      "path": "docs/connectathon/evidence/workbench-api-run002-2917cba6.json",
+      "sha256": "7164d04c35b024516ac9e6f49bc20ea02551fb4d91e0df9580fe58df7f68b41a"
+    },
+    {
+      "path": "docs/connectathon/evidence/standalone-api-run001-2917cba6.json",
+      "sha256": "8516fb937d7928df9e4c29762119cdf0bda3ce156b27840c97117d85312269c9"
+    },
+    {
+      "path": "docs/connectathon/evidence/standalone-api-run002-2917cba6-output-parity-pending-semantic.json",
+      "sha256": "54a772b33b11590b272f6cff10f190d68c310a19054076a35d350de863cddfc5"
+    },
+    {
+      "path": "docs/connectathon/evidence/standalone-api-run002-2917cba6-final.json",
+      "sha256": "cb4b392f54d4e20735eb978c5c258ea42f27d0691d864004c7f0f463b7153c55"
+    }
+  ],
+  "status": {
+    "workbenchRun001": "54/54 API/direct public Node parity passed",
+    "workbenchRun002": "72/72 API/direct public Node parity passed",
+    "standaloneRun001": "6/6 parity and semantic checks passed",
+    "standaloneRun002": "6/6 output parity and semantic checks passed with explicit positive RequestGroup note action IDs"
+  }
+}
