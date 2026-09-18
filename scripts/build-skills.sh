@@ -418,9 +418,21 @@ PY
       }
       ;;
     companion_files_present)
-      [ -f "${bundle_path}/reference.md" ] && [ -f "${bundle_path}/examples/plan.md" ] && [ -f "${bundle_path}/examples/output.md" ] || {
+      python3 - "${bundle_path}" <<'PY' || {
+from pathlib import Path
+import sys
+
+bundle = Path(sys.argv[1])
+examples = bundle / "examples"
+has_plan = examples.is_dir() and any(
+    path.is_file() and path.stem == "plan" and path.suffix in {".md", ".yaml"}
+    for path in examples.rglob("*")
+)
+has_output = examples.is_dir() and any(path.is_file() for path in examples.rglob("output.md"))
+raise SystemExit(0 if (bundle / "reference.md").is_file() and has_plan and has_output else 1)
+PY
         ERRORS=$((ERRORS + 1))
-        printf 'FAIL [%s] %s/%s rule=%s expected companion files\n' "${scope}" "${platform}" "${skill_name}" "${rule}" >&2
+        printf 'FAIL [%s] %s/%s rule=%s expected reference.md, an examples/**/plan.md or examples/**/plan.yaml, and examples/**/output.md\n' "${scope}" "${platform}" "${skill_name}" "${rule}" >&2
         return 1
       }
       ;;
