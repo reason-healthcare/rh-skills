@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
 
-from rh_skills.commands.cql import _strict_json_equal, cql
+from rh_skills.commands.cql import _strict_json_equal, _versioned_includes, cql
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -140,6 +142,184 @@ def test_validate_errors_exits_nonzero(tmp_path, monkeypatch):
         mock_run.return_value = MagicMock(returncode=1)
         result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
     assert result.exit_code != 0
+
+
+def test_validate_verifies_selected_imported_dependency_before_invoking_rh(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    imported = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert imported.exit_code == 0, imported.output
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "Primary"])
+
+    assert result.exit_code == 0, result.output
+    assert mock_run.call_args[0][0][1:3] == ["cql", "validate"]
+
+
+def test_validate_rejects_tampered_selected_imported_sidecar_before_invoking_rh(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    imported = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert imported.exit_code == 0, imported.output
+    (tmp_path / "topics/test-topic/computable/FHIRHelpers-4.0.1.cql").write_text(
+        "library FHIRHelpers version '4.0.1'\n// tampered\n"
+    )
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "Primary"])
+
+    assert result.exit_code != 0
+    assert "does not match its manifest" in result.output
+    mock_run.assert_not_called()
+
+
+def test_validate_rejects_fhir_library_attachment_that_no_longer_matches_pinned_sidecar(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    imported = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert imported.exit_code == 0, imported.output
+    library_path = tmp_path / "topics/test-topic/computable/Library-fhir-helpers-4-0-1.json"
+    library = json.loads(library_path.read_text())
+    library["content"][0]["data"] = "dGFtcGVyZWQ="  # base64("tampered")
+    library_path.write_text(json.dumps(library, indent=2) + "\n")
+
+    # Preserve the tracking file checksum so this reaches the independent
+    # Library-attachment-to-sidecar comparison rather than failing earlier.
+    tracking_path = tmp_path / "tracking.yaml"
+    tracking = tracking_path.read_text()
+    new_digest = hashlib.sha256(library_path.read_bytes()).hexdigest()
+    updated_tracking, replacements = re.subn(
+        r"^(\s+topics/test-topic/computable/Library-fhir-helpers-4-0-1\.json:\s*)[0-9a-f]{64}\s*$",
+        rf"\g<1>{new_digest}",
+        tracking,
+        flags=re.MULTILINE,
+    )
+    assert replacements == 1
+    tracking_path.write_text(updated_tracking)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "Primary"])
+
+    assert result.exit_code != 0
+    assert "CQL attachment differs" in result.output
+    mock_run.assert_not_called()
+
+
+def test_validate_rejects_untracked_compiled_versioned_sidecar_before_invoking_rh(tmp_path, monkeypatch):
+    workspace = _make_topic(
+        tmp_path,
+        content=(
+            "library TestLib version '1.0.0'\n"
+            "include LocalHelper version '1.0.0'\n"
+        ),
+    )
+    (workspace / "topics/test-topic/computable/elm").mkdir()
+    (workspace / "topics/test-topic/computable/elm/LocalHelper-1.0.0.json").write_text(
+        json.dumps({"library": {"identifier": {"id": "LocalHelper", "version": "1.0.0"}}})
+    )
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code != 0
+    assert "not a tracked imported dependency" in result.output
+    mock_run.assert_not_called()
+
+
+def test_validate_rejects_untracked_compiled_sidecar_reached_through_local_source_include(tmp_path, monkeypatch):
+    workspace = _make_topic(
+        tmp_path,
+        content=(
+            "library TestLib version '1.0.0'\n"
+            "include LocalHelper version '1.0.0'\n"
+        ),
+    )
+    computable = workspace / "topics/test-topic/computable"
+    (computable / "LocalHelper-1.0.0.cql").write_text(
+        "library LocalHelper version '1.0.0'\n"
+        "include CompiledLeaf version '1.0.0'\n"
+    )
+    (computable / "elm").mkdir()
+    (computable / "elm/CompiledLeaf-1.0.0.json").write_text(
+        json.dumps({"library": {"identifier": {"id": "CompiledLeaf", "version": "1.0.0"}}})
+    )
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code != 0
+    assert "CompiledLeaf-1.0.0.json is not a tracked imported dependency" in result.output
+    mock_run.assert_not_called()
+
+
+def test_validate_keeps_versioned_local_source_only_include_compatible(tmp_path, monkeypatch):
+    workspace = _make_topic(
+        tmp_path,
+        content=(
+            "library TestLib version '1.0.0'\n"
+            "include LocalHelper version '1.0.0'\n"
+        ),
+    )
+    (workspace / "topics/test-topic/computable/LocalHelper-1.0.0.cql").write_text(
+        "library LocalHelper version '1.0.0'\n"
+    )
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code == 0, result.output
+    assert mock_run.call_args[0][0][1:3] == ["cql", "validate"]
+
+
+def test_validate_ignores_commented_out_versioned_include(tmp_path, monkeypatch):
+    workspace = _make_topic(
+        tmp_path,
+        content=(
+            "library TestLib version '1.0.0'\n"
+            "/* include CompiledLeaf version '1.0.0' */\n"
+            "// include AlsoIgnored version '1.0.0'\n"
+            "define X: 'include Quoted version \\'1.0.0\\''\n"
+        ),
+    )
+    # If the scanner sees either commented directive, this arbitrary sidecar
+    # would turn a no-import local library into a provenance error.
+    (workspace / "topics/test-topic/computable/elm").mkdir()
+    (workspace / "topics/test-topic/computable/elm/CompiledLeaf-1.0.0.json").write_text(
+        json.dumps({"library": {"identifier": {"id": "CompiledLeaf", "version": "1.0.0"}}})
+    )
+    (workspace / "tracking.yaml").write_text("topics: []\n")
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code == 0, result.output
+    assert mock_run.call_args[0][0][1:3] == ["cql", "validate"]
+
+
+def test_versioned_include_scanner_handles_cql_backslash_strings_and_backtick_identifiers(tmp_path):
+    source = tmp_path / "Quoted.cql"
+    source.write_text(
+        "library Quoted version '1.0.0'\n"
+        "define Example: 'include Ignored version \\'1.0.0\\''\n"
+        "include `Pinned.Helper` version '2.0.0'\n"
+    )
+
+    assert _versioned_includes(source) == {("Pinned.Helper", "2.0.0")}
 
 
 # ── translate ─────────────────────────────────────────────────────────────────

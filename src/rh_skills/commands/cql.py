@@ -1,6 +1,7 @@
 """rh-skills cql — CQL command group (validate/translate/test via rh)."""
 from __future__ import annotations
 
+import base64
 import json
 import shutil
 import subprocess
@@ -8,8 +9,8 @@ from pathlib import Path
 
 import click
 
-from rh_skills.common import config_value, repo_root
-from rh_skills.commands.cql_library import import_library
+from rh_skills.common import config_value, repo_root, require_topic, require_tracking, sha256_file, tracking_file
+from rh_skills.commands.cql_library import _load_manifest, import_library
 
 
 def _resolve_rh_binary() -> str:
@@ -34,6 +35,308 @@ def _cql_path(topic: str, library: str) -> Path:
     """Return the canonical .cql file path for a topic/library."""
     root = repo_root()
     return root / "topics" / topic / "computable" / f"{library}.cql"
+
+
+def _versioned_includes(cql_path: Path) -> set[tuple[str, str]]:
+    """Return lexical versioned include directives declared by one CQL file.
+
+    This deliberately does not use a line regex: examples in ``//`` or
+    ``/* ... */`` comments, and strings containing the word ``include``, are
+    not library dependencies. It only needs the small declaration grammar
+    here, while the native compiler remains the authority for full CQL.
+    """
+    try:
+        source = cql_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise click.ClickException(f"Cannot read CQL source {cql_path}: {exc}") from exc
+
+    tokens: list[tuple[str, str]] = []
+    index = 0
+    while index < len(source):
+        character = source[index]
+        if character.isspace():
+            index += 1
+            continue
+        if source.startswith("//", index):
+            newline = source.find("\n", index + 2)
+            index = len(source) if newline < 0 else newline + 1
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            index = len(source) if end < 0 else end + 2
+            continue
+        if character == "'":
+            index += 1
+            value: list[str] = []
+            while index < len(source):
+                if source[index] == "\\":
+                    if index + 1 >= len(source):
+                        # The native parser rejects an unterminated escape.
+                        # Treat the remaining token as a string, rather than
+                        # scanning its contents as a declaration.
+                        index = len(source)
+                        break
+                    escaped = source[index + 1]
+                    value.append({
+                        "n": "\n",
+                        "r": "\r",
+                        "t": "\t",
+                        "f": "\f",
+                    }.get(escaped, escaped))
+                    index += 2
+                    continue
+                if source[index] == "'":
+                    index += 1
+                    break
+                value.append(source[index])
+                index += 1
+            tokens.append(("string", "".join(value)))
+            continue
+        if character in {'"', "`"}:
+            delimiter = character
+            index += 1
+            value = []
+            while index < len(source):
+                if source[index] == delimiter:
+                    index += 1
+                    break
+                value.append(source[index])
+                index += 1
+            tokens.append(("identifier", "".join(value)))
+            continue
+        if character.isalpha() or character == "_":
+            end = index + 1
+            while end < len(source) and (source[end].isalnum() or source[end] in "._"):
+                end += 1
+            tokens.append(("identifier", source[index:end]))
+            index = end
+            continue
+        tokens.append(("punctuation", character))
+        index += 1
+
+    includes: set[tuple[str, str]] = set()
+    for index, (kind, value) in enumerate(tokens):
+        if kind != "identifier" or value.lower() != "include":
+            continue
+        if index + 3 >= len(tokens):
+            continue
+        name_kind, name = tokens[index + 1]
+        version_kind, version_keyword = tokens[index + 2]
+        value_kind, version = tokens[index + 3]
+        if (
+            name_kind == "identifier"
+            and version_kind == "identifier"
+            and version_keyword.lower() == "version"
+            and value_kind == "string"
+            and version
+        ):
+            includes.add((name, version))
+    return includes
+
+
+def _repo_file(raw_path: object, label: str) -> Path:
+    """Resolve one tracked repo-relative file without permitting an escape."""
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        raise click.ClickException(f"{label} must be a non-empty repository-relative path")
+    candidate = Path(raw_path)
+    if candidate.is_absolute():
+        raise click.ClickException(f"{label} must be repository-relative")
+    root = repo_root().resolve()
+    try:
+        resolved = (root / candidate).resolve(strict=True)
+        resolved.relative_to(root)
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(f"{label} escapes or cannot be read from the repository") from exc
+    if not resolved.is_file():
+        raise click.ClickException(f"{label} is not a file: {resolved}")
+    return resolved
+
+
+def _tracked_external_dependencies(topic: str) -> dict[tuple[str, str], list[dict]]:
+    """Return imported dependency tracking entries, keyed by CQL identity.
+
+    A workspace without tracking remains valid for local CQL authoring. It only
+    becomes an error when a versioned compiled sidecar is selected below.
+    """
+    if not tracking_file().is_file():
+        return {}
+    topic_entry = require_topic(require_tracking(), topic)
+    dependencies: dict[tuple[str, str], list[dict]] = {}
+    for entry in topic_entry.get("computable", []) or []:
+        if not isinstance(entry, dict) or entry.get("strategy") != "external-dependency":
+            continue
+        dependency = entry.get("external_dependency")
+        if not isinstance(dependency, dict):
+            raise click.ClickException(
+                f"External dependency tracking entry {entry.get('name')!r} has no external_dependency object"
+            )
+        name = dependency.get("name")
+        version = dependency.get("version")
+        if not isinstance(name, str) or not name or not isinstance(version, str) or not version:
+            raise click.ClickException(
+                f"External dependency tracking entry {entry.get('name')!r} needs name and version"
+            )
+        dependencies.setdefault((name, version), []).append(entry)
+    return dependencies
+
+
+def _tracked_file_digest(entry: dict, path: Path, label: str) -> None:
+    """Require the tracked path and checksum to match the exact on-disk bytes."""
+    root = repo_root().resolve()
+    try:
+        relative = path.resolve().relative_to(root).as_posix()
+    except ValueError as exc:  # pragma: no cover - guarded by callers
+        raise click.ClickException(f"{label} escapes repository root: {path}") from exc
+    files = entry.get("files")
+    checksums = entry.get("checksums")
+    if not isinstance(files, list) or relative not in files:
+        raise click.ClickException(f"Pinned dependency does not track {label}: {relative}")
+    expected = checksums.get(relative) if isinstance(checksums, dict) else None
+    actual = sha256_file(path)
+    if not isinstance(expected, str) or expected != actual:
+        raise click.ClickException(
+            f"Pinned dependency tracking checksum mismatch for {label}: {relative}"
+        )
+
+
+def _attachment_bytes(library: dict, content_type: str, label: str) -> bytes:
+    content = library.get("content")
+    if not isinstance(content, list):
+        raise click.ClickException(f"{label} Library.content must be an array")
+    matches = [attachment for attachment in content if isinstance(attachment, dict)
+               and attachment.get("contentType") == content_type]
+    if len(matches) != 1 or not isinstance(matches[0].get("data"), str):
+        raise click.ClickException(
+            f"{label} Library must contain exactly one base64 {content_type} attachment"
+        )
+    try:
+        return base64.b64decode(matches[0]["data"], validate=True)
+    except ValueError as exc:
+        raise click.ClickException(f"{label} Library {content_type} attachment is not valid base64") from exc
+
+
+def _verify_imported_dependency(
+    entry: dict,
+    name: str,
+    version: str,
+    computable_dir: Path,
+) -> Path:
+    """Verify one selected compiled dependency and return its CQL sidecar."""
+    dependency = entry.get("external_dependency")
+    if not isinstance(dependency, dict):  # guarded while indexing, retained for direct calls
+        raise click.ClickException("External dependency tracking entry has no provenance")
+    manifest_path = _repo_file(dependency.get("manifest"), f"{name} {version} manifest")
+    imported = _load_manifest(manifest_path)
+    expected_resource = {
+        "canonical": imported["resource"]["url"],
+        "name": imported["resource"]["name"],
+        "version": imported["resource"]["version"],
+    }
+    actual_resource = {key: dependency.get(key) for key in expected_resource}
+    if actual_resource != expected_resource:
+        raise click.ClickException(
+            f"Pinned dependency provenance does not match its manifest for {name} {version}"
+        )
+    if dependency.get("source") != imported["source"]:
+        raise click.ClickException(
+            f"Pinned dependency source provenance does not match its manifest for {name} {version}"
+        )
+    if dependency.get("cql_sha256") != imported["cql_sha256"] or dependency.get("elm_sha256") != imported["elm_sha256"]:
+        raise click.ClickException(
+            f"Pinned dependency CQL/ELM provenance does not match its manifest for {name} {version}"
+        )
+
+    cql_path = computable_dir / f"{name}-{version}.cql"
+    elm_path = computable_dir / "elm" / f"{name}-{version}.json"
+    for path, expected, label in [
+        (cql_path, imported["cql_sha256"], "CQL sidecar"),
+        (elm_path, imported["elm_sha256"], "ELM sidecar"),
+    ]:
+        if not path.is_file():
+            raise click.ClickException(f"Pinned dependency {label} is missing: {path}")
+        if sha256_file(path) != expected:
+            raise click.ClickException(f"Pinned dependency {label} does not match its manifest: {path}")
+        _tracked_file_digest(entry, path, label)
+
+    library_candidates: list[tuple[Path, dict]] = []
+    for raw_path in entry.get("files", []) or []:
+        if not isinstance(raw_path, str) or not raw_path.endswith(".json"):
+            continue
+        path = _repo_file(raw_path, f"{name} {version} tracked file")
+        try:
+            resource = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise click.ClickException(f"Cannot read pinned dependency Library {path}: {exc}") from exc
+        if (
+            isinstance(resource, dict)
+            and resource.get("resourceType") == "Library"
+            and resource.get("id") == imported["resource"]["id"]
+            and resource.get("url") == imported["resource"]["url"]
+            and resource.get("name") == name
+            and resource.get("version") == version
+        ):
+            library_candidates.append((path, resource))
+    if len(library_candidates) != 1:
+        raise click.ClickException(
+            f"Pinned dependency {name} {version} must track exactly one matching FHIR Library, found {len(library_candidates)}"
+        )
+    library_path, library = library_candidates[0]
+    _tracked_file_digest(entry, library_path, "FHIR Library")
+    if _attachment_bytes(library, "text/cql", f"{name} {version}") != cql_path.read_bytes():
+        raise click.ClickException(f"Pinned dependency FHIR Library CQL attachment differs from {cql_path}")
+    if _attachment_bytes(library, "application/elm+json", f"{name} {version}") != elm_path.read_bytes():
+        raise click.ClickException(f"Pinned dependency FHIR Library ELM attachment differs from {elm_path}")
+    return cql_path
+
+
+def _verify_pinned_dependencies(topic: str, cql_path: Path) -> None:
+    """Verify every selected compiled include has immutable import provenance.
+
+    Versioned local source includes remain supported when no compiled ELM
+    sidecar exists. Once ``elm/Name-Version.json`` is present, it must be a
+    tracked ``external-dependency`` import; runtime must never select an
+    arbitrary sidecar or silently recompile a changed imported source.
+    """
+    root_includes = _versioned_includes(cql_path)
+    if not root_includes:
+        return
+
+    computable_dir = cql_path.parent
+    dependencies = _tracked_external_dependencies(topic)
+    visited: set[tuple[str, str]] = set()
+
+    def verify_include(name: str, version: str) -> None:
+        identity = (name, version)
+        if identity in visited:
+            return
+        visited.add(identity)
+        selected_elm = computable_dir / "elm" / f"{name}-{version}.json"
+        entries = dependencies.get(identity, [])
+        if not entries:
+            if selected_elm.exists():
+                raise click.ClickException(
+                    f"Compiled ELM sidecar {selected_elm} is not a tracked imported dependency for {name} {version}"
+                )
+            # With no selected ELM, native resolution falls back to the first
+            # source candidate: input.parent, then --lib-path. rh-skills uses
+            # the computable directory for both, so this is the sole local
+            # candidate. Scan it for transitive selected sidecars before
+            # allowing package-cache or absent-source resolution to proceed.
+            source_candidate = computable_dir / f"{name}-{version}.cql"
+            if source_candidate.is_file():
+                for child_name, child_version in _versioned_includes(source_candidate):
+                    verify_include(child_name, child_version)
+            return
+        if len(entries) != 1:
+            raise click.ClickException(
+                f"Ambiguous imported dependency provenance for {name} {version}: {len(entries)} tracking entries"
+            )
+        dependency_cql = _verify_imported_dependency(entries[0], name, version, computable_dir)
+        for child_name, child_version in _versioned_includes(dependency_cql):
+            verify_include(child_name, child_version)
+
+    for name, version in root_includes:
+        verify_include(name, version)
 
 
 def _parse_eval_output(raw: str):
@@ -238,10 +541,11 @@ def cql():
 @click.argument("library")
 def validate(topic: str, library: str) -> None:
     """Validate a .cql file using `rh cql validate`."""
-    rh = _resolve_rh_binary()
     cql_file = _cql_path(topic, library)
     if not cql_file.exists():
         raise click.ClickException(f"CQL file not found: {cql_file}")
+    _verify_pinned_dependencies(topic, cql_file)
+    rh = _resolve_rh_binary()
 
     result = subprocess.run(
         [rh, "cql", "validate", str(cql_file), "--lib-path", str(cql_file.parent)],
@@ -255,10 +559,11 @@ def validate(topic: str, library: str) -> None:
 @click.argument("library")
 def translate(topic: str, library: str) -> None:
     """Compile CQL to topics/<topic>/computable/elm/<library>.json."""
-    rh = _resolve_rh_binary()
     cql_file = _cql_path(topic, library)
     if not cql_file.exists():
         raise click.ClickException(f"CQL file not found: {cql_file}")
+    _verify_pinned_dependencies(topic, cql_file)
+    rh = _resolve_rh_binary()
 
     elm_dir = cql_file.parent / "elm"
     elm_dir.mkdir(exist_ok=True)
@@ -277,10 +582,11 @@ def translate(topic: str, library: str) -> None:
 @click.argument("library")
 def test(topic: str, library: str) -> None:
     """Run fixture-based expression tests using ``rh cql eval``."""
-    rh = _resolve_rh_binary()
     cql_file = _cql_path(topic, library)
     if not cql_file.exists():
         raise click.ClickException(f"CQL file not found: {cql_file}")
+    _verify_pinned_dependencies(topic, cql_file)
+    rh = _resolve_rh_binary()
 
     fixtures_root = repo_root() / "tests" / "cql" / library
     if not fixtures_root.exists():

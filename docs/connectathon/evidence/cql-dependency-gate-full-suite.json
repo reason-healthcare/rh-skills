@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-09-18T17:17:02.532121+00:00",
+  "scope": "Root complete framework suite with pinned dependency gate working tree",
+  "command": ".venv/bin/python -m pytest -q",
+  "exitCode": 0,
+  "passed": 1057,
+  "skipped": 18,
+  "warnings": 8,
+  "warningScope": "Existing Click deprecated promote combine usage",
+  "log": "/tmp/connectathon-root-dependency-gate-final-pytest.log",
+  "inputs": {
+    "src/rh_skills/commands/cql.py": "cc72326822f14c98d663156e6b3121181ee1a2ba6780e136ff9715087db74b4c",
+    "tests/unit/test_cql.py": "ab8f11f901afebbacf15b29cb2966b20b1f7f923bb1a522cc4a4b5bfed00c686"
+  }
+}
