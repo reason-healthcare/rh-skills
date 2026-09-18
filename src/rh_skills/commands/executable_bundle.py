@@ -11,6 +11,7 @@ import tempfile
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.parse import quote
 
 import click
 
@@ -225,19 +226,28 @@ def _elm_definition_names(elm: dict[str, Any]) -> set[str]:
     library = elm.get("library", {}) if isinstance(elm, dict) else {}
     statements = library.get("statements", {}) if isinstance(library, dict) else {}
     definitions = statements.get("def", []) if isinstance(statements, dict) else []
-    names: set[str] = set()
+    expression_names: set[str] = set()
+    saw_definition = False
     for definition in definitions if isinstance(definitions, list) else []:
         if not isinstance(definition, dict) or not isinstance(definition.get("name"), str):
+            continue
+        saw_definition = True
+        definition_type = definition.get("type")
+        if definition_type == "FunctionDef" and definition.get("external") is True:
+            # Official FHIRHelpers ELM exposes host-provided operations such as
+            # resolve as external FunctionDefs. They have operands but no ELM
+            # expression, and are not valid text/cql-identifier values.
             continue
         expression = definition.get("expression")
         if not isinstance(expression, dict) or not expression:
             raise ExecutableBundleError(
                 f"ELM definition {definition['name']} is missing an executable expression"
             )
-        names.add(definition["name"])
-    if not names:
-        raise ExecutableBundleError("Embedded ELM contains no executable definitions")
-    return names
+        if definition_type in (None, "ExpressionDef"):
+            expression_names.add(definition["name"])
+    if not saw_definition:
+        raise ExecutableBundleError("Embedded ELM contains no definitions")
+    return expression_names
 
 
 def _validate_library_content(
@@ -449,6 +459,41 @@ def _sha256_json(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     ).hexdigest()
+
+
+def _bundle_full_urls(resources: list[dict[str, Any]]) -> dict[int, str]:
+    """Return deterministic, collision-free fullUrls for FHIR Bundle entries."""
+    canonical_counts: dict[str, int] = {}
+    for resource in resources:
+        url = resource.get("url")
+        if isinstance(url, str) and url:
+            canonical_counts[url] = canonical_counts.get(url, 0) + 1
+
+    full_urls: dict[int, str] = {}
+    seen: set[str] = set()
+    for resource in resources:
+        resource_type = resource["resourceType"]
+        resource_id = resource["id"]
+        canonical = resource.get("url")
+        if isinstance(canonical, str) and canonical:
+            if canonical_counts[canonical] == 1:
+                full_url = canonical
+            else:
+                version = resource.get("version")
+                if not isinstance(version, str) or not version:
+                    raise ExecutableBundleError(
+                        f"{resource_type}/{resource_id}: duplicate canonical has no version for Bundle fullUrl"
+                    )
+                full_url = f"{canonical}?version={quote(version, safe='')}"
+        else:
+            full_url = f"https://reason.healthcare/fhir/{resource_type}/{resource_id}"
+        if full_url in seen:
+            raise ExecutableBundleError(
+                f"Duplicate Bundle fullUrl {full_url} for {resource_type}/{resource_id}"
+            )
+        seen.add(full_url)
+        full_urls[id(resource)] = full_url
+    return full_urls
 
 
 def _validate_evaluation_date(value: str | None) -> str:
@@ -879,19 +924,24 @@ def compose_executable_bundle(
             entry["parameters"] = parameters
         fixture_entries.append(entry)
 
+    sorted_resources = sorted(
+        resources,
+        key=lambda item: (
+            str(item.get("resourceType", "")),
+            str(item.get("url", "")),
+            str(item.get("version", "")),
+            str(item.get("id", "")),
+        ),
+    )
+    full_urls = _bundle_full_urls(sorted_resources)
     bundle_resource = {
         "resourceType": "Bundle",
         "id": "executable-cpg",
         "type": "collection",
-        "entry": [{"resource": resource} for resource in sorted(
-            resources,
-            key=lambda item: (
-                str(item.get("resourceType", "")),
-                str(item.get("url", "")),
-                str(item.get("version", "")),
-                str(item.get("id", "")),
-            ),
-        )],
+        "entry": [
+            {"fullUrl": full_urls[id(resource)], "resource": resource}
+            for resource in sorted_resources
+        ],
     }
     fixture_index = {"fixtures": fixture_entries}
     manifest_output = {

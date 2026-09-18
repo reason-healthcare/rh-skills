@@ -9,6 +9,7 @@ import pytest
 
 from rh_skills.commands.executable_bundle import (
     ExecutableBundleError,
+    _elm_definition_names,
     _validate_closure,
     compose_executable_bundle,
 )
@@ -140,6 +141,38 @@ def test_closure_rejects_elm_definition_without_executable_expression():
 
     with pytest.raises(ExecutableBundleError, match="missing an executable expression"):
         _validate_closure([library, _root()], "https://example.org/fhir/PlanDefinition/root|1.0.0")
+
+
+def test_elm_permits_official_external_fhirhelpers_function_definition():
+    elm = {
+        "library": {
+            "statements": {
+                "def": [
+                    {
+                        "type": "FunctionDef",
+                        "operand": [
+                            {
+                                "type": "OperandDef",
+                                "operandTypeSpecifier": {
+                                    "type": "NamedTypeSpecifier",
+                                    "name": "{urn:hl7-org:elm-types:r1}String",
+                                },
+                                "name": "reference",
+                            }
+                        ],
+                        "name": "resolve",
+                        "context": "Unfiltered",
+                        "accessLevel": "Public",
+                        "external": True,
+                    }
+                ]
+            }
+        }
+    }
+
+    # Matches the official FHIRHelpers 4.0.1 external `resolve` shape. It is
+    # accepted for closure but cannot satisfy a zero-operand CQL identifier.
+    assert _elm_definition_names(elm) == set()
 
 
 def test_closure_rejects_cql_identifier_missing_from_linked_library():
@@ -362,6 +395,7 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
 
     fixture_index = json.loads(result["index"].read_text())
     executable_manifest = json.loads(result["manifest"].read_text())
+    executable_bundle = json.loads(result["bundle"].read_text())
     assert fixture_index["fixtures"] == [
         {
             "id": "case-one",
@@ -379,6 +413,10 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
         }
     ]
     assert json.loads((output / "fixtures" / "case-one.json").read_text()) == _fixture_bundle()
+    assert [entry["fullUrl"] for entry in executable_bundle["entry"]] == [
+        "https://example.org/fhir/Library/logic",
+        "https://example.org/fhir/PlanDefinition/root",
+    ]
     assert executable_manifest["checksums"]["algorithm"] == "sha256-canonical-json"
     assert len(executable_manifest["checksums"]["rootResourceCanonicalJson"]) == 64
     assert executable_manifest["checksums"]["fixtureBundles"][0]["path"] == "fixtures/case-one.json"
