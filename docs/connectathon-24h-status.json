@@ -47,7 +47,7 @@
     },
     {
       "id": "G2",
-      "status": "passed",
+      "status": "in_progress",
       "owner": "skills_usecase_audit + runtime_execution",
       "evidence": [
         "docs/connectathon/evidence/run001-final-fhir-summary.json",
@@ -55,13 +55,21 @@
         "docs/connectathon/evidence/rh-skills-26743a6-full.json"
       ],
       "passedAt": "2026-09-18T03:22:59.726412+00:00",
-      "scope": "First source-authored rehearsal; second independent replay remains G6"
+      "scope": "First source-authored rehearsal; second independent replay remains G6",
+      "reopenedAt": "2026-09-18T03:44:17.521881+00:00",
+      "note": "Knowledge package and actual execution pass; runtime-generated FHIR conformance revealed score and textual RequestGroup defects, now assigned."
     },
     {
       "id": "G3",
-      "status": "in_progress",
+      "status": "passed",
       "owner": "workbench_audit",
-      "evidence": []
+      "evidence": [
+        "docs/connectathon/evidence/workbench-api-run001-prefixed.json",
+        "docs/connectathon/evidence/workbench-incomplete-package-report.json",
+        "docs/connectathon/evidence/workbench-browser-run001-staged-flow.json"
+      ],
+      "passedAt": "2026-09-18T03:35:18.616319+00:00",
+      "scope": "First actual generated snapshot and all three previews; second independently authored package pending G6"
     },
     {
       "id": "G4",
@@ -84,8 +92,8 @@
     },
     {
       "id": "G7",
-      "status": "pending",
-      "owner": null,
+      "status": "in_progress",
+      "owner": "root + runtime_execution + skills_usecase_audit",
       "evidence": []
     },
     {
@@ -107,7 +115,7 @@
       "evidence": []
     }
   ],
-  "nextAction": "Repair final Bundle references and Questionnaire identity handoff, rerun final validation/API checks and browser assessment-to-preview flow; finish independent package and cold start.",
+  "nextAction": "Repair runtime output FHIR conformance, revalidate actual final outputs, finish both package API/browser parity and cold-start runbooks.",
   "iterations": [
     {
       "id": "ITER-001",
@@ -218,9 +226,27 @@
       "startedAt": "2026-09-18T03:22:59.726412+00:00",
       "status": "in_progress",
       "summary": "G1/G2 first package pass; prefixed WorkbenchAPI54/54 and incomplete409s; browserencounter handoff and secondpackage semanticlink underrepair."
+    },
+    {
+      "id": "ITER-019",
+      "startedAt": "2026-09-18T03:35:18.616319+00:00",
+      "status": "in_progress",
+      "summary": "Actual browser assessment\u2192measure\u2192guideline\u2192restore passes; second-run explicit linkage/AND-gate repair verified; final build and recovery underway."
+    },
+    {
+      "id": "ITER-020",
+      "startedAt": "2026-09-18T03:40:58.201119+00:00",
+      "status": "in_progress",
+      "summary": "Second independently authored final22-resourceBundle validated0FHIRerrors andactual71/71executionchecks; firstbundle deterministicrebuildsamehash; second snapshotimported."
+    },
+    {
+      "id": "ITER-021",
+      "startedAt": "2026-09-18T03:44:17.521881+00:00",
+      "status": "in_progress",
+      "summary": "Broadened outputFHIRvalidation catches sixproportionMeasureReportscores and fiveRequestGroup text-onlyaction violations; runtimefixandindependentstandardsreviewassigned."
     }
   ],
-  "lastUpdatedAt": "2026-09-18T01:36:26.092259+00:00",
+  "lastUpdatedAt": "2026-09-18T03:44:17.521881+00:00",
   "journal": "docs/CONNECTATHON-JOURNAL.md",
   "constraints": [
     "Do not modify hl7-agentic-knowledge-connectathon; all source files and git state are read-only.",
@@ -230,33 +256,38 @@
   "repositories": {
     "rh-skills": {
       "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
-      "head": "0cc1354f162af3a0b06394c092e69ffab83d1a19",
+      "head": "9f48a46f91bf2407d46394a0e235908baf9fd11b",
       "branch": "codex/connectathon-live-readiness",
-      "status": "M docs/CONNECTATHON-JOURNAL.md\n M docs/connectathon-24h-status.json\n M schemas/l2-schema.yaml\n M skills/.curated/rh-inf-formalize/SKILL.md\n M src/rh_skills/cli.py\n M src/rh_skills/commands/cql.py\n M src/rh_skills/commands/formalize.py\n M src/rh_skills/commands/promote.py\n M src/rh_skills/schemas/l2-schema.yaml\n M src/rh_skills/templates/formalize/activitydefinition/questionnaire-task.json.j2\n M src/rh_skills/templates/formalize/plandefinition/care-pathway-group.json.j2\n M src/rh_skills/templates/formalize/plandefinition/care-pathway-root.json.j2\n M src/rh_skills/validators/care_pathway.py\n M src/rh_skills/validators/decision_table.py\n M tests/cql/README.md\n M tests/unit/test_cql.py\n M tests/unit/test_formalize.py\n M tests/unit/test_validate.py\n?? docs/connectathon/evidence/generated-execution-pass4.json\n?? docs/connectathon/evidence/generated-fhir-pass3-validation-summary.json\n?? docs/connectathon/evidence/upstream-refresh-latest.json"
+      "status": "M docs/connectathon/evidence/native-final-context-verification.json\n?? docs/connectathon/evidence/workbench-browser-run001-staged-flow.json",
+      "checkedAt": "2026-09-18T03:35:18.616319+00:00"
     },
     "workbench": {
       "path": "/Users/bkaney/projects/reason-healthcare/workbench",
-      "head": "fc6bdd6b6d73dca114a493fabae45eb7a5af6827",
+      "head": "2c084cb90d9fa0c0dd1217bb7b3f67c112cdb949",
       "branch": "codex/connectathon-live-readiness",
-      "status": ""
+      "status": "M apps/workbench/next-env.d.ts",
+      "checkedAt": "2026-09-18T03:35:18.616319+00:00"
     },
     "rh": {
       "path": "/Users/bkaney/projects/reason-healthcare/rh",
-      "head": "2fe13b88c0aafcc3139e6e32b873497afc83d4c5",
+      "head": "23c69ead34182f7b5859cd1bc66517035ea1235d",
       "branch": "codex/connectathon-live-readiness",
-      "status": "M crates/rh-cql/src/elm/expression.rs\n M crates/rh-cql/src/emit/literals.rs\n M crates/rh-cql/src/emit/operators.rs\n M crates/rh-cql/src/eval/engine.rs"
+      "status": "",
+      "checkedAt": "2026-09-18T03:35:18.616319+00:00"
     },
     "standalone": {
       "path": "/private/tmp/connectathon-reason-framework",
-      "head": "b7127ea174784a0d71db3cd4cffd020b6363997b",
+      "head": "c67ca5b54ab5cf7ef462533b3f5cb29dfd885bb0",
       "branch": "codex/connectathon-live-readiness",
-      "status": ""
+      "status": "",
+      "checkedAt": "2026-09-18T03:35:18.616319+00:00"
     },
     "connectathon-read-only": {
       "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
       "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
       "branch": "main",
-      "status": ""
+      "status": "",
+      "checkedAt": "2026-09-18T03:35:18.616319+00:00"
     }
   },
   "activeTasks": [
@@ -266,7 +297,7 @@
       "model": "gpt-5.6-terra",
       "reasoningEffort": "high",
       "status": "in_progress",
-      "task": "Workbench restore committed; strict executable bundle composer and dependency lock assigned"
+      "task": "Final shared preview design verification and production build coordination"
     },
     {
       "id": "RT-01",
@@ -274,7 +305,7 @@
       "model": "gpt-5.6-terra",
       "reasoningEffort": "high",
       "status": "in_progress",
-      "task": "Portable FHIR logical choice/primitive access and FHIRHelpers support; prove official and RH translated ELM parity"
+      "task": "Final runtime parity evidence, cold-start recovery and executable acceptance tools"
     },
     {
       "id": "SK-01",
@@ -282,7 +313,7 @@
       "model": "gpt-5.6-luna",
       "reasoningEffort": "high",
       "status": "in_progress",
-      "task": "Clean-source skill run and reusable rh-skills fixes"
+      "task": "Explicit linkage/multi-condition fix9f48a46 verified; run001 blast-radius check and live authoring runbook"
     },
     {
       "id": "REPLAY-01",
@@ -290,7 +321,7 @@
       "model": "gpt-5.6-terra",
       "reasoningEffort": "high",
       "status": "in_progress",
-      "task": "Independent source-to-L1/L2 in run-002; no run-001 artifact access; prior integration context disclosed"
+      "task": "Run002 source-faithful population AND unresolved-response gate through normal L2 CLI; independent author reused context disclosed"
     }
   ],
   "baselineTests": {
@@ -308,17 +339,17 @@
   "defects": [
     {
       "id": "SK-DOC-001",
-      "status": "CLI_help_fixed_committed_generated_bundle_pending",
+      "status": "fixed_generated_build_verified",
       "description": "Concept CLI help examples use--concept but parser requires positional name; curated docs already correct"
     },
     {
       "id": "SK-BASE-001",
-      "status": "investigating",
+      "status": "fixed_full_suite_passed",
       "description": "Baseline statin integration test expects a different generated ELM filename"
     },
     {
       "id": "SK-GEN-001",
-      "status": "code_fixed_unit_tests_verified_regeneration_pending",
+      "status": "fixed_generated_package_validated",
       "description": "Questionnaire formalization drops item code/required",
       "validation": "Coordinator ran test_formalize.py + test_cql.py:40passed"
     },
@@ -330,17 +361,17 @@
     },
     {
       "id": "SK-AUTH-001",
-      "status": "correction_in_progress",
+      "status": "corrected_source_traceability_reviewed_clinical_approval_pending",
       "description": "Unreported evidence certainty was inferred from guideline/recommendation metadata; remove unsupported ratings and clarify skill guidance"
     },
     {
       "id": "SK-FHIR-001",
-      "status": "17_regenerated_resources_zero_structural_errors_final_portable_package_pending",
+      "status": "fixed_final_run001_zero_errors_no_unresolved_references",
       "description": "Generated R4 Evidence.certainty invalid and unsupported; EvidenceVariable required definition absent; relatedAction.description invalid."
     },
     {
       "id": "SK-GEN-002",
-      "status": "confirmed_fix_in_progress",
+      "status": "fixed_run001_final_package_verified",
       "description": "Regeneration leaves stale resources; generated terminology loses version; primary titles ignore L2 clinical titles."
     },
     {
@@ -356,41 +387,64 @@
     },
     {
       "id": "SK-EXEC-001",
-      "status": "intermediate53executionchecks_passed_root_action_gates_verified_portable_final_pending",
+      "status": "fixed_run001_final53_checks_and_browser_passed",
       "description": "Generatedexecutionwiringloseseventeligibility,referencemismatchedCQLnames,andlabelsFHIRPathdynamicvaluesasCQL;pathwaypositivechildexecutesfornegativeyoungerinput.",
       "evidence": "docs/connectathon/evidence/generated-apply-pass2-wiring-failures.json"
     },
     {
       "id": "SK-CQL-001",
-      "status": "portable_candidate96_native_and_referenceELM_true_false_null_passed_final_authored_regeneration_pending",
+      "status": "fixed_native_and_official_reference_ELM96_checks_passed",
       "description": "Authored CQL uses JSON wire choice member valueBoolean and omits FHIRHelpers; RH accepts it but official FHIR4.0.1 model translation fails. Standard logical choice access and explicit helper dependency translate in a test copy; actual execution parity pending.",
       "evidence": "docs/connectathon/evidence/official-cql-translator-probe.json"
     },
     {
       "id": "PKG-CLOSE-001",
-      "status": "fixed_in_ef6dddb_0cc1354_focused_tests_verified_final_package_pending",
+      "status": "fixed_final_bundle_closure_and_validation_passed",
       "description": "Composer accepts missing Measure expression, expression available only in different Library version, and incorrect expansion code/release with same total.",
       "evidence": "docs/connectathon/evidence/composer-pass1-closure-failures.json"
     },
     {
       "id": "SK-L2-BOOL-001",
-      "status": "generic_fix_focused142_worker_passed_replay_pending",
+      "status": "fixed_schema_full_suite_and_replay_validated",
       "description": "Schema omitted Boolean semantic variables, forcing incorrect ordinal/presence modeling. Validator and both schema copies repaired."
     },
     {
       "id": "SK-TERM-002",
-      "status": "generic_candidate_version_propagation_in_progress",
+      "status": "fixed_exact_version_preserved_verified_expansions_imported",
       "description": "Concept enrichment candidate format drops exact code-system release; preserve optional version through CLI and semantic reference."
     },
     {
       "id": "SK-GUIDANCE-001",
-      "status": "confirmed_generic_guidance_mode_in_progress",
+      "status": "fixed_generic_guidance_mode_run002_semantic_binding_followup",
       "description": "Decision leaf always generates ActivityDefinition; noncoded recommendation/referral can invent ServiceRequest codes. Add explicit text-only guidance mode and reject missing code on executable actions."
     },
     {
       "id": "RT-AGE-002",
-      "status": "source_review_confirmed_reproduction_assigned",
+      "status": "fixed_reference_ELM_precision_checks_passed",
       "description": "New reference ELM CalculateAge unary dispatch discards precision and defaults all units to years; bounded preservation/regression requested."
+    },
+    {
+      "id": "WB-QR-CONTEXT-001",
+      "status": "fixed_actual_browser_staging_measure_guideline_restore_passed",
+      "description": "Preserve authored Questionnaire canonical and explicit encounter from population to staged completed response",
+      "evidence": "docs/connectathon/evidence/workbench-browser-run001-staged-flow.json"
+    },
+    {
+      "id": "SK-LINK-002",
+      "status": "generic_fix9f48a46_full1030_worker_passed_run002_regeneration_pending",
+      "description": "Remove fuzzy recommendation binding; require explicit rule links and support conjunctive pathway applicability conditions"
+    },
+    {
+      "id": "RT-FHIR-SCORE-001",
+      "status": "reproduced_official_validator_fix_assigned",
+      "description": "Individual proportion MeasureReport group lacks required measureScore; denominator-zero semantics require explicit handling",
+      "evidence": "docs/connectathon/evidence/runtime-output-fhir-failure-summary.json"
+    },
+    {
+      "id": "RT-FHIR-RQG-001",
+      "status": "reproduced_official_validator_fix_assigned",
+      "description": "Text-only RequestGroup action has neither resource nor nested action and violates R4 rqg-1; preserve guidance without inventing clinical orders",
+      "evidence": "docs/connectathon/evidence/runtime-output-fhir-failure-summary.json"
     }
   ],
   "checks": [
@@ -438,54 +492,85 @@
       "checkedAt": "2026-09-18T01:36:26.092259+00:00",
       "result": "Worker-reported portable candidate96/96; official FHIR4.0.1 ELM true/false/null passed native and publicNode; source review found unary CalculateAge precision omission, follow-up assigned",
       "evidence": "docs/connectathon/evidence/runtime-portable-fhir-compatibility.json"
+    },
+    {
+      "checkedAt": "2026-09-18T03:40:58.201119+00:00",
+      "implementationCommit": "9f48a46",
+      "command": "/private/tmp/connectathon-live/venv/bin/python -m pytest -q",
+      "verifier": "root independent full suite",
+      "result": "1030 passed, 18 skipped, 8 warnings in 7.46s",
+      "logSha256": "2caf25c7da2d8f1d235606ccc1fa8516eb58404192f1bddd20b63265b10950b3",
+      "log": "/private/tmp/connectathon-live/evidence/rh-skills-9f48a46-full.log"
+    },
+    {
+      "checkedAt": "2026-09-18T03:40:58.201119+00:00",
+      "result": "Run002 final22resources:0FHIRerrors65warnings12info;71/71actualpublicNodechecks",
+      "evidence": [
+        "docs/connectathon/evidence/run002-final-fhir-summary.json",
+        "docs/connectathon/evidence/run002-final-execution.json"
+      ]
     }
   ],
   "upstreamRefresh": {
-    "checkedAt": "2026-09-18T01:25:48.530666+00:00",
-    "scope": "Fresh upstream fetch and ancestry; protected Connectathon source remote was not fetched or changed",
-    "repositories": {
-      "rh-skills": {
-        "upstreamRef": "origin/main",
-        "upstreamSha": "eb280968e8af623b9b30c4175111929e322f696c",
-        "taskSha": "0cc1354f162af3a0b06394c092e69ffab83d1a19",
-        "behindAhead": "0\t6",
-        "includesCurrentMain": true
+    "checkedAt": "2026-09-18T03:12:09.288537+00:00",
+    "method": "git fetch REMOTE main then ancestry and counts; protected source repo never fetched",
+    "repositories": [
+      {
+        "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
+        "remote": "origin",
+        "main": "eb280968e8af623b9b30c4175111929e322f696c",
+        "head": "4115c454da1806194252f83afd1450cd0f1b9b86",
+        "branch": "codex/connectathon-live-readiness",
+        "ahead": 12,
+        "behind": 0,
+        "containsLatestMain": true
       },
-      "workbench": {
-        "upstreamRef": "origin/main",
-        "upstreamSha": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
-        "taskSha": "fc6bdd6b6d73dca114a493fabae45eb7a5af6827",
-        "behindAhead": "0\t20",
-        "includesCurrentMain": true
+      {
+        "path": "/Users/bkaney/projects/reason-healthcare/workbench",
+        "remote": "origin",
+        "main": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
+        "head": "db4709142d1d3e7448d31665b66989886526e5cf",
+        "branch": "codex/connectathon-live-readiness",
+        "ahead": 23,
+        "behind": 0,
+        "containsLatestMain": true
       },
-      "rh": {
-        "upstreamRef": "upstream/main",
-        "upstreamSha": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
-        "taskSha": "58ec3343e4b75adbf4370fb7c15919a0b0324826",
-        "behindAhead": "0\t12",
-        "includesCurrentMain": true
+      {
+        "path": "/Users/bkaney/projects/reason-healthcare/rh",
+        "remote": "upstream",
+        "main": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
+        "head": "4cdbfc0aacf14984c3c94cf372247cc0667863f0",
+        "branch": "codex/connectathon-live-readiness",
+        "ahead": 16,
+        "behind": 0,
+        "containsLatestMain": true
       },
-      "standalone": {
-        "upstreamRef": "origin/main",
-        "upstreamSha": "2e8d91daf360f184e6c98f700031414829c64921",
-        "taskSha": "b7127ea174784a0d71db3cd4cffd020b6363997b",
-        "behindAhead": "0\t2",
-        "includesCurrentMain": true
+      {
+        "path": "/private/tmp/connectathon-reason-framework",
+        "remote": "origin",
+        "main": "2e8d91daf360f184e6c98f700031414829c64921",
+        "head": "c67ca5b54ab5cf7ef462533b3f5cb29dfd885bb0",
+        "branch": "codex/connectathon-live-readiness",
+        "ahead": 6,
+        "behind": 0,
+        "containsLatestMain": true
       }
-    }
+    ]
   },
   "coordination": {
     "implementationOwnership": {
       "generator_cql_skills": "skills_usecase_audit",
-      "composer": "workbench_audit",
+      "composer": "skills_usecase_audit",
       "runtime_standalone": "runtime_execution",
       "journal_integration_verification": "root",
       "concept_version_extract_docs": "workbench_audit",
       "run002_L2_CQL": "workbench_audit",
-      "run002_formalization": "root"
+      "run002_formalization": "root",
+      "runtime_acceptance_runbook": "runtime_execution",
+      "authoring_runbook": "skills_usecase_audit"
     },
     "commitPolicy": "One staging/commit slot per shared repository; announce boundaries and handoffs; refresh main before final integration; rerun affected checks; rebuild generated skill bundle before final replay.",
     "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed."
   },
-  "updatedAt": "2026-09-18T03:22:59.726412+00:00"
+  "updatedAt": "2026-09-18T03:44:17.521881+00:00"
 }

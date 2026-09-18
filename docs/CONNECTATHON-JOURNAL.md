@@ -6,9 +6,9 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 
 ## Current checkpoint
 
-**In progress. G0, G1 and G2 passed for rehearsal 1; final application/replay gates remain open.** The first complete 18-resource executable Bundle has zero FHIR errors and no unresolved reference warnings. Its 53 direct execution checks pass, and the corrected project-scoped Workbench API matrix passes 54 calls. The full rh-skills suite independently passes 1,027 tests, 18 skipped. Browser assessment-to-preview handoff and the independent second package remain under active repair.
+**In progress. G0, G1 and G3 pass; G2 is reopened for runtime output conformance.** Both source-authored knowledge packages validate with zero FHIR errors and no unresolved references (18 and22 resources). Their direct execution matrices pass53/53 and71/71; the first browser assessment → measure → guideline → restore flow passes. Further validation of the produced runtime resources found missing proportion scores and invalid text-only RequestGroup actions; those fixes are underway. The full rh-skills suite independently passes **1,030 tests,18 skipped**. Final production UI, replay and recovery gates remain open.
 
-**Latest framework checkpoint:** `26743a6` fixes executable Bundle identities and local references without mutating authored source resources. Current main was refreshed at 23:12 EDT; all four implementation branches contain their authoritative main. Protected source integrity: all 41 files unchanged, original revision and clean status verified at 23:17 EDT.
+**Latest framework checkpoint:** `9f48a46` requires explicit recommendation links and preserves conjunctive pathway applicability conditions. Rebuilding the first package after this fix produces the same bytes; the complete second-run regeneration also reproduces its22-resource Bundle exactly. Current main was refreshed at23:12 EDT; all four implementation branches contain their authoritative main. Protected source integrity: all41 files unchanged, original revision and clean status verified at23:17 EDT.
 
 - [Implementation plan](CONNECTATHON-24H-PLAN.md)
 - [Machine-readable status](connectathon-24h-status.json)
@@ -20,14 +20,14 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 | Task | Status | Owner | Scope / next evidence |
 | --- | --- | --- | --- |
 | BASE-01 | Complete | Coordinator | Task branches/worktrees created; source repository clean and hashed |
-| RT-01 | In progress | Terra / runtime_execution | Runtime implementation verified; final hashes reconciled; generated-case integration pending |
-| SK-01 | In progress | Luna / skills_usecase_audit | Eight L2 artifacts and real CQL; execution bindings, strict composer and full regression next |
-| PKG-01 | In progress | Skills/runtime | Strict composer tested; verified expansions and FHIRHelpers imported; final composition pending |
-| WB-01 | In progress | Terra / workbench_audit | Source inventory and incomplete state browser-verified; named fixture integration next |
-| SA-01 | In progress | Terra / runtime_execution | Adapter and production build pass; browser boot verified; actual package parity next |
-| UX-01 | In progress | Terra / workbench_audit | Inspector search/source and responsive checks pass; executable previews not yet checked |
-| REPLAY-01 | In progress | Terra / independent author + Coordinator | Seven corrected L2 artifacts formalized; separate CQL author and root formalizer; actual tests next |
-| FINAL-01 | Pending integration | Coordinator | Exact-revision checks, cold start/recovery, Saturday runbook |
+| RT-01 | Repairing output conformance | Terra / runtime_execution | Functional/native/WASM parity passes; fix MeasureReport score and informational RequestGroup representation |
+| SK-01 | Framework passes; runbook in progress | Luna / skills_usecase_audit | Two independent authoring runs, full1030 tests,24 skill bundles; normal CLI fixes and deterministic rebuilds verified |
+| PKG-01 | Knowledge content passes | Skills/runtime |18/22 resource Bundles validate, locked helpers/terminology and six separate fixtures; runtime output conformance still open |
+| WB-01 | First flow passes | Terra / workbench_audit | Complete inventory, project identity, allthree previews, assessment handoff/restore and incomplete-package rejection verified |
+| SA-01 | First parity passes | Terra / runtime_execution | Same actual package uploaded and applied; six API cases match; repeat after final runtime fix |
+| UX-01 | Final review in progress | Terra / workbench_audit + Coordinator | Shared controls/contrast/focus/reduced-motion repaired; final production responsive and keyboard review pending |
+| REPLAY-01 | Knowledge/execution passes | Terra / independent author + Coordinator | Seven L2 artifacts,22 resources,71 execution checks and deterministic rebuild; second snapshot imported, application replay next |
+| FINAL-01 | In progress | Coordinator | Durable workspaces/tools, exact revisions, cold start/recovery, Saturday runbook and honest capability report |
 
 ## Iteration log
 
@@ -284,3 +284,31 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 - Update the board and ledger at material checkpoints. Preserve chronological log entries; amend claims when later evidence changes them.
 - Keep credentials and restricted source contents out of this journal. Link to synthetic/local evidence where appropriate.
 - Recheck the protected source hash inventory before the final handoff and after any operation involving source inputs.
+
+### ITER-019 — Connected browser flow passes; second-run semantic correction — 2026-09-17 23:37 EDT
+
+**G3 passed for run001:** coordinator completed the actual authenticated browser sequence on final Bundle `08a666…20e89a` and runtime `23c69ead`: populate the no-response patient, answer yes/no/no, validate/stage, observe Measure numerator **1** and CPG screening Task plus positive-guidance CommunicationRequest, restore the source scenario, rerun with Task only and Measure numerator **0**. Required unanswered items do not silently become false. The authored Questionnaire canonical and explicit encounter survive the handoff. Package inventory shows all 18 executable resources and 28 authored artifacts; generic FHIRHelpers source and keyboard source-dialog open/close work. [Browser evidence](connectathon/evidence/workbench-browser-run001-staged-flow.json).
+
+**Coordinated rh-skills update:** `9f48a46` removes heuristic recommendation linking and adds backward-compatible conjunctive pathway applicability conditions. Worker reports **1,030 tests passed, 18 skipped**, and all **24 generated skill bundles** validated. The independent second author is applying the population-and-unresolved-response gate through the normal L2 body-init/derive/review workflow. Root will regenerate L3 after that review; the held second package is not accepted. The accepted first package is preserved while a separate rebuild checks the change's scope.
+
+**Final verification underway:** runtime worker refreshed native and official-reference ELM checks, public Node/WASM parity, Workbench54/54 and standalone6/6 on current runtime hashes; production build/cold start and durable rerun tools are in progress. Final design/console review remains open. The ledger now refreshes current task ownership, defect status and repository heads rather than retaining old intermediate state.
+
+**Next:** freeze the second source-authored package, validate/execute/import it, finish production browser/design and cold-start recovery checks, and archive the live-session runbook and reproducible evidence.
+
+### ITER-020 — Second package validates and executes — 2026-09-17 23:42 EDT
+
+**Independent replay:** after the reviewed L2 correction, root regenerated the decision table, measure and care pathway with `9f48a46`; Luna composed/packaged via normal CLI. Final Bundle `3e6a1f…6023e` contains **22 resources**. Official FHIR validation reports **zero errors, 65 warnings, 12 information, no unresolved reference warnings**. Warnings comprise missing narratives, offline MIME/LOINC checks and expansion metadata. [FHIR evidence](connectathon/evidence/run002-final-fhir-summary.json).
+
+**Actual execution:** coordinator independently ran all ten generated PlanDefinitions over six fixtures, six individual MeasureReports and five QuestionnaireResponse checks: **71/71 pass**. Explicit checks cover inline exercise/multifactorial guidance, no invented orders, no actions outside population, population AND incomplete-response gating, Questionnaire identity, patient, encounter and period. A first coordinator probe used a nonexistent oracle expression name; correcting it to the source's `Consider Multifactorial Intervention` and adding missing-key rejection fixes the verifier without changing the oracle or implementation. [Execution evidence](connectathon/evidence/run002-final-execution.json).
+
+**Reproducibility and regressions:** a separate first-run clone, care-pathway regeneration and composition produced the exact accepted `08a666…20e89a` Bundle again; all18 resource identities/content/fullUrls and fixture-index hashes match. The initially suspected stale expression is an actual authored CQL/ELM alias, so no repair was needed. Root independently reran the complete rh-skills suite at `9f48a46`: **1,030 passed, 18 skipped**. [Rebuild evidence](connectathon/evidence/run001-9f48a46-deterministic-rebuild.json), [suite](connectathon/evidence/rh-skills-9f48a46-full.json).
+
+**Workbench:** root generated/imported the separate second snapshot, `snap_connectathon-steadi-replay_run002-3e6a1fde4db9`, with31 artifacts/eight sources. Its actual API/browser replay is next. Final design audit found low-contrast warning text and assigned a bounded semantic-color correction before production build. No clinical-approval, SDC-extraction or independent-engine certification claim.
+
+### ITER-021 — Actual runtime output validation finds two conformance defects — 2026-09-17 23:45 EDT
+
+**G2 reopened for runtime output conformance:** validating the generated knowledge Bundle is insufficient to establish valid operation results. Coordinator submitted12 unmodified captured outputs (six main-pathway `$apply` Bundles and six individual MeasureReports) to the official validator with their knowledge dependencies. It reports **11 errors**: six proportion reports omit `measureScore`; five text-only RequestGroup actions violate R4 `rqg-1` because they have neither a resource nor a nested action. A validator process exit0 does not mean its resources have zero errors. [Failure evidence](connectathon/evidence/runtime-output-fhir-failure-summary.json).
+
+**Coordination:** runtime owner will reproduce on current23c69 and repair generic output generation. The Workbench worker independently checks normative R4 semantics and denominator-zero handling. Preserve informational guidance without creating unintended clinical orders; preserve undefined scores rather than fabricate a zero. Knowledge-package validation, CQL assertions and browser behavior remain passed in their stated scopes. Final readiness stays open until actual corrected outputs validate.
+
+**Isolation audit:** the second-run deterministic clone initially retained the original absolute `repo_root`; its CLI replay rewrote original tracking events. All original resource, executable Bundle, manifest, fixture-index and package hashes remain identical. The worker is restoring its tracking-only mutation from the exact pre-run copy, retargeting clone configuration, and documenting the preflight check in the runbook. The protected Connectathon source repository is unaffected.

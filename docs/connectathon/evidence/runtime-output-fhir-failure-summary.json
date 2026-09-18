@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-09-18T03:44:17.521881+00:00",
+  "inputScope": "Unaltered captured runtime outputs for six run001 main-pathway $apply Bundles and six individual MeasureReports",
+  "inputDirectory": "/private/tmp/connectathon-live/evidence/run001-runtime-fhir-inputs",
+  "knowledgeBundleSha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a",
+  "generationWasmSha256": "553d099 (earlier captured output; owner reproducing on current23c69)",
+  "counts": {
+    "warning": 68,
+    "error": 11,
+    "information": 5
+  },
+  "errorCounts": {
+    "A measureScore is required when the Measure.scoring=proportion": 6,
+    "Constraint failed: rqg-1: 'Must have resource or action but not both'": 5
+  },
+  "interpretation": "Knowledge content conformance and functional execution passed; output-resource FHIR conformance is a distinct open acceptance requirement. Do not conflate validator process exit0 with0resourceerrors."
+}

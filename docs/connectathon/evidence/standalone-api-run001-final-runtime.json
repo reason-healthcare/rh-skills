@@ -1,0 +1,395 @@
+{
+  "checkedAt": "2026-09-18T03:27:50.608Z",
+  "scope": "Actual standalone API versus direct public Node/WASM PlanDefinition $apply parity. Source fixture manifest and case files are read-only.",
+  "inputs": {
+    "contentPath": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+    "contentSha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a",
+    "planSelector": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+    "resolvedPlanCanonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+    "fixtureManifestPath": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/executable/fixtures/index.json",
+    "fixtureManifestSha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc",
+    "evaluationDate": "2026-06-15T09:20:00Z",
+    "standaloneBase": "http://127.0.0.1:9091",
+    "runtimePath": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+    "runtimeSha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0",
+    "wasmPath": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-node/rh_cpg_bg.wasm",
+    "wasmSha256": "078391d125f0c47e3985ee68d1577e5534a3cf76772b6aa54e0d3395e55238e8",
+    "ignoredForParity": [
+      "generated response Bundle id",
+      "output Bundle entry resource id",
+      "references to those generated entry resources",
+      "entry fullUrl for those generated resources",
+      "meta.lastUpdated",
+      "meta.versionId",
+      "Bundle.timestamp"
+    ]
+  },
+  "sourceFixturesUnchanged": true,
+  "cases": [
+    {
+      "fixtureId": "younger-than-65",
+      "context": {
+        "subject": "Patient/patient-younger-than-65",
+        "encounter": "Encounter/encounter-younger-than-65",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": false,
+        "At Increased Fall Risk": false
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/younger-than-65.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/younger-than-65.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": false,
+            "taskCount": 0,
+            "communicationCount": 0,
+            "requestGroupActionCount": 0,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "communicationCount": 0,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": false,
+            "taskCount": 0,
+            "communicationCount": 0,
+            "requestGroupActionCount": 0,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "communicationCount": 0,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-all-no",
+      "context": {
+        "subject": "Patient/patient-eligible-all-no",
+        "encounter": "Encounter/encounter-eligible-all-no",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": false
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-all-no.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-all-no.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "communicationCount": 0,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "communicationCount": 0,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-unsteady-yes",
+      "context": {
+        "subject": "Patient/patient-eligible-unsteady-yes",
+        "encounter": "Encounter/encounter-eligible-unsteady-yes",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": true
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-unsteady-yes.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-unsteady-yes.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 1,
+            "requestGroupActionCount": 6,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": true,
+            "communicationCount": 1,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 1,
+            "requestGroupActionCount": 6,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": true,
+            "communicationCount": 1,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-prior-fall-yes",
+      "context": {
+        "subject": "Patient/patient-eligible-prior-fall-yes",
+        "encounter": "Encounter/encounter-eligible-prior-fall-yes",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": true
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-prior-fall-yes.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-prior-fall-yes.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 1,
+            "requestGroupActionCount": 6,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": true,
+            "communicationCount": 1,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 1,
+            "requestGroupActionCount": 6,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": true,
+            "communicationCount": 1,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-incomplete-response",
+      "context": {
+        "subject": "Patient/patient-eligible-incomplete-response",
+        "encounter": "Encounter/encounter-eligible-incomplete-response",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": null
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-incomplete-response.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-incomplete-response.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "communicationCount": 0,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "communicationCount": 0,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    },
+    {
+      "fixtureId": "eligible-no-response",
+      "context": {
+        "subject": "Patient/patient-eligible-no-response",
+        "encounter": "Encounter/encounter-eligible-no-response",
+        "encounterSource": "single patient-bound Encounter in fixture Bundle"
+      },
+      "expected": {
+        "In Screening Population": true,
+        "At Increased Fall Risk": null
+      },
+      "standalone": {
+        "httpStatus": 200,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-no-response.standalone-response.json"
+      },
+      "direct": {
+        "success": true,
+        "rawResponse": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/eligible-no-response.direct-response.json"
+      },
+      "parity": true,
+      "semantic": {
+        "standalone": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "communicationCount": 0,
+            "passed": true
+          }
+        },
+        "direct": {
+          "taskQuestionnaireSubjectEncounter": {
+            "passed": true,
+            "issues": []
+          },
+          "noActionOutsidePopulation": {
+            "expectedPopulation": true,
+            "taskCount": 1,
+            "communicationCount": 0,
+            "requestGroupActionCount": 4,
+            "passed": true
+          },
+          "positiveGuidanceOnlyExpected": {
+            "expectedIncreasedRisk": false,
+            "communicationCount": 0,
+            "passed": true
+          }
+        }
+      },
+      "semanticPassed": true
+    }
+  ],
+  "counts": {
+    "total": 6,
+    "parityPassed": 6,
+    "semanticPassed": 6
+  }
+}
