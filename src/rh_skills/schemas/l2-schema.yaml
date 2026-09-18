@@ -245,7 +245,10 @@ artifact_type_sections:
         carry kind. Use medication for MedicationRequest; service, procedure,
         referral, or assessment for ServiceRequest; questionnaire for
         CollectInformation; and communication for CommunicationRequest. Avoid
-        Task because it is too generic. Leaf executable actions should
+        Task because it is too generic. Use guidance only for source-faithful,
+        non-order recommendation text that remains inline in PlanDefinition;
+        guidance never emits an ActivityDefinition or inferred clinical code.
+        Leaf executable actions should
         routinely carry concept_refs[] and/or explicit coding via code or
         codings[] so formalize can reuse reviewed
         terminology rather than re-inferring it. Use produces_data_elements[]
