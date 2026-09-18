@@ -1,0 +1,147 @@
+{
+  "checkedAt": "2026-09-18T12:35:25.128936+00:00",
+  "scope": "Required local run003 checks only. They prove native 48+18 CQL, raw public Node extraction, adversarial CQL, and QR-free public Node CPG/Measure. Service/browser/validator/second-engine results are not inferred.",
+  "inputs": {
+    "workspace": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-003",
+    "content": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-003/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+      "sha256": "ba1474411f41bc1d69819b2e93c4c7674e6e83366e6cfdaf01f8bbc856a55713"
+    },
+    "runtime": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+      "sha256": "478033b2ddbcab71dd648a59ccd25c07484113c2ccca381ef200fd3e8027f00b"
+    },
+    "native": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+      "sha256": "584345995210c80a0f1442730e5b1d7e58bcdcea2e7a8b014205fdd8f24ac13a"
+    },
+    "terminologyReplay": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/terminology-cql-replay",
+    "preparedData": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/terminology-cql-replay/evidence/actual-generated-v2-qr-free-data",
+    "extractionCapture": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2"
+  },
+  "core": [
+    {
+      "name": "native-cql:FallRiskScreeningRecommendationLogic",
+      "status": "pass",
+      "expectedAssertions": 48,
+      "command": [
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/.venv/bin/rh-skills",
+        "cql",
+        "test",
+        "steadi-live-replay",
+        "FallRiskScreeningRecommendationLogic"
+      ],
+      "exitCode": 0,
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/native-FallRiskScreeningRecommendationLogic.log",
+      "counts": [
+        [
+          48,
+          48
+        ]
+      ]
+    },
+    {
+      "name": "native-cql:MeasureMeasure",
+      "status": "pass",
+      "expectedAssertions": 18,
+      "command": [
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/.venv/bin/rh-skills",
+        "cql",
+        "test",
+        "steadi-live-replay",
+        "MeasureMeasure"
+      ],
+      "exitCode": 0,
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/native-MeasureMeasure.log",
+      "counts": [
+        [
+          18,
+          18
+        ]
+      ]
+    },
+    {
+      "name": "public-node-wasm:raw-sdc-extraction",
+      "status": "pass",
+      "report": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/public-node-extraction.json",
+      "command": [
+        "node",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/docs/connectathon/tools/verify-run003-public-node-extraction.mjs",
+        "--capture-root",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2",
+        "--runtime",
+        "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+        "--output",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/public-node-extraction.json"
+      ],
+      "exitCode": 0,
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/public-node-extraction.log",
+      "counts": []
+    },
+    {
+      "name": "native-cql:adversarial-observation-terminology",
+      "status": "pass",
+      "report": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/cql-adversarial.json",
+      "command": [
+        "python3",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/docs/connectathon/tools/verify-run003-observation-cql-adversarial.py",
+        "--workspace",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-003",
+        "--runtime-root",
+        "/Users/bkaney/projects/reason-healthcare/rh",
+        "--terminology-root",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/terminology-cql-replay",
+        "--prepared-root",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/terminology-cql-replay/evidence/actual-generated-v2-qr-free-data",
+        "--output",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/cql-adversarial.json"
+      ],
+      "exitCode": 0,
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/cql-adversarial.log",
+      "counts": []
+    },
+    {
+      "name": "public-node-wasm:qr-free-cpg-measure",
+      "status": "pass",
+      "report": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/direct-node/results.json",
+      "command": [
+        "node",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/docs/connectathon/tools/verify-run003-observation-node.mjs",
+        "--content",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-003/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+        "--runtime",
+        "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+        "--prepared-root",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/terminology-cql-replay/evidence/actual-generated-v2-qr-free-data",
+        "--output",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/direct-node"
+      ],
+      "exitCode": 0,
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-durable-acceptance/direct-node.log",
+      "counts": []
+    }
+  ],
+  "corePassed": true,
+  "notRun": [
+    {
+      "name": "standalone-raw-qr-api-parity",
+      "reason": "requires final service configuration and raw fixture request mapping"
+    },
+    {
+      "name": "workbench-raw-qr-api-matrix",
+      "reason": "requires root snapshot ID and authenticated cookie"
+    },
+    {
+      "name": "browser",
+      "reason": "manual root-owned gate"
+    },
+    {
+      "name": "official-fhir-validation",
+      "reason": "root-owned gate"
+    },
+    {
+      "name": "reference-engine-execution",
+      "reason": "not implemented; reference translator is a well-formedness check"
+    }
+  ]
+}

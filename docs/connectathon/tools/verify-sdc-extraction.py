@@ -64,7 +64,8 @@ def main():
             "booleanValues": all(type(r.get("valueBoolean")) is bool for r in resources),
             "transaction": (actual is not None and actual.get("resourceType") == "Bundle" and actual.get("type") == "transaction") if item["invoked"] else not entries,
             "transactionRequests": all(e.get("request", {}).get("method") in ("POST", "PUT") and bool(e.get("request", {}).get("url")) for e in entries),
-            "uniqueResourceIds": all(r.get("id") for r in resources) and len({r["id"] for r in resources}) == len(resources),
+            "uniquePresentResourceIds": len({r["id"] for r in resources if r.get("id")}) == sum(bool(r.get("id")) for r in resources),
+            "transactionEntryIdentities": all(e.get("fullUrl") for e in entries) and len({e["fullUrl"] for e in entries}) == len(entries),
         }
         results.append({"fixtureId": fixture_id, "passed": all(checks.values()), "checks": checks,
                         "inputSha256": digest(source / "bundle.json"),

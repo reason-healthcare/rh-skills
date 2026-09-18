@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "plan": "docs/CONNECTATHON-24H-PLAN.md",
-  "status": "in_progress_sdc_observation_pipeline",
+  "status": "in_progress_cql_style_and_context_conformance",
   "preparedAt": "2026-09-17",
   "executionStartedAt": "2026-09-17T23:35:32Z",
   "deadline": "2026-09-18T23:35:32Z",
@@ -154,7 +154,7 @@
       "evidence": []
     }
   ],
-  "nextAction": "Use the live runbook for Saturday. Rerun acceptance after code or authored artifact changes. Broader track gates remain explicitly deferred.",
+  "nextAction": "Finish idiomatic CQL style guide, enforce Patient retrieve context in native/WASM, validate explicit class Code retrieve and FHIRCommon relationship helper, then package/import/replay separate run004 candidate.",
   "iterations": [
     {
       "id": "ITER-001",
@@ -336,7 +336,7 @@
       "summary": "User identified missing Measure definition display and unused packaged ValueSets; requires actual SDC extraction -> Observation CQL as the main live workflow. Baseline QR packages preserved; source and application gates reopened."
     }
   ],
-  "lastUpdatedAt": "2026-09-18T04:11:13.798453+00:00",
+  "lastUpdatedAt": "2026-09-18T12:48:39.781340+00:00",
   "journal": "docs/CONNECTATHON-JOURNAL.md",
   "constraints": [
     "Do not modify hl7-agentic-knowledge-connectathon; all source files and git state are read-only.",
@@ -383,40 +383,28 @@
   },
   "activeTasks": [
     {
-      "id": "WB-01",
-      "owner": "workbench_audit",
-      "model": "gpt-5.6-terra",
-      "reasoningEffort": "high",
-      "status": "complete",
-      "task": "Final shared preview design verification and production build coordination",
-      "completedAt": "2026-09-18T04:41:44.014623+00:00"
-    },
-    {
-      "id": "RT-01",
-      "owner": "runtime_execution",
-      "model": "gpt-5.6-terra",
-      "reasoningEffort": "high",
-      "status": "complete",
-      "task": "Final runtime parity evidence, cold-start recovery and executable acceptance tools",
-      "completedAt": "2026-09-18T04:41:44.014623+00:00"
-    },
-    {
-      "id": "SK-01",
+      "id": "cql-style-guide",
       "owner": "skills_usecase_audit",
-      "model": "gpt-5.6-luna",
-      "reasoningEffort": "high",
-      "status": "complete",
-      "task": "Explicit linkage/multi-condition fix9f48a46 verified; run001 blast-radius check and live authoring runbook",
-      "completedAt": "2026-09-18T04:41:44.014623+00:00"
+      "status": "in_progress",
+      "scope": "Patient context, typed terminology, model code paths, with/such-that FHIRCommon references; examples translated and tested"
     },
     {
-      "id": "REPLAY-01",
+      "id": "cql-context-runtime",
+      "owner": "runtime_execution",
+      "status": "in_progress",
+      "scope": "Patient/Unfiltered expression context, mixed-patient retrieves, explicit class code retrieval, official helper execution"
+    },
+    {
+      "id": "fhircommon-dependency",
       "owner": "workbench_audit",
-      "model": "gpt-5.6-terra",
-      "reasoningEffort": "high",
-      "status": "complete",
-      "task": "Run002 source-faithful population AND unresolved-response gate through normal L2 CLI; independent author reused context disclosed",
-      "completedAt": "2026-09-18T04:41:44.014623+00:00"
+      "status": "in_progress",
+      "scope": "Authoritative versioned source/ELM/Library, dependency closure, exact helper signature and semantics"
+    },
+    {
+      "id": "run004-verification",
+      "owner": "root",
+      "status": "pending_runtime",
+      "scope": "Independent tests, official FHIR validation, fresh snapshot, Workbench and standalone acceptance"
     }
   ],
   "baselineTests": {
@@ -645,6 +633,16 @@
       "verifier": "root independent durable command, authenticated APIs and actual browser",
       "result": "Both native48, semantic53/71, Workbench54/72, standalone6/6 parity+semantics pass",
       "evidence": "docs/connectathon/evidence/final-readiness.json"
+    },
+    {
+      "checkedAt": "2026-09-18T10:31:29.591469+00:00",
+      "verifier": "root",
+      "result": "1042 passed, 18 skipped, 8 warnings; actual extraction source6/6 + generated6/6; generated Questionnaire/clinical FHIR validation15errors under repair",
+      "evidence": [
+        "docs/connectathon/evidence/sdc-source-native-comparison.json",
+        "docs/connectathon/evidence/sdc-generated-native-comparison.json",
+        "docs/connectathon/evidence/sdc-generated-output-fhir-validation.json"
+      ]
     }
   ],
   "upstreamRefresh": {
@@ -709,9 +707,10 @@
       "sdc_skills_cli_tests": "skills_usecase_audit"
     },
     "commitPolicy": "Root owns rh-skills index and commits; workers edit owned files unstaged. Other repo owners coordinate changes and commit boundaries. No changes to protected source. Refresh main before final integration; regenerate and replay affected packages.",
-    "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed."
+    "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed.",
+    "currentMilestone": "Actual extraction 6/6 source and generated Questionnaire comparisons passed; fix generated SDC versionAlgorithm and source text, then finalize Observation CQL, application handoff and browser source inspection."
   },
-  "updatedAt": "2026-09-18T10:12:52.950045+00:00",
+  "updatedAt": "2026-09-18T10:31:29.591469+00:00",
   "finalReadiness": "docs/connectathon/evidence/final-readiness.json",
   "sourceIntegrityCheckedAt": "2026-09-18T04:43:32.870673+00:00"
 }

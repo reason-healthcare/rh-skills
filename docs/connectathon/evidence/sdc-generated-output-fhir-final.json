@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-09-18T10:37:51.511479+00:00",
+  "scope": "Final generated run003 Questionnaire plus four actual SDC extraction transactions and six actual clinical bundles; FHIR R4 + SDC4.0.0, offline terminology",
+  "validator": "6.10.2",
+  "inputCount": 11,
+  "counts": {
+    "warning": 94
+  },
+  "errors": [],
+  "warningCounts": {
+    "Unable to validate code '100257-5' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "Unable to validate code '97878-3' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "Unable to validate code '52552-7' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "Constraint failed: dom-6: 'A resource should have narrative for robust management' (defined in http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)": 42,
+    "Entry 0 matches the reference Patient/patient-eligible-all-no by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Patient/patient-eligible-all-no does not match the full target URL urn:uuid:patient-eligible-all-no by Bundle resolution rules": 6,
+    "Entry 1 matches the reference Encounter/encounter-eligible-all-no by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Encounter/encounter-eligible-all-no does not match the full target URL urn:uuid:encounter-eligible-all-no by Bundle resolution rules": 3,
+    "Entry 2 matches the reference QuestionnaireResponse/response-eligible-all-no by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/QuestionnaireResponse/response-eligible-all-no does not match the full target URL urn:uuid:response-eligible-all-no by Bundle resolution rules": 3,
+    "No response answer found for required item 'fallen-in-past-year'": 1,
+    "Entry 0 matches the reference Patient/patient-eligible-prior-fall-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Patient/patient-eligible-prior-fall-yes does not match the full target URL urn:uuid:patient-eligible-prior-fall-yes by Bundle resolution rules": 6,
+    "Entry 1 matches the reference Encounter/encounter-eligible-prior-fall-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Encounter/encounter-eligible-prior-fall-yes does not match the full target URL urn:uuid:encounter-eligible-prior-fall-yes by Bundle resolution rules": 3,
+    "Entry 2 matches the reference QuestionnaireResponse/response-eligible-prior-fall-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/QuestionnaireResponse/response-eligible-prior-fall-yes does not match the full target URL urn:uuid:response-eligible-prior-fall-yes by Bundle resolution rules": 3,
+    "Entry 0 matches the reference Patient/patient-eligible-unsteady-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Patient/patient-eligible-unsteady-yes does not match the full target URL urn:uuid:patient-eligible-unsteady-yes by Bundle resolution rules": 6,
+    "Entry 1 matches the reference Encounter/encounter-eligible-unsteady-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Encounter/encounter-eligible-unsteady-yes does not match the full target URL urn:uuid:encounter-eligible-unsteady-yes by Bundle resolution rules": 3,
+    "Entry 2 matches the reference QuestionnaireResponse/response-eligible-unsteady-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/QuestionnaireResponse/response-eligible-unsteady-yes does not match the full target URL urn:uuid:response-eligible-unsteady-yes by Bundle resolution rules": 3,
+    "Entry 0 matches the reference Patient/patient-younger-than-65 by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Patient/patient-younger-than-65 does not match the full target URL urn:uuid:patient-younger-than-65 by Bundle resolution rules": 6,
+    "Entry 1 matches the reference Encounter/encounter-younger-than-65 by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Encounter/encounter-younger-than-65 does not match the full target URL urn:uuid:encounter-younger-than-65 by Bundle resolution rules": 3,
+    "Entry 2 matches the reference QuestionnaireResponse/response-younger-than-65 by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/QuestionnaireResponse/response-younger-than-65 does not match the full target URL urn:uuid:response-younger-than-65 by Bundle resolution rules": 3
+  },
+  "operationOutcomeSha256": "1e29c8eba0fe31ddfac72eb759c7d897f1c6fad05578c105bb9cb066d82a5e15",
+  "inputHashes": {
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/questionnaire-input.json": "9544f05500e0f387e79c595b02b1a470918a107124bc320d96ac80f744502e54",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-all-no--transaction.json": "e135d8963e5f94726edfbb96e1072de8b4ae2926507bdbf38df68bb47acbd63c",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-prior-fall-yes--transaction.json": "f781380ef6be77178a795aead22e6fad634af05f29babc189e2da084a1dd70d9",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-unsteady-yes--transaction.json": "2ff888a5755edca5046e791d101977e7786cc577d550d3e5f81a9692d3c66cdc",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/younger-than-65--transaction.json": "c02967a1972caff4d63464f9387f3645d7972648ade37e0d8886bc31ff38f112",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-all-no--clinical-data.json": "2f99d19d9b5971cdb169fa0cb3f7286d1f125ef78f3d8b32f8675948a50ca436",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-incomplete-response--clinical-data.json": "02133c8aa4d50d79fe417350f0ab8c0998753f561abb3bdfeae7f8bee06e52ac",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-no-response--clinical-data.json": "45e7f17d7728035c2566e27610223fe7440cd70f10de6280dc1bbebde806d1e6",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-prior-fall-yes--clinical-data.json": "50ea26ddee4681c0888266b5bb14c1547de697698c4c76641e058ac0c51d30bb",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-unsteady-yes--clinical-data.json": "57716ca6118b8d66dca694f663abf66730a0c54b405395eb2755707cba6d15a3",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/younger-than-65--clinical-data.json": "7592beffa4cab0cab0ebbfb5dc0b882108657a3148655ddd0f80945ddb7e28f6"
+  },
+  "command": "dist/connectathon-20260919/verification/root-sdc-fhir-v2/command.json",
+  "passed": true
+}

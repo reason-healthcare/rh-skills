@@ -1,0 +1,90 @@
+{
+  "checkedAt": "2026-09-18T10:35:22.537Z",
+  "scope": "Root independent public Node/WASM adverse extraction and reconciliation checks",
+  "wasmSha256": "9d9343134afd29f8da00f6a08fe156c96545cfb7aff1a69d59cada21eb16d530",
+  "passed": true,
+  "rows": [
+    {
+      "case": "wrong-questionnaire-version",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "wrong-subject",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "wrong-encounter",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "multiple-choice-values",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "duplicate-unanswered-item",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "duplicate-answer",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "item-extract-disabled",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "unknown-modifier",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "missing-required-answer",
+      "expected": "not-invoked",
+      "actual": "not-invoked",
+      "passed": true
+    },
+    {
+      "case": "missing-author",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "invalid-authored",
+      "expected": "error",
+      "actual": "error",
+      "passed": true
+    },
+    {
+      "case": "reconcile-idempotent",
+      "passed": true
+    },
+    {
+      "case": "preserve-unrelated-and-aggregate",
+      "passed": true
+    },
+    {
+      "case": "preserve-local-observation-identities",
+      "passed": true
+    },
+    {
+      "case": "reject-wrong-provenance-transaction",
+      "passed": true
+    }
+  ]
+}

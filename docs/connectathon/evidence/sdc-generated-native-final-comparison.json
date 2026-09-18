@@ -1,0 +1,116 @@
+{
+  "checkedAt": "2026-09-18T10:36:38.279625+00:00",
+  "scope": "Independent comparison of captured extraction output against unchanged source oracle; no independent engine claim",
+  "manifestSha256": "791d2916b2262f51c1b1fafe4d2203c097c36c28d775a99e4f1181dea8f83eed",
+  "passed": true,
+  "cases": [
+    {
+      "fixtureId": "eligible-all-no",
+      "passed": true,
+      "checks": {
+        "invocation": true,
+        "count": true,
+        "semantics": true,
+        "booleanValues": true,
+        "transaction": true,
+        "transactionRequests": true,
+        "uniquePresentResourceIds": true,
+        "transactionEntryIdentities": true
+      },
+      "inputSha256": "d24d590d9f912085216c8d49417d38dc41f7f74601568d2dceaf25831f5fcbb2",
+      "oracleSha256": "09f64523f5cbc99af7dc0fb2e2eab5f7bcb4939bbfdacfc5bd2413a62cfbe655",
+      "actualPath": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-all-no--transaction.json",
+      "actualSha256": "e135d8963e5f94726edfbb96e1072de8b4ae2926507bdbf38df68bb47acbd63c"
+    },
+    {
+      "fixtureId": "eligible-incomplete-response",
+      "passed": true,
+      "checks": {
+        "invocation": true,
+        "count": true,
+        "semantics": true,
+        "booleanValues": true,
+        "transaction": true,
+        "transactionRequests": true,
+        "uniquePresentResourceIds": true,
+        "transactionEntryIdentities": true
+      },
+      "inputSha256": "02133c8aa4d50d79fe417350f0ab8c0998753f561abb3bdfeae7f8bee06e52ac",
+      "oracleSha256": "5af843e6a523f2886c7ad0973f1c88ebdd57977028a32ba598522d9466509859",
+      "actualPath": null,
+      "actualSha256": null
+    },
+    {
+      "fixtureId": "eligible-no-response",
+      "passed": true,
+      "checks": {
+        "invocation": true,
+        "count": true,
+        "semantics": true,
+        "booleanValues": true,
+        "transaction": true,
+        "transactionRequests": true,
+        "uniquePresentResourceIds": true,
+        "transactionEntryIdentities": true
+      },
+      "inputSha256": "45e7f17d7728035c2566e27610223fe7440cd70f10de6280dc1bbebde806d1e6",
+      "oracleSha256": "aa8f324fe524b58cb512a5f02434e2ad79f5ba0e63c91995b29446319237e7eb",
+      "actualPath": null,
+      "actualSha256": null
+    },
+    {
+      "fixtureId": "eligible-prior-fall-yes",
+      "passed": true,
+      "checks": {
+        "invocation": true,
+        "count": true,
+        "semantics": true,
+        "booleanValues": true,
+        "transaction": true,
+        "transactionRequests": true,
+        "uniquePresentResourceIds": true,
+        "transactionEntryIdentities": true
+      },
+      "inputSha256": "6b01f448a001e02b9d16a2349badafe47d3cc5ad5a20ea364781b84390861d82",
+      "oracleSha256": "a63f5c0e136b17a399b94687784192fe5f7454cf1b12fb827600c9a22e6eab65",
+      "actualPath": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-prior-fall-yes--transaction.json",
+      "actualSha256": "f781380ef6be77178a795aead22e6fad634af05f29babc189e2da084a1dd70d9"
+    },
+    {
+      "fixtureId": "eligible-unsteady-yes",
+      "passed": true,
+      "checks": {
+        "invocation": true,
+        "count": true,
+        "semantics": true,
+        "booleanValues": true,
+        "transaction": true,
+        "transactionRequests": true,
+        "uniquePresentResourceIds": true,
+        "transactionEntryIdentities": true
+      },
+      "inputSha256": "1d3682809c5d1d6aae8e71539db6234490d8a119efd4be0eda503d5f8a16dd5c",
+      "oracleSha256": "5a4ed587ebed3cc0543f40af5ddfdbc079faf4f2829d17173897e0d0b712dc7d",
+      "actualPath": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/eligible-unsteady-yes--transaction.json",
+      "actualSha256": "2ff888a5755edca5046e791d101977e7786cc577d550d3e5f81a9692d3c66cdc"
+    },
+    {
+      "fixtureId": "younger-than-65",
+      "passed": true,
+      "checks": {
+        "invocation": true,
+        "count": true,
+        "semantics": true,
+        "booleanValues": true,
+        "transaction": true,
+        "transactionRequests": true,
+        "uniquePresentResourceIds": true,
+        "transactionEntryIdentities": true
+      },
+      "inputSha256": "b0a336afad85bffa2d41ca9aa6e1acb49e44c4bf4b1869f2eb15992df90b2abc",
+      "oracleSha256": "4c8fbc906c76d485cc9345cbe99e7c3f791d7ee8b998c973725cddfd380cbc5a",
+      "actualPath": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/younger-than-65--transaction.json",
+      "actualSha256": "c02967a1972caff4d63464f9387f3645d7972648ade37e0d8886bc31ff38f112"
+    }
+  ]
+}

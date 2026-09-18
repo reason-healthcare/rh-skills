@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-09-18T04:40:38.515111+00:00",
-  "decision": "reopened_for_required_sdc_observation_pipeline",
+  "checkedAt": "2026-09-18T12:48:39.781340+00:00",
+  "decision": "reopened_for_idiomatic_cql_and_patient_context_conformance",
   "eventDate": "2026-09-19",
   "scope": "Live STEADI source-to-L2/L3 skills and Workbench assessment, Measure, CPG plus standalone local CPG",
   "repositories": {
@@ -133,6 +133,9 @@
     "updatedAt": "2026-09-18T10:15:28.345237+00:00",
     "reason": "User requires actual SDC QuestionnaireResponse extraction, Observations consumed by ValueSet-based CQL, and readable Measure population definitions. Previous evidence covers QR-reading packages only.",
     "baselineEvidencePreserved": true,
-    "newPipelineVerified": false
+    "newPipelineVerified": false,
+    "run003SdcPipelineVerified": true,
+    "finalCandidateVerified": false,
+    "nextCandidate": "run004: context-scoped typed terminology and FHIRCommon relationships"
   }
 }
