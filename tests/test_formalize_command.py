@@ -809,10 +809,10 @@ sections:
 
             planning = pathway["action"][0]
             assert planning["id"] == "planning"
-            assert planning["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
+            assert "definitionCanonical" not in planning
             execution = pathway["action"][1]
             assert execution["id"] == "execution"
-            assert execution["definitionCanonical"].endswith("/PlanDefinition/dt-assessment")
+            assert "definitionCanonical" not in execution
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -897,8 +897,8 @@ sections:
             assert "Using deterministic CPG-on-FHIR builders" not in result.output
             pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
             assert [action["id"] for action in pathway["action"]] == ["phase1", "phase2", "phase3"]
-            assert pathway["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
-            assert pathway["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-planning")
+            assert "definitionCanonical" not in pathway["action"][0]
+            assert "definitionCanonical" not in pathway["action"][1]
             assert "definitionCanonical" not in pathway["action"][2]
             assert (topic_dir / "computable" / "PlanDefinition-path-phase1.json").exists()
             assert (topic_dir / "computable" / "PlanDefinition-path-phase2.json").exists()
@@ -996,8 +996,8 @@ sections:
             planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
             assert assessment_plan["type"]["coding"][0]["code"] == "workflow-definition"
             assert planning_plan["type"]["coding"][0]["code"] == "workflow-definition"
-            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert "definitionCanonical" not in assessment_plan["action"][0]
+            assert "definitionCanonical" not in planning_plan["action"][0]
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1093,8 +1093,8 @@ sections:
             assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
             assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment.json").read_text())
             planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
-            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert "definitionCanonical" not in assessment_plan["action"][0]
+            assert "definitionCanonical" not in planning_plan["action"][0]
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1456,13 +1456,13 @@ sections:
             assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
             assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment.json").read_text())
             planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
-            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert "definitionCanonical" not in assessment_plan["action"][0]
+            assert "definitionCanonical" not in planning_plan["action"][0]
             assert not (topic_dir / "computable" / "PlanDefinition-path-crs-pathway.json").exists()
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
-    def test_stub_mode_care_pathway_semantically_links_steps_to_recommendation_plans(self, tmp_repo):
+    def test_stub_mode_care_pathway_requires_explicit_rule_links_for_recommendations(self, tmp_repo):
         topic = "semantic-link-topic"
         topic_dir = tmp_repo / "topics" / topic
         structured_dir = topic_dir / "structured"
@@ -1553,8 +1553,9 @@ sections:
 
             assess_plan = json.loads((computable / "PlanDefinition-semantic-link-topic-protocol-assess-candidacy.json").read_text())
             assert assess_plan["type"]["coding"][0]["code"] == "workflow-definition"
-            nested = assess_plan["action"][0]["definitionCanonical"]
-            assert nested.endswith("/PlanDefinition/semantic-link-topic-recommendation-assess-candidacy")
+            assert "definitionCanonical" not in assess_plan["action"][0], (
+                "similar step wording must not bind an unlinked pathway node to a recommendation"
+            )
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 

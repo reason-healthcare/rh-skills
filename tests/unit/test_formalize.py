@@ -1012,7 +1012,12 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
         "name": "care-pathway",
         "sections": {
             "steps": [
-                {"id": "protocol", "label": "Protocol", "applicability_condition": "adult-age-criterion-met"},
+                {
+                    "id": "protocol",
+                    "label": "Protocol",
+                    "applicability_condition": "adult-age-criterion-met",
+                    "applicability_conditions": ["guideline-exclusion-present"],
+                },
                 {"id": "eligibility", "label": "Eligibility", "parent_id": "protocol"},
                 {"id": "verify-step", "label": "Verify diagnosis", "parent_id": "eligibility", "rule_id": "rule-verify"},
                 {"id": "snot-step", "label": "Collect SNOT-22", "parent_id": "eligibility", "rule_id": "rule-snot"},
@@ -1084,7 +1089,7 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
     )
 
     pathway_conditions = _condition_expressions_by_action_id(pathway_resources)
-    assert ("AdultAgeCriterionMet",) in pathway_conditions["protocol"]
+    assert ("AdultAgeCriterionMet", "GuidelineExclusionPresent") in pathway_conditions["protocol"]
     assert ("NoGuidelineExclusionPresent",) in pathway_conditions["eligibility"]
     assert (
         "CrsDiagnosisVerified",

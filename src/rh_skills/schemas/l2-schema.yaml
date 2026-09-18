@@ -128,7 +128,7 @@ artifact_type_sections:
         moderate | low | very-low | consensus | insufficient.
       steps: >
         Flat workflow steps. Each entry: {id, label, description?, actor?, parent_id?,
-        applicability_condition?, rule_id?, rule_ids[]?, action_labels?,
+        applicability_condition?, applicability_conditions[]?, rule_id?, rule_ids[]?, action_labels?,
         evidence_traceability_ids[]?, provenance?}. parent_id references
         another step id when a nested relationship is needed. When a paired
         decision table defines pathway_phases, keep care-pathway steps aligned
@@ -148,6 +148,11 @@ artifact_type_sections:
         recommendation-scoped decision-table rule should appear in at least one
         care-pathway leaf step's rule_id or rule_ids[] linkage.
         applicability_condition is a local pathway gate, not an event trigger.
+        Use applicability_conditions[] when a step requires multiple gates;
+        all listed condition IDs, together with applicability_condition when
+        present, are conjunctive. Keep every gate explicit in the L2 source.
+        Recommendation links are resolved only from rule_id/rule_ids[]; prose
+        similarity does not establish a decision-table binding.
         Actions are defined in decision-table artifacts, not in care pathways;
         use care-pathway only for sequencing and orchestration.
       transitions: >

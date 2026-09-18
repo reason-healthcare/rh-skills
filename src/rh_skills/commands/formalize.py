@@ -1321,7 +1321,6 @@ def _build_care_pathway_actions(
     evidence_claim_index: dict[str, dict[str, Any]] | None = None,
     branch_plan_map: dict[str, str] | None = None,
     recommendation_plan_map: dict[str, str] | None = None,
-    recommendation_candidates: list[dict[str, Any]] | None = None,
     action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
     pathway_condition_context: dict[str, Any] | None = None,
 ) -> list[dict]:
@@ -1411,18 +1410,14 @@ def _build_care_pathway_actions(
                 for sub_action in build_action(child, child_inherited_condition_keys)
             ]
         elif not branch_ref:
-            exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_refs = _resolve_recommendation_references(
                 step,
                 recommendation_plan_map or {},
-                recommendation_candidates or [],
             )
-            if exact_ref and exact_ref not in recommendation_refs:
-                recommendation_refs = [exact_ref, *recommendation_refs]
             action_ref = _resolve_action_reference(step, action_reference_map or {})
             available_refs = [
                 ref for ref in recommendation_refs
-                if ref == exact_ref or ref not in used_recommendation_refs
+                if ref not in used_recommendation_refs
             ]
             if len(available_refs) > 1:
                 grouped_actions = []
@@ -2549,8 +2544,7 @@ def _build_pathway_condition_context(
         elif len(direct_refs) > 1:
             placed.extend(common_rule_conditions(direct_refs))
 
-        applicability_id = str(step.get("applicability_condition") or "").strip()
-        if applicability_id:
+        for applicability_id in _step_applicability_refs(step):
             entry = _condition_entry_for_id(applicability_id, condition_index)
             if entry is not None:
                 placed = _merge_action_conditions(placed, [entry])
@@ -3161,7 +3155,6 @@ def _build_care_pathway_stub_plan_definitions(
     l2_data: dict | None,
     evidence_claim_index: dict[str, dict[str, Any]] | None = None,
     recommendation_plan_map: dict[str, str] | None = None,
-    recommendation_candidates: list[dict[str, Any]] | None = None,
     action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
     pathway_condition_context: dict[str, Any] | None = None,
     library_canonical: str | None = None,
@@ -3258,18 +3251,14 @@ def _build_care_pathway_stub_plan_definitions(
                     child_actions.extend(build_subtree(child, child_inherited_condition_keys))
             action["action"] = child_actions
         else:
-            exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_refs = _resolve_recommendation_references(
                 step,
                 recommendation_plan_map or {},
-                recommendation_candidates or [],
             )
-            if exact_ref and exact_ref not in recommendation_refs:
-                recommendation_refs = [exact_ref, *recommendation_refs]
             action_ref = _resolve_action_reference(step, action_reference_map or {})
             available_refs = [
                 ref for ref in recommendation_refs
-                if ref == exact_ref or ref not in used_recommendation_refs
+                if ref not in used_recommendation_refs
             ]
             if len(available_refs) > 1:
                 grouped_actions = []
@@ -4033,12 +4022,6 @@ def _build_stub_resources(
                 canonical,
                 decision_table_data,
             )
-            recommendation_candidates = _build_decision_table_reference_candidates(
-                canonical,
-                topic,
-                decision_table_name or "decision-table",
-                decision_table_data,
-            )
             pathway_condition_context = _build_pathway_condition_context(
                 l2_data,
                 decision_table_data,
@@ -4061,7 +4044,6 @@ def _build_stub_resources(
                 l2_data,
                 evidence_claim_index,
                 recommendation_plan_map=recommendation_plan_map,
-                recommendation_candidates=recommendation_candidates,
                 action_reference_map=action_reference_map,
                 pathway_condition_context=pathway_condition_context,
                 library_canonical=related_library_canonical,
@@ -4088,7 +4070,6 @@ def _build_stub_resources(
                         evidence_claim_index=evidence_claim_index,
                         branch_plan_map=root_branch_plan_map,
                         recommendation_plan_map=recommendation_plan_map,
-                        recommendation_candidates=recommendation_candidates,
                         action_reference_map=action_reference_map,
                         pathway_condition_context=pathway_condition_context,
                     ),
@@ -4931,125 +4912,6 @@ def _build_decision_table_action_reference_map(
     return dict(reference_map)
 
 
-def _build_decision_table_reference_candidates(
-    canonical: str,
-    topic: str,
-    decision_table_name: str,
-    decision_table_data: dict[str, Any] | None,
-) -> list[dict[str, Any]]:
-    """Build semantic recommendation-link candidates from a decision table."""
-    if not isinstance(decision_table_data, dict):
-        return []
-
-    sections = decision_table_data.get("sections") or {}
-    events = sections.get("events") or []
-    rules = sections.get("rules") or []
-    actions = sections.get("actions") or []
-    if not isinstance(events, list):
-        events = []
-    if not isinstance(rules, list):
-        rules = []
-    if not isinstance(actions, list):
-        actions = []
-
-    base_id = _deterministic_artifact_base_id(
-        decision_table_name,
-        "decision-table",
-        topic,
-        decision_table_data,
-    )
-    action_index = {
-        str(action.get("id") or "").strip(): action
-        for action in actions
-        if isinstance(action, dict) and str(action.get("id") or "").strip()
-    }
-    suffix_map = _build_decision_table_rule_suffix_map([rule for rule in rules if isinstance(rule, dict)])
-    candidates: list[dict[str, Any]] = []
-    event_index = {
-        str(event.get("id") or "").strip(): event
-        for event in events
-        if isinstance(event, dict) and str(event.get("id") or "").strip()
-    }
-    for idx, rule in enumerate(rules, start=1):
-        if not isinstance(rule, dict):
-            continue
-        event_id = str(rule.get("event") or "").strip()
-        event = event_index.get(event_id) or {}
-        child_id = f"{base_id}-{suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)}"
-        canonical_ref = _canonical_for_generated_resource(canonical, "PlanDefinition", child_id)
-        alias_values = [
-            rule.get("id"),
-            event_id,
-            event_id.removeprefix("event-"),
-            rule.get("phase"),
-            rule.get("description"),
-            rule.get("rationale"),
-            (event or {}).get("label"),
-            (event or {}).get("title"),
-            (event or {}).get("phase"),
-        ]
-        for action_id in rule.get("then") or []:
-            action_def = action_index.get(str(action_id))
-            alias_values.extend([
-                action_id,
-                (action_def or {}).get("label"),
-                (action_def or {}).get("title"),
-                (action_def or {}).get("description"),
-            ])
-        tokens = _semantic_tokens(*[str(v) for v in alias_values if v])
-        aliases = {to_kebab_case(str(v)) for v in alias_values if isinstance(v, str) and v.strip()}
-        candidates.append({
-            "canonical": canonical_ref,
-            "tokens": tokens,
-            "aliases": aliases,
-        })
-    return candidates
-
-
-def _resolve_recommendation_reference(
-    step: dict[str, Any],
-    recommendation_plan_map: dict[str, str],
-    recommendation_candidates: list[dict[str, Any]],
-) -> str | None:
-    """Resolve the best matching recommendation PlanDefinition for a pathway step."""
-    rule_id = str(step.get("rule_id") or "").strip()
-    if rule_id:
-        mapped_ref = recommendation_plan_map.get(rule_id)
-        if mapped_ref:
-            return mapped_ref
-        log_warn(
-            "  Care-pathway step '%s' references unknown decision-table rule_id '%s'"
-            % (str(step.get("id") or ""), rule_id)
-        )
-
-    step_keys = [
-        str(step.get("id") or ""),
-        str(step.get("label") or ""),
-        str(step.get("title") or ""),
-        str(step.get("description") or ""),
-    ]
-    for key in step_keys[:3]:
-        normalized = to_kebab_case(key)
-        if normalized and normalized in recommendation_plan_map:
-            return recommendation_plan_map[normalized]
-
-    step_tokens = _semantic_tokens(*step_keys)
-    if not step_tokens:
-        return None
-
-    best_match: str | None = None
-    best_score = 0
-    for candidate in recommendation_candidates:
-        overlap = len(step_tokens & set(candidate.get("tokens") or set()))
-        if overlap > best_score:
-            best_score = overlap
-            best_match = candidate.get("canonical")
-
-    if best_score >= 2:
-        return best_match
-    return None
-
-
 def _step_rule_refs(step: dict[str, Any]) -> list[str]:
     refs: list[str] = []
     rule_id = step.get("rule_id")
@@ -5067,6 +4929,29 @@ def _step_rule_refs(step: dict[str, Any]) -> list[str]:
             seen.add(ref)
             deduped.append(ref)
     return deduped
+
+
+def _step_applicability_refs(step: dict[str, Any]) -> list[str]:
+    """Return deduplicated condition IDs authored as step-local AND gates."""
+    refs: list[str] = []
+    singular = step.get("applicability_condition")
+    if singular is not None:
+        if not isinstance(singular, str) or not singular.strip():
+            raise ValueError("Care-pathway applicability_condition must be a non-empty string")
+        refs.append(singular.strip())
+
+    plural = step.get("applicability_conditions")
+    if plural is not None:
+        if not isinstance(plural, list) or not plural:
+            raise ValueError("Care-pathway applicability_conditions must be a non-empty list of condition IDs")
+        for index, value in enumerate(plural, start=1):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(
+                    f"Care-pathway applicability_conditions[{index}] must be a non-empty condition ID"
+                )
+            refs.append(value.strip())
+
+    return list(dict.fromkeys(refs))
 
 
 def _recommendation_child_action_display(
@@ -5122,7 +5007,6 @@ def _recommendation_child_action_display(
 def _resolve_recommendation_references(
     step: dict[str, Any],
     recommendation_plan_map: dict[str, str],
-    recommendation_candidates: list[dict[str, Any]],
 ) -> list[str]:
     resolved: list[str] = []
     for rule_ref in _step_rule_refs(step):
@@ -5135,15 +5019,10 @@ def _resolve_recommendation_references(
                 "  Care-pathway step '%s' references unknown decision-table rule_id '%s'"
                 % (str(step.get("id") or ""), rule_ref)
             )
-    if resolved:
-        return resolved
-
-    fallback = _resolve_recommendation_reference(
-        step,
-        recommendation_plan_map,
-        recommendation_candidates,
-    )
-    return [fallback] if fallback else []
+    # A recommendation canonical is executable pathway wiring. Require an
+    # authored rule_id/rule_ids binding rather than guessing from step prose,
+    # token overlap, or the first plausible recommendation.
+    return resolved
 
 
 def _resolve_action_reference(

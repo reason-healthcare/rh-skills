@@ -154,6 +154,12 @@ Executable activity coding rule:
 - Do not use recommendation prose or text-only `code.text` as a substitute for coding.
 - `kind: guidance` is source-faithful non-order recommendation text in the PlanDefinition action tree. It never produces an ActivityDefinition, clinical code, order, or referral.
 
+Care-pathway condition and linkage rules:
+- Treat `applicability_condition` and every entry in `applicability_conditions[]` as explicit local gates; gates are conjunctive. Use the plural field when the step requires more than one condition, such as population eligibility and incomplete-response status.
+- Preserve each gate in the generated action and in any standalone strategy PlanDefinition generated for that branch.
+- Link a pathway step to decision-table recommendation logic only through its authored `rule_id` or `rule_ids[]`. Step labels, descriptions, token similarity, and candidate ordering are not bindings. Leave an unlinked workflow step as a textual PlanDefinition action.
+- Do not add a default condition when the L2 pathway omits one. Report a missing or ambiguous clinical gate for L2 review.
+
 Questionnaire identity rule:
 - When an approved L2 assessment's `sections.instrument` provides `id`, `canonical`, and `version`, preserve those values on the generated Questionnaire. This keeps QuestionnaireResponses authored from a shared or previously published Questionnaire resolvable by the generated CQL. Generate Questionnaire content from the L2 items; do not replace the generated resource with a copied source Questionnaire. If no identity is supplied, use the topic's formalize configuration defaults.
 
@@ -588,15 +594,15 @@ When multiple strategies produce resources that reference each other:
   `http://example.org/fhir/<ResourceType>/<id>` for cross-references.
   The actual base URL is set via `rh-skills formalize-config`.
 
-**`sub_pathway_reference` (care-pathway → ECA rule)**: When a care-pathway step
-carries `sub_pathway_reference: <eca-artifact-id>`, the formalized
-PlanDefinition (clinical-protocol) must include an `action.definitionCanonical`
-pointing to the ECA PlanDefinition's canonical URL at the corresponding leaf
-action. Both artifacts are formalized independently via `rh-skills formalize`.
-Set the cross-reference by hand in the PlanDefinition JSON after both resources
-are generated — the CLI does **not** resolve `sub_pathway_reference` links
-automatically. Do not search source code to verify this; handle it inline as a
-manual JSON edit before calling `rh-skills validate <topic> l3 <artifact>`.
+**Explicit care-pathway binding**: A pathway step links to a decision-table
+recommendation only when its L2 `rule_id` or `rule_ids[]` names that rule.
+Formalize resolves those stable references to generated PlanDefinition
+canonicals. Do not bind by matching titles or prose, and do not edit generated
+PlanDefinition JSON to repair an incomplete L2 link. Update the structured L2
+artifact through the documented `promote body-init` / `promote derive` flow,
+validate it, obtain technical review, and regenerate with `rh-skills formalize`.
+Use `applicability_conditions[]` when a step needs multiple local gates; all
+listed gates, together with `applicability_condition` if present, are ANDed.
 
 ---
 

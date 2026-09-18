@@ -7,6 +7,7 @@ from click.testing import CliRunner
 from ruamel.yaml import YAML
 
 from rh_skills.commands.validate import validate
+from rh_skills.validators.care_pathway import validate_care_pathway
 from rh_skills.validators.decision_table import validate_decision_table
 
 
@@ -3630,6 +3631,37 @@ concerns: []
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "care-artifact"])
     assert result.exit_code == 0, result.output
+
+
+def test_care_pathway_accepts_explicit_conjunctive_applicability_conditions():
+    errors, _warnings = validate_care_pathway({
+        "artifact_type": "care-pathway",
+        "sections": {
+            "steps": [{
+                "id": "wait-for-response",
+                "label": "Wait for response",
+                "applicability_condition": "in-population",
+                "applicability_conditions": ["response-incomplete", "has-encounter"],
+            }],
+            "transitions": [],
+        },
+    })
+    assert errors == 0
+
+
+def test_care_pathway_rejects_empty_or_duplicate_applicability_conditions():
+    errors, _warnings = validate_care_pathway({
+        "artifact_type": "care-pathway",
+        "sections": {
+            "steps": [{
+                "id": "wait-for-response",
+                "label": "Wait for response",
+                "applicability_conditions": ["in-population", "in-population", ""],
+            }],
+            "transitions": [],
+        },
+    })
+    assert errors == 2
 
 
 def test_validate_care_pathway_accepts_rule_ids_on_leaf_step(tmp_repo):
