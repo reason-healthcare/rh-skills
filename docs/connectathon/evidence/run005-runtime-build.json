@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-09-18T19:10:21.205503+00:00",
+  "runId": "run005",
+  "commit": "d88532b26cbaa1f2a137abf1c068856a2c336733",
+  "rootIndependent": {
+    "cpgLibraryTests": {
+      "passed": 68,
+      "failed": 0,
+      "log": "/tmp/connectathon-run005-rh-cpg.log",
+      "sha256": "cc233ba6e5faf544e8b6e6ebda425e204951530760027be46632d1ecf3e13227"
+    },
+    "generatedExpressionProbe": "dist/connectathon-20260919/verification/root-run005-score-spike/results.json",
+    "scope": "Generated guarded FHIRPath expression tested through public Node/WASM with synthetic coded score item; not final run005 package"
+  },
+  "workerReported": {
+    "publicNodeTests": 7,
+    "nativeBuild": "passed",
+    "allThreeWasmBuilds": "passed"
+  },
+  "runtime": {
+    "target/debug/rh": "f3ac2e539a8e11635bbc87f1436cba03429c4f407e7f4ce1af6cde783ec6c22f",
+    "packages/cpg/dist/node.js": "478033b2ddbcab71dd648a59ccd25c07484113c2ccca381ef200fd3e8027f00b",
+    "packages/cpg/wasm-node/rh_cpg_bg.wasm": "e2c01301ceeeed4c22a2ac99a0ea56292458605ec7e782f27a4f982191120256",
+    "packages/cpg/wasm-bundler/rh_cpg_bg.wasm": "e2c01301ceeeed4c22a2ac99a0ea56292458605ec7e782f27a4f982191120256"
+  }
+}

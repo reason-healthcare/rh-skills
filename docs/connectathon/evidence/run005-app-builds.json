@@ -1,0 +1,157 @@
+{
+  "checkedAt": "2026-09-18T19:14:13.132297+00:00",
+  "scope": "Production builds, restarted root documents and their referenced static assets. Final run005 package browser behavior remains pending.",
+  "apps": [
+    {
+      "app": "workbench",
+      "head": "ea85b474e944deafd1b442556ba7f270567649e1",
+      "buildExitCode": 0,
+      "buildLog": "/tmp/connectathon-run005-workbench-build.log",
+      "buildLogSha256": "9f20c54a40d4ee2f8cb59dafc4e31673adbe5bb5d81d51a9686523f769430548",
+      "rootStatus": 200,
+      "assets": [
+        {
+          "path": "/_next/static/chunks/02b3yu8-z_tnr.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0cz1d0mv5g_q7.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0i899lv12bryo.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1vt8fnt3vw-m2.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/26lyam0vz62ff.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2p2p9g9r8mmbq.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2tczmvtltn-18.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/37784af1lg_82.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3ibbpcim5r207.css",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-1b3frt-dwybp2.js",
+          "status": 200
+        }
+      ],
+      "passed": true
+    },
+    {
+      "app": "standalone",
+      "head": "6227080ff9667f34d6a9944036c7bba972f75253",
+      "buildExitCode": 0,
+      "buildLog": "/tmp/connectathon-run005-standalone-build.log",
+      "buildLogSha256": "fcc24ec63108d826f78a7612290c9bdc1f1791c1341c94d54971173ff56dcb7b",
+      "rootStatus": 200,
+      "assets": [
+        {
+          "path": "/_next/static/chunks/18-53bd1d727d2474fb.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/388cc126-101e44b9c060446d.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/41cc530b-440327e84941f7b6.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/637-0856967553492318.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/7c09d4dc-b0b7bc7185b205ff.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/87c73c54-09e1ba5c70e60a51.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/985a9a81-27ab6d922c6676e8.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/990a3170-08d8c6aec3cd56cd.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/app/page-42070b95dc04e010.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/d86b74c0-b89c8fcf752c191a.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/eb0351e1-8972311942c80a6d.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/ed736d57-d3ec95a57d2e4de7.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/f32b3386-f0ce5af6314a35b0.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/main-app-a9a17c760135bd06.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/polyfills-42372ed130431b0a.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/webpack-03210075bfdf4b17.js",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/css/5e954445ff25b39a.css",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/css/6231820583a6ba6f.css",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/css/990ffc471b7df92a.css",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/media/aa4147798ac4e0e2-s.p.woff",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/media/c207dc2952833603-s.p.woff",
+          "status": 200
+        },
+        {
+          "path": "/_next/static/media/db07c843c0ad9373-s.p.woff",
+          "status": 200
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true
+}

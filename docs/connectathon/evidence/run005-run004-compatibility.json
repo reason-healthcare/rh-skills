@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-09-18T19:15:38.300440+00:00",
+  "scope": "Frozen run004 unchanged raw QR fixtures against run005 runtime/app builds; no old evidence overwritten",
+  "reports": [
+    {
+      "application": "workbench",
+      "path": "dist/connectathon-20260919/verification/root-run005-compat-run004-workbench/workbench-api-matrix-report.json",
+      "sha256": "10e54623dd144a77685d3b21d5c431491a27ea94d9e32cf53d220baca6489797",
+      "passed": true,
+      "counts": {
+        "fixtures": 6,
+        "artifactCalls": 72,
+        "parityPassed": 72,
+        "parityFailed": 0
+      },
+      "passRule": "72 expected artifact calls, parityPassed=72, parityFailed=0; reviewed fixture integrity unchanged"
+    },
+    {
+      "application": "standalone",
+      "path": "dist/connectathon-20260919/verification/root-run005-compat-run004-standalone/standalone-raw-qr-parity-report.json",
+      "sha256": "b6541f813f42031c49dedc1f9227b83e7c028e03e72a1d8071a9824d3de89288",
+      "passed": true,
+      "counts": null
+    }
+  ]
+}

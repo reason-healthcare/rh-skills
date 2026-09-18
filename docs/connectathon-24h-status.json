@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "plan": "docs/CONNECTATHON-24H-PLAN.md",
-  "status": "ready_to_attempt_live_core_with_documented_limits",
+  "status": "in_progress_run005_score_revision",
   "preparedAt": "2026-09-17",
   "executionStartedAt": "2026-09-17T23:35:32Z",
   "deadline": "2026-09-18T23:35:32Z",
@@ -47,7 +47,7 @@
     },
     {
       "id": "G2",
-      "status": "passed_with_documented_validator_exception",
+      "status": "reopened_for_run005",
       "owner": "skills_usecase_audit + runtime_execution",
       "evidence": [
         "docs/connectathon/evidence/run001-final-fhir-summary.json",
@@ -62,15 +62,15 @@
       ],
       "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "scope": "Both actual source-authored knowledge packages and current runtime operation outputs; exact zero-denominator validator limitation remains explicit",
-      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
       "note": "Each runtime12-output batch has one raw MEASURE_MR_SCORE_REQUIRED diagnostic only for the zero-denominator younger fixture. Core R4 permits absent undefined score. No strict-validator pass is claimed.",
       "previousScopeStatus": "passed_with_documented_validator_exception",
-      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed.",
+      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs.",
       "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G3",
-      "status": "passed",
+      "status": "reopened_for_run005",
       "owner": "workbench_audit",
       "evidence": [
         "docs/connectathon/evidence/run001-workbench-final-matrix.json",
@@ -83,13 +83,13 @@
       "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "scope": "Both source-authored snapshots, all three previews, complete package inspection and assessment staging/restoration",
       "previousScopeStatus": "passed",
-      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed.",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs.",
       "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G4",
-      "status": "passed",
+      "status": "reopened_for_run005",
       "owner": "runtime_execution + root",
       "evidence": [
         "docs/connectathon/evidence/run001-standalone-final-parity.json",
@@ -101,12 +101,12 @@
       ],
       "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "previousScopeStatus": "passed",
-      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed."
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs."
     },
     {
       "id": "G5",
-      "status": "passed",
+      "status": "reopened_for_run005",
       "owner": "workbench_audit + root",
       "evidence": [
         "docs/connectathon/evidence/final-browser-verification.json",
@@ -116,13 +116,13 @@
       ],
       "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "previousScopeStatus": "passed",
-      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed.",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs.",
       "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G6",
-      "status": "passed_with_rehearsal_timing_and_context_limits",
+      "status": "reopened_for_run005",
       "owner": "workbench_audit + root",
       "evidence": [
         "docs/connectathon/evidence/run001-durable-final-acceptance.json",
@@ -135,14 +135,14 @@
       ],
       "note": "Second author reused integration context. Two separate source-authored workspaces and deterministic regeneration pass; observed wall times include repairs/waits and miss the unproven60\u201390minute target.",
       "passedAt": "2026-09-18T18:27:06.369098+00:00",
-      "previousScopeStatus": "passed_with_rehearsal_limits",
-      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed.",
+      "previousScopeStatus": "passed_with_rehearsal_timing_and_context_limits",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs.",
       "updatedAt": "2026-09-18T17:59:01.597537+00:00"
     },
     {
       "id": "G7",
-      "status": "passed",
+      "status": "reopened_for_run005",
       "owner": "root + runtime_execution + skills_usecase_audit",
       "evidence": [
         "docs/connectathon/evidence/standalone-production-final-02e2b5b.json",
@@ -153,8 +153,8 @@
       ],
       "passedAt": "2026-09-18T18:27:06.369098+00:00",
       "previousScopeStatus": "passed",
-      "reopenedAt": "2026-09-18T10:12:52.950045+00:00",
-      "followup": "Final scoped run004 acceptance complete; broader clinical and interoperability gates remain unclaimed."
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Reverify affected scope for score Observation revision; prior evidence applies only to frozen runs."
     },
     {
       "id": "X1",
@@ -175,7 +175,7 @@
       "evidence": []
     }
   ],
-  "nextAction": "Use the final live runbook for a fresh source-authoring session; preserve measured timing/context limits and separate clinical/interoperability gates.",
+  "nextAction": "Generate and verify run005 using extracted assessment score Observations; retain accepted run004 baseline.",
   "iterations": [
     {
       "id": "ITER-001",
@@ -378,7 +378,7 @@
       "summary": "Final Library decoding and standalone file input accepted; correct raw-QR API72/6, source/main refresh and scoped handoff."
     }
   ],
-  "lastUpdatedAt": "2026-09-18T18:27:06.369098+00:00",
+  "lastUpdatedAt": "2026-09-18T19:18:06.407657+00:00",
   "journal": "docs/CONNECTATHON-JOURNAL.md",
   "constraints": [
     "Do not modify hl7-agentic-knowledge-connectathon; all source files and git state are read-only.",
@@ -429,23 +429,23 @@
   "activeTasks": [
     {
       "owner": "skills_usecase_audit",
-      "task": "Finalize exact authoring manifest and live runbook",
-      "status": "complete"
+      "task": "Optional structured scoring contract, skill/CQL guidance, formalizer and run005 package",
+      "status": "in_progress"
     },
     {
       "owner": "runtime_execution",
-      "task": "Decode CQL/ELM Library attachments in shared Workbench inspector; tests/build",
-      "status": "complete"
+      "task": "Metadata-driven SDC calculated integer score extraction with native/WASM/Node tests",
+      "status": "implementation_complete_pending_final_run005_package_acceptance"
     },
     {
       "owner": "workbench_audit",
-      "task": "SA-INPUT-001 separate local patient Bundle input, tests and production build",
-      "status": "complete"
+      "task": "Primary standards review and calculated-score Workbench UI",
+      "status": "implementation_complete_pending_final_run005_package_acceptance"
     },
     {
       "owner": "root",
-      "task": "Final browser verification, evidence journal and repository handoff",
-      "status": "complete"
+      "task": "Journal, upstream checks, independent package/runtime/app/browser acceptance",
+      "status": "in_progress"
     }
   ],
   "baselineTests": {
@@ -716,19 +716,29 @@
       "verifier": "root browser/report inspection + independent workers",
       "result": "FinalWB72/72,standalone6/6; LibrarydecodedCQL/ELM; standaloneinvalidfile recovery; asset12/29; source41/41",
       "evidence": "docs/connectathon/evidence/run004-final-app-builds.json"
+    },
+    {
+      "checkedAt": "2026-09-18T19:18:06.407657+00:00",
+      "verifier": "root independent and coordinated worker",
+      "result": "RH68CPGtests; Node7; generatedexpressionprobe0/0/1/1+partial; productionbuilds+restart; frozenrun004 WB72/72+standalone6/6; Python1070pass18skip1schemacopyfailureunderrepair",
+      "evidence": [
+        "docs/connectathon/evidence/run005-runtime-build.json",
+        "docs/connectathon/evidence/run005-app-builds.json",
+        "docs/connectathon/evidence/run005-run004-compatibility.json"
+      ]
     }
   ],
   "upstreamRefresh": {
-    "checkedAt": "2026-09-18T18:24:06.301342+00:00",
-    "method": "Fresh fetch of all four implementation main branches over command-scoped HTTPS; protected source never fetched",
+    "checkedAt": "2026-09-18T18:59:32.750168+00:00",
+    "method": "Root fresh fetch via command-scoped HTTPS; protected source excluded",
     "repositories": [
       {
         "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
         "remote": "origin",
         "main": "eb280968e8af623b9b30c4175111929e322f696c",
-        "head": "5aace52f12afadcadf51806b17cd5ad699b37900",
+        "head": "70959875dfee29aaf7e78515bff2a22166d6b16a",
         "branch": "codex/connectathon-live-readiness",
-        "ahead": 28,
+        "ahead": 29,
         "behind": 0,
         "containsLatestMain": true
       },
@@ -784,9 +794,9 @@
     },
     "commitPolicy": "Root owns rh-skills index and commits; workers edit owned files unstaged. Other repo owners coordinate changes and commit boundaries. No changes to protected source. Refresh main before final integration; regenerate and replay affected packages.",
     "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed.",
-    "currentMilestone": "Scoped live core preparation complete with finalrun004; broader clinical/timing/interoperability limits remain."
+    "currentMilestone": "Run005 requested score revision underway; run004 baseline remains accepted and frozen."
   },
-  "updatedAt": "2026-09-18T18:27:06.369098+00:00",
+  "updatedAt": "2026-09-18T19:18:06.407657+00:00",
   "finalReadiness": "docs/connectathon/evidence/final-readiness.json",
   "sourceIntegrityCheckedAt": "2026-09-18T18:24:06.301342+00:00"
 }
