@@ -128,7 +128,7 @@ sections:
         if args[1:3] == ["cql", "validate"]:
             return SimpleNamespace(returncode=0, stdout="", stderr="")
         if args[1:3] == ["cql", "compile"]:
-            output_path = Path(args[-1])
+            output_path = Path(args[args.index("--output") + 1])
             output_path.write_text("{}")
             return SimpleNamespace(returncode=0, stdout="", stderr="")
         if args[1:3] == ["cql", "eval"]:
@@ -142,7 +142,7 @@ sections:
 
     result = runner.invoke(cql, ["translate", topic, library_name])
     assert result.exit_code == 0, result.output
-    assert (computable_dir / f"{library_name}.json").exists()
+    assert (computable_dir / "elm" / f"{library_name}.json").exists()
 
     result = runner.invoke(cql, ["test", topic, library_name])
     assert result.exit_code == 0, result.output

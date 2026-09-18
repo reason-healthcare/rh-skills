@@ -25,6 +25,8 @@ def _library(
     *,
     name: str = "Logic",
     version: str = "1.0.0",
+    resource_id: str = "logic",
+    url: str = "https://example.org/fhir/Library/logic",
     cql: str | None = 'library Logic version \'1.0.0\'\ndefine "Eligible": true\n',
     elm: dict | None = None,
 ) -> dict:
@@ -43,8 +45,8 @@ def _library(
         content.append({"contentType": "application/elm+json", "data": _b64(elm)})
     return {
         "resourceType": "Library",
-        "id": "logic",
-        "url": "https://example.org/fhir/Library/logic",
+        "id": resource_id,
+        "url": url,
         "version": version,
         "name": name,
         "content": content,
@@ -362,6 +364,46 @@ def _fixture_bundle() -> dict:
 def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_path):
     computable = tmp_path / "computable"
     _write_json(computable / "library.json", _library())
+    helper_elm = {
+        "library": {
+            "identifier": {"id": "FHIRHelpers", "version": "4.0.1"},
+            "includes": {"def": []},
+            "statements": {"def": [{"name": "HelperValue", "expression": {"type": "Literal"}}]},
+        },
+    }
+    helper_url = "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers"
+    _write_json(
+        computable / "fhirhelpers.json",
+        _library(
+            name="FHIRHelpers",
+            version="4.0.1",
+            resource_id="fhirhelpers-4-0-1",
+            url=helper_url,
+            cql=None,
+            elm=helper_elm,
+        ),
+    )
+    evidence_variable = {
+        "resourceType": "EvidenceVariable",
+        "id": "evidence-summary-evidencevariable",
+        "url": "https://example.org/fhir/EvidenceVariable/evidence-summary-evidencevariable",
+        "version": "1.0.0",
+        "status": "draft",
+        "name": "EvidenceSummaryVariable",
+        "description": "Evidence variable used by the summary.",
+        "characteristic": [],
+    }
+    evidence = {
+        "resourceType": "Evidence",
+        "id": "evidence-summary",
+        "url": "https://example.org/fhir/Evidence/evidence-summary",
+        "version": "1.0.0",
+        "status": "draft",
+        "name": "EvidenceSummary",
+        "exposureBackground": {"reference": "EvidenceVariable/evidence-summary-evidencevariable"},
+    }
+    _write_json(computable / "evidence-variable.json", evidence_variable)
+    _write_json(computable / "evidence.json", evidence)
     _write_json(computable / "root.json", _root())
     fixture_root = tmp_path / "fixtures"
     case_dir = fixture_root / "case-one"
@@ -396,6 +438,10 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
     fixture_index = json.loads(result["index"].read_text())
     executable_manifest = json.loads(result["manifest"].read_text())
     executable_bundle = json.loads(result["bundle"].read_text())
+    executable_entries = {
+        (entry["resource"]["resourceType"], entry["resource"]["id"]): entry
+        for entry in executable_bundle["entry"]
+    }
     assert fixture_index["fixtures"] == [
         {
             "id": "case-one",
@@ -413,10 +459,40 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
         }
     ]
     assert json.loads((output / "fixtures" / "case-one.json").read_text()) == _fixture_bundle()
-    assert [entry["fullUrl"] for entry in executable_bundle["entry"]] == [
-        "https://example.org/fhir/Library/logic",
-        "https://example.org/fhir/PlanDefinition/root",
-    ]
+    assert all(entry["fullUrl"].startswith("urn:uuid:") for entry in executable_bundle["entry"])
+    assert len({entry["fullUrl"] for entry in executable_bundle["entry"]}) == len(executable_bundle["entry"])
+    helper_entry = executable_entries[("Library", "fhirhelpers-4-0-1")]
+    assert helper_entry["resource"]["url"] == helper_url
+    assert helper_entry["fullUrl"] != helper_url
+    evidence_variable_entry = executable_entries[("EvidenceVariable", "evidence-summary-evidencevariable")]
+    evidence_entry = executable_entries[("Evidence", "evidence-summary")]
+    assert evidence_entry["resource"]["exposureBackground"]["reference"] == evidence_variable_entry["fullUrl"]
+    assert json.loads((computable / "evidence.json").read_text())["exposureBackground"]["reference"] == (
+        "EvidenceVariable/evidence-summary-evidencevariable"
+    )
+    manifest_resources = {
+        (resource["resourceType"], resource["id"]): resource
+        for resource in executable_manifest["resources"]
+    }
+    assert manifest_resources[("EvidenceVariable", "evidence-summary-evidencevariable")]["fullUrl"] == (
+        evidence_variable_entry["fullUrl"]
+    )
+
+    repeated = compose_executable_bundle(
+        computable,
+        manifest,
+        fixture_root,
+        tmp_path / "executable-repeat",
+        "https://example.org/fhir/PlanDefinition/root|1.0.0",
+        "2026-06-15T09:20:00Z",
+    )
+    repeated_bundle = json.loads(repeated["bundle"].read_text())
+    assert {
+        (entry["resource"]["resourceType"], entry["resource"]["id"]): entry["fullUrl"]
+        for entry in repeated_bundle["entry"]
+    } == {
+        identity: entry["fullUrl"] for identity, entry in executable_entries.items()
+    }
     assert executable_manifest["checksums"]["algorithm"] == "sha256-canonical-json"
     assert len(executable_manifest["checksums"]["rootResourceCanonicalJson"]) == 64
     assert executable_manifest["checksums"]["fixtureBundles"][0]["path"] == "fixtures/case-one.json"

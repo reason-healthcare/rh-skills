@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import json
 import re
@@ -11,7 +12,7 @@ import tempfile
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
-from urllib.parse import quote
+from uuid import NAMESPACE_URL, uuid5
 
 import click
 
@@ -19,6 +20,9 @@ from rh_skills.common import require_topic, require_tracking, repo_root, topic_d
 
 
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*$")
+_LOCAL_BUNDLE_REFERENCE_RE = re.compile(
+    r"^(?P<resource_type>[A-Z][A-Za-z0-9]*)/(?P<resource_id>[A-Za-z0-9][A-Za-z0-9.-]{0,63})$"
+)
 _CANONICAL_KEYS = {
     "definitionCanonical",
     "derivedFrom",
@@ -463,30 +467,23 @@ def _sha256_json(value: Any) -> str:
 
 def _bundle_full_urls(resources: list[dict[str, Any]]) -> dict[int, str]:
     """Return deterministic, collision-free fullUrls for FHIR Bundle entries."""
-    canonical_counts: dict[str, int] = {}
-    for resource in resources:
-        url = resource.get("url")
-        if isinstance(url, str) and url:
-            canonical_counts[url] = canonical_counts.get(url, 0) + 1
-
     full_urls: dict[int, str] = {}
     seen: set[str] = set()
     for resource in resources:
         resource_type = resource["resourceType"]
         resource_id = resource["id"]
-        canonical = resource.get("url")
-        if isinstance(canonical, str) and canonical:
-            if canonical_counts[canonical] == 1:
-                full_url = canonical
-            else:
-                version = resource.get("version")
-                if not isinstance(version, str) or not version:
-                    raise ExecutableBundleError(
-                        f"{resource_type}/{resource_id}: duplicate canonical has no version for Bundle fullUrl"
-                    )
-                full_url = f"{canonical}?version={quote(version, safe='')}"
-        else:
-            full_url = f"https://reason.healthcare/fhir/{resource_type}/{resource_id}"
+        identity = json.dumps(
+            {
+                "resourceType": resource_type,
+                "id": resource_id,
+                "url": resource.get("url"),
+                "version": resource.get("version"),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        full_url = f"urn:uuid:{uuid5(NAMESPACE_URL, f'rh-skills-fhir-entry:{identity}')}"
         if full_url in seen:
             raise ExecutableBundleError(
                 f"Duplicate Bundle fullUrl {full_url} for {resource_type}/{resource_id}"
@@ -494,6 +491,24 @@ def _bundle_full_urls(resources: list[dict[str, Any]]) -> dict[int, str]:
         seen.add(full_url)
         full_urls[id(resource)] = full_url
     return full_urls
+
+
+def _rewrite_local_bundle_references(value: Any, full_urls_by_identity: dict[tuple[str, str], str]) -> None:
+    """Resolve local relative Reference.reference values to their Bundle fullUrls."""
+    if isinstance(value, dict):
+        reference = value.get("reference")
+        if isinstance(reference, str):
+            match = _LOCAL_BUNDLE_REFERENCE_RE.fullmatch(reference)
+            if match:
+                identity = (match.group("resource_type"), match.group("resource_id"))
+                full_url = full_urls_by_identity.get(identity)
+                if full_url:
+                    value["reference"] = full_url
+        for child in value.values():
+            _rewrite_local_bundle_references(child, full_urls_by_identity)
+    elif isinstance(value, list):
+        for child in value:
+            _rewrite_local_bundle_references(child, full_urls_by_identity)
 
 
 def _validate_evaluation_date(value: str | None) -> str:
@@ -934,14 +949,22 @@ def compose_executable_bundle(
         ),
     )
     full_urls = _bundle_full_urls(sorted_resources)
+    full_urls_by_identity = {
+        (resource["resourceType"], resource["id"]): full_urls[id(resource)]
+        for resource in sorted_resources
+    }
+    bundle_entries: list[dict[str, Any]] = []
+    for resource in sorted_resources:
+        bundle_resource_copy = copy.deepcopy(resource)
+        _rewrite_local_bundle_references(bundle_resource_copy, full_urls_by_identity)
+        bundle_entries.append(
+            {"fullUrl": full_urls[id(resource)], "resource": bundle_resource_copy}
+        )
     bundle_resource = {
         "resourceType": "Bundle",
         "id": "executable-cpg",
         "type": "collection",
-        "entry": [
-            {"fullUrl": full_urls[id(resource)], "resource": resource}
-            for resource in sorted_resources
-        ],
+        "entry": bundle_entries,
     }
     fixture_index = {"fixtures": fixture_entries}
     manifest_output = {
@@ -956,6 +979,7 @@ def compose_executable_bundle(
                 "resourceType": resource.get("resourceType"),
                 "id": resource.get("id"),
                 "canonical": _resource_identity(resource),
+                "fullUrl": full_urls[id(resource)],
                 "sourcePath": source_paths.get((resource.get("resourceType", ""), resource.get("id", ""))),
             }
             for resource in sorted(resources, key=lambda item: (str(item.get("resourceType", "")), str(item.get("id", ""))))
