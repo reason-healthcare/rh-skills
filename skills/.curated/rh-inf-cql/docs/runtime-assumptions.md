@@ -45,8 +45,10 @@ the CQL, ELM, and FHIR Library together. Do not assume an engine will find a
 helper through a network lookup or auto-inject conversions.
 
 For FHIR choice elements, use the FHIR logical type so ELM remains portable;
-for example, `(A.value as FHIR.boolean).value` for a Boolean
-`QuestionnaireResponse.answer.value[x]`. For a CodeableConcept or Coding,
+for example, `(O.value as FHIR.boolean).value` for a Boolean
+`Observation.value[x]`. Clinical CQL consumes extracted clinical resources;
+do not retrieve Questionnaire or QuestionnaireResponse to evaluate answers.
+For a CodeableConcept or Coding,
 declare the relevant CodeSystem/Code or ValueSet and use typed CQL terminology
 operators on the intended model path. Do not split a coded comparison into
 independent system/code string tests. This rule does not prohibit ordinary

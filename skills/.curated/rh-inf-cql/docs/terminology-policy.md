@@ -41,16 +41,19 @@ Include terminology-focused tests for:
 - version-sensitive behavior where applicable
 
 Keep the terminology boundary aligned with the resource being evaluated.
-FHIR R4 `QuestionnaireResponse.item` has a `linkId` and answer, not the
-Questionnaire item's LOINC Coding. Logic that evaluates a response before
-extraction should bind the exact Questionnaire canonical/version and expected
-linkIds; it should not pretend QR answers are coded observations. For an SDC
-Questionnaire-to-Observation workflow, test `Observation.code` against the
-declared ValueSet and separately assert the extracted Coding's system, version,
-code, display, subject, encounter, status, and provenance. ValueSet membership
-tests should vary code and system and should test missing or wrong
-canonical/version resolution. Do not expect changing only `Coding.version` or
-display to change standard CQL membership semantics.
+Clinical decision CQL consumes extracted clinical resources, including
+Observations from both scored and unscored assessments; it does not evaluate
+QuestionnaireResponse answers. FHIR R4 `QuestionnaireResponse.item` has a
+`linkId` and answer, not the Questionnaire item's LOINC Coding. An SDC
+Questionnaire-to-Observation workflow carries that Coding onto the extracted
+Observation. Test
+`Observation.code` against the declared ValueSet and separately assert the
+extracted Coding's system, version, code, display, subject, encounter, status,
+and provenance. Preserve source linkage in the extraction output, but do not
+require QuestionnaireResponse or `derivedFrom` to select clinical evidence.
+ValueSet membership tests should vary code and system and should test missing
+or wrong canonical/version resolution. Do not expect changing only
+`Coding.version` or display to change standard CQL membership semantics.
 
 The `rh-skills cql test` runner accepts an optional `input/terminology.json`
 sidecar per case. It may contain one pre-expanded ValueSet or a Bundle of

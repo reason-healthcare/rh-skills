@@ -390,6 +390,22 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    Coding that was already reviewed and pinned. Enabled extraction also
    requires an explicitly sourced or reviewed `sections.instrument.version_algorithm`
    Coding; never infer an algorithm from the Questionnaire version string.
+
+   **Assessment scoring is optional and source-bound.** If the source defines
+   scoring, preserve its exact input items, weights/transforms, completion and
+   missing/invalid-answer behavior, score type/code/version/unit/range,
+   thresholds, interpretation, and evidence references. Keep source rules
+   distinct from operational representations. Do not make scoring mandatory
+   for ordinary assessments, invent a numeric score or cutoff, or claim an
+   unvalidated score is a validated scale. The current structured SDC score
+   generator supports only an explicitly sourced count of true answers across
+   distinct required Boolean items; it omits the result for incomplete or
+   unusable inputs and treats zero as a valid complete result. Other scoring
+   methods are a capability gap until a matching generator/runtime is reviewed.
+   For integer results, FHIR `Observation.valueInteger` has no unit element;
+   describe the count meaning in the authored score-code definition instead
+   of adding an unsupported unit extension. See the
+   [assessment scoring contract](reference.md#assessment).
 6. After reviewing the plan output, check for open concerns before proceeding:
 
    **⚠ HUMAN-IN-THE-LOOP: Concerns require explicit human confirmation.**

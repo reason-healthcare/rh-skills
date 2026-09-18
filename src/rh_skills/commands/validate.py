@@ -20,6 +20,7 @@ from rh_skills.common import (
     topic_dir,
 )
 from rh_skills.validators.questionnaire import (
+    normalize_assessment_scoring,
     questionnaire_metadata_fields,
     validate_observation_extraction_items,
 )
@@ -1201,8 +1202,14 @@ def validate_artifact_file(
             try:
                 _, extraction = questionnaire_metadata_fields(instrument)
                 validate_observation_extraction_items(sections.get("items") or [], extraction)
+                normalize_assessment_scoring(
+                    sections.get("scoring"),
+                    sections.get("items") or [],
+                    instrument,
+                    sections.get("evidence_traceability"),
+                )
             except ValueError as exc:
-                _report_error(f"  INVALID assessment instrument: {exc}", emit=emit)
+                _report_error(f"  INVALID assessment instrument or scoring: {exc}", emit=emit)
                 errors += 1
 
         paired_errors, paired_warnings = _validate_paired_recommendation_coverage(

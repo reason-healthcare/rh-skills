@@ -39,10 +39,13 @@ define "Ambulatory Encounters":
 
 The retrieve above relies on the Patient context contract for patient scope
 and specifies the intended encounter class. Add explicit encounter-date
-filters when the clinical rule requires them. For Observations, retrieve the
-intended code set and retain required final status, effective date,
-selected-Encounter linkage, and QuestionnaireResponse provenance. Those
-relationships define clinical meaning; Patient context does not replace them.
+filters when the clinical rule requires them. Clinical decision CQL consumes
+the extracted clinical resources: retrieve the intended Observation code set
+and retain required final status, effective date, and selected-Encounter
+linkage. Extraction may retain QuestionnaireResponse provenance such as
+`derivedFrom`, but ordinary clinical reasoning must not retrieve or depend on
+Questionnaire/QuestionnaireResponse resources or their identifiers. These
+clinical relationships define meaning; Patient context does not replace them.
 
 There is no blanket ban on `subject.reference` comparisons. They may be needed
 for `context Unfiltered`, a deliberate cross-context query, or an explicit
@@ -102,8 +105,11 @@ from the same source server. It does not check reference type, base URL,
 canonical identity, or history/version semantics. Use it only when that
 identity model matches the input contract. It preserves the resource-to-
 resource relationship without manually constructing a reference string, and
-does not replace Patient-context scoping. Keep any required date, status,
-period, and QuestionnaireResponse-derivedFrom conditions in the logic.
+does not replace Patient-context scoping. Keep required date, status, period,
+and encounter relationships in the logic. Keep producer lineage such as
+`Observation.derivedFrom` as extraction provenance; do not make it a clinical
+selection predicate unless an explicitly source-defined audit rule requires
+that lineage.
 
 This specific function is provided by the pinned
 [FHIRCommon 2.0.0 library](https://hl7.org/fhir/uv/cql/Library-FHIRCommon.html)
@@ -123,6 +129,44 @@ SHA-256 is
 published package ELM is retained separately because its bundled helper bytes
 differ. Import and link the derivative through `rh-skills cql import-library`
 using its checksum manifest, rather than substituting same-version bytes.
+
+## Consume a calculated assessment score
+
+When the authored assessment defines a scored SDC item, downstream CQL reads
+the resulting coded `Observation`; it does not repeat questionnaire scoring.
+Use the score's declared ValueSet or CodeSystem/Code with typed terminology
+operators, then apply the authored Observation status, integer type/range,
+effective-time, and Encounter rules. With Patient context, rely on the pinned
+ModelInfo/runtime scope and keep the explicit Encounter and time relationship.
+
+For this score contract, exactly one valid score Observation across the
+qualifying screening Encounters in the measurement period is required. No
+match, a code outside the declared terminology, wrong status or value type, an
+out-of-range value, wrong Encounter/time, or multiple valid scores leaves the
+result unknown. Standard CQL Code equivalence and ValueSet membership select
+by system and code; they do not filter input `Coding.version` or display text.
+Preserve the authored version in the CodeSystem, generated Observation, and
+evidence, but do not claim that a typed retrieve rejects a different input
+version. If a source-defined rule requires version-based selection and the
+configured translator/runtime cannot express it with a tested typed operation,
+record that as a capability gap rather than splitting system/code strings. A
+score value of `0` is a valid present score; do not treat it as missing or
+false. The interpretation threshold comes from the authored L2 classification
+and its cited source, not from the Observation's mere existence.
+
+Keep this boundary independent of the score producer. CQL must not retrieve
+`Questionnaire` or `QuestionnaireResponse`, recompute from answer items, or
+require response identifiers or `Observation.derivedFrom` links. A separately
+produced Observation with the same reviewed score code/version, integral value,
+and required encounter/time context must be eligible for the same downstream
+logic. Test that alternate Observation-only input explicitly.
+
+For unscored or item-level assessments, evaluate the extracted, item-coded
+Observations directly; do not read QuestionnaireResponse answers in clinical
+CQL. Do not add a calculated score just to make a downstream retrieve easier,
+and do not describe a local numeric encoding as a validated instrument unless
+its source establishes that claim. A source-defined audit use of response
+resources is a separate, explicit rule and not the default clinical pathway.
 
 ## Use typed terminology operators
 

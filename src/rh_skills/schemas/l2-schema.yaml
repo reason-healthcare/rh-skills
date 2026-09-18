@@ -318,9 +318,26 @@ artifact_type_sections:
         exactly one reviewed Coding per item; that Coding requires system,
         version, code, and display. Do not infer a Coding when one is absent.
       scoring: >
-        Source-faithful completion, scoring, and unknown handling rules.
-        Missing or unusable answers remain unknown when the source contract
-        defines them that way; do not coerce missing values to false.
+        Scoring narrative remains optional for ordinary assessments. An
+        assessment that publishes a calculated score Observation may use this
+        optional structured contract: algorithm {method: count_boolean_answers,
+        input_items: [source item ids], counted_value: true,
+        completion: all_inputs_usable, missing_or_invalid: omit_result,
+        evidence_traceability_ids: [claim ids]}; result {item: {id, text,
+        type: integer, code: {system, version, code, display}}, range:
+        {minimum: 0, maximum: number of input_items}}; and optional
+        classifications[] {id, label, operator: greater_than_or_equal,
+        threshold, evidence_traceability_ids: [claim ids]}. This bounded method
+        requires distinct required Boolean source items, an enabled SDC
+        Observation-extraction contract, and source-linked claims. It computes
+        the number of true answers only when each named item has exactly one
+        usable Boolean; missing, duplicate, or invalid answers produce no
+        score. The integer score has no FHIR unit element; describe its count
+        semantics in the authored code definition. Do not infer a validated
+        instrument, scoring algorithm, threshold, code, or clinical approval.
+        Unsupported methods/operators must fail validation until deliberately
+        implemented. No score block is required for assessments that do not
+        source a scoring algorithm.
 
   terminology:
     description: >
@@ -348,6 +365,17 @@ artifact_type_sections:
         and total count before emitting the unchanged response expansion.
         Do not represent a search result as a complete expansion or substitute
         an unpinned later terminology version.
+      code_systems: >
+        Optional, locally authored complete CodeSystem definitions. Each entry
+        is {id, url, version, content: complete, case_sensitive: boolean,
+        concepts: [{code, display, definition}]}; name?, title?, and status?
+        may be supplied. `id` must be a FHIR id, url/version are the authored
+        canonical identity, and every concept definition is required. Do not
+        derive a CodeSystem from a ValueSet or use this form for a partial or
+        externally managed code system. When case_sensitive is false, codes
+        differing only by case are duplicates. Formalize emits the exact local
+        CodeSystem as a tracked L3 resource; pair it with an authored ValueSet
+        when CQL membership selection is required.
 
 status_values:
   - draft

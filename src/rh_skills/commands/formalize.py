@@ -36,12 +36,17 @@ from rh_skills.fhir.normalize import (
 from rh_skills.fhir.validate import validate_resource
 from rh_skills.fhir.packaging import load_packager_toml
 from rh_skills.validators.questionnaire import (
+    SDC_CALCULATED_EXPRESSION_EXTENSION,
+    SDC_OBSERVATION_EXTRACTION_EXTENSION,
+    normalize_assessment_scoring,
     questionnaire_metadata_fields,
     validate_observation_extraction_items,
 )
 
 _FORMALIZE_TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "formalize"
 FHIR_ID_MAX_LENGTH = 64
+_FHIR_ID_RE = re.compile(r"^[A-Za-z0-9\-.]{1,64}$")
+_PUBLICATION_STATUS_VALUES = {"draft", "active", "retired", "unknown"}
 
 
 # ── CQL Content Embedding ─────────────────────────────────────────────────────
@@ -809,6 +814,38 @@ def _build_questionnaire_items(artifact_name: str, l2_data: dict | None) -> list
             questionnaire_item["answerOption"] = answer_options
 
         questionnaire_items.append(questionnaire_item)
+
+    scoring = sections.get("scoring") or {}
+    instrument = sections.get("instrument") or {}
+    score_contract = normalize_assessment_scoring(
+        scoring,
+        items,
+        instrument,
+        sections.get("evidence_traceability"),
+    )
+    if score_contract:
+        score_item = score_contract["result"]["item"]
+        questionnaire_items.append({
+            "linkId": score_item["id"],
+            "text": score_item["text"],
+            "type": "integer",
+            "code": [score_item["code"]],
+            "readOnly": True,
+            "extension": [
+                {
+                    "url": SDC_CALCULATED_EXPRESSION_EXTENSION,
+                    "valueExpression": {
+                        "description": "Calculated assessment score",
+                        "language": "text/fhirpath",
+                        "expression": score_contract["expression"],
+                    },
+                },
+                {
+                    "url": SDC_OBSERVATION_EXTRACTION_EXTENSION,
+                    "valueBoolean": True,
+                },
+            ],
+        })
 
     if questionnaire_items:
         return questionnaire_items
@@ -1947,6 +1984,12 @@ def _build_questionnaire_resource(
     metadata_fields, extraction = questionnaire_metadata_fields(instrument)
     source_items = sections.get("items") or []
     validate_observation_extraction_items(source_items, extraction)
+    normalize_assessment_scoring(
+        sections.get("scoring"),
+        source_items,
+        instrument,
+        sections.get("evidence_traceability"),
+    )
     return _render_questionnaire_resource(
         {
             "id": questionnaire_id,
@@ -3819,7 +3862,147 @@ def _build_terminology_stub_resources(
     resources: list[dict] = []
     used_ids: defaultdict[str, int] = defaultdict(int)
 
-    if not isinstance(value_sets, list) or not value_sets:
+    # A local code system must be a complete, authored terminology definition.
+    # Do not synthesize one from a ValueSet: a ValueSet selects codes, while a
+    # CodeSystem defines them and must retain its own canonical/version.
+    code_systems = sections.get("code_systems")
+    if code_systems is not None and not isinstance(code_systems, list):
+        raise ValueError("sections.code_systems must be an array when provided")
+
+    code_system_ids: set[str] = set()
+    code_system_identities: set[tuple[str, str]] = set()
+    for index, code_system in enumerate(code_systems or [], start=1):
+        if not isinstance(code_system, dict):
+            raise ValueError(f"sections.code_systems[{index - 1}] must be an object")
+
+        allowed_fields = {
+            "id", "url", "version", "name", "title", "status", "content",
+            "case_sensitive", "concepts",
+        }
+        unknown_fields = set(code_system) - allowed_fields
+        if unknown_fields:
+            raise ValueError(
+                "sections.code_systems[{}] has unsupported field(s): {}".format(
+                    index - 1,
+                    ", ".join(sorted(unknown_fields)),
+                )
+            )
+
+        def required_string(field: str) -> str:
+            value = code_system.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(
+                    f"sections.code_systems[{index - 1}].{field} must be a non-empty string"
+                )
+            return value.strip()
+
+        code_system_id = required_string("id")
+        code_system_url = required_string("url")
+        code_system_version = required_string("version")
+        if not _FHIR_ID_RE.fullmatch(code_system_id):
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].id must be a valid FHIR id "
+                "([A-Za-z0-9\\-.]{1,64})"
+            )
+        if code_system_id in code_system_ids:
+            raise ValueError(f"sections.code_systems has duplicate id {code_system_id!r}")
+        identity = (code_system_url, code_system_version)
+        if identity in code_system_identities:
+            raise ValueError(
+                "sections.code_systems has duplicate canonical/version "
+                f"{code_system_url}|{code_system_version}"
+            )
+        code_system_ids.add(code_system_id)
+        code_system_identities.add(identity)
+
+        if code_system.get("content") != "complete":
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].content must be complete"
+            )
+        if not isinstance(code_system.get("case_sensitive"), bool):
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].case_sensitive must be boolean"
+            )
+        for field in ("name", "title", "status"):
+            if field in code_system and (
+                not isinstance(code_system[field], str) or not code_system[field].strip()
+            ):
+                raise ValueError(
+                    f"sections.code_systems[{index - 1}].{field} must be a non-empty string"
+                )
+        code_system_status = str(code_system.get("status") or status).strip()
+        if code_system_status not in _PUBLICATION_STATUS_VALUES:
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].status must be a valid publication status"
+            )
+        concepts = code_system.get("concepts")
+        if not isinstance(concepts, list) or not concepts:
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].concepts must be a non-empty array"
+            )
+
+        fhir_concepts: list[dict[str, str]] = []
+        concept_codes: set[str] = set()
+        for concept_index, concept in enumerate(concepts):
+            if not isinstance(concept, dict):
+                raise ValueError(
+                    f"sections.code_systems[{index - 1}].concepts[{concept_index}] must be an object"
+                )
+            unknown_concept_fields = set(concept) - {"code", "display", "definition"}
+            if unknown_concept_fields:
+                raise ValueError(
+                    "sections.code_systems[{}].concepts[{}] has unsupported field(s): {}".format(
+                        index - 1,
+                        concept_index,
+                        ", ".join(sorted(unknown_concept_fields)),
+                    )
+                )
+            normalized_concept: dict[str, str] = {}
+            for field in ("code", "display", "definition"):
+                value = concept.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(
+                        "sections.code_systems[{}].concepts[{}].{} must be a non-empty string".format(
+                            index - 1,
+                            concept_index,
+                            field,
+                        )
+                    )
+                normalized_concept[field] = value.strip()
+            uniqueness_key = (
+                normalized_concept["code"]
+                if code_system["case_sensitive"]
+                else normalized_concept["code"].casefold()
+            )
+            if uniqueness_key in concept_codes:
+                raise ValueError(
+                    "sections.code_systems[{}].concepts has duplicate code {!r}".format(
+                        index - 1,
+                        normalized_concept["code"],
+                    )
+                )
+            concept_codes.add(uniqueness_key)
+            fhir_concepts.append(normalized_concept)
+
+        resource = {
+            "resourceType": "CodeSystem",
+            "id": code_system_id,
+            "url": code_system_url,
+            "version": code_system_version,
+            "status": code_system_status,
+            "content": "complete",
+            "caseSensitive": code_system["case_sensitive"],
+            "name": str(code_system.get("name") or _pascal_from_kebab(code_system_id)).strip(),
+            "title": str(
+                code_system.get("title") or code_system_id.replace("-", " ").title()
+            ).strip(),
+            "concept": fhir_concepts,
+        }
+        resources.append(resource)
+
+    if not isinstance(value_sets, list):
+        value_sets = []
+    if not value_sets and not code_systems:
         value_sets = [{"id": artifact_name, "name": artifact_name}]
 
     for idx, value_set in enumerate(value_sets, start=1):

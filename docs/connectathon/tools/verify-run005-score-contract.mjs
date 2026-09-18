@@ -69,6 +69,8 @@ add('preliminary-score',s=>{s.status='preliminary';},false,null);
 add('entered-in-error-score',s=>{s.status='entered-in-error';},false,null);
 add('wrong-code',s=>{s.code.coding[0].code='some-other-score';},false,null);
 add('wrong-system',s=>{s.code.coding[0].system='https://example.invalid/other';},false,null);
+add('same-algorithm-code-without-version',s=>{delete s.code.coding[0].version;},true,true);
+add('same-algorithm-code-different-version-metadata',s=>{s.code.coding[0].version='other-metadata-version';},true,true);
 add('wrong-patient',s=>{s.subject.reference='Patient/some-other-patient';},false,null);
 add('wrong-encounter',s=>{s.encounter.reference='Encounter/some-other-encounter';},false,null);
 add('missing-effective-time',s=>{delete s.effectiveDateTime;},false,null);

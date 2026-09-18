@@ -1,0 +1,60 @@
+{
+  "reviewed_at": "2026-09-18",
+  "scope": "Run005 calculated integer assessment score extracted as an SDC independent Observation",
+  "decision": {
+    "score_contract": "A locally authored immutable algorithm-specific code in a versioned CodeSystem represents a three-question yes-answer count in the inclusive range 0..3. It is not asserted to be a standard LOINC score or a validated severity scale. An algorithm revision receives a new code rather than changing this code's meaning.",
+    "risk_rule": "CDC STEADI defines risk as yes to any of the three key questions. Therefore count >= 1 is the authored risk threshold; a count of 0 is a valid calculated result, not an absent value.",
+    "terminology": "The ReasonHub LOINC searches for the exact three-question yes-count, 'three question fall risk score', and 'fall risk screening total score' found no exact match. Nearby results described other instruments. Do not assign one of those codes. The local CodeSystem and ValueSet canonical/version, algorithm-specific code, display, and definition must be explicitly authored and pinned. Extraction preserves Coding.version, but terminology membership itself matches system and code.",
+    "selection": "Observation-primary CQL must select final Observations with the exact authored system and algorithm-specific code, selected Patient and Encounter, an integer value in 0..3, and an in-period effective time. V1 requires exactly one matching Observation. Coding.version is preserved as provenance but is not a strict input selection filter: an equivalent external producer may omit or differ in that metadata. Zero or multiple candidates yields unknown; a later latest-wins policy must define a deterministic time tie rule before use.",
+    "provenance": "SDC-extracted Observations retain QR provenance through derivedFrom. CQL must not require derivedFrom so another instrument or source can satisfy the same score contract. The extractor must retain subject, encounter, authored effectiveDateTime and issued, valid performer, category, and status=final."
+  },
+  "supported_sdc_subset": {
+    "questionnaire_item": "One readOnly integer item with one complete Coding, one sdc-questionnaire-calculatedExpression valueExpression using supported text/fhirpath, and an explicit item-level sdc-questionnaire-observationExtract valueBoolean=true. Root-level observation extraction may still cover source Boolean items.",
+    "expression_context": "For Questionnaire expressions, %resource resolves to the root QuestionnaireResponse. The declared expression is evaluated against that response and must return exactly one integer in 0..3.",
+    "completion_gate": "Workflow extraction runs only for a completed response with all required source Boolean answers usable. Missing, malformed, duplicate, or unsupported answers leave the score uncalculated; no false or zero default is emitted.",
+    "response_answer": "A calculated score answer may be absent. If present, it is not a source of truth and must be exactly one valueInteger equal to the computed result; mismatch or ambiguous value[x] is an error.",
+    "output": "The runtime calculates or verifies the declared calculated answer, then performs the supported Observation extraction into transaction entries. It does not write to a server and does not claim full SDC $extract support."
+  },
+  "ui_contract": {
+    "editable_answers": "Only authored Boolean source questions are editable. The calculated integer is read-only.",
+    "display": "After validation and successful extraction, display the value from the emitted exact-coded Observation. Display zero normally. Before extraction, or for no unique valid emitted value, display Not calculated; do not derive the value in the browser.",
+    "staging": "The staged assessment banner uses the actual extracted Observation count, so a completed three-Boolean plus score assessment reports four Observations. Existing non-scoring Questionnaires retain their existing count and behavior."
+  },
+  "non_goals": [
+    "No generic scoring engine or arbitrary FHIRPath support.",
+    "No standard LOINC claim for this local yes-count.",
+    "No use of answerOrdinalValue for Boolean STEADI answers; that pattern changes the source answer semantics.",
+    "No inferred encounter, author, effective time, coding, or score source item."
+  ],
+  "sources": [
+    {
+      "url": "https://hl7.org/fhir/uv/sdc/en/StructureDefinition-sdc-questionnaire-calculatedExpression.html",
+      "claim": "Current SDC calculatedExpression is a Questionnaire.item extension; its calculation supplies an answer and the item may not have initial values."
+    },
+    {
+      "url": "https://hl7.org/fhir/uv/sdc/en/expressions.html",
+      "claim": "Current SDC expression guidance identifies calculated answers as a common scoring use and defines %resource as the root QuestionnaireResponse in Questionnaire expressions."
+    },
+    {
+      "url": "https://hl7.org/fhir/uv/sdc/en/extraction.html",
+      "claim": "SDC Observation extraction produces transaction entries and specifies status, code, subject, encounter, authored times, performer, category, answer value, and derivedFrom mapping."
+    },
+    {
+      "url": "https://hl7.org/fhir/uv/sdc/en/StructureDefinition-sdc-questionnaire-observationExtract.html",
+      "claim": "The extension supports independent Observation extraction through valueBoolean=true; related Observation modes are outside this subset."
+    },
+    {
+      "url": "https://www.cdc.gov/steadi/media/pdfs/STEADI-Algorithm-508.pdf",
+      "claim": "CDC STEADI says a yes to any of the three key questions indicates fall risk; it does not define a numeric 0..3 severity score."
+    },
+    {
+      "source": "ReasonHub LOINC search",
+      "queries": [
+        "three question fall risk score",
+        "fall risk screening total score",
+        "CDC STEADI three questions yes count"
+      ],
+      "claim": "No exact LOINC concept was returned; unrelated instrument scores must not be substituted."
+    }
+  ]
+}

@@ -167,6 +167,70 @@ class TestFormalizeCommand:
         events = topic["events"]
         assert any(e["type"] == "computable_converged" for e in events)
 
+    def test_terminology_code_system_is_written_and_tracked(self, formalize_topic):
+        topic_dir = formalize_topic / "topics" / "test-topic"
+        structured_path = topic_dir / "structured" / "score-terminology.yaml"
+        yaml = YAML()
+        yaml.default_flow_style = False
+        with open(structured_path, "w") as stream:
+            yaml.dump({
+                "artifact_schema_version": "1.0",
+                "metadata": {"id": "score-terminology", "title": "Score terminology"},
+                "sections": {
+                    "code_systems": [{
+                        "id": "three-question-score",
+                        "url": "https://example.org/fhir/CodeSystem/three-question-score",
+                        "version": "0.2.0",
+                        "content": "complete",
+                        "case_sensitive": True,
+                        "concepts": [{
+                            "code": "yes-count",
+                            "display": "Three-question yes count",
+                            "definition": "Number of true answers across the three screening questions.",
+                        }],
+                    }],
+                    "value_sets": [{
+                        "id": "three-question-score",
+                        "system": "https://example.org/fhir/CodeSystem/three-question-score",
+                        "version": "0.2.0",
+                        "codes": [{
+                            "code": "yes-count",
+                            "display": "Three-question yes count",
+                        }],
+                    }],
+                },
+            }, stream)
+
+        tracking = load_tracking(formalize_topic)
+        topic = next(item for item in tracking["topics"] if item["name"] == "test-topic")
+        topic["structured"].append({
+            "name": "score-terminology",
+            "artifact_type": "terminology",
+            "status": "approved",
+            "file": "topics/test-topic/structured/score-terminology.yaml",
+        })
+        with open(formalize_topic / "tracking.yaml", "w") as stream:
+            yaml.dump(tracking, stream)
+
+        runner = CliRunner()
+        result = runner.invoke(formalize, ["test-topic", "score-terminology"])
+        assert result.exit_code == 0, result.output
+
+        code_system_path = topic_dir / "computable" / "CodeSystem-three-question-score.json"
+        code_system = json.loads(code_system_path.read_text())
+        assert code_system["url"] == "https://example.org/fhir/CodeSystem/three-question-score"
+        assert code_system["version"] == "0.2.0"
+        assert code_system["concept"][0]["definition"] == (
+            "Number of true answers across the three screening questions."
+        )
+
+        updated = load_tracking(formalize_topic)
+        updated_topic = next(item for item in updated["topics"] if item["name"] == "test-topic")
+        entry = next(item for item in updated_topic["computable"] if item["name"] == "score-terminology")
+        code_system_relative_path = "topics/test-topic/computable/CodeSystem-three-question-score.json"
+        assert code_system_relative_path in entry["files"]
+        assert entry["checksums"][code_system_relative_path]
+
     def test_tracking_uses_matching_plan_entry_inputs_not_primary_target(self, formalize_topic):
         topic_dir = formalize_topic / "topics" / "test-topic"
         structured_dir = topic_dir / "structured"

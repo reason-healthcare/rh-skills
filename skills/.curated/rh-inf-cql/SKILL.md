@@ -90,7 +90,7 @@ Parameter-only decision-table libraries are scaffold artifacts and are not accep
 | `M.authoredOn during Interval<DateTime>` | `FHIRHelpers.ToDateTime(M.authoredOn) during Interval<DateTime>` | Convert the FHIR primitive explicitly using the pinned helper |
 | `date from M.authoredOn` | `FHIRHelpers.ToDateTime(M.authoredOn)` | Convert the FHIR primitive explicitly; use a matching interval type |
 | `ToDateTime(E.period.start)` | `FHIRHelpers.ToDateTime(E.period.start)` | FHIR primitive conversion must use the declared helper |
-| `A.valueBoolean = true` | `(A.value as FHIR.boolean).value = true` | QuestionnaireResponse answer is a choice; use its FHIR logical type for portable translation |
+| `O.valueBoolean = true` | `(O.value as FHIR.boolean).value = true` | Observation value is a FHIR choice; use its FHIR logical type for portable translation |
 | `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Use typed membership; separately supply the complete pinned expansion through the runtime's terminology input or packaged knowledge Bundle |
 | `[Encounter: "Ambulatory"]` | `[Encounter: class ~ "Ambulatory"]` | The FHIR R4 Encounter retrieve's primary code path is `type`; name the non-primary `class` path explicitly |
 | `C.clinicalStatus.value = 'active'` | `exists (C.clinicalStatus.coding S where S ~ "Active")` | Compare the typed Coding with a declared Code and CodeSystem; do not split terminology identity into string predicates |
@@ -280,7 +280,7 @@ Apply every time unless the user asks for something narrower. See
 ### Retrieves and Terminology
 - [ ] Are retrieves scoped appropriately? Use a ValueSet/code filter when a coded concept defines the selection; document and test intentional context or relationship retrieves.
 - [ ] Are value sets and codes declared explicitly?
-- [ ] Is each declared ValueSet used by the evaluated resource path, or is its non-use justified (for example, QR linkIds before SDC extraction)?
+- [ ] Is each declared ValueSet used by the evaluated resource path, or is its non-use justified by the actual coded resources being selected?
 - [ ] Are terminology versions pinned where reproducibility matters?
 - [ ] Is value set membership assumed too loosely anywhere?
 - [ ] If SDC extraction is required, are CQL and tests using produced Observations rather than only a normalized expected Bundle?
@@ -422,19 +422,21 @@ details, unknown terminology expansions, unverified fixture assumptions.
    > canonical URL rather than duplicated locally. For now, local-first via the
    > terminology L2 pipeline is the required path.
 
-   **Choose the terminology boundary that matches the input resource.** In
-   FHIR R4, a `QuestionnaireResponse.item` carries `linkId` and answers; it does
-   not carry the Questionnaire item's LOINC `Coding`. If logic evaluates a
-   response before extraction, bind the exact versioned Questionnaire canonical
-   and expected `linkId` values. Do not invent a ValueSet lookup against a QR
-   answer. When the workflow requires SDC extraction, retain the source
-   Questionnaire's SDC extraction profile and metadata, evaluate the generated
-   `Observation` resources, and scope each retrieve with its terminology L2
-   ValueSet, for example `[Observation: "UnsteadinessQuestion"]`. In that
-   path, verify each Observation's code, system, version, subject, encounter,
-   status, `derivedFrom` response, and provenance before treating the CQL result
-   as an extraction result. A normalized extracted fixture is an oracle; it
-   does not prove that `$extract` produced those Observations.
+   **Clinical decision CQL consumes extracted clinical resources.** For
+   questionnaire-derived evidence, use the SDC-produced, item-coded
+   `Observation` resources and scope each retrieve with its terminology L2
+   ValueSet, for example `[Observation: "UnsteadinessQuestion"]`. Do not
+   retrieve `Questionnaire` or `QuestionnaireResponse`, evaluate QR answers, or
+   require QR identifiers or `Observation.derivedFrom` for ordinary clinical
+   reasoning. Preserve source linkage such as `derivedFrom` in the extraction
+   output as provenance. For a calculated score Observation, consume its exact
+   authored terminology, value type/range, status, effective time, and encounter
+   context; do not recalculate it downstream. Accept an equivalent valid score
+   Observation from another producer under the same reviewed code/value
+   contract. A normalized extracted fixture is an oracle; it does not prove
+   that `$extract` produced those Observations. A source-defined audit rule
+   requiring response resources is a separate explicit exception, not a default
+   clinical pathway.
 
    Fixture-driven native runs may supply a pre-expanded ValueSet or Bundle of
    ValueSets at `tests/cql/<Library>/case-*/input/terminology.json`. The CQL
@@ -947,8 +949,9 @@ change patient scope or coded clinical meaning.
 - Name non-primary coded paths in the retrieve filter. FHIR R4 Encounter's
   primary code path is `type`; `class` is a separate `Coding`, so
   `[Encounter: "Ambulatory"]` does not filter `class`.
-- Preserve independent status, date, encounter-linkage, and `derivedFrom`
-  provenance conditions. Patient context does not replace these joins.
+- Preserve independent status, date, and encounter-linkage conditions.
+  `derivedFrom` is producer provenance, not a default clinical selection
+  predicate. Patient context does not replace clinical joins.
 - For an Observation-to-Encounter reference join, prefer the pinned
   `FHIRCommon.references()` fluent function when its same-source-server,
   resource-id semantics match the input contract. Include and package the

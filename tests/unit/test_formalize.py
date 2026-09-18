@@ -152,6 +152,122 @@ def test_value_set_include_preserves_declared_system_version():
     assert resources[0]["compose"]["include"][0]["version"] == "2.81"
 
 
+def test_local_complete_code_system_is_emitted_with_authored_identity_and_concepts():
+    resources = _build_terminology_stub_resources(
+        "assessment-score-terminology",
+        {"canonical": "https://example.org/fhir", "version": "1", "status": "draft"},
+        {"sections": {
+            "code_systems": [{
+                "id": "three-question-score",
+                "url": "https://example.org/fhir/CodeSystem/three-question-score",
+                "version": "0.2.0",
+                "name": "ThreeQuestionScore",
+                "title": "Three-question yes count",
+                "status": "active",
+                "content": "complete",
+                "case_sensitive": True,
+                "concepts": [{
+                    "code": "yes-count",
+                    "display": "Three-question yes count",
+                    "definition": "Number of true answers across the three screening questions.",
+                }],
+            }],
+            "value_sets": [{
+                "id": "three-question-score",
+                "system": "https://example.org/fhir/CodeSystem/three-question-score",
+                "version": "0.2.0",
+                "codes": [{"code": "yes-count", "display": "Three-question yes count"}],
+            }],
+        }},
+    )
+
+    code_system = next(resource for resource in resources if resource["resourceType"] == "CodeSystem")
+    value_set = next(resource for resource in resources if resource["resourceType"] == "ValueSet")
+    assert code_system == {
+        "resourceType": "CodeSystem",
+        "id": "three-question-score",
+        "url": "https://example.org/fhir/CodeSystem/three-question-score",
+        "version": "0.2.0",
+        "status": "active",
+        "content": "complete",
+        "caseSensitive": True,
+        "name": "ThreeQuestionScore",
+        "title": "Three-question yes count",
+        "concept": [{
+            "code": "yes-count",
+            "display": "Three-question yes count",
+            "definition": "Number of true answers across the three screening questions.",
+        }],
+    }
+    assert value_set["compose"]["include"] == [{
+        "system": "https://example.org/fhir/CodeSystem/three-question-score",
+        "version": "0.2.0",
+        "concept": [{"code": "yes-count", "display": "Three-question yes count"}],
+    }]
+
+
+@pytest.mark.parametrize("mutation, message", [
+    ("missing-url", "url must be a non-empty string"),
+    ("unsafe-id", "must be a valid FHIR id"),
+    ("fragment", "content must be complete"),
+    ("case-sensitive", "case_sensitive must be boolean"),
+    ("invalid-status", "must be a valid publication status"),
+    ("non-string-title", "title must be a non-empty string"),
+    ("missing-definition", "definition must be a non-empty string"),
+    ("duplicate-code", "duplicate code"),
+])
+def test_local_code_system_rejects_incomplete_or_ambiguous_authored_definition(mutation, message):
+    code_system = {
+        "id": "score",
+        "url": "https://example.org/fhir/CodeSystem/score",
+        "version": "0.2.0",
+        "content": "complete",
+        "case_sensitive": True,
+        "concepts": [{"code": "count", "display": "Count", "definition": "A count."}],
+    }
+    if mutation == "missing-url":
+        del code_system["url"]
+    elif mutation == "unsafe-id":
+        code_system["id"] = "../score"
+    elif mutation == "fragment":
+        code_system["content"] = "fragment"
+    elif mutation == "case-sensitive":
+        code_system["case_sensitive"] = "true"
+    elif mutation == "invalid-status":
+        code_system["status"] = "unknown-status"
+    elif mutation == "non-string-title":
+        code_system["title"] = {"not": "text"}
+    elif mutation == "missing-definition":
+        del code_system["concepts"][0]["definition"]
+    elif mutation == "duplicate-code":
+        code_system["case_sensitive"] = False
+        code_system["concepts"][0]["code"] = "Count"
+        code_system["concepts"].append({"code": "count", "display": "Count again", "definition": "Duplicate."})
+
+    with pytest.raises(ValueError, match=message):
+        _build_terminology_stub_resources(
+            "terminology",
+            {"canonical": "https://example.org/fhir", "version": "1", "status": "draft"},
+            {"sections": {"code_systems": [code_system]}},
+        )
+
+
+def test_code_system_only_terminology_does_not_invent_a_placeholder_value_set():
+    resources = _build_terminology_stub_resources(
+        "terminology",
+        {"canonical": "https://example.org/fhir", "version": "1", "status": "draft"},
+        {"sections": {"code_systems": [{
+            "id": "score",
+            "url": "https://example.org/fhir/CodeSystem/score",
+            "version": "0.2.0",
+            "content": "complete",
+            "case_sensitive": True,
+            "concepts": [{"code": "count", "display": "Count", "definition": "A count."}],
+        }]}},
+    )
+    assert [resource["resourceType"] for resource in resources] == ["CodeSystem"]
+
+
 def test_value_set_concept_refs_preserve_approved_code_versions():
     resources = _build_terminology_stub_resources(
         "screening-items",
@@ -685,6 +801,173 @@ def test_questionnaire_rejects_incomplete_sdc_extraction_item_coding():
                 "id": "q1", "text": "Question?", "type": "boolean",
                 "code": {"system": "http://loinc.org", "code": "1234-5", "display": "Question"},
             }]}},
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        )
+
+
+def _scored_assessment_l2(input_required=True):
+    extraction_profile = (
+        "http://hl7.org/fhir/uv/sdc/StructureDefinition/"
+        "sdc-questionnaire-extr-obsn|4.0.0"
+    )
+    return {
+        "title": "Two-item score example",
+        "sections": {
+            "instrument": {
+                "id": "two-item-assessment",
+                "canonical": "https://example.org/fhir/Questionnaire/two-item-assessment",
+                "version": "1.0.0",
+                "version_algorithm": {
+                    "system": "http://hl7.org/fhir/version-algorithm",
+                    "code": "semver",
+                },
+                "observation_extraction": {
+                    "profile": extraction_profile,
+                    "enabled": True,
+                    "category": {
+                        "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                        "code": "survey",
+                        "display": "Survey",
+                    },
+                },
+            },
+            "items": [
+                {
+                    "id": "item-a",
+                    "text": "Question A?",
+                    "type": "boolean",
+                    "required": input_required,
+                    "code": {"system": "https://example.org/codes", "version": "1", "code": "a", "display": "Question A"},
+                },
+                {
+                    "id": "item-b",
+                    "text": "Question B?",
+                    "type": "boolean",
+                    "required": True,
+                    "code": {"system": "https://example.org/codes", "version": "1", "code": "b", "display": "Question B"},
+                },
+            ],
+            "scoring": {
+                "algorithm": {
+                    "method": "count_boolean_answers",
+                    "input_items": ["item-a", "item-b"],
+                    "counted_value": True,
+                    "completion": "all_inputs_usable",
+                    "missing_or_invalid": "omit_result",
+                    "evidence_traceability_ids": ["authored-scoring-rule"],
+                },
+                "result": {
+                    "item": {
+                        "id": "affirmative-count",
+                        "text": "Number of affirmative answers",
+                        "type": "integer",
+                        "code": {
+                            "system": "https://example.org/codes",
+                            "version": "1.0.0",
+                            "code": "affirmative-count",
+                            "display": "Affirmative answer count",
+                        },
+                    },
+                    "range": {"minimum": 0, "maximum": 2},
+                },
+                "classifications": [{
+                    "id": "screen-positive",
+                    "label": "At least one affirmative answer",
+                    "operator": "greater_than_or_equal",
+                    "threshold": 1,
+                    "evidence_traceability_ids": ["authored-scoring-rule"],
+                }],
+            },
+            "evidence_traceability": [{
+                "claim_id": "authored-scoring-rule",
+                "statement": "The source defines this two-item Boolean count.",
+                "evidence": [{"source": "source-document", "locator": "scoring section"}],
+            }],
+        },
+    }
+
+
+def test_scored_questionnaire_emits_optional_readonly_sdc_score_item():
+    questionnaire = _build_questionnaire_resource(
+        "topic",
+        "assessment",
+        _scored_assessment_l2(),
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+    )
+
+    source_items = questionnaire["item"][:2]
+    score_item = questionnaire["item"][2]
+    assert [item["linkId"] for item in source_items] == ["item-a", "item-b"]
+    assert all(item["type"] == "boolean" and item["required"] is True for item in source_items)
+    assert score_item["linkId"] == "affirmative-count"
+    assert score_item["type"] == "integer"
+    assert score_item["readOnly"] is True
+    assert score_item["code"] == [{
+        "system": "https://example.org/codes",
+        "version": "1.0.0",
+        "code": "affirmative-count",
+        "display": "Affirmative answer count",
+    }]
+    extensions = {extension["url"]: extension for extension in score_item["extension"]}
+    assert extensions["http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-observationExtract"]["valueBoolean"] is True
+    expression = extensions["http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression"]["valueExpression"]
+    assert expression["language"] == "text/fhirpath"
+    assert "%resource.status" not in expression["expression"]
+    assert ".where(linkId = 'item-a').count() = 1" in expression["expression"]
+    assert ".where(linkId = 'item-b').answer.value.ofType(boolean).where($this = true).count()" in expression["expression"]
+
+
+def test_ordinary_assessment_scoring_does_not_force_sdc_or_score_item():
+    questionnaire = _build_questionnaire_resource(
+        "topic",
+        "assessment",
+        {"sections": {
+            "items": [{"id": "q1", "text": "Question?", "type": "choice"}],
+            "scoring": {"method": "classification", "description": "Source narrative only."},
+        }},
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+    )
+    assert len(questionnaire["item"]) == 1
+    assert questionnaire["item"][0]["linkId"] == "q1"
+
+
+@pytest.mark.parametrize(("mutate", "error"), [
+    (lambda l2: l2["sections"]["scoring"]["algorithm"].update(method="weighted_sum"), "currently supported method"),
+    (lambda l2: l2["sections"]["scoring"]["algorithm"].update(missing_or_invalid="count_as_zero"), "missing_or_invalid must be omit_result"),
+    (lambda l2: l2["sections"]["scoring"]["result"].update(range={"minimum": 0, "maximum": 3}), "maximum equal to the number"),
+    (lambda l2: l2["sections"]["scoring"]["result"]["item"].update(code={"system": "x", "version": "1", "code": "c"}), "code.display"),
+    (lambda l2: l2["sections"]["scoring"]["classifications"][0].update(threshold=3), "within the score range"),
+])
+def test_scored_questionnaire_rejects_unsupported_or_invalid_contract(mutate, error):
+    l2 = _scored_assessment_l2()
+    mutate(l2)
+    with pytest.raises(ValueError, match=error):
+        _build_questionnaire_resource(
+            "topic",
+            "assessment",
+            l2,
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        )
+
+
+def test_scored_questionnaire_requires_required_boolean_inputs():
+    with pytest.raises(ValueError, match="must be required"):
+        _build_questionnaire_resource(
+            "topic",
+            "assessment",
+            _scored_assessment_l2(input_required=False),
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        )
+
+
+def test_scored_questionnaire_requires_enabled_observation_extraction():
+    l2 = _scored_assessment_l2()
+    l2["sections"]["instrument"]["observation_extraction"]["enabled"] = False
+    with pytest.raises(ValueError, match="requires enabled SDC Observation extraction"):
+        _build_questionnaire_resource(
+            "topic",
+            "assessment",
+            l2,
             {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
         )
 

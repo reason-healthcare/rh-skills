@@ -161,13 +161,16 @@ Care-pathway condition and linkage rules:
 - Do not add a default condition when the L2 pathway omits one. Report a missing or ambiguous clinical gate for L2 review.
 
 Questionnaire identity rule:
-- When an approved L2 assessment's `sections.instrument` provides `id`, `canonical`, and `version`, preserve those values on the generated Questionnaire. This keeps QuestionnaireResponses authored from a shared or previously published Questionnaire resolvable by the generated CQL. Generate Questionnaire content from the L2 items; do not replace the generated resource with a copied source Questionnaire. If no identity is supplied, use the topic's formalize configuration defaults.
+- When an approved L2 assessment's `sections.instrument` provides `id`, `canonical`, and `version`, preserve those values on the generated Questionnaire. This keeps the authored form identity stable for response capture and extraction. Clinical CQL consumes the resulting coded clinical Observations; it must not require the QuestionnaireResponse or its identifier to select evidence. Generate Questionnaire content from the L2 items; do not replace the generated resource with a copied source Questionnaire. If no identity is supplied, use the topic's formalize configuration defaults.
 
 SDC Observation-extraction metadata rule:
 - If the L2 assessment's `sections.instrument.observation_extraction` is present, preserve its typed contract exactly: `profile` is the SDC extraction StructureDefinition canonical plus version, `enabled` is a Boolean, and an enabled extraction requires `category: {system, code, display}`.
 - Emit the profile in `Questionnaire.meta.profile`, `sdc-questionnaire-observationExtract` as `valueBoolean: true`, and `sdc-questionnaire-observation-extract-category` as a `valueCodeableConcept` with the authored Coding. The generic L2 validator/formalizer rejects unsupported fields; never add arbitrary extensions by editing generated JSON.
 - If SDC Observation extraction is enabled, require an explicitly authored `sections.instrument.version_algorithm: {system, code, display?}` and preserve it in the standard `artifact-versionAlgorithm` extension. Do not invent an algorithm; the versioned SDC profile requires this metadata. For ordinary assessments without enabled SDC extraction, version-algorithm metadata remains optional.
 - Preserve each item's LOINC Coding directly in `Questionnaire.item.code[]`, including its system, version, code, and display. This is a FHIR `Coding[]`, not a nested `CodeableConcept`.
+- Structured assessment scoring is opt-in. When `sections.scoring.algorithm` is present, validate its supported method, source item references, requiredness, evidence claims, output range and versioned score Coding before generating the Questionnaire. The current bounded method is `count_boolean_answers`; it generates a read-only integer score item with one `sdc-questionnaire-calculatedExpression` (`text/fhirpath`) and item-level `sdc-questionnaire-observationExtract: true`. Missing/invalid answers omit the score, while a complete count of zero is retained. Do not calculate a score for an ordinary assessment that has no structured algorithm. Unsupported methods must fail with an explicit capability error rather than be translated into a Boolean count.
+- FHIR `Observation.valueInteger` has no unit field. Do not add a unit extension to an integer Questionnaire score item; the authored score Coding definition must explain what is counted. A future quantity-scoring contract needs separate implementation and validation.
+- Formalization emits the Questionnaire metadata and item expression; it does not itself extract or create score Observations. Verify that the SDC/runtime path recomputes exactly one integral result, rejects conflicting prefilled values, and emits the final score Observation only for a completed response with all source inputs usable. Keep runtime extraction evidence distinct from examples or fixture oracles.
 - Formalization produces the Questionnaire definition. It does not claim to run SDC extraction or create the resulting Observations; verify those in the extraction/runtime workflow.
 
 Order-set and regimen decomposition rule:
@@ -527,6 +530,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    | Measure | `group[].population[]` with both numerator and denominator, `scoring` |
    | Questionnaire | `item[]` with `linkId` on every item; if SDC extraction is authored, profile and extraction/category extensions are preserved |
    | ValueSet | `compose.include[]` with at least one entry |
+   | CodeSystem | locally authored `content: complete`, explicit canonical/version, case sensitivity, and a defined concept list |
    | ConceptMap | `group[]` with `element[].target[]` |
    | Evidence | R4-valid core Evidence shape, including `exposureBackground` when Evidence is emitted |
    | EvidenceVariable | `characteristic[]` with at least one entry |
@@ -539,11 +543,17 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    `TODO:MCP-UNREACHABLE`. Treat either result as an error: formalize must
    stop before creating an uncoded executable activity.
 
-6. For each ValueSet or ConceptMap resource, call
+6. For each locally authored CodeSystem, confirm its L2 `code_systems[]`
+   definition supplied a valid FHIR id, canonical URL, version, complete
+   content, explicit case sensitivity, and nonempty `code`/`display`/
+   `definition` for every concept. Do not synthesize a CodeSystem from a
+   ValueSet, accept a partial external code system, or omit it from the tracked
+   computable resource list.
+7. For each ValueSet or ConceptMap resource, call
    `reasonhub-codesystem_verify_code` with each coded entry's `system` and
    `code`. Report any code that fails verification as a terminology error.
    Treat terminology errors as verify failures (exit non-zero).
-7. Report pass/fail per artifact and exit non-zero only when required checks fail.
+8. Report pass/fail per artifact and exit non-zero only when required checks fail.
 
 Verify is read-only and safe to re-run at any time.
 

@@ -943,6 +943,65 @@ sections:
         interpretation: <e.g. "Minimal depression">
 ```
 
+When a source defines a score, capture its algorithm rather than only its
+label: exact input items, answer weights or transformation, completion and
+missing/invalid-response policy, output data type and code, numeric range and
+unit, thresholds and interpretations, and evidence for each scoring rule.
+Keep source statements separate from implementation choices. Do not add a
+score or cutoff to an instrument that has none. Do not describe a locally
+derived count as a validated or source-authored scale.
+
+For the supported optional score-to-Observation workflow, add a typed
+`algorithm` and `result` to `sections.scoring`:
+
+```yaml
+sections:
+  scoring:
+    algorithm:
+      method: count_boolean_answers
+      input_items: [q-one, q-two]     # exact linkIds from items[]
+      counted_value: true
+      completion: all_inputs_usable
+      missing_or_invalid: omit_result
+      evidence_traceability_ids: [source-scoring-rule]
+    result:
+      item:                           # formalizer adds this read-only item
+        id: score-total
+        text: Number of affirmative answers
+        type: integer
+        code:
+          system: <reviewed or locally defined system>
+          version: <pinned version>
+          code: <score concept>
+          display: <meaning including the count unit>
+      range: {minimum: 0, maximum: 2}
+    classifications:
+      - id: positive-screen
+        label: At least one affirmative answer
+        operator: greater_than_or_equal
+        threshold: 1
+        evidence_traceability_ids: [source-positive-rule]
+```
+
+The present generic generator supports only `count_boolean_answers` over
+distinct, required Boolean items, and only the listed completion, missingness,
+and threshold operators. It fails closed for other algorithms; it does not
+convert weighted, ordinal, subscale, or instrument-specific methods to a
+Boolean count. Integer `Observation.valueInteger` has no unit field. State the
+count meaning in the authored score code definition; do not add an unsupported
+unit extension to the integer result. The generated Questionnaire score item
+is read-only, has a FHIRPath `calculatedExpression`, and is marked for SDC
+Observation extraction. A score is omitted unless the response has one usable
+Boolean answer for every named input; zero is a valid result when all inputs
+are false. Extraction still requires a completed response.
+
+For example, CDC STEADI states that any yes answer indicates increased risk.
+A local integer count of yes answers from 0 through 3 with a positive
+classification at `>= 1` is a transparent implementation encoding of that
+rule; it must not be presented as a CDC-defined or validated numeric score.
+If a source only defines a Boolean rule, retain that rule without inventing a
+numeric scale unless the workflow explicitly approves the derived encoding.
+
 When `observation_extraction.enabled` is true, `version_algorithm` must be an
 explicitly sourced or previously reviewed Coding because the versioned SDC
 profile requires Questionnaire version-algorithm metadata. Each supported
