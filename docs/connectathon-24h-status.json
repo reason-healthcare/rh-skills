@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "plan": "docs/CONNECTATHON-24H-PLAN.md",
+  "status": "in_progress",
+  "preparedAt": "2026-09-17",
+  "executionStartedAt": "2026-09-17T23:35:32Z",
+  "deadline": "2026-09-18T23:35:32Z",
+  "scenario": "steadi-fall-screening",
+  "eventDate": "2026-09-19",
+  "objective": "Prepare the skills and tools for live source-to-L2/L3 authoring and fresh-output previews at Saturday's Connectathon",
+  "scenarioSourceRevision": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+  "planningEvidence": {
+    "repositoryAudit": "complete",
+    "localTerminologyProbe": "completed: installed Lite image is fixture-only and lacks LOINC 2.81",
+    "reasonHubFallback": "verified: three active LOINC 2.81 lookups and exact three-code expansion",
+    "designContext": "loaded: Workbench Impeccable 3.8.0, PRODUCT.md and DESIGN.md",
+    "temporaryProbeContainer": "stopped and removed",
+    "localFullProbe": "verified: Full image d37ab3ae30f2, LOINC2.82 search and exact expansion pass;2.81 unavailable"
+  },
+  "gates": [
+    {
+      "id": "G0",
+      "status": "in_progress",
+      "owner": "root",
+      "evidence": [
+        "docs/connectathon/evidence/baseline.json",
+        "docs/connectathon/evidence/source-manifest-check.json",
+        "docs/connectathon/evidence/validator-tool.json",
+        "docs/connectathon/evidence/rh-skills-baseline-tests.json",
+        "docs/connectathon/evidence/shared-questionnaire-validation.json"
+      ]
+    },
+    {
+      "id": "G1",
+      "status": "in_progress",
+      "owner": "skills_usecase_audit",
+      "evidence": []
+    },
+    {
+      "id": "G2",
+      "status": "in_progress",
+      "owner": "skills_usecase_audit + runtime_execution",
+      "evidence": []
+    },
+    {
+      "id": "G3",
+      "status": "in_progress",
+      "owner": "workbench_audit",
+      "evidence": []
+    },
+    {
+      "id": "G4",
+      "status": "pending",
+      "owner": null,
+      "evidence": []
+    },
+    {
+      "id": "G5",
+      "status": "in_progress",
+      "owner": "workbench_audit + root",
+      "evidence": []
+    },
+    {
+      "id": "G6",
+      "status": "pending",
+      "owner": null,
+      "evidence": []
+    },
+    {
+      "id": "G7",
+      "status": "pending",
+      "owner": null,
+      "evidence": []
+    },
+    {
+      "id": "X1",
+      "status": "deferred",
+      "owner": null,
+      "evidence": []
+    },
+    {
+      "id": "M1",
+      "status": "deferred",
+      "owner": null,
+      "evidence": []
+    },
+    {
+      "id": "I1",
+      "status": "deferred",
+      "owner": null,
+      "evidence": []
+    }
+  ],
+  "nextAction": "Finish first source-driven L2/L3 authoring; test context-aware Rust/WASM; verify full package dependency closure and inventory.",
+  "iterations": [
+    {
+      "id": "ITER-001",
+      "startedAt": "2026-09-17T23:35:32Z",
+      "status": "complete",
+      "summary": "Initialize isolated branches, immutable source baseline and parallel execution.",
+      "completedAt": "2026-09-17T23:49:09.003570+00:00"
+    },
+    {
+      "id": "ITER-002",
+      "startedAt": "2026-09-17T23:49:09.003570+00:00",
+      "status": "in_progress",
+      "summary": "Clean runtime setup, baseline validation, first live source run and package review."
+    },
+    {
+      "id": "ITER-003",
+      "startedAt": "2026-09-17T23:52:34.561999+00:00",
+      "completedAt": "2026-09-17T23:53:45.085069+00:00",
+      "status": "complete",
+      "summary": "Verified Full local terminology search/expansion; pinned2.81 remains MCP fallback."
+    },
+    {
+      "id": "ITER-004",
+      "startedAt": "2026-09-17T23:56:11.078060+00:00",
+      "status": "in_progress",
+      "summary": "Confirmed extraction-skill CLI mismatch; authenticated incomplete-package UI verified."
+    },
+    {
+      "id": "ITER-005",
+      "startedAt": "2026-09-17T23:59:45.368289+00:00",
+      "status": "in_progress",
+      "summary": "Questionnaire metadata generator gap; authenticated browser discovered L3 Library404."
+    },
+    {
+      "id": "ITER-006",
+      "startedAt": "2026-09-18T00:09:17.603205+00:00",
+      "status": "in_progress",
+      "summary": "Eight L2 artifacts produced; source review corrects unsupported strength ratings before formalization."
+    }
+  ],
+  "lastUpdatedAt": "2026-09-18T00:12:28.830603+00:00",
+  "journal": "docs/CONNECTATHON-JOURNAL.md",
+  "constraints": [
+    "Do not modify hl7-agentic-knowledge-connectathon; all source files and git state are read-only.",
+    "Use separate rehearsal workspaces.",
+    "Keep framework iterations and evidence in the journal."
+  ],
+  "repositories": {
+    "rh-skills": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
+      "head": "eb280968e8af623b9b30c4175111929e322f696c",
+      "branch": "codex/connectathon-live-readiness",
+      "status": "?? docs/CONNECTATHON-24H-PLAN.md\n?? docs/connectathon-24h-status.json"
+    },
+    "workbench": {
+      "path": "/Users/bkaney/projects/reason-healthcare/workbench",
+      "head": "a59e476",
+      "branch": "codex/connectathon-live-readiness",
+      "status": "checkpoint committed; next iteration in progress"
+    },
+    "rh": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh",
+      "head": "fc96943aae4461ab5382e1f3d10bd623955a6b85",
+      "branch": "codex/connectathon-live-readiness",
+      "status": ""
+    },
+    "standalone": {
+      "path": "/private/tmp/connectathon-reason-framework",
+      "head": "2e8d91daf360f184e6c98f700031414829c64921",
+      "branch": "codex/connectathon-live-readiness",
+      "status": ""
+    },
+    "connectathon-read-only": {
+      "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
+      "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+      "branch": "main",
+      "status": ""
+    }
+  },
+  "activeTasks": [
+    {
+      "id": "WB-01",
+      "owner": "workbench_audit",
+      "model": "gpt-5.6-terra",
+      "reasoningEffort": "high",
+      "status": "in_progress",
+      "task": "Snapshot completeness, mappings, readiness and shared package inspection"
+    },
+    {
+      "id": "RT-01",
+      "owner": "runtime_execution",
+      "model": "gpt-5.6-terra",
+      "reasoningEffort": "high",
+      "status": "in_progress",
+      "task": "Context/period execution spike and runtime/standalone integration"
+    },
+    {
+      "id": "SK-01",
+      "owner": "skills_usecase_audit",
+      "model": "gpt-5.6-luna",
+      "reasoningEffort": "high",
+      "status": "in_progress",
+      "task": "Clean-source skill run and reusable rh-skills fixes"
+    }
+  ],
+  "baselineTests": {
+    "passed": 946,
+    "skipped": 18,
+    "failed": 1,
+    "failure": "test_statin_primary_prevention_flow expects stale ELM filename; investigation assigned"
+  },
+  "localRuntime": {
+    "pythonEnvironment": "/private/tmp/connectathon-live/venv",
+    "database": "127.0.0.1:55432/workbench",
+    "validator": "/private/tmp/connectathon-live/tools/validator_cli-6.10.2.jar",
+    "terminology": "Probe completed and temporary container stopped; Full image remains available; LOINC2.82 only"
+  },
+  "defects": [
+    {
+      "id": "SK-DOC-001",
+      "status": "confirmed_fix_pending",
+      "description": "Concept CLI help examples use--concept but parser requires positional name; curated docs already correct"
+    },
+    {
+      "id": "SK-BASE-001",
+      "status": "investigating",
+      "description": "Baseline statin integration test expects a different generated ELM filename"
+    },
+    {
+      "id": "SK-GEN-001",
+      "status": "code_fixed_unit_tests_verified_regeneration_pending",
+      "description": "Questionnaire formalization drops item code/required",
+      "validation": "Coordinator ran test_formalize.py + test_cql.py:40passed"
+    },
+    {
+      "id": "WB-UI-001",
+      "status": "fixed_browser_verified",
+      "description": "Authored Library source link leads to404; generic L3 detail route required",
+      "evidence": "docs/connectathon/evidence/workbench-browser-initial.json"
+    },
+    {
+      "id": "SK-AUTH-001",
+      "status": "correction_in_progress",
+      "description": "Unreported evidence certainty was inferred from guideline/recommendation metadata; remove unsupported ratings and clarify skill guidance"
+    }
+  ],
+  "checks": [
+    {
+      "checkedAt": "2026-09-18T00:05:58.010629+00:00",
+      "command": "/private/tmp/connectathon-live/venv/bin/python -m pytest tests/unit/test_formalize.py tests/unit/test_cql.py -q",
+      "cwd": "rh-skills",
+      "exitCode": 0,
+      "result": "40 passed in0.25s",
+      "scope": "Questionnaire metadata and strict JSON comparison; generated run still pending"
+    }
+  ]
+}

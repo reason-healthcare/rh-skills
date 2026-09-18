@@ -1,0 +1,35 @@
+{
+  "result": "passed",
+  "sources": [
+    {
+      "id": "cdc-steadi-algorithm",
+      "checksumMatches": true,
+      "bytesMatch": true
+    },
+    {
+      "id": "cdc-steadi-pocket-guide",
+      "checksumMatches": true,
+      "bytesMatch": true
+    },
+    {
+      "id": "uspstf-falls-recommendation-2024",
+      "checksumMatches": true,
+      "bytesMatch": true
+    },
+    {
+      "id": "uspstf-falls-evidence-update-2024",
+      "checksumMatches": true,
+      "bytesMatch": true
+    },
+    {
+      "id": "pillay-falls-systematic-review-2024",
+      "checksumMatches": true,
+      "bytesMatch": true
+    },
+    {
+      "id": "cdc-injury-economics",
+      "checksumMatches": true,
+      "bytesMatch": true
+    }
+  ]
+}

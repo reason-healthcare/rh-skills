@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-09-17T23:52:34.561999+00:00",
+  "image": "reasonhealth/terminology-api-content:phase07-a-508b2f87d35c",
+  "imageId": "sha256:d37ab3ae30f2b6adb22448983838e3480a69de9344ba3f3d11024febdb7c81f0",
+  "localPort": 18085,
+  "installedLOINC": "2.82",
+  "requiredFixtureLOINC": "2.81",
+  "decision": "Use local Full API for 2.82 candidate discovery/expansion; retain ReasonHub MCP for pinned 2.81 execution membership.",
+  "queries": [
+    {
+      "path": "/v1/search",
+      "status": 200,
+      "elapsedSeconds": 0.551,
+      "query": "Feel unsteady when standing or walking",
+      "version": "2.82",
+      "topResult": "100257-5"
+    },
+    {
+      "path": "/v1/search",
+      "status": 200,
+      "elapsedSeconds": 0.511,
+      "query": "Worried about falling",
+      "version": "2.82",
+      "topResult": "97878-3"
+    },
+    {
+      "path": "/fhir/R4/ValueSet/$expand",
+      "status": 404,
+      "elapsedSeconds": 0.007,
+      "version": "2.81",
+      "total": null,
+      "returned": 0
+    },
+    {
+      "path": "/fhir/R4/ValueSet/$expand",
+      "status": 200,
+      "elapsedSeconds": 0.202,
+      "version": "2.82",
+      "total": 3,
+      "returned": 3
+    }
+  ]
+}

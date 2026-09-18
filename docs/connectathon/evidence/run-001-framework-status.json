@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-09-18T00:09:17.599483+00:00",
+  "workspace": "/private/tmp/connectathon-live/run-001",
+  "status": {
+    "topic": "steadi-fall-screening",
+    "title": "STEADI Older Adult Fall Risk Screening",
+    "author": "Automated rehearsal; clinical review pending",
+    "created_at": "2026-09-17T23:43:11Z",
+    "stage": "l2-semi-structured",
+    "workflow_state": "",
+    "sources": 8,
+    "structured": 8,
+    "computable": 0,
+    "last_event": {
+      "type": "formalize_planned",
+      "timestamp": "2026-09-18T00:07:37Z"
+    }
+  }
+}

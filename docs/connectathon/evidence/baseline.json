@@ -1,0 +1,82 @@
+{
+  "recordedAt": "2026-09-17T23:39:03.240845+00:00",
+  "repositories": {
+    "rh-skills": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
+      "head": "eb280968e8af623b9b30c4175111929e322f696c",
+      "branch": "codex/connectathon-live-readiness",
+      "status": "?? docs/CONNECTATHON-24H-PLAN.md\n?? docs/connectathon-24h-status.json"
+    },
+    "workbench": {
+      "path": "/Users/bkaney/projects/reason-healthcare/workbench",
+      "head": "968c5657a98a60156107d7b4e4b758aebcf3567f",
+      "branch": "codex/connectathon-live-readiness",
+      "status": ""
+    },
+    "rh": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh",
+      "head": "fc96943aae4461ab5382e1f3d10bd623955a6b85",
+      "branch": "codex/connectathon-live-readiness",
+      "status": ""
+    },
+    "standalone": {
+      "path": "/private/tmp/connectathon-reason-framework",
+      "head": "2e8d91daf360f184e6c98f700031414829c64921",
+      "branch": "codex/connectathon-live-readiness",
+      "status": ""
+    },
+    "connectathon-read-only": {
+      "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
+      "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+      "branch": "main",
+      "status": ""
+    }
+  },
+  "readOnlySource": {
+    "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+    "files": {
+      ".gitignore": "836727f89a431bbf92f3b8d89b8ef25f7213d645e24ec57b4a1bc54dfb63a7e5",
+      "LICENSE": "9c0745f4de49962393f95725e193fa306516b237c24361001c9f993176c5e426",
+      "NOTICE.md": "ece8e24bc286fb9e650901b83b14cb6275c3b19bab6297bf30c0f7db60549efa",
+      "README.md": "19e1673a8a6881a5581fa473fab1745498f724f61c7b55671f40380b8a401886",
+      "slides/connectathon-track-overview.md": "3767492361b8f48563682c80c44ff5ec857944e3e3ba1defdbfb81edc5f0ee8c",
+      "slides/connectathon-track-overview.pdf": "14f8e64a9c3d037169a9c7fc084a1d496351a2044749733a49f53b7b180d8347",
+      "slides/connectathon.css": "c3f773c31d64ef13d89a13bb09788abf474a193d71bc307276d0c2d3305acb59",
+      "sources/manifest.yaml": "0facf5948826f7e8f60ff2c6ef33787f575d92f535ad4adc7e9c4d33ca4482d3",
+      "sources/raw/cdc-injury-economics.html": "83180831b9ad7aa8b4b2f21090eb5a3f905d28ccc87fbca9bbb7b08404588547",
+      "sources/raw/cdc-steadi-algorithm.pdf": "5e89b5396e488504b927b4b972e82d277f705ba50d0c41a081ec7e40b6e3bdc0",
+      "sources/raw/cdc-steadi-pocket-guide.pdf": "419a3daa3b0caf0ceb203cee9d16dd36abdbf969163dcffcdc6b7c05a21eeb11",
+      "sources/raw/pillay-falls-systematic-review-2024.html": "676b94d7a032a2a0e5e8ce30b5cb213c5ea156aeb14b51fa0b4a3c09f3994fcb",
+      "sources/raw/uspstf-falls-evidence-update-2024.html": "ff0e8915966c5c1e179975f2dfb3d46b15ac56c38a0ad35df5dccfb9461774c5",
+      "sources/raw/uspstf-falls-recommendation-2024.html": "7aebb36b266bda82cd2de6d0d9b89bd8b7b9c8be227bbd405fddf62131f984e8",
+      "test-bundles/README.md": "d560c65d399327a48b5dc91020c89188e9ba35cafd6c59f2b9b730d9b88dd6f0",
+      "test-bundles/cases/eligible-all-no/SUMMARY.md": "239373aee84d53e2c16444ea843de621df6fcfe9c50fac80c103a58ea30e6ffd",
+      "test-bundles/cases/eligible-all-no/assertions.json": "8274c1e18c48018d40f0e1a598139309e9c247a7fd518cb65f3f729956458618",
+      "test-bundles/cases/eligible-all-no/bundle.json": "d24d590d9f912085216c8d49417d38dc41f7f74601568d2dceaf25831f5fcbb2",
+      "test-bundles/cases/eligible-all-no/extracted-bundle.json": "09f64523f5cbc99af7dc0fb2e2eab5f7bcb4939bbfdacfc5bd2413a62cfbe655",
+      "test-bundles/cases/eligible-incomplete-response/SUMMARY.md": "c4e887c2004286bf386a2fcd71974db2abcbc22ecd4ca8c5de0c99002b66e0c6",
+      "test-bundles/cases/eligible-incomplete-response/assertions.json": "93566a33dbfb9accebb395c63f339dc1ea33476636f563aa8b3a3987ad1923c2",
+      "test-bundles/cases/eligible-incomplete-response/bundle.json": "02133c8aa4d50d79fe417350f0ab8c0998753f561abb3bdfeae7f8bee06e52ac",
+      "test-bundles/cases/eligible-incomplete-response/extracted-bundle.json": "5af843e6a523f2886c7ad0973f1c88ebdd57977028a32ba598522d9466509859",
+      "test-bundles/cases/eligible-no-response/SUMMARY.md": "2b94ecd0c4efcd34bd5e090ed3919ecc1b2e990314ef556f92371b618b80ae9b",
+      "test-bundles/cases/eligible-no-response/assertions.json": "87a3218d0747b4b53f2ac9221f75178d4c4dc6628a518c0c30d0e7a053d11f6b",
+      "test-bundles/cases/eligible-no-response/bundle.json": "45e7f17d7728035c2566e27610223fe7440cd70f10de6280dc1bbebde806d1e6",
+      "test-bundles/cases/eligible-no-response/extracted-bundle.json": "aa8f324fe524b58cb512a5f02434e2ad79f5ba0e63c91995b29446319237e7eb",
+      "test-bundles/cases/eligible-prior-fall-yes/SUMMARY.md": "c1f42070930d163357265d274cfdda803b1ce3f429b8973c34510fba78f7d67f",
+      "test-bundles/cases/eligible-prior-fall-yes/assertions.json": "a9ae5265580a1a3a020a79a427b1d3fa85aeb67e726ee7bb5eba4e7e7e77f6be",
+      "test-bundles/cases/eligible-prior-fall-yes/bundle.json": "6b01f448a001e02b9d16a2349badafe47d3cc5ad5a20ea364781b84390861d82",
+      "test-bundles/cases/eligible-prior-fall-yes/extracted-bundle.json": "a63f5c0e136b17a399b94687784192fe5f7454cf1b12fb827600c9a22e6eab65",
+      "test-bundles/cases/eligible-unsteady-yes/SUMMARY.md": "1b17619170fb74eff95ed01e3b5ed863d8c26a91416abc88b45e543ade0dcb43",
+      "test-bundles/cases/eligible-unsteady-yes/assertions.json": "116a93ba1d40c4e16cb61f8ae3aeae491eb6d84cc382a35012c5bcb7044b769b",
+      "test-bundles/cases/eligible-unsteady-yes/bundle.json": "1d3682809c5d1d6aae8e71539db6234490d8a119efd4be0eda503d5f8a16dd5c",
+      "test-bundles/cases/eligible-unsteady-yes/extracted-bundle.json": "5a4ed587ebed3cc0543f40af5ddfdbc079faf4f2829d17173897e0d0b712dc7d",
+      "test-bundles/cases/younger-than-65/SUMMARY.md": "7a341a70e6d7a7b24ba5bb31e373f7dd35671c8e8087087f50ee57b343f83f62",
+      "test-bundles/cases/younger-than-65/assertions.json": "b4cd72eb65b304ec43297a74771e71d3f7f06fe2b1b022c20bd78b7078d10b3f",
+      "test-bundles/cases/younger-than-65/bundle.json": "b0a336afad85bffa2d41ca9aa6e1acb49e44c4bf4b1869f2eb15992df90b2abc",
+      "test-bundles/cases/younger-than-65/extracted-bundle.json": "4c8fbc906c76d485cc9345cbe99e7c3f791d7ee8b998c973725cddfd380cbc5a",
+      "test-bundles/manifest.json": "d07bceaee75a375fb173efa837246567bcbe879bb98abcf680a840689559b152",
+      "test-bundles/questionnaire.json": "7c569b2853f1bed847549962a2e765c8c7f5d2685894c832fa010d94471535d5"
+    },
+    "inventorySha256": "568357fa8ad8793fcf038d705c20a3f24d84168a20a7cb1c99af9a7466a255e7"
+  }
+}
