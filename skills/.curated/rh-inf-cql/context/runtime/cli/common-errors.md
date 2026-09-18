@@ -23,7 +23,7 @@ error: could not resolve library 'FHIRHelpers'
 
 **Category**: `translation`
 **Cause**: `FHIRHelpers` or another included library is not on the include path.
-**Fix**: Confirm the library file is present in the same `computable/` directory or on the configured include path.
+**Fix**: Confirm the exact versioned CQL include exists in the topic's `computable/` directory. For a pinned external helper, use `rh-skills cql import-library <topic> <manifest.json>`; do not rely on implicit downloads.
 
 ---
 
@@ -43,10 +43,11 @@ error: cannot apply operator 'during' to types 'DateTime' and 'Interval<Date>'
 
 **Symptom**: Expression evaluates to `null` but should return `true` or `false`.
 **Category**: `null-propagation` or `fixture-or-data-shape`
-**Cause**: Missing data in fixture; or FHIRHelpers coercion not applied.
+**Cause**: Missing fixture data, incorrect evaluation subject/context, or a missing helper conversion.
 **Fix**:
 1. Check fixture — does the bundle include the expected resource type?
-2. Does the library include `FHIRHelpers`? The `rh` evaluator is FHIRHelpers-agnostic and will not inject it automatically.
+2. Check `input/evaluation-context.json` for the intended subject and evaluation date.
+3. If the expression converts a FHIR primitive or choice, include and resolve the pinned FHIRHelpers version; use FHIR logical types for choice values.
 
 ---
 
@@ -120,4 +121,3 @@ fields inside query aliases. Standard dot-notation (e.g., `C.clinicalStatus`) do
 - For primitive-valued FHIR fields (String, Code, Boolean), access `.value` explicitly
 - `AgeInYearsAt()`, `exists`, `is not null`, and interval arithmetic work without special handling
 - Direct status-code comparison on string enum fields: `((R).status).value in { 'active', 'completed' }`
-

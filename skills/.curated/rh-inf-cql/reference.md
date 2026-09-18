@@ -30,14 +30,15 @@ interact with FHIR types and how translator options are expressed.
 |--------|-----|---------|-------------|
 | Using CQL with FHIR IG | https://hl7.org/fhir/uv/cql/ | current | Any CQL that uses FHIR data model |
 | FHIR Clinical Reasoning Module | https://hl7.org/fhir/R4/clinicalreasoning-module.html | R4 | Understanding Library/Measure resource structure |
-| FHIRHelpers | https://build.fhir.org/ig/HL7/cql-ig/en/Library-FHIRHelpers.html | current | FHIR↔CQL type coercion reference |
+| FHIRHelpers | https://hl7.org/fhir/uv/cql/Library-FHIRHelpers.html | 4.0.1 | FHIR↔CQL type conversion library; pin CQL, ELM, and Library identity |
 | FHIR ModelInfo | https://build.fhir.org/ig/HL7/cql-ig/ | current | Understanding model declarations and type resolution |
 | CQL Translator Options | https://build.fhir.org/ig/HL7/cql-ig/using-elm.html | current | Declaring reproducible translator options in Library |
 
-> **rh-inf-cql note**: Unlike the Java reference translator, `rh-inf-cql` does not
-> automatically inject FHIRHelpers conversion calls. FHIR↔CQL type coercion
-> is handled at the runtime level. When reviewing ELM output from `rh cql compile`,
-> the absence of `FHIRHelpers.ToConcept` wrapping is expected and correct.
+> **rh-inf-cql note**: The runtime does not automatically inject FHIRHelpers.
+> When source includes a helper, import its pinned CQL/ELM/FHIR Library through
+> `rh-skills cql import-library`; reference the helper canonical and version in
+> the primary Library's `relatedArtifact`. For FHIR choices and primitives,
+> use logical FHIR types and verify the same ELM with a reference translator.
 
 ---
 

@@ -56,8 +56,18 @@ Run the evaluator per expression to isolate failures:
 rh cql eval \
   topics/<topic>/computable/<LibraryName>.cql \
   "ExpressionName" \
-  --data tests/cql/<LibraryName>/<case>/input/bundle.json
+  --data tests/cql/<LibraryName>/<case>/input/bundle.json \
+  --subject Patient/<id> \
+  --evaluation-date 2026-06-15T09:20:00Z \
+  --measurement-period-start 2026-01-01 \
+  --measurement-period-end 2026-12-31 \
+  --parameter 'Measurement Period={"start":"2026-01-01","end":"2026-12-31","startInclusive":true,"endInclusive":true}' \
+  --lib-path topics/<topic>/computable
 ```
+
+Use the subject, fixed evaluation date, complete authored period object, and
+parameters from the fixture context. The exact `Measurement Period` parameter
+preserves its closure flags; boundary flags alone do not carry that information.
 
 Or use `rh-skills cql test <topic> <LibraryName>` to run all cases at once.
 

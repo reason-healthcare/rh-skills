@@ -52,9 +52,10 @@ the clinical data the CQL expressions retrieve.
 
 ### `patient.json` (optional)
 
-A standalone `Patient` resource. When present, it is used as the evaluation
-context (`context Patient`). If omitted, the first `Patient` resource in
-`bundle.json` is used.
+A standalone `Patient` resource. When present, it can be used as the evaluation
+context (`context Patient`). If omitted, exactly one `Patient` resource in
+`bundle.json` may be inferred. A Bundle with multiple Patients requires an
+explicit `subject`; the runner never chooses by entry order.
 
 ### `evaluation-context.json` (optional)
 
@@ -78,12 +79,18 @@ the CQL depends on a fixed clock, measurement period, or other named parameter:
 ```
 
 `subject` accepts a FHIR reference (`Patient/id`) or an id (normalized to
-`Patient/id`). If omitted, the runner uses `patient.json`, then the first
-Patient in `bundle.json`. `evaluationDate` is passed as the evaluator clock.
+`Patient/id`), and the selected Patient must exist in the Bundle or
+`patient.json`. If omitted, the runner infers one Patient only when the input
+is unambiguous; multiple Patients require an explicit `subject`.
+`evaluationDate` is passed as the evaluator clock.
 `measurementPeriod` is sent both as evaluator boundary flags and as the full
 `Measurement Period` CQL parameter, preserving the supplied inclusivity flags.
 Other `parameters` are sent as JSON values. Values from
 `evaluation-context.json` override same-named entries from `parameters.json`.
+
+`rh-skills cql test` passes the topic computable directory as `--lib-path`, so
+versioned local includes are available during evaluation. Direct `rh cql eval`
+calls must pass the same `--lib-path` explicitly.
 
 ### `parameters.json` (optional)
 

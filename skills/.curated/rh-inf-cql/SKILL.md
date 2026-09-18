@@ -49,7 +49,7 @@ If any check fails, report the missing resource and halt. Do NOT proceed with a 
 - **Deterministic work via CLI**: validation (`rh-skills cql validate`), compilation (`rh-skills cql translate`), and test execution (`rh-skills cql test`) are always delegated to the `rh-skills` CLI. The agent reasons about CQL but does not replace the CLI for deterministic operations.
 - **Ownership boundary**: `rh-inf-cql` owns `.cql` source files and fixture cases. FHIR JSON packaging is outside scope.
 - **Human confirmation for conflicts**: any ambiguity, inconsistency, or multi-option decision MUST be surfaced to the human before the agent proceeds. Silent resolution is not permitted.
-- **FHIRHelpers-agnostic runtime**: `rh cql compile` does not inject FHIRHelpers wrapper calls. Type coercion between FHIR and CQL system types is the runtime's responsibility, not the author's. Authors should still `include fhir.cqf.common.FHIRHelpers` for explicit conversions where needed.
+- **Portable FHIR CQL**: declare `using FHIR version '4.0.1'`, include the versioned `FHIRHelpers` library for FHIR primitive/choice conversions, and use FHIR logical-model types that translate in both `rh` and the reference translator. Do not claim interoperability from one engine alone.
 
 ---
 
@@ -78,8 +78,8 @@ Allowed alternatives:
 ## Critical Authoring Patterns (read before writing any CQL)
 
 **Runtime defaults** (assume these unless the user specifies otherwise):
-- CQL version: `1.5.3` | FHIR model: `4.0.1` | Translator: standard defaults (signatureLevel none, enableAnnotations false)
-- Engine: `rh` — does NOT auto-inject FHIRHelpers; fixture tests are executed through `rh-skills cql test` / `rh cql eval`
+- CQL version: `1.5.3` | FHIR model: `4.0.1` | Record non-default translator options and validate against a reference translator when portability matters.
+- Engine: `rh`; fixtures run through `rh-skills cql test` / `rh cql eval`. Include pinned libraries explicitly and pass the complete evaluation context.
 
 Parameter-only decision-table libraries are scaffold artifacts and are not acceptable finished authoring outputs.
 
@@ -87,10 +87,12 @@ Parameter-only decision-table libraries are scaffold artifacts and are not accep
 
 | ❌ Wrong | ✓ Correct | Why |
 |----------|-----------|-----|
-| `M.authoredOn during Interval<DateTime>` | `ToDate(M.authoredOn) in Interval<Date>` | FHIR dateTime strings silently return `false` in DateTime intervals |
-| `date from M.authoredOn` | `ToDate(M.authoredOn)` | `date from` runtime-errors on FHIR strings |
+| `M.authoredOn during Interval<DateTime>` | `FHIRHelpers.ToDateTime(M.authoredOn) during Interval<DateTime>` | Convert the FHIR primitive explicitly using the pinned helper |
+| `date from M.authoredOn` | `FHIRHelpers.ToDateTime(M.authoredOn)` | Convert the FHIR primitive explicitly; use a matching interval type |
+| `ToDateTime(E.period.start)` | `FHIRHelpers.ToDateTime(E.period.start)` | FHIR primitive conversion must use the declared helper |
+| `A.valueBoolean = true` | `(A.value as FHIR.boolean).value = true` | QuestionnaireResponse answer is a choice; use its FHIR logical type for portable translation |
 | `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Manual expansion is unnecessary; engine resolves by name |
-| `C.clinicalStatus = 'active'` | `C.clinicalStatus.value in { 'active' }` | FHIR CodeableConcept — compare `.value` string |
+| `C.clinicalStatus.value = 'active'` | `exists (C.clinicalStatus.coding S where S.system.value = 'http://terminology.hl7.org/CodeSystem/condition-clinical' and S.code.value = 'active')` | CodeableConcept contains Coding values; constrain both system and code |
 | `define function "F"(p Interval<DateTime>): ... p ...` | `define "F": Interval[ToDate(start of ...), ToDate(end of ...)]` | Typed function parameters with complex types (`Interval<>`, `FHIR.*`) fail to resolve in the `rh` translator; use named `define` expressions instead |
 | `[Condition] C where C.recordedDate is not null` | `[Condition: "BellsPalsyValueSet"] C` | Retrieve without a code or valueset filter returns ALL records of that resource type — always scope at the retrieve |
 | `[Condition] C where exists(C.code.coding Coding where Coding.system = 'http://hl7.org/fhir/sid/icd-10-cm' and Coding.code = 'G51.0')` | `[Condition: "BellsPalsyValueSet"] C` | Inline code-system matching is brittle, misses synonymous codes across systems, and bypasses the terminology pipeline — pre-coordinate a multi-system valueset and use retrieve-level scoping |
@@ -432,7 +434,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
 
    using FHIR version '4.0.1'
 
-   include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
+   include FHIRHelpers version '4.0.1' called FHIRHelpers
 
    codesystem "<SystemName>": '<system-url>'
 
@@ -494,7 +496,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
 
    using FHIR version '4.0.1'
 
-   include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
+   include FHIRHelpers version '4.0.1' called FHIRHelpers
 
    codesystem "<SystemName>": '<system-url>'
 
@@ -532,15 +534,44 @@ details, unknown terminology expansions, unverified fixture assumptions.
      corpus (`skills/.curated/rh-inf-cql/context/`) or ReasonHub MCP spec tools
      (`reasonhub-search_spec_content` with `source_id: "cql"`).
 
-   **FHIRHelpers for local testing:**
-   If `rh cql validate` reports unresolved FHIR type identifiers and the project
-   does **not** have FHIRHelpers available, install the `fhir.cqf.common` package:
+   **Pinned FHIRHelpers dependency:**
+   When a CQL library includes FHIRHelpers, provide a local manifest that pins
+   the helper's source URL/tag/license, CQL and ELM hashes, canonical, version,
+   and translator options. Import it with
+   `rh-skills cql import-library <topic> <manifest.json>`. The command copies
+   the exact helper CQL, ELM, and FHIR Library into computable/, links each
+   including Library through `relatedArtifact[type=depends-on]`, and records
+   an external dependency in tracking. No runtime network lookup is assumed.
+
+   The manifest pins identity and local, relative inputs:
+
+   ```json
+   {
+     "resource": {
+       "id": "fhir-helpers-4-0-1",
+       "name": "FHIRHelpers",
+       "version": "4.0.1",
+       "url": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers"
+     },
+     "source": {
+       "url": "https://example.invalid/pinned-source",
+       "tag": "vX.Y.Z",
+       "license": "Apache-2.0",
+       "compile_tool": {
+         "name": "cql-to-elm-cli",
+         "version": "X.Y.Z",
+         "options": [],
+         "inputs": []
+       }
+     },
+     "cql": { "path": "FHIRHelpers-4.0.1.cql", "sha256": "<64 lowercase hex characters>" },
+     "elm": { "path": "FHIRHelpers-4.0.1.json", "sha256": "<64 lowercase hex characters>" }
+   }
    ```
-   rh download package fhir.cqf.common 4.0.1
-   ```
-   This is an **external dependency** — do not commit FHIRHelpers `.cql` files
-   into the topic's computable directory. FHIRHelpers is required only for
-   local validation; the runtime resolves it independently.
+
+   Replace every example value with verified metadata and digests. The
+   importer rejects hash, identity, version, or path mismatches and never
+   downloads dependencies.
 
 6. The `.cql` file is now ready. FHIR packaging (Library JSON wrapper, Measure
    JSON) is outside `rh-inf-cql`'s scope — hand off to whatever packaging step
@@ -548,7 +579,8 @@ details, unknown terminology expansions, unverified fixture assumptions.
 
 ### Output contract
 - `.cql` file at `topics/<topic>/computable/<LibraryName>.cql`
-- Passes `rh-skills cql validate` with zero errors
+- Passes `rh-skills cql validate` with zero errors, with explicit versioned
+  includes present locally
 - Follows all style guide and rubric requirements
 
 ---
@@ -886,28 +918,31 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 - ❌ `if X is not null then X else default` — prefer `Coalesce(X, default)`
 - ❌ `First([Condition])` without an ordering expression
 - ❌ Comparing dates with `=` instead of `same day as` or interval operators
-- ❌ `M.authoredOn during Interval<DateTime>` — silently returns `false` for FHIR dateTime strings; use `ToDate(M.authoredOn)` with `Interval<Date>` instead
-- ❌ `date from M.authoredOn` — runtime error when authoredOn is a FHIR string; use `ToDate(M.authoredOn)`
+- ❌ Compare FHIR primitive date/time fields directly to CQL system values — convert with the pinned FHIRHelpers function matching the field and interval type
+- ❌ Compare `.clinicalStatus.value` to a string — traverse `coding` and match both the standard system and code
 - ❌ Manual ValueSet expansion matching (`V.expansion.contains E where E.system = ... and E.code = ...`) — use `code in "ValueSetName"` instead
-- ❌ Inline code-system matching in a `where` clause (`where Coding.system = 'http://...' and Coding.code = 'X'`) — pre-coordinate a valueset using ReasonHub MCP and use `[Condition: "MyValueSet"]` retrieve-level scoping instead; inline matching misses synonymous codes across systems and bypasses the terminology pipeline
+- ❌ Match only a code or display while ignoring its coding system — use a verified ValueSet for a concept set, or compare both `Coding.system.value` and `Coding.code.value` when a rule explicitly names one code
 - ❌ `define function "F"(p Interval<DateTime>): ...` — typed function parameters with `Interval<>` or `FHIR.*` types fail to compile; use a named `define` expression with inline logic instead
 
 ---
 
 ## CLI Commands (Deterministic Boundary)
 
-These are the **only** commands that perform file writes or validation. The agent
-must call these — do not write files directly.
+Use the CLI for deterministic validation, compilation, test execution, and
+pinned external-library import. Do not manually edit generated ELM or FHIR
+Library resources.
 
 | Action | Command | Status |
 |--------|---------|--------|
 | Validate CQL syntax and semantics | `rh-skills cql validate <topic> <library>` | ✓ active (`rh cql validate`) |
 | Compile CQL to ELM JSON | `rh-skills cql translate <topic> <library>` | ✓ active (`rh cql compile`) |
 | Run fixture-based test cases | `rh-skills cql test <topic> <library>` | ✓ active (`rh cql eval` per expected expression) |
+| Import pinned external CQL/ELM/FHIR Library | `rh-skills cql import-library <topic> <manifest.json>` | ✓ verifies hashes and identity; updates tracking |
 
 `rh-skills cql test` discovers fixture cases under `tests/cql/<Library>/case-*/`,
-runs `rh cql eval` for every expected expression, compares actual vs expected
-values, and exits non-zero if any assertion fails.
+passes the topic `computable/` directory as the include path, forwards each
+fixture's subject, evaluation date, measurement period, and parameters, then
+compares actual vs expected values and exits non-zero if any assertion fails.
 
 ---
 
@@ -958,8 +993,7 @@ FHIR Clinical Reasoning rules.
 - If `rh-skills cql validate` fails after two correction attempts, use
   `rh-skills cql translate` as a proxy (see Validate failure protocol above),
   then report the discrepancy and ask the user for guidance. Do **not** attempt
-  further speculative fixes, web searches, or workarounds (e.g., symlinking
-  FHIRHelpers from local paths).
+  further speculative fixes or copy unverified helper files into the topic.
 - Before writing more than one fixture case with placeholder data, confirm the
   fixture schema is acceptable.
 

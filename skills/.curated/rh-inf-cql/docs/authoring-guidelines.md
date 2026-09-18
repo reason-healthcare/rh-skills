@@ -74,12 +74,19 @@ Use helpers when:
 
 Avoid helpers that merely hide simple logic without adding clarity.
 
-## FHIRHelpers note
+## FHIR logical types and FHIRHelpers
 
-The `rh` CLI evaluator is FHIRHelpers-agnostic — it does **not** inject
-`FHIRHelpers.ToConcept` calls automatically. Include
-`include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers` explicitly when
-type coercions between FHIR and CQL system types are needed.
+The `rh` evaluator does not inject helper calls. For portable FHIR CQL, include
+the versioned helper explicitly and make choice/primitive conversions through
+FHIR logical types. For example, use
+`FHIRHelpers.ToDateTime(E.period.start)` for a FHIR dateTime primitive and
+`(A.value as FHIR.boolean).value` for a Boolean choice answer. Compare coded
+concepts through `coding` and constrain both `system.value` and `code.value`.
+
+Resolve the include through the topic's checked-in dependency files. For a
+pinned external library, use `rh-skills cql import-library <topic>
+<manifest.json>`; do not fetch helper source as an unverified side effect of
+validation or packaging.
 
 ## Documentation expectations
 

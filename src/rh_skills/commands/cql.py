@@ -9,6 +9,7 @@ from pathlib import Path
 import click
 
 from rh_skills.common import config_value, repo_root
+from rh_skills.commands.cql_library import import_library
 
 
 def _resolve_rh_binary() -> str:
@@ -117,24 +118,38 @@ def _fixture_eval_context(case_dir: Path, bundle_file: Path) -> tuple[list[str],
     if not isinstance(context, dict):
         raise click.ClickException(f"{context_path}: evaluation context must be a JSON object")
 
-    subject = context.get("subject")
-    if isinstance(subject, str) and subject:
-        if "/" not in subject:
-            subject = f"Patient/{subject}"
-    else:
-        patient_path = case_dir / "input" / "patient.json"
-        patient = json.loads(patient_path.read_text()) if patient_path.is_file() else None
-        if not isinstance(patient, dict):
-            bundle = json.loads(bundle_file.read_text())
-            patients = [
-                entry.get("resource")
-                for entry in bundle.get("entry", [])
-                if isinstance(entry, dict)
-                and isinstance(entry.get("resource"), dict)
-                and entry["resource"].get("resourceType") == "Patient"
-            ] if isinstance(bundle, dict) else []
-            patient = patients[0] if patients else None
+    bundle = json.loads(bundle_file.read_text())
+    patients = [
+        entry.get("resource")
+        for entry in bundle.get("entry", [])
+        if isinstance(entry, dict)
+        and isinstance(entry.get("resource"), dict)
+        and entry["resource"].get("resourceType") == "Patient"
+        and isinstance(entry["resource"].get("id"), str)
+    ] if isinstance(bundle, dict) else []
+    patient_path = case_dir / "input" / "patient.json"
+    patient = json.loads(patient_path.read_text()) if patient_path.is_file() else None
+    explicit_subject = context.get("subject")
+    if isinstance(explicit_subject, str) and explicit_subject:
+        subject = explicit_subject if "/" in explicit_subject else f"Patient/{explicit_subject}"
+        if not subject.startswith("Patient/") or subject.count("/") != 1:
+            raise click.ClickException(f"{context_path}: subject must be Patient/<id>")
+        patient_id = subject.removeprefix("Patient/")
+        known_ids = {entry["id"] for entry in patients}
         if isinstance(patient, dict) and isinstance(patient.get("id"), str):
+            known_ids.add(patient["id"])
+        if patient_id not in known_ids:
+            raise click.ClickException(
+                f"{context_path}: selected subject {subject!r} does not exist in the fixture input"
+            )
+    else:
+        if len(patients) > 1:
+            raise click.ClickException(
+                f"{bundle_file}: contains {len(patients)} Patients; set input/evaluation-context.json subject explicitly"
+            )
+        if len(patients) == 1:
+            subject = f"Patient/{patients[0]['id']}"
+        elif isinstance(patient, dict) and isinstance(patient.get("id"), str):
             subject = f"Patient/{patient['id']}"
         else:
             subject = None
@@ -188,7 +203,7 @@ def validate(topic: str, library: str) -> None:
         raise click.ClickException(f"CQL file not found: {cql_file}")
 
     result = subprocess.run(
-        [rh, "cql", "validate", str(cql_file)],
+        [rh, "cql", "validate", str(cql_file), "--lib-path", str(cql_file.parent)],
         capture_output=False,
     )
     raise SystemExit(result.returncode)
@@ -208,7 +223,7 @@ def translate(topic: str, library: str) -> None:
     elm_dir.mkdir(exist_ok=True)
     elm_file = elm_dir / f"{library}.json"
     result = subprocess.run(
-        [rh, "cql", "compile", str(cql_file), "--output", str(elm_file)],
+        [rh, "cql", "compile", str(cql_file), "--output", str(elm_file), "--lib-path", str(cql_file.parent)],
         capture_output=False,
     )
     if result.returncode != 0:
@@ -276,6 +291,8 @@ def test(topic: str, library: str) -> None:
                     expression,
                     "--data",
                     str(bundle_file),
+                    "--lib-path",
+                    str(cql_file.parent),
                     *context_args,
                     *parameter_args,
                 ],
@@ -308,3 +325,6 @@ def test(topic: str, library: str) -> None:
         click.echo(f"\nFAIL — {failures} assertion(s) failed across {len(cases)} case(s)")
         raise SystemExit(1)
     click.echo(f"\nPASS — {assertions} assertion(s) across {len(cases)} case(s)")
+
+
+cql.add_command(import_library)
