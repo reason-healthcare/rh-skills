@@ -4084,3 +4084,123 @@ def test_validate_fails_with_clear_message_on_yaml_parse_error(tmp_repo):
     assert result.exit_code == 1
     assert "YAML parse error" in result.output
     assert "quoted" in result.output
+
+
+def test_validate_assessment_rejects_malformed_observation_extraction_contract(tmp_repo):
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "assessment"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "assessment.yaml").write_text("""\
+id: assessment
+name: assessment
+title: Assessment
+version: 1.0.0
+status: draft
+domain: screening
+description: Assessment fixture.
+derived_from: [source-l1]
+artifact_type: assessment
+clinical_question: What is assessed?
+sections:
+  instrument:
+    version_algorithm:
+      system: http://hl7.org/fhir/version-algorithm
+      code: semver
+    observation_extraction:
+      profile: http://example.org/Profile|1.0
+      enabled: true
+      category:
+        system: urn:test
+        code: survey
+        display: Survey
+  items:
+    - id: q1
+      text: Question?
+      type: boolean
+      code:
+        system: http://loinc.org
+        version: '2.81'
+        code: 1234-5
+        display: Question
+""")
+    result = CliRunner().invoke(validate, ["my-skill", "assessment"])
+    assert result.exit_code == 1
+    assert "INVALID assessment instrument" in result.output
+    assert "SDC observation extraction profile canonical|version" in result.output
+
+
+def test_validate_assessment_accepts_supported_observation_extraction_contract(tmp_repo):
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "assessment"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "assessment.yaml").write_text("""\
+id: assessment
+name: assessment
+title: Assessment
+version: 1.0.0
+status: draft
+domain: screening
+description: Assessment fixture.
+derived_from: [source-l1]
+artifact_type: assessment
+clinical_question: What is assessed?
+sections:
+  instrument:
+    version_algorithm:
+      system: http://hl7.org/fhir/version-algorithm
+      code: semver
+    observation_extraction:
+      profile: http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0
+      enabled: true
+      category:
+        system: http://terminology.hl7.org/CodeSystem/observation-category
+        code: survey
+        display: Survey
+  items:
+    - id: q1
+      text: Question?
+      type: boolean
+      code:
+        system: http://loinc.org
+        version: '2.81'
+        code: 1234-5
+        display: Question
+""")
+    result = CliRunner().invoke(validate, ["my-skill", "assessment"])
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_assessment_rejects_enabled_extraction_without_version_algorithm(tmp_repo):
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "assessment"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "assessment.yaml").write_text("""\
+id: assessment
+name: assessment
+title: Assessment
+version: 1.0.0
+status: draft
+domain: screening
+description: Assessment fixture.
+derived_from: [source-l1]
+artifact_type: assessment
+clinical_question: What is assessed?
+sections:
+  instrument:
+    observation_extraction:
+      profile: http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0
+      enabled: true
+      category:
+        system: http://terminology.hl7.org/CodeSystem/observation-category
+        code: survey
+        display: Survey
+  items:
+    - id: q1
+      text: Question?
+      type: boolean
+      code:
+        system: http://loinc.org
+        version: '2.81'
+        code: 1234-5
+        display: Question
+""")
+    result = CliRunner().invoke(validate, ["my-skill", "assessment"])
+    assert result.exit_code == 1
+    assert "version_algorithm is required" in result.output

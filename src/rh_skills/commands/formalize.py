@@ -35,6 +35,10 @@ from rh_skills.fhir.normalize import (
 )
 from rh_skills.fhir.validate import validate_resource
 from rh_skills.fhir.packaging import load_packager_toml
+from rh_skills.validators.questionnaire import (
+    questionnaire_metadata_fields,
+    validate_observation_extraction_items,
+)
 
 _FORMALIZE_TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "formalize"
 FHIR_ID_MAX_LENGTH = 64
@@ -1938,6 +1942,11 @@ def _build_questionnaire_resource(
         or assessment_data.get("name")
         or artifact_name.replace("-", " ").title()
     )
+    sections = assessment_data.get("sections") or {}
+    instrument = sections.get("instrument") or {}
+    metadata_fields, extraction = questionnaire_metadata_fields(instrument)
+    source_items = sections.get("items") or []
+    validate_observation_extraction_items(source_items, extraction)
     return _render_questionnaire_resource(
         {
             "id": questionnaire_id,
@@ -1949,6 +1958,7 @@ def _build_questionnaire_resource(
             "title": title,
             "description": str(assessment_data.get("description") or title),
             "item": _build_questionnaire_items(artifact_name, assessment_data),
+            **metadata_fields,
         }
     )
 
@@ -4090,28 +4100,7 @@ def _build_stub_resources(
             lib_id = f"{resource_id}-measure"
             primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
     elif primary == "Questionnaire":
-        questionnaire_id, questionnaire_url, questionnaire_version = _assessment_questionnaire_identity(
-            artifact_name,
-            l2_data or {},
-            cfg,
-            topic,
-        )
-        primary_resource = _render_questionnaire_resource(
-            {
-                "id": questionnaire_id,
-                "url": questionnaire_url,
-                "version": questionnaire_version,
-                "status": status,
-                "date": today,
-                "name": _pascal_from_kebab(questionnaire_id),
-                "title": source_title,
-                "description": str(
-                    (l2_data or {}).get("description")
-                    or artifact_name.replace("-", " ").title()
-                ),
-                "item": _build_questionnaire_items(artifact_name, l2_data),
-            }
-        )
+        primary_resource = _build_questionnaire_resource(topic, artifact_name, l2_data or {}, cfg)
     elif primary == "ValueSet":
         primary_resource["compose"] = {"include": [{"system": "http://snomed.info/sct", "concept": [{"code": "TODO:PLACEHOLDER"}]}]}
     elif primary == "Evidence":

@@ -17,6 +17,7 @@ tests/cql/
         patient.json         ← standalone Patient resource (optional)
         parameters.json      ← CQL parameter overrides (optional)
         evaluation-context.json ← subject, evaluation date, period, generic parameters (optional)
+        terminology.json     ← pre-expanded ValueSet or Bundle of ValueSets (optional)
       expected/
         expression-results.json  ← expected define-name → value map
       notes.md               ← brief description of what the case tests
@@ -49,6 +50,13 @@ A FHIR R4 Bundle used as the data context for evaluation. Minimum structure:
 
 Additional entries (Condition, Observation, MedicationRequest, …) provide
 the clinical data the CQL expressions retrieve.
+
+For SDC extraction workflows, `bundle.json` should contain the Observations
+actually produced by the extraction step. A separate `terminology.json` may
+contain one complete, versioned FHIR `ValueSet` or a Bundle containing complete
+ValueSets; the CQL runner passes it to `rh cql eval --terminology`. Do not use
+an expected normalized extraction Bundle as proof that a live extraction
+produced those Observations.
 
 ### `patient.json` (optional)
 
@@ -91,6 +99,10 @@ Other `parameters` are sent as JSON values. Values from
 `rh-skills cql test` passes the topic computable directory as `--lib-path`, so
 versioned local includes are available during evaluation. Direct `rh cql eval`
 calls must pass the same `--lib-path` explicitly.
+
+When `input/terminology.json` exists, `rh-skills cql test` also passes that
+path as `--terminology`. The runtime resolves only the complete ValueSet
+expansions supplied there; it does not fetch expansions during evaluation.
 
 ### `parameters.json` (optional)
 

@@ -905,30 +905,51 @@ sections:
 
 #### assessment
 
+This is a general assessment shape. Ordinary assessments may use supported
+response types, answer options, and scoring without SDC extraction metadata or
+item Coding requirements. The SDC Observation-extraction fields below are a
+conditional subset for workflows that explicitly use that profile.
+
 ```yaml
-codings:                          # top-level; populated from MCP LOINC lookup
-  - code: <LOINC code>
-    system: http://loinc.org
-    display: <canonical display>
 sections:
   instrument:
-    name: <instrument name>
-    purpose: <what it measures>
-    population: <target population>
+    id: <Questionnaire id>
+    canonical: <Questionnaire canonical URL>
+    version: <Questionnaire version>
+    version_algorithm:             # required when extraction is enabled; never infer
+      system: http://hl7.org/fhir/version-algorithm
+      code: semver
+    observation_extraction:        # optional; only when the workflow uses SDC extraction
+      profile: http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0
+      enabled: true
+      category:
+        system: http://terminology.hl7.org/CodeSystem/observation-category
+        code: survey
+        display: Survey
   items:
-    - id: q1
-      loinc_code: "<LOINC item code>"   # resolved per-item via MCP; omit if unresolved
-      text: <question text>
-      type: <ordinal|boolean|choice|numeric|text>
-      options:
-        - value: <int or string>
-          label: <display label>
+    - id: <source linkId>
+      text: <exact source question text>
+      type: boolean                 # current SDC Observation extractor supports Boolean items
+      required: true
+      code:                         # direct Coding or list of Coding; not CodeableConcept
+        system: http://loinc.org
+        version: <pinned CodeSystem version>
+        code: <reviewed LOINC code>
+        display: <exact terminology display>
   scoring:
     method: <sum|weighted|algorithm>
     ranges:
       - range: <e.g. "0-4">
         interpretation: <e.g. "Minimal depression">
 ```
+
+When `observation_extraction.enabled` is true, `version_algorithm` must be an
+explicitly sourced or previously reviewed Coding because the versioned SDC
+profile requires Questionnaire version-algorithm metadata. Each supported
+Boolean item must also have exactly one complete reviewed Coding with
+`system`, `version`, `code`, and `display`; do not infer or omit it if a
+terminology lookup is unavailable. Without enabled SDC extraction, item Coding
+remains optional unless the source or another workflow requirement calls for it.
 
 #### policy
 

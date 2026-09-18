@@ -19,6 +19,10 @@ from rh_skills.common import (
     schemas_dir,
     topic_dir,
 )
+from rh_skills.validators.questionnaire import (
+    questionnaire_metadata_fields,
+    validate_observation_extraction_items,
+)
 
 
 def _yaml_safe() -> YAML:
@@ -1189,6 +1193,17 @@ def validate_artifact_file(
             cp_errors, cp_warnings = validate_care_pathway(artifact_data, emit_callback=emit_callback)
             errors += cp_errors
             warnings += cp_warnings
+
+        elif artifact_type == "assessment":
+            sections = artifact_data.get("sections") or {}
+            sections = sections if isinstance(sections, dict) else {}
+            instrument = sections.get("instrument") or {}
+            try:
+                _, extraction = questionnaire_metadata_fields(instrument)
+                validate_observation_extraction_items(sections.get("items") or [], extraction)
+            except ValueError as exc:
+                _report_error(f"  INVALID assessment instrument: {exc}", emit=emit)
+                errors += 1
 
         paired_errors, paired_warnings = _validate_paired_recommendation_coverage(
             topic,

@@ -257,6 +257,42 @@ def test_test_passes_explicit_evaluation_context_period_and_parameters(tmp_path,
     ) in parameter_pairs
 
 
+def test_test_passes_optional_preexpanded_valueset_sidecar(tmp_path, monkeypatch):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-006-terminology", {"HasCode": True})
+    case = tmp_path / "tests" / "cql" / "TestLib" / "case-006-terminology"
+    terminology_path = case / "input" / "terminology.json"
+    terminology_path.write_text(json.dumps({
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [{"resource": {"resourceType": "ValueSet", "url": "https://example.org/ValueSet/a", "version": "0.2.0", "expansion": {"contains": []}}}],
+    }))
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="true\n", stderr="")
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code == 0, result.output
+    command = mock_run.call_args[0][0]
+    assert command[command.index("--terminology") + 1] == str(terminology_path)
+
+
+@pytest.mark.parametrize("terminology", [
+    {"resourceType": "Bundle", "type": "collection", "entry": []},
+    {"resourceType": "ValueSet", "url": "https://example.org/ValueSet/a"},
+    {"resourceType": "Patient", "id": "not-terminology"},
+])
+def test_test_rejects_invalid_terminology_sidecar_before_eval(tmp_path, monkeypatch, terminology):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-007-invalid-terminology", {"HasCode": True})
+    case = tmp_path / "tests" / "cql" / "TestLib" / "case-007-invalid-terminology"
+    (case / "input" / "terminology.json").write_text(json.dumps(terminology))
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code != 0
+    mock_run.assert_not_called()
+
+
 def test_test_converts_fhir_parameters_file_into_cli_overrides(tmp_path, monkeypatch):
     topic = _make_topic(tmp_path)
     monkeypatch.chdir(topic)

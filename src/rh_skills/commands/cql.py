@@ -109,6 +109,47 @@ def _fixture_parameters(case_dir: Path) -> dict[str, object]:
     return parameters
 
 
+def _fixture_terminology_args(case_dir: Path) -> list[str]:
+    """Return the optional pre-expanded terminology input for native evaluation."""
+    terminology_path = case_dir / "input" / "terminology.json"
+    if not terminology_path.is_file():
+        return []
+    try:
+        resource = json.loads(terminology_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise click.ClickException(f"{terminology_path}: invalid JSON: {exc}") from exc
+
+    if not isinstance(resource, dict):
+        raise click.ClickException(f"{terminology_path}: terminology input must be a FHIR ValueSet or Bundle")
+    if resource.get("resourceType") == "ValueSet":
+        value_sets = [resource]
+    elif resource.get("resourceType") == "Bundle":
+        entries = resource.get("entry")
+        if not isinstance(entries, list):
+            raise click.ClickException(f"{terminology_path}: Bundle.entry must be an array")
+        value_sets = []
+        for index, entry in enumerate(entries, start=1):
+            value_set = entry.get("resource") if isinstance(entry, dict) else None
+            if not isinstance(value_set, dict) or value_set.get("resourceType") != "ValueSet":
+                raise click.ClickException(
+                    f"{terminology_path}: Bundle.entry[{index - 1}] must contain a ValueSet resource"
+                )
+            value_sets.append(value_set)
+    else:
+        raise click.ClickException(
+            f"{terminology_path}: expected resourceType ValueSet or Bundle, "
+            f"got {resource.get('resourceType')!r}"
+        )
+    if not value_sets:
+        raise click.ClickException(f"{terminology_path}: Bundle contains no ValueSet resources")
+    for index, value_set in enumerate(value_sets, start=1):
+        if not isinstance(value_set.get("url"), str) or not value_set["url"].strip():
+            raise click.ClickException(f"{terminology_path}: ValueSet #{index} is missing url")
+        if not isinstance(value_set.get("version"), str) or not value_set["version"].strip():
+            raise click.ClickException(f"{terminology_path}: ValueSet #{index} is missing version")
+    return ["--terminology", str(terminology_path)]
+
+
 def _fixture_eval_context(case_dir: Path, bundle_file: Path) -> tuple[list[str], list[str]]:
     """Return native `rh cql eval` context flags and JSON parameter arguments."""
     context_path = case_dir / "input" / "evaluation-context.json"
@@ -276,6 +317,11 @@ def test(topic: str, library: str) -> None:
         case_failed = False
         try:
             context_args, parameter_args = _fixture_eval_context(case_dir, bundle_file)
+            terminology_args = _fixture_terminology_args(case_dir)
+        except click.ClickException as exc:
+            click.echo(f"    FAIL evaluation context: {exc.format_message()}")
+            failures += 1
+            continue
         except (OSError, json.JSONDecodeError) as exc:
             click.echo(f"    FAIL evaluation context: {exc}")
             failures += 1
@@ -295,6 +341,7 @@ def test(topic: str, library: str) -> None:
                     str(cql_file.parent),
                     *context_args,
                     *parameter_args,
+                    *terminology_args,
                 ],
                 capture_output=True,
                 text=True,

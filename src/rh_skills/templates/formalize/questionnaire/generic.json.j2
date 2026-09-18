@@ -8,5 +8,7 @@
   "name": "{{ name }}",
   "title": "{{ title }}",
   "description": {{ description | tojson }},
+  {% if meta_profile | default([]) %}"meta": {"profile": {{ meta_profile | default([]) | tojson }}}, {% endif %}
+  {% if extension | default([]) %}"extension": {{ extension | default([]) | tojson }}, {% endif %}
   "item": {{ item | tojson }}
 }

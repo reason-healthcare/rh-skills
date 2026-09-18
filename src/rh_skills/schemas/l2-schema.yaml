@@ -281,6 +281,47 @@ artifact_type_sections:
         {source: source_direct|inferred, rationale?}. Inferred recommendations
         should always include rationale.
 
+  assessment:
+    description: >
+      Structured assessment instrument and response semantics. Questionnaire
+      extraction metadata is optional and must be explicit when downstream
+      workflows require SDC Observation extraction.
+    recommended_sections:
+      - summary
+      - instrument
+      - items
+      - scoring
+      - evidence_traceability
+    section_definitions:
+      instrument: >
+        Assessment instrument identity and scope. Optional version_algorithm:
+        {system, code, display?}; when SDC Observation extraction is enabled,
+        author this Coding explicitly because the versioned SDC profile
+        requires Questionnaire version algorithm metadata. Formalize preserves
+        it in the standard artifact-versionAlgorithm extension. Optional
+        observation_extraction is the supported SDC contract:
+        {profile: '<SDC observation-extraction profile canonical>|<version>',
+        enabled: true|false, category?: {system, code, display}}. If enabled,
+        provide category with all three non-empty strings and version_algorithm.
+        Only these fields are supported; do not pass arbitrary FHIR extensions
+        through L2. Without observation_extraction, ordinary assessments may
+        use supported response types, options, and scoring without this metadata.
+        Formalize emits the authored profile, extraction enable extension,
+        and category extension. Omit the field when extraction is not part of
+        the workflow.
+      items: >
+        Questionnaire items: {id, text, type, required?, code?}. Preserve
+        source linkIds, answer types, requiredness, and full Coding identity
+        including system, version, code, and display. Under SDC extraction,
+        item codings are the terminology bindings copied to Observation.code.
+        The currently supported extraction subset is Boolean items with
+        exactly one reviewed Coding per item; that Coding requires system,
+        version, code, and display. Do not infer a Coding when one is absent.
+      scoring: >
+        Source-faithful completion, scoring, and unknown handling rules.
+        Missing or unusable answers remain unknown when the source contract
+        defines them that way; do not coerce missing values to false.
+
   terminology:
     description: >
       Governed concept codes and explicitly verified terminology expansions.

@@ -379,10 +379,17 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    — do not retry the same tool and do not try alternative tools as a fallback.
    For `terminology` artifacts, omit `candidate_codes[]`, note the deferral in
    the Review Summary, and proceed (resolution can be done in formalize mode).
-   For `assessment` artifacts, **also omit `codings[]` and all per-item
-   `loinc_code` fields from the derived artifact** — do not substitute codes
-   from the source text. Note in the Review Summary that LOINC codes are absent
-   because MCP was unavailable; they must be resolved before formalize.
+   For `assessment` artifacts, do not infer codes from question wording. Preserve
+   an exact source-authored item Coding or a pinned Coding already reviewed in
+   the topic terminology artifact, including `system`, `version`, `code`, and
+   `display`. If the assessment declares
+   `sections.instrument.observation_extraction`, every supported Boolean item
+   must have exactly one such reviewed Coding; if a required Coding is not
+   available or reviewed, record the terminology gap as blocking and do not
+   claim the assessment is extraction-ready. An MCP outage does not erase a
+   Coding that was already reviewed and pinned. Enabled extraction also
+   requires an explicitly sourced or reviewed `sections.instrument.version_algorithm`
+   Coding; never infer an algorithm from the Questionnaire version string.
 6. After reviewing the plan output, check for open concerns before proceeding:
 
    **⚠ HUMAN-IN-THE-LOOP: Concerns require explicit human confirmation.**

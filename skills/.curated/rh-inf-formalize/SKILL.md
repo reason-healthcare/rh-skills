@@ -163,6 +163,13 @@ Care-pathway condition and linkage rules:
 Questionnaire identity rule:
 - When an approved L2 assessment's `sections.instrument` provides `id`, `canonical`, and `version`, preserve those values on the generated Questionnaire. This keeps QuestionnaireResponses authored from a shared or previously published Questionnaire resolvable by the generated CQL. Generate Questionnaire content from the L2 items; do not replace the generated resource with a copied source Questionnaire. If no identity is supplied, use the topic's formalize configuration defaults.
 
+SDC Observation-extraction metadata rule:
+- If the L2 assessment's `sections.instrument.observation_extraction` is present, preserve its typed contract exactly: `profile` is the SDC extraction StructureDefinition canonical plus version, `enabled` is a Boolean, and an enabled extraction requires `category: {system, code, display}`.
+- Emit the profile in `Questionnaire.meta.profile`, `sdc-questionnaire-observationExtract` as `valueBoolean: true`, and `sdc-questionnaire-observation-extract-category` as a `valueCodeableConcept` with the authored Coding. The generic L2 validator/formalizer rejects unsupported fields; never add arbitrary extensions by editing generated JSON.
+- If SDC Observation extraction is enabled, require an explicitly authored `sections.instrument.version_algorithm: {system, code, display?}` and preserve it in the standard `artifact-versionAlgorithm` extension. Do not invent an algorithm; the versioned SDC profile requires this metadata. For ordinary assessments without enabled SDC extraction, version-algorithm metadata remains optional.
+- Preserve each item's LOINC Coding directly in `Questionnaire.item.code[]`, including its system, version, code, and display. This is a FHIR `Coding[]`, not a nested `CodeableConcept`.
+- Formalization produces the Questionnaire definition. It does not claim to run SDC extraction or create the resulting Observations; verify those in the extraction/runtime workflow.
+
 Order-set and regimen decomposition rule:
 - When the L2 source describes an order set, regimen, or medication bundle,
   do not keep it as one broad executable medication action if the component
@@ -518,7 +525,7 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    | PlanDefinition | `type` (eca-rule or clinical-protocol), `action[]` with at least one entry |
    | Library | `type`, `content[].contentType` |
    | Measure | `group[].population[]` with both numerator and denominator, `scoring` |
-   | Questionnaire | `item[]` with `linkId` on every item |
+   | Questionnaire | `item[]` with `linkId` on every item; if SDC extraction is authored, profile and extraction/category extensions are preserved |
    | ValueSet | `compose.include[]` with at least one entry |
    | ConceptMap | `group[]` with `element[].target[]` |
    | Evidence | R4-valid core Evidence shape, including `exposureBackground` when Evidence is emitted |

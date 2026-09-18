@@ -513,6 +513,197 @@ def test_related_questionnaire_preserves_explicit_canonical_and_version():
     assert questionnaire["version"] == "0.2.0"
 
 
+def test_questionnaire_emits_authored_sdc_observation_extraction_metadata():
+    questionnaire = _build_questionnaire_resource(
+        "steadi-fall-screening",
+        "assessment",
+        {
+            "title": "STEADI Three-Question Fall-Risk Screen",
+            "sections": {
+                "instrument": {
+                    "id": "steadi-three-question-screen",
+                    "canonical": "https://example.org/fhir/Questionnaire/steadi-three-question-screen",
+                    "version": "0.2.0",
+                    "version_algorithm": {
+                        "system": "http://hl7.org/fhir/version-algorithm",
+                        "code": "semver",
+                    },
+                    "observation_extraction": {
+                        "profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+                        "enabled": True,
+                        "category": {
+                            "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                            "code": "survey",
+                            "display": "Survey",
+                        },
+                    },
+                },
+                "items": [{
+                    "id": "unsteady",
+                    "text": "Do you feel unsteady?",
+                    "type": "boolean",
+                    "code": {
+                        "system": "http://loinc.org",
+                        "version": "2.81",
+                        "code": "100257-5",
+                        "display": "Feel unsteady when standing or walking",
+                    },
+                }],
+            },
+        },
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+    )
+
+    assert questionnaire["meta"]["profile"] == [
+        "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0"
+    ]
+    assert questionnaire["extension"] == [
+        {
+            "url": "http://hl7.org/fhir/StructureDefinition/artifact-versionAlgorithm",
+            "valueCoding": {
+                "system": "http://hl7.org/fhir/version-algorithm",
+                "code": "semver",
+            },
+        },
+        {
+            "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-observationExtract",
+            "valueBoolean": True,
+        },
+        {
+            "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-observation-extract-category",
+            "valueCodeableConcept": {
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "survey",
+                    "display": "Survey",
+                }]
+            },
+        },
+    ]
+
+
+def test_questionnaire_omits_sdc_fields_when_extraction_is_disabled():
+    questionnaire = _build_questionnaire_resource(
+        "topic",
+        "assessment",
+        {"sections": {"instrument": {
+            "observation_extraction": {
+                "profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+                "enabled": False,
+            },
+        }, "items": [{
+            "id": "unsteady", "text": "Do you feel unsteady?", "type": "boolean",
+            "code": {"system": "http://loinc.org", "version": "2.81", "code": "100257-5", "display": "Feel unsteady"},
+        }]}},
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+    )
+    assert "meta" not in questionnaire
+    assert "extension" not in questionnaire
+
+
+def test_questionnaire_rejects_enabled_sdc_extraction_without_explicit_version_algorithm():
+    with pytest.raises(ValueError, match="version_algorithm is required"):
+        _build_questionnaire_resource(
+            "topic",
+            "assessment",
+            {"sections": {"instrument": {
+                "observation_extraction": {
+                    "profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+                    "enabled": True,
+                    "category": {"system": "urn:test", "code": "survey", "display": "Survey"},
+                },
+            }, "items": []}},
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        )
+
+
+def test_questionnaire_preserves_version_algorithm_when_extraction_is_disabled():
+    questionnaire = _build_questionnaire_resource(
+        "topic",
+        "assessment",
+        {"sections": {"instrument": {
+            "version_algorithm": {
+                "system": "http://hl7.org/fhir/version-algorithm",
+                "code": "semver",
+            },
+            "observation_extraction": {
+                "profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+                "enabled": False,
+            },
+        }, "items": [{
+            "id": "unsteady", "text": "Do you feel unsteady?", "type": "boolean",
+            "code": {"system": "http://loinc.org", "version": "2.81", "code": "100257-5", "display": "Feel unsteady"},
+        }]}},
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+    )
+    assert questionnaire["extension"] == [{
+        "url": "http://hl7.org/fhir/StructureDefinition/artifact-versionAlgorithm",
+        "valueCoding": {
+            "system": "http://hl7.org/fhir/version-algorithm",
+            "code": "semver",
+        },
+    }]
+
+
+@pytest.mark.parametrize("extraction", [
+    {"profile": "http://example.org/Profile|1.0", "enabled": True,
+     "category": {"system": "urn:test", "code": "survey", "display": "Survey"}},
+    {"profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+     "enabled": "true", "category": {"system": "urn:test", "code": "survey", "display": "Survey"}},
+    {"profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+     "enabled": True, "category": {"system": "urn:test", "code": "survey"}},
+    {"profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+     "enabled": True, "category": {"system": "urn:test", "code": "survey", "display": "Survey"},
+     "extension": []},
+])
+def test_questionnaire_rejects_unsupported_sdc_extraction_metadata(extraction):
+    with pytest.raises(ValueError, match="observation_extraction"):
+        _build_questionnaire_resource(
+            "topic",
+            "assessment",
+            {"sections": {"instrument": {"observation_extraction": extraction}, "items": []}},
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        )
+
+
+def test_questionnaire_rejects_incomplete_sdc_extraction_item_coding():
+    with pytest.raises(ValueError, match="Coding requires non-empty version"):
+        _build_questionnaire_resource(
+            "topic",
+            "assessment",
+            {"sections": {"instrument": {
+                "version_algorithm": {
+                    "system": "http://hl7.org/fhir/version-algorithm",
+                    "code": "semver",
+                },
+                "observation_extraction": {
+                    "profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+                    "enabled": True,
+                    "category": {"system": "urn:test", "code": "survey", "display": "Survey"},
+                },
+            }, "items": [{
+                "id": "q1", "text": "Question?", "type": "boolean",
+                "code": {"system": "http://loinc.org", "code": "1234-5", "display": "Question"},
+            }]}},
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        )
+
+
+@pytest.mark.parametrize("algorithm", [
+    "semver",
+    {"system": "http://hl7.org/fhir/version-algorithm"},
+    {"system": "http://hl7.org/fhir/version-algorithm", "code": "semver", "foo": "bar"},
+])
+def test_questionnaire_rejects_unsupported_version_algorithm(algorithm):
+    with pytest.raises(ValueError, match="version_algorithm"):
+        _build_questionnaire_resource(
+            "topic",
+            "assessment",
+            {"sections": {"instrument": {"version_algorithm": algorithm}, "items": []}},
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        )
+
+
 def test_assessment_stub_generation_preserves_explicit_questionnaire_identity():
     strategy, _ = _get_strategy("assessment")
     resources = _build_stub_resources(
@@ -525,13 +716,37 @@ def test_assessment_stub_generation_preserves_explicit_questionnaire_identity():
             "id": "steadi-three-question-screen",
             "canonical": "https://example.org/fhir/Questionnaire/steadi-three-question-screen",
             "version": "0.2.0",
-        }, "items": []}},
+            "version_algorithm": {
+                "system": "http://hl7.org/fhir/version-algorithm",
+                "code": "semver",
+            },
+            "observation_extraction": {
+                "profile": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0",
+                "enabled": True,
+                "category": {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "survey",
+                    "display": "Survey",
+                },
+            },
+        }, "items": [{
+            "id": "unsteady", "text": "Do you feel unsteady?", "type": "boolean",
+            "code": {"system": "http://loinc.org", "version": "2.81", "code": "100257-5", "display": "Feel unsteady"},
+        }]}},
     )
     questionnaire = next(r for r in resources if r["resourceType"] == "Questionnaire")
 
     assert questionnaire["id"] == "steadi-three-question-screen"
     assert questionnaire["url"] == "https://example.org/fhir/Questionnaire/steadi-three-question-screen"
     assert questionnaire["version"] == "0.2.0"
+    assert questionnaire["meta"]["profile"] == [
+        "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0"
+    ]
+    extraction_extension = next(
+        extension for extension in questionnaire["extension"]
+        if extension["url"].endswith("sdc-questionnaire-observationExtract")
+    )
+    assert extraction_extension["valueBoolean"] is True
 
 
 def test_measure_generation_preserves_all_authored_populations_and_bound_codesystems():

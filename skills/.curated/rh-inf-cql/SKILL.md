@@ -275,8 +275,10 @@ Apply every time unless the user asks for something narrower. See
 ### Retrieves and Terminology
 - [ ] Are retrieves scoped appropriately? (valueset or code filter at the retrieve)
 - [ ] Are value sets and codes declared explicitly?
+- [ ] Is each declared ValueSet used by the evaluated resource path, or is its non-use justified (for example, QR linkIds before SDC extraction)?
 - [ ] Are terminology versions pinned where reproducibility matters?
 - [ ] Is value set membership assumed too loosely anywhere?
+- [ ] If SDC extraction is required, are CQL and tests using produced Observations rather than only a normalized expected Bundle?
 
 ### Testing
 - [ ] Is there at least one positive case?
@@ -414,6 +416,29 @@ details, unknown terminology expansions, unverified fixture assumptions.
    > VSAC, HL7, or FHIR community IGs) should eventually be referenced by their
    > canonical URL rather than duplicated locally. For now, local-first via the
    > terminology L2 pipeline is the required path.
+
+   **Choose the terminology boundary that matches the input resource.** In
+   FHIR R4, a `QuestionnaireResponse.item` carries `linkId` and answers; it does
+   not carry the Questionnaire item's LOINC `Coding`. If logic evaluates a
+   response before extraction, bind the exact versioned Questionnaire canonical
+   and expected `linkId` values. Do not invent a ValueSet lookup against a QR
+   answer. When the workflow requires SDC extraction, retain the source
+   Questionnaire's SDC extraction profile and metadata, evaluate the generated
+   `Observation` resources, and scope each retrieve with its terminology L2
+   ValueSet, for example `[Observation: "UnsteadinessQuestion"]`. In that
+   path, verify each Observation's code, system, version, subject, encounter,
+   status, `derivedFrom` response, and provenance before treating the CQL result
+   as an extraction result. A normalized extracted fixture is an oracle; it
+   does not prove that `$extract` produced those Observations.
+
+   Fixture-driven native runs may supply a pre-expanded ValueSet or Bundle of
+   ValueSets at `tests/cql/<Library>/case-*/input/terminology.json`. The CQL
+   test runner forwards this file to `rh cql eval --terminology`; include only
+   complete, versioned expansions for declared canonical dependencies. Test
+   positive membership, wrong code, wrong system, and unresolved or wrong
+   ValueSet canonical version. Do not expect `Coding.version` or display text
+   alone to change standard CQL code membership; assert those fields separately
+   when they are part of the extraction contract.
 
 2. **Apply the CQL style guide** (see Style Guide section below) and the
    **authoring rubric** (see Authoring Rubric section below) before writing any code.
