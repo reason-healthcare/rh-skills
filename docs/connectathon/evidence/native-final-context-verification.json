@@ -1,12 +1,13 @@
 {
-  "checkedAt": "2026-09-18T00:46:33.892548+00:00",
+  "checkedAt": "2026-09-18T02:20:47.588962+00:00",
   "scope": "Native authoring CQL; original48 plus48 context/identity/answer mutations; not FHIR package or WASM acceptance",
   "stableInputs": true,
   "libraries": {
-    "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/computable/FallScreeningAndGuidanceRecommendationLogic.cql": "e02c3900f2f212de922bf082a27c6d2be5a8b75db13113574ca6a3e27f4f409b",
-    "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/computable/MeasureMeasure.cql": "3f6c850ace9fb4581e2174f4b5f68bbaaeba9951bf6b25f58f72f8b365588f47"
+    "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/computable/FHIRHelpers-4.0.1.cql": "6748661c16fe66dd07a68f07f77f7fea44e8b933d265dcc3c575964ba8329591",
+    "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/computable/FallScreeningAndGuidanceRecommendationLogic.cql": "47e44d70b32f39e20b4933926fa6854c758d300a94bc9e9b5ed3cb6b75d43396",
+    "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/computable/MeasureMeasure.cql": "3ed4513e926c7c58b65cb7fb3f573bea50125095bc13a5c4f9103b46c9accbce"
   },
-  "runtimeSha256": "17ea5c7b946d9f25e1a17f6bea1b81922bc92a5521c82d51e59d101bcc20d3df",
+  "runtimeSha256": "faa4514cbe752c5594988b4a6c7da38dcc8564b958469835568eb46ff05cd403",
   "counts": {
     "original": {
       "total": 48,

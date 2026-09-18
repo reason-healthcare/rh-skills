@@ -1,0 +1,644 @@
+{
+  "checkedAt": "2026-09-18T03:08:58.149Z",
+  "scope": "Authenticated Workbench API replay versus direct public Node/WASM using an already-imported snapshot. This verifier does not import or mutate the snapshot.",
+  "inputs": {
+    "baseUrl": "http://127.0.0.1:9090",
+    "projectId": "connectathon-steadi",
+    "snapshotId": "snap_connectathon-steadi_run001-4f15cca6a7b2",
+    "contentPath": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+    "contentSha256": "4f15cca6a7b2e3c516ab2a95a72f97055a49ae88cecb3f89ffcc00684d295579",
+    "fixtureIndexPath": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/executable/fixtures/index.json",
+    "fixtureIndexSha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc",
+    "runtimePath": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+    "runtimeSha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0",
+    "cookieProvided": true,
+    "plans": [
+      {
+        "artifactId": "plandefinition-fall-screening-and-guidance-recommendation",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0"
+      },
+      {
+        "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-offer-screen",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0"
+      },
+      {
+        "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0"
+      },
+      {
+        "artifactId": "plandefinition-older-adult-fall-screening-protocol",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0"
+      },
+      {
+        "artifactId": "plandefinition-older-adult-fall-screening-protocol-interpret-phase",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0"
+      },
+      {
+        "artifactId": "plandefinition-older-adult-fall-screening-protocol-positive-guidance",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0"
+      },
+      {
+        "artifactId": "plandefinition-older-adult-fall-screening-protocol-screen-phase",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0"
+      }
+    ],
+    "measure": {
+      "artifactId": "measure-measure",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0"
+    },
+    "questionnaire": {
+      "artifactId": "questionnaire-steadi-three-question-screen",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0"
+    },
+    "evaluationDate": "2026-06-15T09:20:00Z",
+    "measurementPeriod": {
+      "start": "2026-01-01T00:00:00Z",
+      "end": "2026-12-31T23:59:59Z",
+      "startInclusive": true,
+      "endInclusive": true
+    }
+  },
+  "sourceFixturesUnchanged": true,
+  "cases": [
+    {
+      "fixtureId": "younger-than-65",
+      "subject": "Patient/patient-younger-than-65",
+      "encounter": "Encounter/encounter-younger-than-65",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.plandefinition-fall-screening-and-guidance-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-offer-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.plandefinition-fall-screening-and-guidance-recommendation-offer-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.plandefinition-older-adult-fall-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-interpret-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.plandefinition-older-adult-fall-screening-protocol-interpret-phase.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-positive-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.plandefinition-older-adult-fall-screening-protocol-positive-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-screen-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.plandefinition-older-adult-fall-screening-protocol-screen-phase.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-all-no",
+      "subject": "Patient/patient-eligible-all-no",
+      "encounter": "Encounter/encounter-eligible-all-no",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.plandefinition-fall-screening-and-guidance-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-offer-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.plandefinition-fall-screening-and-guidance-recommendation-offer-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.plandefinition-older-adult-fall-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-interpret-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.plandefinition-older-adult-fall-screening-protocol-interpret-phase.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-positive-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.plandefinition-older-adult-fall-screening-protocol-positive-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-screen-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.plandefinition-older-adult-fall-screening-protocol-screen-phase.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-unsteady-yes",
+      "subject": "Patient/patient-eligible-unsteady-yes",
+      "encounter": "Encounter/encounter-eligible-unsteady-yes",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.plandefinition-fall-screening-and-guidance-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-offer-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.plandefinition-fall-screening-and-guidance-recommendation-offer-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.plandefinition-older-adult-fall-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-interpret-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.plandefinition-older-adult-fall-screening-protocol-interpret-phase.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-positive-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.plandefinition-older-adult-fall-screening-protocol-positive-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-screen-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.plandefinition-older-adult-fall-screening-protocol-screen-phase.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-prior-fall-yes",
+      "subject": "Patient/patient-eligible-prior-fall-yes",
+      "encounter": "Encounter/encounter-eligible-prior-fall-yes",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.plandefinition-fall-screening-and-guidance-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-offer-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.plandefinition-fall-screening-and-guidance-recommendation-offer-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.plandefinition-older-adult-fall-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-interpret-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.plandefinition-older-adult-fall-screening-protocol-interpret-phase.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-positive-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.plandefinition-older-adult-fall-screening-protocol-positive-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-screen-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.plandefinition-older-adult-fall-screening-protocol-screen-phase.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-incomplete-response",
+      "subject": "Patient/patient-eligible-incomplete-response",
+      "encounter": "Encounter/encounter-eligible-incomplete-response",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.plandefinition-fall-screening-and-guidance-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-offer-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.plandefinition-fall-screening-and-guidance-recommendation-offer-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.plandefinition-older-adult-fall-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-interpret-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.plandefinition-older-adult-fall-screening-protocol-interpret-phase.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-positive-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.plandefinition-older-adult-fall-screening-protocol-positive-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-screen-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.plandefinition-older-adult-fall-screening-protocol-screen-phase.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-no-response",
+      "subject": "Patient/patient-eligible-no-response",
+      "encounter": "Encounter/encounter-eligible-no-response",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.plandefinition-fall-screening-and-guidance-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-offer-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.plandefinition-fall-screening-and-guidance-recommendation-offer-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.plandefinition-older-adult-fall-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-interpret-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.plandefinition-older-adult-fall-screening-protocol-interpret-phase.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-positive-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.plandefinition-older-adult-fall-screening-protocol-positive-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "plandefinition-older-adult-fall-screening-protocol-screen-phase",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.plandefinition-older-adult-fall-screening-protocol-screen-phase.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "fixtures": 6,
+    "artifactCalls": 54,
+    "parityPassed": 54,
+    "parityFailed": 0
+  },
+  "negative": {
+    "status": "not-run",
+    "reason": "No explicitly confirmed isolated incomplete snapshot supplied."
+  }
+}

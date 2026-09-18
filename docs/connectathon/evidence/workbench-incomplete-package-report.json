@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-09-18T03:20:54.652Z",
+  "scope": "Authenticated read-only route check for a deliberately isolated incomplete package. A pass establishes the package-readiness gate returned HTTP 409 before a generated preview output was returned; it does not establish runtime execution.",
+  "inputs": {
+    "baseUrl": "http://127.0.0.1:9090",
+    "projectId": "connectathon-incomplete",
+    "snapshotId": "snap_connectathon-incomplete_incomplete-package-v1",
+    "manifestPath": "/private/tmp/connectathon-live/snapshots/connectathon-incomplete-producer-fixture-snapshot/manifest.json",
+    "manifestSha256": "9c7aac57023d40f3f90a1dcd4b96aa4510d9ab59ebbaff042928ae2ed83f2dfe",
+    "artifacts": {
+      "planDefinition": "connectathon-incomplete--plandefinition-crs-surgical-management",
+      "measure": "connectathon-incomplete--measure-outcome-evaluation",
+      "questionnaire": "connectathon-incomplete--questionnaire-postop-followup"
+    },
+    "requestBody": {
+      "subject": "Patient/example",
+      "encounter": "Encounter/example",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z"
+      }
+    },
+    "cookieProvided": true
+  },
+  "results": [
+    {
+      "operation": "apply",
+      "artifactId": "connectathon-incomplete--plandefinition-crs-surgical-management",
+      "path": "/api/projects/connectathon-incomplete/snapshots/snap_connectathon-incomplete_incomplete-package-v1/artifacts/connectathon-incomplete--plandefinition-crs-surgical-management/preview/apply",
+      "httpStatus": 409,
+      "body": {
+        "error": "Preview unavailable — package incomplete: The executable content bundle is missing Library dependency https://example.invalid/fhir/Library/incomplete-preview-dependency|1.0.0 required by PlanDefinition/crs-surgical-management. Regenerate the package with its dependency closure."
+      },
+      "gatedBeforeRuntimeOutput": true,
+      "passed": true
+    },
+    {
+      "operation": "evaluate-measure",
+      "artifactId": "connectathon-incomplete--measure-outcome-evaluation",
+      "path": "/api/projects/connectathon-incomplete/snapshots/snap_connectathon-incomplete_incomplete-package-v1/artifacts/connectathon-incomplete--measure-outcome-evaluation/preview/evaluate-measure",
+      "httpStatus": 409,
+      "body": {
+        "error": "Preview unavailable — package incomplete: The executable content bundle is missing Library dependency https://example.invalid/fhir/Library/incomplete-preview-dependency|1.0.0 required by PlanDefinition/crs-surgical-management. Regenerate the package with its dependency closure."
+      },
+      "gatedBeforeRuntimeOutput": true,
+      "passed": true
+    },
+    {
+      "operation": "questionnaire",
+      "artifactId": "connectathon-incomplete--questionnaire-postop-followup",
+      "path": "/api/projects/connectathon-incomplete/snapshots/snap_connectathon-incomplete_incomplete-package-v1/artifacts/connectathon-incomplete--questionnaire-postop-followup/preview/questionnaire",
+      "httpStatus": 409,
+      "body": {
+        "error": "Preview unavailable — package incomplete: The executable content bundle is missing Library dependency https://example.invalid/fhir/Library/incomplete-preview-dependency|1.0.0 required by PlanDefinition/crs-surgical-management. Regenerate the package with its dependency closure."
+      },
+      "gatedBeforeRuntimeOutput": true,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

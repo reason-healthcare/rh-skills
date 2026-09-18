@@ -6,7 +6,9 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 
 ## Current checkpoint
 
-**In progress: the first run has L2, generated L3 and 96 passing native CQL checks. Actual package wiring and final conformance are still being repaired. **Current blocker:** official FHIR model translation rejects the first CQL; portable-source/runtime compatibility is in progress. The independent second source-to-L2 run is complete.** **G0 passed:** exact baselines and context-aware native/WASM feasibility are verified; generated-package acceptance is still pending. The source repository `hl7-agentic-knowledge-connectathon` is strictly read-only; its commit and tracked-file hashes are recorded for before/after verification.
+**In progress. G0, G1 and G2 passed for rehearsal 1; final application/replay gates remain open.** The first complete 18-resource executable Bundle has zero FHIR errors and no unresolved reference warnings. Its 53 direct execution checks pass, and the corrected project-scoped Workbench API matrix passes 54 calls. The full rh-skills suite independently passes 1,027 tests, 18 skipped. Browser assessment-to-preview handoff and the independent second package remain under active repair.
+
+**Latest framework checkpoint:** `26743a6` fixes executable Bundle identities and local references without mutating authored source resources. Current main was refreshed at 23:12 EDT; all four implementation branches contain their authoritative main. Protected source integrity: all 41 files unchanged, original revision and clean status verified at 23:17 EDT.
 
 - [Implementation plan](CONNECTATHON-24H-PLAN.md)
 - [Machine-readable status](connectathon-24h-status.json)
@@ -20,11 +22,11 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 | BASE-01 | Complete | Coordinator | Task branches/worktrees created; source repository clean and hashed |
 | RT-01 | In progress | Terra / runtime_execution | Runtime implementation verified; final hashes reconciled; generated-case integration pending |
 | SK-01 | In progress | Luna / skills_usecase_audit | Eight L2 artifacts and real CQL; execution bindings, strict composer and full regression next |
-| PKG-01 | Contract agreed | Skills/runtime | Build executable Bundle with exact dependency closure and separate fixture index |
+| PKG-01 | In progress | Skills/runtime | Strict composer tested; verified expansions and FHIRHelpers imported; final composition pending |
 | WB-01 | In progress | Terra / workbench_audit | Source inventory and incomplete state browser-verified; named fixture integration next |
 | SA-01 | In progress | Terra / runtime_execution | Adapter and production build pass; browser boot verified; actual package parity next |
 | UX-01 | In progress | Terra / workbench_audit | Inspector search/source and responsive checks pass; executable previews not yet checked |
-| REPLAY-01 | In progress | Terra / independent author | Eight sources and seven validated L2 artifacts; independent L3 pending stable contracts |
+| REPLAY-01 | In progress | Terra / independent author + Coordinator | Seven corrected L2 artifacts formalized; separate CQL author and root formalizer; actual tests next |
 | FINAL-01 | Pending integration | Coordinator | Exact-revision checks, cold start/recovery, Saturday runbook |
 
 ## Iteration log
@@ -205,6 +207,74 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 **Terminology:** independently looked up the authored fall-prevention education code in the pinned SNOMED US release. The code is active with the expected display. [Lookup](connectathon/evidence/snomed-fall-education-lookup.json). Generated Coding.version retention remains part of producer repair.
 
 **Next:** regenerate once source/action gates are fixed, validate FHIR and intermediate RH execution while portable runtime work proceeds, then repeat on the final portable package.
+
+### ITER-014 — Main refreshed, generated execution verified, second-run review — 2026-09-17 21:25 EDT
+
+**User steering:** coordinate rh-skills changes across agents and use current main. Fresh fetch verifies all task branches contain their authoritative main: rh-skills `eb28096`, Workbench `4f9ba9c`, standalone `2e8d91d`, and RH `upstream/main` `8a211695` (that checkout has no remote named origin). All are **zero commits behind**; no rebase was needed. The protected Connectathon repository was not fetched or modified. [Exact revisions](connectathon/evidence/upstream-refresh-latest.json).
+
+**Coordination:** one staging/commit slot per shared repository. Luna owns formalizer, CQL wrapper and skill changes; Terra owns the composer; root owns the journal and final integration/verification. Composer checkpoints `ef6dddb` and `0cc1354` repair the demonstrated closure gaps, preserve legal external FHIRHelpers functions, and add collection Bundle fullUrls. Root verified the 21-test closure repair; the latest 22-test compatibility result is worker-reported, with actual package verification pending.
+
+**Generated-resource milestone:** official validator reports **0 errors, 33 warnings, 24 informational messages** for the captured 17 resources, with FHIR4.0.1, SDC4.0.0 and CPG2.0.0 loaded. This validates base and actually declared profiles, with terminology checked separately. The first root-owned validation wrapper omitted fullUrl and caused 19 wrapper errors; the corrected wrapper changes no generated resource. Final composer output must pass independently. [Evidence](connectathon/evidence/generated-fhir-pass3-validation-summary.json).
+
+**Actual execution:** pass4 runs **42 generated PlanDefinition applications, six individual MeasureReports and five QuestionnaireResponse validations: 53/53 pass**. Root checked that the younger scenario now returns no titled screening/guidance actions; incomplete and all-no cases omit positive guidance. The package produces one screening Task per eligible case and one communication only when applicable. This uses the intermediate RH CQL/ELM and does not close the reference-translator portability blocker. [Results](connectathon/evidence/generated-execution-pass4.json).
+
+**Independent replay review:** run002's initial L2 passed structural validation but review found a residence/encounter-class conflation, measurement period modeled as a population, prose used as condition references, and unpinned/unresolved concept bindings. The independent author is correcting these through the workflow. Community dwelling remains an explicit scenario precondition, not a fact inferred from AMB. Root will run deterministic formalization; Terra will author CQL from run002 L2 in a separate role, without first-run code access. No fresh-session claim is made.
+
+**Next:** finish portable runtime support, verified expansion/dependency ingestion, final package build/import and both browser walkthroughs; complete the independent replay using rebuilt current skills.
+
+### ITER-015 — Portable execution and independent-replay contract repairs — 2026-09-17 21:40 EDT
+
+**Runtime milestone:** commit `2fe13b8` adds the bounded FHIR model/helper support. Worker evidence records **96/96** portable-candidate native checks, clean official CQFramework translation with explicit overload signatures, and actual reference ELM execution for true/false/null through native and public Node/WASM. Both applications restarted with the rebuilt package. [Evidence](connectathon/evidence/runtime-portable-fhir-compatibility.json). This is the same execution engine, and authored-source regeneration remains pending. Root source review found that the newly handled unary CalculateAge node loses its requested precision; reproduction and a bounded correction are assigned before final artifacts.
+
+**Skills corrections driven by replay:** the independent L2 author correctly requested Boolean variables and pinned LOINC versions. The Boolean type was absent from schema/validator; Luna repaired it (142 focused tests reported passing). The concept candidate CLI also drops version; Terra owns its optional-version propagation and the extraction skill/reference documentation. Luna owns generator/CQL/import-library and formalization guidance. A single commit slot prevents mixed staging; root-owned journal/evidence remain separate.
+
+**SK-GUIDANCE-001:** current decision-table formalization generates ActivityDefinition for every leaf and infers a code for noncoded referral/assessment actions. That would create unintended ServiceRequests from textual guidance. Formalization is held. A bounded explicit `guidance` mode will preserve title/description and applicability directly in PlanDefinition without an ActivityDefinition or fabricated code. Questionnaire collection uses the already-supported Task/collectWith shape. The independent author is revising L2 through documented commands, and executable actions must fail rather than guess missing coding.
+
+**Additional independent verification:** official FHIR validation with all 17 captured resources loaded as resolvable dependencies reports **0 errors, 33 warnings, 5 information, and no unresolved canonicals**. Warning review: 17 missing narratives; 9 offline MIME checks; three offline LOINC checks independently verified through MCP; four avoidable Library type-system/binding warnings assigned for correction. [Resolved-reference validation](connectathon/evidence/generated-fhir-pass3-resolved-summary.json).
+
+**Next:** complete helper/verified-expansion ingestion through the CLI, regenerate portable source and packages, formalize the corrected second run, then verify complete-package Workbench and standalone behavior. All readiness gates beyond G0 remain open.
+
+### ITER-016 — Portable runtime verified and both authoring runs progress — 2026-09-17 22:11 EDT
+
+**Independent runtime verification:** coordinator reran official-reference ELM through native execution (**96/96 exact values**) and the public Node API (**96/96 one-hot true/false/null classifications**). Three unary age-in-month boundary checks also pass. Runtime `aa8fefdd` preserves requested CalculateAge precision. [Native evidence](connectathon/evidence/reference-elm-native-96.json), [Node evidence](connectathon/evidence/reference-elm-public-node-96-classification.json), [artifact hashes](connectathon/evidence/runtime-final-artifacts.json). This verifies the same engine in two builds; independent-engine interoperability remains unpassed.
+
+**Actual skills milestones:** run001 regenerates portable source and packages 18 knowledge resources, three CQL sources and six separate patient Bundle examples through the normal CLI; worker reports all 48 authored CQL assertions pass. Final executable composition and application import are pending. The rebuilt skills validate all 24 platform bundles. Full pytest found 16 failures: one stale CQL test mock/output-path assumption, 14 formalizer fixtures needing the intentional fail-closed contracts, and one schema mirror drift. Luna owns the CQL test; Terra owns formalizer fixtures and schema synchronization. No passing full-suite claim is made.
+
+**Independent run002:** coordinator performed automated technical review, approved the seven source-traceable L2 artifacts through the CLI, validated all seven, and formalized them using deterministic generation. The explicit decision-table root is `fall-risk-screening-recommendation`. Three separately scoped LOINC 2.81 ValueSets preserve exact verified expansions through the new `concept write --expansions` path. FHIRHelpers was imported with the normal hash/provenance-checking command. Terra independently authored CQL and fixtures without first-run authored logic. Clinical approval remains pending. An apparent unsupported-context CLI failure is being checked against the exact tested binary before changing code.
+
+**Workbench design/recovery:** authenticated pages now work with the isolated database on port 55432. Coordinator reproduced horizontal overflow and ambiguous repeated preview labels; `8995359` contains navigation and uses distinct preview titles in a keyboard-operable disclosure. Browser checks confirm no horizontal overflow at **actual** widths 620 and 1280. Requested viewport overrides did not change browser dimensions, so 390/1024/1440 checks are not claimed. Actual generated STEADI preview walkthroughs remain pending.
+
+**Next:** finish composition and import the exact first-run package; verify six cases through Workbench and standalone; complete the independent run's actual CLI tests and package, then perform cold-start and recovery checks.
+
+### ITER-017 — Actual package import, API parity and browser handoff defects — 2026-09-17 23:11 EDT
+
+**Runtime and regressions:** runtime `5d156e9` supports the independent author's portable CalculateAgeAt overload. Both authored CQL runs pass the original 48 assertions. Workers independently report the full rh-skills suite at **1,027 passed, 18 skipped**. A coordinator rerun overlapped the next composer edit and caught its old fullUrl assertion; the final suite will run after that repair freezes.
+
+**Final-package conformance catches PKG-URL-001:** the actual 18-resource executable Bundle failed two FHIR errors because FHIRHelpers' canonical URL tail differed from its resource id. UUID fullUrls remove both errors, but validation then exposed one broken relative EvidenceVariable reference. Composer now needs consistent local-reference rewriting before this gate closes. No manual edit to authored FHIR is accepted. [Original failure](connectathon/evidence/run001-fullurl-failure-operationoutcome.json), [intermediate zero-error result with reference warning](connectathon/evidence/run001-fhir-before-reference-rewrite-operationoutcome.json).
+
+**Workbench actual import:** `2be98e4` repairs treating CQL as YAML and collisions between same-basename helper CQL/ELM artifacts. Root rebuilt and imported the 28-artifact, eight-source snapshot. `db47091` removes an old filter that hid decision tables whenever a care pathway was present; the browser now shows all eight authored L2 artifacts and their linked previews. The protected source repository remains untouched.
+
+**Execution milestone:** final embedded ELM executes all 53 root-owned package checks. Authenticated Workbench API verification reports **54/54** calls with direct Node parity across seven Plans, Measure and Questionnaire for six fixtures, bound to Bundle `4f15cca…5579`. Standalone API parity also passes six cases, and coordinator uploaded the actual `.tgz` in the browser, selected a supplied patient, and produced Task plus CommunicationRequest through local execution. FullUrl regeneration will require updated hashes and parity evidence. [Workbench API proof](connectathon/evidence/workbench-api-run001-pass1.json).
+
+**Browser-specific P0:** assessment population changes the Questionnaire reference to `|0.2.0-assembled`; the browser validates/stages it although authored CQL requires exact `|0.2.0`. This needs a generic population/identity correction, followed by actual staged response → measure/guideline → restore checks. The standalone narrow split layout was also unreadable at actual 390px; its owner implemented stacking and coordinator visual verification is next.
+
+**Independent replay hardening:** original six cases pass, but extra mutation probes found acceptance of duplicate answers and improperly bound encounter responses. Terra corrected the independently authored source, retaining the original fixture contract. Four remaining expected-value differences concern explicit null precedence outside the population; root reviewed the L2 unknown policy rather than forcing run001's extra expectations onto a different valid authoring decision. The variant contract and final translated/repackaged output remain under verification.
+
+**Next:** finish dependency-reference closure and assessment canonical preservation; validate/reimport fresh Bundles; finish second-run package and reference-ELM checks; verify browser interactions and cold start.
+
+### ITER-018 — First package gates pass; real browser flow and independent replay continue — 2026-09-17 23:23 EDT
+
+**G1/G2 passed for run001:** coordinator independently validated final Bundle `08a666000842…20e89a`: **18 resources, zero FHIR errors, 37 warnings, eight information, no unresolved reference warnings**. Remaining warnings are missing narratives, offline MIME/LOINC checks, and expansion metadata; pinned LOINC membership was independently verified. Coordinator also reran **53/53** actual embedded-ELM package checks on current WASM `553d099…ada3b4`, and full rh-skills at `26743a6`: **1,027 passed, 18 skipped**. [FHIR summary](connectathon/evidence/run001-final-fhir-summary.json), [execution](connectathon/evidence/run001-final-execution.json), [full suite](connectathon/evidence/rh-skills-26743a6-full.json).
+
+**Import identity correction:** the original `measure-measure` artifact id collided with an existing project's artifact record. Generic builder commit `6a0e078` prefixes artifact IDs with project ID and remaps L2 derivation links. Root rebuilt/imported the final snapshot and the Measure page now renders. Old unprefixed API evidence is superseded for identity acceptance; current prefixed matrix passes **54/54** and verifies resource canonicals. `fa77ab8` adds consistent project checks in all preview APIs. A separate task-only incomplete snapshot correctly returns **409** for all three preview operations, with no execution output. [Prefixed matrix](connectathon/evidence/workbench-api-run001-prefixed.json), [negative checks](connectathon/evidence/workbench-incomplete-package-report.json).
+
+**Browser handoff testing:** runtime `4cdbfc0` and Workbench `d00b843` preserve the authored Questionnaire canonical through assembly/population/completion. Coordinator verified `|0.2.0`, explicit true/false/false and successful staging. Actual Measure evaluation still reports numerator zero because the populated/staged response lacks its selected encounter; the runtime worker is repairing that context contract. This flow is not passed yet.
+
+**Design:** actual 1440×900 Measure page is readable with no horizontal overflow. Actual 390px standalone layout now stacks graph/context panels after `c67ca5b`; the title and controls are readable, replacing the prior one-letter-per-line result panel. Shared Workbench form polish moves technical input behind a disclosure for named scenarios; verification is pending.
+
+**Independent replay:** original 48 cases and 96 reference-ELM checks now pass with explicit ActCode system binding, patient/encounter matching, duplicate-answer rejection, and reviewed null precedence. Root inspection of its assembled 22-resource package then found a wrong generator link: “Confirm screening population” points to the exercise-guidance PlanDefinition. This is a generator reference-resolution defect, not an accepted clinical decision. Luna owns the generic repair; the second package is held and will be regenerated/revalidated through the framework.
+
+**Next:** prove staged assessment changes Measure/CPG results and restoration recovers the original scenario; finish independent package semantics, final builds, durable runbook/artifacts and cold-start rehearsal.
 
 ## Journal rules
 

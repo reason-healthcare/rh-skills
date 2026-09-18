@@ -1,0 +1,46 @@
+{
+  "checkedAt": "2026-09-18T03:12:09.288537+00:00",
+  "method": "git fetch REMOTE main then ancestry and counts; protected source repo never fetched",
+  "repositories": [
+    {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
+      "remote": "origin",
+      "main": "eb280968e8af623b9b30c4175111929e322f696c",
+      "head": "4115c454da1806194252f83afd1450cd0f1b9b86",
+      "branch": "codex/connectathon-live-readiness",
+      "ahead": 12,
+      "behind": 0,
+      "containsLatestMain": true
+    },
+    {
+      "path": "/Users/bkaney/projects/reason-healthcare/workbench",
+      "remote": "origin",
+      "main": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
+      "head": "db4709142d1d3e7448d31665b66989886526e5cf",
+      "branch": "codex/connectathon-live-readiness",
+      "ahead": 23,
+      "behind": 0,
+      "containsLatestMain": true
+    },
+    {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh",
+      "remote": "upstream",
+      "main": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
+      "head": "4cdbfc0aacf14984c3c94cf372247cc0667863f0",
+      "branch": "codex/connectathon-live-readiness",
+      "ahead": 16,
+      "behind": 0,
+      "containsLatestMain": true
+    },
+    {
+      "path": "/private/tmp/connectathon-reason-framework",
+      "remote": "origin",
+      "main": "2e8d91daf360f184e6c98f700031414829c64921",
+      "head": "c67ca5b54ab5cf7ef462533b3f5cb29dfd885bb0",
+      "branch": "codex/connectathon-live-readiness",
+      "ahead": 6,
+      "behind": 0,
+      "containsLatestMain": true
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-09-18T02:21:05.535321+00:00",
+  "runtimeCommit": "5d156e9bcbb66fa74e32753eb337cc672e47c56c",
+  "artifacts": {
+    "nativeCli": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+      "sha256": "faa4514cbe752c5594988b4a6c7da38dcc8564b958469835568eb46ff05cd403",
+      "mtimeUtc": "2026-09-18T02:14:51.698741+00:00"
+    },
+    "wasmWeb": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm/rh_cpg_bg.wasm",
+      "sha256": "1b0b2388372f63598c6c42a146f444119d518bfcf1d61e6653e94c921092bf87",
+      "mtimeUtc": "2026-09-18T02:16:06.433507+00:00"
+    },
+    "wasmNode": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-node/rh_cpg_bg.wasm",
+      "sha256": "1b0b2388372f63598c6c42a146f444119d518bfcf1d61e6653e94c921092bf87",
+      "mtimeUtc": "2026-09-18T02:16:05.280380+00:00"
+    },
+    "wasmBundler": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-bundler/rh_cpg_bg.wasm",
+      "sha256": "1b0b2388372f63598c6c42a146f444119d518bfcf1d61e6653e94c921092bf87",
+      "mtimeUtc": "2026-09-18T02:16:07.550591+00:00"
+    },
+    "cpgNodeDist": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+      "sha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0",
+      "mtimeUtc": "2026-09-18T02:16:08.036853+00:00"
+    }
+  },
+  "validation": {
+    "rhCqlEvalTests": "297 passed (`cargo test -p rh-cql --lib eval --quiet`)",
+    "run001NativeMatrix": "96/96 (`verify_native.py`)",
+    "run002PortableCql": "48/48 (FallRisk 30 + Measure 18)",
+    "publicNodeReferenceElm": "96/96 memberships and 96/96 one-hot classification",
+    "standaloneApiParity": "6/6 direct Node/WASM parity and 6/6 semantic checks"
+  },
+  "notes": [
+    "The WASM build command completed successfully and behavior probes used the emitted wasm-node artifact. wasm-pack printed a platform fallback wasm-bindgen warning in this sandbox; artifact hash plus public Node/WASM probes are recorded above."
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-09-18T01:52:51.194Z",
+  "scope": "Public Node/WASM unary CalculateAge precision=Month from CQFramework reference ELM; fixed evaluation clock. Each output proves the stated exact month age.",
+  "wasmNodeSha256": "736c75852f5eead778813b6efe1d3eb4ca40dfd44605e8bbf64556ffb3cc14fa",
+  "checks": [
+    {
+      "name": "before-birthday",
+      "birthDate": "2020-01-15",
+      "expectedMonths": 1,
+      "actualPopulationCount": 1,
+      "success": true,
+      "passed": true,
+      "assertion": "CQFramework reference ELM CalculateAge precision Month equal expected; FHIRHelpers.ToDate converts Patient.birthDate."
+    },
+    {
+      "name": "on-birthday",
+      "birthDate": "2020-01-14",
+      "expectedMonths": 2,
+      "actualPopulationCount": 1,
+      "success": true,
+      "passed": true,
+      "assertion": "CQFramework reference ELM CalculateAge precision Month equal expected; FHIRHelpers.ToDate converts Patient.birthDate."
+    },
+    {
+      "name": "after-birthday",
+      "birthDate": "2020-01-13",
+      "expectedMonths": 2,
+      "actualPopulationCount": 1,
+      "success": true,
+      "passed": true,
+      "assertion": "CQFramework reference ELM CalculateAge precision Month equal expected; FHIRHelpers.ToDate converts Patient.birthDate."
+    }
+  ]
+}

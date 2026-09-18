@@ -1,0 +1,1634 @@
+{
+  "checkedAt": "2026-09-18T01:42:18.417Z",
+  "provider": "ReasonHub MCP",
+  "request": {
+    "resourceType": "ValueSet",
+    "id": "steadi-replay-screening-questions",
+    "status": "draft",
+    "compose": {
+      "include": [
+        {
+          "system": "http://loinc.org",
+          "version": "2.81",
+          "concept": [
+            {
+              "code": "100257-5"
+            },
+            {
+              "code": "97878-3"
+            },
+            {
+              "code": "52552-7"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "lookups": [
+    {
+      "code": "100257-5",
+      "response": {
+        "resourceType": "Parameters",
+        "parameter": [
+          {
+            "name": "name",
+            "valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+          },
+          {
+            "name": "version",
+            "valueString": "2.81"
+          },
+          {
+            "name": "display",
+            "valueString": "Feel unsteady when standing or walking"
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "COMPONENT"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP432179-2"
+              },
+              {
+                "name": "description",
+                "valueString": "First axis: analyte/component measured (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "PROPERTY"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6813-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Second axis: kind of property observed (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "TIME_ASPCT"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6960-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Third axis: timing of measurement (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "SYSTEM"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP310005-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "SCALE_TYP"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Fifth axis: type of scale (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "CLASS"
+              },
+              {
+                "name": "value",
+                "valueString": "H&P.HX"
+              },
+              {
+                "name": "description",
+                "valueString": "Classification for grouping observations"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "CLASSTYPE"
+              },
+              {
+                "name": "value",
+                "valueString": "2"
+              },
+              {
+                "name": "description",
+                "valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "ORDER_OBS"
+              },
+              {
+                "name": "value",
+                "valueString": "Observation"
+              },
+              {
+                "name": "description",
+                "valueString": "Intended use categorization (Order, Observation, Both)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "STATUS"
+              },
+              {
+                "name": "value",
+                "valueString": "ACTIVE"
+              },
+              {
+                "name": "description",
+                "valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "VersionFirstReleased"
+              },
+              {
+                "name": "value",
+                "valueString": "2.73"
+              },
+              {
+                "name": "description",
+                "valueString": "LOINC version when term was first released"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "VersionLastChanged"
+              },
+              {
+                "name": "value",
+                "valueString": "2.73"
+              },
+              {
+                "name": "description",
+                "valueString": "LOINC version when term was last changed"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "inactive"
+              },
+              {
+                "name": "value",
+                "valueBoolean": false
+              },
+              {
+                "name": "description",
+                "valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "parent"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP248771-0"
+              },
+              {
+                "name": "description",
+                "valueString": "Clinical terms not yet categorized"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "answer-list"
+              },
+              {
+                "name": "value",
+                "valueCode": "LL361-7"
+              },
+              {
+                "name": "description",
+                "valueString": "Associated answer list (LOINC LL code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP310005-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP432179-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6813-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6960-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP101862-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP230017-8"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP432179-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6813-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6960-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6985-8"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7787-7"
+              },
+              {
+                "name": "description",
+                "valueString": "Clinical"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7800-8"
+              },
+              {
+                "name": "description",
+                "valueString": "History"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "code": "97878-3",
+      "response": {
+        "resourceType": "Parameters",
+        "parameter": [
+          {
+            "name": "name",
+            "valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+          },
+          {
+            "name": "version",
+            "valueString": "2.81"
+          },
+          {
+            "name": "display",
+            "valueString": "Worried about falling"
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "COMPONENT"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP426905-8"
+              },
+              {
+                "name": "description",
+                "valueString": "First axis: analyte/component measured (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "PROPERTY"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6813-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Second axis: kind of property observed (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "TIME_ASPCT"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6960-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Third axis: timing of measurement (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "SYSTEM"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP310005-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "SCALE_TYP"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Fifth axis: type of scale (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "CLASS"
+              },
+              {
+                "name": "value",
+                "valueString": "H&P.HX"
+              },
+              {
+                "name": "description",
+                "valueString": "Classification for grouping observations"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "CLASSTYPE"
+              },
+              {
+                "name": "value",
+                "valueString": "2"
+              },
+              {
+                "name": "description",
+                "valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "ORDER_OBS"
+              },
+              {
+                "name": "value",
+                "valueString": "Observation"
+              },
+              {
+                "name": "description",
+                "valueString": "Intended use categorization (Order, Observation, Both)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "STATUS"
+              },
+              {
+                "name": "value",
+                "valueString": "ACTIVE"
+              },
+              {
+                "name": "description",
+                "valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "VersionFirstReleased"
+              },
+              {
+                "name": "value",
+                "valueString": "2.70"
+              },
+              {
+                "name": "description",
+                "valueString": "LOINC version when term was first released"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "VersionLastChanged"
+              },
+              {
+                "name": "value",
+                "valueString": "2.70"
+              },
+              {
+                "name": "description",
+                "valueString": "LOINC version when term was last changed"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "inactive"
+              },
+              {
+                "name": "value",
+                "valueBoolean": false
+              },
+              {
+                "name": "description",
+                "valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "parent"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP248771-0"
+              },
+              {
+                "name": "description",
+                "valueString": "Clinical terms not yet categorized"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "panel-parent"
+              },
+              {
+                "name": "value",
+                "valueCode": "97874-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Stay Independent panel [Stay Independent]"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "answer-list"
+              },
+              {
+                "name": "value",
+                "valueCode": "LL5955-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Associated answer list (LOINC LL code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP310005-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP426905-8"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6813-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6960-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP426905-8"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6813-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6960-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6985-8"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7787-7"
+              },
+              {
+                "name": "description",
+                "valueString": "Clinical"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7800-8"
+              },
+              {
+                "name": "description",
+                "valueString": "History"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "code": "52552-7",
+      "response": {
+        "resourceType": "Parameters",
+        "parameter": [
+          {
+            "name": "name",
+            "valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+          },
+          {
+            "name": "version",
+            "valueString": "2.81"
+          },
+          {
+            "name": "display",
+            "valueString": "Falls in the past year"
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "COMPONENT"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP74925-6"
+              },
+              {
+                "name": "description",
+                "valueString": "First axis: analyte/component measured (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "PROPERTY"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6817-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Second axis: kind of property observed (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "TIME_ASPCT"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP203022-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Third axis: timing of measurement (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "SYSTEM"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP310005-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "SCALE_TYP"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Fifth axis: type of scale (LOINC Part code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "CLASS"
+              },
+              {
+                "name": "value",
+                "valueString": "SURVEY.CMS"
+              },
+              {
+                "name": "description",
+                "valueString": "Classification for grouping observations"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "CLASSTYPE"
+              },
+              {
+                "name": "value",
+                "valueString": "4"
+              },
+              {
+                "name": "description",
+                "valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "ORDER_OBS"
+              },
+              {
+                "name": "value",
+                "valueString": "Observation"
+              },
+              {
+                "name": "description",
+                "valueString": "Intended use categorization (Order, Observation, Both)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "STATUS"
+              },
+              {
+                "name": "value",
+                "valueString": "ACTIVE"
+              },
+              {
+                "name": "description",
+                "valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "VersionFirstReleased"
+              },
+              {
+                "name": "value",
+                "valueString": "2.27"
+              },
+              {
+                "name": "description",
+                "valueString": "LOINC version when term was first released"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "VersionLastChanged"
+              },
+              {
+                "name": "value",
+                "valueString": "2.70"
+              },
+              {
+                "name": "description",
+                "valueString": "LOINC version when term was last changed"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "inactive"
+              },
+              {
+                "name": "value",
+                "valueBoolean": false
+              },
+              {
+                "name": "description",
+                "valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "parent"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP248772-8"
+              },
+              {
+                "name": "description",
+                "valueString": "Survey terms not yet categorized"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "panel-parent"
+              },
+              {
+                "name": "value",
+                "valueCode": "52538-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Patient History Prior to this Current Illness, Exacerbation, or Injury"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "panel-parent"
+              },
+              {
+                "name": "value",
+                "valueCode": "83273-3"
+              },
+              {
+                "name": "description",
+                "valueString": "IRF-PAI - Health conditions - admission during assessment period [CMS Assessment]"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "panel-parent"
+              },
+              {
+                "name": "value",
+                "valueCode": "93164-2"
+              },
+              {
+                "name": "description",
+                "valueString": "IRF-PAI v4.0 - Health conditions - admission during assessment period [CMS Assessment]"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "panel-parent"
+              },
+              {
+                "name": "value",
+                "valueCode": "97874-2"
+              },
+              {
+                "name": "description",
+                "valueString": "Stay Independent panel [Stay Independent]"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "answer-list"
+              },
+              {
+                "name": "value",
+                "valueCode": "LL208-0"
+              },
+              {
+                "name": "description",
+                "valueString": "Associated answer list (LOINC LL code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "answer-list"
+              },
+              {
+                "name": "value",
+                "valueCode": "LL4184-9"
+              },
+              {
+                "name": "description",
+                "valueString": "Associated answer list (LOINC LL code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "answer-list"
+              },
+              {
+                "name": "value",
+                "valueCode": "LL5954-4"
+              },
+              {
+                "name": "description",
+                "valueString": "Associated answer list (LOINC LL code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP203022-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP310005-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6817-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP74925-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Primary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP203022-1"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP231645-5"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP29696-9"
+              },
+              {
+                "name": "description",
+                "valueString": "Survey instruments"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP434693-0"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6817-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP6985-8"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP74925-6"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          },
+          {
+            "name": "property",
+            "part": [
+              {
+                "name": "code",
+                "valueCode": "part-link-supplementary"
+              },
+              {
+                "name": "value",
+                "valueCode": "LP7751-3"
+              },
+              {
+                "name": "description",
+                "valueString": "Supplementary part link (LOINC LP code)"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "expansion": {
+    "resourceType": "ValueSet",
+    "id": "steadi-replay-screening-questions",
+    "status": "draft",
+    "compose": {
+      "include": [
+        {
+          "system": "http://loinc.org",
+          "version": "2.81",
+          "concept": [
+            {
+              "code": "100257-5"
+            },
+            {
+              "code": "97878-3"
+            },
+            {
+              "code": "52552-7"
+            }
+          ]
+        }
+      ]
+    },
+    "expansion": {
+      "total": 3,
+      "timestamp": "2026-09-18T01:42:18.418Z",
+      "contains": [
+        {
+          "system": "http://loinc.org",
+          "code": "100257-5",
+          "display": "Feel unsteady when standing or walking",
+          "version": "2.81"
+        },
+        {
+          "system": "http://loinc.org",
+          "code": "97878-3",
+          "display": "Worried about falling",
+          "version": "2.81"
+        },
+        {
+          "system": "http://loinc.org",
+          "code": "52552-7",
+          "display": "Falls in the past year",
+          "version": "2.81"
+        }
+      ]
+    }
+  }
+}

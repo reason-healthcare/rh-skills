@@ -1,0 +1,96 @@
+{
+  "checkedAt": "2026-09-18T01:47:30Z",
+  "scope": "Provenance for portable FHIR 4.0.1 CQL helper dependency used by the reference-ELM evidence. Does not alter run-001 authored sources.",
+  "canonical": {
+    "library": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers",
+    "version": "4.0.1",
+    "versioned": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1",
+    "elmIdentifier": {
+      "id": "FHIRHelpers",
+      "version": "4.0.1"
+    },
+    "mainLibraryRelatedArtifact": {
+      "type": "depends-on",
+      "resource": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1"
+    },
+    "reason": "The FHIR R4 core example identifies Library/library-fhir-helpers and version 4.0.1 but does not declare a Library.url. The published UV CQL artifact is the versioned package canonical to depend on."
+  },
+  "officialSources": [
+    {
+      "url": "https://www.hl7.org/fhir/R4/library-fhir-helpers.html",
+      "package": "hl7.fhir.r4.core#4.0.1",
+      "purpose": "R4 core FHIRHelpers Library example and version/identifier evidence"
+    },
+    {
+      "url": "https://hl7.org/fhir/uv/cql/",
+      "package": "hl7.fhir.uv.cql#2.0.0",
+      "purpose": "published CQL implementation guide, FHIR R4.0.1"
+    },
+    {
+      "url": "https://hl7.org/fhir/uv/crmi/2023Sep/using-cql.html",
+      "purpose": "FHIR Library relatedArtifact depends-on dependency representation"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/cqframework/clinical_quality_language/v3.26.0/Src/java/quick/src/main/resources/org/hl7/fhir/fhir-modelinfo-4.0.1.xml",
+      "purpose": "CQFramework FHIR 4.0.1 modelinfo input"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/cqframework/clinical_quality_language/v3.26.0/Src/java/quick/src/main/resources/org/hl7/fhir/FHIRHelpers-4.0.1.cql",
+      "purpose": "CQFramework FHIRHelpers CQL source"
+    }
+  ],
+  "translator": {
+    "mavenCoordinate": "info.cqframework:cql-to-elm-cli:3.26.0",
+    "class": "org.cqframework.cql.cql2elm.cli.Main",
+    "signatureLevel": "Overloads",
+    "command": "JAVA_BIN=/Users/bkaney/.asdf/installs/java/adoptopenjdk-17.0.6+10/bin/java /private/tmp/connectathon-live/evidence/run-official-cql-translator-probe.sh"
+  },
+  "artifacts": {
+    "modelInfo": {
+      "path": "/private/tmp/connectathon-cql-translator/fhir-modelinfo-4.0.1.xml",
+      "sha256": "16fa8119e074ebfb6a301b58af72417c2360dca899e89f6e3bd1d9a0e4789722"
+    },
+    "helperCql": {
+      "path": "/private/tmp/connectathon-cql-translator/FHIRHelpers-4.0.1.cql",
+      "sha256": "6748661c16fe66dd07a68f07f77f7fea44e8b933d265dcc3c575964ba8329591"
+    },
+    "translatorJar": {
+      "path": "/private/tmp/connectathon-cql-translator/m2/info/cqframework/cql-to-elm-cli/3.26.0/cql-to-elm-cli-3.26.0.jar",
+      "sha256": "93464ad6bafb56ffdb4bdb2c3e069ab2160b17f5395b6d3518f50ff8632d64bf"
+    },
+    "helperElm": {
+      "path": "/private/tmp/connectathon-cql-translator/fhir-portable-output-overloads/FHIRHelpers-4.0.1.json",
+      "sha256": "4f8b5da2c1205afc62a1c3f4d412c87ccaeb9eb4d1196883704060d0863c9554"
+    },
+    "fallElm": {
+      "path": "/private/tmp/connectathon-cql-translator/fhir-portable-output-overloads/FallScreeningAndGuidanceRecommendationLogic.json",
+      "sha256": "4f20a8b67d772846c39b3005df8c6f92f34564faf497c801208b67712c901f1e"
+    },
+    "measureElm": {
+      "path": "/private/tmp/connectathon-cql-translator/fhir-portable-output-overloads/MeasureMeasure.json",
+      "sha256": "a1a83b683b43767bea75e41bf33873b818cc8150bfa72a9058a393c14cb3ea75"
+    },
+    "translatorScript": {
+      "path": "/private/tmp/connectathon-live/evidence/run-official-cql-translator-probe.sh",
+      "sha256": "924a69a37c40dd279b7bc2b3c41b31af2c7223337e92fd701e92ddb06b822980"
+    }
+  },
+  "referenceProofs": [
+    {
+      "path": "/private/tmp/connectathon-live/evidence/reference-elm-native-96.json",
+      "result": "96/96 exact true/false/null native evaluations with FHIRHelpers resource version 4.0.1"
+    },
+    {
+      "path": "/private/tmp/connectathon-live/evidence/reference-elm-public-node-96.json",
+      "result": "96/96 Node/WASM Measure memberships; MeasureReport count distinguishes true from non-true only"
+    },
+    {
+      "path": "/private/tmp/connectathon-live/evidence/runtime-public-node-unary-age-precision.json",
+      "result": "3/3 Node/WASM reference-ELM CalculateAge precision Month birthday boundaries"
+    },
+    {
+      "path": "/private/tmp/connectathon-live/evidence/reference-elm-public-node-96-classification.json",
+      "result": "96/96 one-hot IsTrue/IsFalse/IsNull Node/WASM classifications with test-only in-memory statements"
+    }
+  ]
+}

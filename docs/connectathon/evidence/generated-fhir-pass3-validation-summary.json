@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-09-18T01:19:33.195738+00:00",
+  "scope": "Captured17generatedresources;FHIR4.0.1+SDC4.0.0+CPG2.0.0;terminologyoff;root-ownedvalidationwrapperaddedfullUrls;actualcomposeroutputstillpending;portableCQLgatefailed",
+  "counts": {
+    "information": 24,
+    "warning": 33
+  },
+  "errors": [],
+  "outcomePath": "/private/tmp/connectathon-live/evidence/generated-fhir-pass3-resource-validation.json",
+  "wrapperCorrection": "First root-owned capture omitted fullUrl and produced19wrapper/reference errors. No generated resource was altered; corrected validation wrapper adds resource canonical fullUrl. Composer has same omission fixed at0cc1354, finalcomposer output notyetvalidated."
+}
