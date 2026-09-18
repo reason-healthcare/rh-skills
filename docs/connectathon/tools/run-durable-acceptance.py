@@ -74,8 +74,8 @@ def main() -> int:
     fixtures = Path(expand(config["fixtures"], roots))
     runtime = Path(expand(config["runtime"], roots))
     native_runtime = args.runtime_root.resolve() / "target/debug/rh"
-    if not native_runtime.is_file():
-        parser.error(f"native runtime is missing: {native_runtime}")
+    wasm_runtime = runtime.parent.parent / "wasm-node" / "rh_cpg_bg.wasm"
+    if not native_runtime.is_file() or not wasm_runtime.is_file(): parser.error(f"native runtime or Node/WASM companion is missing: {native_runtime} / {wasm_runtime}")
     args.output.mkdir(parents=True, exist_ok=True)
     checks: list[dict[str, Any]] = []
     native_environment = os.environ.copy()
@@ -127,7 +127,7 @@ def main() -> int:
             optional.append({"name": "workbench-api-matrix", "status": "pass" if result["exitCode"] == 0 else "fail", **result})
     else:
         optional.append({"name": "workbench-api-matrix", "status": "not_run", "reason": "pass --with-workbench URL, --workbench-config, and an authenticated cookie to rerun"})
-    report = {"checkedAt": dt.datetime.now(dt.timezone.utc).isoformat(), "run": config["run"], "scope": "Required core invokes native CQL and direct Node/WASM only. Optional service replays and external evidence are not converted into a full-track pass.", "inputs": {"workspace": str(workspace), "content": {"path": str(content), "sha256": sha256(content)}, "fixtures": {"path": str(fixtures), "sha256": sha256(fixtures)}, "runtime": {"path": str(runtime), "sha256": sha256(runtime)}, "nativeRuntime": {"path": str(native_runtime), "sha256": sha256(native_runtime)}}, "core": checks, "corePassed": all(item["status"] == "pass" for item in checks), "optional": optional, "external": [{"name": "authenticated-browser", "status": "not_run"}, {"name": "official-fhir-validation", "status": "not_run"}, {"name": "manual-clinical-review", "status": "not_run"}, {"name": "SDC-extraction", "status": "unsupported"}, {"name": "second-engine-parity", "status": "unsupported"}]}
+    report = {"checkedAt": dt.datetime.now(dt.timezone.utc).isoformat(), "run": config["run"], "scope": "Required core invokes native CQL and direct Node/WASM only. Optional service replays and external evidence are not converted into a full-track pass.", "inputs": {"workspace": str(workspace), "content": {"path": str(content), "sha256": sha256(content)}, "fixtures": {"path": str(fixtures), "sha256": sha256(fixtures)}, "runtime": {"path": str(runtime), "sha256": sha256(runtime)}, "wasm": {"path": str(wasm_runtime), "sha256": sha256(wasm_runtime)}, "nativeRuntime": {"path": str(native_runtime), "sha256": sha256(native_runtime)}}, "core": checks, "corePassed": all(item["status"] == "pass" for item in checks), "optional": optional, "external": [{"name": "authenticated-browser", "status": "not_run"}, {"name": "official-fhir-validation", "status": "not_run"}, {"name": "manual-clinical-review", "status": "not_run"}, {"name": "SDC-extraction", "status": "unsupported"}, {"name": "second-engine-parity", "status": "unsupported"}]}
     report_path = args.output / "acceptance-report.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))

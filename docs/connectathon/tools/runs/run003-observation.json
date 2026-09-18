@@ -1,0 +1,27 @@
+{
+  "run": "run003-observation",
+  "runId": "run003",
+  "workspace": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/workspaces/run-003",
+  "content": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/workspaces/run-003/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+  "runtimeRoot": "${REPO_ROOT}/rh",
+  "runtime": "${REPO_ROOT}/rh/packages/cpg/dist/node.js",
+  "terminologyReplay": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/terminology-cql-replay",
+  "preparedData": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/terminology-cql-replay/evidence/actual-generated-v2-qr-free-data",
+  "extractionCapture": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2",
+  "oracleRoot": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/workspaces/run-003/oracle/test-bundles",
+  "expectedAssertions": {
+    "FallRiskScreeningRecommendationLogic": 48,
+    "MeasureMeasure": 18,
+    "total": 66
+  },
+  "requiredBeforeServiceReplay": [
+    "public-node-wasm raw extraction against v2 capture",
+    "native QR-free CQL 48 plus 18",
+    "native CQL adverse behavior",
+    "direct public Node/WASM QR-free CPG and Measure"
+  ],
+  "serviceReplay": {
+    "requires": ["final uploaded content", "raw QR fixture mapping", "root-created Workbench snapshot ID", "authenticated cookie for Workbench only"],
+    "neverInfer": ["browser", "official FHIR validation", "reference-engine execution"]
+  }
+}

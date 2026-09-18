@@ -1,6 +1,71 @@
 # Durable acceptance tools
 
-`run-durable-acceptance.py` is the only required-core entrypoint. It invokes
+## Current Observation-based workflow
+
+The current Connectathon workflow is QuestionnaireResponse → actual SDC
+extraction → Observations → versioned ValueSet CQL. The run003 package is a
+frozen accepted baseline. Run004 is the declared idiomatic-CQL revision, with
+Patient-context isolation and pinned FHIRCommon reference relationships; its
+final acceptance is recorded in the journal and readiness manifest.
+
+`run-run003-observation-acceptance.py` is the required local entrypoint for this
+Observation contract. Its historical filename is retained; supply the exact
+candidate workspace/content paths and a new output directory for every replay.
+The command verifies:
+
+- 48 unchanged decision assertions and 18 Measure population assertions through
+  normal source-based `rh-skills cql test`.
+- Actual public Node/WASM SDC extraction against the frozen generated-Questionnaire
+  capture, separate from expected-output fixtures.
+- Observation/terminology adverse cases, including wrong patient/encounter,
+  partial or duplicate results, and unresolved or wrong-version ValueSets.
+- Public Node/WASM PlanDefinition and individual Measure results using QR-free
+  clinical data prepared from actual extraction output.
+
+The generated Questionnaire must match the extraction capture's input hash
+before reusing that capture. A changed Questionnaire needs a new native
+extraction capture and derived clinical-data manifest; never silently relabel
+an older capture as output of a new input. Package, native runtime, public
+module and WASM binary identities must accompany the results.
+
+Example (use the final accepted candidate paths from the readiness manifest):
+
+```sh
+python3 docs/connectathon/tools/run-run003-observation-acceptance.py \
+  --run-id run004 \
+  --oracle-root dist/connectathon-20260919/workspaces/run-004/oracle/test-bundles \
+  --workspace dist/connectathon-20260919/workspaces/run-004 \
+  --content dist/connectathon-20260919/workspaces/run-004/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json \
+  --runtime-root /Users/bkaney/projects/reason-healthcare/rh \
+  --runtime /Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js \
+  --terminology-root dist/connectathon-20260919/terminology-cql-replay \
+  --prepared-root dist/connectathon-20260919/terminology-cql-replay/evidence/actual-generated-v2-qr-free-data \
+  --extraction-capture dist/connectathon-20260919/verification/root-sdc-generated-native-v2 \
+  --rh-skills-bin "$PWD/.venv/bin/rh-skills" \
+  --output dist/connectathon-20260919/verification/operator-run004
+```
+
+Service checks are separate: `verify-run003-workbench-api.mjs` sends raw
+QuestionnaireResponse inputs to every imported preview endpoint; configure the
+exact project/snapshot/artifact identities after importing the final package.
+`verify-run003-standalone-raw-qr.mjs` exercises standalone extraction and CPG
+application. Set the Workbench cookie only in the environment, never in a
+committed config or report. Both require the final running service and runtime.
+
+`verify-patient-context-fhircommon-node.mjs` independently tests the official
+reference-translated helper through the public WASM module. It includes
+wrong-patient-only and wrong-encounter-only data; a positive Measure membership
+count by itself cannot prove that a result list excluded unrelated resources.
+
+Official FHIR validation, reference CQL translation, browser assessment staging
+and restore, source visibility, narrow layouts, and source-repository integrity
+have separate evidence. API parity uses the same RH engine and is not a second
+independent CQL implementation. None of these additional gates is inferred from
+local acceptance success.
+
+## Historical QuestionnaireResponse-reading replays
+
+`run-durable-acceptance.py` is the entrypoint for the frozen run001/run002 contracts. It invokes
 the configured `rh-skills cql test` matrices and the current public Node/WASM
 package verifier. The native tool is pinned to `--runtime-root/target/debug/rh`;
 it does not silently use a PATH binary. Its report binds the durable executable bundle, fixture index, runtime

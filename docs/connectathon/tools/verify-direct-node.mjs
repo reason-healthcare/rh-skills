@@ -177,6 +177,7 @@ for (const scenario of manifest.cases) {
     const checks = {
       succeeds: result.success === true,
       individualReport: report?.resourceType === 'MeasureReport' && report?.type === 'individual',
+      statusComplete: report?.status === 'complete',
       correctSubject: report?.subject?.reference === subject,
       scoreMatchesPopulation: expected.Denominator === true ? report?.group?.[0]?.measureScore?.value === Number(expected.Numerator) : report?.group?.[0]?.measureScore === undefined,
       noMisScopedAbsentReason: !(report?.extension ?? []).some((extension) => extension.url === 'http://hl7.org/fhir/StructureDefinition/data-absent-reason'),
