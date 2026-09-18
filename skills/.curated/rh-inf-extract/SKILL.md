@@ -178,8 +178,9 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      > `evidence-summary` is ONLY for narrative reviews with no branching choice.
      > When in doubt: conflicting guidelines with event/condition/action logic = `decision-table`.
 
-     Standard types: evidence-summary · decision-table · care-pathway · terminology ·
-     measure · assessment · policy · custom (when clearly justified).
+     Standard types: eligibility-criteria · risk-factors · evidence-summary ·
+     decision-table · care-pathway · terminology · measure · assessment · policy ·
+     custom (when clearly justified).
 
    - **Type-appropriate content inventory** — for each candidate artifact, enumerate
      the substantive source elements that the artifact must account for. The format
@@ -200,6 +201,15 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      an item, or a code). Use it in step 4's completeness check and carry it
      forward to implement mode.
 
+   - **Keep source type, recommendation grade, and evidence certainty distinct.**
+     Preserve an explicitly reported recommendation grade as that grade (for
+     example, USPSTF Grade B or Grade C). Add `strength` or `evidence_quality`
+     only when the source explicitly reports evidence certainty or quality; do
+     not infer a rating from a guideline publisher, recommendation grade, or
+     summary of net benefit. If certainty/quality is not reported, omit that
+     field. Record what kind of source supports a claim in its citation or
+     source metadata, not as a substitute certainty rating.
+
    - **Specific cross-source disagreements** — exact values, thresholds, or
      recommendations that differ between sources (e.g., "source A: HbA1c <7.0%;
      source B: <=6.5%"). These become `concerns[]` entries at approve time.
@@ -207,6 +217,23 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
 3. Run `rh-skills promote plan <topic>` to generate the plan files. Use `--force` to
    overwrite an existing plan. Do not manually edit `extract-plan.yaml` — use
    `--force` to regenerate or record corrections in `review_summary` when approving.
+
+   If source-text inference omits a clinically necessary L2 artifact type, add it
+   through the author-controlled CLI rather than editing the plan. Supply one or
+   more normalized source slugs, which apply to every forced type in that one
+   invocation:
+
+   ```bash
+   rh-skills promote plan <topic> --force \
+     --include-artifact-type eligibility-criteria \
+     --include-artifact-type care-pathway \
+     --include-source source-a --include-source source-b
+   ```
+
+   `--include-source` is intentionally one shared provenance set for all
+   `--include-artifact-type` flags in that invocation. Run separate plan commands
+   only when the required types need different source sets. The CLI rejects
+   unknown or duplicate types, unknown sources, and forced types without sources.
 
    If normalized front matter contains concepts, this command also writes
    one CSV per concept under `topics/<topic>/process/plans/concepts/` (the review artifacts) and

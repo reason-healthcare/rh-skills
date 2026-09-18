@@ -2278,6 +2278,51 @@ _EVIDENCE_SUMMARY_FALLBACK = {
 }
 
 
+# Deterministic defaults for artifact types that an author explicitly requests
+# when source-text inference does not surface a clinically necessary domain.
+# The source set remains explicit at the CLI boundary; this table supplies only
+# the normal plan metadata for the selected type.
+_FORCED_ARTIFACT_PROFILES: dict[str, dict] = {
+    "eligibility-criteria": {
+        "section": "criteria",
+        "key_question": "Which people meet the source-supported inclusion and exclusion criteria?",
+    },
+    "risk-factors": {
+        "section": "risk_factors",
+        "key_question": "Which source-supported risk factors should be represented?",
+    },
+    "evidence-summary": _EVIDENCE_SUMMARY_FALLBACK,
+    "decision-table": {
+        "section": ["events", "conditions", "data_elements", "actions", "rules"],
+        "key_question": "What recommendation-scoped triggers, conditions, and actions are required?",
+    },
+    "care-pathway": {
+        "section": ["steps", "transitions"],
+        "key_question": "What source-supported sequence and transitions define the care pathway?",
+    },
+    "terminology": {
+        "section": "value_sets",
+        "key_question": "What reviewed terms, codes, and value-set boundaries are needed?",
+    },
+    "measure": {
+        "section": "populations",
+        "key_question": "What source-supported measure populations and outcomes are required?",
+    },
+    "assessment": {
+        "section": ["instrument", "items", "scoring"],
+        "key_question": "What source-supported assessment instrument and response semantics are required?",
+    },
+    "policy": {
+        "section": "policy",
+        "key_question": "What source-supported policy constraints apply?",
+    },
+    "custom": {
+        "section": "summary",
+        "key_question": "What source-supported content requires a custom structured artifact?",
+    },
+}
+
+
 def _infer_artifact_profiles(source_name: str, content: str) -> list[dict]:
     """Return all matching artifact profiles for a source (many-to-many)."""
     haystack = f"{source_name} {content[:1000]}".lower()
@@ -2307,6 +2352,67 @@ def _group_sources_for_extract_plan(source_records: list[dict]) -> list[dict]:
             if record not in group["sources"]:
                 group["sources"].append(record)
     return list(grouped.values())
+
+
+def _add_forced_artifact_groups(
+    groups: list[dict],
+    include_artifact_types: tuple[str, ...],
+    include_sources: tuple[str, ...],
+    source_records: list[dict],
+) -> list[dict]:
+    """Add explicitly requested artifact types omitted by source-text inference.
+
+    ``--include-source`` intentionally applies as one explicit provenance set to
+    every requested type in the same invocation. Click repeatable options do
+    not retain grouping between individual type and source arguments.
+    """
+    if not include_artifact_types:
+        if include_sources:
+            raise click.UsageError(
+                "--include-source requires at least one --include-artifact-type"
+            )
+        return groups
+    if not include_sources:
+        raise click.UsageError(
+            "--include-artifact-type requires at least one --include-source"
+        )
+
+    duplicate_types = sorted({
+        artifact_type
+        for artifact_type in include_artifact_types
+        if include_artifact_types.count(artifact_type) > 1
+    })
+    if duplicate_types:
+        raise click.UsageError(
+            "Duplicate --include-artifact-type value(s): " + ", ".join(duplicate_types)
+        )
+
+    unknown_types = sorted(set(include_artifact_types) - set(_FORCED_ARTIFACT_PROFILES))
+    if unknown_types:
+        raise click.UsageError(
+            "Unknown --include-artifact-type value(s): " + ", ".join(unknown_types)
+        )
+
+    records_by_name = {record["name"]: record for record in source_records}
+    unknown_sources = sorted(set(include_sources) - set(records_by_name))
+    if unknown_sources:
+        raise click.UsageError(
+            "Unknown --include-source value(s): " + ", ".join(unknown_sources)
+        )
+
+    inferred_types = {group["artifact_type"] for group in groups}
+    selected_records = [records_by_name[source] for source in include_sources]
+    for artifact_type in include_artifact_types:
+        if artifact_type in inferred_types:
+            continue
+        profile = _FORCED_ARTIFACT_PROFILES[artifact_type]
+        groups.append({
+            "artifact_type": artifact_type,
+            "section": profile["section"],
+            "key_question": profile["key_question"],
+            "sources": selected_records,
+        })
+    return groups
 
 
 _ARTIFACT_PURPOSES: dict[str, str] = {
@@ -3052,8 +3158,25 @@ def concept():
 @promote.command("plan")
 @click.argument("topic")
 @click.option("--force", is_flag=True, help="Overwrite an existing extract-plan.md")
-def plan(topic, force):
-    """Write topics/<topic>/process/plans/extract-plan.yaml and extract-plan-readout.md."""
+@click.option(
+    "--include-artifact-type",
+    "include_artifact_types",
+    multiple=True,
+    help="Add this L2 artifact type only when inference omits it; requires --include-source.",
+)
+@click.option(
+    "--include-source",
+    "include_sources",
+    multiple=True,
+    help="Normalized source slug used by every --include-artifact-type in this invocation.",
+)
+def plan(topic, force, include_artifact_types, include_sources):
+    """Write topics/<topic>/process/plans/extract-plan.yaml and extract-plan-readout.md.
+
+    Repeat --include-artifact-type to retain a clinically necessary artifact
+    omitted by heuristic inference. Repeat --include-source to set one shared,
+    explicit provenance set for all forced types in this invocation.
+    """
     tracking = require_tracking()
     require_topic(tracking, topic)
 
@@ -3068,6 +3191,12 @@ def plan(topic, force):
         return
 
     grouped = _group_sources_for_extract_plan(source_records)
+    grouped = _add_forced_artifact_groups(
+        grouped,
+        include_artifact_types,
+        include_sources,
+        source_records,
+    )
     artifacts = []
     for group in grouped:
         concerns = _identify_group_concerns(group)
@@ -3438,32 +3567,28 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
 
     \b
     --source mcp (default): record RH MCP lookup candidates.
-      rh-skills promote concept enrich <topic> \\
-        --concept "Hypertension" \\
+      rh-skills promote concept enrich <topic> "Hypertension" \\
         --candidate "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
         --lookup-query "Hypertension"
 
     \b
     --source custom: create a new concept with no MCP candidates (custom/manual concept).
-      rh-skills promote concept enrich <topic> \\
-        --concept "Frailty" --source custom --type finding
+      rh-skills promote concept enrich <topic> "Frailty" --source custom --type finding
 
     \b
     Both sources: add an intensional expansion expression.
-      rh-skills promote concept enrich <topic> \\
-        --concept "Hypertension" \\
+      rh-skills promote concept enrich <topic> "Hypertension" \\
         --expansion "http://snomed.info/sct|<<38341003|All subtypes of hypertension"
 
     \b
     Combined in one call (mcp source):
-      rh-skills promote concept enrich <topic> \\
-        --concept "Hypertension" \\
+      rh-skills promote concept enrich <topic> "Hypertension" \\
         --candidate "http://snomed.info/sct|38341003|Hypertensive disorder" \\
         --expansion "http://snomed.info/sct|<<38341003|All subtypes"
 
     \b
     Reset candidates:
-      rh-skills promote concept enrich <topic> --concept "Hypertension" --reset
+      rh-skills promote concept enrich <topic> "Hypertension" --reset
     """
     source = source.lower()
 
@@ -3817,17 +3942,17 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
     \b
     Non-interactive (AI agent):
       # Approve all candidate rows for a concept:
-      rh-skills promote concept review <topic> --concept "Hypertension" --approve-all
+      rh-skills promote concept review <topic> "Hypertension" --approve-all
 
       # Exclude all candidate rows for a concept:
-      rh-skills promote concept review <topic> --concept "Hypertension" --exclude-all
+      rh-skills promote concept review <topic> "Hypertension" --exclude-all
 
       # Approve or exclude a specific code:
-      rh-skills promote concept review <topic> --concept "Hypertension" --approve-code 38341003
-      rh-skills promote concept review <topic> --concept "Hypertension" --exclude-code I10
+      rh-skills promote concept review <topic> "Hypertension" --approve-code 38341003
+      rh-skills promote concept review <topic> "Hypertension" --exclude-code I10
 
       # Add a comment to a concept:
-      rh-skills promote concept review <topic> --concept "Hypertension" --note "Confirmed SNOMED"
+      rh-skills promote concept review <topic> "Hypertension" --note "Confirmed SNOMED"
 
       # Finalize (seal the review):
       rh-skills promote concept review <topic> --finalize --reviewer "taylor"

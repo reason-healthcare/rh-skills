@@ -25,6 +25,19 @@ def load_yaml(path):
         return y.load(f)
 
 
+def test_concept_cli_help_uses_positional_name_argument():
+    runner = CliRunner()
+    enrich = runner.invoke(promote, ["concept", "enrich", "--help"])
+    review = runner.invoke(promote, ["concept", "review", "--help"])
+
+    assert enrich.exit_code == 0
+    assert review.exit_code == 0
+    assert "TOPIC NAME" in enrich.output
+    assert "TOPIC NAME" in review.output
+    assert "--concept" not in enrich.output
+    assert "--concept" not in review.output
+
+
 def structured_evidence_summary_path(tmp_repo, topic_name, artifact_name):
     return (
         tmp_repo / "topics" / topic_name / "structured" / "evidence-summaries" / artifact_name / "evidence-summary.yaml"
@@ -719,6 +732,76 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     tracking = load_yaml(tmp_repo / "tracking.yaml")
     topic = next(t for t in tracking["topics"] if t["name"] == "my-skill")
     assert "extract_planned" in [event["type"] for event in topic["events"]]
+
+
+def test_plan_can_force_omitted_types_with_shared_explicit_sources(tmp_repo):
+    setup_topic_with_normalized_sources(
+        tmp_repo,
+        source_names=("source-a", "source-b"),
+    )
+    runner = CliRunner()
+
+    result = runner.invoke(promote, [
+        "plan", "my-skill",
+        "--include-artifact-type", "eligibility-criteria",
+        "--include-artifact-type", "care-pathway",
+        "--include-source", "source-a",
+        "--include-source", "source-b",
+    ])
+
+    assert result.exit_code == 0, result.output
+    plan = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text()
+    )
+    forced = {
+        artifact["artifact_type"]: artifact
+        for artifact in plan["artifacts"]
+        if artifact["artifact_type"] in {"eligibility-criteria", "care-pathway"}
+    }
+    assert set(forced) == {"eligibility-criteria", "care-pathway"}
+    assert forced["eligibility-criteria"]["source_files"] == [
+        "sources/normalized/source-a.md",
+        "sources/normalized/source-b.md",
+    ]
+    assert forced["care-pathway"]["source_files"] == forced["eligibility-criteria"]["source_files"]
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        (("--include-artifact-type", "eligibility-criteria"), "requires at least one --include-source"),
+        (("--include-source", "source-a"), "requires at least one --include-artifact-type"),
+        (("--include-artifact-type", "unknown-type", "--include-source", "source-a"), "Unknown --include-artifact-type"),
+        (("--include-artifact-type", "eligibility-criteria", "--include-source", "unknown-source"), "Unknown --include-source"),
+        (("--include-artifact-type", "eligibility-criteria", "--include-artifact-type", "eligibility-criteria", "--include-source", "source-a"), "Duplicate --include-artifact-type"),
+    ],
+)
+def test_plan_rejects_invalid_forced_artifact_inputs(tmp_repo, args, expected):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("source-a",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill", *args])
+
+    assert result.exit_code == 2
+    assert expected in result.output
+
+
+def test_plan_force_regenerates_existing_plan_with_forced_artifact(tmp_repo):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("source-a",))
+    runner = CliRunner()
+    first = runner.invoke(promote, ["plan", "my-skill"])
+    assert first.exit_code == 0, first.output
+
+    second = runner.invoke(promote, [
+        "plan", "my-skill", "--force",
+        "--include-artifact-type", "eligibility-criteria",
+        "--include-source", "source-a",
+    ])
+    assert second.exit_code == 0, second.output
+    plan = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text()
+    )
+    eligibility = next(a for a in plan["artifacts"] if a["artifact_type"] == "eligibility-criteria")
+    assert eligibility["source_files"] == ["sources/normalized/source-a.md"]
 
 
 def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
