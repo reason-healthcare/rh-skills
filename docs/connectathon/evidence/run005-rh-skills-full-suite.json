@@ -23,5 +23,13 @@
     "src/rh_skills/validators/questionnaire.py": "e5bb7f6618e82277ccdcdb114bc30c9dd433d56d1b10f295e7c50e517cfb3191",
     "tests/test_formalize_command.py": "aed6f7da0d134849f4bb907586183a3ef3e9772b6f6659bca3ff6303d760f986",
     "tests/unit/test_formalize.py": "2a14e77c0d1cc17699c3670fcdba5d9cb4e2ed981622c3cd24f33d66a5624e54"
+  },
+  "trackingFollowup": {
+    "checkedAt": "2026-09-18T19:55:05.856781+00:00",
+    "command": "/private/tmp/connectathon-live/venv/bin/python -m pytest -q",
+    "result": "1082 passed, 18 skipped, 8 existing warnings in 8.85s",
+    "log": "/tmp/connectathon-run005-rh-skills-final-tracking.log",
+    "logSha256": "30c58cebe1f597e474953aaa0b59bf04fcee1bdf15a28b0bb9d4d5c0507e2d83",
+    "scope": "CodeSystem tracking allowlist and explicit Observation-only CQL checklist follow-up"
   }
 }

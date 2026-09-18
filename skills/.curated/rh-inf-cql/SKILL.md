@@ -283,7 +283,7 @@ Apply every time unless the user asks for something narrower. See
 - [ ] Is each declared ValueSet used by the evaluated resource path, or is its non-use justified by the actual coded resources being selected?
 - [ ] Are terminology versions pinned where reproducibility matters?
 - [ ] Is value set membership assumed too loosely anywhere?
-- [ ] If SDC extraction is required, are CQL and tests using produced Observations rather than only a normalized expected Bundle?
+- [ ] If a clinical fact originates in a Questionnaire, does CQL consume its extracted clinical Observation(s), without retrieving the Questionnaire/QuestionnaireResponse or depending on response identifiers/derivedFrom? Preserve source provenance in the extraction output.
 
 ### Testing
 - [ ] Is there at least one positive case?
