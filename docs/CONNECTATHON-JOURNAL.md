@@ -6,7 +6,7 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 
 ## Current checkpoint
 
-**In progress: first clean run has produced eight L2 artifacts; formalization, package construction and preview integration are next.** No readiness gate has passed yet. The source repository `hl7-agentic-knowledge-connectathon` is strictly read-only; its commit and tracked-file hashes are recorded for before/after verification.
+**In progress: the first run has L2, generated L3 and 96 passing native CQL checks. Actual package wiring and final conformance are still being repaired. **Current blocker:** official FHIR model translation rejects the first CQL; portable-source/runtime compatibility is in progress. The independent second source-to-L2 run is complete.** **G0 passed:** exact baselines and context-aware native/WASM feasibility are verified; generated-package acceptance is still pending. The source repository `hl7-agentic-knowledge-connectathon` is strictly read-only; its commit and tracked-file hashes are recorded for before/after verification.
 
 - [Implementation plan](CONNECTATHON-24H-PLAN.md)
 - [Machine-readable status](connectathon-24h-status.json)
@@ -18,13 +18,13 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 | Task | Status | Owner | Scope / next evidence |
 | --- | --- | --- | --- |
 | BASE-01 | Complete | Coordinator | Task branches/worktrees created; source repository clean and hashed |
-| RT-01 | In progress | Terra / runtime_execution | Native/WASM context implemented; 183 focused tests pass; final binary hash reconciliation pending |
-| SK-01 | In progress | Luna / skills_usecase_audit | Eight L2 artifacts; generator/help/authoring-guidance repairs; formalize and CQL next |
+| RT-01 | In progress | Terra / runtime_execution | Runtime implementation verified; final hashes reconciled; generated-case integration pending |
+| SK-01 | In progress | Luna / skills_usecase_audit | Eight L2 artifacts and real CQL; execution bindings, strict composer and full regression next |
 | PKG-01 | Contract agreed | Skills/runtime | Build executable Bundle with exact dependency closure and separate fixture index |
 | WB-01 | In progress | Terra / workbench_audit | Source inventory and incomplete state browser-verified; named fixture integration next |
-| SA-01 | Pending RT-01 | Terra / runtime_execution | Same package executes in standalone CPG preview |
+| SA-01 | In progress | Terra / runtime_execution | Adapter and production build pass; browser boot verified; actual package parity next |
 | UX-01 | In progress | Terra / workbench_audit | Inspector search/source and responsive checks pass; executable previews not yet checked |
-| REPLAY-01 | Pending SK-01 | Coordinator + fresh reviewer | Independent timed clean-source replay and controlled input variation |
+| REPLAY-01 | In progress | Terra / independent author | Eight sources and seven validated L2 artifacts; independent L3 pending stable contracts |
 | FINAL-01 | Pending integration | Coordinator | Exact-revision checks, cold start/recovery, Saturday runbook |
 
 ## Iteration log
@@ -60,7 +60,7 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 
 **Implementation in review:** Workbench snapshot mappings, executable-bundle transfer, stale-bundle cleanup and scenario context fields are implemented. Worker-reported targeted tests: 28 passing, lint passing, isolated database import successful (106 artifacts, 5 sources). Coordinator review requires full per-resource inspection and stronger dependency/version checks before calling a package ready. Rust context/period/parameter support is implemented but runtime tests and WASM build remain pending.
 
-**Next:** complete L2/L3 authoring; produce a validated dependency-complete execution Bundle; test all six scenarios against actual runtime outputs; inspect authenticated previews. No readiness gate is marked passed yet.
+**Next:** complete L2/L3 authoring; produce a validated dependency-complete execution Bundle; test all six scenarios against actual runtime outputs; inspect authenticated previews. At this checkpoint no readiness gate was marked passed.
 
 ### ITER-003 — Full local terminology verified — 2026-09-17 19:53 EDT
 
@@ -113,6 +113,98 @@ This journal tracks actual preparation for running rh-skills live. A generated r
 **Runtime:** native age/ambulatory-encounter evaluation gives true for the eligible input and false for the younger input. Exact-version resolution now fails closed instead of substituting another version; missing declared action definitions error. Full Rust/WASM validation and standalone integration remain in progress.
 
 **Next:** formalize corrected L2, compile real CQL, validate FHIR outputs, assemble exact dependencies, then execute the 48 assertions and six individual MeasureReports.
+
+### ITER-007 — Runtime feasibility passed; actual package generation continues — 2026-09-17 20:20 EDT
+
+**G0 passed.** Coordinator independently exercised the public Node/WASM package with compiled ELM: a supplied Boolean parameter changed action applicability, a 2027 clock changed a population result, the report preserved the supplied 2027 period, and a reversed period failed visibly. [Actual results](connectathon/evidence/runtime-public-node-verification.json). This is runtime feasibility, not the final 48 STEADI assertions.
+
+**Pinned runtime:** Rust checkpoint `88d2846`; native binary SHA-256 `7246880137abbec3cc6b990086d6a700a822f0e601295ee6ca9e18a2fc21fc7b`; WASM SHA-256 `23ef5b139fd4c3d63366eecb7471b015c410cfbeeaf69db0babb02ab8f9ccc61`. An intermediate native hash mismatch was reconciled against the final rebuild. The installable TypeScript wrapper now builds successfully. Focused runtime suites report 50 CPG, 92 CQL-evaluator and 41 CLI tests passing.
+
+**Workbench integration:** checkpoints `c06199f` and `c0123cf` add generic named fixtures, stale-result clearing, resolved action/library/evidence inspection and the new runtime dependency. An isolated database smoke persisted a generic synthetic fixture and removed it when its index disappeared. Worker type/lint/wiring checks pass; actual generated STEADI package import remains pending.
+
+**Formalization iteration:** the first decision-table formalization produced ten resources but exposed two placeholder terminology codes, which are acceptance blockers. The worker is replacing unsupported action modeling with source-supported content and verified terminology, then regenerating. A newly introduced Questionnaire identity branch also failed with an undefined variable; it is being fixed with a primary-generator regression. These are recorded failures, not successful L3 completion.
+
+**Next:** finish corrected generated L3/CQL and the strict package builder; run original-case assertions; validate real FHIR outputs; connect standalone local mode and repeat the skill workflow independently.
+
+### ITER-008 — Generated FHIR validation catches reusable defects — 2026-09-17 20:29 EDT
+
+**Independent check failed:** captured the first 22 generated resources and ran official validator 6.10.2 against FHIR R4 with SDC 4.0.0: **8 errors, 53 warnings, 31 informational messages**. Six errors are actual generated-structure defects: unsupported `Evidence.certainty`, two EvidenceVariable characteristics lacking required `definition[x]`, and three invalid `relatedAction.description` fields. Two errors concern the CPG `collectWith` extension; rerunning with official CPG 2.0.0 loaded will separate dependency setup from generator defects. [Validation summary](connectathon/evidence/generated-fhir-pass1-validation-summary.json).
+
+**Source fidelity:** `formalize.py` hardcodes a moderate Evidence certainty despite the L2 having no such rating. This is both a release mismatch and unsupported clinical metadata. The generic repair must preserve authored evidence without inventing certainty. Additional review found root titles ignore authored clinical titles, ValueSet composition drops the pinned code-system version, and regeneration retains obsolete outputs. These are assigned as SK-FHIR-001 and SK-GEN-002; final regenerated output must prove the fixes.
+
+**Parallel ownership:** Luna continues real CQL, fixture assertions and bounded package construction. Terra owns the now-frozen generator file and its tests for R4 repairs. No worker may manually patch generated output and call it a framework pass.
+
+**Standalone checkpoint:** local RH CPG adapter committed at `7e56540`; route tests and a direct apply smoke pass. Production build now succeeds after replacing Google font fetching with the bundled font (worker report). Final browser boot and generated-package parity remain pending. Workbench also gained an idempotent fixture-table migration at `d79d890`.
+
+**Pinned CPG rerun (20:30 EDT):** official CPG 2.0.0 resolves the extension but exposes missing requirements in claimed profiles: collection activity profile/code/doNotPerform, strategy action codes, and pathway action restrictions. Total is **14 errors, 43 warnings, 21 informational messages**. These remain repair blockers; loading a profile does not itself establish conformance. Exact outcomes are linked from the validation summary.
+
+**Native CQL milestone (20:32 EDT):** coordinator independently ran all original assertions against actual authored CQL: **48/48 passed**, with strict Boolean/null comparison and explicit patient, clock and measurement period. [Results and commands](connectathon/evidence/native-48-assertions-pass1.json). The worker is now making patient/encounter association explicit; repeat against that final CQL and the embedded ELM before claiming G2. No generated FHIR/package gate is passed yet.
+
+**Browser boot:** standalone upload screen renders at localhost:9091 after restart. One existing Ant Design form warning is recorded for polish; real package upload/apply remains pending. Workbench inspection also found that assessment completion was display-only and Questionnaire canonical versions were dropped; generic completion-to-preview flow is being repaired.
+
+**Next:** regenerate corrected FHIR, repeat and vary the six-case matrix, import that exact package into both previews, then conduct the independent clean replay.
+
+### ITER-009 — Variation testing finds a real age boundary bug — 2026-09-17 20:41 EDT
+
+**Stable authored CQL:** all **48 original assertions still pass** after explicit patient/encounter binding. Of 48 additional checks, **42 pass and 6 fail**. Renamed IDs with a worry-only positive, foreign encounter subjects, out-of-period encounters, wrong Questionnaire versions and duplicate answers behave as expected. All six failures share one cause: a person born 1961-06-16 is incorrectly considered 65 at the 2026-06-15 encounter. [Exact results, hashes and commands](connectathon/evidence/native-final-context-verification.json).
+
+**RT-AGE-001:** the runtime counts calendar boundaries instead of completed years for `AgeInYearsAt`. The correction belongs in the engine, preserving the authored encounter-date age rule. Terra has applied the initial fix and is adding birthday/month/leap/negative-date checks, rebuilding native/WASM and refreshing both applications. No runtime fix pass is claimed until independently rerun. The governing distinction is documented in the [HL7 CQL interval calculation specification](https://cql.hl7.org/15-h-timeintervalcalculations.html).
+
+**Generator review iteration:** coordinator rejected two attempted conformance shortcuts: putting placeholder text into the required EvidenceVariable definition, and guessing triage/diagnosis codes from action labels. The revised generator maps actual authored criteria/summary text and preserves action semantics without inventing clinical coding. It claims a CPG profile only when the generated shape supports its minimum contract. Final validation must report base R4 versus declared-profile conformance separately.
+
+**Independent replay:** a new-session Luna spawn was rejected by the team-size limit. Reassigned the independent Workbench worker, **gpt-5.6-terra/high**, to `run-002`, with source/skill access only and no copying or inspection of run-001 authored L2/L3/CQL. It retains prior integration context; this is explicitly weaker than the original fresh-context gate and will not be labeled as that test. L1/L2 authoring proceeds while runtime/package fixes finish. The initial 60-minute source-to-preview target has not been achieved by run-001; record repair and waiting time separately from the eventual prepared-tool rehearsal.
+
+**Source integrity:** all 41 protected files and the original revision remain unchanged; read-only Git status is clean. [Check](connectathon/evidence/source-integrity-latest.json).
+
+**Verification update (20:44 EDT):** root independently reran the rebuilt native binary: **96/96 passed** with unchanged CQL hashes. Broader affected evaluator tests then failed **1 of 290**: `DifferenceBetween` had inherited the completed-period adjustment and returned 2 instead of the expected 3 calendar-year boundaries. The runtime worker is separating the two operations and must rerun the full affected suite. [Original birthday failure](connectathon/evidence/native-age-boundary-failure.json), [broader regression](connectathon/evidence/runtime-age-regression-review.json). The latest matrix report is mutable; the original failure observation is preserved separately.
+
+**Additional framework findings:** source-faithful Measure generation now includes authored initial-population, denominator and numerator, with standard code systems; 32 formalize tests pass (worker report). The independent replay confirmed that planner inference omits necessary domains while the skill forbids manual plan edits; a small explicit CLI augmentation is being implemented and the second plan will be regenerated using that documented path.
+
+**Execution mode:** run-001 uses agent-authored L2/CQL and deterministic `LLM_PROVIDER=stub` L3 generation. It does not test provider-backed formalization. CQL had independent review but was authored by the same agent loading the CQL skill; no successful nested-author delegation is claimed. These workflow limits remain visible in the readiness report.
+
+**Next:** finish broader native/WASM runtime verification, validate regenerated FHIR and package, test assessment-to-guideline/measure flow and standalone parity, then finish replay/cold-start evidence.
+
+### ITER-010 — Actual apply exposes producer wiring defects — 2026-09-17 20:54 EDT
+
+**Conformance improves, still not passed:** regenerated FHIR is down from 14 errors to **1 error, 37 warnings and 25 informational messages**. The remaining error is the missing `ActivityDefinition.profile` output-profile field; `meta.profile` is already present and serves a different purpose. The required output profile is CPG Questionnaire Task. [Pass2 validation](connectathon/evidence/generated-fhir-pass2-validation-summary.json). Obsolete outputs and an unjustified empty ValueSet are still being removed by a reusable regeneration fix.
+
+**SK-EXEC-001 confirmed by execution:** the actual generated decision root fails because collect-information dynamic values contain FHIRPath syntax labeled as CQL identifiers. It also references a condition name absent from the authored CQL. A pathway child actually produces a positive-guidance CommunicationRequest for the younger negative fixture because its applicability conditions were not emitted. [Actual apply responses](connectathon/evidence/generated-apply-pass2-wiring-failures.json). These are producer/skill contract defects, not acceptable demo results. The repair must preserve event eligibility, bind every generated CQL reference, and condition all routes to positive guidance.
+
+**Runtime verification:** the broad evaluator regression is corrected (worker reports **290/290** evaluator and **10/10** clinical-age tests passing). Coordinator independently ran the public Node/WASM wrapper: duration, difference, and before/on/after-birthday probes all pass. [Proof](connectathon/evidence/runtime-public-node-age-difference.json). Actual current WASM hash is `f2fc9b265e89286383680b168083d3aef50d075f99544e306ef593caac6f2b81`; this supersedes the worker's intermediate hash. A generated-style collect Task also has a passing runtime regression; final generated package still needs regeneration and execution.
+
+**Next:** finish producer bindings and stale cleanup, validate and execute every generated root, import the package into both applications, and continue independent authoring. A bounded official-translator probe will check CQL model compatibility separately; no second-engine conformance claim is made.
+
+### ITER-011 — Runtime regression verified; independent L2 replay complete — 2026-09-17 21:02 EDT
+
+**RT-AGE-001 closed within the tested scope:** coordinator independently ran the corrected engine's affected suites: **290 CQL evaluator tests and 51 CPG library tests passed** at `58ec3343`. Native 96-case and public Node/WASM five-probe evidence are retained separately. This does not assert complete CQL language conformance. [Original failure and final regression check](connectathon/evidence/runtime-age-regression-review.json).
+
+**Independent replay milestone:** run-002 registered eight sources and authored seven L2 artifacts without reading/copying run-001 outputs. All seven validate, with four optional decision-table warnings. Clinical review remains pending. The generic planner now supports explicit artifact types and source selection through documented repeatable CLI options, committed at `f7f8b23`. The earlier manual plan attempt is preserved as a failed workflow attempt; the accepted plan was regenerated through the repaired CLI. [Replay status](/private/tmp/connectathon-live/run-002/evidence/task-evidence/replay-status.json).
+
+**Producer review continues:** an intermediate regeneration still pruned event-level eligibility and retained four obsolete outputs on disk. Validation is held until the reusable generator repairs both; known-broken intermediate output will not be treated as final. The official translator compatibility probe is independent of this RH execution evidence.
+
+**Next:** validate the corrected generated package, execute its actual roots on every fixture, finish strict composition, and open the same outputs in both applications.
+
+### ITER-012 — Reference translation reveals a portability blocker — 2026-09-17 21:08 EDT
+
+**SK-CQL-001 confirmed:** official CQFramework CQL-to-ELM 3.26.0 with its tagged FHIR 4.0.1 model rejects both authored CQL libraries. Errors include missing FHIRHelpers, unqualified FHIR dateTime conversion, and using the JSON wire name `valueBoolean` as a CQL model property. Passing RH evaluation was insufficient evidence of well-formed portable CQL. [Reference translator evidence](connectathon/evidence/official-cql-translator-probe.json).
+
+**Bounded candidate:** a separate test copy with explicit FHIRHelpers 4.0.1, qualified conversion and `(A.value as FHIR.boolean).value` translates successfully. No authored source was silently replaced. The runtime worker is implementing and testing the necessary model access; only then will the skills worker adopt/regenerate the portable source and rerun the actual skill commands. The pinned helper and compiled ELM must be included by the package composer. Translation success alone does not count as a second execution engine.
+
+**Skill defect:** the CQL skill also recommends `C.clinicalStatus.value` even though clinicalStatus is a CodeableConcept. The official model rejects it; explicit coding traversal translates. Guidance and a regression are being repaired together, with code-system binding retained where clinically relevant.
+
+**Workbench:** restore-original-scenario and exact Questionnaire version/encounter replacement are committed at `fc6bdd6`; six focused tests and TypeScript pass (worker report). The composer work has moved to that worker while Luna finishes generator and CLI/skill repairs. Browser integration is still pending the real complete package.
+
+**Next:** prove portable CQL execution, regenerate valid dependency-complete outputs, then exercise the same artifact set through Workbench and standalone preview.
+
+### ITER-013 — Composer negative checks catch incomplete closure — 2026-09-17 21:11 EDT
+
+**Implementation checkpoint:** generic `compose-executable` is committed at `8dfcd6c`; coordinator independently ran its first 16 tests successfully. It writes a complete Bundle, fixture index and checksum manifest through staged publication.
+
+**PKG-CLOSE-001:** independent adversarial probes nevertheless found three unsafe acceptances: a Measure criteria expression absent from its Library, a condition found only in another Library version, and an expansion whose code/release disagree with the pinned composition despite matching count. [Exact failures](connectathon/evidence/composer-pass1-closure-failures.json). The worker is repairing validation across Plan/Measure/Activity expressions, exact Library identity, and terminology membership, with regression tests. Initial test success is not package acceptance.
+
+**Terminology:** independently looked up the authored fall-prevention education code in the pinned SNOMED US release. The code is active with the expected display. [Lookup](connectathon/evidence/snomed-fall-education-lookup.json). Generated Coding.version retention remains part of producer repair.
+
+**Next:** regenerate once source/action gates are fixed, validate FHIR and intermediate RH execution while portable runtime work proceeds, then repeat on the final portable package.
 
 ## Journal rules
 

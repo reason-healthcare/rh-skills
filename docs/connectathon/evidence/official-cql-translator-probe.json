@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-09-17T21:05:15-04:00",
+  "scope": "bounded independent CQL well-formedness probe; not a two-engine execution gate",
+  "translator": {
+    "source": "official CQFramework GitHub tag and Maven Central artifact",
+    "coordinate": "info.cqframework:cql-to-elm-cli:3.26.0",
+    "manifest": {"implementationVersion": "3.26.0", "cqlSpecificationVersion": "1.5.3"},
+    "installRoot": "/private/tmp/connectathon-cql-translator",
+    "java": "Temurin OpenJDK 17.0.6",
+    "modelInfo": {
+      "source": "https://raw.githubusercontent.com/cqframework/clinical_quality_language/v3.26.0/Src/java/quick/src/main/resources/org/hl7/fhir/fhir-modelinfo-4.0.1.xml",
+      "path": "/private/tmp/connectathon-cql-translator/fhir-modelinfo-4.0.1.xml",
+      "bytes": 3482068
+    },
+    "fhirHelpers": {
+      "source": "https://raw.githubusercontent.com/cqframework/clinical_quality_language/v3.26.0/Src/java/quick/src/main/resources/org/hl7/fhir/FHIRHelpers-4.0.1.cql",
+      "path": "/private/tmp/connectathon-cql-translator/FHIRHelpers-4.0.1.cql"
+    }
+  },
+  "authoredLibraries": [
+    "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/computable/FallScreeningAndGuidanceRecommendationLogic.cql",
+    "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/computable/MeasureMeasure.cql"
+  ],
+  "authoredResult": {
+    "status": "fails FHIR R4.0.1 reference translation",
+    "command": "java -cp <official Maven classpath> org.cqframework.cql.cql2elm.cli.Main --input <library.cql> --model /private/tmp/connectathon-cql-translator/fhir-modelinfo-4.0.1.xml --format JSON --output <output>",
+    "logs": [
+      "/private/tmp/connectathon-cql-translator/FallScreeningAndGuidanceRecommendationLogic-fhir-translate.log",
+      "/private/tmp/connectathon-cql-translator/MeasureMeasure-fhir-translate.log"
+    ],
+    "errors": [
+      "Could not resolve library name FHIRHelpers (multiple locations)",
+      "Could not resolve call to operator ToDateTime with signature (FHIR.dateTime)",
+      "Member valueBoolean not found for type FHIR.QuestionnaireResponse.Item.Answer (three locations)"
+    ]
+  },
+  "isolatedModelChecks": {
+    "wireName": {
+      "source": "/private/tmp/connectathon-cql-translator/ChoiceWireNameProbe.cql",
+      "result": "fails: Member valueBoolean not found for type FHIR.QuestionnaireResponse.Item.Answer"
+    },
+    "portableChoice": {
+      "source": "/private/tmp/connectathon-cql-translator/ChoicePortableProbe.cql",
+      "expression": "(A.value as FHIR.boolean).value",
+      "result": "translates successfully; ELM /private/tmp/connectathon-cql-translator/output/ChoicePortableProbe.json"
+    },
+    "badCodeableConcept": {
+      "source": "/private/tmp/connectathon-cql-translator/CodeableConceptProbe.cql",
+      "expression": "C.clinicalStatus.value",
+      "result": "fails: Member value not found for type CodeableConcept"
+    },
+    "portableCodeableConcept": {
+      "source": "/private/tmp/connectathon-cql-translator/CodeablePortableProbe.cql",
+      "expression": "exists (C.clinicalStatus.coding S where S.code.value = 'active')",
+      "result": "translates successfully; ELM /private/tmp/connectathon-cql-translator/output/CodeablePortableProbe.json"
+    }
+  },
+  "minimalPortableCandidate": {
+    "status": "translated successfully in a copy only; authored sources were not modified",
+    "directory": "/private/tmp/connectathon-cql-translator/fhir-portable-candidate",
+    "output": "/private/tmp/connectathon-cql-translator/fhir-portable-output",
+    "log": "/private/tmp/connectathon-cql-translator/fhir-portable-candidate.log",
+    "changes": [
+      "include FHIRHelpers version '4.0.1' called FHIRHelpers",
+      "qualify FHIRHelpers.ToDateTime(E.period.start)",
+      "replace A.valueBoolean predicates with (A.value as FHIR.boolean).value"
+    ],
+    "result": "FHIRHelpers and both authored-library copies produced ELM JSON. Translator issued SignatureLevel=None overload ambiguity warnings for FHIRHelpers.ToString and ToDateTime; it reported no errors."
+  },
+  "requiredFollowUp": [
+    "Luna/author must choose and apply the candidate only after preserving RH runtime semantics with a focused regression; RH may need to support the standard value choice member and FHIR.boolean wrapper.",
+    "rh-inf-cql Critical Authoring Patterns must replace C.clinicalStatus.value with coding traversal and add this reference-translator regression."
+  ],
+  "sourceUnchanged": true
+}

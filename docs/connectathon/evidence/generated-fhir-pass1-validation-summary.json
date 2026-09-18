@@ -1,0 +1,158 @@
+{
+  "checkedAt": "2026-09-18T00:29:31.730135+00:00",
+  "result": "failed",
+  "scope": "First generated22resources captured before CQL finalization; stale outputs still included. FHIR4.0.1 and SDC4.0.0; terminologyoff; CPG2.0.0 rerunpending.",
+  "counts": {
+    "error": 8,
+    "information": 31,
+    "warning": 53
+  },
+  "errors": [
+    {
+      "location": [
+        "Bundle.entry[4].resource"
+      ],
+      "message": "Unrecognized property 'certainty'"
+    },
+    {
+      "location": [
+        "Bundle.entry[18].resource.action[0].relatedAction[0]"
+      ],
+      "message": "Unrecognized property 'description'"
+    },
+    {
+      "location": [
+        "Bundle.entry[18].resource.action[0].action[0].relatedAction[0]"
+      ],
+      "message": "Unrecognized property 'description'"
+    },
+    {
+      "location": [
+        "Bundle.entry[18].resource.action[0].action[1].relatedAction[0]"
+      ],
+      "message": "Unrecognized property 'description'"
+    },
+    {
+      "location": [
+        "Bundle.entry[0].resource/*ActivityDefinition/administer-three-question-screen*/.extension[0]"
+      ],
+      "message": "The extension http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith could not be found so is not allowed here"
+    },
+    {
+      "location": [
+        "Bundle.entry[0].resource/*ActivityDefinition/administer-three-question-screen*/.extension[0].url"
+      ],
+      "message": "No definition could be found for URL value 'http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith'"
+    },
+    {
+      "location": [
+        "Bundle.entry[5].resource/*EvidenceVariable/eligibility-criteria*/.characteristic[0]"
+      ],
+      "message": "EvidenceVariable.characteristic.definition[x]: minimum required = 1, but only found 0 (from http://hl7.org/fhir/StructureDefinition/EvidenceVariable|4.0.1)"
+    },
+    {
+      "location": [
+        "Bundle.entry[6].resource/*EvidenceVariable/evidence-summary-evidencevariable*/.characteristic[0]"
+      ],
+      "message": "EvidenceVariable.characteristic.definition[x]: minimum required = 1, but only found 0 (from http://hl7.org/fhir/StructureDefinition/EvidenceVariable|4.0.1)"
+    }
+  ],
+  "outcomePath": "/private/tmp/connectathon-live/evidence/generated-fhir-pass1-validation.json",
+  "inputManifest": "/private/tmp/connectathon-live/evidence/generated-fhir-pass1-manifest.json",
+  "cpgPinnedRerun": {
+    "package": "hl7.fhir.uv.cpg#2.0.0",
+    "counts": {
+      "error": 14,
+      "information": 21,
+      "warning": 43
+    },
+    "errors": [
+      {
+        "location": [
+          "Bundle.entry[4].resource"
+        ],
+        "message": "Unrecognized property 'certainty'"
+      },
+      {
+        "location": [
+          "Bundle.entry[18].resource.action[0].relatedAction[0]"
+        ],
+        "message": "Unrecognized property 'description'"
+      },
+      {
+        "location": [
+          "Bundle.entry[18].resource.action[0].action[0].relatedAction[0]"
+        ],
+        "message": "Unrecognized property 'description'"
+      },
+      {
+        "location": [
+          "Bundle.entry[18].resource.action[0].action[1].relatedAction[0]"
+        ],
+        "message": "Unrecognized property 'description'"
+      },
+      {
+        "location": [
+          "Bundle.entry[0].resource/*ActivityDefinition/administer-three-question-screen*/"
+        ],
+        "message": "ActivityDefinition.profile: minimum required = 1, but only found 0 (from http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity|2.0.0)"
+      },
+      {
+        "location": [
+          "Bundle.entry[0].resource/*ActivityDefinition/administer-three-question-screen*/"
+        ],
+        "message": "ActivityDefinition.doNotPerform: minimum required = 1, but only found 0 (from http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity|2.0.0)"
+      },
+      {
+        "location": [
+          "Bundle.entry[0].resource/*ActivityDefinition/administer-three-question-screen*/.code"
+        ],
+        "message": "The pattern [system http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs, code collect-information, and display 'null'] defined in the profile http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity|2.0.0 not found. Issues: [ValidationMessage[level=ERROR,type=VALUE,location=Bundle.entry[0].resource/*ActivityDefinition/administer-three-question-screen*/.code.coding.system,message=Value is 'http://loinc.org' but is fixed to 'http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs' in the profile http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity|2.0.0#ActivityDefinition], ValidationMessage[level=ERROR,type=VALUE,location=Bundle.entry[0].resource/*ActivityDefinition/administer-three-question-screen*/.code.coding.code,message=Value is '52552-7' but is fixed to 'collect-information' in the profile http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity|2.0.0#ActivityDefinition]]"
+      },
+      {
+        "location": [
+          "Bundle.entry[5].resource/*EvidenceVariable/eligibility-criteria*/.characteristic[0]"
+        ],
+        "message": "EvidenceVariable.characteristic.definition[x]: minimum required = 1, but only found 0 (from http://hl7.org/fhir/StructureDefinition/EvidenceVariable|4.0.1)"
+      },
+      {
+        "location": [
+          "Bundle.entry[6].resource/*EvidenceVariable/evidence-summary-evidencevariable*/.characteristic[0]"
+        ],
+        "message": "EvidenceVariable.characteristic.definition[x]: minimum required = 1, but only found 0 (from http://hl7.org/fhir/StructureDefinition/EvidenceVariable|4.0.1)"
+      },
+      {
+        "location": [
+          "Bundle.entry[15].resource/*PlanDefinition/older-adult-fall-screening-protocol-interpret-phase*/.action[0]"
+        ],
+        "message": "PlanDefinition.action.code: minimum required = 1, but only found 0 (from http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition|2.0.0)"
+      },
+      {
+        "location": [
+          "Bundle.entry[16].resource/*PlanDefinition/older-adult-fall-screening-protocol-positive-guidance*/.action[0]"
+        ],
+        "message": "PlanDefinition.action.code: minimum required = 1, but only found 0 (from http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition|2.0.0)"
+      },
+      {
+        "location": [
+          "Bundle.entry[17].resource/*PlanDefinition/older-adult-fall-screening-protocol-screen-phase*/.action[0]"
+        ],
+        "message": "PlanDefinition.action.code: minimum required = 1, but only found 0 (from http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition|2.0.0)"
+      },
+      {
+        "location": [
+          "Bundle.entry[18].resource/*PlanDefinition/older-adult-fall-screening-protocol*/.action[0]"
+        ],
+        "message": "PlanDefinition.action.code: minimum required = 1, but only found 0 (from http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-pathwaydefinition|2.0.0)"
+      },
+      {
+        "location": [
+          "Bundle.entry[18].resource/*PlanDefinition/older-adult-fall-screening-protocol*/.action[0]"
+        ],
+        "message": "PlanDefinition.action.relatedAction: max allowed = 0, but found 1 (from http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-pathwaydefinition|2.0.0)"
+      }
+    ],
+    "outcomePath": "/private/tmp/connectathon-live/evidence/generated-fhir-pass1-cpg-validation.json",
+    "profileReference": "https://hl7.org/fhir/uv/cpg/STU2/StructureDefinition-cpg-collectWith.html"
+  }
+}

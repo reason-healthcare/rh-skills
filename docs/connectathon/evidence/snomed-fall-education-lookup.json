@@ -1,0 +1,214 @@
+{
+  "checkedAt": "2026-09-18T01:09:26.778Z",
+  "method": "ReasonHub CodeSystem $lookup",
+  "request": {
+    "code": "710580007",
+    "system": "http://snomed.info/sct",
+    "version": "http://snomed.info/sct/731000124108/version/20250901"
+  },
+  "response": {
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "name",
+        "valueString": "SNOMED CT (US Edition)"
+      },
+      {
+        "name": "version",
+        "valueString": "http://snomed.info/sct/731000124108/version/20250901"
+      },
+      {
+        "name": "display",
+        "valueString": "Education about fall prevention"
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "parent"
+          },
+          {
+            "name": "value",
+            "valueCode": "390997009"
+          },
+          {
+            "name": "description",
+            "valueString": "Falls education"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "parent"
+          },
+          {
+            "name": "value",
+            "valueCode": "418526005"
+          },
+          {
+            "name": "description",
+            "valueString": "Prevention education"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "sufficientlyDefined"
+          },
+          {
+            "name": "value",
+            "valueBoolean": true
+          },
+          {
+            "name": "description",
+            "valueString": "True if the concept is fully defined (has sufficient conditions for classification)"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "moduleId"
+          },
+          {
+            "name": "value",
+            "valueCode": "900000000000207008"
+          },
+          {
+            "name": "description",
+            "valueString": "SNOMED CT core"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "effectiveTime"
+          },
+          {
+            "name": "value",
+            "valueDateTime": "2015-07-31"
+          },
+          {
+            "name": "description",
+            "valueString": "Date when this concept version became effective"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "semanticTag"
+          },
+          {
+            "name": "value",
+            "valueCode": "procedure"
+          },
+          {
+            "name": "description",
+            "valueString": "The semantic tag from the Fully Specified Name (e.g., \"disorder\", \"finding\", \"procedure\")"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "inactive"
+          },
+          {
+            "name": "value",
+            "valueBoolean": false
+          },
+          {
+            "name": "description",
+            "valueString": "Whether the code is inactive (derived from RF2 Concept.active)"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "designation.FSN"
+          },
+          {
+            "name": "value",
+            "valueString": "Education about fall prevention (procedure)"
+          },
+          {
+            "name": "description",
+            "valueString": "Fully Specified Name"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "designation.synonym"
+          },
+          {
+            "name": "value",
+            "valueString": "Education about fall prevention"
+          },
+          {
+            "name": "description",
+            "valueString": "Synonym"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "260686004"
+          },
+          {
+            "name": "value",
+            "valueCode": "425689005"
+          },
+          {
+            "name": "description",
+            "valueString": "Education - action"
+          }
+        ]
+      },
+      {
+        "name": "property",
+        "part": [
+          {
+            "name": "code",
+            "valueCode": "363702006"
+          },
+          {
+            "name": "value",
+            "valueCode": "161898004"
+          },
+          {
+            "name": "description",
+            "valueString": "Falls"
+          }
+        ]
+      }
+    ]
+  },
+  "scope": "Code identity/status/display at authored release; coding suitability is authored technical mapping with clinical review pending"
+}

@@ -1,0 +1,129 @@
+{
+  "checkedAt": "2026-09-18T00:52:44.182Z",
+  "scope": "Independent public Node/WASM temporal regression probe; not generated package acceptance",
+  "wasmSha256": "f2fc9b265e89286383680b168083d3aef50d075f99544e306ef593caac6f2b81",
+  "success": true,
+  "checks": [
+    {
+      "expression": "Difference Correct",
+      "expected": 1,
+      "actual": 1
+    },
+    {
+      "expression": "Duration Correct",
+      "expected": 1,
+      "actual": 1
+    },
+    {
+      "expression": "Before Birthday",
+      "expected": 1,
+      "actual": 1
+    },
+    {
+      "expression": "On Birthday",
+      "expected": 1,
+      "actual": 1
+    },
+    {
+      "expression": "After Birthday",
+      "expected": 1,
+      "actual": 1
+    }
+  ],
+  "passed": true,
+  "raw": {
+    "success": true,
+    "data": "{\"group\":[{\"population\":[{\"code\":{\"coding\":[{\"code\":\"numerator\",\"system\":\"http://terminology.hl7.org/CodeSystem/measure-population\"}]},\"count\":1}]},{\"population\":[{\"code\":{\"coding\":[{\"code\":\"numerator\",\"system\":\"http://terminology.hl7.org/CodeSystem/measure-population\"}]},\"count\":1}]},{\"population\":[{\"code\":{\"coding\":[{\"code\":\"numerator\",\"system\":\"http://terminology.hl7.org/CodeSystem/measure-population\"}]},\"count\":1}]},{\"population\":[{\"code\":{\"coding\":[{\"code\":\"numerator\",\"system\":\"http://terminology.hl7.org/CodeSystem/measure-population\"}]},\"count\":1}]},{\"population\":[{\"code\":{\"coding\":[{\"code\":\"numerator\",\"system\":\"http://terminology.hl7.org/CodeSystem/measure-population\"}]},\"count\":1}]}],\"id\":\"7c221398-7720-4e81-8333-a5a3762ccb6a\",\"measure\":\"http://example.org/Measure/temporal-probe\",\"period\":{\"end\":\"2026-12-31T23:59:59Z\",\"start\":\"2026-01-01T00:00:00Z\"},\"resourceType\":\"MeasureReport\",\"status\":\"complete\",\"subject\":{\"reference\":\"Patient/temporal-patient\"},\"type\":\"individual\"}",
+    "value": {
+      "group": [
+        {
+          "population": [
+            {
+              "code": {
+                "coding": [
+                  {
+                    "code": "numerator",
+                    "system": "http://terminology.hl7.org/CodeSystem/measure-population"
+                  }
+                ]
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "population": [
+            {
+              "code": {
+                "coding": [
+                  {
+                    "code": "numerator",
+                    "system": "http://terminology.hl7.org/CodeSystem/measure-population"
+                  }
+                ]
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "population": [
+            {
+              "code": {
+                "coding": [
+                  {
+                    "code": "numerator",
+                    "system": "http://terminology.hl7.org/CodeSystem/measure-population"
+                  }
+                ]
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "population": [
+            {
+              "code": {
+                "coding": [
+                  {
+                    "code": "numerator",
+                    "system": "http://terminology.hl7.org/CodeSystem/measure-population"
+                  }
+                ]
+              },
+              "count": 1
+            }
+          ]
+        },
+        {
+          "population": [
+            {
+              "code": {
+                "coding": [
+                  {
+                    "code": "numerator",
+                    "system": "http://terminology.hl7.org/CodeSystem/measure-population"
+                  }
+                ]
+              },
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "id": "7c221398-7720-4e81-8333-a5a3762ccb6a",
+      "measure": "http://example.org/Measure/temporal-probe",
+      "period": {
+        "end": "2026-12-31T23:59:59Z",
+        "start": "2026-01-01T00:00:00Z"
+      },
+      "resourceType": "MeasureReport",
+      "status": "complete",
+      "subject": {
+        "reference": "Patient/temporal-patient"
+      },
+      "type": "individual"
+    }
+  }
+}

@@ -25,5 +25,12 @@
       "output": "/private/tmp/connectathon-live/evidence/runtime-rh-cli-cql-tests.log",
       "result": "41 passed"
     }
-  ]
+  ],
+  "initialNativeHashMismatch": true,
+  "resolvedAt": "2026-09-18T00:20:16.609645+00:00",
+  "nativeBinary": {
+    "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+    "sha256": "f9205258599f7a3fda0d5a34438d1cdd6a07d02424285df52a66aac1076249b3"
+  },
+  "runtimeRevision": "88d2846038ce5e8b85ed73f444d0226481c2ae70"
 }

@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-09-18T00:54:35.450087+00:00",
+  "scope": "Pass2generatedcontent;FHIR4.0.1+SDC4.0.0+CPG2.0.0;terminologyoff;obsoleteoutputsnotyetremoved;unclaimedCPGprofileconstraintsnotasserted",
+  "counts": {
+    "information": 25,
+    "warning": 37,
+    "error": 1
+  },
+  "errors": [
+    {
+      "location": [
+        "Bundle.entry[0].resource/*ActivityDefinition/administer-three-question-screen*/"
+      ],
+      "message": "ActivityDefinition.profile: minimum required = 1, but only found 0 (from http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity|2.0.0)"
+    }
+  ],
+  "outcomePath": "/private/tmp/connectathon-live/evidence/generated-fhir-pass2-validation.json"
+}

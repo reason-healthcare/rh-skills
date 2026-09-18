@@ -20,15 +20,18 @@
   "gates": [
     {
       "id": "G0",
-      "status": "in_progress",
+      "status": "passed",
       "owner": "root",
       "evidence": [
         "docs/connectathon/evidence/baseline.json",
         "docs/connectathon/evidence/source-manifest-check.json",
         "docs/connectathon/evidence/validator-tool.json",
         "docs/connectathon/evidence/rh-skills-baseline-tests.json",
-        "docs/connectathon/evidence/shared-questionnaire-validation.json"
-      ]
+        "docs/connectathon/evidence/shared-questionnaire-validation.json",
+        "docs/connectathon/evidence/runtime-spike-verification.json",
+        "docs/connectathon/evidence/runtime-public-node-verification.json"
+      ],
+      "passedAt": "2026-09-18T00:20:16.609645+00:00"
     },
     {
       "id": "G1",
@@ -50,8 +53,8 @@
     },
     {
       "id": "G4",
-      "status": "pending",
-      "owner": null,
+      "status": "in_progress",
+      "owner": "runtime_execution + root",
       "evidence": []
     },
     {
@@ -62,9 +65,10 @@
     },
     {
       "id": "G6",
-      "status": "pending",
-      "owner": null,
-      "evidence": []
+      "status": "in_progress",
+      "owner": "workbench_audit + root",
+      "evidence": [],
+      "note": "New-session spawn unavailable at team limit; independent author reuses prior integration context, no first-run artifact copying."
     },
     {
       "id": "G7",
@@ -91,7 +95,7 @@
       "evidence": []
     }
   ],
-  "nextAction": "Finish first source-driven L2/L3 authoring; test context-aware Rust/WASM; verify full package dependency closure and inventory.",
+  "nextAction": "Repair portable FHIR CQL runtime/skill contract after official translator failure, while completing generator and strict package composer; then repeat generated execution and preview integration.",
   "iterations": [
     {
       "id": "ITER-001",
@@ -130,9 +134,51 @@
       "startedAt": "2026-09-18T00:09:17.603205+00:00",
       "status": "in_progress",
       "summary": "Eight L2 artifacts produced; source review corrects unsupported strength ratings before formalization."
+    },
+    {
+      "id": "ITER-007",
+      "startedAt": "2026-09-18T00:20:16.609645+00:00",
+      "status": "in_progress",
+      "summary": "G0 passed: actual native and public Node/WASM execution with explicit context; Workbench consumes the tested runtime."
+    },
+    {
+      "id": "ITER-008",
+      "startedAt": "2026-09-18T00:29:31.730135+00:00",
+      "status": "in_progress",
+      "summary": "Independent first generated-FHIR validation failed; bounded generic conformance repairs assigned while CQL authoring continues."
+    },
+    {
+      "id": "ITER-009",
+      "startedAt": "2026-09-18T00:41:11.164128+00:00",
+      "status": "in_progress",
+      "summary": "Context variations expose age boundary defect; independent source authoring replay started with prior integration context disclosed."
+    },
+    {
+      "id": "ITER-010",
+      "startedAt": "2026-09-18T00:54:35.450087+00:00",
+      "status": "in_progress",
+      "summary": "FHIRerrorsdown14to1;actualapplyexposesproducerbindingandapplicabilitydefects;publicWASMtemporalprobepasses."
+    },
+    {
+      "id": "ITER-011",
+      "startedAt": "2026-09-18T01:02:09.064855+00:00",
+      "status": "in_progress",
+      "summary": "Broader runtime tests independently pass; second source-to-L2 replay complete; generated execution repairs still being checked."
+    },
+    {
+      "id": "ITER-012",
+      "startedAt": "2026-09-18T01:07:48.166728+00:00",
+      "status": "in_progress",
+      "summary": "Official reference translator rejects RH-only CQL; portable candidate translates, runtime compatibility repair assigned."
+    },
+    {
+      "id": "ITER-013",
+      "startedAt": "2026-09-18T01:11:33.754385+00:00",
+      "status": "in_progress",
+      "summary": "Initial composer suite passes16; independent negative probes expose three closure defects."
     }
   ],
-  "lastUpdatedAt": "2026-09-18T00:12:28.830603+00:00",
+  "lastUpdatedAt": "2026-09-18T01:11:33.754385+00:00",
   "journal": "docs/CONNECTATHON-JOURNAL.md",
   "constraints": [
     "Do not modify hl7-agentic-knowledge-connectathon; all source files and git state are read-only.",
@@ -142,25 +188,25 @@
   "repositories": {
     "rh-skills": {
       "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
-      "head": "eb280968e8af623b9b30c4175111929e322f696c",
+      "head": "f7f8b23cf10e3212e170990b56ab41ed1bf6310b",
       "branch": "codex/connectathon-live-readiness",
-      "status": "?? docs/CONNECTATHON-24H-PLAN.md\n?? docs/connectathon-24h-status.json"
+      "status": "M docs/CONNECTATHON-JOURNAL.md\n M docs/connectathon-24h-status.json\n M docs/connectathon/evidence/runtime-spike-verification.json\n M docs/connectathon/evidence/source-integrity-latest.json\n M skills/.curated/rh-inf-formalize/SKILL.md\n M src/rh_skills/cli.py\n M src/rh_skills/commands/cql.py\n M src/rh_skills/commands/formalize.py\n M src/rh_skills/schemas/l2-schema.yaml\n M src/rh_skills/templates/formalize/activitydefinition/questionnaire-task.json.j2\n M src/rh_skills/templates/formalize/plandefinition/care-pathway-group.json.j2\n M src/rh_skills/templates/formalize/plandefinition/care-pathway-root.json.j2\n M src/rh_skills/validators/care_pathway.py\n M src/rh_skills/validators/decision_table.py\n M tests/unit/test_cql.py\n M tests/unit/test_formalize.py\n?? docs/connectathon/evidence/generated-apply-pass2-wiring-failures.json\n?? docs/connectathon/evidence/generated-fhir-pass1-validation-summary.json\n?? docs/connectathon/evidence/generated-fhir-pass2-validation-summary.json\n?? docs/connectathon/evidence/native-48-assertions-pass1.json\n?? docs/connectathon/evidence/native-age-boundary-failure.json\n?? docs/connectathon/evidence/native-final-context-verification.json\n?? docs/connectathon/evidence/runtime-age-regression-review.json\n?? docs/connectathon/evidence/runtime-public-node-age-difference.json\n?? docs/connectathon/evidence/runtime-public-node-verification.json\n?? src/rh_skills/commands/executable_bundle.py"
     },
     "workbench": {
       "path": "/Users/bkaney/projects/reason-healthcare/workbench",
-      "head": "a59e476",
+      "head": "83771a35185552855ec821d5b6183b4d8137dc86",
       "branch": "codex/connectathon-live-readiness",
-      "status": "checkpoint committed; next iteration in progress"
+      "status": ""
     },
     "rh": {
       "path": "/Users/bkaney/projects/reason-healthcare/rh",
-      "head": "fc96943aae4461ab5382e1f3d10bd623955a6b85",
+      "head": "58ec3343e4b75adbf4370fb7c15919a0b0324826",
       "branch": "codex/connectathon-live-readiness",
       "status": ""
     },
     "standalone": {
       "path": "/private/tmp/connectathon-reason-framework",
-      "head": "2e8d91daf360f184e6c98f700031414829c64921",
+      "head": "b7127ea174784a0d71db3cd4cffd020b6363997b",
       "branch": "codex/connectathon-live-readiness",
       "status": ""
     },
@@ -178,7 +224,7 @@
       "model": "gpt-5.6-terra",
       "reasoningEffort": "high",
       "status": "in_progress",
-      "task": "Snapshot completeness, mappings, readiness and shared package inspection"
+      "task": "Workbench restore committed; strict executable bundle composer and dependency lock assigned"
     },
     {
       "id": "RT-01",
@@ -186,7 +232,7 @@
       "model": "gpt-5.6-terra",
       "reasoningEffort": "high",
       "status": "in_progress",
-      "task": "Context/period execution spike and runtime/standalone integration"
+      "task": "Portable FHIR logical choice/primitive access and FHIRHelpers support; prove official and RH translated ELM parity"
     },
     {
       "id": "SK-01",
@@ -195,6 +241,14 @@
       "reasoningEffort": "high",
       "status": "in_progress",
       "task": "Clean-source skill run and reusable rh-skills fixes"
+    },
+    {
+      "id": "REPLAY-01",
+      "owner": "workbench_audit",
+      "model": "gpt-5.6-terra",
+      "reasoningEffort": "high",
+      "status": "in_progress",
+      "task": "Independent source-to-L1/L2 in run-002; no run-001 artifact access; prior integration context disclosed"
     }
   ],
   "baselineTests": {
@@ -212,7 +266,7 @@
   "defects": [
     {
       "id": "SK-DOC-001",
-      "status": "confirmed_fix_pending",
+      "status": "CLI_help_fixed_committed_generated_bundle_pending",
       "description": "Concept CLI help examples use--concept but parser requires positional name; curated docs already correct"
     },
     {
@@ -236,6 +290,45 @@
       "id": "SK-AUTH-001",
       "status": "correction_in_progress",
       "description": "Unreported evidence certainty was inferred from guideline/recommendation metadata; remove unsupported ratings and clarify skill guidance"
+    },
+    {
+      "id": "SK-FHIR-001",
+      "status": "confirmed_fix_in_progress",
+      "description": "Generated R4 Evidence.certainty invalid and unsupported; EvidenceVariable required definition absent; relatedAction.description invalid."
+    },
+    {
+      "id": "SK-GEN-002",
+      "status": "confirmed_fix_in_progress",
+      "description": "Regeneration leaves stale resources; generated terminology loses version; primary titles ignore L2 clinical titles."
+    },
+    {
+      "id": "RT-AGE-001",
+      "status": "fixed_independently_verified_native96_publicNode5_cql290_cpg51",
+      "description": "AgeInYearsAt counted calendar-year boundaries; one day before65thbirthday incorrectlyeligible. Independentvariations42/48pass,original48/48pass.",
+      "evidence": [
+        "docs/connectathon/evidence/native-age-boundary-failure.json",
+        "docs/connectathon/evidence/native-final-context-verification.json",
+        "docs/connectathon/evidence/runtime-age-regression-review.json",
+        "docs/connectathon/evidence/runtime-public-node-age-difference.json"
+      ]
+    },
+    {
+      "id": "SK-EXEC-001",
+      "status": "repair_in_progress",
+      "description": "Generatedexecutionwiringloseseventeligibility,referencemismatchedCQLnames,andlabelsFHIRPathdynamicvaluesasCQL;pathwaypositivechildexecutesfornegativeyoungerinput.",
+      "evidence": "docs/connectathon/evidence/generated-apply-pass2-wiring-failures.json"
+    },
+    {
+      "id": "SK-CQL-001",
+      "status": "reference_translation_failed_runtime_and_skill_repair_in_progress",
+      "description": "Authored CQL uses JSON wire choice member valueBoolean and omits FHIRHelpers; RH accepts it but official FHIR4.0.1 model translation fails. Standard logical choice access and explicit helper dependency translate in a test copy; actual execution parity pending.",
+      "evidence": "docs/connectathon/evidence/official-cql-translator-probe.json"
+    },
+    {
+      "id": "PKG-CLOSE-001",
+      "status": "confirmed_repair_in_progress",
+      "description": "Composer accepts missing Measure expression, expression available only in different Library version, and incorrect expansion code/release with same total.",
+      "evidence": "docs/connectathon/evidence/composer-pass1-closure-failures.json"
     }
   ],
   "checks": [
@@ -246,6 +339,30 @@
       "exitCode": 0,
       "result": "40 passed in0.25s",
       "scope": "Questionnaire metadata and strict JSON comparison; generated run still pending"
+    },
+    {
+      "checkedAt": "2026-09-18T00:34:02.095531+00:00",
+      "command": "Independent subprocess invocation of rh cql eval for every source assertion",
+      "result": "48/48 passed",
+      "scope": "Native authoring CQL pass1, pending regenerated-library/WASM parity and context hardening",
+      "evidence": "docs/connectathon/evidence/native-48-assertions-pass1.json"
+    },
+    {
+      "checkedAt": "2026-09-18T00:46:03.344273+00:00",
+      "command": "python3 /private/tmp/connectathon-live/evidence/verify_native.py",
+      "result": "96/96passed; stableCQLhashes; broaderRusttest1failureopen",
+      "evidence": "docs/connectathon/evidence/native-final-context-verification.json"
+    },
+    {
+      "checkedAt": "2026-09-18T00:54:35.450087+00:00",
+      "result": "5/5publicNodeWASMage/differenceprobespassed",
+      "scope": "Independentactualwrapper; wasmSHAf2fc9b265e89286383680b168083d3aef50d075f99544e306ef593caac6f2b81",
+      "evidence": "docs/connectathon/evidence/runtime-public-node-age-difference.json"
+    },
+    {
+      "checkedAt": "2026-09-18T01:02:09.064855+00:00",
+      "result": "Coordinator independently verified 290 CQL evaluator and 51 CPG library tests",
+      "evidence": "docs/connectathon/evidence/runtime-age-regression-review.json"
     }
   ]
 }

@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-09-18T00:46:03.344273+00:00",
+  "runtimeCommit": "c180b54d",
+  "command": "cargo test -p rh-cql --lib eval --quiet",
+  "passed": 289,
+  "failed": 1,
+  "failedTest": "eval::operators::temporal::tests::difference_between_years",
+  "expected": 3,
+  "actual": 2,
+  "status": "fixed_independently_verified",
+  "reason": "DifferenceBetween must count boundaries; elapsed completed periods apply to DurationBetween.",
+  "verification": {
+    "checkedAt": "2026-09-18T01:02:09.064855+00:00",
+    "runtimeCommit": "58ec3343e4b75adbf4370fb7c15919a0b0324826",
+    "tests": [
+      {
+        "command": "cargo test -p rh-cql --lib eval --quiet",
+        "passed": 290,
+        "failed": 0
+      },
+      {
+        "command": "cargo test -p rh-cpg --lib --quiet",
+        "passed": 51,
+        "failed": 0
+      }
+    ],
+    "note": "Original failing observation preserved above. Root ran both suites after the correction."
+  }
+}

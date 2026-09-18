@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-09-18T01:10:45.727500+00:00",
+  "commit": "8dfcd6c",
+  "scope": "Independent synthetic adversarial composer checks, not generated-package results",
+  "results": [
+    {
+      "case": "Measure expression absent from linked ELM",
+      "actual": "incorrectly accepted",
+      "expected": "rejected"
+    },
+    {
+      "case": "Only another Library version defines the requested condition",
+      "actual": "incorrectly accepted",
+      "expected": "rejected"
+    },
+    {
+      "case": "Expansion wrong code and release despite total match",
+      "actual": "incorrectly accepted",
+      "expected": "rejected"
+    }
+  ]
+}
