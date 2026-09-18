@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import json
+import math
 import re
 import sys
 from collections import defaultdict
@@ -3753,6 +3754,75 @@ def _canonical_json_sha256(value: Any) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+_EXPANSION_PARAMETER_VALUE_FIELDS = {
+    "valueString": str,
+    "valueUri": str,
+    "valueCode": str,
+    "valueBoolean": bool,
+    "valueInteger": int,
+    "valueDecimal": (int, float),
+    "valueDateTime": str,
+}
+
+
+def _validate_expansion_parameters(
+    response: dict[str, Any],
+    expected_membership: dict[tuple[str, str, str], str | None],
+) -> None:
+    """Fail closed on supported ``ValueSet.expansion.parameter`` shapes.
+
+    The complete expansion response remains provenance supplied by its source.
+    FHIR permits a name-only parameter. The one local semantic parameter we
+    interpret, ``used-codesystem``, must pin a canonical/version from compose.
+    """
+    parameters = response.get("parameter")
+    if parameters is None:
+        return
+    if not isinstance(parameters, list):
+        raise ValueError("ValueSet expansion response parameter must be an array")
+
+    expected_system_versions = {(system, version) for system, version, _ in expected_membership}
+    for index, parameter in enumerate(parameters):
+        if not isinstance(parameter, dict):
+            raise ValueError(f"ValueSet expansion parameter[{index}] must be an object")
+        name = parameter.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"ValueSet expansion parameter[{index}] requires a non-empty name")
+        value_fields = [field for field in parameter if field in _EXPANSION_PARAMETER_VALUE_FIELDS]
+        if set(parameter) != {"name", *value_fields} or len(value_fields) > 1:
+            raise ValueError(
+                f"ValueSet expansion parameter[{index}] permits at most one supported value[x]"
+            )
+        if not value_fields:
+            if name == "used-codesystem":
+                raise ValueError(
+                    f"ValueSet expansion parameter[{index}] used-codesystem requires valueUri canonical|version"
+                )
+            continue
+        value_field = value_fields[0]
+        value = parameter[value_field]
+        expected_type = _EXPANSION_PARAMETER_VALUE_FIELDS[value_field]
+        if (
+            not isinstance(value, expected_type)
+            or isinstance(value, bool) and value_field in {"valueInteger", "valueDecimal"}
+            or isinstance(value, str) and not value.strip()
+            or value_field == "valueDecimal" and isinstance(value, float) and not math.isfinite(value)
+        ):
+            raise ValueError(
+                f"ValueSet expansion parameter[{index}].{value_field} has an invalid value"
+            )
+        if name == "used-codesystem":
+            if value_field != "valueUri" or value.count("|") != 1:
+                raise ValueError(
+                    f"ValueSet expansion parameter[{index}] used-codesystem requires valueUri canonical|version"
+                )
+            system, version = value.split("|", 1)
+            if not system or not version or (system, version) not in expected_system_versions:
+                raise ValueError(
+                    f"ValueSet expansion parameter[{index}] used-codesystem does not match pinned compose"
+                )
+
+
 def _verified_value_set_expansion(value_set: dict[str, Any], compose: dict[str, Any]) -> dict[str, Any] | None:
     """Validate imported terminology-tool expansion evidence and return its FHIR element."""
     imported = value_set.get("expansion")
@@ -3810,6 +3880,8 @@ def _verified_value_set_expansion(value_set: dict[str, Any], compose: dict[str, 
                 raise ValueError(f"ValueSet compose has duplicate membership {system}|{version}#{concept['code']}")
             display = concept.get("display")
             expected_membership[key] = display if isinstance(display, str) else None
+
+    _validate_expansion_parameters(response, expected_membership)
 
     contains = response.get("contains")
     if not isinstance(contains, list):

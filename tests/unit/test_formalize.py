@@ -30,6 +30,7 @@ from rh_skills.commands.formalize import (
     _build_questionnaire_items,
     _build_questionnaire_resource,
     _build_stub_resources,
+    _canonical_json_sha256,
     _collect_information_dynamic_values,
     _embed_cql_in_library,
     _attach_external_library_dependencies,
@@ -347,6 +348,63 @@ def test_verified_value_set_expansion_preserves_response_after_integrity_checks(
         artifact,
     )
     assert resources[0]["expansion"] == artifact["sections"]["value_sets"][0]["expansion"]["response"]
+
+
+def test_verified_value_set_expansion_preserves_pinned_used_codesystem_parameter():
+    artifact = _verified_value_set_l2()
+    response = artifact["sections"]["value_sets"][0]["expansion"]["response"]
+    response["parameter"] = [
+        {"name": "source supplied note"},
+        {"name": "used-codesystem", "valueUri": "http://loinc.org|2.81"},
+    ]
+    artifact["sections"]["value_sets"][0]["expansion"]["source"]["response_sha256"] = (
+        _canonical_json_sha256(response)
+    )
+
+    resources = _build_terminology_stub_resources(
+        "terminology",
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        artifact,
+    )
+
+    assert resources[0]["expansion"]["parameter"] == response["parameter"]
+
+
+@pytest.mark.parametrize("parameter, message", [
+    ({"name": "used-codesystem", "valueUri": "http://loinc.org"}, "canonical\\|version"),
+    ({"name": "used-codesystem", "valueUri": "http://loinc.org|2.82"}, "does not match"),
+    ({"name": "used-codesystem", "valueString": "http://loinc.org|2.81"}, "requires valueUri"),
+    ({"name": "used-codesystem", "valueUri": "http://loinc.org|2.81", "valueCode": "2.81"}, "at most one"),
+    ({"name": "ordinary parameter", "unsupported": "value"}, "at most one"),
+    ({"name": "decimal", "valueDecimal": float("inf")}, "invalid value"),
+])
+def test_verified_value_set_expansion_rejects_invalid_parameters(parameter, message):
+    artifact = _verified_value_set_l2()
+    expansion = artifact["sections"]["value_sets"][0]["expansion"]
+    expansion["response"]["parameter"] = [parameter]
+    expansion["source"]["response_sha256"] = _canonical_json_sha256(expansion["response"])
+
+    with pytest.raises(ValueError, match=message):
+        _build_terminology_stub_resources(
+            "terminology",
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+            artifact,
+        )
+
+
+def test_verified_value_set_expansion_accepts_large_integer_decimal_parameter():
+    artifact = _verified_value_set_l2()
+    expansion = artifact["sections"]["value_sets"][0]["expansion"]
+    expansion["response"]["parameter"] = [{"name": "large decimal", "valueDecimal": 10 ** 4000}]
+    expansion["source"]["response_sha256"] = _canonical_json_sha256(expansion["response"])
+
+    resources = _build_terminology_stub_resources(
+        "terminology",
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        artifact,
+    )
+
+    assert resources[0]["expansion"]["parameter"] == expansion["response"]["parameter"]
 
 
 @pytest.mark.parametrize("mutation, message", [

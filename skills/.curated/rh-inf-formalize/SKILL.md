@@ -390,6 +390,11 @@ FHIR files directly.
       corresponding `terminology` artifact, use those as the
       authoritative starting set, augmented by MCP search only where the plan
       set is incomplete.
+   e. Preserve an explicitly supplied `expansion.response.parameter[]` exactly
+      as returned or authored provenance. A persisted local CodeSystem
+      projection may record its exact canonical/version only as
+      `{name: used-codesystem, valueUri: '<canonical>|<version>'}`; do not
+      invent, replace, or normalize parameters from an upstream MCP response.
 5. Run the formalize command for each approved L2 artifact. The `<artifact-name>`
    argument **must be the plan entry's `source_artifact` value**. That should
    match the L2 artifact's `name` field (the kebab-case identifier in the YAML,
