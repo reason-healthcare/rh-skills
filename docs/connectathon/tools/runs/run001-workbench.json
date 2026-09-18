@@ -1,0 +1,49 @@
+{
+  "projectId": "connectathon-steadi",
+  "snapshotId": "snap_connectathon-steadi_run001-08a666000842",
+  "evaluationDate": "2026-06-15T09:20:00Z",
+  "measurementPeriod": {
+    "start": "2026-01-01T00:00:00Z",
+    "end": "2026-12-31T23:59:59Z",
+    "startInclusive": true,
+    "endInclusive": true
+  },
+  "plans": [
+    {
+      "artifactId": "connectathon-steadi--plandefinition-fall-screening-and-guidance-recommendation",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi--plandefinition-fall-screening-and-guidance-recommendation-offer-screen",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi--plandefinition-fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi--plandefinition-older-adult-fall-screening-protocol",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi--plandefinition-older-adult-fall-screening-protocol-screen-phase",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi--plandefinition-older-adult-fall-screening-protocol-interpret-phase",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi--plandefinition-older-adult-fall-screening-protocol-positive-guidance",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0"
+    }
+  ],
+  "measure": {
+    "artifactId": "connectathon-steadi--measure-measure",
+    "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0"
+  },
+  "questionnaire": {
+    "artifactId": "connectathon-steadi--questionnaire-steadi-three-question-screen",
+    "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0"
+  }
+}
