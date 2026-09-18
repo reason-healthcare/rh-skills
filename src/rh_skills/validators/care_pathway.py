@@ -139,13 +139,11 @@ def validate_care_pathway(
                 if claim_id:
                     claim_ids.add(claim_id)
                 strength = entry.get("strength")
-                if strength is None or str(strength).strip() == "":
-                    report_warn(
-                        f"  care-pathway: evidence_traceability entry #{idx} missing recommended 'strength' field"
-                    )
-                    continue
-                normalized_strength = str(strength).strip().lower()
-                if normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
+                if strength is not None and str(strength).strip():
+                    normalized_strength = str(strength).strip().lower()
+                else:
+                    normalized_strength = None
+                if normalized_strength and normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
                     report_error(
                         f"  care-pathway: evidence_traceability entry #{idx} has invalid strength '{strength}' "
                         f"(allowed: {', '.join(sorted(_EVIDENCE_STRENGTH_VALUES))})"

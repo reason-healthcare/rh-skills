@@ -60,8 +60,8 @@ optional_fields:
                        #   - Custom concepts (not extracted from source documents) are added via
                        #     'concept enrich --source custom'; their sources value is 'custom'.
                        #   - Approved related terminology rows may be written at L2 as
-                       #     concepts[].codes[].related[]. Expansion rules remain inputs to
-                       #     review/formalization rather than generic free-form L2 expansion output.
+                       #     concepts[].codes[].related[]. Expansion expressions remain inputs
+                       #     to review/formalization rather than generic free-form membership.
 
 artifact_types:
   - eligibility-criteria
@@ -117,11 +117,15 @@ artifact_type_sections:
     section_definitions:
       evidence_traceability: >
         Evidence claims that support recommendation content:
-        {claim_id, statement, strength?, evidence[]}. claim_id must be unique
+        {claim_id, statement, strength?, recommendation_grade?, evidence[]}. claim_id must be unique
         per artifact and is referenced by recommendation-like steps through
-        evidence_traceability_ids[]. strength is recommended and should use
-        validator-supported values such as high | moderate | low | very-low |
-        consensus | insufficient.
+        evidence_traceability_ids[]. Add strength only when the source reports
+        evidence certainty/quality; do not infer it from source type or a
+        recommendation grade. Preserve an explicitly reported recommendation
+        grade separately in recommendation_grade (for example, USPSTF Grade B
+        or C). If the source does not report a certainty/quality, omit strength.
+        When strength is supplied, use validator-supported values such as high |
+        moderate | low | very-low | consensus | insufficient.
       steps: >
         Flat workflow steps. Each entry: {id, label, description?, actor?, parent_id?,
         applicability_condition?, rule_id?, rule_ids[]?, action_labels?,
@@ -168,11 +172,15 @@ artifact_type_sections:
     section_definitions:
       evidence_traceability: >
         Evidence claims that support decision logic:
-        {claim_id, statement, strength?, evidence[]}. claim_id must be unique per
+        {claim_id, statement, strength?, recommendation_grade?, evidence[]}. claim_id must be unique per
         artifact and is referenced from actions and rules via
-        evidence_traceability_ids[]. strength is recommended and should use
-        validator-supported values such as high | moderate | low | very-low |
-        consensus | insufficient.
+        evidence_traceability_ids[]. Add strength only when the source reports
+        evidence certainty/quality; do not infer it from source type or a
+        recommendation grade. Preserve an explicitly reported recommendation
+        grade separately in recommendation_grade (for example, USPSTF Grade B
+        or C). If the source does not report a certainty/quality, omit strength.
+        When strength is supplied, use validator-supported values such as high |
+        moderate | low | very-low | consensus | insufficient.
       pathway_phases: >
         Optional canonical phase model for phase-organized narratives:
         {id, label, description?}. Use only when the source clearly groups
@@ -219,7 +227,7 @@ artifact_type_sections:
         data participates in feature resolution: direct_evidence,
         inference_input, assessment_output, context, calculation_input, or
         derived_value. Missing role defaults to direct_evidence. Use value_type
-        for implementation-neutral value shape: presence, quantity,
+        for implementation-neutral value shape: presence, boolean, quantity,
         codeable_concept, date_time, interval, ordinal, or text. Use
         produced_by[] to reference action ids that produce this data element.
         evidence_source and temporal_scope remain clinical descriptions, not
@@ -264,6 +272,33 @@ artifact_type_sections:
         evidence_traceability claim_id values and provenance metadata such as
         {source: source_direct|inferred, rationale?}. Inferred recommendations
         should always include rationale.
+
+  terminology:
+    description: >
+      Governed concept codes and explicitly verified terminology expansions.
+      Use when source content or the requested implementation depends on pinned
+      code-system membership.
+    recommended_sections:
+      - summary
+      - evidence_traceability
+      - value_sets
+    section_definitions:
+      value_sets: >
+        ValueSet specifications: {id, name?, system?, version?, codes[]?,
+        concept_refs[]?, expansion?}. Use explicit codes and versions where
+        membership is finite. An imported expansion is terminology-tool data,
+        not an inferred or manually generated membership list. Its shape is
+        {source: {provider, reference, response_timestamp, response_sha256},
+        requested_compose: <exact FHIR ValueSet.compose>, response: <exact
+        FHIR ValueSet.expansion element>}. The response hash is SHA-256 of the
+        response JSON encoded as UTF-8 canonical compact JSON with sorted keys,
+        no extra whitespace, and ensure_ascii=false. Preserve the provider,
+        source reference, pinned requested composition, response timestamp, and
+        returned `contains` entries. Formalize verifies the hash, compose
+        identity, unique system|version|code membership, displays when authored,
+        and total count before emitting the unchanged response expansion.
+        Do not represent a search result as a complete expansion or substitute
+        an unpinned later terminology version.
 
 status_values:
   - draft

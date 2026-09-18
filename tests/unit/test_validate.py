@@ -7,6 +7,7 @@ from click.testing import CliRunner
 from ruamel.yaml import YAML
 
 from rh_skills.commands.validate import validate
+from rh_skills.validators.decision_table import validate_decision_table
 
 
 def make_valid_l2(tmp_repo, skill="my-skill", artifact="test-artifact"):
@@ -1591,6 +1592,33 @@ concerns: []
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
     assert result.exit_code == 0, result.output
+
+
+def test_decision_table_value_type_boolean_is_supported():
+    artifact = {
+        "artifact_type": "decision-table",
+        "sections": {
+            "evidence_traceability": [{
+                "claim_id": "screening-claim",
+                "statement": "Use the screening response",
+                "evidence": [{"source": "source-l1", "locator": "Questionnaire item"}],
+            }],
+            "events": [{"id": "screen", "label": "Screen"}],
+            "conditions": [{"id": "answer", "label": "Answer is yes", "values": ["Yes", "No"]}],
+            "data_elements": [{
+                "id": "boolean-answer",
+                "condition_id": "answer",
+                "label": "Boolean answer",
+                "value_type": "boolean",
+            }],
+            "actions": [{"id": "communicate", "label": "Communicate", "kind": "communication"}],
+            "rules": [{"id": "positive", "event": "screen", "when": {"answer": "Yes"}, "then": ["communicate"], "evidence_traceability_ids": ["screening-claim"]}],
+        },
+    }
+
+    errors, _warnings = validate_decision_table(artifact)
+
+    assert errors == 0
 
 
 def test_validate_decision_table_allows_event_driven_rule_without_when(tmp_repo):

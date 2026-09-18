@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import base64
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -18,14 +19,24 @@ from ruamel.yaml import YAML
 from rh_skills.commands.formalize import (
     _activity_definition_kind,
     _activity_definition_intent,
+    _build_measure_populations,
     _build_care_pathway_stub_plan_definitions,
+    _build_decision_table_rule_conditions,
+    _build_evidence_variable_characteristics,
+    _resolve_activity_code,
+    _build_terminology_stub_resources,
+    _build_questionnaire_items,
+    _build_questionnaire_resource,
     _build_stub_resources,
+    _collect_information_dynamic_values,
     _embed_cql_in_library,
     _enforce_generated_fhir_ids,
     _fhir_resource_id,
     _get_strategy,
     _hoist_plan_definition_action_conditions,
     _normalize_activity_codeable_concept,
+    _orphaned_decision_table_output_files,
+    _validate_cql_identifier_links,
     formalize,
 )
 
@@ -47,6 +58,458 @@ def test_activity_definition_kind_normalizes_supported_l2_action_kinds():
     assert _activity_definition_kind("CollectInformation") == "Task"
     assert _activity_definition_kind("communication") == "CommunicationRequest"
     assert _activity_definition_kind("Task") == "Task"
+
+
+def test_evidence_variable_uses_authored_criteria_and_rejects_empty_source():
+    characteristics = _build_evidence_variable_characteristics(
+        "eligibility-criteria", {"sections": {"criteria": ["Adults age 65 years or older"]}}
+    )
+    assert characteristics == [{
+        "description": "Criteria: Adults age 65 years or older",
+        "definitionCodeableConcept": {"text": "Criteria: Adults age 65 years or older"},
+    }]
+    with pytest.raises(ValueError, match="requires authored criteria"):
+        _build_evidence_variable_characteristics("eligibility-criteria", {"sections": {}})
+
+
+def test_value_set_include_preserves_declared_system_version():
+    resources = _build_terminology_stub_resources(
+        "screening-items",
+        {"canonical": "https://example.org/fhir", "version": "1", "status": "draft"},
+        {"sections": {"value_sets": [{
+            "id": "screening-items", "system": "http://loinc.org", "version": "2.81",
+            "codes": [{"code": "100257-5", "display": "Unsteady"}],
+        }]}},
+    )
+    assert resources[0]["compose"]["include"][0]["version"] == "2.81"
+
+
+def _verified_value_set_l2():
+    compose = {"include": [{
+        "system": "http://loinc.org",
+        "version": "2.81",
+        "concept": [
+            {"code": "100257-5", "display": "Feel unsteady when standing or walking"},
+            {"code": "97878-3", "display": "Worried about falling"},
+            {"code": "52552-7", "display": "Falls in the past year"},
+        ],
+    }]}
+    response = {
+        "total": 3,
+        "timestamp": "2026-09-17T23:49:25.532Z",
+        "contains": [
+            {"system": "http://loinc.org", "code": "100257-5", "display": "Feel unsteady when standing or walking", "version": "2.81"},
+            {"system": "http://loinc.org", "code": "97878-3", "display": "Worried about falling", "version": "2.81"},
+            {"system": "http://loinc.org", "code": "52552-7", "display": "Falls in the past year", "version": "2.81"},
+        ],
+    }
+    digest = hashlib.sha256(
+        json.dumps(response, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    return {
+        "artifact_type": "terminology",
+        "sections": {"value_sets": [{
+            "id": "screening-items",
+            "name": "Screening items",
+            "system": "http://loinc.org",
+            "version": "2.81",
+            "codes": [
+                {"code": "100257-5", "display": "Feel unsteady when standing or walking"},
+                {"code": "97878-3", "display": "Worried about falling"},
+                {"code": "52552-7", "display": "Falls in the past year"},
+            ],
+            "expansion": {
+                "source": {
+                    "provider": "ReasonHub MCP",
+                    "reference": "evidence/loinc-expansion.json",
+                    "response_timestamp": response["timestamp"],
+                    "response_sha256": digest,
+                },
+                "requested_compose": compose,
+                "response": response,
+            },
+        }]},
+    }
+
+
+def test_verified_value_set_expansion_preserves_response_after_integrity_checks():
+    artifact = _verified_value_set_l2()
+    resources = _build_terminology_stub_resources(
+        "terminology",
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        artifact,
+    )
+    assert resources[0]["expansion"] == artifact["sections"]["value_sets"][0]["expansion"]["response"]
+
+
+@pytest.mark.parametrize("mutation, message", [
+    ("requested-compose", "requested_compose does not match"),
+    ("response-hash", "response hash does not match"),
+    ("response-version", "membership does not match"),
+    ("duplicate-membership", "duplicate membership"),
+    ("total", "total does not match"),
+    ("timestamp", "timestamp does not match"),
+])
+def test_verified_value_set_expansion_rejects_unverified_or_incomplete_data(mutation, message):
+    artifact = _verified_value_set_l2()
+    expansion = artifact["sections"]["value_sets"][0]["expansion"]
+    if mutation == "requested-compose":
+        expansion["requested_compose"]["include"][0]["version"] = "2.82"
+    elif mutation == "response-hash":
+        expansion["response"]["contains"][0]["display"] = "altered"
+    elif mutation == "response-version":
+        expansion["response"]["contains"][0]["version"] = "2.82"
+        payload = json.dumps(expansion["response"], sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        expansion["source"]["response_sha256"] = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    elif mutation == "duplicate-membership":
+        expansion["response"]["contains"].append(dict(expansion["response"]["contains"][0]))
+        expansion["response"]["total"] = 4
+        payload = json.dumps(expansion["response"], sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        expansion["source"]["response_sha256"] = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    elif mutation == "total":
+        expansion["response"]["total"] = 2
+        payload = json.dumps(expansion["response"], sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        expansion["source"]["response_sha256"] = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    elif mutation == "timestamp":
+        expansion["source"]["response_timestamp"] = "2026-09-18T00:00:00Z"
+
+    with pytest.raises(ValueError, match=message):
+        _build_terminology_stub_resources(
+            "terminology",
+            {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+            artifact,
+        )
+
+
+def test_event_applicability_is_combined_with_rule_conditions():
+    entries = _build_decision_table_rule_conditions(
+        {"id": "offer-screen", "when": {"positive-risk": "Yes"}},
+        {
+            "eligible": {"id": "eligible", "label": "In screening population"},
+            "positive-risk": {"id": "positive-risk", "label": "Positive screen"},
+        },
+        event={"id": "ambulatory-encounter", "applicability": ["eligible"]},
+    )
+
+    assert [entry["expression"]["expression"] for entry in entries] == [
+        "InScreeningPopulation",
+        "PositiveScreen",
+    ]
+
+
+def test_collect_information_dynamic_values_use_activity_fhirpath_and_indexed_inputs():
+    values = _collect_information_dynamic_values("https://example.org/Questionnaire/test|1.0")
+
+    assert values == [
+        {
+            "path": "input[0].type",
+            "expression": {"language": "text/fhirpath", "expression": "code"},
+        },
+        {
+            "path": "input[0].valueCanonical",
+            "expression": {
+                "language": "text/fhirpath",
+                "expression": "extension.where(url = 'http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value",
+            },
+        },
+    ]
+
+
+def test_activity_definition_preserves_authored_coding_version():
+    code = _resolve_activity_code(
+        {
+            "codings": [{
+                "system": "http://snomed.info/sct",
+                "version": "http://snomed.info/sct/731000124108/version/20250901",
+                "code": "710580007",
+                "display": "Education about fall prevention",
+            }],
+        },
+        action_id="communicate-positive-screen",
+        title="Communicate positive screen",
+    )
+
+    assert code["coding"][0] == {
+        "system": "http://snomed.info/sct",
+        "version": "http://snomed.info/sct/731000124108/version/20250901",
+        "code": "710580007",
+        "display": "Education about fall prevention",
+    }
+
+
+def test_cql_link_validation_rejects_referenced_identifier_missing_from_library(tmp_path):
+    resources = [
+        {
+            "resourceType": "Library",
+            "id": "logic",
+            "url": "https://example.org/Library/logic",
+            "name": "Logic",
+        },
+        {
+            "resourceType": "PlanDefinition",
+            "id": "plan",
+            "library": ["https://example.org/Library/logic"],
+            "action": [{
+                "condition": [{
+                    "expression": {
+                        "language": "text/cql-identifier",
+                        "expression": "PositiveScreen",
+                    },
+                }],
+            }],
+        },
+    ]
+    (tmp_path / "logic.cql").write_text('library Logic version \'1.0.0\'\ndefine "OtherExpression": true\n')
+
+    with pytest.raises(ValueError, match="PositiveScreen"):
+        _validate_cql_identifier_links(resources, tmp_path)
+
+
+def test_cql_link_validation_accepts_identifier_defined_in_linked_library(tmp_path):
+    resources = [
+        {
+            "resourceType": "Library",
+            "id": "logic",
+            "url": "https://example.org/Library/logic",
+            "name": "Logic",
+        },
+        {
+            "resourceType": "PlanDefinition",
+            "id": "plan",
+            "library": ["https://example.org/Library/logic"],
+            "action": [{
+                "condition": [{
+                    "expression": {
+                        "language": "text/cql-identifier",
+                        "expression": "PositiveScreen",
+                    },
+                }],
+            }],
+        },
+    ]
+    (tmp_path / "logic.cql").write_text('library Logic version \'1.0.0\'\ndefine "PositiveScreen": true\n')
+
+    assert _validate_cql_identifier_links(resources, tmp_path) == []
+
+
+def test_decision_table_orphan_cleanup_removes_only_stale_children_and_unreferenced_activities(tmp_path):
+    stale_plan = {
+        "resourceType": "PlanDefinition",
+        "id": "root-negative",
+        "url": "https://example.org/fhir/PlanDefinition/root-negative",
+        "action": [{
+            "definitionCanonical": "https://example.org/fhir/ActivityDefinition/old-action",
+        }],
+    }
+    unrelated_plan = {
+        "resourceType": "PlanDefinition",
+        "id": "other-plan",
+        "url": "https://example.org/fhir/PlanDefinition/other-plan",
+        "action": [],
+    }
+    (tmp_path / "PlanDefinition-root-negative.json").write_text(json.dumps(stale_plan))
+    (tmp_path / "PlanDefinition-other-plan.json").write_text(json.dumps(unrelated_plan))
+    (tmp_path / "ActivityDefinition-old-action.json").write_text(json.dumps({
+        "resourceType": "ActivityDefinition",
+        "id": "old-action",
+        "url": "https://example.org/fhir/ActivityDefinition/old-action",
+    }))
+
+    stale = _orphaned_decision_table_output_files(
+        tmp_path,
+        "https://example.org/fhir",
+        "root",
+        {"PlanDefinition-root-current.json"},
+        resources=[{
+            "resourceType": "PlanDefinition",
+            "id": "root",
+            "url": "https://example.org/fhir/PlanDefinition/root",
+            "action": [],
+        }],
+        protected_filenames=set(),
+    )
+
+    assert stale == ["ActivityDefinition-old-action.json", "PlanDefinition-root-negative.json"]
+
+
+def test_decision_table_orphan_cleanup_preserves_activity_referenced_by_current_outputs(tmp_path):
+    stale_plan = {
+        "resourceType": "PlanDefinition",
+        "id": "root-negative",
+        "url": "https://example.org/fhir/PlanDefinition/root-negative",
+        "action": [{
+            "definitionCanonical": "https://example.org/fhir/ActivityDefinition/shared-action",
+        }],
+    }
+    (tmp_path / "PlanDefinition-root-negative.json").write_text(json.dumps(stale_plan))
+    (tmp_path / "ActivityDefinition-shared-action.json").write_text(json.dumps({
+        "resourceType": "ActivityDefinition",
+        "id": "shared-action",
+        "url": "https://example.org/fhir/ActivityDefinition/shared-action",
+    }))
+
+    stale = _orphaned_decision_table_output_files(
+        tmp_path,
+        "https://example.org/fhir",
+        "root",
+        set(),
+        resources=[{
+            "resourceType": "PlanDefinition",
+            "id": "current",
+            "url": "https://example.org/fhir/PlanDefinition/current",
+            "action": [{
+                "definitionCanonical": "https://example.org/fhir/ActivityDefinition/shared-action",
+            }],
+        }],
+        protected_filenames=set(),
+    )
+
+    assert stale == ["PlanDefinition-root-negative.json"]
+
+
+def test_questionnaire_item_preserves_coding_and_required_false():
+    items = _build_questionnaire_items("assessment", {"sections": {"items": [{
+        "id": "unsteady",
+        "text": "Feel unsteady?",
+        "type": "boolean",
+        "required": False,
+        "code": {
+            "version": "2.81",
+            "system": "http://loinc.org",
+            "code": "100257-5",
+            "display": "Feel unsteady when standing or walking",
+        },
+    }]}})
+
+    assert items == [{
+        "linkId": "unsteady",
+        "text": "Feel unsteady?",
+        "type": "boolean",
+        "required": False,
+        "code": [{
+            "version": "2.81",
+            "system": "http://loinc.org",
+            "code": "100257-5",
+            "display": "Feel unsteady when standing or walking",
+        }],
+    }]
+
+
+def test_questionnaire_item_keeps_omitted_required_omitted():
+    items = _build_questionnaire_items("assessment", {"sections": {"items": [{
+        "id": "question-1", "text": "Question?", "type": "boolean",
+    }]}})
+    assert "required" not in items[0]
+
+
+def test_related_questionnaire_preserves_explicit_canonical_and_version():
+    questionnaire = _build_questionnaire_resource(
+        "steadi-fall-screening",
+        "assessment",
+        {
+            "title": "STEADI Three-Question Fall-Risk Screen",
+            "sections": {"instrument": {
+                "id": "steadi-three-question-screen",
+                "canonical": "https://example.org/fhir/Questionnaire/steadi-three-question-screen",
+                "version": "0.2.0",
+            }, "items": []},
+        },
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+    )
+
+    assert questionnaire["id"] == "steadi-three-question-screen"
+    assert questionnaire["url"] == "https://example.org/fhir/Questionnaire/steadi-three-question-screen"
+    assert questionnaire["version"] == "0.2.0"
+
+
+def test_assessment_stub_generation_preserves_explicit_questionnaire_identity():
+    strategy, _ = _get_strategy("assessment")
+    resources = _build_stub_resources(
+        "assessment",
+        "assessment",
+        strategy,
+        "steadi-fall-screening",
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        {"sections": {"instrument": {
+            "id": "steadi-three-question-screen",
+            "canonical": "https://example.org/fhir/Questionnaire/steadi-three-question-screen",
+            "version": "0.2.0",
+        }, "items": []}},
+    )
+    questionnaire = next(r for r in resources if r["resourceType"] == "Questionnaire")
+
+    assert questionnaire["id"] == "steadi-three-question-screen"
+    assert questionnaire["url"] == "https://example.org/fhir/Questionnaire/steadi-three-question-screen"
+    assert questionnaire["version"] == "0.2.0"
+
+
+def test_measure_generation_preserves_all_authored_populations_and_bound_codesystems():
+    strategy, _ = _get_strategy("measure")
+    resources = _build_stub_resources(
+        "measure",
+        "measure",
+        strategy,
+        "fall-screening",
+        {"canonical": "https://example.org/fhir", "version": "1.0.0", "status": "draft"},
+        {"sections": {"populations": [
+            {"id": "initial-population", "type": "initial-population", "description": "Eligible patients."},
+            {"id": "denominator", "type": "denominator", "description": "All eligible patients."},
+            {"id": "numerator", "type": "numerator", "description": "Eligible patients with a completed screen."},
+        ]}},
+    )
+    measure = next(resource for resource in resources if resource["resourceType"] == "Measure")
+
+    assert measure["scoring"]["coding"] == [{
+        "system": "http://terminology.hl7.org/CodeSystem/measure-scoring",
+        "code": "proportion",
+    }]
+    assert measure["group"][0]["population"] == [
+        {
+            "id": "initial-population",
+            "code": {"coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "initial-population",
+            }]},
+            "description": "Eligible patients.",
+            "criteria": {"language": "text/cql-identifier", "expression": "Initial Population"},
+        },
+        {
+            "id": "denominator",
+            "code": {"coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "denominator",
+            }]},
+            "description": "All eligible patients.",
+            "criteria": {"language": "text/cql-identifier", "expression": "Denominator"},
+        },
+        {
+            "id": "numerator",
+            "code": {"coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                "code": "numerator",
+            }]},
+            "description": "Eligible patients with a completed screen.",
+            "criteria": {"language": "text/cql-identifier", "expression": "Numerator"},
+        },
+    ]
+
+
+def test_measure_populations_require_authored_l2_definitions():
+    with pytest.raises(ValueError, match=r"sections\.populations"):
+        _build_measure_populations({"sections": {}})
+
+
+@pytest.mark.parametrize("bad_coding", [
+    "http://loinc.org|100257-5",
+    {"system": "http://loinc.org"},
+    {"system": "http://loinc.org", "code": "100257-5", "extra": "silently ignored?"},
+    {"system": 1, "code": "100257-5"},
+])
+def test_questionnaire_item_rejects_malformed_coding(bad_coding):
+    with pytest.raises(ValueError):
+        _build_questionnaire_items("assessment", {"sections": {"items": [{
+            "id": "question-1", "text": "Question?", "type": "boolean", "code": bad_coding,
+        }]}})
 
 
 def test_activity_definition_intent_normalizes_to_r4_request_intent_codes():
@@ -531,22 +994,72 @@ def test_paired_care_pathway_condition_context_hoists_and_prunes_rule_conditions
         "NoGuidelineExclusionPresent",
         "SinusSurgeryPlanningActive",
     ) in pathway_conditions["planning"]
-    assert ("SinusSurgeryOrderPresent",) in pathway_conditions["educate-step"]
+    assert any(
+        "SinusSurgeryOrderPresent" in conditions
+        for conditions in pathway_conditions["educate-step"]
+    )
     assert ("CrsDiagnosisVerified",) in pathway_conditions["candidacy"]
 
+    eligibility_plan = next(
+        resource for resource in pathway_resources
+        if resource.get("resourceType") == "PlanDefinition"
+        and str(resource.get("id") or "").endswith("-protocol-eligibility")
+    )
+    eligibility_child_conditions = [
+        set(condition["expression"]["expression"] for condition in action.get("condition") or [])
+        for action in eligibility_plan.get("action") or []
+    ]
+    assert eligibility_child_conditions
+    assert all(
+        {"AdultAgeCriterionMet", "NoGuidelineExclusionPresent"} <= conditions
+        for conditions in eligibility_child_conditions
+    ), "Standalone pathway branches must retain all ancestor applicability conditions"
+
+    education_plan = next(
+        resource for resource in pathway_resources
+        if resource.get("resourceType") == "PlanDefinition"
+        and str(resource.get("id") or "").endswith("-protocol-educate-step")
+    )
+    education_conditions = set(
+        condition["expression"]["expression"]
+        for action in education_plan.get("action") or []
+        for condition in action.get("condition") or []
+    )
+    assert {
+        "AdultAgeCriterionMet",
+        "CrsDiagnosisVerified",
+        "NoGuidelineExclusionPresent",
+        "SinusSurgeryPlanningActive",
+        "SinusSurgeryOrderPresent",
+    } <= education_conditions, "Standalone leaf branches must retain all ancestor and local gates"
+
     decision_conditions = _condition_expressions_by_action_id(decision_resources)
-    assert ("CrsDiagnosisVerified",) in decision_conditions["verify-diagnosis"]
-    assert ("NoGuidelineExclusionPresent",) not in decision_conditions["verify-diagnosis"]
-    assert decision_conditions["collect-snot"] == [()]
-    assert ("NoFineCutCtAvailable",) in decision_conditions["obtain-ct"]
-    assert all("NoGuidelineExclusionPresent" not in entry for entry in decision_conditions["obtain-ct"])
-    assert decision_conditions["educate-postop"] == [()]
-    assert all(entry == () for entry in decision_conditions["assess-candidacy"])
-    assert all(entry == () for entry in decision_conditions["avoid-fixed-therapy"])
-    assert ("CrsSubtypeLikelyToBenefitFromSurgery",) in decision_conditions["identify-subtype"]
-    assert all("CrsDiagnosisVerified" not in entry for entry in decision_conditions["identify-subtype"])
-    assert ("SurgicalCandidacyEstablished",) in decision_conditions["offer-surgery"]
-    assert all("CrsDiagnosisVerified" not in entry for entry in decision_conditions["offer-surgery"])
+    decision_root = next(
+        resource for resource in decision_resources
+        if resource.get("resourceType") == "PlanDefinition"
+        and str(resource.get("id") or "").endswith("-recommendation")
+    )
+    assert all(action.get("condition") for action in decision_root.get("action") or []), (
+        "Root decision-table PlanDefinition links must retain the same gates as child plans"
+    )
+    assert any({"AdultAgeCriterionMet", "CrsDiagnosisVerified", "NoGuidelineExclusionPresent"} <= set(entry)
+               for entry in decision_conditions["verify-diagnosis"])
+    assert any({"AdultAgeCriterionMet", "NoGuidelineExclusionPresent"} <= set(entry)
+               for entry in decision_conditions["collect-snot"])
+    assert any({"AdultAgeCriterionMet", "CrsDiagnosisVerified", "NoGuidelineExclusionPresent",
+                "SinusSurgeryPlanningActive", "NoFineCutCtAvailable"} <= set(entry)
+               for entry in decision_conditions["obtain-ct"])
+    assert any({"AdultAgeCriterionMet", "CrsDiagnosisVerified", "NoGuidelineExclusionPresent",
+                "SinusSurgeryPlanningActive", "SinusSurgeryOrderPresent"} <= set(entry)
+               for entry in decision_conditions["educate-postop"])
+    assert any({"AdultAgeCriterionMet", "CrsDiagnosisVerified"} <= set(entry)
+               for entry in decision_conditions["assess-candidacy"])
+    assert any({"AdultAgeCriterionMet", "CrsDiagnosisVerified"} <= set(entry)
+               for entry in decision_conditions["avoid-fixed-therapy"])
+    assert any({"AdultAgeCriterionMet", "CrsDiagnosisVerified", "CrsSubtypeLikelyToBenefitFromSurgery"} <= set(entry)
+               for entry in decision_conditions["identify-subtype"])
+    assert any({"AdultAgeCriterionMet", "CrsDiagnosisVerified", "SurgicalCandidacyEstablished"} <= set(entry)
+               for entry in decision_conditions["offer-surgery"])
 
 
 # ---------------------------------------------------------------------------
@@ -733,6 +1246,49 @@ sections:
         assert activity_json["id"] == "a1"
         assert activity_json["title"] == "Refer to specialist"
         assert activity_json["kind"] == "CommunicationRequest"
+
+    def test_force_regeneration_removes_only_orphaned_decision_table_children(self, tmp_repo):
+        topic = "bells-palsy"
+        artifact = "management-decision"
+        topic_dir = tmp_repo / "topics" / topic
+        structured_dir = topic_dir / "structured"
+        computable_dir = topic_dir / "computable"
+        structured_dir.mkdir(parents=True)
+        computable_dir.mkdir(parents=True)
+        self._make_root_tracking_yaml(tmp_repo, topic, artifact, "decision-table")
+        self._make_decision_table_artifact(
+            structured_dir,
+            artifact,
+            [{"id": "c1", "label": "Facial weakness present"}],
+        )
+        _make_formalize_config(topic_dir, topic)
+        stale_plan = {
+            "resourceType": "PlanDefinition",
+            "id": "management-decision-negative",
+            "url": "http://example.org/fhir/PlanDefinition/management-decision-negative",
+            "action": [{
+                "definitionCanonical": "http://example.org/fhir/ActivityDefinition/old-action",
+            }],
+        }
+        (computable_dir / "PlanDefinition-management-decision-negative.json").write_text(
+            json.dumps(stale_plan)
+        )
+        (computable_dir / "ActivityDefinition-old-action.json").write_text(json.dumps({
+            "resourceType": "ActivityDefinition",
+            "id": "old-action",
+            "url": "http://example.org/fhir/ActivityDefinition/old-action",
+        }))
+
+        result = CliRunner().invoke(
+            formalize,
+            [topic, artifact, "--force"],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Removed stale PlanDefinition-management-decision-negative.json" in result.output
+        assert not (computable_dir / "PlanDefinition-management-decision-negative.json").exists()
+        assert not (computable_dir / "ActivityDefinition-old-action.json").exists()
 
     def test_decision_table_event_trigger_does_not_emit_action_trigger(self, tmp_repo):
         topic = "trigger-topic"

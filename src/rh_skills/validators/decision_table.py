@@ -69,6 +69,7 @@ _DATA_ELEMENT_ROLES = {
 
 _DATA_ELEMENT_VALUE_TYPES = {
     "presence",
+    "boolean",
     "quantity",
     "codeable_concept",
     "date_time",
@@ -273,13 +274,11 @@ def validate_decision_table(
                 if claim_id:
                     claim_ids.add(claim_id)
                 strength = entry.get("strength")
-                if strength is None or str(strength).strip() == "":
-                    report_warn(
-                        f"  decision-table: evidence_traceability entry #{idx} missing recommended 'strength' field"
-                    )
-                    continue
-                normalized_strength = str(strength).strip().lower()
-                if normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
+                if strength is not None and str(strength).strip():
+                    normalized_strength = str(strength).strip().lower()
+                else:
+                    normalized_strength = None
+                if normalized_strength and normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
                     report_error(
                         f"  decision-table: evidence_traceability entry #{idx} has invalid strength '{strength}' "
                         f"(allowed: {', '.join(sorted(_EVIDENCE_STRENGTH_VALUES))})"

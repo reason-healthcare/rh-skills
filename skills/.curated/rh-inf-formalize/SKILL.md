@@ -154,6 +154,9 @@ Executable activity coding rule:
 - Do not use recommendation prose or text-only `code.text` as a substitute for coding.
 - If MCP is unavailable, emit an explicit `TODO:MCP-UNREACHABLE` placeholder coding so verify fails visibly.
 
+Questionnaire identity rule:
+- When an approved L2 assessment's `sections.instrument` provides `id`, `canonical`, and `version`, preserve those values on the generated Questionnaire. This keeps QuestionnaireResponses authored from a shared or previously published Questionnaire resolvable by the generated CQL. Generate Questionnaire content from the L2 items; do not replace the generated resource with a copied source Questionnaire. If no identity is supplied, use the topic's formalize configuration defaults.
+
 Order-set and regimen decomposition rule:
 - When the L2 source describes an order set, regimen, or medication bundle,
   do not keep it as one broad executable medication action if the component

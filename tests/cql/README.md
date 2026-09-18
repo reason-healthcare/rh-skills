@@ -16,6 +16,7 @@ tests/cql/
         bundle.json          ← FHIR R4 Bundle (required)
         patient.json         ← standalone Patient resource (optional)
         parameters.json      ← CQL parameter overrides (optional)
+        evaluation-context.json ← subject, evaluation date, period, generic parameters (optional)
       expected/
         expression-results.json  ← expected define-name → value map
       notes.md               ← brief description of what the case tests
@@ -54,6 +55,35 @@ the clinical data the CQL expressions retrieve.
 A standalone `Patient` resource. When present, it is used as the evaluation
 context (`context Patient`). If omitted, the first `Patient` resource in
 `bundle.json` is used.
+
+### `evaluation-context.json` (optional)
+
+Provide explicit evaluation context when a bundle contains multiple Patients or
+the CQL depends on a fixed clock, measurement period, or other named parameter:
+
+```json
+{
+  "subject": "Patient/test-patient",
+  "evaluationDate": "2026-06-15T09:20:00Z",
+  "measurementPeriod": {
+    "start": "2026-01-01T00:00:00Z",
+    "end": "2026-12-31T23:59:59Z",
+    "startInclusive": true,
+    "endInclusive": true
+  },
+  "parameters": {
+    "IncludeHistoricalData": false
+  }
+}
+```
+
+`subject` accepts a FHIR reference (`Patient/id`) or an id (normalized to
+`Patient/id`). If omitted, the runner uses `patient.json`, then the first
+Patient in `bundle.json`. `evaluationDate` is passed as the evaluator clock.
+`measurementPeriod` is sent both as evaluator boundary flags and as the full
+`Measurement Period` CQL parameter, preserving the supplied inclusivity flags.
+Other `parameters` are sent as JSON values. Values from
+`evaluation-context.json` override same-named entries from `parameters.json`.
 
 ### `parameters.json` (optional)
 
@@ -133,13 +163,24 @@ rh-skills cql test <topic> <LibraryName>
 
 For each case it:
 1. Resolves `topics/<topic>/computable/<LibraryName>.cql`
-2. For each `<define>` in `expected/expression-results.json`, runs:
+2. Loads optional `evaluation-context.json`, `parameters.json`, and
+   `patient.json` from the case input.
+3. For each `<define>` in `expected/expression-results.json`, runs:
    ```bash
-   rh cql eval <LibraryName>.cql "<define>" --data input/bundle.json
+   rh cql eval <LibraryName>.cql "<define>" --data input/bundle.json \
+     --subject Patient/test-patient \
+     --evaluation-date 2026-06-15T09:20:00Z \
+     --measurement-period-start 2026-01-01T00:00:00Z \
+     --measurement-period-end 2026-12-31T23:59:59Z \
+     --parameter 'Measurement Period={"start":"2026-01-01T00:00:00Z","end":"2026-12-31T23:59:59Z","startInclusive":true,"endInclusive":true}'
    ```
-3. Compares stdout to the expected value (JSON then string fallback)
-4. Reports `PASS` or `FAIL` per expression per case
-5. Exits non-zero if any case fails
+   Context flags are included only when present. The full interval is passed as
+   JSON under the exact CQL parameter name, so inclusive/exclusive semantics are
+   not inferred from the start/end flags.
+4. Compares stdout to the expected JSON value with strict type matching
+   (`true` differs from `1`; `null` remains distinct).
+5. Reports `PASS` or `FAIL` per expression per case
+6. Exits non-zero if any case fails
 
 ---
 
