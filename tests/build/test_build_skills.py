@@ -121,6 +121,39 @@ def test_builds_single_platform_bundle_with_companions(build_repo, build_env):
     assert (skill_root / "SKILL.md").read_text().startswith("---\n")
 
 
+def test_copilot_accepts_mode_examples_nested_by_mode(build_repo, build_env):
+    source = build_repo / "skills" / ".curated" / "rh-inf-sample" / "examples"
+    plan = source / "review-mode" / "plan.md"
+    output = source / "author-mode" / "output.md"
+    plan.parent.mkdir(parents=True)
+    output.parent.mkdir(parents=True)
+    plan.write_text("Review plan\n")
+    output.write_text("Author output\n")
+    (source / "plan.md").unlink()
+    (source / "output.md").unlink()
+
+    result = run_build("--platform", "copilot", "--validate", env=build_env)
+
+    assert result.returncode == 0, result.stderr
+    skill_root = build_repo / "dist" / "copilot" / "rh-inf-sample"
+    assert (skill_root / "examples" / "review-mode" / "plan.md").is_file()
+    assert (skill_root / "examples" / "author-mode" / "output.md").is_file()
+
+
+def test_copilot_rejects_nested_examples_missing_output(build_repo, build_env):
+    source = build_repo / "skills" / ".curated" / "rh-inf-sample" / "examples"
+    plan = source / "review-mode" / "plan.md"
+    plan.parent.mkdir(parents=True)
+    plan.write_text("Review plan\n")
+    (source / "plan.md").unlink()
+    (source / "output.md").unlink()
+
+    result = run_build("--platform", "copilot", "--validate", env=build_env)
+
+    assert result.returncode != 0
+    assert "expected reference.md, an examples/**/plan.md or examples/**/plan.yaml, and examples/**/output.md" in result.stderr
+
+
 def test_builds_all_bundled_platforms_deterministically(build_repo, build_env):
     first = run_build("--all", env=build_env)
     assert first.returncode == 0, first.stderr

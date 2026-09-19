@@ -66,13 +66,13 @@ artifact row named `concepts`, materialized at
 | L2 Type | Strategy | Primary Resource | Supporting Resources |
 |---------|----------|------------------|---------------------|
 | `evidence-summary` | evidence-summary | Evidence | EvidenceVariable |
-| `decision-table` | decision-table | PlanDefinition (eca-rule) | ActivityDefinition, Library (CQL) |
+| `decision-table` | decision-table | PlanDefinition (eca-rule) | ActivityDefinition for coded executable leaves, Library (CQL) |
 | `care-pathway` | care-pathway | PlanDefinition (clinical-protocol) | ActivityDefinition |
 | `terminology` | terminology | ValueSet | ConceptMap |
 | `measure` | measure | Measure | Library (CQL) |
 | `assessment` | assessment | Questionnaire | — |
 | `policy` | policy | PlanDefinition (eca-rule) | Questionnaire (DTR), Library (CQL) |
-| `eligibility-criteria` | eligibility-criteria | EvidenceVariable | ValueSet |
+| `eligibility-criteria` | eligibility-criteria | EvidenceVariable | — |
 | `risk-factors` | risk-factors | EvidenceVariable | ValueSet |
 | `custom` | generic (named fallback) | PlanDefinition | — |
 
@@ -143,8 +143,8 @@ Directionality: `rh-skills formalize` consumes L2 structured artifacts as input
 and emits L3 FHIR JSON artifacts as output.
 
 Executable activity coding rule:
-- If an `ActivityDefinition` already has approved coding in the topic `concepts` artifact, reuse it.
-- If it does not, implement mode must call ReasonHub MCP to find a real code before writing JSON.
+- An executable `ActivityDefinition` must carry an authored `code`/`codings` value or resolve an exact L2 `concept_refs[]` identifier from the approved topic `concepts` artifact.
+- Never infer a code from an action title, label, token similarity, or an unapproved concept. If neither approved source is present, stop formalization with an actionable error.
 - Choose the target terminology by action kind:
   `MedicationRequest` → prefer RxNorm;
   `ServiceRequest` → prefer LOINC for lab/observable/instrument orders, otherwise SNOMED CT for procedural/imaging/referral orders;
@@ -152,7 +152,26 @@ Executable activity coding rule:
   `CommunicationRequest` → usually SNOMED CT;
   `Task` → valid for task-oriented activities such as collect-information when the FHIR R4 kind is `Task`.
 - Do not use recommendation prose or text-only `code.text` as a substitute for coding.
-- If MCP is unavailable, emit an explicit `TODO:MCP-UNREACHABLE` placeholder coding so verify fails visibly.
+- `kind: guidance` is source-faithful non-order recommendation text in the PlanDefinition action tree. It never produces an ActivityDefinition, clinical code, order, or referral.
+
+Care-pathway condition and linkage rules:
+- Treat `applicability_condition` and every entry in `applicability_conditions[]` as explicit local gates; gates are conjunctive. Use the plural field when the step requires more than one condition, such as population eligibility and incomplete-response status.
+- Preserve each gate in the generated action and in any standalone strategy PlanDefinition generated for that branch.
+- Link a pathway step to decision-table recommendation logic only through its authored `rule_id` or `rule_ids[]`. Step labels, descriptions, token similarity, and candidate ordering are not bindings. Leave an unlinked workflow step as a textual PlanDefinition action.
+- Do not add a default condition when the L2 pathway omits one. Report a missing or ambiguous clinical gate for L2 review.
+
+Questionnaire identity rule:
+- When an approved L2 assessment's `sections.instrument` provides `id`, `canonical`, and `version`, preserve those values on the generated Questionnaire. This keeps the authored form identity stable for response capture and extraction. Clinical CQL consumes the resulting coded clinical Observations; it must not require the QuestionnaireResponse or its identifier to select evidence. Generate Questionnaire content from the L2 items; do not replace the generated resource with a copied source Questionnaire. If no identity is supplied, use the topic's formalize configuration defaults.
+
+SDC Observation-extraction metadata rule:
+- If the L2 assessment's `sections.instrument.observation_extraction` is present, preserve its typed contract exactly: `profile` is the SDC extraction StructureDefinition canonical plus version, `enabled` is a Boolean, and an enabled extraction requires `category: {system, code, display}`.
+- Emit the profile in `Questionnaire.meta.profile`, `sdc-questionnaire-observationExtract` as `valueBoolean: true`, and `sdc-questionnaire-observation-extract-category` as a `valueCodeableConcept` with the authored Coding. The generic L2 validator/formalizer rejects unsupported fields; never add arbitrary extensions by editing generated JSON.
+- If SDC Observation extraction is enabled, require an explicitly authored `sections.instrument.version_algorithm: {system, code, display?}` and preserve it in the standard `artifact-versionAlgorithm` extension. Do not invent an algorithm; the versioned SDC profile requires this metadata. For ordinary assessments without enabled SDC extraction, version-algorithm metadata remains optional.
+- Preserve each item's LOINC Coding directly in `Questionnaire.item.code[]`, including its system, version, code, and display. This is a FHIR `Coding[]`, not a nested `CodeableConcept`.
+- Structured assessment scoring is opt-in. When `sections.scoring.algorithm` is present, validate its supported method, source item references, requiredness, evidence claims, output range and versioned score Coding before generating the Questionnaire. The current bounded method is `count_boolean_answers`; it generates a read-only integer score item with one `sdc-questionnaire-calculatedExpression` (`text/fhirpath`) and item-level `sdc-questionnaire-observationExtract: true`. Missing/invalid answers omit the score, while a complete count of zero is retained. Do not calculate a score for an ordinary assessment that has no structured algorithm. Unsupported methods must fail with an explicit capability error rather than be translated into a Boolean count.
+- FHIR `Observation.valueInteger` has no unit field. Do not add a unit extension to an integer Questionnaire score item; the authored score Coding definition must explain what is counted. A future quantity-scoring contract needs separate implementation and validation.
+- Formalization emits the Questionnaire metadata and item expression; it does not itself extract or create score Observations. Verify that the SDC/runtime path recomputes exactly one integral result, rejects conflicting prefilled values, and emits the final score Observation only for a completed response with all source inputs usable. Keep runtime extraction evidence distinct from examples or fixture oracles.
+- Formalization produces the Questionnaire definition. It does not claim to run SDC extraction or create the resulting Observations; verify those in the extraction/runtime workflow.
 
 Order-set and regimen decomposition rule:
 - When the L2 source describes an order set, regimen, or medication bundle,
@@ -371,6 +390,11 @@ FHIR files directly.
       corresponding `terminology` artifact, use those as the
       authoritative starting set, augmented by MCP search only where the plan
       set is incomplete.
+   e. Preserve an explicitly supplied `expansion.response.parameter[]` exactly
+      as returned or authored provenance. A persisted local CodeSystem
+      projection may record its exact canonical/version only as
+      `{name: used-codesystem, valueUri: '<canonical>|<version>'}`; do not
+      invent, replace, or normalize parameters from an upstream MCP response.
 5. Run the formalize command for each approved L2 artifact. The `<artifact-name>`
    argument **must be the plan entry's `source_artifact` value**. That should
    match the L2 artifact's `name` field (the kebab-case identifier in the YAML,
@@ -509,8 +533,9 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
    | PlanDefinition | `type` (eca-rule or clinical-protocol), `action[]` with at least one entry |
    | Library | `type`, `content[].contentType` |
    | Measure | `group[].population[]` with both numerator and denominator, `scoring` |
-   | Questionnaire | `item[]` with `linkId` on every item |
+   | Questionnaire | `item[]` with `linkId` on every item; if SDC extraction is authored, profile and extraction/category extensions are preserved |
    | ValueSet | `compose.include[]` with at least one entry |
+   | CodeSystem | locally authored `content: complete`, explicit canonical/version, case sensitivity, and a defined concept list |
    | ConceptMap | `group[]` with `element[].target[]` |
    | Evidence | R4-valid core Evidence shape, including `exposureBackground` when Evidence is emitted |
    | EvidenceVariable | `characteristic[]` with at least one entry |
@@ -518,17 +543,22 @@ delete any file, and **MUST NOT** write to tracking.yaml directly.
 
    Report each missing field as an error (not a warning).
 
-5. **Unresolved code placeholder detection** — scan all FHIR JSON files for
-   the literal string `TODO:MCP-UNREACHABLE`. Each occurrence indicates a code
-   that the LLM could not resolve via reasonhub MCP tools. Report each as a
-   warning with the file path and field location. If the count exceeds 3 per
-   resource, report it as an error.
+5. **Unresolved executable coding detection** — scan all FHIR JSON files for
+   missing clinical `ActivityDefinition.code` values and the literal string
+   `TODO:MCP-UNREACHABLE`. Treat either result as an error: formalize must
+   stop before creating an uncoded executable activity.
 
-6. For each ValueSet or ConceptMap resource, call
+6. For each locally authored CodeSystem, confirm its L2 `code_systems[]`
+   definition supplied a valid FHIR id, canonical URL, version, complete
+   content, explicit case sensitivity, and nonempty `code`/`display`/
+   `definition` for every concept. Do not synthesize a CodeSystem from a
+   ValueSet, accept a partial external code system, or omit it from the tracked
+   computable resource list.
+7. For each ValueSet or ConceptMap resource, call
    `reasonhub-codesystem_verify_code` with each coded entry's `system` and
    `code`. Report any code that fails verification as a terminology error.
    Treat terminology errors as verify failures (exit non-zero).
-7. Report pass/fail per artifact and exit non-zero only when required checks fail.
+8. Report pass/fail per artifact and exit non-zero only when required checks fail.
 
 Verify is read-only and safe to re-run at any time.
 
@@ -586,15 +616,15 @@ When multiple strategies produce resources that reference each other:
   `http://example.org/fhir/<ResourceType>/<id>` for cross-references.
   The actual base URL is set via `rh-skills formalize-config`.
 
-**`sub_pathway_reference` (care-pathway → ECA rule)**: When a care-pathway step
-carries `sub_pathway_reference: <eca-artifact-id>`, the formalized
-PlanDefinition (clinical-protocol) must include an `action.definitionCanonical`
-pointing to the ECA PlanDefinition's canonical URL at the corresponding leaf
-action. Both artifacts are formalized independently via `rh-skills formalize`.
-Set the cross-reference by hand in the PlanDefinition JSON after both resources
-are generated — the CLI does **not** resolve `sub_pathway_reference` links
-automatically. Do not search source code to verify this; handle it inline as a
-manual JSON edit before calling `rh-skills validate <topic> l3 <artifact>`.
+**Explicit care-pathway binding**: A pathway step links to a decision-table
+recommendation only when its L2 `rule_id` or `rule_ids[]` names that rule.
+Formalize resolves those stable references to generated PlanDefinition
+canonicals. Do not bind by matching titles or prose, and do not edit generated
+PlanDefinition JSON to repair an incomplete L2 link. Update the structured L2
+artifact through the documented `promote body-init` / `promote derive` flow,
+validate it, obtain technical review, and regenerate with `rh-skills formalize`.
+Use `applicability_conditions[]` when a step needs multiple local gates; all
+listed gates, together with `applicability_condition` if present, are ANDed.
 
 ---
 

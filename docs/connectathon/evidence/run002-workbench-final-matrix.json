@@ -1,0 +1,824 @@
+{
+  "checkedAt": "2026-09-18T04:35:21.671Z",
+  "scope": "Authenticated Workbench API replay versus direct public Node/WASM using an already-imported snapshot. This verifier does not import or mutate the snapshot.",
+  "inputs": {
+    "baseUrl": "http://127.0.0.1:9090",
+    "projectId": "connectathon-steadi-replay",
+    "snapshotId": "snap_connectathon-steadi-replay_run002-3e6a1fde4db9",
+    "contentPath": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+    "contentSha256": "3e6a1fde4db9b4e83d73d56ce388b2777883236f5748e05fd61e7b9025b6023e",
+    "fixtureIndexPath": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/executable/fixtures/index.json",
+    "fixtureIndexSha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc",
+    "runtimePath": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+    "runtimeSha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0",
+    "cookieProvided": true,
+    "plans": [
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-collect-screen|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-exercise-for-increased-risk|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-individualize-mult-0cf8535f51|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-await-complete-response|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-collect-screen|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-confirm-population|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-exercise-guidance|0.2.0"
+      },
+      {
+        "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance",
+        "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-multifactorial-guidance|0.2.0"
+      }
+    ],
+    "measure": {
+      "artifactId": "connectathon-steadi-replay--measure-measure",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0"
+    },
+    "questionnaire": {
+      "artifactId": "connectathon-steadi-replay--questionnaire-steadi-three-question-screen",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0"
+    },
+    "evaluationDate": "2026-06-15T09:20:00Z",
+    "measurementPeriod": {
+      "start": "2026-01-01T00:00:00Z",
+      "end": "2026-12-31T23:59:59Z",
+      "startInclusive": true,
+      "endInclusive": true
+    }
+  },
+  "sourceFixturesUnchanged": true,
+  "cases": [
+    {
+      "fixtureId": "younger-than-65",
+      "subject": "Patient/patient-younger-than-65",
+      "encounter": "Encounter/encounter-younger-than-65",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-exercise-for-increased-risk|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-individualize-mult-0cf8535f51|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-await-complete-response|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-confirm-population|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-exercise-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-multifactorial-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "connectathon-steadi-replay--measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "connectathon-steadi-replay--questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "canonicalPreserved": true,
+          "parity": true,
+          "responsePath": "younger-than-65.connectathon-steadi-replay--questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-all-no",
+      "subject": "Patient/patient-eligible-all-no",
+      "encounter": "Encounter/encounter-eligible-all-no",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-exercise-for-increased-risk|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-individualize-mult-0cf8535f51|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-await-complete-response|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-confirm-population|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-exercise-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-multifactorial-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "connectathon-steadi-replay--measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "connectathon-steadi-replay--questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "canonicalPreserved": true,
+          "parity": true,
+          "responsePath": "eligible-all-no.connectathon-steadi-replay--questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-unsteady-yes",
+      "subject": "Patient/patient-eligible-unsteady-yes",
+      "encounter": "Encounter/encounter-eligible-unsteady-yes",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-exercise-for-increased-risk|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-individualize-mult-0cf8535f51|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-await-complete-response|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-confirm-population|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-exercise-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-multifactorial-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "connectathon-steadi-replay--measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "connectathon-steadi-replay--questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "canonicalPreserved": true,
+          "parity": true,
+          "responsePath": "eligible-unsteady-yes.connectathon-steadi-replay--questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-prior-fall-yes",
+      "subject": "Patient/patient-eligible-prior-fall-yes",
+      "encounter": "Encounter/encounter-eligible-prior-fall-yes",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-exercise-for-increased-risk|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-individualize-mult-0cf8535f51|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-await-complete-response|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-confirm-population|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-exercise-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-multifactorial-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "connectathon-steadi-replay--measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "connectathon-steadi-replay--questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "canonicalPreserved": true,
+          "parity": true,
+          "responsePath": "eligible-prior-fall-yes.connectathon-steadi-replay--questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-incomplete-response",
+      "subject": "Patient/patient-eligible-incomplete-response",
+      "encounter": "Encounter/encounter-eligible-incomplete-response",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-exercise-for-increased-risk|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-individualize-mult-0cf8535f51|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-await-complete-response|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-confirm-population|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-exercise-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-multifactorial-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "connectathon-steadi-replay--measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "connectathon-steadi-replay--questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "canonicalPreserved": true,
+          "parity": true,
+          "responsePath": "eligible-incomplete-response.connectathon-steadi-replay--questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    },
+    {
+      "fixtureId": "eligible-no-response",
+      "subject": "Patient/patient-eligible-no-response",
+      "encounter": "Encounter/encounter-eligible-no-response",
+      "evaluationDate": "2026-06-15T09:20:00Z",
+      "measurementPeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-12-31T23:59:59Z",
+        "startInclusive": true,
+        "endInclusive": true
+      },
+      "artifactResults": [
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-exercise-for-increased-risk|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-individualize-mult-0cf8535f51|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-await-complete-response|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-collect-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-collect-screen.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-confirm-population|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-confirm-population.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-exercise-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance.apply.json"
+        },
+        {
+          "kind": "apply",
+          "artifactId": "connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-multifactorial-guidance|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance.apply.json"
+        },
+        {
+          "kind": "measure",
+          "artifactId": "connectathon-steadi-replay--measure-measure",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--measure-measure.measure.json"
+        },
+        {
+          "kind": "questionnaire",
+          "artifactId": "connectathon-steadi-replay--questionnaire-steadi-three-question-screen",
+          "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+          "httpStatus": 200,
+          "directSuccess": true,
+          "canonicalPreserved": true,
+          "parity": true,
+          "responsePath": "eligible-no-response.connectathon-steadi-replay--questionnaire-steadi-three-question-screen.questionnaire.json"
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "fixtures": 6,
+    "artifactCalls": 72,
+    "parityPassed": 72,
+    "parityFailed": 0
+  },
+  "negative": {
+    "status": "not-run",
+    "reason": "No explicitly confirmed isolated incomplete snapshot supplied."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-09-18T20:55:17.427950+00:00",
+  "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
+  "readOnly": true,
+  "networkFetchPerformed": false,
+  "verificationMethod": "Compare current commit/tree to recorded baseline and inspect no-optional-locks Git status; no fetch or writes.",
+  "filesChecked": 41,
+  "changedFiles": [],
+  "baselineHead": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+  "currentHead": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+  "baselineMatches": true,
+  "currentTree": "e1d07a071961dabe54c6409ba7e717723fdede6f",
+  "baselineTree": "e1d07a071961dabe54c6409ba7e717723fdede6f",
+  "treeMatches": true,
+  "gitStatus": "## main...origin/main",
+  "clean": true,
+  "passed": true
+}

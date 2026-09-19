@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-09-18T04:23:44.503532+00:00",
+  "supersedes": "final-app-coldstart-2917cba6.json only for final Workbench UI revision and service restart evidence; previous record remains preserved",
+  "runtime": {
+    "commit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+    "nativeSha256": "44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d",
+    "wasmNodeSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320"
+  },
+  "applications": {
+    "workbench": {
+      "commit": "f00e223",
+      "build": "npm run build --workspace @reasonhealth/workbench",
+      "productionStart": "DATABASE_URL=postgres://workbench:workbench@127.0.0.1:55432/workbench PORT=9090 HOSTNAME=127.0.0.1 npm run start --workspace @reasonhealth/workbench",
+      "localGetStatus": 307
+    },
+    "standalone": {
+      "commit": "c120708674c4b22bb110ff865eec87b467ae99a8",
+      "build": "npm run build from packages/cpg-review",
+      "productionStart": "RH_CPG_WASM_NODE_MODULE=<RH_REPO>/packages/cpg/wasm-node/rh_cpg.js PORT=9091 HOSTNAME=127.0.0.1 node .next/standalone/packages/cpg-review/server.js",
+      "localGetStatus": 200
+    }
+  },
+  "apiEvidence": {
+    "run001Workbench": "workbench-api-run001-2917cba6.json",
+    "run002Workbench": "workbench-api-run002-2917cba6.json",
+    "run001Standalone": "standalone-api-run001-2917cba6.json",
+    "run002Standalone": "standalone-api-run002-2917cba6-final.json"
+  }
+}

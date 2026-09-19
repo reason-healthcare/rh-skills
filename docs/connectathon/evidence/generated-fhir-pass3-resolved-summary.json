@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-09-18T01:46:11.435202+00:00",
+  "scope": "Captured17FHIRresources with same resources loaded as validator dependencies; FHIR4.0.1,SDC4.0.0,CPG2.0.0;terminologyoff;finalportablepackagepending",
+  "counts": {
+    "warning": 33,
+    "information": 5
+  },
+  "errors": [],
+  "unresolvedCanonicals": 0,
+  "inputSha256": "fa524068a910beb743394794bd6cf2c704639e5009dab8ee3f8452a24724319a",
+  "outcomePath": "/private/tmp/connectathon-live/evidence/generated-fhir-pass3-resolved-validation.json",
+  "warningDisposition": {
+    "dom6_missing_narrative": 17,
+    "Library_type_missing_system_and_binding": {
+      "count": 4,
+      "status": "generic producer correction assigned"
+    },
+    "offline_MIME_code_checks": 9,
+    "LOINC_code_checks_offline_but_MCP_verified": 3
+  },
+  "command": "java -Xmx2g -Duser.home=/private/tmp/connectathon-live/validator-home -jar /private/tmp/connectathon-live/tools/validator_cli-6.10.2.jar /private/tmp/connectathon-live/evidence/generated-fhir-pass3-resource-validation-input.json -version 4.0.1 -ig hl7.fhir.uv.sdc#4.0.0 -ig hl7.fhir.uv.cpg#2.0.0 -ig /private/tmp/connectathon-live/evidence/pass3-resource-dependencies -tx n/a -output /private/tmp/connectathon-live/evidence/generated-fhir-pass3-resolved-validation.json",
+  "exitCode": 0
+}

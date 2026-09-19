@@ -1,0 +1,165 @@
+{
+  "checkedAt": "2026-09-18T04:35:18.291083+00:00",
+  "run": "run001",
+  "scope": "Required core invokes native CQL and direct Node/WASM only. Optional service replays and external evidence are not converted into a full-track pass.",
+  "inputs": {
+    "workspace": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-001",
+    "content": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+      "sha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a"
+    },
+    "fixtures": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-001/topics/steadi-fall-screening/process/package-workspace/executable/fixtures/index.json",
+      "sha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc"
+    },
+    "runtime": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+      "sha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0"
+    },
+    "nativeRuntime": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+      "sha256": "44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d"
+    }
+  },
+  "core": [
+    {
+      "name": "native-cql:FallScreeningAndGuidanceRecommendationLogic",
+      "status": "pass",
+      "expected": 30,
+      "observed": {
+        "passed": 30,
+        "total": 30
+      },
+      "command": [
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/.venv/bin/rh-skills",
+        "cql",
+        "test",
+        "steadi-fall-screening",
+        "FallScreeningAndGuidanceRecommendationLogic"
+      ],
+      "exitCode": 0,
+      "counts": [
+        [
+          30,
+          30
+        ]
+      ],
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/native-FallScreeningAndGuidanceRecommendationLogic.log"
+    },
+    {
+      "name": "native-cql:MeasureMeasure",
+      "status": "pass",
+      "expected": 18,
+      "observed": {
+        "passed": 18,
+        "total": 18
+      },
+      "command": [
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/.venv/bin/rh-skills",
+        "cql",
+        "test",
+        "steadi-fall-screening",
+        "MeasureMeasure"
+      ],
+      "exitCode": 0,
+      "counts": [
+        [
+          18,
+          18
+        ]
+      ],
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/native-MeasureMeasure.log"
+    },
+    {
+      "name": "direct-public-node-wasm-semantic",
+      "status": "pass",
+      "report": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/direct-node/results.json",
+      "command": [
+        "node",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/docs/connectathon/tools/verify-direct-node.mjs",
+        "--content",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+        "--runtime",
+        "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+        "--oracle-root",
+        "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon/test-bundles",
+        "--profile",
+        "run001",
+        "--output",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/direct-node"
+      ],
+      "exitCode": 0,
+      "counts": [],
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/direct-node.log"
+    }
+  ],
+  "corePassed": true,
+  "optional": [
+    {
+      "name": "standalone-api-parity",
+      "status": "pass",
+      "command": [
+        "node",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/docs/connectathon/tools/vendor/verify-standalone-api-parity.mjs",
+        "--content",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+        "--plan",
+        "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+        "--fixtures",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-001/topics/steadi-fall-screening/process/package-workspace/executable/fixtures/index.json",
+        "--assertion-root",
+        "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon/test-bundles/cases",
+        "--evaluation-date",
+        "2026-06-15T09:20:00Z",
+        "--output",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/standalone-api-parity",
+        "--standalone",
+        "http://127.0.0.1:9091",
+        "--runtime",
+        "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+        "--guidance-json",
+        "{\"mode\": \"communication-request\"}"
+      ],
+      "exitCode": 0,
+      "counts": [],
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/standalone-api-parity.log"
+    },
+    {
+      "name": "workbench-api-matrix",
+      "status": "pass",
+      "command": [
+        "node",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/docs/connectathon/tools/vendor/verify-workbench-api-matrix.mjs",
+        "--config",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/workbench-api-matrix-config.json",
+        "--output",
+        "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/workbench-api-matrix"
+      ],
+      "exitCode": 0,
+      "counts": [],
+      "log": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-services-run001/workbench-api-matrix.log"
+    }
+  ],
+  "external": [
+    {
+      "name": "authenticated-browser",
+      "status": "not_run"
+    },
+    {
+      "name": "official-fhir-validation",
+      "status": "not_run"
+    },
+    {
+      "name": "manual-clinical-review",
+      "status": "not_run"
+    },
+    {
+      "name": "SDC-extraction",
+      "status": "unsupported"
+    },
+    {
+      "name": "second-engine-parity",
+      "status": "unsupported"
+    }
+  ]
+}

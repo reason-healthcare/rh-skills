@@ -90,10 +90,9 @@ def _check_value_set(r: dict) -> list[str]:
 
 
 def _check_evidence(r: dict) -> list[str]:
-    errors = []
-    if e := _has_field(r, "certainty", "Evidence.certainty[]"):
-        errors.append(e)
-    return errors
+    # R4 Evidence has no required certainty element.  Certainty is clinical
+    # appraisal content and must not be fabricated to satisfy a preflight check.
+    return []
 
 
 def _check_library(r: dict) -> list[str]:

@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-09-18T01:30:58.362286+00:00",
+  "commit": "2fe13b88c0aafcc3139e6e32b873497afc83d4c5",
+  "scope": "Portable FHIR R4 CQL compatibility follow-up. Original authored CQL remains unchanged; candidate copies are under /private/tmp.",
+  "artifacts": {
+    "native": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+      "sha256": "601a2f67962e20a98976d7afd89c5bb68153080fc9ffd4c0df76469e7016f092"
+    },
+    "wasmNode": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-node/rh_cpg_bg.wasm",
+      "sha256": "473bbf7af42704308f3fdb721da7f852cdb4f71ab61a15f65b91eaa3a5ef1a46"
+    },
+    "wasmWeb": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm/rh_cpg_bg.wasm",
+      "sha256": "473bbf7af42704308f3fdb721da7f852cdb4f71ab61a15f65b91eaa3a5ef1a46"
+    },
+    "wasmBundler": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-bundler/rh_cpg_bg.wasm",
+      "sha256": "473bbf7af42704308f3fdb721da7f852cdb4f71ab61a15f65b91eaa3a5ef1a46"
+    },
+    "nodeDist": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+      "sha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0"
+    }
+  },
+  "officialDependencies": {
+    "translatorCoordinate": "info.cqframework:cql-to-elm-cli:3.26.0",
+    "signatureLevel": "Overloads",
+    "modelInfo": {
+      "path": "/private/tmp/connectathon-cql-translator/fhir-modelinfo-4.0.1.xml",
+      "sha256": "16fa8119e074ebfb6a301b58af72417c2360dca899e89f6e3bd1d9a0e4789722"
+    },
+    "fhirHelpers": {
+      "path": "/private/tmp/connectathon-cql-translator/FHIRHelpers-4.0.1.cql",
+      "sha256": "6748661c16fe66dd07a68f07f77f7fea44e8b933d265dcc3c575964ba8329591",
+      "license": "Apache-2.0"
+    }
+  },
+  "results": {
+    "rhCompiledPortableCandidate": "96/96 passed: original 48 plus 48 context/identity/answer variations",
+    "nativeCandidateEvidence": "/private/tmp/connectathon-live/evidence/native-portable-candidate-context-verification.json",
+    "officialTranslation": "FHIRHelpers and both candidate libraries translated successfully with --signatures Overloads",
+    "officialTranslationLog": "/private/tmp/connectathon-live/evidence/official-cql-translator-overloads.log",
+    "nativeReferenceElm": "three actual fixtures: true, false, null passed",
+    "nativeReferenceElmLog": "/private/tmp/connectathon-live/evidence/reference-elm-runtime-probe.log",
+    "publicNodeReferenceElm": "three actual fixtures passed; MeasureReport measure retains canonical|version",
+    "publicNodeEvidence": "/private/tmp/connectathon-live/evidence/runtime-public-node-reference-elm.json",
+    "testCommands": [
+      "cargo test -p rh-cql --lib eval --quiet (295 passed)",
+      "cargo test -p rh-cql --test fhir_choice_primitive_test --quiet (3 passed)",
+      "cargo test -p rh-cpg --lib --quiet (52 passed)",
+      "pnpm --dir packages/cpg test -- --runInBand (5 passed)",
+      "pnpm --dir packages/cpg run build",
+      "NPM_CONFIG_CACHE=/private/tmp/connectathon-npm-cache pnpm --dir packages/cpg pack:dry-run (includes wasm-node/package.json)"
+    ]
+  },
+  "limitations": [
+    "This is standard-model translation and runtime proof, not a claim that authored source has already switched.",
+    "The build logs a wasm-pack wasm-opt permission fallback on this host even though it exits zero; the listed artifacts were hash-read and executed by the public Node probe."
+  ]
+}

@@ -38,4 +38,5 @@ Bash 3.2+ (portable macOS/Linux): Follow standard conventions
 
 
 <!-- MANUAL ADDITIONS START -->
+- CQL authoring must prefer the CMS FHIR Quality Measure Development IG Pattern Index (https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html) whenever a listed pattern covers the clinical/data category. Preserve its intent if runtime constraints require an adaptation, and use local rh-inf-cql guidance only when the index does not cover the situation.
 <!-- MANUAL ADDITIONS END -->

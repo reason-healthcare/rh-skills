@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-09-18T04:16:33.561911+00:00",
+  "runtime": {
+    "commit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+    "nativeSha256": "44e89078f9205909f770a3b0498558a4029fca707c38c543ec98a9be89ad633d",
+    "wasmNodeSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320"
+  },
+  "applications": {
+    "workbench": {
+      "commit": "0b2607979c860863f0fa89712a0437ef3d4ab55a",
+      "build": "npm run build --workspace @reasonhealth/workbench",
+      "start": "DATABASE_URL=postgres://workbench:workbench@127.0.0.1:55432/workbench PORT=9090 HOSTNAME=127.0.0.1 npm run start --workspace @reasonhealth/workbench",
+      "localGet": "307 unauthenticated redirect"
+    },
+    "standalone": {
+      "commit": "c120708674c4b22bb110ff865eec87b467ae99a8",
+      "build": "cd packages/cpg-review && npm run build",
+      "start": "RH_CPG_WASM_NODE_MODULE=<RH_REPO>/packages/cpg/wasm-node/rh_cpg.js PORT=9091 HOSTNAME=127.0.0.1 node .next/standalone/packages/cpg-review/server.js",
+      "localGet": "200"
+    }
+  },
+  "apiParity": {
+    "run001Workbench": {
+      "calls": "54/54",
+      "report": "/private/tmp/connectathon-live/evidence/workbench-api-matrix-run001-08a666000842-2917cba6-production/workbench-api-matrix-report.json"
+    },
+    "run002Workbench": {
+      "calls": "72/72",
+      "report": "/private/tmp/connectathon-live/evidence/workbench-api-matrix-run002-3e6a1f-2917cba6-production/workbench-api-matrix-report.json"
+    },
+    "run001Standalone": {
+      "cases": "6/6 semantic 6/6",
+      "report": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-2917cba6-production/standalone-api-parity-report.json"
+    },
+    "run002Standalone": {
+      "outputParity": "6/6",
+      "semanticStatus": "pending rerun after explicit positive-note action-id contract correction",
+      "report": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run002-3e6a1f-2917cba6-production/standalone-api-parity-report.json"
+    }
+  }
+}

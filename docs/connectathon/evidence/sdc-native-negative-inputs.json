@@ -1,0 +1,85 @@
+{
+  "checkedAt": "2026-09-18T10:33:59.369968+00:00",
+  "runtimeSha256": "584345995210c80a0f1442730e5b1d7e58bcdcea2e7a8b014205fdd8f24ac13a",
+  "scope": "Root independent native adverse-input replay",
+  "passed": true,
+  "results": [
+    {
+      "case": "wrong-questionnaire-version",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "wrong-subject",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "wrong-encounter",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "multiple-choice-values",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "duplicate-unanswered-item",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "duplicate-answer",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "item-extract-disabled",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "unknown-modifier",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "missing-required-answer",
+      "expected": "not-invoked",
+      "actual": "not-invoked",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "case": "missing-author",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "case": "invalid-authored",
+      "expected": "error",
+      "actual": "error",
+      "passed": true,
+      "exitCode": 1
+    }
+  ]
+}

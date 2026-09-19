@@ -36,6 +36,35 @@ to version drift.
 ### Multi-event case
 Verify whether earliest, latest, first, or any-match semantics work as intended.
 
+### Patient-context isolation case
+When testing an engine's Patient context, include a second patient's Encounter
+and clinical resources in the same Bundle, set `--subject` to the intended
+patient, and verify those foreign resources do not affect the result. A failure
+is a runtime context-scoping blocker; do not make the CQL pass by adding
+`subject.reference = 'Patient/' + Patient.id` predicates. Keep legitimate
+encounter, date, and status joins in the expression.
+
+### Assessment-derived Observation cases
+Clinical decision CQL should receive extracted coded Observations rather than
+Questionnaire or QuestionnaireResponse resources. Include a case containing
+only the relevant Observations and their clinical context, with no response or
+questionnaire resources; the result should remain the same. Preserve source
+provenance in extraction output, but do not require a response reference in
+the CQL selection predicate unless a distinct source-defined audit rule calls
+for it.
+
+### Calculated score Observation cases
+When downstream logic consumes a scored assessment, preserve existing item-
+level cases and add score-only cases. Cover every in-range score (including
+zero), the authored threshold boundaries, missing or non-integer values,
+out-of-range values, wrong status or terminology identity, wrong effective
+time/Encounter, and duplicate valid score Observations. Ambiguous or invalid
+score evidence must remain unknown; a valid zero is present data, not false or
+missing. Include a separately produced score Observation with the same declared
+code/version and clinical context but no `Questionnaire`, `QuestionnaireResponse`,
+or `derivedFrom`; downstream CQL should return the same result. This proves the
+scoring and decision layers are separated.
+
 ## Folder Pattern
 
 ```text
@@ -56,8 +85,18 @@ Run the evaluator per expression to isolate failures:
 rh cql eval \
   topics/<topic>/computable/<LibraryName>.cql \
   "ExpressionName" \
-  --data tests/cql/<LibraryName>/<case>/input/bundle.json
+  --data tests/cql/<LibraryName>/<case>/input/bundle.json \
+  --subject Patient/<id> \
+  --evaluation-date 2026-06-15T09:20:00Z \
+  --measurement-period-start 2026-01-01 \
+  --measurement-period-end 2026-12-31 \
+  --parameter 'Measurement Period={"start":"2026-01-01","end":"2026-12-31","startInclusive":true,"endInclusive":true}' \
+  --lib-path topics/<topic>/computable
 ```
+
+Use the subject, fixed evaluation date, complete authored period object, and
+parameters from the fixture context. The exact `Measurement Period` parameter
+preserves its closure flags; boundary flags alone do not carry that information.
 
 Or use `rh-skills cql test <topic> <LibraryName>` to run all cases at once.
 

@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-09-18T17:33:05.724409+00:00",
+  "scope": "Correct local derivative Library translator metadata; unchanged official CQL and pinned ELM",
+  "manifest": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/dependencies/FHIRCommon-2.0.0/manifest.json",
+  "manifestSha256": "48535aa60c1394b7cc6d5f729cb025435a1a14c66ad14874dcfbfed545bfb18c",
+  "verifiedFileCount": 16,
+  "allFileHashesMatch": true,
+  "derivativeLibrarySha256": "d278723f3ea4f9d8e9a8b9bd4c9ef1c0ed17f3806f7bd824c2cd8efe2ba3bf4b",
+  "translatorOptions": [
+    {
+      "name": "translatorVersion",
+      "valueString": "3.26.0"
+    },
+    {
+      "name": "format",
+      "valueString": "JSON"
+    },
+    {
+      "name": "signatureLevel",
+      "valueString": "Overloads"
+    }
+  ],
+  "preservedFiles": {
+    "Library-FHIRCommon.published.json": "c90eb9b775f074bebb7a2be747bfd49238e02944926ff71f8f74971931ab675f",
+    "FHIRCommon-2.0.0.cql": "40ed15194eb5f436c9fdeec9267a74f1ef5f93b3755f431b3bf687d4cf4da28c",
+    "FHIRCommon-2.0.0.pinned-fhirhelpers.elm.json": "5b735bf1807df3518d365206797b7c1693cacc996d9e022eab5bd6ca11264817"
+  },
+  "cliBoundary": "Normal import-library generates its own minimal FHIR Library from the pinned CQL/ELM manifest; this cached derivative Library is used by direct helper probes. No manually edited generated Library is required."
+}

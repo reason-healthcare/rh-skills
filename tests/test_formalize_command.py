@@ -167,6 +167,70 @@ class TestFormalizeCommand:
         events = topic["events"]
         assert any(e["type"] == "computable_converged" for e in events)
 
+    def test_terminology_code_system_is_written_and_tracked(self, formalize_topic):
+        topic_dir = formalize_topic / "topics" / "test-topic"
+        structured_path = topic_dir / "structured" / "score-terminology.yaml"
+        yaml = YAML()
+        yaml.default_flow_style = False
+        with open(structured_path, "w") as stream:
+            yaml.dump({
+                "artifact_schema_version": "1.0",
+                "metadata": {"id": "score-terminology", "title": "Score terminology"},
+                "sections": {
+                    "code_systems": [{
+                        "id": "three-question-score",
+                        "url": "https://example.org/fhir/CodeSystem/three-question-score",
+                        "version": "0.2.0",
+                        "content": "complete",
+                        "case_sensitive": True,
+                        "concepts": [{
+                            "code": "yes-count",
+                            "display": "Three-question yes count",
+                            "definition": "Number of true answers across the three screening questions.",
+                        }],
+                    }],
+                    "value_sets": [{
+                        "id": "three-question-score",
+                        "system": "https://example.org/fhir/CodeSystem/three-question-score",
+                        "version": "0.2.0",
+                        "codes": [{
+                            "code": "yes-count",
+                            "display": "Three-question yes count",
+                        }],
+                    }],
+                },
+            }, stream)
+
+        tracking = load_tracking(formalize_topic)
+        topic = next(item for item in tracking["topics"] if item["name"] == "test-topic")
+        topic["structured"].append({
+            "name": "score-terminology",
+            "artifact_type": "terminology",
+            "status": "approved",
+            "file": "topics/test-topic/structured/score-terminology.yaml",
+        })
+        with open(formalize_topic / "tracking.yaml", "w") as stream:
+            yaml.dump(tracking, stream)
+
+        runner = CliRunner()
+        result = runner.invoke(formalize, ["test-topic", "score-terminology"])
+        assert result.exit_code == 0, result.output
+
+        code_system_path = topic_dir / "computable" / "CodeSystem-three-question-score.json"
+        code_system = json.loads(code_system_path.read_text())
+        assert code_system["url"] == "https://example.org/fhir/CodeSystem/three-question-score"
+        assert code_system["version"] == "0.2.0"
+        assert code_system["concept"][0]["definition"] == (
+            "Number of true answers across the three screening questions."
+        )
+
+        updated = load_tracking(formalize_topic)
+        updated_topic = next(item for item in updated["topics"] if item["name"] == "test-topic")
+        entry = next(item for item in updated_topic["computable"] if item["name"] == "score-terminology")
+        code_system_relative_path = "topics/test-topic/computable/CodeSystem-three-question-score.json"
+        assert code_system_relative_path in entry["files"]
+        assert entry["checksums"][code_system_relative_path]
+
     def test_tracking_uses_matching_plan_entry_inputs_not_primary_target(self, formalize_topic):
         topic_dir = formalize_topic / "topics" / "test-topic"
         structured_dir = topic_dir / "structured"
@@ -358,7 +422,7 @@ class TestCqlEmbedding:
         with open(structured_dir / "test-measure.yaml", "w") as f:
             y.dump({
                 "metadata": {"id": "test-measure", "title": "Test Measure"},
-                "populations": [{"id": "ip", "type": "initial-population"}],
+                "sections": {"populations": [{"id": "ip", "type": "initial-population"}]},
             }, f)
 
         make_tracking(tmp_repo, topics=[{
@@ -422,7 +486,7 @@ class TestDeterministicFormalizeRegression:
         with open(structured_dir / "test-measure.yaml", "w") as f:
             y.dump({
                 "metadata": {"id": "test-measure", "title": "Test Measure"},
-                "populations": [{"id": "ip", "type": "initial-population"}],
+                "sections": {"populations": [{"id": "ip", "type": "initial-population"}]},
             }, f)
 
         make_tracking(tmp_repo, topics=[{
@@ -481,10 +545,12 @@ sections:
     - id: order-ct
       label: Order sinus CT
       type: diagnostic-test
+      code: {system: http://example.org/test, code: test-order, display: Test order}
       do_not_perform: true
     - id: counsel
       label: Counsel patient
       type: communication
+      code: {system: http://example.org/test, code: test-order, display: Test order}
       intent: proposal
   rules:
     - id: r1
@@ -522,8 +588,8 @@ sections:
             assert activity["doNotPerform"] is True
             assert activity["status"] == "active"
             assert activity["version"] == "2.1.0"
-            assert activity["code"]["coding"][0]["system"] == "http://snomed.info/sct"
-            assert activity["code"]["coding"][0]["code"] == "TODO:MCP-UNREACHABLE"
+            assert activity["code"]["coding"][0]["system"] == "http://example.org/test"
+            assert activity["code"]["coding"][0]["code"] == "test-order"
             assert activity["code"]["text"] == "Order sinus CT"
             plan = json.loads((computable / "PlanDefinition-dt.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
@@ -531,8 +597,10 @@ sections:
             assert plan["library"][0].endswith("/Library/dt-logic")
             assert plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
             assert child_plan["library"][0].endswith("/Library/dt-logic")
-            assert plan["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"]
-            assert child_plan["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"]
+            # The generated tree lacks the CPG common-process coding required
+            # to claim the recommendation profile.
+            assert "meta" not in plan
+            assert "meta" not in child_plan
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -564,6 +632,7 @@ sections:
     - id: assess-surgical-candidacy
       label: Assess surgical candidacy
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
     - id: complete-qol-assessment
       label: Complete quality of life assessment
       kind: assessment
@@ -619,18 +688,18 @@ sections:
             assert activity["kind"] == "Task"
             assert activity["intent"] == "proposal"
             assert activity["meta"]["profile"][0] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity"
-            assert "profile" not in activity
+            assert activity["profile"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
             assert activity["code"]["coding"][0]["system"] == "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs"
             assert activity["code"]["coding"][0]["code"] == "collect-information"
             assert activity["extension"][0]["url"] == "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
-            assert activity["extension"][0]["valueCanonical"].endswith("/Questionnaire/qol-assessment")
+            assert activity["extension"][0]["valueCanonical"].endswith("/Questionnaire/qol-assessment|2.1.0")
             dynamic_values = {dv["path"]: dv["expression"] for dv in activity.get("dynamicValue", [])}
             collect_with_url = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
-            expected_collect_with_expr = f"%context.extension.where(url = '{collect_with_url}').value"
-            assert dynamic_values["input.type"]["language"] == "text/cql-identifier"
-            assert dynamic_values["input.type"]["expression"] == "%context.code"
-            assert dynamic_values["input.valueCanonical"]["language"] == "text/cql-identifier"
-            assert dynamic_values["input.valueCanonical"]["expression"] == expected_collect_with_expr
+            expected_collect_with_expr = f"extension.where(url = '{collect_with_url}').value"
+            assert dynamic_values["input[0].type"]["language"] == "text/fhirpath"
+            assert dynamic_values["input[0].type"]["expression"] == "code"
+            assert dynamic_values["input[0].valueCanonical"]["language"] == "text/fhirpath"
+            assert dynamic_values["input[0].valueCanonical"]["expression"] == expected_collect_with_expr
             assert "relatedArtifact" not in activity
             assert not (computable / "Questionnaire-qol-assessment.json").exists()
             assert child_plan["action"][0]["id"] == "assess-surgical-candidacy"
@@ -752,6 +821,7 @@ sections:
     - id: order-ct
       label: Order sinus CT
       kind: order
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: intake
@@ -803,10 +873,10 @@ sections:
 
             planning = pathway["action"][0]
             assert planning["id"] == "planning"
-            assert planning["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
+            assert "definitionCanonical" not in planning
             execution = pathway["action"][1]
             assert execution["id"] == "execution"
-            assert execution["definitionCanonical"].endswith("/PlanDefinition/dt-assessment")
+            assert "definitionCanonical" not in execution
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -836,6 +906,7 @@ sections:
     - id: order-ct
       label: Order sinus CT
       kind: order
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: intake
@@ -890,8 +961,8 @@ sections:
             assert "Using deterministic CPG-on-FHIR builders" not in result.output
             pathway = json.loads((topic_dir / "computable" / "PlanDefinition-path.json").read_text())
             assert [action["id"] for action in pathway["action"]] == ["phase1", "phase2", "phase3"]
-            assert pathway["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
-            assert pathway["action"][1]["definitionCanonical"].endswith("/PlanDefinition/dt-planning")
+            assert "definitionCanonical" not in pathway["action"][0]
+            assert "definitionCanonical" not in pathway["action"][1]
             assert "definitionCanonical" not in pathway["action"][2]
             assert (topic_dir / "computable" / "PlanDefinition-path-phase1.json").exists()
             assert (topic_dir / "computable" / "PlanDefinition-path-phase2.json").exists()
@@ -925,6 +996,7 @@ sections:
     - id: order-ct
       label: Order sinus CT
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: verify-diagnosis
@@ -988,8 +1060,8 @@ sections:
             planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
             assert assessment_plan["type"]["coding"][0]["code"] == "workflow-definition"
             assert planning_plan["type"]["coding"][0]["code"] == "workflow-definition"
-            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert "definitionCanonical" not in assessment_plan["action"][0]
+            assert "definitionCanonical" not in planning_plan["action"][0]
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1024,6 +1096,7 @@ sections:
     - id: order-ct
       label: Order sinus CT
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: verify-diagnosis
@@ -1084,8 +1157,8 @@ sections:
             assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
             assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment.json").read_text())
             planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
-            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert "definitionCanonical" not in assessment_plan["action"][0]
+            assert "definitionCanonical" not in planning_plan["action"][0]
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1112,6 +1185,7 @@ sections:
     - id: verify-crs-diagnosis
       label: Verify CRS diagnosis
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: rule-verify-diagnosis
       event: verify-diagnosis
@@ -1193,9 +1267,11 @@ sections:
     - id: assess-surgical-candidacy
       label: Assess surgical candidacy
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
     - id: offer-surgery
       label: Offer surgery
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: rule-assess-candidacy
       event: assess-candidacy
@@ -1287,6 +1363,7 @@ sections:
     - id: order-ct
       label: Order sinus CT
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: verify-diagnosis
@@ -1352,9 +1429,11 @@ sections:
             assert protocol["type"]["coding"][0]["display"] == "Clinical Protocol"
             assert recommendation["type"]["coding"][0]["system"] == "http://terminology.hl7.org/CodeSystem/plan-definition-type"
             assert recommendation["type"]["coding"][0]["display"] == "ECA Rule"
-            assert protocol["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-pathwaydefinition"]
-            assert strategy["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-strategydefinition"]
-            assert recommendation["meta"]["profile"] == ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"]
+            # The generated tree has no CPG common-process codes; it must not
+            # claim a CPG profile merely because it uses PlanDefinition.
+            assert "meta" not in protocol
+            assert "meta" not in strategy
+            assert "meta" not in recommendation
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1382,6 +1461,7 @@ sections:
     - id: order-ct
       label: Order sinus CT
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: verify-diagnosis
@@ -1440,13 +1520,13 @@ sections:
             assert (topic_dir / "computable" / "PlanDefinition-path-planning.json").exists()
             assessment_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-assessment.json").read_text())
             planning_plan = json.loads((topic_dir / "computable" / "PlanDefinition-path-planning.json").read_text())
-            assert assessment_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-verify-diagnosis")
-            assert planning_plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-assess-candidacy")
+            assert "definitionCanonical" not in assessment_plan["action"][0]
+            assert "definitionCanonical" not in planning_plan["action"][0]
             assert not (topic_dir / "computable" / "PlanDefinition-path-crs-pathway.json").exists()
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
-    def test_stub_mode_care_pathway_semantically_links_steps_to_recommendation_plans(self, tmp_repo):
+    def test_stub_mode_care_pathway_requires_explicit_rule_links_for_recommendations(self, tmp_repo):
         topic = "semantic-link-topic"
         topic_dir = tmp_repo / "topics" / topic
         structured_dir = topic_dir / "structured"
@@ -1472,9 +1552,11 @@ sections:
     - id: assess-surgical-candidacy
       label: Assess surgical candidacy
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
     - id: perform-full-exposure-surgery
       label: Perform full exposure surgery
       kind: Procedure
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: event-assess-candidacy
@@ -1535,8 +1617,9 @@ sections:
 
             assess_plan = json.loads((computable / "PlanDefinition-semantic-link-topic-protocol-assess-candidacy.json").read_text())
             assert assess_plan["type"]["coding"][0]["code"] == "workflow-definition"
-            nested = assess_plan["action"][0]["definitionCanonical"]
-            assert nested.endswith("/PlanDefinition/semantic-link-topic-recommendation-assess-candidacy")
+            assert "definitionCanonical" not in assess_plan["action"][0], (
+                "similar step wording must not bind an unlinked pathway node to a recommendation"
+            )
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -1566,6 +1649,7 @@ sections:
     - id: withhold-antibacterial-therapy
       label: Withhold antibacterial therapy
       kind: ServiceRequest
+      code: {{system: http://example.org/test, code: test-order, display: Test order}}
   rules:
     - id: {long_rule_id}
       event: antibacterial-review
@@ -1661,6 +1745,7 @@ sections:
     - id: perform-full-exposure-surgery
       label: Perform full exposure surgery
       kind: Procedure
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: event-operative-planning
@@ -1742,9 +1827,11 @@ sections:
     - id: assess-surgical-candidacy
       label: Assess surgical candidacy
       kind: ServiceRequest
+      code: {system: http://example.org/test, code: test-order, display: Test order}
     - id: administer-snot-22-assessment
       label: Administer or review SNOT-22 assessment
       kind: questionnaire
+      code: {system: http://example.org/test, code: test-order, display: Test order}
   rules:
     - id: r1
       event: event-assess-candidacy
@@ -1814,7 +1901,7 @@ artifact_type: decision-table
 sections:
   events: [{id: intake, label: Intake, trigger_type: named-event}]
   conditions: [{id: severe, label: Severe, values: [Yes, No]}]
-  actions: [{id: order-ct, label: Order CT, kind: order}]
+  actions: [{id: order-ct, label: Order CT, kind: order, code: {system: http://example.org/test, code: test-order, display: Test order}}]
   rules: [{id: r1, event: intake, when: {severe: Yes}, then: [order-ct]}]
 """
         )
@@ -1849,7 +1936,7 @@ sections:
         structured_dir.mkdir(parents=True)
         (topic_dir / "computable").mkdir()
         (structured_dir / "measure.yaml").write_text(
-            "artifact_type: measure\nsections: {}\n"
+            "artifact_type: measure\nsections:\n  populations:\n    - id: initial-population\n      type: initial-population\n"
         )
         self._write_topic_config(topic_dir, topic)
         make_tracking(tmp_repo, topics=[{

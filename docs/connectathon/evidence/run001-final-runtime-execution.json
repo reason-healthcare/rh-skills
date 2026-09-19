@@ -1,0 +1,1087 @@
+{
+  "checkedAt": "2026-09-18T04:05:33.039Z",
+  "scope": "Independent actual embedded ELM execution via public Node/WASM package; all generated PlanDefinition roots, six individual MeasureReports, supplied QuestionnaireResponses. No aggregate or SDC extraction claim.",
+  "input": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+  "bundleSha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a",
+  "stableInput": true,
+  "wasmSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320",
+  "counts": {
+    "total": 53,
+    "passed": 53,
+    "failed": 0
+  },
+  "results": [
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "fall-screening-and-guidance-recommendation",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--fall-screening-and-guidance-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "fall-screening-and-guidance-recommendation-offer-screen",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--fall-screening-and-guidance-recommendation-offer-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "older-adult-fall-screening-protocol",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--older-adult-fall-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "older-adult-fall-screening-protocol-interpret-phase",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--older-adult-fall-screening-protocol-interpret-phase.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "older-adult-fall-screening-protocol-positive-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--older-adult-fall-screening-protocol-positive-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "younger-than-65",
+      "root": "older-adult-fall-screening-protocol-screen-phase",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "noScreeningOutsidePopulation": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "younger-than-65--older-adult-fall-screening-protocol-screen-phase.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "younger-than-65",
+      "root": "measure",
+      "populations": {
+        "initial-population": 0,
+        "denominator": 0,
+        "numerator": 0
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "younger-than-65--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "younger-than-65",
+      "root": "steadi-three-question-screen",
+      "expectedValid": true,
+      "valid": true,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[]}",
+        "value": {
+          "issues": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "fall-screening-and-guidance-recommendation",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--fall-screening-and-guidance-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "fall-screening-and-guidance-recommendation-offer-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--fall-screening-and-guidance-recommendation-offer-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "older-adult-fall-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--older-adult-fall-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "older-adult-fall-screening-protocol-interpret-phase",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--older-adult-fall-screening-protocol-interpret-phase.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "older-adult-fall-screening-protocol-positive-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--older-adult-fall-screening-protocol-positive-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-all-no",
+      "root": "older-adult-fall-screening-protocol-screen-phase",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--older-adult-fall-screening-protocol-screen-phase.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-all-no",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 1
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-all-no--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "eligible-all-no",
+      "root": "steadi-three-question-screen",
+      "expectedValid": true,
+      "valid": true,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[]}",
+        "value": {
+          "issues": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "fall-screening-and-guidance-recommendation",
+      "taskCount": 1,
+      "communicationCount": 1,
+      "checks": {
+        "succeeds": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--fall-screening-and-guidance-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "fall-screening-and-guidance-recommendation-offer-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--fall-screening-and-guidance-recommendation-offer-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+      "taskCount": 0,
+      "communicationCount": 1,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "older-adult-fall-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 1,
+      "checks": {
+        "succeeds": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--older-adult-fall-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "older-adult-fall-screening-protocol-interpret-phase",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--older-adult-fall-screening-protocol-interpret-phase.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "older-adult-fall-screening-protocol-positive-guidance",
+      "taskCount": 0,
+      "communicationCount": 1,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--older-adult-fall-screening-protocol-positive-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-unsteady-yes",
+      "root": "older-adult-fall-screening-protocol-screen-phase",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--older-adult-fall-screening-protocol-screen-phase.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-unsteady-yes",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 1
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-unsteady-yes--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "eligible-unsteady-yes",
+      "root": "steadi-three-question-screen",
+      "expectedValid": true,
+      "valid": true,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[]}",
+        "value": {
+          "issues": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "fall-screening-and-guidance-recommendation",
+      "taskCount": 1,
+      "communicationCount": 1,
+      "checks": {
+        "succeeds": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--fall-screening-and-guidance-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "fall-screening-and-guidance-recommendation-offer-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--fall-screening-and-guidance-recommendation-offer-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+      "taskCount": 0,
+      "communicationCount": 1,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "older-adult-fall-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 1,
+      "checks": {
+        "succeeds": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--older-adult-fall-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "older-adult-fall-screening-protocol-interpret-phase",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--older-adult-fall-screening-protocol-interpret-phase.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "older-adult-fall-screening-protocol-positive-guidance",
+      "taskCount": 0,
+      "communicationCount": 1,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--older-adult-fall-screening-protocol-positive-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "older-adult-fall-screening-protocol-screen-phase",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--older-adult-fall-screening-protocol-screen-phase.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 1
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-prior-fall-yes--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "eligible-prior-fall-yes",
+      "root": "steadi-three-question-screen",
+      "expectedValid": true,
+      "valid": true,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[]}",
+        "value": {
+          "issues": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "fall-screening-and-guidance-recommendation",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--fall-screening-and-guidance-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "fall-screening-and-guidance-recommendation-offer-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--fall-screening-and-guidance-recommendation-offer-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "older-adult-fall-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--older-adult-fall-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "older-adult-fall-screening-protocol-interpret-phase",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--older-adult-fall-screening-protocol-interpret-phase.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "older-adult-fall-screening-protocol-positive-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--older-adult-fall-screening-protocol-positive-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-incomplete-response",
+      "root": "older-adult-fall-screening-protocol-screen-phase",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--older-adult-fall-screening-protocol-screen-phase.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-incomplete-response",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 0
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-incomplete-response--MeasureReport-measure.json"
+    },
+    {
+      "kind": "questionnaire-validation",
+      "fixture": "eligible-incomplete-response",
+      "root": "steadi-three-question-screen",
+      "expectedValid": false,
+      "valid": false,
+      "result": {
+        "success": true,
+        "data": "{\"issues\":[\"Item fallen-in-past-year is required but has no answer\"]}",
+        "value": {
+          "issues": [
+            "Item fallen-in-past-year is required but has no answer"
+          ]
+        }
+      },
+      "passed": true
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "fall-screening-and-guidance-recommendation",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--fall-screening-and-guidance-recommendation.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "fall-screening-and-guidance-recommendation-offer-screen",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--fall-screening-and-guidance-recommendation-offer-screen.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "older-adult-fall-screening-protocol",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "oneScreeningWhenEligible": true,
+        "oneGuidanceWhenApplicable": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--older-adult-fall-screening-protocol.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "older-adult-fall-screening-protocol-interpret-phase",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--older-adult-fall-screening-protocol-interpret-phase.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "older-adult-fall-screening-protocol-positive-guidance",
+      "taskCount": 0,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--older-adult-fall-screening-protocol-positive-guidance.json"
+    },
+    {
+      "kind": "apply",
+      "fixture": "eligible-no-response",
+      "root": "older-adult-fall-screening-protocol-screen-phase",
+      "taskCount": 1,
+      "communicationCount": 0,
+      "checks": {
+        "succeeds": true,
+        "noInappropriatePositiveGuidance": true,
+        "validActionStructure": true,
+        "noDanglingActionLinks": true,
+        "requestTargetsIncluded": true,
+        "nestedRequestsAreOptions": true,
+        "rootIsProposal": true,
+        "correctTaskQuestionnaire": true,
+        "correctSubject": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--older-adult-fall-screening-protocol-screen-phase.json"
+    },
+    {
+      "kind": "measure",
+      "fixture": "eligible-no-response",
+      "root": "measure",
+      "populations": {
+        "initial-population": 1,
+        "denominator": 1,
+        "numerator": 0
+      },
+      "checks": {
+        "succeeds": true,
+        "individualReport": true,
+        "correctSubject": true,
+        "scoreMatchesPopulation": true,
+        "noMisScopedAbsentReason": true,
+        "correctPeriod": true,
+        "initialPopulation": true,
+        "denominator": true,
+        "numerator": true
+      },
+      "passed": true,
+      "output": "eligible-no-response--MeasureReport-measure.json"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "runId": "run003",
+  "baseUrl": "${WORKBENCH_BASE_URL}",
+  "projectId": "connectathon-steadi-observations",
+  "snapshotId": "snap_connectathon-steadi-observations_run003-ba1474411f41",
+  "evaluationDate": "2026-06-15T09:20:00Z",
+  "measurementPeriod": {
+    "start": "2026-01-01T00:00:00Z",
+    "end": "2026-12-31T23:59:59Z",
+    "startInclusive": true,
+    "endInclusive": true
+  },
+  "contentPath": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/workspaces/run-003/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+  "fixtureIndexPath": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/workspaces/run-003/topics/steadi-live-replay/process/package-workspace/executable/fixtures/index.json",
+  "assertionRoot": "${REPO_ROOT}/rh-skills/dist/connectathon-20260919/workspaces/run-003/oracle/test-bundles/cases",
+  "runtimePath": "${REPO_ROOT}/rh/packages/cpg/dist/node.js",
+  "plans": [
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-fall-risk-screening-recommendation",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-fall-risk-screening-recommendation-collect-screen",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-collect-screen|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-fall-risk-screening-recommendation-exercise-for-increased-risk",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-exercise-for-increased-risk|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-risk-screening-recommendation-individualize-mult-0cf8535f51|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-steadi-fall-risk-screening-protocol",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-steadi-fall-risk-screening-protocol-confirm-population",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-confirm-population|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-steadi-fall-risk-screening-protocol-collect-screen",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-collect-screen|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-steadi-fall-risk-screening-protocol-await-complete-response",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-await-complete-response|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-steadi-fall-risk-screening-protocol-exercise-guidance",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-exercise-guidance|0.2.0"
+    },
+    {
+      "artifactId": "connectathon-steadi-observations--plandefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance",
+      "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol-multifactorial-guidance|0.2.0"
+    }
+  ],
+  "measure": {
+    "artifactId": "connectathon-steadi-observations--measure-measure",
+    "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0"
+  },
+  "questionnaire": {
+    "artifactId": "connectathon-steadi-observations--questionnaire-steadi-three-question-screen",
+    "canonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0"
+  },
+  "expectedCalls": {
+    "fixtures": 6,
+    "planApplies": 60,
+    "measures": 6,
+    "questionnaires": 6,
+    "total": 72
+  },
+  "auth": "Set WORKBENCH_COOKIE at execution; never add cookies to this file."
+}

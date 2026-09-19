@@ -5,7 +5,7 @@ compatibility: "Requires rh-skills project with topics/<topic>/computable/ struc
 applyTo: "**/*.cql, **/*.xml, **/Library-*.json, **/Measure-*.json, **/PlanDefinition-*.json, **/ActivityDefinition-*.json, **/tests/cql/**/*.json, **/tests/cql/**/*.yaml, **/skills/.curated/rh-inf-cql/**"
 metadata:
   author: "rh-skills"
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 ## User Input
@@ -37,6 +37,7 @@ Before producing any output:
 3. For **author** mode: confirm the structured artifact YAML exists at `topics/<topic>/structured/<artifact>.yaml`.
 4. For **review**/**debug**/**test-plan** modes: confirm the `.cql` source file exists at `topics/<topic>/computable/<LibraryName>.cql`.
 5. For any CQL expression involving **intervals, date/time, null semantics, or operators whose behavior is uncertain**: **first check the Critical Authoring Patterns table** (search this file for `## Critical Authoring Patterns`). Only call `reasonhub-search_spec_content` (source: `cql`) if the specific pattern is not already covered there.
+6. **Before authoring CQL, consult the [CMS FHIR Quality Measure Development IG Pattern Index](https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html)**. When it covers the requested category (patient, condition, encounter, observation, medication, device, procedure, or related quality-measure domain), use that pattern as the first-choice structure. Record the chosen pattern and why local guidance required a material deviation, if any.
 
 **Author mode — prohibited diagnostic commands**: Do **not** run `ls`, `git status`, `git diff`, or `rg --files` as part of the authoring workflow. The directory structure is confirmed by steps 1–4 above. Any exec call not in the author workflow steps below is wasted work.
 
@@ -49,7 +50,8 @@ If any check fails, report the missing resource and halt. Do NOT proceed with a 
 - **Deterministic work via CLI**: validation (`rh-skills cql validate`), compilation (`rh-skills cql translate`), and test execution (`rh-skills cql test`) are always delegated to the `rh-skills` CLI. The agent reasons about CQL but does not replace the CLI for deterministic operations.
 - **Ownership boundary**: `rh-inf-cql` owns `.cql` source files and fixture cases. FHIR JSON packaging is outside scope.
 - **Human confirmation for conflicts**: any ambiguity, inconsistency, or multi-option decision MUST be surfaced to the human before the agent proceeds. Silent resolution is not permitted.
-- **FHIRHelpers-agnostic runtime**: `rh cql compile` does not inject FHIRHelpers wrapper calls. Type coercion between FHIR and CQL system types is the runtime's responsibility, not the author's. Authors should still `include fhir.cqf.common.FHIRHelpers` for explicit conversions where needed.
+- **Portable FHIR CQL**: declare `using FHIR version '4.0.1'`, include the versioned `FHIRHelpers` library for FHIR primitive/choice conversions, and use FHIR logical-model types that translate in both `rh` and the reference translator. Do not claim interoperability from one engine alone.
+- **CMS QMD patterns first**: For FHIR CQL, prefer the [CMS QMD Pattern Index](https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html) over improvised logic when a listed pattern covers the clinical/data category. Apply the project's portability and terminology rules; if a CMS QMD pattern is not portable under the pinned runtime, keep its intent and record the tested replacement.
 
 ---
 
@@ -78,8 +80,8 @@ Allowed alternatives:
 ## Critical Authoring Patterns (read before writing any CQL)
 
 **Runtime defaults** (assume these unless the user specifies otherwise):
-- CQL version: `1.5.3` | FHIR model: `4.0.1` | Translator: standard defaults (signatureLevel none, enableAnnotations false)
-- Engine: `rh` — does NOT auto-inject FHIRHelpers; fixture tests are executed through `rh-skills cql test` / `rh cql eval`
+- CQL version: `1.5.3` | FHIR model: `4.0.1` | Record non-default translator options and validate against a reference translator when portability matters.
+- Engine: `rh`; fixtures run through `rh-skills cql test` / `rh cql eval`. Include pinned libraries explicitly and pass the complete evaluation context.
 
 Parameter-only decision-table libraries are scaffold artifacts and are not acceptable finished authoring outputs.
 
@@ -87,15 +89,22 @@ Parameter-only decision-table libraries are scaffold artifacts and are not accep
 
 | ❌ Wrong | ✓ Correct | Why |
 |----------|-----------|-----|
-| `M.authoredOn during Interval<DateTime>` | `ToDate(M.authoredOn) in Interval<Date>` | FHIR dateTime strings silently return `false` in DateTime intervals |
-| `date from M.authoredOn` | `ToDate(M.authoredOn)` | `date from` runtime-errors on FHIR strings |
-| `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Manual expansion is unnecessary; engine resolves by name |
-| `C.clinicalStatus = 'active'` | `C.clinicalStatus.value in { 'active' }` | FHIR CodeableConcept — compare `.value` string |
+| `M.authoredOn during Interval<DateTime>` | `FHIRHelpers.ToDateTime(M.authoredOn) during Interval<DateTime>` | Convert the FHIR primitive explicitly using the pinned helper |
+| `date from M.authoredOn` | `FHIRHelpers.ToDateTime(M.authoredOn)` | Convert the FHIR primitive explicitly; use a matching interval type |
+| `ToDateTime(E.period.start)` | `FHIRHelpers.ToDateTime(E.period.start)` | FHIR primitive conversion must use the declared helper |
+| `O.valueBoolean = true` | `(O.value as FHIR.boolean).value = true` | Observation value is a FHIR choice; use its FHIR logical type for portable translation |
+| `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Use typed membership; separately supply the complete pinned expansion through the runtime's terminology input or packaged knowledge Bundle |
+| `[Encounter: "Ambulatory"]` | `[Encounter: class ~ "Ambulatory"]` | The FHIR R4 Encounter retrieve's primary code path is `type`; name the non-primary `class` path explicitly |
+| `C.clinicalStatus.value = 'active'` | `exists (C.clinicalStatus.coding S where S ~ "Active")` | Compare the typed Coding with a declared Code and CodeSystem; do not split terminology identity into string predicates |
 | `define function "F"(p Interval<DateTime>): ... p ...` | `define "F": Interval[ToDate(start of ...), ToDate(end of ...)]` | Typed function parameters with complex types (`Interval<>`, `FHIR.*`) fail to resolve in the `rh` translator; use named `define` expressions instead |
-| `[Condition] C where C.recordedDate is not null` | `[Condition: "BellsPalsyValueSet"] C` | Retrieve without a code or valueset filter returns ALL records of that resource type — always scope at the retrieve |
-| `[Condition] C where exists(C.code.coding Coding where Coding.system = 'http://hl7.org/fhir/sid/icd-10-cm' and Coding.code = 'G51.0')` | `[Condition: "BellsPalsyValueSet"] C` | Inline code-system matching is brittle, misses synonymous codes across systems, and bypasses the terminology pipeline — pre-coordinate a multi-system valueset and use retrieve-level scoping |
+| `[Condition] C where C.recordedDate is not null` | `[Condition: "BellsPalsyValueSet"] C` when the coded concept defines selection | Broad retrieves can include unrelated resources. A terminology filter is appropriate when code membership defines the concept; a narrow context/relationship retrieve may be intentional if its scope is explicit and tested |
+| `[Condition] C where exists(C.code.coding S where S ~ "BellsPalsy")` | `[Condition: "BellsPalsyValueSet"] C` | Prefer a complete, reviewed ValueSet when the clinical concept includes synonyms or multiple codes; for one named code, declare its CodeSystem and use a typed terminology comparison |
 
-**Do not read secondary docs files** (`authoring-guidelines.md`, `engine-notes/README.md`, `translator-options/README.md`, `cli/usage.md`, etc.) before writing CQL. The information above and the anti-pattern catalog (search for `Anti-pattern catalog` in this file) covers the critical cases. Read those files only if a specific gap arises.
+Before writing CQL, read the required [CQL Style Guide](docs/cql-style-guide.md).
+Other secondary docs (`authoring-guidelines.md`, `engine-notes/README.md`,
+`translator-options/README.md`, `cli/usage.md`, and similar files) are
+on-demand: consult them when a specific runtime or workflow question arises.
+The critical authoring patterns and anti-pattern catalog below still apply.
 
 ---
 
@@ -271,10 +280,12 @@ Apply every time unless the user asks for something narrower. See
 - [ ] Are helper definitions used where they increase clarity?
 
 ### Retrieves and Terminology
-- [ ] Are retrieves scoped appropriately? (valueset or code filter at the retrieve)
+- [ ] Are retrieves scoped appropriately? Use a ValueSet/code filter when a coded concept defines the selection; document and test intentional context or relationship retrieves.
 - [ ] Are value sets and codes declared explicitly?
+- [ ] Is each declared ValueSet used by the evaluated resource path, or is its non-use justified by the actual coded resources being selected?
 - [ ] Are terminology versions pinned where reproducibility matters?
 - [ ] Is value set membership assumed too loosely anywhere?
+- [ ] If a clinical fact originates in a Questionnaire, does CQL consume its extracted clinical Observation(s), without retrieving the Questionnaire/QuestionnaireResponse or depending on response identifiers/derivedFrom? Preserve source provenance in the extraction output.
 
 ### Testing
 - [ ] Is there at least one positive case?
@@ -413,8 +424,36 @@ details, unknown terminology expansions, unverified fixture assumptions.
    > canonical URL rather than duplicated locally. For now, local-first via the
    > terminology L2 pipeline is the required path.
 
-2. **Apply the CQL style guide** (see Style Guide section below) and the
-   **authoring rubric** (see Authoring Rubric section below) before writing any code.
+   **Clinical decision CQL consumes extracted clinical resources.** For
+   questionnaire-derived evidence, use the SDC-produced, item-coded
+   `Observation` resources and scope each retrieve with its terminology L2
+   ValueSet, for example `[Observation: "UnsteadinessQuestion"]`. Do not
+   retrieve `Questionnaire` or `QuestionnaireResponse`, evaluate QR answers, or
+   require QR identifiers or `Observation.derivedFrom` for ordinary clinical
+   reasoning. Preserve source linkage such as `derivedFrom` in the extraction
+   output as provenance. For a calculated score Observation, consume its exact
+   authored terminology, value type/range, status, effective time, and encounter
+   context; do not recalculate it downstream. Accept an equivalent valid score
+   Observation from another producer under the same reviewed code/value
+   contract. A normalized extracted fixture is an oracle; it does not prove
+   that `$extract` produced those Observations. A source-defined audit rule
+   requiring response resources is a separate explicit exception, not a default
+   clinical pathway.
+
+   Fixture-driven native runs may supply a pre-expanded ValueSet or Bundle of
+   ValueSets at `tests/cql/<Library>/case-*/input/terminology.json`. The CQL
+   test runner forwards this file to `rh cql eval --terminology`; include only
+   complete, versioned expansions for declared canonical dependencies. Test
+   positive membership, wrong code, wrong system, and unresolved or wrong
+   ValueSet canonical version. Do not expect `Coding.version` or display text
+   alone to change standard CQL code membership; assert those fields separately
+   when they are part of the extraction contract.
+
+2. **Read the [CQL Style Guide](docs/cql-style-guide.md)** and apply the
+   **authoring rubric** (see Authoring Rubric below) before writing or reviewing
+   code. The guide is the source of truth for Patient-context retrieval,
+   terminology operators, FHIR primitive handling, provenance joins, and the
+   CMS QMD authoring-pattern precedence rule.
 
 3. **Draft the CQL library** using the template for the artifact type:
 
@@ -432,7 +471,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
 
    using FHIR version '4.0.1'
 
-   include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
+   include FHIRHelpers version '4.0.1' called FHIRHelpers
 
    codesystem "<SystemName>": '<system-url>'
 
@@ -494,7 +533,7 @@ details, unknown terminology expansions, unverified fixture assumptions.
 
    using FHIR version '4.0.1'
 
-   include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
+   include FHIRHelpers version '4.0.1' called FHIRHelpers
 
    codesystem "<SystemName>": '<system-url>'
 
@@ -532,15 +571,44 @@ details, unknown terminology expansions, unverified fixture assumptions.
      corpus (`skills/.curated/rh-inf-cql/context/`) or ReasonHub MCP spec tools
      (`reasonhub-search_spec_content` with `source_id: "cql"`).
 
-   **FHIRHelpers for local testing:**
-   If `rh cql validate` reports unresolved FHIR type identifiers and the project
-   does **not** have FHIRHelpers available, install the `fhir.cqf.common` package:
+   **Pinned FHIRHelpers dependency:**
+   When a CQL library includes FHIRHelpers, provide a local manifest that pins
+   the helper's source URL/tag/license, CQL and ELM hashes, canonical, version,
+   and translator options. Import it with
+   `rh-skills cql import-library <topic> <manifest.json>`. The command copies
+   the exact helper CQL, ELM, and FHIR Library into computable/, links each
+   including Library through `relatedArtifact[type=depends-on]`, and records
+   an external dependency in tracking. No runtime network lookup is assumed.
+
+   The manifest pins identity and local, relative inputs:
+
+   ```json
+   {
+     "resource": {
+       "id": "fhir-helpers-4-0-1",
+       "name": "FHIRHelpers",
+       "version": "4.0.1",
+       "url": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers"
+     },
+     "source": {
+       "url": "https://example.invalid/pinned-source",
+       "tag": "vX.Y.Z",
+       "license": "Apache-2.0",
+       "compile_tool": {
+         "name": "cql-to-elm-cli",
+         "version": "X.Y.Z",
+         "options": [],
+         "inputs": []
+       }
+     },
+     "cql": { "path": "FHIRHelpers-4.0.1.cql", "sha256": "<64 lowercase hex characters>" },
+     "elm": { "path": "FHIRHelpers-4.0.1.json", "sha256": "<64 lowercase hex characters>" }
+   }
    ```
-   rh download package fhir.cqf.common 4.0.1
-   ```
-   This is an **external dependency** — do not commit FHIRHelpers `.cql` files
-   into the topic's computable directory. FHIRHelpers is required only for
-   local validation; the runtime resolves it independently.
+
+   Replace every example value with verified metadata and digests. The
+   importer rejects hash, identity, version, or path mismatches and never
+   downloads dependencies.
 
 6. The `.cql` file is now ready. FHIR packaging (Library JSON wrapper, Measure
    JSON) is outside `rh-inf-cql`'s scope — hand off to whatever packaging step
@@ -548,7 +616,8 @@ details, unknown terminology expansions, unverified fixture assumptions.
 
 ### Output contract
 - `.cql` file at `topics/<topic>/computable/<LibraryName>.cql`
-- Passes `rh-skills cql validate` with zero errors
+- Passes `rh-skills cql validate` with zero errors, with explicit versioned
+  includes present locally
 - Follows all style guide and rubric requirements
 
 ---
@@ -781,8 +850,8 @@ guidance on preferred alternatives.
 | Unpinned valueset or code system version | `terminology-resolution` | BLOCKING |
 | Hidden timezone or precision assumption (`Today()`, `Now()` without explicit context) | `temporal-precision` | ADVISORY |
 | Quantity comparison without unit normalization on both sides | `unit-conversion` | BLOCKING |
-| Retrieve without code or valueset filter — returns ALL records of that resource type | `retrieve-scope` | BLOCKING |
-| Retrieve too broad — correct code/valueset filter present but `where` clause applied downstream instead of at the retrieve | `retrieve-scope` | ADVISORY |
+| Broad retrieve without explained clinical scope | `retrieve-scope` | HOUSE POLICY: BLOCKING unless documented exception |
+| Code/ValueSet filter that defines the concept is applied only downstream | `retrieve-scope` | ADVISORY |
 | Duplicate logic instead of a named helper definition | Style | ADVISORY |
 | Ambiguous null handling — assuming null is false without explicit `is null` check | `null-propagation` | ADVISORY |
 | Dependence on implicit engine behavior not documented in `context/runtime/` | `engine-behavior` | ADVISORY |
@@ -839,7 +908,7 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 | 1 | Unpinned terminology | BLOCKING | `valueset "X": 'urn:oid:...'` without version pinning where reproducibility matters |
 | 2 | Hidden timezone/precision assumptions | ADVISORY | `Today()` or `Now()` without explicit context clock; date arithmetic without `ToDate()` |
 | 3 | Quantity comparison without unit normalization | BLOCKING | `obs.value > 5 'mg'` where source unit may differ |
-| 4 | Retrieve without code/valueset filter | BLOCKING | `[Condition]`, `[Observation]`, `[MedicationRequest]` etc. with no code or valueset at the retrieve — returns ALL records of that type regardless of clinical meaning |
+| 4 | Broad retrieve without an explained clinical scope | HOUSE POLICY: BLOCKING unless documented exception | Prefer a retrieve-level ValueSet/code filter when terminology defines the selection. A context or relationship retrieve may be appropriate without one when its intended scope and joins are explicit and tested. |
 | 5 | Duplicate logic instead of helper definitions | ADVISORY | Same expression repeated in 3+ defines without extraction |
 | 6 | Ambiguous null handling | BLOCKING | `if X then Y` without `else null` where null branch matters; comparing null to a value without `~` |
 | 7 | Dependence on implicit engine behavior | ADVISORY | Logic that relies on FHIRHelpers auto-injection, implicit conversions, or unspecified operator overloads |
@@ -847,6 +916,10 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 ---
 
 ## CQL Style Guide
+
+Read the [CQL Style Guide](docs/cql-style-guide.md) before authoring or
+reviewing CQL. The key constraints are repeated below because violations can
+change patient scope or coded clinical meaning.
 
 ### Library naming and versioning
 - Library identifiers use PascalCase: `LipidManagementLogic`, `PHQ9AssessmentLogic`
@@ -862,9 +935,35 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
   finalizing the library. See the valueset sourcing rule in the author workflow.
 
 ### Retrieve patterns
-- One `define` per resource type retrieve; name it `"<Resource> by <filter>"`
-- Apply status filters in the retrieve define, not in derived defines
-- Do not retrieve inside functions; retrieves belong at the library expression level
+- Prefer named retrieve definitions when they clarify or reuse resource filters;
+  name them for the resource and meaningful filter.
+- Prefer keeping status filters with their retrieve when that makes the result
+  easier to review.
+- Keep a retrieve in a helper function only when the function improves reuse
+  and the configured translator supports it.
+- With `context Patient`, rely on Patient context to scope each retrieve when
+  the pinned FHIR ModelInfo declares the relevant context relationship and the
+  engine honors it; do not
+  repeat it with `subject.reference = Patient.id`. If the runtime leaks another
+  patient's resource, block that engine path rather than adding a CQL workaround.
+- Declare a `valueset`, `codesystem`, or `code` and use typed terminology
+  operators (`in`, `~`, or exact `=`). Do not decompose a `Coding` or
+  `CodeableConcept` comparison into separate system/code string checks.
+- Name non-primary coded paths in the retrieve filter. FHIR R4 Encounter's
+  primary code path is `type`; `class` is a separate `Coding`, so
+  `[Encounter: "Ambulatory"]` does not filter `class`.
+- Preserve independent status, date, and encounter-linkage conditions.
+  `derivedFrom` is producer provenance, not a default clinical selection
+  predicate. Patient context does not replace clinical joins.
+- For an Observation-to-Encounter reference join, prefer the pinned
+  `FHIRCommon.references()` fluent function when its same-source-server,
+  resource-id semantics match the input contract. Include and package the
+  versioned Library/ELM dependency; do not replace the relationship with a
+  manually assembled reference string.
+- Explicit patient-reference checks may be valid in `context Unfiltered` or a
+  deliberate cross-patient query; state that context and purpose. See the
+  [CQL context guidance](https://cql.hl7.org/02-authorsguide.html#context) and
+  [retrieve scoping](https://cql.hl7.org/02-authorsguide.html#retrieve-context).
 
 ### Null and interval conventions
 - Use `~` (equivalent) for concept comparisons, `=` for exact equality
@@ -886,28 +985,31 @@ Flag each pattern as BLOCKING (must fix before use) or ADVISORY (should fix).
 - ❌ `if X is not null then X else default` — prefer `Coalesce(X, default)`
 - ❌ `First([Condition])` without an ordering expression
 - ❌ Comparing dates with `=` instead of `same day as` or interval operators
-- ❌ `M.authoredOn during Interval<DateTime>` — silently returns `false` for FHIR dateTime strings; use `ToDate(M.authoredOn)` with `Interval<Date>` instead
-- ❌ `date from M.authoredOn` — runtime error when authoredOn is a FHIR string; use `ToDate(M.authoredOn)`
+- ❌ Compare FHIR primitive date/time fields directly to CQL system values — convert with the pinned FHIRHelpers function matching the field and interval type
+- ❌ Reconstruct a CodeableConcept/Coding terminology comparison with separate system/code string predicates — declare the CodeSystem and Code and compare with `~`, or use a reviewed ValueSet
 - ❌ Manual ValueSet expansion matching (`V.expansion.contains E where E.system = ... and E.code = ...`) — use `code in "ValueSetName"` instead
-- ❌ Inline code-system matching in a `where` clause (`where Coding.system = 'http://...' and Coding.code = 'X'`) — pre-coordinate a valueset using ReasonHub MCP and use `[Condition: "MyValueSet"]` retrieve-level scoping instead; inline matching misses synonymous codes across systems and bypasses the terminology pipeline
+- ❌ Match only a code or display while ignoring its coding system — use a verified ValueSet for a concept set, or a declared CodeSystem/Code with a typed terminology operator for one named code
 - ❌ `define function "F"(p Interval<DateTime>): ...` — typed function parameters with `Interval<>` or `FHIR.*` types fail to compile; use a named `define` expression with inline logic instead
 
 ---
 
 ## CLI Commands (Deterministic Boundary)
 
-These are the **only** commands that perform file writes or validation. The agent
-must call these — do not write files directly.
+Use the CLI for deterministic validation, compilation, test execution, and
+pinned external-library import. Do not manually edit generated ELM or FHIR
+Library resources.
 
 | Action | Command | Status |
 |--------|---------|--------|
 | Validate CQL syntax and semantics | `rh-skills cql validate <topic> <library>` | ✓ active (`rh cql validate`) |
 | Compile CQL to ELM JSON | `rh-skills cql translate <topic> <library>` | ✓ active (`rh cql compile`) |
 | Run fixture-based test cases | `rh-skills cql test <topic> <library>` | ✓ active (`rh cql eval` per expected expression) |
+| Import pinned external CQL/ELM/FHIR Library | `rh-skills cql import-library <topic> <manifest.json>` | ✓ verifies hashes and identity; updates tracking |
 
 `rh-skills cql test` discovers fixture cases under `tests/cql/<Library>/case-*/`,
-runs `rh cql eval` for every expected expression, compares actual vs expected
-values, and exits non-zero if any assertion fails.
+passes the topic `computable/` directory as the include path, forwards each
+fixture's subject, evaluation date, measurement period, and parameters, then
+compares actual vs expected values and exits non-zero if any assertion fails.
 
 ---
 
@@ -958,8 +1060,7 @@ FHIR Clinical Reasoning rules.
 - If `rh-skills cql validate` fails after two correction attempts, use
   `rh-skills cql translate` as a proxy (see Validate failure protocol above),
   then report the discrepancy and ask the user for guidance. Do **not** attempt
-  further speculative fixes, web searches, or workarounds (e.g., symlinking
-  FHIRHelpers from local paths).
+  further speculative fixes or copy unverified helper files into the topic.
 - Before writing more than one fixture case with placeholder data, confirm the
   fixture schema is acceptable.
 

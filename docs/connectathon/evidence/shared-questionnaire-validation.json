@@ -1,0 +1,158 @@
+{
+  "checkedAt": "2026-09-17T23:49:09.003570+00:00",
+  "input": "hl7-agentic-knowledge-connectathon/test-bundles/questionnaire.json",
+  "validator": "6.10.2",
+  "fhirVersion": "4.0.1",
+  "loadedIG": "hl7.fhir.uv.sdc#4.0.0",
+  "explicitProfile": "none; validate declared profiles and base resource",
+  "terminologyServer": "disabled; separate pinned terminology verification required",
+  "counts": {
+    "fatal": 0,
+    "error": 0,
+    "warning": 4,
+    "information": 0
+  },
+  "outcome": {
+    "resourceType": "OperationOutcome",
+    "text": {
+      "status": "generated",
+      "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p class=\"res-header-id\"><b>OperationOutcome </b></p><table class=\"grid\"><tr><td><b>Severity</b></td><td><b>Location</b></td><td><b>Code</b></td><td><b>Details</b></td><td><b>Diagnostics</b></td><td><b>Source</b></td></tr><tr><td>Warning</td><td>Questionnaire.item[0].code[0]</td><td>Business Rule Violation</td><td>Unable to validate code '100257-5' in system 'http://loinc.org' because the validator is running without terminology services</td><td/><td>TerminologyEngine</td></tr><tr><td>Warning</td><td>Questionnaire.item[1].code[0]</td><td>Business Rule Violation</td><td>Unable to validate code '97878-3' in system 'http://loinc.org' because the validator is running without terminology services</td><td/><td>TerminologyEngine</td></tr><tr><td>Warning</td><td>Questionnaire.item[2].code[0]</td><td>Business Rule Violation</td><td>Unable to validate code '52552-7' in system 'http://loinc.org' because the validator is running without terminology services</td><td/><td>TerminologyEngine</td></tr><tr><td>Warning</td><td>Questionnaire</td><td>Validation rule failed</td><td>Constraint failed: dom-6: 'A resource should have narrative for robust management' (defined in http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)</td><td/><td>InstanceValidator</td></tr></table></div>"
+    },
+    "extension": [
+      {
+        "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-file",
+        "valueString": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon/test-bundles/questionnaire.json"
+      }
+    ],
+    "issue": [
+      {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+            "valueInteger": 57
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+            "valueInteger": 10
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+            "valueString": "TerminologyEngine"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+            "valueCode": "Error_validating_code_running_without_terminology_services"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-context",
+            "valueString": "http://hl7.org/fhir/StructureDefinition/Questionnaire|4.0.1"
+          }
+        ],
+        "severity": "warning",
+        "code": "business-rule",
+        "details": {
+          "text": "Unable to validate code '100257-5' in system 'http://loinc.org' because the validator is running without terminology services"
+        },
+        "expression": [
+          "Questionnaire.item[0].code[0]"
+        ]
+      },
+      {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+            "valueInteger": 71
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+            "valueInteger": 10
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+            "valueString": "TerminologyEngine"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+            "valueCode": "Error_validating_code_running_without_terminology_services"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-context",
+            "valueString": "http://hl7.org/fhir/StructureDefinition/Questionnaire|4.0.1"
+          }
+        ],
+        "severity": "warning",
+        "code": "business-rule",
+        "details": {
+          "text": "Unable to validate code '97878-3' in system 'http://loinc.org' because the validator is running without terminology services"
+        },
+        "expression": [
+          "Questionnaire.item[1].code[0]"
+        ]
+      },
+      {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+            "valueInteger": 85
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+            "valueInteger": 10
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+            "valueString": "TerminologyEngine"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+            "valueCode": "Error_validating_code_running_without_terminology_services"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-context",
+            "valueString": "http://hl7.org/fhir/StructureDefinition/Questionnaire|4.0.1"
+          }
+        ],
+        "severity": "warning",
+        "code": "business-rule",
+        "details": {
+          "text": "Unable to validate code '52552-7' in system 'http://loinc.org' because the validator is running without terminology services"
+        },
+        "expression": [
+          "Questionnaire.item[2].code[0]"
+        ]
+      },
+      {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+            "valueInteger": 1
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+            "valueInteger": 2
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+            "valueString": "InstanceValidator"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+            "valueCode": "http://hl7.org/fhir/StructureDefinition/DomainResource#dom-6"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-context",
+            "valueString": "http://hl7.org/fhir/StructureDefinition/Questionnaire|4.0.1"
+          }
+        ],
+        "severity": "warning",
+        "code": "invariant",
+        "details": {
+          "text": "Constraint failed: dom-6: 'A resource should have narrative for robust management' (defined in http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)"
+        },
+        "expression": [
+          "Questionnaire"
+        ]
+      }
+    ]
+  }
+}

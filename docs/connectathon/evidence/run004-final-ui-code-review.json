@@ -1,0 +1,54 @@
+{
+  "reviewed_at": "2026-09-18",
+  "scope": {
+    "workbench_commit": "f79a632",
+    "reviewed_predecessor": "0e5ea0a",
+    "workbench_paths": [
+      "apps/workbench/app/projects/[projectId]/snapshots/[snapshotId]/artifacts/[artifactId]/preview/library-attachment-decoder.ts",
+      "apps/workbench/app/projects/[projectId]/snapshots/[snapshotId]/artifacts/[artifactId]/preview/library-attachment-viewer.tsx",
+      "apps/workbench/app/projects/[projectId]/snapshots/[snapshotId]/artifacts/[artifactId]/artifact-header-actions.tsx"
+    ],
+    "standalone_commits": ["5ee141f", "6227080"]
+  },
+  "workbench_findings": {
+    "confirmed": [
+      "Library attachments are decoded to inert text in pre elements; there is no HTML injection path.",
+      "URL-only attachments are not fetched. Rendered links are restricted to http and https with rel=noreferrer.",
+      "Decoded attachment text and original FHIR Library JSON use bounded scroll containers, so the view does not silently truncate source text.",
+      "Malformed Base64, invalid UTF-8, malformed JSON, missing data, and unsupported binary content have explicit decoder messages."
+    ],
+    "resolved_follow_up": [
+      {
+        "path": "apps/workbench/app/projects/[projectId]/snapshots/[snapshotId]/artifacts/[artifactId]/preview/library-attachment-decoder.ts",
+        "lines": "18-34",
+        "resolution": "A non-array Library.content now becomes an explicit error attachment that preserves the original FHIR JSON as the inspection fallback. The focused decoder regression covers this state."
+      },
+      {
+        "path": "apps/workbench/app/projects/[projectId]/snapshots/[snapshotId]/artifacts/[artifactId]/preview/library-attachment-viewer.tsx",
+        "lines": "90-155",
+        "resolution": "Every collapsed disclosure summary now shows Cannot render attachment, URL-only; not fetched, or Decoded with warning. The detail retains the exact reason and the original Library JSON remains available."
+      },
+      {
+        "path": "apps/workbench/app/projects/[projectId]/snapshots/[snapshotId]/artifacts/[artifactId]/artifact-header-actions.tsx",
+        "lines": "276-291",
+        "resolution": "The modal focus-trap now includes native summary controls and filters hidden or inert candidates. This covers the new Library disclosures; final browser keyboard verification remains root-owned."
+      }
+    ],
+    "remaining_code_blockers": []
+  },
+  "standalone_validation": {
+    "commit": "6227080",
+    "focused_jest": "PASS: LocalPatientBundleFileInput.test.tsx and PatientLoadModeSwitcher.test.tsx, 20 assertions",
+    "production_build": "PASS: npm run build --workspace @reason-framework/cpg-review",
+    "full_tsc": {
+      "status": "NOT PASSING; unrelated existing test typing failures",
+      "command": "npx tsc --noEmit --pretty false -p packages/cpg-review/tsconfig.json",
+      "errors": [
+        "tests/api/localRhCpgSdcPreparation.test.ts(115,13): questionnaire is not in the Resource type",
+        "tests/api/localRhCpgSdcPreparation.test.ts(161,5): Resource is not assignable to BundleEntry<FhirResource>"
+      ],
+      "baseline_check": "The same test file is byte-identical between pre-change 82db811 and 6227080; the errors predate the local-file UI commits."
+    }
+  },
+  "browser_validation": "Not run in this code-review task; root owns final browser verification. Standalone final browser verification for positive, unknown, invalid inline-alert, and valid-recovery flows was reported by root as passing."
+}

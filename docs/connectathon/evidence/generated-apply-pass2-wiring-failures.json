@@ -1,0 +1,137 @@
+{
+  "checkedAt": "2026-09-18T00:48:57.951261+00:00",
+  "scope": "Independent apply check of pass2 generated output; deliberately young negative fixture",
+  "results": [
+    {
+      "root": "fall-screening-and-guidance-recommendation",
+      "exitCode": 1,
+      "stdout": {
+        "ok": false,
+        "errors": [
+          {
+            "code": "operational_error",
+            "message": "expression error: CQL identifier expression has no library reference"
+          }
+        ],
+        "meta": {
+          "version": "0.2.8",
+          "command": "rh"
+        }
+      },
+      "stderr": "error: expression error: CQL identifier expression has no library reference\n",
+      "command": [
+        "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+        "cpg",
+        "apply",
+        "--format",
+        "json",
+        "--plan-definition",
+        "/private/tmp/connectathon-live/evidence/fall-screening-and-guidance-recommendation-pass2-root.json",
+        "--subject",
+        "Patient/patient-younger-than-65",
+        "--content",
+        "/private/tmp/connectathon-live/evidence/generated-fhir-pass2-input.json",
+        "--data",
+        "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon/test-bundles/cases/younger-than-65/bundle.json",
+        "--evaluation-date",
+        "2026-06-15T09:20:00Z",
+        "--measurement-period-start",
+        "2026-01-01T00:00:00Z",
+        "--measurement-period-end",
+        "2026-12-31T23:59:59Z"
+      ]
+    },
+    {
+      "root": "older-adult-fall-screening-protocol-positive-guidance",
+      "exitCode": 0,
+      "stdout": {
+        "ok": true,
+        "result": {
+          "entry": [
+            {
+              "fullUrl": "http://apply-processor/RequestGroup/574078c4-3084-4448-bc65-8376ba6fc75a",
+              "resource": {
+                "action": [
+                  {
+                    "description": "After a positive screen, communicate guideline-level prevention options for clinician and patient discussion. Do not select a treatment or create an order.",
+                    "documentation": [
+                      {
+                        "citation": "USPSTF exercise and multifactorial recommendations apply to community-dwelling adults 65 or older at increased risk; one is Grade B and the other Grade C. Evidence: uspstf-falls-recommendation-2024_html: Recommendation statement and practice considerations.",
+                        "label": "pathway-guidance",
+                        "type": "citation"
+                      }
+                    ],
+                    "id": "positive-guidance",
+                    "resource": {
+                      "reference": "CommunicationRequest/32c2204a-c3af-431c-8a3f-d104faf0a31a"
+                    },
+                    "title": "Discuss guideline-level prevention guidance after a positive screen",
+                    "type": {
+                      "coding": [
+                        {
+                          "code": "create",
+                          "system": "http://terminology.hl7.org/CodeSystem/action-type"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "id": "574078c4-3084-4448-bc65-8376ba6fc75a",
+                "instantiatesCanonical": [
+                  "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0"
+                ],
+                "intent": "proposal",
+                "resourceType": "RequestGroup",
+                "status": "draft",
+                "subject": {
+                  "reference": "Patient/patient-younger-than-65"
+                }
+              }
+            },
+            {
+              "fullUrl": "http://apply-processor/CommunicationRequest/32c2204a-c3af-431c-8a3f-d104faf0a31a",
+              "resource": {
+                "id": "32c2204a-c3af-431c-8a3f-d104faf0a31a",
+                "resourceType": "CommunicationRequest",
+                "status": "draft",
+                "subject": {
+                  "reference": "Patient/patient-younger-than-65"
+                }
+              }
+            }
+          ],
+          "id": "68ef930d-ae34-4a75-b27d-d7d9d2c8b583",
+          "resourceType": "Bundle",
+          "type": "collection"
+        },
+        "errors": [],
+        "meta": {
+          "version": "0.2.8",
+          "command": "cpg apply"
+        }
+      },
+      "stderr": "",
+      "command": [
+        "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+        "cpg",
+        "apply",
+        "--format",
+        "json",
+        "--plan-definition",
+        "/private/tmp/connectathon-live/evidence/older-adult-fall-screening-protocol-positive-guidance-pass2-root.json",
+        "--subject",
+        "Patient/patient-younger-than-65",
+        "--content",
+        "/private/tmp/connectathon-live/evidence/generated-fhir-pass2-input.json",
+        "--data",
+        "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon/test-bundles/cases/younger-than-65/bundle.json",
+        "--evaluation-date",
+        "2026-06-15T09:20:00Z",
+        "--measurement-period-start",
+        "2026-01-01T00:00:00Z",
+        "--measurement-period-end",
+        "2026-12-31T23:59:59Z"
+      ]
+    }
+  ]
+}

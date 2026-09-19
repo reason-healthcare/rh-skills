@@ -1,0 +1,135 @@
+{
+  "runId": "run005",
+  "runtimeCommit": "d49c6275beb5ed2cbe9e212d48124135ce1a25b0",
+  "scope": "Independent audit of recorded final run005 runtime, API, standalone, and FHIR reports. Browser acceptance is outside this report.",
+  "identities": {
+    "contentBundleSha256": "e05c9760c1c900c672ad9345699004ac8ba52f14c362f6095429a196ad502e60",
+    "fixtureIndexSha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc",
+    "nativeSha256": "4907c5487ca1701dbcbb2e4593034f54c665135f80cbe735298d092601846735",
+    "nodeWrapperSha256": "478033b2ddbcab71dd648a59ccd25c07484113c2ccca381ef200fd3e8027f00b",
+    "wasmNodeSha256": "6d9a1cf29974b49fdca0b3a31a21f4ccbdf37a8a9b91b3130db4ddad59d74d16"
+  },
+  "reports": {
+    "scoreContract": {
+      "path": "dist/connectathon-20260919/verification/root-run005-score/score-contract.json",
+      "sha256": "f7fee1d7bf8c648b031cdf5d73125d614b9c20df6e32ac5ea078cd4597532411"
+    },
+    "directNode": {
+      "path": "dist/connectathon-20260919/verification/root-final-run005/direct-node/results.json",
+      "sha256": "35af6ea7a594e7b7e3959aba82905e90a62ee83fd8bf8405cc0a7cbfd39fcc18"
+    },
+    "scoreApps": {
+      "path": "dist/connectathon-20260919/verification/root-final-run005/score-apps/score-apps-report.json",
+      "sha256": "f6590dd1feccfa358f27efb5bead850af28bb80ea66ea466af27885ee124ea01"
+    },
+    "workbenchApi": {
+      "path": "dist/connectathon-20260919/verification/root-run005-workbench-api-e05c9760c1c9/workbench-api-matrix-report.json",
+      "sha256": "6c51df8886a08aac66d6b4d73ecbde86c82fca2747c8ff2acbb073d9b5ad9e30"
+    },
+    "standaloneRawQr": {
+      "path": "dist/connectathon-20260919/verification/root-final-run005-standalone/standalone-raw-qr-parity-report.json",
+      "sha256": "3a7f26c35f4f776a29f7558f60a5f9701df941f601c843c26614b44102f15c85"
+    },
+    "knowledgeFhir": {
+      "path": "dist/connectathon-20260919/verification/root-run005-knowledge-final-e05c9760c1c9/summary.json",
+      "sha256": "6cac8b70be626798ce4fdbdf473e01c26f01e49fe18020296b6a978c5d3f00e4"
+    },
+    "extractionFhir": {
+      "path": "dist/connectathon-20260919/verification/root-run005-extraction-fhir-final/summary.json",
+      "sha256": "6d96e3aeb10d04645c1664771a48afa1ecb070ccab238119024d70e5c51f2d6b"
+    },
+    "runtimeFhir": {
+      "path": "dist/connectathon-20260919/verification/root-run005-runtime-fhir/summary.json",
+      "sha256": "74c9facbe68f49e113e6b2daec98d8790d56e9f7b25e1ba6dde6166eefd64c55"
+    },
+    "publicNodeTests": {
+      "path": "dist/connectathon-20260919/verification/root-final-run005/public-node-tests.log",
+      "sha256": "3587c719dab496ca95c49af59abf058c1804455c1508adbd49e46abaf02e1bc3"
+    }
+  },
+  "verified": {
+    "scoreContract": {
+      "passed": true,
+      "rawExtractionCases": 6,
+      "alternateSourceScoreCases": 22,
+      "nativeAndPublicNode": true,
+      "qrFreeAlternateSource": true
+    },
+    "directPublicNode": {
+      "passed": true,
+      "applyCalls": 60,
+      "measureCalls": 6,
+      "planDefinitions": 10,
+      "fixtures": 6,
+      "qrFreePreparedData": true,
+      "frozenOracleManifestSha256": "d07bceaee75a375fb173efa837246567bcbe879bb98abcf680a840689559b152"
+    },
+    "scoreApps": {
+      "passed": true,
+      "scoreCases": 22,
+      "httpCalls": 66,
+      "passedCases": 22,
+      "inputContainsNoQuestionnaireQuestionnaireResponseOrDerivedFrom": true
+    },
+    "workbenchApi": {
+      "artifactCalls": 72,
+      "http200": 72,
+      "directParity": 72,
+      "sourceFixturesUnchanged": true,
+      "snapshotId": "snap_connectathon-steadi-scores_run005-e05c9760c1c9",
+      "negativeMissingDependency": {
+        "status": "not-run",
+        "reason": "No explicitly confirmed isolated incomplete snapshot supplied."
+      }
+    },
+    "standaloneRawQr": {
+      "passed": true,
+      "http200": 6,
+      "directParity": 6,
+      "semanticChecks": 6
+    },
+    "fhir": {
+      "knowledge": {
+        "inputCount": 25,
+        "errors": 0,
+        "strictValidatorPassed": true
+      },
+      "extraction": {
+        "inputCount": 10,
+        "errors": 0,
+        "strictValidatorPassed": true,
+        "collectionFullUrlsPreserved": true
+      },
+      "runtime": {
+        "inputCount": 12,
+        "errors": 1,
+        "strictValidatorPassed": false,
+        "documentedOnlyError": {
+          "code": "MEASURE_MR_SCORE_REQUIRED",
+          "input": "dist/connectathon-20260919/verification/root-final-run005/direct-node/younger-than-65--MeasureReport-measure.json",
+          "expression": [
+            "MeasureReport.group[0]"
+          ]
+        }
+      }
+    },
+    "publicNodeTests": {
+      "passed": true,
+      "testFiles": 1,
+      "tests": 7,
+      "command": "pnpm --filter @reasonhealth/cpg test",
+      "runtimeCommit": "d49c6275beb5ed2cbe9e212d48124135ce1a25b0",
+      "wasmNodeSha256": "6d9a1cf29974b49fdca0b3a31a21f4ccbdf37a8a9b91b3130db4ddad59d74d16"
+    }
+  },
+  "notRunOrNotClaimed": {
+    "browserAcceptance": "owned separately; not evaluated here",
+    "workbenchMissingDependencyNegative": "not-run: no explicitly confirmed isolated incomplete snapshot supplied",
+    "strictRuntimeFhirGreen": "false: the documented zero-denominator younger-than-65 MeasureReport remains a raw validator error"
+  },
+  "assumptions": [
+    "Input Coding.version is provenance rather than a score-selection predicate; stable score system and code select the algorithm.",
+    "Direct Node uses QR-free prepared data generated by the separately bound extraction report.",
+    "FHIR validation ran offline with packaged dependencies; it does not claim external terminology-server validation."
+  ]
+}

@@ -30,14 +30,25 @@ interact with FHIR types and how translator options are expressed.
 |--------|-----|---------|-------------|
 | Using CQL with FHIR IG | https://hl7.org/fhir/uv/cql/ | current | Any CQL that uses FHIR data model |
 | FHIR Clinical Reasoning Module | https://hl7.org/fhir/R4/clinicalreasoning-module.html | R4 | Understanding Library/Measure resource structure |
-| FHIRHelpers | https://build.fhir.org/ig/HL7/cql-ig/en/Library-FHIRHelpers.html | current | FHIR↔CQL type coercion reference |
+| FHIRHelpers | https://hl7.org/fhir/uv/cql/Library-FHIRHelpers.html | 4.0.1 | FHIR↔CQL type conversion library; pin CQL, ELM, and Library identity |
 | FHIR ModelInfo | https://build.fhir.org/ig/HL7/cql-ig/ | current | Understanding model declarations and type resolution |
 | CQL Translator Options | https://build.fhir.org/ig/HL7/cql-ig/using-elm.html | current | Declaring reproducible translator options in Library |
+| CMS QMD Pattern Index | https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html | current | **Preferred first-choice FHIR CQL patterns** |
 
-> **rh-inf-cql note**: Unlike the Java reference translator, `rh-inf-cql` does not
-> automatically inject FHIRHelpers conversion calls. FHIR↔CQL type coercion
-> is handled at the runtime level. When reviewing ELM output from `rh cql compile`,
-> the absence of `FHIRHelpers.ToConcept` wrapping is expected and correct.
+> **CMS QMD pattern precedence**: When authoring or revising FHIR CQL, first
+> consult the CMS QMD Pattern Index and use a
+> listed pattern when it covers the requested clinical/data category. Apply the
+> pinned FHIR/CQL versions, terminology policy, FHIRHelpers conversions, and
+> runtime tests from this repository. If a pattern is not portable as written,
+> preserve its intent in the smallest tested adaptation and record the reason.
+> Use the local Critical Authoring Patterns table only for cases the pattern
+> index does not cover or for environment-specific behavior.
+
+> **rh-inf-cql note**: The runtime does not automatically inject FHIRHelpers.
+> When source includes a helper, import its pinned CQL/ELM/FHIR Library through
+> `rh-skills cql import-library`; reference the helper canonical and version in
+> the primary Library's `relatedArtifact`. For FHIR choices and primitives,
+> use logical FHIR types and verify the same ELM with a reference translator.
 
 ---
 

@@ -1,0 +1,32 @@
+{
+  "checkedAt": "2026-09-18T19:26:33.732882+00:00",
+  "scope": "ValueSet retrieve matches immutable system/code semantics; input Coding.version is provenance, not a membership predicate. This does not validate typed Code equality.",
+  "command": [
+    "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+    "cql",
+    "eval",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run005-code-version-probe/CodeVersionProbe.cql",
+    "VersionedValueSetRetrieve",
+    "--data",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run005-code-version-probe/data.json",
+    "--terminology",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run005-code-version-probe/terminology.json",
+    "--subject",
+    "Patient/p1",
+    "--lib-path",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run005-code-version-probe/lib"
+  ],
+  "inputCoding": [
+    {
+      "system": "https://example.org/fhir/CodeSystem/steadi-score",
+      "version": "other-version",
+      "code": "steadi-three-question-yes-count",
+      "display": "STEADI score"
+    }
+  ],
+  "exitCode": 0,
+  "stdout": "true",
+  "stderr": "",
+  "passed": true,
+  "decision": "Use immutable algorithm-specific code for run005; algorithm changes receive new codes. Keep authored CodeSystem/ValueSet versions pinned and preserve Coding.version on extraction, without claiming external input version filtering."
+}

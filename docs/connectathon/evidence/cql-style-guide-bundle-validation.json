@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-09-18T14:15:52.044460+00:00",
+  "command": "bash scripts/build-skills.sh --all --validate",
+  "built": 24,
+  "warnings": 0,
+  "errors": 0,
+  "log": "/tmp/connectathon-root-style-build.log",
+  "logSha256": "4bf43d016eb3a0e0cb8b1d817df66603cd245da09ff1816deea7b7c981c70715",
+  "guideDistribution": [
+    {
+      "platform": "claude",
+      "guideExists": true,
+      "sha256": "47ce0be82f0f1861a85cdab100a5b91fae61257798bb03d6b1a2d4cda924605b",
+      "matchesCurated": true
+    },
+    {
+      "platform": "copilot",
+      "guideExists": true,
+      "sha256": "47ce0be82f0f1861a85cdab100a5b91fae61257798bb03d6b1a2d4cda924605b",
+      "matchesCurated": true
+    },
+    {
+      "platform": "gemini",
+      "guideExists": true,
+      "sha256": "47ce0be82f0f1861a85cdab100a5b91fae61257798bb03d6b1a2d4cda924605b",
+      "matchesCurated": true
+    }
+  ],
+  "agentNativeInstallation": "Separate fresh curated skill installation check pending; not a dist/codex build target."
+}

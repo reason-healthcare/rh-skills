@@ -1,0 +1,60 @@
+{
+  "checkedAt": "2026-09-18T17:38:40.861392+00:00",
+  "runtimeRevision": "26716c9319f50ee71aa8456cc8a0ccefe100d7f5",
+  "rootChecks": {
+    "cqlLibrary": {
+      "passed": 877,
+      "failed": 0,
+      "log": "/tmp/connectathon-root-final-cql.log"
+    },
+    "cpgLibrary": {
+      "passed": 64,
+      "failed": 0,
+      "log": "/tmp/connectathon-root-final-cpg.log"
+    },
+    "publicNodeContext": {
+      "passed": 6,
+      "failed": 0,
+      "evidence": "docs/connectathon/evidence/cql-context-public-node.json"
+    },
+    "frozenRun003Compatibility": {
+      "report": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run003-compat/acceptance-report.json",
+      "reportSha256": "b4a1a1320eef5ff4a99361c6ed33d172605aeaf99d2836eab302ccabdbc77a83",
+      "corePassed": true
+    }
+  },
+  "runtimeIdentity": {
+    "workspace": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-003",
+    "content": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-003/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+      "sha256": "ba1474411f41bc1d69819b2e93c4c7674e6e83366e6cfdaf01f8bbc856a55713"
+    },
+    "runtime": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+      "sha256": "478033b2ddbcab71dd648a59ccd25c07484113c2ccca381ef200fd3e8027f00b"
+    },
+    "wasm": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-node/rh_cpg_bg.wasm",
+      "sha256": "d936e08fed0ae47bcc30ad75274ec3d1336ec079a7bf97054de4fa80f1081726"
+    },
+    "native": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+      "sha256": "7b11131a9c748daaedd88a830d1aa39328d2c6ff81908e5176a70fce83d945e6"
+    },
+    "terminologyReplay": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/terminology-cql-replay",
+    "preparedData": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/terminology-cql-replay/evidence/actual-generated-v2-qr-free-data",
+    "historicalNativeExtractionCapture": {
+      "captureManifest": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-sdc-generated-native-v2/manifest.json",
+      "captureManifestSha256": "791d2916b2262f51c1b1fafe4d2203c097c36c28d775a99e4f1181dea8f83eed",
+      "questionnaireSha256": "9544f05500e0f387e79c595b02b1a470918a107124bc320d96ac80f744502e54",
+      "provenance": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-003/tests/cql/observation-capture-provenance.json",
+      "provenanceSha256": "a3648fd05e7b050855faf8c08635e0d6c7208c81a7db843aa853d29e455edb02"
+    },
+    "freshPublicNodeExtractionReplay": "public-node-extraction.json",
+    "frozenOracle": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-003/oracle/test-bundles",
+      "manifestSha256": "d07bceaee75a375fb173efa837246567bcbe879bb98abcf680a840689559b152"
+    }
+  },
+  "limits": "Run004 package/application acceptance is separate; these results do not establish general CQL or SDC conformance."
+}

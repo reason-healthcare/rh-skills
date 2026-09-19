@@ -153,14 +153,14 @@ def _concept_artifact_tracking_path(topic: str) -> str:
 
 _CONCEPT_CSV_FIELDNAMES = [
     "concept_name", "concept_type", "role", "sources", "context", "lookup_query", "lookup_notes",
-    "system", "code", "display", "distance",
+    "system", "code", "display", "version", "distance",
     "confidence", "include/exclude", "comments",
     "row_type", "relation", "related_code",
 ]
 
 # Core data fields for Individual Codes section of per-concept CSVs.
 _CONCEPT_CODE_CORE_FIELDS = [
-    "include/exclude", "system", "code", "display", "distance",
+    "include/exclude", "system", "code", "display", "version", "distance",
     "confidence", "row_type", "relation", "related_code", "comments",
 ]
 
@@ -204,7 +204,7 @@ def _write_concept_csv(path: Path, meta_dict: dict, rows: list[dict], expansion_
     if expansion_rows is None:
         expansion_rows = []
     _META_KEYS = ["concept_name", "concept_type", "role", "sources", "context", "lookup_query", "lookup_notes"]
-    _PAD_WIDTH = 10  # total columns per metadata row
+    _PAD_WIDTH = max(10, len(_CONCEPT_CODE_CORE_FIELDS))  # total columns per metadata row
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
@@ -319,6 +319,7 @@ def _load_concept_csv(path: Path) -> tuple[dict, list[dict], list[dict]]:
             row["confidence"] = conf_raw
             row.pop("method", None)
             row.setdefault("related_code", "")
+            row.setdefault("version", "")
             for field in _CONCEPT_CODE_CORE_FIELDS:
                 row.setdefault(field, "")
             code_rows.append(row)
@@ -688,8 +689,8 @@ def _eligible_formalize_inputs(topic: str) -> tuple[list[dict], list[str]]:
 _L3_TARGET_MAP: dict[str, dict] = {
     "evidence-summary": {
         "primary": "Evidence",
-        "supporting": ["EvidenceVariable", "Citation"],
-        "l3_targets": ["Evidence", "EvidenceVariable", "Citation"],
+        "supporting": ["EvidenceVariable"],
+        "l3_targets": ["Evidence", "EvidenceVariable"],
     },
     "decision-table": {
         "primary": "PlanDefinition",
@@ -720,6 +721,16 @@ _L3_TARGET_MAP: dict[str, dict] = {
         "primary": "PlanDefinition",
         "supporting": ["Questionnaire", "Library"],
         "l3_targets": ["PlanDefinition (eca-rule)", "Questionnaire (DTR)", "Library (CQL)"],
+    },
+    "eligibility-criteria": {
+        "primary": "EvidenceVariable",
+        "supporting": [],
+        "l3_targets": ["EvidenceVariable"],
+    },
+    "risk-factors": {
+        "primary": "EvidenceVariable",
+        "supporting": ["ValueSet"],
+        "l3_targets": ["EvidenceVariable", "ValueSet"],
     },
 }
 
@@ -1973,7 +1984,41 @@ def _collect_frontmatter_concepts(source_records: list[dict]) -> list[dict]:
     )
 
 
-def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
+def _select_frontmatter_concepts(
+    concepts: list[dict], include_concepts: tuple[str, ...],
+) -> tuple[list[dict], dict | None]:
+    """Apply an explicit concept-review scope without altering default planning."""
+    if not include_concepts:
+        return concepts, None
+
+    duplicate_names = sorted({
+        name for name in include_concepts if include_concepts.count(name) > 1
+    })
+    if duplicate_names:
+        raise click.UsageError(
+            "Duplicate --include-concept value(s): " + ", ".join(duplicate_names)
+        )
+
+    available = {str(concept["name"]): concept for concept in concepts}
+    unknown_names = sorted(set(include_concepts) - set(available))
+    if unknown_names:
+        raise click.UsageError(
+            "Unknown --include-concept value(s): " + ", ".join(unknown_names)
+        )
+
+    selected = [available[name] for name in include_concepts]
+    return selected, {
+        "mode": "explicit",
+        "included_concepts": list(include_concepts),
+        "excluded_terms_disposition": (
+            "Outside this accepted use-case terminology scope; not a clinical rejection."
+        ),
+    }
+
+
+def _build_concept_review(
+    topic: str, concepts: list[dict], scope: dict | None = None,
+) -> dict | None:
     if not concepts:
         return None
     # Collect the deduplicated set of source file paths across all concepts
@@ -1984,13 +2029,16 @@ def _build_concept_review(topic: str, concepts: list[dict]) -> dict | None:
             if sf not in seen:
                 source_files.append(sf)
                 seen.add(sf)
-    return {
+    review = {
         "source_files": source_files,
         "status": "pending-review",
         "concept_count": len(concepts),
         "review_artifact": f"topics/{topic}/process/plans/concepts/",
         "final_artifact": _concept_artifact_tracking_path(topic),
     }
+    if scope is not None:
+        review["scope"] = scope
+    return review
 
 
 def _build_concepts_extract_artifact_entry(concept_review: dict) -> dict:
@@ -2017,13 +2065,20 @@ def _build_concepts_extract_artifact_entry(concept_review: dict) -> dict:
     }
 
 
-def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, Path]:
+def _build_concept_review_csvs(
+    topic: str, concepts: list[dict], scope: dict | None = None,
+) -> tuple[Path, Path]:
     """Write one per-concept CSV and concepts-review-meta.yaml.
 
     Each concept gets its own CSV under process/plans/concepts/<slug>.csv with
     #key,value metadata comment lines at the top and no code rows yet.
     concept enrich adds candidate rows. Returns (concepts_dir, meta_path).
     """
+    concepts_dir = _concepts_csv_dir(topic)
+    if concepts_dir.exists():
+        for stale_path in [*concepts_dir.glob("*.csv"), *concepts_dir.glob("*.lock")]:
+            stale_path.unlink()
+
     checksums: dict = {}
     for c in concepts:
         meta_dict = {
@@ -2038,7 +2093,6 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
         csv_path = _concept_csv_path(topic, c["name"])
         _write_concept_csv(csv_path, meta_dict, [])
         checksums[_slugify(c["name"])] = _csv_checksum(csv_path)
-    concepts_dir = _concepts_csv_dir(topic)
     source_files: list[str] = []
     seen_sources: set[str] = set()
     for concept in concepts:
@@ -2057,11 +2111,74 @@ def _build_concept_review_csvs(topic: str, concepts: list[dict]) -> tuple[Path, 
         "source_files": source_files,
         "final_artifact": _concept_artifact_tracking_path(topic),
     }
+    if scope is not None:
+        meta["scope"] = scope
     meta_path = _write_concept_review_meta(topic, meta)
     return concepts_dir, meta_path
 
 
-def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
+def _load_verified_value_set_expansions(path: Path) -> dict[str, dict]:
+    """Load expansion evidence keyed by the exact generated ValueSet id."""
+    try:
+        data = _yaml_safe().load(path.read_text()) or {}
+    except Exception as exc:
+        raise click.UsageError(f"Unable to read --expansions YAML: {exc}") from exc
+    sections = data.get("sections") if isinstance(data, dict) else None
+    value_sets = sections.get("value_sets") if isinstance(sections, dict) else None
+    if not isinstance(value_sets, list):
+        raise click.UsageError("--expansions YAML requires sections.value_sets[]")
+    expansions: dict[str, dict] = {}
+    for index, entry in enumerate(value_sets):
+        if not isinstance(entry, dict):
+            raise click.UsageError(f"--expansions sections.value_sets[{index}] must be an object")
+        value_set_id = str(entry.get("id") or "").strip()
+        expansion = entry.get("expansion")
+        if not value_set_id or not isinstance(expansion, dict):
+            raise click.UsageError(
+                f"--expansions sections.value_sets[{index}] requires id and expansion"
+            )
+        if value_set_id in expansions:
+            raise click.UsageError(f"--expansions contains duplicate ValueSet id '{value_set_id}'")
+        expansions[value_set_id] = expansion
+    return expansions
+
+
+def _merge_verified_value_set_expansions(
+    artifact: dict,
+    expansions: dict[str, dict],
+) -> None:
+    """Attach supplied evidence only to generated ValueSets with exact ids."""
+    value_sets = ((artifact.get("sections") or {}).get("value_sets") or [])
+    generated = {
+        str(value_set.get("id") or "").strip(): value_set
+        for value_set in value_sets
+        if isinstance(value_set, dict) and str(value_set.get("id") or "").strip()
+    }
+    unknown = sorted(set(expansions) - set(generated))
+    if unknown:
+        raise click.UsageError(
+            "--expansions references unknown generated ValueSet id(s): " + ", ".join(unknown)
+        )
+    for value_set_id, expansion in expansions.items():
+        generated[value_set_id]["expansion"] = expansion
+
+
+def _validate_verified_expansion_contracts(artifact: dict) -> None:
+    """Reuse the formalizer's exact compose/hash/membership expansion validation."""
+    from rh_skills.commands.formalize import _build_terminology_stub_resources
+
+    _build_terminology_stub_resources(
+        str(artifact.get("name") or "concepts"),
+        {"canonical": "https://validation.invalid/fhir", "version": "0", "status": "draft"},
+        artifact,
+    )
+
+
+def _write_concepts_l2_artifact_from_csv(
+    topic: str,
+    tracking: dict,
+    expansions: dict[str, dict] | None = None,
+) -> Path:
     """Build and write the terminology artifact from per-concept CSVs."""
     concepts_dir = _concepts_csv_dir(topic)
     meta = _load_concept_review_meta(topic)
@@ -2142,12 +2259,21 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
             if not is_included or not system or not code:
                 continue
 
-            cand_key = (system.casefold(), code.casefold())
+            version = row.get("version", "").strip()
+            cand_key = (system.casefold(), code.casefold(), version.casefold())
             if not any(
-                (e["system"].casefold(), e["code"].casefold()) == cand_key
+                (
+                    e["system"].casefold(),
+                    e["code"].casefold(),
+                    str(e.get("version", "")).casefold(),
+                ) == cand_key
                 for e in approved_by_concept[name]
             ):
-                cand_entry: dict = {k: v for k, v in {"system": system, "code": code, "display": display}.items() if v}
+                cand_entry: dict = {
+                    k: v
+                    for k, v in {"system": system, "code": code, "display": display, "version": version}.items()
+                    if v
+                }
                 cand_entry["_key"] = code.casefold()
                 approved_by_concept[name].append(cand_entry)
                 parent_entries[code.casefold()] = cand_entry
@@ -2211,12 +2337,15 @@ def _write_concepts_l2_artifact_from_csv(topic: str, tracking: dict) -> Path:
         "sections": {
             "summary": (
                 "Terminology review output derived from topic concept annotations. "
-                "Each concept was deduplicated across sources before human review."
+                "Each concept was deduplicated across sources before review."
             ),
             "value_sets": value_set_rows,
         },
         "concepts": concept_rows,
     }
+    if expansions:
+        _merge_verified_value_set_expansions(artifact, expansions)
+        _validate_verified_expansion_contracts(artifact)
     artifact_path = _concept_artifact_path(topic)
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     buf = io.StringIO()
@@ -2278,6 +2407,51 @@ _EVIDENCE_SUMMARY_FALLBACK = {
 }
 
 
+# Deterministic defaults for artifact types that an author explicitly requests
+# when source-text inference does not surface a clinically necessary domain.
+# The source set remains explicit at the CLI boundary; this table supplies only
+# the normal plan metadata for the selected type.
+_FORCED_ARTIFACT_PROFILES: dict[str, dict] = {
+    "eligibility-criteria": {
+        "section": "criteria",
+        "key_question": "Which people meet the source-supported inclusion and exclusion criteria?",
+    },
+    "risk-factors": {
+        "section": "risk_factors",
+        "key_question": "Which source-supported risk factors should be represented?",
+    },
+    "evidence-summary": _EVIDENCE_SUMMARY_FALLBACK,
+    "decision-table": {
+        "section": ["events", "conditions", "data_elements", "actions", "rules"],
+        "key_question": "What recommendation-scoped triggers, conditions, and actions are required?",
+    },
+    "care-pathway": {
+        "section": ["steps", "transitions"],
+        "key_question": "What source-supported sequence and transitions define the care pathway?",
+    },
+    "terminology": {
+        "section": "value_sets",
+        "key_question": "What reviewed terms, codes, and value-set boundaries are needed?",
+    },
+    "measure": {
+        "section": "populations",
+        "key_question": "What source-supported measure populations and outcomes are required?",
+    },
+    "assessment": {
+        "section": ["instrument", "items", "scoring"],
+        "key_question": "What source-supported assessment instrument and response semantics are required?",
+    },
+    "policy": {
+        "section": "policy",
+        "key_question": "What source-supported policy constraints apply?",
+    },
+    "custom": {
+        "section": "summary",
+        "key_question": "What source-supported content requires a custom structured artifact?",
+    },
+}
+
+
 def _infer_artifact_profiles(source_name: str, content: str) -> list[dict]:
     """Return all matching artifact profiles for a source (many-to-many)."""
     haystack = f"{source_name} {content[:1000]}".lower()
@@ -2307,6 +2481,67 @@ def _group_sources_for_extract_plan(source_records: list[dict]) -> list[dict]:
             if record not in group["sources"]:
                 group["sources"].append(record)
     return list(grouped.values())
+
+
+def _add_forced_artifact_groups(
+    groups: list[dict],
+    include_artifact_types: tuple[str, ...],
+    include_sources: tuple[str, ...],
+    source_records: list[dict],
+) -> list[dict]:
+    """Add explicitly requested artifact types omitted by source-text inference.
+
+    ``--include-source`` intentionally applies as one explicit provenance set to
+    every requested type in the same invocation. Click repeatable options do
+    not retain grouping between individual type and source arguments.
+    """
+    if not include_artifact_types:
+        if include_sources:
+            raise click.UsageError(
+                "--include-source requires at least one --include-artifact-type"
+            )
+        return groups
+    if not include_sources:
+        raise click.UsageError(
+            "--include-artifact-type requires at least one --include-source"
+        )
+
+    duplicate_types = sorted({
+        artifact_type
+        for artifact_type in include_artifact_types
+        if include_artifact_types.count(artifact_type) > 1
+    })
+    if duplicate_types:
+        raise click.UsageError(
+            "Duplicate --include-artifact-type value(s): " + ", ".join(duplicate_types)
+        )
+
+    unknown_types = sorted(set(include_artifact_types) - set(_FORCED_ARTIFACT_PROFILES))
+    if unknown_types:
+        raise click.UsageError(
+            "Unknown --include-artifact-type value(s): " + ", ".join(unknown_types)
+        )
+
+    records_by_name = {record["name"]: record for record in source_records}
+    unknown_sources = sorted(set(include_sources) - set(records_by_name))
+    if unknown_sources:
+        raise click.UsageError(
+            "Unknown --include-source value(s): " + ", ".join(unknown_sources)
+        )
+
+    inferred_types = {group["artifact_type"] for group in groups}
+    selected_records = [records_by_name[source] for source in include_sources]
+    for artifact_type in include_artifact_types:
+        if artifact_type in inferred_types:
+            continue
+        profile = _FORCED_ARTIFACT_PROFILES[artifact_type]
+        groups.append({
+            "artifact_type": artifact_type,
+            "section": profile["section"],
+            "key_question": profile["key_question"],
+            "sources": selected_records,
+        })
+    return groups
 
 
 _ARTIFACT_PURPOSES: dict[str, str] = {
@@ -3052,8 +3287,35 @@ def concept():
 @promote.command("plan")
 @click.argument("topic")
 @click.option("--force", is_flag=True, help="Overwrite an existing extract-plan.md")
-def plan(topic, force):
-    """Write topics/<topic>/process/plans/extract-plan.yaml and extract-plan-readout.md."""
+@click.option(
+    "--include-artifact-type",
+    "include_artifact_types",
+    multiple=True,
+    help="Add this L2 artifact type only when inference omits it; requires --include-source.",
+)
+@click.option(
+    "--include-source",
+    "include_sources",
+    multiple=True,
+    help="Normalized source slug used by every --include-artifact-type in this invocation.",
+)
+@click.option(
+    "--include-concept",
+    "include_concepts",
+    multiple=True,
+    help="Review only this exact front-matter concept name; repeatable. Omitted means review every discovered concept.",
+)
+def plan(topic, force, include_artifact_types, include_sources, include_concepts):
+    """Write topics/<topic>/process/plans/extract-plan.yaml and extract-plan-readout.md.
+
+    Repeat --include-artifact-type to retain a clinically necessary artifact
+    omitted by heuristic inference. Repeat --include-source to set one shared,
+    explicit provenance set for all forced types in this invocation.
+
+    Repeat --include-concept to restrict terminology review to exact source
+    concept names for a bounded accepted use case. Terms outside that explicit
+    scope are not clinically rejected.
+    """
     tracking = require_tracking()
     require_topic(tracking, topic)
 
@@ -3068,12 +3330,21 @@ def plan(topic, force):
         return
 
     grouped = _group_sources_for_extract_plan(source_records)
+    grouped = _add_forced_artifact_groups(
+        grouped,
+        include_artifact_types,
+        include_sources,
+        source_records,
+    )
     artifacts = []
     for group in grouped:
         concerns = _identify_group_concerns(group)
         artifacts.append(_build_plan_artifact_entry(group, concerns=concerns))
     frontmatter_concepts = _collect_frontmatter_concepts(source_records)
-    concept_review = _build_concept_review(topic, frontmatter_concepts)
+    frontmatter_concepts, concept_scope = _select_frontmatter_concepts(
+        frontmatter_concepts, include_concepts,
+    )
+    concept_review = _build_concept_review(topic, frontmatter_concepts, concept_scope)
     if concept_review:
         artifacts.append(_build_concepts_extract_artifact_entry(concept_review))
 
@@ -3083,7 +3354,9 @@ def plan(topic, force):
     plan = _yaml_safe().load(plan_yaml)
     _extract_readout_path(topic).write_text(_render_extract_readout(plan))
     if frontmatter_concepts:
-        concepts_dir, meta_path = _build_concept_review_csvs(topic, frontmatter_concepts)
+        concepts_dir, meta_path = _build_concept_review_csvs(
+            topic, frontmatter_concepts, concept_scope,
+        )
         log_info(f"Created: {concepts_dir}")
         log_info(f"Created: {meta_path}")
 
@@ -3099,7 +3372,10 @@ def plan(topic, force):
     click.echo("\nNext steps:")
     click.echo(f"  1. Review the readout : cat topics/{topic}/process/plans/extract-plan-readout.md")
     if frontmatter_concepts:
-        click.echo(f"  2. Enrich concepts    : rh-skills promote concept enrich {topic} <name> --candidate <system|code|display>")
+        click.echo(
+            f"  2. Enrich concepts    : rh-skills promote concept enrich {topic} <name> "
+            "--candidate <system|code|display[|distance[|confidence]][|version]>"
+        )
         click.echo(f"  3. Edit the CSVs      : open topics/{topic}/process/plans/concepts/")
         click.echo(f"  4. Finalize review    : rh-skills promote concept review {topic} --finalize --reviewer <name>")
         click.echo(f"  5. Write terminology artifact: rh-skills promote concept write {topic}  (during implement)")
@@ -3259,15 +3535,16 @@ def _confidence_from_distance(distance: float) -> str:
 
 
 def _parse_candidate_flag(value: str) -> dict:
-    """Parse 'system|code|display[|distance[|confidence]]' into a candidate dict.
+    """Parse 'system|code|display[|distance[|confidence]][|version]' into a candidate dict.
 
     distance   — numeric float (lower = closer match); returned by MCP tools
     confidence — optional string label: high | medium | low
+    version    — optional code-system version, preserved into L2 Coding.version
     """
-    parts = value.split("|", 4)
+    parts = value.split("|", 5)
     if len(parts) < 3 or not parts[0].strip() or not parts[1].strip():
         raise click.UsageError(
-            f"--candidate value must be 'system|code|display[|distance[|confidence]]', got: {value!r}"
+            f"--candidate value must be 'system|code|display[|distance[|confidence]][|version]', got: {value!r}"
         )
     system = parts[0].strip()
     _validate_system_uri(system)
@@ -3293,6 +3570,8 @@ def _parse_candidate_flag(value: str) -> dict:
         entry["confidence"] = confidence
     elif "distance" in entry:
         entry["confidence"] = _confidence_from_distance(entry["distance"])
+    if len(parts) >= 6 and parts[5].strip():
+        entry["version"] = parts[5].strip()
     return entry
 
 
@@ -3407,7 +3686,7 @@ def _related_candidates_for_code(code_entry: dict, candidates: list[dict]) -> li
     multiple=True,
     type=click.STRING,
     metavar="TEXT",
-    help="MCP candidate to record. Format: 'system|code|display[|distance[|confidence]]'. Repeatable. Only valid with --source mcp.",
+    help="MCP candidate to record. Format: 'system|code|display[|distance[|confidence]][|version]'. Repeatable. Only valid with --source mcp.",
 )
 @click.option(
     "--related-candidate",
@@ -3438,32 +3717,28 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
 
     \b
     --source mcp (default): record RH MCP lookup candidates.
-      rh-skills promote concept enrich <topic> \\
-        --concept "Hypertension" \\
+      rh-skills promote concept enrich <topic> "Hypertension" \\
         --candidate "http://snomed.info/sct|38341003|Hypertensive disorder, systemic arterial (disorder)|0.02|high" \\
         --lookup-query "Hypertension"
 
     \b
     --source custom: create a new concept with no MCP candidates (custom/manual concept).
-      rh-skills promote concept enrich <topic> \\
-        --concept "Frailty" --source custom --type finding
+      rh-skills promote concept enrich <topic> "Frailty" --source custom --type finding
 
     \b
     Both sources: add an intensional expansion expression.
-      rh-skills promote concept enrich <topic> \\
-        --concept "Hypertension" \\
+      rh-skills promote concept enrich <topic> "Hypertension" \\
         --expansion "http://snomed.info/sct|<<38341003|All subtypes of hypertension"
 
     \b
     Combined in one call (mcp source):
-      rh-skills promote concept enrich <topic> \\
-        --concept "Hypertension" \\
+      rh-skills promote concept enrich <topic> "Hypertension" \\
         --candidate "http://snomed.info/sct|38341003|Hypertensive disorder" \\
         --expansion "http://snomed.info/sct|<<38341003|All subtypes"
 
     \b
     Reset candidates:
-      rh-skills promote concept enrich <topic> --concept "Hypertension" --reset
+      rh-skills promote concept enrich <topic> "Hypertension" --reset
     """
     source = source.lower()
 
@@ -3618,6 +3893,7 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
             new_system = norm_new["system"]
             new_code = norm_new["code"]
             new_display = norm_new["display"]
+            new_version = str(entry.get("version", "")).strip()
             new_dist = entry.get("distance")
             new_conf_str = str(entry.get("confidence", "")).lower()
             if not new_conf_str and entry.get("distance") is not None:
@@ -3630,6 +3906,7 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
                     r for r in existing_candidate_rows
                     if r.get("system", "").strip().casefold() == new_system.casefold()
                     and r.get("code", "").strip().casefold() == new_code.casefold()
+                    and r.get("version", "").strip().casefold() == new_version.casefold()
                 ),
                 None,
             )
@@ -3651,6 +3928,7 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
                     new_is_better = True
                 if new_is_better:
                     dup_row["display"] = new_display or dup_row.get("display", "")
+                    dup_row["version"] = new_version
                     dup_row["distance"] = str(new_dist) if new_dist is not None else ""
                     dup_row["confidence"] = new_conf_str
                     log_info(f"Updated candidate {new_system}|{new_code} with better entry.")
@@ -3662,6 +3940,7 @@ def enrich_concepts(topic, concept_name, source, concept_type, raw_candidates, r
                     "system": new_system,
                     "code": new_code,
                     "display": new_display,
+                    "version": new_version,
                     "distance": str(new_dist) if new_dist is not None else "",
                     "confidence": new_conf_str,
                     "row_type": "candidate",
@@ -3817,17 +4096,17 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
     \b
     Non-interactive (AI agent):
       # Approve all candidate rows for a concept:
-      rh-skills promote concept review <topic> --concept "Hypertension" --approve-all
+      rh-skills promote concept review <topic> "Hypertension" --approve-all
 
       # Exclude all candidate rows for a concept:
-      rh-skills promote concept review <topic> --concept "Hypertension" --exclude-all
+      rh-skills promote concept review <topic> "Hypertension" --exclude-all
 
       # Approve or exclude a specific code:
-      rh-skills promote concept review <topic> --concept "Hypertension" --approve-code 38341003
-      rh-skills promote concept review <topic> --concept "Hypertension" --exclude-code I10
+      rh-skills promote concept review <topic> "Hypertension" --approve-code 38341003
+      rh-skills promote concept review <topic> "Hypertension" --exclude-code I10
 
       # Add a comment to a concept:
-      rh-skills promote concept review <topic> --concept "Hypertension" --note "Confirmed SNOMED"
+      rh-skills promote concept review <topic> "Hypertension" --note "Confirmed SNOMED"
 
       # Finalize (seal the review):
       rh-skills promote concept review <topic> --finalize --reviewer "taylor"
@@ -4024,7 +4303,13 @@ def review_concepts(topic, concept_name, approve_all, exclude_all, approve_codes
 
 @concept.command("write")
 @click.argument("topic")
-def write_concepts(topic):
+@click.option(
+    "--expansions",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="YAML terminology artifact body containing verified expansions keyed by exact ValueSet id.",
+)
+def write_concepts(topic, expansions):
     """Write the terminology artifact from the approved concept review CSV.
 
     Requires concept review to be finalized (status: approved).
@@ -4040,7 +4325,8 @@ def write_concepts(topic):
             f"Run 'rh-skills promote concept review {topic} --finalize --reviewer <name>' first."
         )
 
-    artifact_path = _write_concepts_l2_artifact_from_csv(topic, tracking)
+    expansion_contracts = _load_verified_value_set_expansions(expansions) if expansions else None
+    artifact_path = _write_concepts_l2_artifact_from_csv(topic, tracking, expansion_contracts)
     log_info(f"Created: {artifact_path}")
 
 

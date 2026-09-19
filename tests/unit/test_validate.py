@@ -7,6 +7,8 @@ from click.testing import CliRunner
 from ruamel.yaml import YAML
 
 from rh_skills.commands.validate import validate
+from rh_skills.validators.care_pathway import validate_care_pathway
+from rh_skills.validators.decision_table import validate_decision_table
 
 
 def make_valid_l2(tmp_repo, skill="my-skill", artifact="test-artifact"):
@@ -1591,6 +1593,33 @@ concerns: []
     runner = CliRunner()
     result = runner.invoke(validate, ["my-skill", "test-artifact"])
     assert result.exit_code == 0, result.output
+
+
+def test_decision_table_value_type_boolean_is_supported():
+    artifact = {
+        "artifact_type": "decision-table",
+        "sections": {
+            "evidence_traceability": [{
+                "claim_id": "screening-claim",
+                "statement": "Use the screening response",
+                "evidence": [{"source": "source-l1", "locator": "Questionnaire item"}],
+            }],
+            "events": [{"id": "screen", "label": "Screen"}],
+            "conditions": [{"id": "answer", "label": "Answer is yes", "values": ["Yes", "No"]}],
+            "data_elements": [{
+                "id": "boolean-answer",
+                "condition_id": "answer",
+                "label": "Boolean answer",
+                "value_type": "boolean",
+            }],
+            "actions": [{"id": "communicate", "label": "Communicate", "kind": "communication"}],
+            "rules": [{"id": "positive", "event": "screen", "when": {"answer": "Yes"}, "then": ["communicate"], "evidence_traceability_ids": ["screening-claim"]}],
+        },
+    }
+
+    errors, _warnings = validate_decision_table(artifact)
+
+    assert errors == 0
 
 
 def test_validate_decision_table_allows_event_driven_rule_without_when(tmp_repo):
@@ -3604,6 +3633,37 @@ concerns: []
     assert result.exit_code == 0, result.output
 
 
+def test_care_pathway_accepts_explicit_conjunctive_applicability_conditions():
+    errors, _warnings = validate_care_pathway({
+        "artifact_type": "care-pathway",
+        "sections": {
+            "steps": [{
+                "id": "wait-for-response",
+                "label": "Wait for response",
+                "applicability_condition": "in-population",
+                "applicability_conditions": ["response-incomplete", "has-encounter"],
+            }],
+            "transitions": [],
+        },
+    })
+    assert errors == 0
+
+
+def test_care_pathway_rejects_empty_or_duplicate_applicability_conditions():
+    errors, _warnings = validate_care_pathway({
+        "artifact_type": "care-pathway",
+        "sections": {
+            "steps": [{
+                "id": "wait-for-response",
+                "label": "Wait for response",
+                "applicability_conditions": ["in-population", "in-population", ""],
+            }],
+            "transitions": [],
+        },
+    })
+    assert errors == 2
+
+
 def test_validate_care_pathway_accepts_rule_ids_on_leaf_step(tmp_repo):
     write_extract_plan(tmp_repo)
     td = tmp_repo / "topics" / "my-skill" / "structured" / "care-artifact"
@@ -4024,3 +4084,123 @@ def test_validate_fails_with_clear_message_on_yaml_parse_error(tmp_repo):
     assert result.exit_code == 1
     assert "YAML parse error" in result.output
     assert "quoted" in result.output
+
+
+def test_validate_assessment_rejects_malformed_observation_extraction_contract(tmp_repo):
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "assessment"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "assessment.yaml").write_text("""\
+id: assessment
+name: assessment
+title: Assessment
+version: 1.0.0
+status: draft
+domain: screening
+description: Assessment fixture.
+derived_from: [source-l1]
+artifact_type: assessment
+clinical_question: What is assessed?
+sections:
+  instrument:
+    version_algorithm:
+      system: http://hl7.org/fhir/version-algorithm
+      code: semver
+    observation_extraction:
+      profile: http://example.org/Profile|1.0
+      enabled: true
+      category:
+        system: urn:test
+        code: survey
+        display: Survey
+  items:
+    - id: q1
+      text: Question?
+      type: boolean
+      code:
+        system: http://loinc.org
+        version: '2.81'
+        code: 1234-5
+        display: Question
+""")
+    result = CliRunner().invoke(validate, ["my-skill", "assessment"])
+    assert result.exit_code == 1
+    assert "INVALID assessment instrument" in result.output
+    assert "SDC observation extraction profile canonical|version" in result.output
+
+
+def test_validate_assessment_accepts_supported_observation_extraction_contract(tmp_repo):
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "assessment"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "assessment.yaml").write_text("""\
+id: assessment
+name: assessment
+title: Assessment
+version: 1.0.0
+status: draft
+domain: screening
+description: Assessment fixture.
+derived_from: [source-l1]
+artifact_type: assessment
+clinical_question: What is assessed?
+sections:
+  instrument:
+    version_algorithm:
+      system: http://hl7.org/fhir/version-algorithm
+      code: semver
+    observation_extraction:
+      profile: http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0
+      enabled: true
+      category:
+        system: http://terminology.hl7.org/CodeSystem/observation-category
+        code: survey
+        display: Survey
+  items:
+    - id: q1
+      text: Question?
+      type: boolean
+      code:
+        system: http://loinc.org
+        version: '2.81'
+        code: 1234-5
+        display: Question
+""")
+    result = CliRunner().invoke(validate, ["my-skill", "assessment"])
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_assessment_rejects_enabled_extraction_without_version_algorithm(tmp_repo):
+    td = tmp_repo / "topics" / "my-skill" / "structured" / "assessment"
+    td.mkdir(parents=True, exist_ok=True)
+    (td / "assessment.yaml").write_text("""\
+id: assessment
+name: assessment
+title: Assessment
+version: 1.0.0
+status: draft
+domain: screening
+description: Assessment fixture.
+derived_from: [source-l1]
+artifact_type: assessment
+clinical_question: What is assessed?
+sections:
+  instrument:
+    observation_extraction:
+      profile: http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0
+      enabled: true
+      category:
+        system: http://terminology.hl7.org/CodeSystem/observation-category
+        code: survey
+        display: Survey
+  items:
+    - id: q1
+      text: Question?
+      type: boolean
+      code:
+        system: http://loinc.org
+        version: '2.81'
+        code: 1234-5
+        display: Question
+""")
+    result = CliRunner().invoke(validate, ["my-skill", "assessment"])
+    assert result.exit_code == 1
+    assert "version_algorithm is required" in result.output

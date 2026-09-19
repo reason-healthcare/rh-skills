@@ -1,0 +1,31 @@
+{
+  "checkedAt": "2026-09-17T23:59:45.368289+00:00",
+  "workbenchRevision": "a59e476",
+  "url": "http://localhost:9090/projects/aao-crs/snapshots/snap_aao-crs_contract-check/artifacts/plandefinition-crs-surgical-management-recommendation/preview/cpg",
+  "authenticated": true,
+  "checks": [
+    {
+      "check": "Missing executable package gives actionable incomplete notice and suppresses run form",
+      "status": "passed"
+    },
+    {
+      "check": "Authored artifact inventory contains106 items with type groups and canonical/version",
+      "status": "passed"
+    },
+    {
+      "check": "Library filter plus measure search yields exactly1 matching item",
+      "status": "passed"
+    },
+    {
+      "check": "Opening Measure Library from inventory",
+      "status": "failed",
+      "observed": "404 at /artifacts/library-measure-measure",
+      "defect": "WB-UI-001"
+    }
+  ],
+  "followUp": {
+    "checkedAt": "2026-09-18T00:00:44.904364+00:00",
+    "status": "passed",
+    "check": "Measure Library filtered inventory source opens inline, stays on preview page, no console warning/error; generic L3 source access repair"
+  }
+}

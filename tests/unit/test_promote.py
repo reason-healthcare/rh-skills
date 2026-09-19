@@ -2,6 +2,8 @@
 
 import io
 import os
+import hashlib
+import json
 
 import click
 import pytest
@@ -13,6 +15,9 @@ from rh_skills.commands.promote import (
     _approved_formalize_target,
     _build_stub_l2_artifact,
     _load_concept_csv,
+    _load_verified_value_set_expansions,
+    _merge_verified_value_set_expansions,
+    _validate_verified_expansion_contracts,
     _sanitize_yaml,
     _write_concept_csv,
     promote,
@@ -23,6 +28,79 @@ def load_yaml(path):
     y = YAML()
     with open(path) as f:
         return y.load(f)
+
+
+def test_concept_cli_help_uses_positional_name_argument():
+    runner = CliRunner()
+    enrich = runner.invoke(promote, ["concept", "enrich", "--help"])
+    review = runner.invoke(promote, ["concept", "review", "--help"])
+
+    assert enrich.exit_code == 0
+    assert review.exit_code == 0
+    assert "TOPIC NAME" in enrich.output
+    assert "TOPIC NAME" in review.output
+    assert "--concept" not in enrich.output
+    assert "--concept" not in review.output
+
+
+def test_concept_write_accepts_only_exact_verified_expansion_ids(tmp_path):
+    response = {
+        "total": 1,
+        "timestamp": "2026-09-18T01:54:13Z",
+        "contains": [{
+            "system": "http://loinc.org", "version": "2.81",
+            "code": "100257-5", "display": "Feel unsteady when standing or walking",
+        }],
+    }
+    digest = hashlib.sha256(
+        json.dumps(response, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    expansion = {
+        "source": {
+            "provider": "ReasonHub MCP", "reference": "evidence.json#unsteady",
+            "response_timestamp": "2026-09-18T01:54:13Z", "response_sha256": digest,
+        },
+        "requested_compose": {"include": [{
+            "system": "http://loinc.org", "version": "2.81",
+            "concept": [{"code": "100257-5", "display": "Feel unsteady when standing or walking"}],
+        }]},
+        "response": response,
+    }
+    expansion_file = tmp_path / "expansions.yaml"
+    buf = io.StringIO()
+    YAML().dump({"sections": {"value_sets": [{
+        "id": "unsteady", "expansion": expansion,
+    }]}}, buf)
+    expansion_file.write_text(buf.getvalue())
+    loaded = _load_verified_value_set_expansions(expansion_file)
+    artifact = {
+        "name": "concepts",
+        "concepts": [{"id": "unsteady", "codes": [{
+            "system": "http://loinc.org", "version": "2.81", "code": "100257-5",
+            "display": "Feel unsteady when standing or walking",
+        }]}],
+        "sections": {"value_sets": [{"id": "unsteady", "concept_refs": ["unsteady"]}]},
+    }
+    _merge_verified_value_set_expansions(artifact, loaded)
+    assert artifact["sections"]["value_sets"][0]["expansion"] == expansion
+    _validate_verified_expansion_contracts(artifact)
+
+    with pytest.raises(click.UsageError, match="unknown generated ValueSet"):
+        _merge_verified_value_set_expansions(artifact, {"not-generated": expansion})
+
+
+def test_concept_write_rejects_duplicate_expansion_ids(tmp_path):
+    expansion_file = tmp_path / "duplicates.yaml"
+    expansion_file.write_text("""\
+sections:
+  value_sets:
+    - id: same
+      expansion: {}
+    - id: same
+      expansion: {}
+""")
+    with pytest.raises(click.UsageError, match="duplicate ValueSet id"):
+        _load_verified_value_set_expansions(expansion_file)
 
 
 def structured_evidence_summary_path(tmp_repo, topic_name, artifact_name):
@@ -721,6 +799,124 @@ def test_plan_writes_extract_review_packet_and_records_event(tmp_repo):
     assert "extract_planned" in [event["type"] for event in topic["events"]]
 
 
+def test_plan_can_force_omitted_types_with_shared_explicit_sources(tmp_repo):
+    setup_topic_with_normalized_sources(
+        tmp_repo,
+        source_names=("source-a", "source-b"),
+    )
+    runner = CliRunner()
+
+    result = runner.invoke(promote, [
+        "plan", "my-skill",
+        "--include-artifact-type", "eligibility-criteria",
+        "--include-artifact-type", "care-pathway",
+        "--include-source", "source-a",
+        "--include-source", "source-b",
+    ])
+
+    assert result.exit_code == 0, result.output
+    plan = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text()
+    )
+    forced = {
+        artifact["artifact_type"]: artifact
+        for artifact in plan["artifacts"]
+        if artifact["artifact_type"] in {"eligibility-criteria", "care-pathway"}
+    }
+    assert set(forced) == {"eligibility-criteria", "care-pathway"}
+    assert forced["eligibility-criteria"]["source_files"] == [
+        "sources/normalized/source-a.md",
+        "sources/normalized/source-b.md",
+    ]
+    assert forced["care-pathway"]["source_files"] == forced["eligibility-criteria"]["source_files"]
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        (("--include-artifact-type", "eligibility-criteria"), "requires at least one --include-source"),
+        (("--include-source", "source-a"), "requires at least one --include-artifact-type"),
+        (("--include-artifact-type", "unknown-type", "--include-source", "source-a"), "Unknown --include-artifact-type"),
+        (("--include-artifact-type", "eligibility-criteria", "--include-source", "unknown-source"), "Unknown --include-source"),
+        (("--include-artifact-type", "eligibility-criteria", "--include-artifact-type", "eligibility-criteria", "--include-source", "source-a"), "Duplicate --include-artifact-type"),
+    ],
+)
+def test_plan_rejects_invalid_forced_artifact_inputs(tmp_repo, args, expected):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("source-a",))
+    runner = CliRunner()
+    result = runner.invoke(promote, ["plan", "my-skill", *args])
+
+    assert result.exit_code == 2
+    assert expected in result.output
+
+
+def test_plan_force_regenerates_existing_plan_with_forced_artifact(tmp_repo):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("source-a",))
+    runner = CliRunner()
+    first = runner.invoke(promote, ["plan", "my-skill"])
+    assert first.exit_code == 0, first.output
+
+    second = runner.invoke(promote, [
+        "plan", "my-skill", "--force",
+        "--include-artifact-type", "eligibility-criteria",
+        "--include-source", "source-a",
+    ])
+    assert second.exit_code == 0, second.output
+    plan = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text()
+    )
+    eligibility = next(a for a in plan["artifacts"] if a["artifact_type"] == "eligibility-criteria")
+    assert eligibility["source_files"] == ["sources/normalized/source-a.md"]
+
+
+def test_plan_can_scope_concept_review_to_exact_source_names(tmp_repo):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+
+    first = runner.invoke(promote, ["plan", "my-skill"])
+    assert first.exit_code == 0, first.output
+
+    result = runner.invoke(promote, [
+        "plan", "my-skill", "--force",
+        "--include-concept", "Hypertension",
+    ])
+
+    assert result.exit_code == 0, result.output
+    plan = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "extract-plan.yaml").read_text()
+    )
+    scope = plan["concept_review"]["scope"]
+    assert scope["mode"] == "explicit"
+    assert scope["included_concepts"] == ["Hypertension"]
+    assert scope["excluded_terms_disposition"] == (
+        "Outside this accepted use-case terminology scope; not a clinical rejection."
+    )
+    concepts_dir = tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts"
+    assert (concepts_dir / "hypertension.csv").exists()
+    assert not (concepts_dir / "blood-pressure-screening.csv").exists()
+    meta = YAML(typ="safe").load(
+        (tmp_repo / "topics" / "my-skill" / "process" / "plans" / "concepts-review-meta.yaml").read_text()
+    )
+    assert meta["scope"] == scope
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        (("--include-concept", "Hypertension", "--include-concept", "Hypertension"), "Duplicate --include-concept"),
+        (("--include-concept", "hypertension"), "Unknown --include-concept"),
+    ],
+)
+def test_plan_rejects_duplicate_or_nonexact_concept_scope(tmp_repo, args, expected):
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+
+    result = runner.invoke(promote, ["plan", "my-skill", *args])
+
+    assert result.exit_code == 2
+    assert expected in result.output
+
+
 def test_review_concepts_writes_terminology_l2_artifact(tmp_repo):
     setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
     runner = CliRunner()
@@ -1215,6 +1411,41 @@ def test_concept_enrich_custom_then_mcp_then_write_roundtrip(tmp_repo):
     frailty = next((c for c in artifact["concepts"] if c["name"] == "Frailty"), None)
     assert frailty is not None
     assert frailty["codes"][0]["code"] == "248279007"
+
+
+def test_concept_candidate_versions_round_trip_to_l2_and_remain_distinct(tmp_repo):
+    """Candidate versions are preserved and differentiate otherwise identical codes."""
+    setup_topic_with_normalized_sources(tmp_repo, source_names=("ada-guidelines",))
+    runner = CliRunner()
+    runner.invoke(promote, ["plan", "my-skill"])
+
+    for version in ("2.81", "2.82"):
+        result = runner.invoke(promote, [
+            "concept", "enrich", "my-skill", "Hypertension",
+            "--candidate", f"http://loinc.org|100257-5|Fall-risk screen|||{version}",
+        ])
+        assert result.exit_code == 0, result.output
+    result = runner.invoke(promote, [
+        "concept", "enrich", "my-skill", "Blood pressure screening",
+        "--candidate", "http://snomed.info/sct|171207006|Blood pressure screening (procedure)",
+    ])
+    assert result.exit_code == 0, result.output
+
+    runner.invoke(promote, ["concept", "review", "my-skill", "Hypertension", "--approve-all"])
+    runner.invoke(promote, ["concept", "review", "my-skill", "Blood pressure screening", "--approve-all"])
+    result = runner.invoke(promote, [
+        "concept", "review", "my-skill", "--finalize", "--reviewer", "test-reviewer", "--force",
+    ])
+    assert result.exit_code == 0, result.output
+    result = runner.invoke(promote, ["concept", "write", "my-skill"])
+    assert result.exit_code == 0, result.output
+
+    artifact = YAML(typ="safe").load(structured_terminology_path(tmp_repo).read_text())
+    hypertension = next(c for c in artifact["concepts"] if c["name"] == "Hypertension")
+    assert {(code["code"], code["version"]) for code in hypertension["codes"]} == {
+        ("100257-5", "2.81"),
+        ("100257-5", "2.82"),
+    }
 
 
 def test_write_concepts_requires_approved_packet(tmp_repo):
@@ -2810,6 +3041,19 @@ class TestFormalizeSectionMapping:
 
 
 class TestBuildFormalizeArtifacts:
+    def test_strategy_targets_match_current_r4_producers(self):
+        from rh_skills.commands.promote import _build_formalize_artifacts
+
+        result = _build_formalize_artifacts("test-topic", [
+            {"name": "evidence", "artifact_type": "evidence-summary"},
+            {"name": "eligibility", "artifact_type": "eligibility-criteria"},
+            {"name": "risk", "artifact_type": "risk-factors"},
+        ])
+        targets = {entry["strategy"]: entry["l3_targets"] for entry in result}
+        assert targets["evidence-summary"] == ["Evidence", "EvidenceVariable"]
+        assert targets["eligibility-criteria"] == ["EvidenceVariable"]
+        assert targets["risk-factors"] == ["EvidenceVariable", "ValueSet"]
+
     def test_single_type_produces_one_artifact(self):
         from rh_skills.commands.promote import _build_formalize_artifacts
         result = _build_formalize_artifacts("test-topic", [

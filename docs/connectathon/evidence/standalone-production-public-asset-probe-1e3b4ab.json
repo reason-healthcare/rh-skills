@@ -1,0 +1,14 @@
+{
+  "standaloneCommits": [
+    "49a7177 fix(cpg-review): bundle standalone static assets",
+    "1e3b4ab fix(cpg-review): include public standalone assets"
+  ],
+  "runtimeCommit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+  "wasmNodeSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320",
+  "build": "npm run build; postbuild copies .next/static and public beside the nested generated standalone server",
+  "start": "RH_CPG_WASM_NODE_MODULE=<RH_REPO>/packages/cpg/wasm-node/rh_cpg.js PORT=9091 HOSTNAME=127.0.0.1 node .next/standalone/packages/cpg-review/server.js",
+  "assetProbe": "/private/tmp/connectathon-live/evidence/standalone-root-asset-probe-49a7177-public-fixed.json",
+  "localAssetCount": 31,
+  "localAssetFailures": 0,
+  "rootGetStatus": 200
+}

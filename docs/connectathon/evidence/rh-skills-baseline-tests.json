@@ -1,0 +1,10 @@
+{
+  "sourceRevision": "eb28096",
+  "command": "/private/tmp/connectathon-live/venv/bin/python -m pytest -q",
+  "exitCode": 1,
+  "passed": 946,
+  "skipped": 18,
+  "failed": 1,
+  "failure": "tests/integration/test_statin_primary_prevention_flow.py::test_statin_primary_prevention_flow expects a .json translation file; observed missing. New .elm.json contract to inspect.",
+  "classification": "baseline failure; no implementation fixes applied at test start"
+}

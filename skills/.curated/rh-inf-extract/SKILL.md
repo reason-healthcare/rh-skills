@@ -178,8 +178,9 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      > `evidence-summary` is ONLY for narrative reviews with no branching choice.
      > When in doubt: conflicting guidelines with event/condition/action logic = `decision-table`.
 
-     Standard types: evidence-summary · decision-table · care-pathway · terminology ·
-     measure · assessment · policy · custom (when clearly justified).
+     Standard types: eligibility-criteria · risk-factors · evidence-summary ·
+     decision-table · care-pathway · terminology · measure · assessment · policy ·
+     custom (when clearly justified).
 
    - **Type-appropriate content inventory** — for each candidate artifact, enumerate
      the substantive source elements that the artifact must account for. The format
@@ -200,6 +201,15 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      an item, or a code). Use it in step 4's completeness check and carry it
      forward to implement mode.
 
+   - **Keep source type, recommendation grade, and evidence certainty distinct.**
+     Preserve an explicitly reported recommendation grade as that grade (for
+     example, USPSTF Grade B or Grade C). Add `strength` or `evidence_quality`
+     only when the source explicitly reports evidence certainty or quality; do
+     not infer a rating from a guideline publisher, recommendation grade, or
+     summary of net benefit. If certainty/quality is not reported, omit that
+     field. Record what kind of source supports a claim in its citation or
+     source metadata, not as a substitute certainty rating.
+
    - **Specific cross-source disagreements** — exact values, thresholds, or
      recommendations that differ between sources (e.g., "source A: HbA1c <7.0%;
      source B: <=6.5%"). These become `concerns[]` entries at approve time.
@@ -207,6 +217,39 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
 3. Run `rh-skills promote plan <topic>` to generate the plan files. Use `--force` to
    overwrite an existing plan. Do not manually edit `extract-plan.yaml` — use
    `--force` to regenerate or record corrections in `review_summary` when approving.
+
+   If source-text inference omits a clinically necessary L2 artifact type, add it
+   through the author-controlled CLI rather than editing the plan. Supply one or
+   more normalized source slugs, which apply to every forced type in that one
+   invocation:
+
+   ```bash
+   rh-skills promote plan <topic> --force \
+     --include-artifact-type eligibility-criteria \
+     --include-artifact-type care-pathway \
+     --include-source source-a --include-source source-b
+   ```
+
+   `--include-source` is intentionally one shared provenance set for all
+   `--include-artifact-type` flags in that invocation. Run separate plan commands
+   only when the required types need different source sets. The CLI rejects
+   unknown or duplicate types, unknown sources, and forced types without sources.
+
+   For a bounded accepted use case, restrict terminology review to explicit
+   front-matter concept names without treating every source annotation as an
+   accepted executable term:
+
+   ```bash
+   rh-skills promote plan <topic> --force \
+     --include-concept "exact source concept name" \
+     --include-concept "another exact source concept name"
+   ```
+
+   `--include-concept` is repeatable and preserves its supplied exact names in
+   the review packet. The CLI rejects unknown names, case changes, and duplicates.
+   Omit it to retain the default behavior of reviewing every discovered concept.
+   Terms outside an explicit scope are documented as outside the accepted use
+   case; they are not clinically rejected.
 
    If normalized front matter contains concepts, this command also writes
    one CSV per concept under `topics/<topic>/process/plans/concepts/` (the review artifacts) and
@@ -336,10 +379,33 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    — do not retry the same tool and do not try alternative tools as a fallback.
    For `terminology` artifacts, omit `candidate_codes[]`, note the deferral in
    the Review Summary, and proceed (resolution can be done in formalize mode).
-   For `assessment` artifacts, **also omit `codings[]` and all per-item
-   `loinc_code` fields from the derived artifact** — do not substitute codes
-   from the source text. Note in the Review Summary that LOINC codes are absent
-   because MCP was unavailable; they must be resolved before formalize.
+   For `assessment` artifacts, do not infer codes from question wording. Preserve
+   an exact source-authored item Coding or a pinned Coding already reviewed in
+   the topic terminology artifact, including `system`, `version`, `code`, and
+   `display`. If the assessment declares
+   `sections.instrument.observation_extraction`, every supported Boolean item
+   must have exactly one such reviewed Coding; if a required Coding is not
+   available or reviewed, record the terminology gap as blocking and do not
+   claim the assessment is extraction-ready. An MCP outage does not erase a
+   Coding that was already reviewed and pinned. Enabled extraction also
+   requires an explicitly sourced or reviewed `sections.instrument.version_algorithm`
+   Coding; never infer an algorithm from the Questionnaire version string.
+
+   **Assessment scoring is optional and source-bound.** If the source defines
+   scoring, preserve its exact input items, weights/transforms, completion and
+   missing/invalid-answer behavior, score type/code/version/unit/range,
+   thresholds, interpretation, and evidence references. Keep source rules
+   distinct from operational representations. Do not make scoring mandatory
+   for ordinary assessments, invent a numeric score or cutoff, or claim an
+   unvalidated score is a validated scale. The current structured SDC score
+   generator supports only an explicitly sourced count of true answers across
+   distinct required Boolean items; it omits the result for incomplete or
+   unusable inputs and treats zero as a valid complete result. Other scoring
+   methods are a capability gap until a matching generator/runtime is reviewed.
+   For integer results, FHIR `Observation.valueInteger` has no unit element;
+   describe the count meaning in the authored score-code definition instead
+   of adding an unsupported unit extension. See the
+   [assessment scoring contract](reference.md#assessment).
 6. After reviewing the plan output, check for open concerns before proceeding:
 
    **⚠ HUMAN-IN-THE-LOOP: Concerns require explicit human confirmation.**
@@ -423,7 +489,7 @@ Do not attempt step 7 before step 6 is complete — the CLI will hard-block.
 
 If the plan includes `concept_review`, populate the packet by calling
 `rh-skills promote concept enrich` **once per result, per system searched**:
-`rh-skills promote concept enrich <topic> <name> --candidate "system|code|display[|distance[|confidence]]"`
+`rh-skills promote concept enrich <topic> <name> --candidate "system|code|display[|distance[|confidence]][|version]"`
 
 > Run `rh-skills promote concept enrich --help` for the full option reference and worked examples.
 
@@ -450,6 +516,11 @@ mode via `rh-skills promote concept write` to
 `topics/<topic>/structured/concepts/concepts.yaml`, and the extract plan's
 explicit `concepts` artifact row is the reviewer-facing contract for that
 package.
+
+For verified FHIR `ValueSet.expansion` evidence, use
+`rh-skills promote concept write <topic> --expansions <yaml>`. The YAML may
+only attach `expansion` objects to exact generated `sections.value_sets[].id`
+values; it cannot alter approved candidate coding.
 
 **⚠ Do NOT ask the reviewer how they want to proceed or offer workflow options
 (e.g. "Option A — I drive" vs "Option B — you drive"). The workflow is fixed:
@@ -490,10 +561,15 @@ the remaining results from that search are discarded.
 Record MCP metadata exactly as returned. Do not transform similarity to
 distance (`1 - similarity`) and do not map custom confidence thresholds
 (for example, "0.8+ = high") unless MCP already returned that value.
-The `--candidate` format is `system|code|display[|distance[|confidence]]`.
+The `--candidate` format is `system|code|display[|distance[|confidence]][|version]`.
 `distance` is a float (lower = closer match) — returned by MCP tools.
 `confidence` is an optional string label (`high`, `medium`, `low`); place it
 after distance if MCP returned it.
+`version` is an optional code-system release and is the final field. Preserve it
+when the lookup or source contract supplies it; it becomes `codes[].version` in
+the L2 terminology artifact. For a versioned candidate without distance or
+confidence, leave those fields empty, for example
+`http://loinc.org|100257-5|Feel unsteady when standing or walking|||2.81`.
 When MCP returns only a numeric distance with no confidence label, pass it in
 the 4th field: `system|code|display|<distance>`. Do not insert extra `|`
 characters to fix a format error — that corrupts the system URI or code field.

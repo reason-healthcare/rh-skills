@@ -76,12 +76,22 @@ define "Conditions":
 **Issue**: This retrieves all Condition resources regardless of code, then
 `Has Condition` tests existence with no code filter. The Hyperlipidemia valueset
 is declared but never applied in the retrieve or filter. Clinical correctness
-and query performance both suffer.
+and query performance both suffer. The status check below represents current
+evaluation-time status; it does not establish activity during the measurement
+period. Use the CMS QMD `prevalenceInterval()` pattern when period prevalence is
+required.
 **Recommended fix**:
 ```cql
+codesystem "Condition Clinical Status Codes":
+  'http://terminology.hl7.org/CodeSystem/condition-clinical'
+
+code "Active":
+  'active' from "Condition Clinical Status Codes" display 'Active'
+
 define "Hyperlipidemia Conditions":
   [Condition: "Hyperlipidemia"] C
-    where C.clinicalStatus ~ 'active'
+  where exists (C.clinicalStatus.coding S
+    where S ~ "Active")
 ```
 
 ---

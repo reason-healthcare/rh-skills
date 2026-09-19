@@ -364,6 +364,8 @@ class TestRhCqlSkillContract:
     SKILL_PATH = Path("skills/.curated/rh-inf-cql/SKILL.md")
     REF_PATH = Path("skills/.curated/rh-inf-cql/reference.md")
     EXAMPLES_DIR = Path("skills/.curated/rh-inf-cql/examples")
+    AUTHOR_OUTPUT_PATH = EXAMPLES_DIR / "author-example" / "output.md"
+    REVIEW_OUTPUT_PATH = EXAMPLES_DIR / "review-example" / "output.md"
 
     # ── SKILL.md — four mode headings ─────────────────────────────────────────
 
@@ -457,6 +459,35 @@ class TestRhCqlSkillContract:
             pytest.skip("rh-inf-cql examples/review-example/ not implemented")
         assert path.exists(), "rh-inf-cql: examples/review-example/output.md must exist"
 
+    def test_condition_status_examples_use_typed_terminology_comparison(self):
+        """Canonical examples must preserve system and code as one typed identity."""
+        for path in (self.AUTHOR_OUTPUT_PATH, self.REVIEW_OUTPUT_PATH):
+            if not path.exists():
+                pytest.skip(f"rh-inf-cql example not implemented: {path}")
+
+            content = path.read_text()
+            assert not re.search(r"\.system(?:\.value)?\s*=", content), (
+                f"{path}: do not split coded identity into a system string predicate"
+            )
+            assert not re.search(r"\.code(?:\.value)?\s*=", content), (
+                f"{path}: do not split coded identity into a code string predicate"
+            )
+            assert not re.search(
+                r"clinicalStatus\s*~\s*['\"]active['\"]", content, re.IGNORECASE
+            ), (
+                f"{path}: do not compare clinicalStatus to a systemless string"
+            )
+            assert 'codesystem "Condition Clinical Status Codes":' in content
+            assert (
+                "'http://terminology.hl7.org/CodeSystem/condition-clinical'"
+                in content
+            )
+            assert 'code "Active":' in content
+            assert "'active' from \"Condition Clinical Status Codes\"" in content
+            assert 'where S ~ "Active"' in content
+            assert re.search(r"evaluation[- ]time", content)
+            assert "prevalenceInterval()" in content
+
     # ── CLI boundary ──────────────────────────────────────────────────────────
 
     def test_skill_md_references_rh_cql_cli_commands(self):
@@ -496,3 +527,25 @@ class TestRhCqlSkillContract:
             "rh-inf-cql SKILL.md must explicitly reject parameter-only decision-table "
             "libraries as acceptable finished authoring"
         )
+
+    def test_skill_md_requires_cms_qmd_pattern_index_before_authoring(self):
+        """CMS QMD patterns are the first-choice FHIR CQL baseline."""
+        if not self.SKILL_PATH.exists():
+            pytest.skip("rh-inf-cql skill not implemented")
+        body = skill_body(self.SKILL_PATH)
+        assert "CMS QMD patterns first" in body, (
+            "rh-inf-cql SKILL.md must make CMS QMD patterns the first-choice "
+            "FHIR CQL authoring baseline"
+        )
+        assert (
+            "https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html"
+            in body
+        ), "rh-inf-cql SKILL.md must link the CMS QMD Pattern Index"
+
+        reference = self.REF_PATH
+        if reference.exists():
+            reference_body = reference.read_text()
+            assert "CMS QMD Pattern Index" in reference_body, (
+                "rh-inf-cql reference.md must identify the CMS QMD Pattern Index as "
+                "the preferred FHIR CQL pattern source"
+            )

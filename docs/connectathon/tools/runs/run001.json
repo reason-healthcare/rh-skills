@@ -1,0 +1,16 @@
+{
+  "run": "run001",
+  "workspace": "${REPO_ROOT}/dist/connectathon-20260919/workspaces/run-001",
+  "topic": "steadi-fall-screening",
+  "content": "${REPO_ROOT}/dist/connectathon-20260919/workspaces/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+  "fixtures": "${REPO_ROOT}/dist/connectathon-20260919/workspaces/run-001/topics/steadi-fall-screening/process/package-workspace/executable/fixtures/index.json",
+  "runtime": "${RUNTIME_ROOT}/packages/cpg/dist/node.js",
+  "plan": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+  "measure": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+  "questionnaire": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+  "guidance": { "mode": "communication-request" },
+  "nativeCql": [
+    { "library": "FallScreeningAndGuidanceRecommendationLogic", "expected": 30 },
+    { "library": "MeasureMeasure", "expected": 18 }
+  ]
+}

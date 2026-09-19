@@ -1,0 +1,89 @@
+{
+  "checkedAt": "2026-09-18T04:09:36.123917+00:00",
+  "rhSkillsRepoHead": "eb96eda20bb7bc4f471d1fedf0785c8324bc0459",
+  "python": "3.13.4",
+  "rhSkillsVersion": "0.1.0",
+  "source": "/Users/bkaney/projects/reason-healthcare/rh-skills/skills/.curated",
+  "workspaceRoot": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/live-workspaces/agent-skills-preflight-20260918",
+  "genericPlatform": ".agents/skills/",
+  "commands": {
+    "buildWheel": "uv build --offline --project \"$SKILLS_REPO\" --out-dir \"$WHEEL_DIR\"",
+    "syncFreshSourceEnvironment": "UV_CACHE_DIR=\"$UV_CACHE_DIR\" UV_PROJECT_ENVIRONMENT=\"$UV_PROJECT_ENVIRONMENT\" uv sync --offline --locked --project \"$SKILLS_REPO\"",
+    "installWheelDependenciesFromLock": "UV_CACHE_DIR=\"$UV_CACHE_DIR\" UV_PROJECT_ENVIRONMENT=\"$WHEEL_ENV\" uv sync --offline --locked --no-install-project --project \"$SKILLS_REPO\"",
+    "installBuiltWheel": "uv pip install --offline --no-deps --python \"$WHEEL_ENV/bin/python\" \"$WHEEL\"",
+    "installCuratedSkills": "printf '1\\n' | rh-skills skills init --from \"$SKILLS_REPO/skills/.curated\"",
+    "installWheelBundledSkills": "printf '1\\n' | rh-skills skills init",
+    "driftCheck": "rh-skills skills check"
+  },
+  "freshSourceEnvironment": {
+    "workspace": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/live-workspaces/agent-skills-preflight-20260918/fresh-locked-sync",
+    "lockfile": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/live-workspaces/agent-skills-preflight-20260918/fresh-locked-sync/.rh-skills-lock.yaml",
+    "lockfileSha256": "414eaebe091c55e280cb43190d841972f5caef3f9cacba350214419bfab59655",
+    "installedSkills": 8,
+    "skillsCheckPassed": true
+  },
+  "builtWheel": {
+    "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/live-workspaces/agent-skills-preflight-20260918/wheels/rh_skills-0.1.0-py3-none-any.whl",
+    "sha256": "dbcb66fc97753827949ea546396b2d7d248fe5fb63d82eb6b1074024bdc4d9e5",
+    "lockfile": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/live-workspaces/agent-skills-preflight-20260918/bundled-wheel-locked-install/.rh-skills-lock.yaml",
+    "lockfileSha256": "fc4ede255d33e1f854b1236e30885c3939268370c5f300f0e100d46cddefec7f",
+    "installedSkills": 8,
+    "skillsCheckPassed": true,
+    "wheelEmbeddedSkillTreesMatchCuratedByteForByte": true,
+    "perSkillTreeSha256": {
+      "rh-inf-cql": {
+        "curatedTreeSha256": "f2b9e955f04372b0092f03ce1983dc34cdadd09aa568dcaee0438bf4a09101e7",
+        "wheelBundledTreeSha256": "f2b9e955f04372b0092f03ce1983dc34cdadd09aa568dcaee0438bf4a09101e7"
+      },
+      "rh-inf-discovery": {
+        "curatedTreeSha256": "36f8df378db10afb6a6150eafa76e65782a7b3b1b87dd7953533bd5337cc8457",
+        "wheelBundledTreeSha256": "36f8df378db10afb6a6150eafa76e65782a7b3b1b87dd7953533bd5337cc8457"
+      },
+      "rh-inf-extract": {
+        "curatedTreeSha256": "833a553f2cd4724f7752aa0da48cd06d0c658a940d3638ca50e25077d2236e81",
+        "wheelBundledTreeSha256": "833a553f2cd4724f7752aa0da48cd06d0c658a940d3638ca50e25077d2236e81"
+      },
+      "rh-inf-formalize": {
+        "curatedTreeSha256": "ebf35f4d0e0ae12475b336d862381b91610d017c8b1e9582f360c7d3bc8395cc",
+        "wheelBundledTreeSha256": "ebf35f4d0e0ae12475b336d862381b91610d017c8b1e9582f360c7d3bc8395cc"
+      },
+      "rh-inf-ingest": {
+        "curatedTreeSha256": "ad89094478d59844122dee9c34a30e975a06171a2c474037d4d8c7c161e068ed",
+        "wheelBundledTreeSha256": "ad89094478d59844122dee9c34a30e975a06171a2c474037d4d8c7c161e068ed"
+      },
+      "rh-inf-resolve": {
+        "curatedTreeSha256": "4a31af65bd3b1a074ae77b81a1770c1a2fb5dc54a1504aacefe118351d8216e9",
+        "wheelBundledTreeSha256": "4a31af65bd3b1a074ae77b81a1770c1a2fb5dc54a1504aacefe118351d8216e9"
+      },
+      "rh-inf-status": {
+        "curatedTreeSha256": "bd254ed59ccc3aee1d532df83d69f17342cfc44cc15b79548f96ecd1831bf4a6",
+        "wheelBundledTreeSha256": "bd254ed59ccc3aee1d532df83d69f17342cfc44cc15b79548f96ecd1831bf4a6"
+      },
+      "rh-inf-verify": {
+        "curatedTreeSha256": "68d39f116d32845ce846ea6de10c995ed37ff817983f33342202c149f3a8e99c",
+        "wheelBundledTreeSha256": "68d39f116d32845ce846ea6de10c995ed37ff817983f33342202c149f3a8e99c"
+      }
+    },
+    "selectedInstalledSkillMd": {
+      "rh-inf-extract": {
+        "curatedSkillMdSha256": "7eeb57818d1c346f8d0ad70641619962a11a5a8457fffd5ac03a531dbcaa99c1",
+        "installedSkillMdSha256": "11c49db4da9f9a16629e036499a9ca4f9a5191c5a0f30fb22cdc626a0bfa6c6e",
+        "contentMatchesAfterGenericPathRewriteNormalization": true
+      },
+      "rh-inf-formalize": {
+        "curatedSkillMdSha256": "c66ca87535d74553979f2434caa46ec826847dac845811da45d01fa97ae5f9c0",
+        "installedSkillMdSha256": "7fbe1ea334f866e3571084261df393f6a43a815b8acee20f872fa465766adf7a",
+        "contentMatchesAfterGenericPathRewriteNormalization": true
+      },
+      "rh-inf-cql": {
+        "curatedSkillMdSha256": "a239df4bc34e4af59ea281d95300e7f725e4c6a888aba43d181f53159acc018b",
+        "installedSkillMdSha256": "a239df4bc34e4af59ea281d95300e7f725e4c6a888aba43d181f53159acc018b",
+        "contentMatchesAfterGenericPathRewriteNormalization": true
+      }
+    },
+    "runtimeUsedExternalPythonPath": false
+  },
+  "sourceRepoAgentsStatus": "",
+  "sourceRepoAgentsUntouched": true,
+  "note": "The offline wheel install used a lockfile-synced dependency-only venv, then installed the locally built wheel with --no-deps; the installed CLI ran without PYTHONPATH. Both smoke workspaces are separate under ignored dist/ and the source repo .agents tree was not touched."
+}

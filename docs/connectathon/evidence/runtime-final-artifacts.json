@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-09-18T01:48:00Z",
+  "runtimeCommits": [
+    "2fe13b88c0aafcc3139e6e32b873497afc83d4c5",
+    "aa8fefdd4bf4cf70e32ba43722f4f5672996b446"
+  ],
+  "standaloneCommit": "ade339c",
+  "artifacts": {
+    "nativeCli": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+      "sha256": "65ea7de2b407acb2d4aab2aa0d3a38316a798875b3715bd276e4acec886582ef"
+    },
+    "wasmNode": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-node/rh_cpg_bg.wasm",
+      "sha256": "736c75852f5eead778813b6efe1d3eb4ca40dfd44605e8bbf64556ffb3cc14fa"
+    },
+    "wasmWeb": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm/rh_cpg_bg.wasm",
+      "sha256": "736c75852f5eead778813b6efe1d3eb4ca40dfd44605e8bbf64556ffb3cc14fa"
+    },
+    "wasmBundler": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-bundler/rh_cpg_bg.wasm",
+      "sha256": "736c75852f5eead778813b6efe1d3eb4ca40dfd44605e8bbf64556ffb3cc14fa"
+    },
+    "cpgNodeDist": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+      "sha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0"
+    }
+  },
+  "validation": {
+    "nativeAuthoringMatrix": "96/96 original+context variants",
+    "nativeReferenceElmMatrix": "96/96 exact true/false/null",
+    "publicNodeReferenceElmMatrix": "96/96 true/non-true Measure memberships",
+    "publicNodeUnaryAgePrecision": "3/3 birthday boundaries CalculateAge precision Month",
+    "workbenchAuthenticatedGet": "HTTP 200 at http://127.0.0.1:9090/ using task database port 55432",
+    "standaloneGet": "HTTP 200 at http://127.0.0.1:9091/",
+    "publicNodeOneHotClassification": "96/96 IsTrue/IsFalse/IsNull one-hot classifications over reference ELM"
+  },
+  "evidence": [
+    "/private/tmp/connectathon-live/evidence/native-final-context-verification.json",
+    "/private/tmp/connectathon-live/evidence/reference-elm-native-96.json",
+    "/private/tmp/connectathon-live/evidence/reference-elm-public-node-96.json",
+    "/private/tmp/connectathon-live/evidence/runtime-public-node-unary-age-precision.json",
+    "/private/tmp/connectathon-live/evidence/fhirhelpers-4.0.1-dependency-provenance.json",
+    "/private/tmp/connectathon-live/evidence/standalone-local-runtime-runbook.md",
+    "/private/tmp/connectathon-live/evidence/reference-elm-public-node-96-classification.json"
+  ]
+}

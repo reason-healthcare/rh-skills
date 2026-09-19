@@ -1,0 +1,911 @@
+{
+  "schemaVersion": 1,
+  "plan": "docs/CONNECTATHON-24H-PLAN.md",
+  "status": "complete_local_technical_rehearsal",
+  "preparedAt": "2026-09-17",
+  "executionStartedAt": "2026-09-17T23:35:32Z",
+  "deadline": "2026-09-18T23:35:32Z",
+  "scenario": "steadi-fall-screening",
+  "eventDate": "2026-09-19",
+  "objective": "Prepare live source-to-L2/L3 authoring with actual SDC QuestionnaireResponse extraction to Observations, ValueSet-based CQL, and complete Workbench/standalone previews for Saturday",
+  "scenarioSourceRevision": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+  "planningEvidence": {
+    "repositoryAudit": "complete",
+    "localTerminologyProbe": "completed: installed Lite image is fixture-only and lacks LOINC 2.81",
+    "reasonHubFallback": "verified: three active LOINC 2.81 lookups and exact three-code expansion",
+    "designContext": "loaded: Workbench Impeccable 3.8.0, PRODUCT.md and DESIGN.md",
+    "temporaryProbeContainer": "stopped and removed",
+    "localFullProbe": "verified: Full image d37ab3ae30f2, LOINC2.82 search and exact expansion pass;2.81 unavailable"
+  },
+  "gates": [
+    {
+      "id": "G0",
+      "status": "passed",
+      "owner": "root",
+      "evidence": [
+        "docs/connectathon/evidence/baseline.json",
+        "docs/connectathon/evidence/source-manifest-check.json",
+        "docs/connectathon/evidence/validator-tool.json",
+        "docs/connectathon/evidence/rh-skills-baseline-tests.json",
+        "docs/connectathon/evidence/shared-questionnaire-validation.json",
+        "docs/connectathon/evidence/runtime-spike-verification.json",
+        "docs/connectathon/evidence/runtime-public-node-verification.json"
+      ],
+      "passedAt": "2026-09-18T00:20:16.609645+00:00"
+    },
+    {
+      "id": "G1",
+      "status": "passed",
+      "owner": "skills_usecase_audit",
+      "evidence": [
+        "docs/connectathon/evidence/run001-final-fhir-summary.json",
+        "docs/connectathon/evidence/run001-final-execution.json",
+        "docs/connectathon/evidence/rh-skills-26743a6-full.json"
+      ],
+      "passedAt": "2026-09-18T03:22:59.726412+00:00",
+      "scope": "First source-authored rehearsal; second independent replay remains G6"
+    },
+    {
+      "id": "G2",
+      "status": "passed_with_documented_validator_exception",
+      "owner": "skills_usecase_audit + runtime_execution",
+      "evidence": [
+        "docs/connectathon/evidence/run001-final-fhir-summary.json",
+        "docs/connectathon/evidence/run002-final-fhir-summary.json",
+        "docs/connectathon/evidence/run001-final-runtime-execution.json",
+        "docs/connectathon/evidence/run002-final-runtime-execution.json",
+        "docs/connectathon/evidence/run001-runtime-final-validation.json",
+        "docs/connectathon/evidence/run002-runtime-final-validation.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
+      ],
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
+      "scope": "Both actual source-authored knowledge packages and current runtime operation outputs; exact zero-denominator validator limitation remains explicit",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "note": "Each runtime12-output batch has one raw MEASURE_MR_SCORE_REQUIRED diagnostic only for the zero-denominator younger fixture. Core R4 permits absent undefined score. No strict-validator pass is claimed.",
+      "previousScopeStatus": "passed_with_documented_validator_exception",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run.",
+      "updatedAt": "2026-09-18T17:59:01.597537+00:00"
+    },
+    {
+      "id": "G3",
+      "status": "passed",
+      "owner": "workbench_audit",
+      "evidence": [
+        "docs/connectathon/evidence/run001-workbench-final-matrix.json",
+        "docs/connectathon/evidence/run002-workbench-final-matrix.json",
+        "docs/connectathon/evidence/final-browser-verification.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
+      ],
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
+      "scope": "Both source-authored snapshots, all three previews, complete package inspection and assessment staging/restoration",
+      "previousScopeStatus": "passed",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run.",
+      "updatedAt": "2026-09-18T17:59:01.597537+00:00"
+    },
+    {
+      "id": "G4",
+      "status": "passed",
+      "owner": "runtime_execution + root",
+      "evidence": [
+        "docs/connectathon/evidence/run001-standalone-final-parity.json",
+        "docs/connectathon/evidence/run002-standalone-final-parity.json",
+        "docs/connectathon/evidence/final-browser-verification.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
+      ],
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
+      "previousScopeStatus": "passed",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run."
+    },
+    {
+      "id": "G5",
+      "status": "passed",
+      "owner": "workbench_audit + root",
+      "evidence": [
+        "docs/connectathon/evidence/final-browser-verification.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
+      ],
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
+      "previousScopeStatus": "passed",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run.",
+      "updatedAt": "2026-09-18T17:59:01.597537+00:00"
+    },
+    {
+      "id": "G6",
+      "status": "passed",
+      "owner": "workbench_audit + root",
+      "evidence": [
+        "docs/connectathon/evidence/run001-durable-final-acceptance.json",
+        "docs/connectathon/evidence/run002-durable-final-acceptance.json",
+        "docs/connectathon/evidence/run001-9f48a46-deterministic-rebuild.json",
+        "docs/connectathon/evidence/run002-9f48a46-deterministic-rebuild.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
+      ],
+      "note": "Second author reused integration context. Two separate source-authored workspaces and deterministic regeneration pass; observed wall times include repairs/waits and miss the unproven60\u201390minute target.",
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
+      "previousScopeStatus": "passed_with_rehearsal_timing_and_context_limits",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run.",
+      "updatedAt": "2026-09-18T17:59:01.597537+00:00"
+    },
+    {
+      "id": "G7",
+      "status": "passed",
+      "owner": "root + runtime_execution + skills_usecase_audit",
+      "evidence": [
+        "docs/connectathon/evidence/standalone-production-final-02e2b5b.json",
+        "docs/connectathon/evidence/workbench-production-coldstart-557cd5b.json",
+        "docs/connectathon/evidence/final-readiness.json",
+        "docs/connectathon/evidence/run004-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run004-browser-verification.json",
+        "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+        "docs/connectathon/evidence/run005-browser-verification.json"
+      ],
+      "passedAt": "2026-09-18T21:00:13.809664+00:00",
+      "previousScopeStatus": "passed",
+      "reopenedAt": "2026-09-18T18:59:32.750168+00:00",
+      "followup": "Run005 accepted in the declared local technical scope; fresh Saturday authoring is a separate live run."
+    },
+    {
+      "id": "X1",
+      "status": "deferred",
+      "owner": null,
+      "evidence": []
+    },
+    {
+      "id": "M1",
+      "status": "deferred",
+      "owner": null,
+      "evidence": []
+    },
+    {
+      "id": "I1",
+      "status": "deferred",
+      "owner": null,
+      "evidence": []
+    }
+  ],
+  "nextAction": "Review run005 in Workbench; use LIVE-RUNBOOK for Saturday fresh authoring. No open implementation blocker in the tested scope.",
+  "iterations": [
+    {
+      "id": "ITER-001",
+      "startedAt": "2026-09-17T23:35:32Z",
+      "status": "complete",
+      "summary": "Initialize isolated branches, immutable source baseline and parallel execution.",
+      "completedAt": "2026-09-17T23:49:09.003570+00:00"
+    },
+    {
+      "id": "ITER-002",
+      "startedAt": "2026-09-17T23:49:09.003570+00:00",
+      "status": "complete",
+      "summary": "Clean runtime setup, baseline validation, first live source run and package review.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-003",
+      "startedAt": "2026-09-17T23:52:34.561999+00:00",
+      "completedAt": "2026-09-17T23:53:45.085069+00:00",
+      "status": "complete",
+      "summary": "Verified Full local terminology search/expansion; pinned2.81 remains MCP fallback."
+    },
+    {
+      "id": "ITER-004",
+      "startedAt": "2026-09-17T23:56:11.078060+00:00",
+      "status": "complete",
+      "summary": "Confirmed extraction-skill CLI mismatch; authenticated incomplete-package UI verified.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-005",
+      "startedAt": "2026-09-17T23:59:45.368289+00:00",
+      "status": "complete",
+      "summary": "Questionnaire metadata generator gap; authenticated browser discovered L3 Library404.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-006",
+      "startedAt": "2026-09-18T00:09:17.603205+00:00",
+      "status": "complete",
+      "summary": "Eight L2 artifacts produced; source review corrects unsupported strength ratings before formalization.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-007",
+      "startedAt": "2026-09-18T00:20:16.609645+00:00",
+      "status": "complete",
+      "summary": "G0 passed: actual native and public Node/WASM execution with explicit context; Workbench consumes the tested runtime.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-008",
+      "startedAt": "2026-09-18T00:29:31.730135+00:00",
+      "status": "complete",
+      "summary": "Independent first generated-FHIR validation failed; bounded generic conformance repairs assigned while CQL authoring continues.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-009",
+      "startedAt": "2026-09-18T00:41:11.164128+00:00",
+      "status": "complete",
+      "summary": "Context variations expose age boundary defect; independent source authoring replay started with prior integration context disclosed.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-010",
+      "startedAt": "2026-09-18T00:54:35.450087+00:00",
+      "status": "complete",
+      "summary": "FHIRerrorsdown14to1;actualapplyexposesproducerbindingandapplicabilitydefects;publicWASMtemporalprobepasses.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-011",
+      "startedAt": "2026-09-18T01:02:09.064855+00:00",
+      "status": "complete",
+      "summary": "Broader runtime tests independently pass; second source-to-L2 replay complete; generated execution repairs still being checked.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-012",
+      "startedAt": "2026-09-18T01:07:48.166728+00:00",
+      "status": "complete",
+      "summary": "Official reference translator rejects RH-only CQL; portable candidate translates, runtime compatibility repair assigned.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-013",
+      "startedAt": "2026-09-18T01:11:33.754385+00:00",
+      "status": "complete",
+      "summary": "Initial composer suite passes16; independent negative probes expose three closure defects.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-014",
+      "startedAt": "2026-09-18T01:25:48.530666+00:00",
+      "status": "complete",
+      "summary": "Fresh main ancestry verified across implementation repos; generated FHIR structure and actual execution milestones; independent L2 semantic corrections before second formalization.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-015",
+      "startedAt": "2026-09-18T01:36:26.092259+00:00",
+      "status": "complete",
+      "summary": "Portable reference ELM executes; second replay exposes Boolean, terminology-version and guidance-action producer gaps; owners coordinated.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-016",
+      "startedAt": "2026-09-18T02:09:24.197714+00:00",
+      "status": "complete",
+      "summary": "Reference ELM native and Node 96/96 verified; first portable package built; second L2 formalized with pinned expansions/helper; final application integration pending.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-017",
+      "startedAt": "2026-09-18T03:11:02.602595+00:00",
+      "status": "complete",
+      "summary": "Actual Workbench import and54APIcalls pass; browser reveals assessment canonical handoff defect; final Bundle reference closure and second-run variants in repair.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-018",
+      "startedAt": "2026-09-18T03:22:59.726412+00:00",
+      "status": "complete",
+      "summary": "G1/G2 first package pass; prefixed WorkbenchAPI54/54 and incomplete409s; browserencounter handoff and secondpackage semanticlink underrepair.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-019",
+      "startedAt": "2026-09-18T03:35:18.616319+00:00",
+      "status": "complete",
+      "summary": "Actual browser assessment\u2192measure\u2192guideline\u2192restore passes; second-run explicit linkage/AND-gate repair verified; final build and recovery underway.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-020",
+      "startedAt": "2026-09-18T03:40:58.201119+00:00",
+      "status": "complete",
+      "summary": "Second independently authored final22-resourceBundle validated0FHIRerrors andactual71/71executionchecks; firstbundle deterministicrebuildsamehash; second snapshotimported.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-021",
+      "startedAt": "2026-09-18T03:44:17.521881+00:00",
+      "status": "complete",
+      "summary": "Broadened outputFHIRvalidation catches sixproportionMeasureReportscores and fiveRequestGroup text-onlyaction violations; runtimefixandindependentstandardsreviewassigned.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-022",
+      "startedAt": "2026-09-18T04:00:40.788124+00:00",
+      "status": "complete",
+      "summary": "Durable workspace/snapshot/tool archives created and reimported; latest main refreshed; R4 guidance notes and explicit zero-denominator validator exception agreed; final runtime/UI checks underway.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-023",
+      "startedAt": "2026-09-18T04:11:13.798453+00:00",
+      "status": "complete",
+      "summary": "Final runtime2917cba6 independently passes53+71 execution and60+4 CPG regressions;24 operation outputs accepted with exactly two explicit zero-denominator validator diagnostics total; production browser checks next.",
+      "closedAt": "2026-09-18T04:41:44.014623+00:00"
+    },
+    {
+      "id": "ITER-024",
+      "status": "complete",
+      "completedAt": "2026-09-18T04:41:44.014623+00:00",
+      "summary": "Fresh skill installation, both production application matrices and second browser staging/restore; measured design repairs."
+    },
+    {
+      "id": "ITER-025",
+      "status": "complete",
+      "completedAt": "2026-09-18T04:41:44.014623+00:00",
+      "summary": "Production asset recovery, final browser verification, durable acceptance rerun and readiness handoff."
+    },
+    {
+      "id": "ITER-026",
+      "startedAt": "2026-09-18T10:12:52.950045+00:00",
+      "status": "complete",
+      "summary": "User identified missing Measure definition display and unused packaged ValueSets; requires actual SDC extraction -> Observation CQL as the main live workflow. Baseline QR packages preserved; source and application gates reopened.",
+      "completedAt": "2026-09-18T18:27:06.369098+00:00"
+    },
+    {
+      "id": "ITER-029",
+      "status": "complete",
+      "startedAt": "2026-09-18T17:59:01.597537+00:00",
+      "summary": "Final idiomatic run004 package passes runtime/FHIR/Workbench; standalone separate patient Bundle input gap being repaired.",
+      "completedAt": "2026-09-18T18:27:06.369098+00:00"
+    },
+    {
+      "id": "ITER-030",
+      "status": "complete",
+      "startedAt": "2026-09-18T18:01:30.751002+00:00",
+      "summary": "User requests decoded base64 Library attachment views in Workbench.",
+      "completedAt": "2026-09-18T18:27:06.369098+00:00"
+    },
+    {
+      "id": "ITER-031",
+      "status": "complete",
+      "completedAt": "2026-09-18T18:27:06.369098+00:00",
+      "summary": "Final Library decoding and standalone file input accepted; correct raw-QR API72/6, source/main refresh and scoped handoff."
+    },
+    {
+      "id": "ITER-032",
+      "status": "complete",
+      "startedAt": "2026-09-18T18:59:32.750168+00:00",
+      "summary": "General score authoring contract and run005 accepted through native, Node, Workbench and standalone; final browser stale staging defect corrected.",
+      "completedAt": "2026-09-18T21:00:13.809664+00:00"
+    }
+  ],
+  "lastUpdatedAt": "2026-09-18T21:00:13.809664+00:00",
+  "journal": "docs/CONNECTATHON-JOURNAL.md",
+  "constraints": [
+    "Do not modify hl7-agentic-knowledge-connectathon; all source files and git state are read-only.",
+    "Use separate rehearsal workspaces.",
+    "Keep framework iterations and evidence in the journal."
+  ],
+  "repositories": {
+    "rh-skills": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
+      "head": "5aace52f12afadcadf51806b17cd5ad699b37900",
+      "branch": "codex/connectathon-live-readiness",
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00",
+      "behindMain": 0,
+      "statusNote": "Final implementation pin; rh-skills documentation/evidence commit follows."
+    },
+    "workbench": {
+      "path": "/Users/bkaney/projects/reason-healthcare/workbench",
+      "head": "f79a63282e69a5ff5805f2b7cf28a0dfd1bd0729",
+      "branch": "codex/connectathon-live-readiness",
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00",
+      "behindMain": 0,
+      "statusNote": "Clean final implementation worktree."
+    },
+    "rh": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh",
+      "head": "26716c9319f50ee71aa8456cc8a0ccefe100d7f5",
+      "branch": "codex/connectathon-live-readiness",
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00",
+      "behindMain": 0,
+      "statusNote": "Clean final implementation worktree."
+    },
+    "standalone": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
+      "head": "6227080ff9667f34d6a9944036c7bba972f75253",
+      "branch": "codex/connectathon-live-readiness",
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00",
+      "behindMain": 0,
+      "statusNote": "Clean final implementation worktree."
+    },
+    "connectathon-read-only": {
+      "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
+      "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+      "branch": "main",
+      "status": "",
+      "checkedAt": "2026-09-18T18:24:06.301342+00:00"
+    }
+  },
+  "activeTasks": [
+    {
+      "owner": "skills_usecase_audit",
+      "task": "Optional structured scoring contract, skill/CQL guidance, formalizer and run005 package",
+      "status": "complete"
+    },
+    {
+      "owner": "runtime_execution",
+      "task": "Metadata-driven SDC calculated integer score extraction with native/WASM/Node tests",
+      "status": "complete"
+    },
+    {
+      "owner": "workbench_audit",
+      "task": "Primary standards review and calculated-score Workbench UI",
+      "status": "complete"
+    },
+    {
+      "owner": "root",
+      "task": "Journal, upstream checks, independent package/runtime/app/browser acceptance",
+      "status": "complete"
+    }
+  ],
+  "baselineTests": {
+    "passed": 946,
+    "skipped": 18,
+    "failed": 1,
+    "failure": "test_statin_primary_prevention_flow expects stale ELM filename; investigation assigned"
+  },
+  "localRuntime": {
+    "pythonEnvironment": "/Users/bkaney/projects/reason-healthcare/rh-skills/.venv",
+    "database": "127.0.0.1:55432/workbench",
+    "validator": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/tools/validator_cli-6.10.2.jar",
+    "terminology": "Probe completed and temporary container stopped; Full image remains available; LOINC2.82 only",
+    "artifactRoot": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919",
+    "validatorCache": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/validator-home",
+    "referenceTranslator": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/reference-translator",
+    "applicationStatus": "Workbenchf79a632 and standalone6227080 production services running; final rawQR API72/6 and browser paths verified.",
+    "workbench": "http://localhost:9090",
+    "standalone": "http://localhost:9091"
+  },
+  "defects": [
+    {
+      "id": "SK-DOC-001",
+      "status": "fixed_generated_build_verified",
+      "description": "Concept CLI help examples use--concept but parser requires positional name; curated docs already correct"
+    },
+    {
+      "id": "SK-BASE-001",
+      "status": "fixed_full_suite_passed",
+      "description": "Baseline statin integration test expects a different generated ELM filename"
+    },
+    {
+      "id": "SK-GEN-001",
+      "status": "fixed_generated_package_validated",
+      "description": "Questionnaire formalization drops item code/required",
+      "validation": "Coordinator ran test_formalize.py + test_cql.py:40passed"
+    },
+    {
+      "id": "WB-UI-001",
+      "status": "fixed_browser_verified",
+      "description": "Authored Library source link leads to404; generic L3 detail route required",
+      "evidence": "docs/connectathon/evidence/workbench-browser-initial.json"
+    },
+    {
+      "id": "SK-AUTH-001",
+      "status": "corrected_source_traceability_reviewed_clinical_approval_pending",
+      "description": "Unreported evidence certainty was inferred from guideline/recommendation metadata; remove unsupported ratings and clarify skill guidance"
+    },
+    {
+      "id": "SK-FHIR-001",
+      "status": "fixed_final_run001_zero_errors_no_unresolved_references",
+      "description": "Generated R4 Evidence.certainty invalid and unsupported; EvidenceVariable required definition absent; relatedAction.description invalid."
+    },
+    {
+      "id": "SK-GEN-002",
+      "status": "fixed_run001_final_package_verified",
+      "description": "Regeneration leaves stale resources; generated terminology loses version; primary titles ignore L2 clinical titles."
+    },
+    {
+      "id": "RT-AGE-001",
+      "status": "fixed_independently_verified_native96_publicNode5_cql290_cpg51",
+      "description": "AgeInYearsAt counted calendar-year boundaries; one day before65thbirthday incorrectlyeligible. Independentvariations42/48pass,original48/48pass.",
+      "evidence": [
+        "docs/connectathon/evidence/native-age-boundary-failure.json",
+        "docs/connectathon/evidence/native-final-context-verification.json",
+        "docs/connectathon/evidence/runtime-age-regression-review.json",
+        "docs/connectathon/evidence/runtime-public-node-age-difference.json"
+      ]
+    },
+    {
+      "id": "SK-EXEC-001",
+      "status": "fixed_run001_final53_checks_and_browser_passed",
+      "description": "Generatedexecutionwiringloseseventeligibility,referencemismatchedCQLnames,andlabelsFHIRPathdynamicvaluesasCQL;pathwaypositivechildexecutesfornegativeyoungerinput.",
+      "evidence": "docs/connectathon/evidence/generated-apply-pass2-wiring-failures.json"
+    },
+    {
+      "id": "SK-CQL-001",
+      "status": "fixed_native_and_official_reference_ELM96_checks_passed",
+      "description": "Authored CQL uses JSON wire choice member valueBoolean and omits FHIRHelpers; RH accepts it but official FHIR4.0.1 model translation fails. Standard logical choice access and explicit helper dependency translate in a test copy; actual execution parity pending.",
+      "evidence": "docs/connectathon/evidence/official-cql-translator-probe.json"
+    },
+    {
+      "id": "PKG-CLOSE-001",
+      "status": "fixed_final_bundle_closure_and_validation_passed",
+      "description": "Composer accepts missing Measure expression, expression available only in different Library version, and incorrect expansion code/release with same total.",
+      "evidence": "docs/connectathon/evidence/composer-pass1-closure-failures.json"
+    },
+    {
+      "id": "SK-L2-BOOL-001",
+      "status": "fixed_schema_full_suite_and_replay_validated",
+      "description": "Schema omitted Boolean semantic variables, forcing incorrect ordinal/presence modeling. Validator and both schema copies repaired."
+    },
+    {
+      "id": "SK-TERM-002",
+      "status": "fixed_exact_version_preserved_verified_expansions_imported",
+      "description": "Concept enrichment candidate format drops exact code-system release; preserve optional version through CLI and semantic reference."
+    },
+    {
+      "id": "SK-GUIDANCE-001",
+      "status": "fixed_both_authored_guidance_contracts_verified",
+      "description": "Decision leaf always generates ActivityDefinition; noncoded recommendation/referral can invent ServiceRequest codes. Add explicit text-only guidance mode and reject missing code on executable actions."
+    },
+    {
+      "id": "RT-AGE-002",
+      "status": "fixed_reference_ELM_precision_checks_passed",
+      "description": "New reference ELM CalculateAge unary dispatch discards precision and defaults all units to years; bounded preservation/regression requested."
+    },
+    {
+      "id": "WB-QR-CONTEXT-001",
+      "status": "fixed_actual_browser_staging_measure_guideline_restore_passed",
+      "description": "Preserve authored Questionnaire canonical and explicit encounter from population to staged completed response",
+      "evidence": "docs/connectathon/evidence/workbench-browser-run001-staged-flow.json"
+    },
+    {
+      "id": "SK-LINK-002",
+      "status": "fixed_full1030_suite_both_regenerations_and_semantic_replays_verified",
+      "description": "Remove fuzzy recommendation binding; require explicit rule links and support conjunctive pathway applicability conditions"
+    },
+    {
+      "id": "RT-FHIR-SCORE-001",
+      "status": "fixed_defined_scores_and_normal_zero_counts; exact_validator_limitation_documented",
+      "description": "Individual proportion MeasureReport group lacks required measureScore; denominator-zero semantics require explicit handling",
+      "evidence": "docs/connectathon/evidence/run001-runtime-final-validation.json"
+    },
+    {
+      "id": "RT-FHIR-RQG-001",
+      "status": "fixed_guidance_notes_target_intents_and_reference_closure; final_actual_outputs_verified",
+      "description": "Text-only RequestGroup action has neither resource nor nested action and violates R4 rqg-1; preserve guidance without inventing clinical orders",
+      "evidence": "docs/connectathon/evidence/run002-runtime-final-validation.json"
+    },
+    {
+      "id": "WB-MEASURE-SOURCE-001",
+      "status": "fixed_final_run004_browser_verified",
+      "description": "All three population definition bodies, complete Library CQL and terminology dependencies visible.",
+      "evidence": "docs/connectathon/evidence/run004-browser-verification.json"
+    },
+    {
+      "id": "SDC-OBS-CQL-001",
+      "status": "fixed_final_run004_extraction_runtime_and_workbench_verified",
+      "description": "Primary authored CQL reads QuestionnaireResponse linkIds, leaving packaged ValueSets unexecuted; user requires actual SDC extraction and terminology-filtered Observation CQL.",
+      "evidence": "docs/connectathon/evidence/run004-final-runtime-app-verification.json"
+    },
+    {
+      "id": "SA-INPUT-001",
+      "status": "fixed_final_browser_build_and_focused_tests_verified",
+      "description": "Standalone package context requires embedded patient Bundle; add separate local fixture-file input for knowledge-only packages.",
+      "evidence": "docs/connectathon/evidence/run004-browser-verification.json"
+    },
+    {
+      "id": "WB-LIBRARY-DECODE-001",
+      "status": "fixed_final_browser_build_and_focused_tests_verified",
+      "description": "General Library inspector must decode base64 CQL/ELM attachments while retaining raw JSON.",
+      "evidence": "docs/connectathon/evidence/run004-browser-verification.json"
+    },
+    {
+      "id": "RT-SCORE-EFFECTIVE-001",
+      "status": "fixed_final_native_node_and_apps_verified",
+      "description": "Observation.effective choice resolution returns null for effectiveDateTime, discarding valid score Observations; integer cast and ValueSet retrieval work.",
+      "evidence": "docs/connectathon/evidence/run005-final-runtime-app-verification.json"
+    },
+    {
+      "id": "RT-SCORE-TERM-PROVENANCE-001",
+      "status": "fixed_final_native_node_and_apps_verified",
+      "description": "Native terminology loader rejects standard nonfiltering used-codesystem expansion parameter as a filter; bounded provenance support under repair.",
+      "evidence": "docs/connectathon/evidence/run005-final-runtime-app-verification.json"
+    },
+    {
+      "id": "WB-SCORE-STALE-STAGING-001",
+      "status": "fixed_final_browser_verified",
+      "description": "Clearing a required form answer removes visual score but leaves previously validated sessionStorage Observations for Measure/CPG.",
+      "evidence": "docs/connectathon/evidence/run005-browser-verification.json"
+    }
+  ],
+  "checks": [
+    {
+      "checkedAt": "2026-09-18T00:05:58.010629+00:00",
+      "command": "/private/tmp/connectathon-live/venv/bin/python -m pytest tests/unit/test_formalize.py tests/unit/test_cql.py -q",
+      "cwd": "rh-skills",
+      "exitCode": 0,
+      "result": "40 passed in0.25s",
+      "scope": "Questionnaire metadata and strict JSON comparison; generated run still pending"
+    },
+    {
+      "checkedAt": "2026-09-18T00:34:02.095531+00:00",
+      "command": "Independent subprocess invocation of rh cql eval for every source assertion",
+      "result": "48/48 passed",
+      "scope": "Native authoring CQL pass1, pending regenerated-library/WASM parity and context hardening",
+      "evidence": "docs/connectathon/evidence/native-48-assertions-pass1.json"
+    },
+    {
+      "checkedAt": "2026-09-18T00:46:03.344273+00:00",
+      "command": "python3 /private/tmp/connectathon-live/evidence/verify_native.py",
+      "result": "96/96passed; stableCQLhashes; broaderRusttest1failureopen",
+      "evidence": "docs/connectathon/evidence/native-final-context-verification.json"
+    },
+    {
+      "checkedAt": "2026-09-18T00:54:35.450087+00:00",
+      "result": "5/5publicNodeWASMage/differenceprobespassed",
+      "scope": "Independentactualwrapper; wasmSHAf2fc9b265e89286383680b168083d3aef50d075f99544e306ef593caac6f2b81",
+      "evidence": "docs/connectathon/evidence/runtime-public-node-age-difference.json"
+    },
+    {
+      "checkedAt": "2026-09-18T01:02:09.064855+00:00",
+      "result": "Coordinator independently verified 290 CQL evaluator and 51 CPG library tests",
+      "evidence": "docs/connectathon/evidence/runtime-age-regression-review.json"
+    },
+    {
+      "checkedAt": "2026-09-18T01:25:48.530666+00:00",
+      "result": "17 generated resources:0FHIRerrors,33warnings,24information; intermediate publicNode53/53 checks; no portable-CQL conformance claim",
+      "evidence": [
+        "docs/connectathon/evidence/generated-fhir-pass3-validation-summary.json",
+        "docs/connectathon/evidence/generated-execution-pass4.json"
+      ]
+    },
+    {
+      "checkedAt": "2026-09-18T01:36:26.092259+00:00",
+      "result": "Worker-reported portable candidate96/96; official FHIR4.0.1 ELM true/false/null passed native and publicNode; source review found unary CalculateAge precision omission, follow-up assigned",
+      "evidence": "docs/connectathon/evidence/runtime-portable-fhir-compatibility.json"
+    },
+    {
+      "checkedAt": "2026-09-18T03:40:58.201119+00:00",
+      "implementationCommit": "9f48a46",
+      "command": "/private/tmp/connectathon-live/venv/bin/python -m pytest -q",
+      "verifier": "root independent full suite",
+      "result": "1030 passed, 18 skipped, 8 warnings in 7.46s",
+      "logSha256": "2caf25c7da2d8f1d235606ccc1fa8516eb58404192f1bddd20b63265b10950b3",
+      "log": "/private/tmp/connectathon-live/evidence/rh-skills-9f48a46-full.log"
+    },
+    {
+      "checkedAt": "2026-09-18T03:40:58.201119+00:00",
+      "result": "Run002 final22resources:0FHIRerrors65warnings12info;71/71actualpublicNodechecks",
+      "evidence": [
+        "docs/connectathon/evidence/run002-final-fhir-summary.json",
+        "docs/connectathon/evidence/run002-final-execution.json"
+      ]
+    },
+    {
+      "checkedAt": "2026-09-18T04:11:13.798453+00:00",
+      "runtimeCommit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+      "verifier": "root independent rerun",
+      "checks": [
+        {
+          "command": "cargo test -p rh-cpg --lib",
+          "passed": 60,
+          "failed": 0,
+          "logSha256": "66f9b284ef4fc3db791a15b0b2a197f6e1286e2c7573a53af355798da9841edb"
+        },
+        {
+          "command": "cargo test -p rh-cpg --test apply_plan_definition",
+          "passed": 4,
+          "failed": 0,
+          "logSha256": "628e7c6149b09042b167a3051828896c693481556bef7687ceeec026e5478e77"
+        }
+      ]
+    },
+    {
+      "checkedAt": "2026-09-18T04:41:44.014623+00:00",
+      "verifier": "root independent durable command, authenticated APIs and actual browser",
+      "result": "Both native48, semantic53/71, Workbench54/72, standalone6/6 parity+semantics pass",
+      "evidence": "docs/connectathon/evidence/final-readiness.json"
+    },
+    {
+      "checkedAt": "2026-09-18T10:31:29.591469+00:00",
+      "verifier": "root",
+      "result": "1042 passed, 18 skipped, 8 warnings; actual extraction source6/6 + generated6/6; generated Questionnaire/clinical FHIR validation15errors under repair",
+      "evidence": [
+        "docs/connectathon/evidence/sdc-source-native-comparison.json",
+        "docs/connectathon/evidence/sdc-generated-native-comparison.json",
+        "docs/connectathon/evidence/sdc-generated-output-fhir-validation.json"
+      ]
+    },
+    {
+      "checkedAt": "2026-09-18T14:11:24.503747+00:00",
+      "verifier": "root independent",
+      "result": "869 CQL library tests and64 CPG library tests pass on current runtime working changes; style guide2 complete reference-translated libraries clean; runtime/package final replay pending",
+      "evidence": "docs/connectathon/evidence/cql-style-guide-reference-validation.json"
+    },
+    {
+      "checkedAt": "2026-09-18T17:59:01.597537+00:00",
+      "verifier": "root plus independent worker audit",
+      "result": "Native66; adverse12; Node60+6; Workbench72; standaloneAPI6; Python1062/18; Rust877+64; knowledgeFHIR0errors; runtimeFHIRone exact exception",
+      "evidence": "docs/connectathon/evidence/run004-final-runtime-app-verification.json"
+    },
+    {
+      "checkedAt": "2026-09-18T18:27:06.369098+00:00",
+      "verifier": "root browser/report inspection + independent workers",
+      "result": "FinalWB72/72,standalone6/6; LibrarydecodedCQL/ELM; standaloneinvalidfile recovery; asset12/29; source41/41",
+      "evidence": "docs/connectathon/evidence/run004-final-app-builds.json"
+    },
+    {
+      "checkedAt": "2026-09-18T19:18:06.407657+00:00",
+      "verifier": "root independent and coordinated worker",
+      "result": "RH68CPGtests; Node7; generatedexpressionprobe0/0/1/1+partial; productionbuilds+restart; frozenrun004 WB72/72+standalone6/6; Python1070pass18skip1schemacopyfailureunderrepair",
+      "evidence": [
+        "docs/connectathon/evidence/run005-runtime-build.json",
+        "docs/connectathon/evidence/run005-app-builds.json",
+        "docs/connectathon/evidence/run005-run004-compatibility.json"
+      ]
+    },
+    {
+      "checkedAt": "2026-09-18T19:30:24.350370+00:00",
+      "verifier": "root independent",
+      "result": "Full Python suite: 1082 passed, 18 skipped, 8 existing warnings; schema copies match",
+      "evidence": "docs/connectathon/evidence/run005-rh-skills-full-suite.json"
+    },
+    {
+      "checkedAt": "2026-09-18T20:01:39.063337+00:00",
+      "verifier": "root plus independent workers",
+      "result": "Run005 source reference translation passes; Python1082/18; final83dbbbd skill install8/8 and bundles24/24; protected41/41 and prior-run1473/1473 unchanged; final candidate package acceptance pending",
+      "evidence": [
+        "docs/connectathon/evidence/run005-reference-cql-validation.json",
+        "docs/connectathon/evidence/run005-rh-skills-full-suite.json",
+        "docs/connectathon/evidence/run005-frozen-integrity.json"
+      ]
+    }
+  ],
+  "upstreamRefresh": {
+    "checkedAt": "2026-09-18T20:55:17.427950+00:00",
+    "method": "Fresh fetch of four implementation-repository remotes followed by local tracking-ref and worktree inspection.",
+    "networkFetchPerformed": true,
+    "fetchedRepositories": [
+      "rh-skills:origin",
+      "rh:upstream",
+      "workbench:origin",
+      "standalone:origin"
+    ],
+    "excludedRepositories": [
+      "protected source checkout hl7-agentic-knowledge-connectathon"
+    ],
+    "remoteFreshness": "Tracking refs refreshed at checkedAt for the four listed remotes; freshness is as of fetch completion.",
+    "repositories": [
+      {
+        "name": "rh-skills",
+        "path": "/Users/bkaney/projects/reason-healthcare/rh-skills",
+        "fetchRemote": "origin",
+        "trackingRemoteRef": "origin/main",
+        "localTrackingMain": "eb280968e8af623b9b30c4175111929e322f696c",
+        "head": "19ebef3ab2e001fb66a4948237f7475c9581d723",
+        "ahead": 34,
+        "behind": 0,
+        "trackingRefFetchedAt": "2026-09-18T20:55:17.427950+00:00",
+        "worktreeStatus": "## codex/connectathon-live-readiness...origin/main [ahead 34]\n M docs/CONNECTATHON-JOURNAL.md\n M docs/connectathon-24h-status.json\n M docs/connectathon/LIVE-RUNBOOK.md\n M docs/connectathon/evidence/final-readiness.json\n M docs/connectathon/evidence/run005-app-builds.json\n M docs/connectathon/evidence/run005-scoring-standards.json\n M docs/connectathon/evidence/source-integrity-latest.json\n M docs/connectathon/evidence/source-manifest-check.json\n M docs/connectathon/evidence/upstream-refresh-latest.json\n M docs/connectathon/tools/PROVENANCE.md\n M docs/connectathon/tools/verify-run005-score-contract.mjs\n?? docs/connectathon/evidence/run005-browser-verification.json\n?? docs/connectathon/evidence/run005-final-runtime-app-verification.json\n?? docs/connectathon/evidence/run005-frozen-integrity.json\n?? docs/connectathon/evidence/run005-reference-cql-validation.json\n?? docs/connectathon/evidence/run005-style-guide-example-check.json\n?? docs/connectathon/tools/run-run005-fhir-validation.py\n?? docs/connectathon/tools/runs/run005-score-workbench.json\n?? docs/connectathon/tools/verify-run005-score-apps.mjs",
+        "dirtyPaths": [
+          " M docs/CONNECTATHON-JOURNAL.md",
+          " M docs/connectathon-24h-status.json",
+          " M docs/connectathon/LIVE-RUNBOOK.md",
+          " M docs/connectathon/evidence/final-readiness.json",
+          " M docs/connectathon/evidence/run005-app-builds.json",
+          " M docs/connectathon/evidence/run005-scoring-standards.json",
+          " M docs/connectathon/evidence/source-integrity-latest.json",
+          " M docs/connectathon/evidence/source-manifest-check.json",
+          " M docs/connectathon/evidence/upstream-refresh-latest.json",
+          " M docs/connectathon/tools/PROVENANCE.md",
+          " M docs/connectathon/tools/verify-run005-score-contract.mjs",
+          "?? docs/connectathon/evidence/run005-browser-verification.json",
+          "?? docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+          "?? docs/connectathon/evidence/run005-frozen-integrity.json",
+          "?? docs/connectathon/evidence/run005-reference-cql-validation.json",
+          "?? docs/connectathon/evidence/run005-style-guide-example-check.json",
+          "?? docs/connectathon/tools/run-run005-fhir-validation.py",
+          "?? docs/connectathon/tools/runs/run005-score-workbench.json",
+          "?? docs/connectathon/tools/verify-run005-score-apps.mjs"
+        ],
+        "worktreeClean": false
+      },
+      {
+        "name": "rh",
+        "path": "/Users/bkaney/projects/reason-healthcare/rh",
+        "fetchRemote": "upstream",
+        "trackingRemoteRef": "upstream/main",
+        "localTrackingMain": "8a211695a70adfda29c0d1f01174ad8ee25e908b",
+        "head": "d49c6275beb5ed2cbe9e212d48124135ce1a25b0",
+        "ahead": 32,
+        "behind": 0,
+        "trackingRefFetchedAt": "2026-09-18T20:55:17.427950+00:00",
+        "worktreeStatus": "## codex/connectathon-live-readiness",
+        "dirtyPaths": [],
+        "worktreeClean": true
+      },
+      {
+        "name": "workbench",
+        "path": "/Users/bkaney/projects/reason-healthcare/workbench",
+        "fetchRemote": "origin",
+        "trackingRemoteRef": "origin/main",
+        "localTrackingMain": "4f9ba9c719aa69d43921e6b37814d4c318c853d2",
+        "head": "8bcae98e37a3f0f854e7bdd74e75c09c133548e3",
+        "ahead": 46,
+        "behind": 0,
+        "trackingRefFetchedAt": "2026-09-18T20:55:17.427950+00:00",
+        "worktreeStatus": "## codex/connectathon-live-readiness",
+        "dirtyPaths": [],
+        "worktreeClean": true
+      },
+      {
+        "name": "standalone",
+        "path": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/standalone",
+        "fetchRemote": "origin",
+        "trackingRemoteRef": "origin/main",
+        "localTrackingMain": "2e8d91daf360f184e6c98f700031414829c64921",
+        "head": "6227080ff9667f34d6a9944036c7bba972f75253",
+        "ahead": 16,
+        "behind": 0,
+        "trackingRefFetchedAt": "2026-09-18T20:55:17.427950+00:00",
+        "worktreeStatus": "## codex/connectathon-live-readiness",
+        "dirtyPaths": [],
+        "worktreeClean": true
+      }
+    ],
+    "protectedSource": {
+      "path": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
+      "excludedFromFetch": true,
+      "head": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+      "tree": "e1d07a071961dabe54c6409ba7e717723fdede6f",
+      "baselineHead": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+      "clean": true,
+      "matchesBaseline": true
+    }
+  },
+  "coordination": {
+    "implementationOwnership": {
+      "generator_cql_skills": "skills_usecase_audit",
+      "composer": "skills_usecase_audit",
+      "runtime_standalone": "runtime_execution",
+      "journal_integration_verification": "root",
+      "concept_version_extract_docs": "workbench_audit",
+      "run002_L2_CQL": "workbench_audit",
+      "run002_formalization": "root",
+      "runtime_acceptance_runbook": "runtime_execution",
+      "authoring_runbook": "skills_usecase_audit",
+      "sdc_extraction_applications": "workbench_audit",
+      "observation_cql_runtime": "runtime_execution",
+      "sdc_skills_cli_tests": "skills_usecase_audit",
+      "idiomatic_cql_style_and_run004": "skills_usecase_audit",
+      "patient_context_typed_retrieve_fhircommon_runtime": "runtime_execution",
+      "fhircommon_dependency_and_style_review": "workbench_audit"
+    },
+    "commitPolicy": "Root owns rh-skills index and commits; workers edit owned files unstaged. Other repo owners coordinate changes and commit boundaries. No changes to protected source. Refresh main before final integration; regenerate and replay affected packages.",
+    "secondReplay": "Root owns deterministic formalization steps; Workbench Terra owns separate CQL authoring using run002 L2 only; reused context explicitly disclosed.",
+    "currentMilestone": "Run005 accepted locally with the exact documented zero-denominator validator exception."
+  },
+  "updatedAt": "2026-09-18T21:00:13.809664+00:00",
+  "finalReadiness": "docs/connectathon/evidence/final-readiness.json",
+  "sourceIntegrityCheckedAt": "2026-09-18T20:55:17.427950+00:00"
+}

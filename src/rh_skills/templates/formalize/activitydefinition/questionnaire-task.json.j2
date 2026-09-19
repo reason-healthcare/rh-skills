@@ -16,6 +16,10 @@
   },
   "kind": "{{ kind }}",
   "intent": "{{ intent }}",
+  "doNotPerform": {{ do_not_perform | tojson }},
+{% if profile %}
+  "profile": {{ profile | tojson }},
+{% endif %}
   "code": {{ code | tojson }},
   "dynamicValue": {{ dynamic_value | tojson }}{% if participant or related_artifact %},{% endif %}
 {% if participant %}

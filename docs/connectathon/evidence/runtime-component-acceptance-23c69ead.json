@@ -1,0 +1,108 @@
+{
+  "checkedAt": "2026-09-18T03:33:07.701307+00:00",
+  "scope": "Bounded final-artifact runtime component acceptance. A true componentPassed result does not claim full Connectathon acceptance.",
+  "boundInputs": {
+    "content": {
+      "path": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+      "sha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a"
+    },
+    "fixtures": {
+      "path": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/executable/fixtures/index.json",
+      "sha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc"
+    },
+    "package": {
+      "path": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/output/reason.steadi-fall-screening-0.2.0.tgz",
+      "sha256": "6b6ee0b64cdea30a231936ccce2ee11a27c6c8cd60b0a6a6be7578882f6e5d9f"
+    },
+    "nativeSha256": "ca2d5db8e5811d1fd761ba468a6fab312080cab4e32996bfa3a57a3264ad5ecf",
+    "wasmSha256": "078391d125f0c47e3985ee68d1577e5534a3cf76772b6aa54e0d3395e55238e8",
+    "runtimeModuleSha256": "78f05389796cf5afc810a165990ec6c7eaa17c3207c96db775fcc8262295cda0"
+  },
+  "componentChecks": [
+    {
+      "name": "final-bundle-standalone-api-parity",
+      "path": "/private/tmp/connectathon-live/evidence/standalone-api-parity-run001-08a666000842-23c69ead/standalone-api-parity-report.json",
+      "passed": true,
+      "detail": {
+        "total": 6,
+        "parityPassed": 6,
+        "semanticPassed": 6
+      }
+    },
+    {
+      "name": "native-cql-matrix",
+      "path": "/private/tmp/connectathon-live/evidence/native-final-context-verification.json",
+      "passed": true,
+      "detail": {
+        "original": {
+          "total": 48,
+          "passed": 48
+        },
+        "variation": {
+          "total": 48,
+          "passed": 48
+        }
+      }
+    },
+    {
+      "name": "public-node-wasm-one-hot-matrix",
+      "path": "/private/tmp/connectathon-live/evidence/reference-elm-public-node-96-classification.json",
+      "passed": true,
+      "detail": {
+        "total": 96,
+        "passed": 96,
+        "failed": 0
+      }
+    },
+    {
+      "name": "portable-run002-cql-matrix",
+      "path": "/private/tmp/connectathon-live/evidence/run002-cql-matrix-23c69ead.json",
+      "passed": true,
+      "detail": {
+        "decision": {
+          "total": 30,
+          "passed": 30,
+          "failed": 0
+        },
+        "measure": {
+          "total": 18,
+          "passed": 18,
+          "failed": 0
+        }
+      }
+    },
+    {
+      "name": "package-fixture-knowledge-boundary",
+      "path": "/private/tmp/connectathon-live/evidence/standalone-package-loader-inspection-08a666000842.json",
+      "passed": true,
+      "detail": {
+        "packageExampleBundleCount": 6,
+        "executableBundleResourceCount": 0,
+        "testResult": "passed (1 test)"
+      }
+    }
+  ],
+  "componentPassed": true,
+  "unsupportedGates": [
+    {
+      "name": "final-official-fhir-validation",
+      "status": "pending-external-evidence",
+      "reason": "This component verifier does not accept earlier validation of a different resource count or bundle hash."
+    },
+    {
+      "name": "workbench-imported-snapshot-api-replay",
+      "status": "pending-external-evidence",
+      "reason": "Requires the separate authenticated Workbench replay evidence."
+    },
+    {
+      "name": "authenticated-browser-snapshot",
+      "status": "pending-external-evidence",
+      "reason": "Owned and verified separately by the Workbench/browser workstream."
+    },
+    {
+      "name": "full-track-two-engine",
+      "status": "unsupported",
+      "reason": "Not established by local RH runtime component checks."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+
+> @reasonhealth/workbench@0.1.0 start
+> next start -p ${PORT:-9090}
+
+▲ Next.js 16.2.9
+- Local:         http://localhost:9090
+- Network:       http://127.246.159.22:9090
+✓ Ready in 106ms

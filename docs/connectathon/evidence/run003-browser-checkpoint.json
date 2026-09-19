@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-09-18T12:44:51.338564+00:00",
+  "scope": "run003 before Patient-context correction; browser actions from this task, screenshots emitted inline rather than saved",
+  "packageSha256": "ba1474411f41bc1d69819b2e93c4c7674e6e83366e6cfdaf01f8bbc856a55713",
+  "workbenchAppCommit": "2887637",
+  "importerCommit": "21cb80b",
+  "standaloneCommit": "82db811",
+  "snapshot": "snap_connectathon-steadi-observations_run003-ba1474411f41",
+  "verified": [
+    "Measure definitions resolve Initial Population, Denominator, Numerator",
+    "Full Library source shows3versionedValueSets andObservationretrieves",
+    "Named no-response baseline Measure1/1/0 score0",
+    "Completed yes/no/no assessment announces3finalSDCObservations",
+    "Staged same-scenario Measure1/1/1 score1",
+    "Standalone generated tgz loads; positiveguidanceforunsteadyObservationcase",
+    "Standalone no-response case displaysunknown-response stopnote",
+    "390px standalone andMeasure sourcepanel have390px documentwidth",
+    "Staged no-response CPG enables exercise and individualized multifactorial guidance",
+    "Restore source scenario returns CPG to unknown-response stop note",
+    "Restore source scenario returns Measure1/1/0 score0"
+  ],
+  "pending": [
+    "Final candidate browser replay afterPatient-context andtypedcode CQL correction"
+  ],
+  "limitations": [
+    "Standalone Task-basedpathway doesnotprovidegeneratedQ+QR forlegacyQuestionnaireeditor; interactiveassessmentworkflow isWorkbench",
+    "Patientcontextnative/WASMdefect underrepair; finalcandidatewillremovemanualsubjectpredicates"
+  ]
+}

@@ -1,6 +1,7 @@
 import click
 from rh_skills.commands import (
     cql as cql_cmd,
+    executable_bundle,
     fhirpath as fhirpath_cmd,
     formalize,
     formalize_config,
@@ -34,6 +35,7 @@ main.add_command(promote.promote)
 main.add_command(formalize.formalize)
 main.add_command(formalize_config.formalize_config)
 main.add_command(package.package)
+main.add_command(executable_bundle.compose_executable)
 main.add_command(schema.schema)
 main.add_command(source.source)
 main.add_command(validate.validate)

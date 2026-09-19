@@ -4,33 +4,37 @@ Behavior specific to the `rh` CQL evaluator.
 
 ## Key Differences from Reference Java Evaluator
 
-### FHIRHelpers-Agnostic
+### Pinned FHIRHelpers dependency
 
-The `rh` evaluator does **not** inject FHIRHelpers automatically.
-Unlike the reference Java translator, it does not wrap FHIR coded values
-with `FHIRHelpers.ToConcept()` calls during compilation.
+The `rh` evaluator does not inject FHIRHelpers automatically. Portable CQL
+declares a versioned include:
 
-**Impact**: Expressions that rely on implicit FHIR → CQL type coercion will
-evaluate to `null` or error when FHIRHelpers is not explicitly included.
+`include FHIRHelpers version '4.0.1' called FHIRHelpers`
 
-**Required mitigation**: Every CQL library that uses FHIR coded, quantity, or
-date types should include:
+Resolve the include from pinned local CQL/ELM files. Use
+`rh-skills cql import-library <topic> <manifest.json>` to verify hashes and
+identity, add the FHIR Library, and record dependency provenance. The primary
+FHIR Library must declare the helper in `relatedArtifact`.
 
-```cql
-include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
-```
+For choice elements, use FHIR logical types (for example,
+`(A.value as FHIR.boolean).value`). Traverse CodeableConcept `coding` and compare
+each Coding to a declared Code (for example, `S ~ "Active"`) so system and code
+are matched through typed CQL terminology semantics. Do not reproduce that
+identity with separate `.system.value` and `.code.value` string predicates.
+Validate portable CQL with a reference translator too.
 
 ### Terminology Resolution
 
-The evaluator resolves terminology offline by default. Value set membership
-checks require either:
-- pre-expanded value set resources bundled in the fixture
-- an online terminology service configured via CLI options
+The evaluator performs no implicit terminology lookup. Pin terminology
+membership, and include a verified expansion in executable packaging when the
+target runtime requires one.
 
 ### Context Resolution
 
-Default context is `Patient`. Multi-patient evaluation is not currently supported
-via the CLI test workflow.
+Default context is `Patient`. A fixture with multiple Patients must provide an
+explicit subject; the test runner fails rather than selecting by entry order.
+Put the evaluation date, measurement period, and named parameters in
+`input/evaluation-context.json` or `input/parameters.json`.
 
 ## Reporting
 

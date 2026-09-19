@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-18T21:00:13.809664+00:00",
+  "status": "accepted_local_technical_rehearsal_with_documented_validator_exception",
+  "runId": "run005",
+  "previousAcceptedCandidate": "docs/connectathon/evidence/run004-final-readiness.json",
+  "request": "Reusable assessment scoring and SDC-extracted score Observations; CQL independent of Questionnaire and QuestionnaireResponse",
+  "decisions": {
+    "algorithm": "Authored count of Yes answers, 0..3; not a CDC-defined numeric scale",
+    "riskThreshold": ">= 1 per CDC any-Yes rule; optional clarification unanswered",
+    "completion": "Exactly one valid final integer score Observation in range 0..3 with qualifying encounter and effective time; zero is complete",
+    "missingness": "No score for incomplete or unusable inputs",
+    "interoperability": "Same coded score from another source must work without Questionnaire, QuestionnaireResponse, or derivedFrom",
+    "automatedScoringScope": "Reusable scoring contract and reviewed authoring pattern. Implemented automatic generator supports complete Boolean answer counts; other algorithms require explicit reviewed implementation."
+  },
+  "pending": [],
+  "services": {
+    "workbench": "http://localhost:9090",
+    "standalone": "http://localhost:9091",
+    "database": "127.0.0.1:55432/workbench"
+  },
+  "publishing": "Local branches only; no push, merge, deployment or protected source mutation",
+  "candidate": {
+    "version": "0.3.0",
+    "bundleSha256": "e05c9760c1c900c672ad9345699004ac8ba52f14c362f6095429a196ad502e60",
+    "tgzSha256": "f11afb984bc723d202645cedf0cf3a34f0983da22cb9d389358672f4c08add3d",
+    "resourceCount": 25,
+    "artifactCount": 36,
+    "snapshot": "http://localhost:9090/projects/connectathon-steadi-scores/snapshots/snap_connectathon-steadi-scores_run005-e05c9760c1c9",
+    "standalonePackage": "dist/connectathon-20260919/workspaces/run-005/process/package-build-run005-final-4907c5/output/reason.steadi-live-replay-0.3.0.tgz",
+    "derivativeReplay": true,
+    "freshIndependentAuthoringClaim": false
+  },
+  "verified": {
+    "rhSkillsPython": {
+      "passed": 1090,
+      "skipped": 18,
+      "codeCommit": "a31d9c0",
+      "laterChange": "19ebef3 guide prose only"
+    },
+    "freshSkillDistribution": {
+      "commit": "19ebef3ab2e001fb66a4948237f7475c9581d723",
+      "bundles": 24,
+      "installedSkills": 8,
+      "evidence": "dist/connectathon-20260919/live-workspaces/agent-skills-preflight-20260918/run005-final-19ebef3/fresh-install-evidence.json"
+    },
+    "nativeCqlAssertions": 66,
+    "referenceTranslation": "CQFramework 3.26.0; both exact sources; translation only",
+    "runtimeAudit": "docs/connectathon/evidence/run005-final-runtime-app-verification.json",
+    "browser": "docs/connectathon/evidence/run005-browser-verification.json",
+    "runtimeCommit": "d49c6275beb5ed2cbe9e212d48124135ce1a25b0",
+    "workbenchFinalCommit": "8bcae98e37a3f0f854e7bdd74e75c09c133548e3",
+    "standaloneCommit": "6227080ff9667f34d6a9944036c7bba972f75253",
+    "mainRefresh": "docs/connectathon/evidence/upstream-refresh-latest.json",
+    "protectedSource": "docs/connectathon/evidence/source-integrity-latest.json",
+    "frozenPriorRuns": "docs/connectathon/evidence/run005-frozen-integrity.json",
+    "applicationBuilds": "docs/connectathon/evidence/run005-app-builds.json"
+  },
+  "limitations": [
+    "FHIR validator 6.10.2 reports MEASURE_MR_SCORE_REQUIRED for the younger zero-denominator MeasureReport; strict runtime validation remains false. No other runtime validation errors.",
+    "Assessment staging is scoped to the same browser tab.",
+    "Run005 is a declared revision of frozen earlier authoring work, not a new independent authoring benchmark.",
+    "Final API matrix does not re-run an isolated missing-dependency negative snapshot; prior negative/unit evidence remains separate.",
+    "Browser late-response guards were inspected in code; forced network-delay behavior was not separately exercised."
+  ]
+}

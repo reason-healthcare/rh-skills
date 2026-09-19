@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-09-18T14:10:56.222477+00:00",
+  "status": "reference_translation_passed",
+  "guide": {
+    "path": "skills/.curated/rh-inf-cql/docs/cql-style-guide.md",
+    "sha256": "47ce0be82f0f1861a85cdab100a5b91fae61257798bb03d6b1a2d4cda924605b"
+  },
+  "referenceManifest": "dist/connectathon-20260919/verification/style-guide-reference-translation/final-47ce0be8/manifest.json",
+  "referenceManifestSha256": "ea393f2cebf1f70b1e13964a075c990fea2935b475fa2f2bebb51b3535a6c1ed",
+  "translator": {
+    "coordinate": "info.cqframework:cql-to-elm-cli:3.26.0",
+    "classpath": "dist/connectathon-20260919/reference-translator/all-jars-classpath.txt",
+    "fhir_modelinfo": "dist/connectathon-20260919/dependencies/FHIRCommon-2.0.0/fhir-modelinfo-4.0.1.xml",
+    "fhir_modelinfo_sha256": "16fa8119e074ebfb6a301b58af72417c2360dca899e89f6e3bd1d9a0e4789722",
+    "signatures": "Overloads"
+  },
+  "completeLibraries": 2,
+  "completeLibraryErrors": 0,
+  "completeLibraryWarnings": 0,
+  "fragmentsNotTranslated": 3,
+  "rootVerification": "Compared all source and output hashes, inspected translator logs and complete source examples. Runtime and package acceptance remain separate."
+}

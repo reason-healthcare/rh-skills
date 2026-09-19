@@ -2,13 +2,17 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import base64
+import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
+from ruamel.yaml import YAML
 
-from rh_skills.commands.cql import cql
+from rh_skills.commands.cql import _strict_json_equal, _versioned_includes, cql
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -29,6 +33,106 @@ def _make_fixture(tmp_path: Path, library: str, case: str, expected: dict) -> No
         json.dumps({"resourceType": "Bundle", "type": "collection", "entry": []})
     )
     (case_dir / "expected" / "expression-results.json").write_text(json.dumps(expected))
+
+
+def _make_library_import_workspace(
+    tmp_path: Path,
+    *,
+    name: str = "FHIRHelpers",
+    version: str = "4.0.1",
+    resource_id: str = "fhir-helpers-4-0-1",
+    canonical: str = "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers",
+    cql_source: str | None = None,
+    primary_includes: tuple[tuple[str, str], ...] | None = None,
+    manifest_name: str = "import.json",
+) -> Path:
+    topic = "test-topic"
+    computable = tmp_path / "topics" / topic / "computable"
+    computable.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "tracking.yaml").write_text(
+        "topics:\n"
+        "  - name: test-topic\n"
+        "    computable:\n"
+        "      - name: primary-library\n"
+        "        files:\n"
+        "          - topics/test-topic/computable/Library-Primary.json\n"
+        "        checksums:\n"
+        "          topics/test-topic/computable/Library-Primary.json: initial\n"
+    )
+    includes = primary_includes or ((name, version),)
+    include_lines = "".join(
+        f"include {include_name} version '{include_version}' called Dependency{index}\n"
+        for index, (include_name, include_version) in enumerate(includes)
+    )
+    (computable / "Primary.cql").write_text(
+        "library Primary version '1.0.0'\n"
+        "using FHIR version '4.0.1'\n"
+        + include_lines
+    )
+    (computable / "Library-Primary.json").write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "primary",
+        "url": "https://example.org/fhir/Library/primary",
+        "version": "1.0.0",
+        "name": "Primary",
+        "status": "active",
+        "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/library-type", "code": "logic-library"}]},
+        "content": [],
+    }, indent=2) + "\n")
+
+    manifest_dir = tmp_path / "dependencies"
+    manifest_dir.mkdir(exist_ok=True)
+    cql = cql_source or f"library {name} version '{version}'\nusing FHIR version '4.0.1'\n"
+    elm_include_defs = [
+        {
+            "type": "IncludeDef",
+            "localIdentifier": match.group(1),
+            "path": match.group(1),
+            "version": match.group(2),
+        }
+        for match in re.finditer(
+            r"^\s*include\s+([A-Za-z][A-Za-z0-9_.]*)\s+version\s+['\"]([^'\"]+)['\"]",
+            cql,
+            re.IGNORECASE | re.MULTILINE,
+        )
+    ]
+    elm = {"library": {
+        "identifier": {"id": name, "version": version},
+        "includes": {"type": "Library$Includes", "def": elm_include_defs},
+    }}
+    cql_path = manifest_dir / f"{name}-{version}.cql"
+    elm_path = manifest_dir / f"{name}-{version}.json"
+    cql_path.write_text(cql)
+    elm_path.write_text(json.dumps(elm, separators=(",", ":")))
+    import hashlib
+
+    manifest = {
+        "resource": {
+            "id": resource_id,
+            "url": canonical,
+            "name": name,
+            "version": version,
+        },
+        "source": {
+            "url": f"https://example.org/source/{name}.cql",
+            "tag": "v3.26.0",
+            "license": "Apache-2.0",
+            "compile_tool": {"name": "CQFramework cql-to-elm-cli", "version": "3.26.0", "options": ["--format", "JSON"]},
+        },
+        "cql": {"path": cql_path.name, "sha256": hashlib.sha256(cql_path.read_bytes()).hexdigest()},
+        "elm": {"path": elm_path.name, "sha256": hashlib.sha256(elm_path.read_bytes()).hexdigest()},
+    }
+    manifest_path = manifest_dir / manifest_name
+    manifest_path.write_text(json.dumps(manifest, indent=2))
+    return manifest_path
+
+
+def test_strict_json_equality_distinguishes_boolean_null_and_number():
+    assert not _strict_json_equal(True, 1)
+    assert not _strict_json_equal(False, 0)
+    assert not _strict_json_equal(None, False)
+    assert _strict_json_equal(1, 1.0)
+    assert not _strict_json_equal({"risk": True}, {"risk": 1})
 
 
 # ── validate ──────────────────────────────────────────────────────────────────
@@ -58,7 +162,10 @@ def test_validate_success_exits_zero(tmp_path, monkeypatch):
         result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
     assert result.exit_code == 0
     cmd = mock_run.call_args[0][0]
-    assert cmd[1:] == ["cql", "validate", str(tmp_path / "topics/test-topic/computable/TestLib.cql")]
+    assert cmd[1:] == [
+        "cql", "validate", str(tmp_path / "topics/test-topic/computable/TestLib.cql"),
+        "--lib-path", str(tmp_path / "topics/test-topic/computable"),
+    ]
 
 
 def test_validate_errors_exits_nonzero(tmp_path, monkeypatch):
@@ -68,6 +175,184 @@ def test_validate_errors_exits_nonzero(tmp_path, monkeypatch):
         mock_run.return_value = MagicMock(returncode=1)
         result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
     assert result.exit_code != 0
+
+
+def test_validate_verifies_selected_imported_dependency_before_invoking_rh(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    imported = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert imported.exit_code == 0, imported.output
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "Primary"])
+
+    assert result.exit_code == 0, result.output
+    assert mock_run.call_args[0][0][1:3] == ["cql", "validate"]
+
+
+def test_validate_rejects_tampered_selected_imported_sidecar_before_invoking_rh(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    imported = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert imported.exit_code == 0, imported.output
+    (tmp_path / "topics/test-topic/computable/FHIRHelpers-4.0.1.cql").write_text(
+        "library FHIRHelpers version '4.0.1'\n// tampered\n"
+    )
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "Primary"])
+
+    assert result.exit_code != 0
+    assert "does not match its manifest" in result.output
+    mock_run.assert_not_called()
+
+
+def test_validate_rejects_fhir_library_attachment_that_no_longer_matches_pinned_sidecar(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    imported = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert imported.exit_code == 0, imported.output
+    library_path = tmp_path / "topics/test-topic/computable/Library-fhir-helpers-4-0-1.json"
+    library = json.loads(library_path.read_text())
+    library["content"][0]["data"] = "dGFtcGVyZWQ="  # base64("tampered")
+    library_path.write_text(json.dumps(library, indent=2) + "\n")
+
+    # Preserve the tracking file checksum so this reaches the independent
+    # Library-attachment-to-sidecar comparison rather than failing earlier.
+    tracking_path = tmp_path / "tracking.yaml"
+    tracking = tracking_path.read_text()
+    new_digest = hashlib.sha256(library_path.read_bytes()).hexdigest()
+    updated_tracking, replacements = re.subn(
+        r"^(\s+topics/test-topic/computable/Library-fhir-helpers-4-0-1\.json:\s*)[0-9a-f]{64}\s*$",
+        rf"\g<1>{new_digest}",
+        tracking,
+        flags=re.MULTILINE,
+    )
+    assert replacements == 1
+    tracking_path.write_text(updated_tracking)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "Primary"])
+
+    assert result.exit_code != 0
+    assert "CQL attachment differs" in result.output
+    mock_run.assert_not_called()
+
+
+def test_validate_rejects_untracked_compiled_versioned_sidecar_before_invoking_rh(tmp_path, monkeypatch):
+    workspace = _make_topic(
+        tmp_path,
+        content=(
+            "library TestLib version '1.0.0'\n"
+            "include LocalHelper version '1.0.0'\n"
+        ),
+    )
+    (workspace / "topics/test-topic/computable/elm").mkdir()
+    (workspace / "topics/test-topic/computable/elm/LocalHelper-1.0.0.json").write_text(
+        json.dumps({"library": {"identifier": {"id": "LocalHelper", "version": "1.0.0"}}})
+    )
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code != 0
+    assert "not a tracked imported dependency" in result.output
+    mock_run.assert_not_called()
+
+
+def test_validate_rejects_untracked_compiled_sidecar_reached_through_local_source_include(tmp_path, monkeypatch):
+    workspace = _make_topic(
+        tmp_path,
+        content=(
+            "library TestLib version '1.0.0'\n"
+            "include LocalHelper version '1.0.0'\n"
+        ),
+    )
+    computable = workspace / "topics/test-topic/computable"
+    (computable / "LocalHelper-1.0.0.cql").write_text(
+        "library LocalHelper version '1.0.0'\n"
+        "include CompiledLeaf version '1.0.0'\n"
+    )
+    (computable / "elm").mkdir()
+    (computable / "elm/CompiledLeaf-1.0.0.json").write_text(
+        json.dumps({"library": {"identifier": {"id": "CompiledLeaf", "version": "1.0.0"}}})
+    )
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code != 0
+    assert "CompiledLeaf-1.0.0.json is not a tracked imported dependency" in result.output
+    mock_run.assert_not_called()
+
+
+def test_validate_keeps_versioned_local_source_only_include_compatible(tmp_path, monkeypatch):
+    workspace = _make_topic(
+        tmp_path,
+        content=(
+            "library TestLib version '1.0.0'\n"
+            "include LocalHelper version '1.0.0'\n"
+        ),
+    )
+    (workspace / "topics/test-topic/computable/LocalHelper-1.0.0.cql").write_text(
+        "library LocalHelper version '1.0.0'\n"
+    )
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code == 0, result.output
+    assert mock_run.call_args[0][0][1:3] == ["cql", "validate"]
+
+
+def test_validate_ignores_commented_out_versioned_include(tmp_path, monkeypatch):
+    workspace = _make_topic(
+        tmp_path,
+        content=(
+            "library TestLib version '1.0.0'\n"
+            "/* include CompiledLeaf version '1.0.0' */\n"
+            "// include AlsoIgnored version '1.0.0'\n"
+            "define X: 'include Quoted version \\'1.0.0\\''\n"
+        ),
+    )
+    # If the scanner sees either commented directive, this arbitrary sidecar
+    # would turn a no-import local library into a provenance error.
+    (workspace / "topics/test-topic/computable/elm").mkdir()
+    (workspace / "topics/test-topic/computable/elm/CompiledLeaf-1.0.0.json").write_text(
+        json.dumps({"library": {"identifier": {"id": "CompiledLeaf", "version": "1.0.0"}}})
+    )
+    (workspace / "tracking.yaml").write_text("topics: []\n")
+    monkeypatch.chdir(workspace)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code == 0, result.output
+    assert mock_run.call_args[0][0][1:3] == ["cql", "validate"]
+
+
+def test_versioned_include_scanner_handles_cql_backslash_strings_and_backtick_identifiers(tmp_path):
+    source = tmp_path / "Quoted.cql"
+    source.write_text(
+        "library Quoted version '1.0.0'\n"
+        "define Example: 'include Ignored version \\'1.0.0\\''\n"
+        "include `Pinned.Helper` version '2.0.0'\n"
+    )
+
+    assert _versioned_includes(source) == {("Pinned.Helper", "2.0.0")}
 
 
 # ── translate ─────────────────────────────────────────────────────────────────
@@ -100,7 +385,8 @@ def test_translate_success_echoes_elm_path(tmp_path, monkeypatch):
     assert str(expected_elm) in result.output
     cmd = mock_run.call_args[0][0]
     assert cmd[1:3] == ["cql", "compile"]
-    assert cmd[-1] == str(expected_elm)
+    assert str(expected_elm) in cmd
+    assert cmd[-2:] == ["--lib-path", str(tmp_path / "topics/test-topic/computable")]
 
 
 def test_translate_failure_exits_nonzero(tmp_path, monkeypatch):
@@ -135,6 +421,150 @@ def test_test_runs_eval_and_reports_pass(tmp_path, monkeypatch):
     assert "case-001-basic" in result.output
 
 
+def test_test_passes_explicit_evaluation_context_period_and_parameters(tmp_path, monkeypatch):
+    topic = _make_topic(
+        tmp_path,
+        content='library TestLib version \'1.0.0\'\nparameter "Measurement Period" Interval<DateTime>\n',
+    )
+    monkeypatch.chdir(topic)
+    _make_fixture(tmp_path, "TestLib", "case-002-context", {"IsAdult": True})
+    case = tmp_path / "tests" / "cql" / "TestLib" / "case-002-context"
+    bundle_path = case / "input" / "bundle.json"
+    bundle_path.write_text(json.dumps({
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [
+            {"resource": {"resourceType": "Patient", "id": "selected-patient"}},
+            {"resource": {"resourceType": "Patient", "id": "other-patient"}},
+        ],
+    }))
+    (case / "input" / "evaluation-context.json").write_text(json.dumps({
+        "subject": "Patient/selected-patient",
+        "evaluationDate": "2026-06-15T09:20:00Z",
+        "measurementPeriod": {
+            "start": "2026-01-01T00:00:00Z",
+            "end": "2026-12-31T23:59:59Z",
+            "startInclusive": True,
+            "endInclusive": False,
+        },
+        "parameters": {"RiskThreshold": 2},
+    }))
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="true\n", stderr="")
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+
+    assert result.exit_code == 0, result.output
+    command = mock_run.call_args[0][0]
+    assert command[command.index("--subject") + 1] == "Patient/selected-patient"
+    assert command[command.index("--evaluation-date") + 1] == "2026-06-15T09:20:00Z"
+    assert command[command.index("--measurement-period-start") + 1] == "2026-01-01T00:00:00Z"
+    assert command[command.index("--measurement-period-end") + 1] == "2026-12-31T23:59:59Z"
+    assert "--parameter" in command
+    assert command[command.index("--subject") + 1] == "Patient/selected-patient"
+    parameter_pairs = [command[idx + 1] for idx, value in enumerate(command[:-1]) if value == "--parameter"]
+    assert "RiskThreshold=2" in parameter_pairs
+    assert (
+        'Measurement Period={"start":"2026-01-01T00:00:00Z","end":"2026-12-31T23:59:59Z",'
+        '"startInclusive":true,"endInclusive":false}'
+    ) in parameter_pairs
+
+
+def test_test_passes_optional_preexpanded_valueset_sidecar(tmp_path, monkeypatch):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-006-terminology", {"HasCode": True})
+    case = tmp_path / "tests" / "cql" / "TestLib" / "case-006-terminology"
+    terminology_path = case / "input" / "terminology.json"
+    terminology_path.write_text(json.dumps({
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [{"resource": {"resourceType": "ValueSet", "url": "https://example.org/ValueSet/a", "version": "0.2.0", "expansion": {"contains": []}}}],
+    }))
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="true\n", stderr="")
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code == 0, result.output
+    command = mock_run.call_args[0][0]
+    assert command[command.index("--terminology") + 1] == str(terminology_path)
+
+
+@pytest.mark.parametrize("terminology", [
+    {"resourceType": "Bundle", "type": "collection", "entry": []},
+    {"resourceType": "ValueSet", "url": "https://example.org/ValueSet/a"},
+    {"resourceType": "Patient", "id": "not-terminology"},
+])
+def test_test_rejects_invalid_terminology_sidecar_before_eval(tmp_path, monkeypatch, terminology):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-007-invalid-terminology", {"HasCode": True})
+    case = tmp_path / "tests" / "cql" / "TestLib" / "case-007-invalid-terminology"
+    (case / "input" / "terminology.json").write_text(json.dumps(terminology))
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code != 0
+    mock_run.assert_not_called()
+
+
+def test_test_converts_fhir_parameters_file_into_cli_overrides(tmp_path, monkeypatch):
+    topic = _make_topic(tmp_path)
+    monkeypatch.chdir(topic)
+    _make_fixture(tmp_path, "TestLib", "case-003-parameters", {"HasConsent": True})
+    case = tmp_path / "tests" / "cql" / "TestLib" / "case-003-parameters"
+    (case / "input" / "parameters.json").write_text(json.dumps({
+        "resourceType": "Parameters",
+        "parameter": [{"name": "HasConsent", "valueBoolean": True}],
+    }))
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="true\n", stderr="")
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+
+    assert result.exit_code == 0, result.output
+    command = mock_run.call_args[0][0]
+    assert command[command.index("--parameter") + 1] == "HasConsent=true"
+
+
+def test_test_rejects_multiple_patients_without_explicit_subject(tmp_path, monkeypatch):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-004-multiple-patients", {"IsAdult": True})
+    case = tmp_path / "tests/cql/TestLib/case-004-multiple-patients"
+    (case / "input/bundle.json").write_text(json.dumps({
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [
+            {"resource": {"resourceType": "Patient", "id": "patient-a"}},
+            {"resource": {"resourceType": "Patient", "id": "patient-b"}},
+        ],
+    }))
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code != 0
+    assert "set input/evaluation-context.json subject explicitly" in result.output
+    mock_run.assert_not_called()
+
+
+def test_test_rejects_explicit_subject_missing_from_fixture(tmp_path, monkeypatch):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-005-wrong-subject", {"IsAdult": True})
+    case = tmp_path / "tests/cql/TestLib/case-005-wrong-subject"
+    (case / "input/bundle.json").write_text(json.dumps({
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [{"resource": {"resourceType": "Patient", "id": "actual-patient"}}],
+    }))
+    (case / "input/evaluation-context.json").write_text(json.dumps({
+        "subject": "Patient/not-in-fixture",
+    }))
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code != 0
+    assert "does not exist in the fixture input" in result.output
+    mock_run.assert_not_called()
+
+
 def test_test_reports_expression_mismatch(tmp_path, monkeypatch):
     monkeypatch.chdir(_make_topic(tmp_path))
     _make_fixture(tmp_path, "TestLib", "case-001-basic", {"IsAdult": True})
@@ -146,6 +576,17 @@ def test_test_reports_expression_mismatch(tmp_path, monkeypatch):
     assert "expected true, got false" in result.output.lower()
 
 
+def test_test_rejects_boolean_result_when_expected_value_is_number_one(tmp_path, monkeypatch):
+    monkeypatch.chdir(_make_topic(tmp_path))
+    _make_fixture(tmp_path, "TestLib", "case-001-basic", {"IsAdult": 1})
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="true\n", stderr="")
+        result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
+    assert result.exit_code != 0
+    assert "expected 1, got true" in result.output.lower()
+
+
 def test_test_reports_eval_failure(tmp_path, monkeypatch):
     monkeypatch.chdir(_make_topic(tmp_path))
     _make_fixture(tmp_path, "TestLib", "case-001-basic", {"IsAdult": True})
@@ -155,3 +596,204 @@ def test_test_reports_eval_failure(tmp_path, monkeypatch):
         result = CliRunner().invoke(cql, ["test", "test-topic", "TestLib"])
     assert result.exit_code != 0
     assert "compile error" in result.output
+
+
+def test_import_library_pins_identity_links_primary_and_is_idempotent(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert result.exit_code == 0, result.output
+
+    computable = tmp_path / "topics/test-topic/computable"
+    helper_path = computable / "Library-fhir-helpers-4-0-1.json"
+    helper = json.loads(helper_path.read_text())
+    assert helper["url"] == "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers"
+    assert helper["version"] == "4.0.1"
+    assert [content["contentType"] for content in helper["content"]] == [
+        "text/cql", "application/elm+json"
+    ]
+    primary_path = computable / "Library-Primary.json"
+    primary = json.loads(primary_path.read_text())
+    assert primary["relatedArtifact"] == [{
+        "type": "depends-on",
+        "resource": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1",
+    }]
+    tracking_text = (tmp_path / "tracking.yaml").read_text()
+    assert "external-library-FHIRHelpers-4.0.1" in tracking_text
+    assert "external-dependency" in tracking_text
+
+    before = {
+        path: path.read_bytes()
+        for path in [
+            helper_path,
+            computable / "FHIRHelpers-4.0.1.cql",
+            computable / "elm/FHIRHelpers-4.0.1.json",
+            primary_path,
+        ]
+    }
+    repeated = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert repeated.exit_code == 0, repeated.output
+    assert "already imported" in repeated.output
+    assert all(path.read_bytes() == content for path, content in before.items())
+
+
+def _import_fhircommon_dependency_chain(tmp_path: Path, monkeypatch) -> tuple[Path, Path, Path]:
+    primary_includes = (
+        ("FHIRCommon", "2.0.0"),
+        ("FHIRHelpers", "4.0.1"),
+        ("Unrelated", "1.0.0"),
+    )
+    helper_manifest = _make_library_import_workspace(
+        tmp_path,
+        primary_includes=primary_includes,
+        manifest_name="fhirhelpers-import.json",
+    )
+    common_manifest = _make_library_import_workspace(
+        tmp_path,
+        name="FHIRCommon",
+        version="2.0.0",
+        resource_id="fhircommon-2-0-0",
+        canonical="http://hl7.org/fhir/uv/cql/Library/FHIRCommon",
+        cql_source=(
+            "library FHIRCommon version '2.0.0'\n"
+            "using FHIR version '4.0.1'\n"
+            "include FHIRHelpers version '4.0.1' called FHIRHelpers\n"
+            "define fluent function references(reference FHIR.Reference, resource FHIR.Resource):\n"
+            "  resource.id = Last(Split(reference.reference, '/'))\n"
+        ),
+        primary_includes=primary_includes,
+        manifest_name="fhircommon-import.json",
+    )
+    unrelated_manifest = _make_library_import_workspace(
+        tmp_path,
+        name="Unrelated",
+        version="1.0.0",
+        resource_id="unrelated-1-0-0",
+        canonical="https://example.org/fhir/Library/Unrelated",
+        primary_includes=primary_includes,
+        manifest_name="unrelated-import.json",
+    )
+    monkeypatch.chdir(tmp_path)
+    for manifest in (helper_manifest, common_manifest, helper_manifest, unrelated_manifest):
+        result = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+        assert result.exit_code == 0, result.output
+    common_library = tmp_path / "topics/test-topic/computable/Library-fhircommon-2-0-0.json"
+    return helper_manifest, common_manifest, common_library
+
+
+def _update_tracked_file_checksum(workspace: Path, path: Path, entry_name: str) -> None:
+    tracking_path = workspace / "tracking.yaml"
+    yaml = YAML(typ="safe")
+    tracking = yaml.load(tracking_path.read_text())
+    topic_entry = next(item for item in tracking["topics"] if item["name"] == "test-topic")
+    entry = next(item for item in topic_entry["computable"] if item["name"] == entry_name)
+    relative_path = path.relative_to(workspace).as_posix()
+    entry["checksums"][relative_path] = hashlib.sha256(path.read_bytes()).hexdigest()
+    with tracking_path.open("w") as stream:
+        YAML().dump(tracking, stream)
+
+
+def test_import_library_reimport_preserves_tracked_transitive_dependency_link(tmp_path, monkeypatch):
+    _, common_manifest, common_library = _import_fhircommon_dependency_chain(tmp_path, monkeypatch)
+    resource = json.loads(common_library.read_text())
+    assert resource["relatedArtifact"] == [{
+        "type": "depends-on",
+        "resource": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1",
+    }]
+    library_bytes = common_library.read_bytes()
+    tracking_bytes = (tmp_path / "tracking.yaml").read_bytes()
+
+    repeated = CliRunner().invoke(
+        cql, ["import-library", "test-topic", str(common_manifest)]
+    )
+
+    assert repeated.exit_code == 0, repeated.output
+    assert "already imported" in repeated.output
+    assert common_library.read_bytes() == library_bytes
+    assert (tmp_path / "tracking.yaml").read_bytes() == tracking_bytes
+
+
+@pytest.mark.parametrize("tampered_part", ["cql", "elm", "undeclared-dependency", "unrelated-tracked-dependency"])
+def test_import_library_reimport_rejects_tampered_or_untracked_library_changes(
+    tmp_path, monkeypatch, tampered_part
+):
+    _, common_manifest, common_library = _import_fhircommon_dependency_chain(tmp_path, monkeypatch)
+    resource = json.loads(common_library.read_text())
+    if tampered_part == "cql":
+        attachment = next(item for item in resource["content"] if item["contentType"] == "text/cql")
+        attachment["data"] = base64.b64encode(
+            base64.b64decode(attachment["data"]) + b"\n// changed"
+        ).decode("ascii")
+    elif tampered_part == "elm":
+        attachment = next(item for item in resource["content"] if item["contentType"] == "application/elm+json")
+        elm = json.loads(base64.b64decode(attachment["data"]))
+        elm["library"]["identifier"]["version"] = "9.9.9"
+        attachment["data"] = base64.b64encode(json.dumps(elm).encode()).decode("ascii")
+    elif tampered_part == "undeclared-dependency":
+        resource["relatedArtifact"] = [{
+            "type": "depends-on",
+            "resource": "https://untracked.example/Library/Unknown|1.0.0",
+        }]
+    else:
+        # This dependency has a valid external-dependency tracking entry, but is
+        # not included by FHIRCommon's own CQL/ELM and therefore is not allowed.
+        resource["relatedArtifact"] = [{
+            "type": "depends-on",
+            "resource": "https://example.org/fhir/Library/Unrelated|1.0.0",
+        }]
+    common_library.write_text(json.dumps(resource, indent=2) + "\n")
+    _update_tracked_file_checksum(
+        tmp_path,
+        common_library,
+        "external-library-FHIRCommon-2.0.0",
+    )
+
+    result = CliRunner().invoke(
+        cql, ["import-library", "test-topic", str(common_manifest)]
+    )
+
+    assert result.exit_code != 0
+    assert "undeclared or duplicate dependency" in result.output or "identity or CQL/ELM attachments differ" in result.output
+
+
+def test_import_library_rejects_bad_hash_before_writing(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    data = json.loads(manifest.read_text())
+    data["cql"]["sha256"] = "0" * 64
+    manifest.write_text(json.dumps(data))
+    monkeypatch.chdir(tmp_path)
+
+    result = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert result.exit_code != 0
+    assert "SHA-256 mismatch" in result.output
+    assert not (tmp_path / "topics/test-topic/computable/Library-fhir-helpers-4-0-1.json").exists()
+
+
+def test_import_library_rejects_elm_identity_mismatch(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    data = json.loads(manifest.read_text())
+    elm_path = manifest.parent / data["elm"]["path"]
+    elm = json.loads(elm_path.read_text())
+    elm["library"]["identifier"]["version"] = "4.0.0"
+    elm_path.write_text(json.dumps(elm, separators=(",", ":")))
+    import hashlib
+
+    data["elm"]["sha256"] = hashlib.sha256(elm_path.read_bytes()).hexdigest()
+    manifest.write_text(json.dumps(data))
+    monkeypatch.chdir(tmp_path)
+
+    result = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert result.exit_code != 0
+    assert "ELM library identifier/version mismatch" in result.output
+
+
+def test_import_library_rejects_manifest_path_escape(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    data = json.loads(manifest.read_text())
+    data["cql"]["path"] = "../outside.cql"
+    manifest.write_text(json.dumps(data))
+    monkeypatch.chdir(tmp_path)
+
+    result = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+    assert result.exit_code != 0
+    assert "escapes the manifest directory" in result.output

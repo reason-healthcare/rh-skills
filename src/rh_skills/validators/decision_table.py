@@ -56,6 +56,7 @@ _ACTION_KIND_ALIASES = {
     "communication": "CommunicationRequest",
     "medication": "MedicationRequest",
     "task": "Task",
+    "guidance": "PlanDefinitionAction",
 }
 
 _DATA_ELEMENT_ROLES = {
@@ -69,6 +70,7 @@ _DATA_ELEMENT_ROLES = {
 
 _DATA_ELEMENT_VALUE_TYPES = {
     "presence",
+    "boolean",
     "quantity",
     "codeable_concept",
     "date_time",
@@ -273,13 +275,11 @@ def validate_decision_table(
                 if claim_id:
                     claim_ids.add(claim_id)
                 strength = entry.get("strength")
-                if strength is None or str(strength).strip() == "":
-                    report_warn(
-                        f"  decision-table: evidence_traceability entry #{idx} missing recommended 'strength' field"
-                    )
-                    continue
-                normalized_strength = str(strength).strip().lower()
-                if normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
+                if strength is not None and str(strength).strip():
+                    normalized_strength = str(strength).strip().lower()
+                else:
+                    normalized_strength = None
+                if normalized_strength and normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
                     report_error(
                         f"  decision-table: evidence_traceability entry #{idx} has invalid strength '{strength}' "
                         f"(allowed: {', '.join(sorted(_EVIDENCE_STRENGTH_VALUES))})"
@@ -668,7 +668,7 @@ def validate_decision_table(
                 )
             elif normalized_kind not in _ACTION_KIND_ALIASES:
                 report_warn(
-                    f"  decision-table: leaf action '{action_id}' uses unknown kind '{raw_kind}'; expected medication, service/procedure/referral/assessment, questionnaire, or communication"
+                    f"  decision-table: leaf action '{action_id}' uses unknown kind '{raw_kind}'; expected medication, service/procedure/referral/assessment, questionnaire, communication, or guidance"
                 )
             concept_refs = action.get("concept_refs")
             code = action.get("code")
@@ -683,7 +683,7 @@ def validate_decision_table(
                 isinstance(entry, dict) and str(entry.get("code") or "").strip()
                 for entry in codings
             )
-            if not (has_concept_refs or has_code or has_codings):
+            if normalized_kind != "guidance" and not (has_concept_refs or has_code or has_codings):
                 report_warn(
                     f"  decision-table: leaf action '{action_id}' is missing recommended concept_refs[] or code/codings[] terminology linkage"
                 )

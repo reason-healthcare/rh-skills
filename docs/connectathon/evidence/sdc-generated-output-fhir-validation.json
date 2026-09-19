@@ -1,0 +1,458 @@
+{
+  "checkedAt": "2026-09-18T10:30:04.504937+00:00",
+  "scope": "Generated run003 Questionnaire, four actual extraction transaction Bundles and six actual post-extraction clinical data Bundles; FHIR R4 4.0.1 + SDC4.0.0, offline terminology",
+  "validator": "6.10.2",
+  "inputCount": 11,
+  "counts": {
+    "warning": 94,
+    "error": 15
+  },
+  "errors": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 1
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 2
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnairecommon#sdc-2"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-context",
+          "valueString": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0"
+        }
+      ],
+      "severity": "error",
+      "code": "invariant",
+      "details": {
+        "text": "Constraint failed: sdc-2: 'If version is present, versionAlgorithm must be present.' (defined in http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnairecommon)"
+      },
+      "expression": [
+        "Questionnaire"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 65
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId unsteady"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-all-no*/.item[0]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 74
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId worries-about-falling"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-all-no*/.item[1]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 83
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId fallen-in-past-year"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-all-no*/.item[2]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 65
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId unsteady"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-incomplete-response*/.item[0]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 74
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId worries-about-falling"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-incomplete-response*/.item[1]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 65
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId unsteady"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-prior-fall-yes*/.item[0]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 74
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId worries-about-falling"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-prior-fall-yes*/.item[1]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 83
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId fallen-in-past-year"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-prior-fall-yes*/.item[2]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 65
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId unsteady"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-unsteady-yes*/.item[0]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 74
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId worries-about-falling"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-unsteady-yes*/.item[1]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 83
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId fallen-in-past-year"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-eligible-unsteady-yes*/.item[2]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 65
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId unsteady"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-younger-than-65*/.item[0]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 74
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId worries-about-falling"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-younger-than-65*/.item[1]"
+      ]
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          "valueInteger": 83
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          "valueInteger": 12
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          "valueString": "InstanceValidator"
+        },
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id",
+          "valueCode": "Questionnaire_QR_Item_Text"
+        }
+      ],
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "If text exists, it must match the questionnaire definition for linkId fallen-in-past-year"
+      },
+      "expression": [
+        "Bundle.entry[2].resource/*QuestionnaireResponse/response-younger-than-65*/.item[2]"
+      ]
+    }
+  ],
+  "warningCounts": {
+    "Unable to validate code '100257-5' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "Unable to validate code '97878-3' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "Unable to validate code '52552-7' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "Constraint failed: dom-6: 'A resource should have narrative for robust management' (defined in http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)": 42,
+    "Entry 0 matches the reference Patient/patient-eligible-all-no by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Patient/patient-eligible-all-no does not match the full target URL urn:uuid:patient-eligible-all-no by Bundle resolution rules": 6,
+    "Entry 1 matches the reference Encounter/encounter-eligible-all-no by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Encounter/encounter-eligible-all-no does not match the full target URL urn:uuid:encounter-eligible-all-no by Bundle resolution rules": 3,
+    "Entry 2 matches the reference QuestionnaireResponse/response-eligible-all-no by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/QuestionnaireResponse/response-eligible-all-no does not match the full target URL urn:uuid:response-eligible-all-no by Bundle resolution rules": 3,
+    "No response answer found for required item 'fallen-in-past-year'": 1,
+    "Entry 0 matches the reference Patient/patient-eligible-prior-fall-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Patient/patient-eligible-prior-fall-yes does not match the full target URL urn:uuid:patient-eligible-prior-fall-yes by Bundle resolution rules": 6,
+    "Entry 1 matches the reference Encounter/encounter-eligible-prior-fall-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Encounter/encounter-eligible-prior-fall-yes does not match the full target URL urn:uuid:encounter-eligible-prior-fall-yes by Bundle resolution rules": 3,
+    "Entry 2 matches the reference QuestionnaireResponse/response-eligible-prior-fall-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/QuestionnaireResponse/response-eligible-prior-fall-yes does not match the full target URL urn:uuid:response-eligible-prior-fall-yes by Bundle resolution rules": 3,
+    "Entry 0 matches the reference Patient/patient-eligible-unsteady-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Patient/patient-eligible-unsteady-yes does not match the full target URL urn:uuid:patient-eligible-unsteady-yes by Bundle resolution rules": 6,
+    "Entry 1 matches the reference Encounter/encounter-eligible-unsteady-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Encounter/encounter-eligible-unsteady-yes does not match the full target URL urn:uuid:encounter-eligible-unsteady-yes by Bundle resolution rules": 3,
+    "Entry 2 matches the reference QuestionnaireResponse/response-eligible-unsteady-yes by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/QuestionnaireResponse/response-eligible-unsteady-yes does not match the full target URL urn:uuid:response-eligible-unsteady-yes by Bundle resolution rules": 3,
+    "Entry 0 matches the reference Patient/patient-younger-than-65 by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Patient/patient-younger-than-65 does not match the full target URL urn:uuid:patient-younger-than-65 by Bundle resolution rules": 6,
+    "Entry 1 matches the reference Encounter/encounter-younger-than-65 by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Encounter/encounter-younger-than-65 does not match the full target URL urn:uuid:encounter-younger-than-65 by Bundle resolution rules": 3,
+    "Entry 2 matches the reference QuestionnaireResponse/response-younger-than-65 by type and id but its fullUrl https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/QuestionnaireResponse/response-younger-than-65 does not match the full target URL urn:uuid:response-younger-than-65 by Bundle resolution rules": 3
+  },
+  "operationOutcomeSha256": "29cdcf9fea95486712335a4a6a8430888f0e4163aa8ac74acfa7e2300ef18c37",
+  "command": "dist/connectathon-20260919/verification/root-sdc-fhir/command.json",
+  "passed": false
+}

@@ -60,8 +60,8 @@ optional_fields:
                        #   - Custom concepts (not extracted from source documents) are added via
                        #     'concept enrich --source custom'; their sources value is 'custom'.
                        #   - Approved related terminology rows may be written at L2 as
-                       #     concepts[].codes[].related[]. Expansion rules remain inputs to
-                       #     review/formalization rather than generic free-form L2 expansion output.
+                       #     concepts[].codes[].related[]. Expansion expressions remain inputs
+                       #     to review/formalization rather than generic free-form membership.
 
 artifact_types:
   - eligibility-criteria
@@ -117,14 +117,18 @@ artifact_type_sections:
     section_definitions:
       evidence_traceability: >
         Evidence claims that support recommendation content:
-        {claim_id, statement, strength?, evidence[]}. claim_id must be unique
+        {claim_id, statement, strength?, recommendation_grade?, evidence[]}. claim_id must be unique
         per artifact and is referenced by recommendation-like steps through
-        evidence_traceability_ids[]. strength is recommended and should use
-        validator-supported values such as high | moderate | low | very-low |
-        consensus | insufficient.
+        evidence_traceability_ids[]. Add strength only when the source reports
+        evidence certainty/quality; do not infer it from source type or a
+        recommendation grade. Preserve an explicitly reported recommendation
+        grade separately in recommendation_grade (for example, USPSTF Grade B
+        or C). If the source does not report a certainty/quality, omit strength.
+        When strength is supplied, use validator-supported values such as high |
+        moderate | low | very-low | consensus | insufficient.
       steps: >
         Flat workflow steps. Each entry: {id, label, description?, actor?, parent_id?,
-        applicability_condition?, rule_id?, rule_ids[]?, action_labels?,
+        applicability_condition?, applicability_conditions[]?, rule_id?, rule_ids[]?, action_labels?,
         evidence_traceability_ids[]?, provenance?}. parent_id references
         another step id when a nested relationship is needed. When a paired
         decision table defines pathway_phases, keep care-pathway steps aligned
@@ -144,6 +148,11 @@ artifact_type_sections:
         recommendation-scoped decision-table rule should appear in at least one
         care-pathway leaf step's rule_id or rule_ids[] linkage.
         applicability_condition is a local pathway gate, not an event trigger.
+        Use applicability_conditions[] when a step requires multiple gates;
+        all listed condition IDs, together with applicability_condition when
+        present, are conjunctive. Keep every gate explicit in the L2 source.
+        Recommendation links are resolved only from rule_id/rule_ids[]; prose
+        similarity does not establish a decision-table binding.
         Actions are defined in decision-table artifacts, not in care pathways;
         use care-pathway only for sequencing and orchestration.
       transitions: >
@@ -168,11 +177,15 @@ artifact_type_sections:
     section_definitions:
       evidence_traceability: >
         Evidence claims that support decision logic:
-        {claim_id, statement, strength?, evidence[]}. claim_id must be unique per
+        {claim_id, statement, strength?, recommendation_grade?, evidence[]}. claim_id must be unique per
         artifact and is referenced from actions and rules via
-        evidence_traceability_ids[]. strength is recommended and should use
-        validator-supported values such as high | moderate | low | very-low |
-        consensus | insufficient.
+        evidence_traceability_ids[]. Add strength only when the source reports
+        evidence certainty/quality; do not infer it from source type or a
+        recommendation grade. Preserve an explicitly reported recommendation
+        grade separately in recommendation_grade (for example, USPSTF Grade B
+        or C). If the source does not report a certainty/quality, omit strength.
+        When strength is supplied, use validator-supported values such as high |
+        moderate | low | very-low | consensus | insufficient.
       pathway_phases: >
         Optional canonical phase model for phase-organized narratives:
         {id, label, description?}. Use only when the source clearly groups
@@ -219,7 +232,7 @@ artifact_type_sections:
         data participates in feature resolution: direct_evidence,
         inference_input, assessment_output, context, calculation_input, or
         derived_value. Missing role defaults to direct_evidence. Use value_type
-        for implementation-neutral value shape: presence, quantity,
+        for implementation-neutral value shape: presence, boolean, quantity,
         codeable_concept, date_time, interval, ordinal, or text. Use
         produced_by[] to reference action ids that produce this data element.
         evidence_source and temporal_scope remain clinical descriptions, not
@@ -237,7 +250,10 @@ artifact_type_sections:
         carry kind. Use medication for MedicationRequest; service, procedure,
         referral, or assessment for ServiceRequest; questionnaire for
         CollectInformation; and communication for CommunicationRequest. Avoid
-        Task because it is too generic. Leaf executable actions should
+        Task because it is too generic. Use guidance only for source-faithful,
+        non-order recommendation text that remains inline in PlanDefinition;
+        guidance never emits an ActivityDefinition or inferred clinical code.
+        Leaf executable actions should
         routinely carry concept_refs[] and/or explicit coding via code or
         codings[] so formalize can reuse reviewed
         terminology rather than re-inferring it. Use produces_data_elements[]
@@ -264,6 +280,102 @@ artifact_type_sections:
         evidence_traceability claim_id values and provenance metadata such as
         {source: source_direct|inferred, rationale?}. Inferred recommendations
         should always include rationale.
+
+  assessment:
+    description: >
+      Structured assessment instrument and response semantics. Questionnaire
+      extraction metadata is optional and must be explicit when downstream
+      workflows require SDC Observation extraction.
+    recommended_sections:
+      - summary
+      - instrument
+      - items
+      - scoring
+      - evidence_traceability
+    section_definitions:
+      instrument: >
+        Assessment instrument identity and scope. Optional version_algorithm:
+        {system, code, display?}; when SDC Observation extraction is enabled,
+        author this Coding explicitly because the versioned SDC profile
+        requires Questionnaire version algorithm metadata. Formalize preserves
+        it in the standard artifact-versionAlgorithm extension. Optional
+        observation_extraction is the supported SDC contract:
+        {profile: '<SDC observation-extraction profile canonical>|<version>',
+        enabled: true|false, category?: {system, code, display}}. If enabled,
+        provide category with all three non-empty strings and version_algorithm.
+        Only these fields are supported; do not pass arbitrary FHIR extensions
+        through L2. Without observation_extraction, ordinary assessments may
+        use supported response types, options, and scoring without this metadata.
+        Formalize emits the authored profile, extraction enable extension,
+        and category extension. Omit the field when extraction is not part of
+        the workflow.
+      items: >
+        Questionnaire items: {id, text, type, required?, code?}. Preserve
+        source linkIds, answer types, requiredness, and full Coding identity
+        including system, version, code, and display. Under SDC extraction,
+        item codings are the terminology bindings copied to Observation.code.
+        The currently supported extraction subset is Boolean items with
+        exactly one reviewed Coding per item; that Coding requires system,
+        version, code, and display. Do not infer a Coding when one is absent.
+      scoring: >
+        Scoring narrative remains optional for ordinary assessments. An
+        assessment that publishes a calculated score Observation may use this
+        optional structured contract: algorithm {method: count_boolean_answers,
+        input_items: [source item ids], counted_value: true,
+        completion: all_inputs_usable, missing_or_invalid: omit_result,
+        evidence_traceability_ids: [claim ids]}; result {item: {id, text,
+        type: integer, code: {system, version, code, display}}, range:
+        {minimum: 0, maximum: number of input_items}}; and optional
+        classifications[] {id, label, operator: greater_than_or_equal,
+        threshold, evidence_traceability_ids: [claim ids]}. This bounded method
+        requires distinct required Boolean source items, an enabled SDC
+        Observation-extraction contract, and source-linked claims. It computes
+        the number of true answers only when each named item has exactly one
+        usable Boolean; missing, duplicate, or invalid answers produce no
+        score. The integer score has no FHIR unit element; describe its count
+        semantics in the authored code definition. Do not infer a validated
+        instrument, scoring algorithm, threshold, code, or clinical approval.
+        Unsupported methods/operators must fail validation until deliberately
+        implemented. No score block is required for assessments that do not
+        source a scoring algorithm.
+
+  terminology:
+    description: >
+      Governed concept codes and explicitly verified terminology expansions.
+      Use when source content or the requested implementation depends on pinned
+      code-system membership.
+    recommended_sections:
+      - summary
+      - evidence_traceability
+      - value_sets
+    section_definitions:
+      value_sets: >
+        ValueSet specifications: {id, name?, system?, version?, codes[]?,
+        concept_refs[]?, expansion?}. Use explicit codes and versions where
+        membership is finite. An imported expansion is terminology-tool data,
+        not an inferred or manually generated membership list. Its shape is
+        {source: {provider, reference, response_timestamp, response_sha256},
+        requested_compose: <exact FHIR ValueSet.compose>, response: <exact
+        FHIR ValueSet.expansion element>}. The response hash is SHA-256 of the
+        response JSON encoded as UTF-8 canonical compact JSON with sorted keys,
+        no extra whitespace, and ensure_ascii=false. Preserve the provider,
+        source reference, pinned requested composition, response timestamp, and
+        returned `contains` entries. Formalize verifies the hash, compose
+        identity, unique system|version|code membership, displays when authored,
+        and total count before emitting the unchanged response expansion.
+        Do not represent a search result as a complete expansion or substitute
+        an unpinned later terminology version.
+      code_systems: >
+        Optional, locally authored complete CodeSystem definitions. Each entry
+        is {id, url, version, content: complete, case_sensitive: boolean,
+        concepts: [{code, display, definition}]}; name?, title?, and status?
+        may be supplied. `id` must be a FHIR id, url/version are the authored
+        canonical identity, and every concept definition is required. Do not
+        derive a CodeSystem from a ValueSet or use this form for a partial or
+        externally managed code system. When case_sensitive is false, codes
+        differing only by case are duplicates. Formalize emits the exact local
+        CodeSystem as a tracked L3 resource; pair it with an authored ValueSet
+        when CQL membership selection is required.
 
 status_values:
   - draft

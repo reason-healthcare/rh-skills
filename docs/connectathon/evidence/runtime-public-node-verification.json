@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-09-18T00:19:23.130Z",
+  "scope": "Independent public Node/WASM context smoke; not generated STEADI acceptance",
+  "checks": {
+    "markerTrueActionCount": 1,
+    "markerFalseActionCount": 0,
+    "supplied2027ClockPopulationCount": 0,
+    "period": {
+      "end": "2027-12-31T23:59:59Z",
+      "start": "2027-01-01T00:00:00Z"
+    },
+    "reversedPeriodRejected": true
+  },
+  "passed": true
+}

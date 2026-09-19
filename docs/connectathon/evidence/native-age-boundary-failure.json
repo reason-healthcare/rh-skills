@@ -1,0 +1,28 @@
+{
+  "observedAt": "2026-09-18T00:38:04.070441+00:00",
+  "recordedAt": "2026-09-18T00:46:03.344273+00:00",
+  "scope": "Preserved coordinator observation from first context-variation run; latest full matrix report was subsequently overwritten during worker rerun.",
+  "runtimeSha256": "7246880137abbec3cc6b990086d6a700a822f0e601295ee6ca9e18a2fc21fc7b",
+  "originalAssertions": {
+    "passed": 48,
+    "total": 48
+  },
+  "variationAssertions": {
+    "passed": 42,
+    "total": 48
+  },
+  "failureCase": "age-64-at-encounter-65-at-evaluation",
+  "birthDate": "1961-06-16",
+  "encounterStart": "2026-06-15T09:00:00Z",
+  "evaluationDate": "2026-12-31T09:20:00Z",
+  "incorrectTrueExpressions": [
+    "In Screening Population",
+    "Exercise Intervention Applicable",
+    "Consider Multifactorial Intervention",
+    "Initial Population",
+    "Denominator",
+    "Numerator"
+  ],
+  "expected": false,
+  "actual": true
+}

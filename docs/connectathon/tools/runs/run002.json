@@ -1,0 +1,19 @@
+{
+  "run": "run002",
+  "workspace": "${REPO_ROOT}/dist/connectathon-20260919/workspaces/run-002",
+  "topic": "steadi-live-replay",
+  "content": "${REPO_ROOT}/dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/executable/executable-bundle.json",
+  "fixtures": "${REPO_ROOT}/dist/connectathon-20260919/workspaces/run-002/topics/steadi-live-replay/process/package-workspace/executable/fixtures/index.json",
+  "runtime": "${RUNTIME_ROOT}/packages/cpg/dist/node.js",
+  "plan": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/steadi-fall-risk-screening-protocol|0.2.0",
+  "measure": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+  "questionnaire": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+  "guidance": {
+    "mode": "informational-guidance-notes",
+    "positiveActionIds": ["refer-exercise-intervention", "individualize-multifactorial-decision"]
+  },
+  "nativeCql": [
+    { "library": "FallRiskScreeningRecommendationLogic", "expected": 30 },
+    { "library": "MeasureMeasure", "expected": 18 }
+  ]
+}

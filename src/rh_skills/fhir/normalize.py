@@ -18,6 +18,7 @@ ALLOWED_RESOURCE_TYPES = frozenset({
     "PlanDefinition",
     "Library",
     "ActivityDefinition",
+    "CodeSystem",
     "ValueSet",
     "ConceptMap",
     "Measure",

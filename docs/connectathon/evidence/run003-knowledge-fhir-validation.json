@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-09-18T12:30:49.869759+00:00",
+  "scope": "22 final run003 executable knowledge resources; FHIR R4 + SDC4.0.0 + CPG2.0.0; exact bundled dependencies; offline terminology",
+  "bundleSha256": "ba1474411f41bc1d69819b2e93c4c7674e6e83366e6cfdaf01f8bbc856a55713",
+  "resourceCount": 22,
+  "counts": {
+    "warning": 65,
+    "information": 12
+  },
+  "errors": [],
+  "unresolvedReferenceDiagnostics": [],
+  "warningCounts": {
+    "Constraint failed: dom-6: 'A resource should have narrative for robust management' (defined in http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)": 22,
+    "The code provided (text/cql-identifier) could not be validated against the maximum value set http://www.rfc-editor.org/bcp/bcp13.txt(which actually refers to 'MimeType' (http://hl7.org/fhir/ValueSet/mimetypes|4.0.1)), (error = No_Service)": 37,
+    "Unable to validate code '100257-5' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "Unable to validate code '97878-3' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "Unable to validate code '52552-7' in system 'http://loinc.org' because the validator is running without terminology services": 1,
+    "This expansion has no parameters; in the absence of the parameters that controlled the expansion, systems may not be able to determine whether it is safe to use this expansion": 3
+  },
+  "operationOutcomeSha256": "0bc7c1e48d8436164ca20ea5585e458d09171a553b5ceceee6532c1d60936b0b",
+  "command": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/command.json",
+  "inputHashes": {
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/ActivityDefinition-collect-three-question-screen.json": "7cfac528b05b1ce91fdd027c7c66477833c76f243f88b931cfd475a162a2b85a",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/Evidence-evidence-summary.json": "a89d322d3c1b896cb2c321df0b76ee359c93aaf40db667779832e3d8f6d79fdd",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/EvidenceVariable-eligibility-criteria.json": "d7c6b3f91071666d119f5d19c049ffb90b99550ba69ddfaadfa371647027eb2b",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/EvidenceVariable-evidence-summary-evidencevariable.json": "fb5fdb183c7ee8192adf76aaf37fe4c060486526c74c83b0218d66ecb54cf6fe",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/Library-fall-risk-screening-recommendation-logic.json": "9112ffe7366b01ee41e3c96f97269e2d7374505fe3b0c608720955d966988085",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/Library-fhirhelpers-4-0-1.json": "0c5e58b599f014e25d834329162530f3dbaa1539cf270a70f5cd7492429ecd17",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/Library-measure-measure.json": "63bd3f2f15429fc2439937b2517a29beb8abdc08a793ea7140238024e3da1c02",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/Measure-measure.json": "47dd75a18e5488debb670c996cdc5c1f7ecc2dc71ee970f5e1d089c2c856e436",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-fall-risk-screening-recommendation-collect-screen.json": "726cefbcb54522de4e5430cbc50be7577b98087e8dc9c5f3119ddcd2e26e107a",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-fall-risk-screening-recommendation-exercise-for-increased-risk.json": "5b98faefa1219f8537f4f65e38c521c50f5b182f8898d01c76e386e5d6334a06",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-fall-risk-screening-recommendation-individualize-mult-0cf8535f51.json": "2ef6ebfb6f6f794138637f34c2d5547983ee25fd2748fc25c42ad8d026636d76",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-fall-risk-screening-recommendation.json": "7e0117336a7a4ab9291ad5287bd32e071d842a206a4d9e7bdf0555a9bdc60ebc",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-steadi-fall-risk-screening-protocol-await-complete-response.json": "213a30b2c2b43a3cb4a14c1ce824438b07de0108ec58c4b8a5ce4868440a4857",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-steadi-fall-risk-screening-protocol-collect-screen.json": "3dcfe135b5ad3a0ea3c132e7772204e0351f9bfc733bf663ae253b7ae150166b",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-steadi-fall-risk-screening-protocol-confirm-population.json": "4f7c95379234b53b71c66b896909d5b0209738a0be867ec6fe4ed4b9d9777dd0",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-steadi-fall-risk-screening-protocol-exercise-guidance.json": "db38d9e91005772404f7f4276a7a62d74d4ce5b410c58082fd10dfbbe60aa070",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-steadi-fall-risk-screening-protocol-multifactorial-guidance.json": "ea3861fce25c4d9d4ecb1ee57052a42aba6cb081ce8dd6c44588ac976b8b78bf",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/PlanDefinition-steadi-fall-risk-screening-protocol.json": "f5601afd94b2af3bf97483ddd4fef8918ec3fc8f4e6119deb65eb85a82cad3ae",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/Questionnaire-steadi-three-question-screen.json": "9544f05500e0f387e79c595b02b1a470918a107124bc320d96ac80f744502e54",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/ValueSet-falls-in-the-past-year.json": "f59529962c0610cc7f60eacccc01fdaf9ed2857bb18ab4258fb793faad1345d3",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/ValueSet-feel-unsteady-when-standing-or-walking.json": "5d683451b38b4d4da081b7dd2fa5cadaf629ef0d99a3cb39efd51591a8935792",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run003-knowledge/dependencies/ValueSet-worried-about-falling.json": "05d03bf96b29e499d50b1160f3b27e75ac95a4381baa14d50fb64ede335b5c4b"
+  },
+  "passed": true
+}

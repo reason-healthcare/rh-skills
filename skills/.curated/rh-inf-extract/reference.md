@@ -58,6 +58,11 @@ concept_review:                    # present when normalized front matter includ
   status: <pending-review | approved>
   review_artifact: topics/<topic>/process/plans/concepts/
   final_artifact: topics/<topic>/structured/concepts/concepts.yaml
+  scope:                            # present only with explicit --include-concept values
+    mode: explicit
+    included_concepts:
+      - <exact front-matter concept name>
+    excluded_terms_disposition: Outside this accepted use-case terminology scope; not a clinical rejection.
 artifacts:
   - name: <kebab-case>
     artifact_type: <catalog type>
@@ -102,6 +107,24 @@ artifacts:
 
 ## Terminology Resolution (Plan Mode)
 
+### Bounded concept review
+
+By default, planning emits a review CSV for every deduplicated source
+front-matter concept. When the accepted use case needs only a bounded subset,
+use repeatable `--include-concept` values with the exact source concept names:
+
+```sh
+rh-skills promote plan <topic> --force \
+  --include-concept "exact source concept name" \
+  --include-concept "another exact source concept name"
+```
+
+The CLI rejects unknown names, case changes, and duplicates. It records the
+explicit scope in both `extract-plan.yaml` and `concepts-review-meta.yaml`.
+Omitting the option preserves the default full concept review. An excluded term
+is outside the accepted use-case terminology scope; it is not a clinical
+rejection or a claim that the term is invalid.
+
 When proposing a `terminology` artifact, use reasonhub MCP tools to
 surface candidate codes before the plan is written.
 
@@ -141,18 +164,24 @@ Do not transform MCP score fields. If MCP returns `distance` and/or
 `distance = 1 - similarity` and do not map custom confidence thresholds (for
 example, "0.8+ = high").
 
-The `--candidate` format is `system|code|display[|distance[|confidence]]`.
+The `--candidate` format is `system|code|display[|distance[|confidence]][|version]`.
 `confidence` is a string label (`high`, `medium`, `low`) — never a number.
 When MCP returns only a numeric distance with no confidence label, pass it in
 the 4th field: `system|code|display|<distance>`. The CLI auto-detects a numeric
 in position 4 and stores it as `distance`. Do not insert extra `|` characters
 to try to fix a format error — that corrupts the system URI or code field.
 
+Use the final optional `version` field for a code-system release supplied by a
+lookup or source contract. It is preserved as `codes[].version` in the L2
+terminology artifact. With no distance or confidence, retain their empty fields:
+`http://loinc.org|100257-5|Feel unsteady when standing or walking|||2.81`.
+
 Do not de-duplicate candidates across concepts. Within a single concept, the
-CLI automatically deduplicates: if the same `system|code` pair is submitted
-more than once, the CLI keeps the better entry (lower distance wins; tie: higher
-confidence wins; tie: first-write-wins) and a warning is printed when a duplicate
-is skipped or replaced.
+CLI automatically deduplicates by `system|code|version`: if that same identity
+is submitted more than once, the CLI keeps the better entry (lower distance wins;
+tie: higher confidence wins; tie: first-write-wins). Different versions remain
+separate candidates, and a warning is printed when an exact duplicate is skipped
+or replaced.
 
 Do not run `rh-skills promote concept enrich` for different concepts in parallel.
 Execute enrich writes serially, one concept at a time.
@@ -205,6 +234,13 @@ When normalized source front matter contains `concepts[]`, extract planning writ
 - `topics/<topic>/process/plans/concepts-review-meta.yaml` — finalization metadata only (written by `--finalize`)
 
 The explicit extract artifact row named `concepts` is the reviewer-facing terminology package. `rh-skills promote concept write <topic>` materializes that row to `topics/<topic>/structured/concepts/concepts.yaml`. Only concepts with at least one approved candidate code or approved expansion are emitted into the final artifact. Custom concepts not extracted from source documents can be added with `concept add`.
+
+When a terminology service has produced verified FHIR `ValueSet.expansion`
+evidence, keep that evidence in a YAML terminology body with
+`sections.value_sets[].id` and `expansion`, then run
+`rh-skills promote concept write <topic> --expansions <path>`. The id must
+match a generated ValueSet exactly. This attaches only the verified expansion
+contract; it cannot add, replace, or approve candidate codes.
 
 Concept deconstruction rule:
 - Do not approve a broad grouped concept as the only actionable concept when
@@ -260,7 +296,7 @@ numbering.
 | Goal | Command |
 |------|---------|
 | Add custom concept | `rh-skills promote concept enrich <topic> "<name>" --source custom --type <type>` |
-| Record MCP candidates | `rh-skills promote concept enrich <topic> <name> --candidate "system\|code\|display[...]"` |
+| Record MCP candidates | `rh-skills promote concept enrich <topic> <name> --candidate "system\|code\|display[\|distance[\|confidence]][\|version]"` |
 | Approve all candidate codes | `rh-skills promote concept review <topic> "<name>" --approve-all` |
 | Exclude all candidate codes | `rh-skills promote concept review <topic> "<name>" --exclude-all` |
 | Approve/exclude specific candidate code | `rh-skills promote concept review <topic> "<name>" --approve-code <code> --exclude-code <other-code>` |
@@ -270,6 +306,7 @@ numbering.
 | Record no-match reason | `rh-skills promote concept enrich <topic> "<name>" --lookup-notes "reason"` |
 | Finalize review | `rh-skills promote concept review <topic> --finalize --reviewer "<name>"` |
 | Write concepts artifact | `rh-skills promote concept write <topic>` |
+| Attach verified ValueSet expansions | `rh-skills promote concept write <topic> --expansions verified-expansions.yaml` |
 
 Review workflow:
 ```sh
@@ -278,7 +315,7 @@ rh-skills promote concept enrich <topic> "<name>" --source custom --type <type>
 
 # Enrich candidates (no decision needed):
 rh-skills promote concept enrich <topic> <name> \
-  --candidate "system|code|display[|distance[|confidence]]"
+  --candidate "system|code|display[|distance[|confidence]][|version]"
 # Omit --candidate when MCP returned no results; still call to record lookup.
 # ... repeat for every concept ...
 
@@ -868,30 +905,110 @@ sections:
 
 #### assessment
 
+This is a general assessment shape. Ordinary assessments may use supported
+response types, answer options, and scoring without SDC extraction metadata or
+item Coding requirements. The SDC Observation-extraction fields below are a
+conditional subset for workflows that explicitly use that profile.
+
 ```yaml
-codings:                          # top-level; populated from MCP LOINC lookup
-  - code: <LOINC code>
-    system: http://loinc.org
-    display: <canonical display>
 sections:
   instrument:
-    name: <instrument name>
-    purpose: <what it measures>
-    population: <target population>
+    id: <Questionnaire id>
+    canonical: <Questionnaire canonical URL>
+    version: <Questionnaire version>
+    version_algorithm:             # required when extraction is enabled; never infer
+      system: http://hl7.org/fhir/version-algorithm
+      code: semver
+    observation_extraction:        # optional; only when the workflow uses SDC extraction
+      profile: http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extr-obsn|4.0.0
+      enabled: true
+      category:
+        system: http://terminology.hl7.org/CodeSystem/observation-category
+        code: survey
+        display: Survey
   items:
-    - id: q1
-      loinc_code: "<LOINC item code>"   # resolved per-item via MCP; omit if unresolved
-      text: <question text>
-      type: <ordinal|boolean|choice|numeric|text>
-      options:
-        - value: <int or string>
-          label: <display label>
+    - id: <source linkId>
+      text: <exact source question text>
+      type: boolean                 # current SDC Observation extractor supports Boolean items
+      required: true
+      code:                         # direct Coding or list of Coding; not CodeableConcept
+        system: http://loinc.org
+        version: <pinned CodeSystem version>
+        code: <reviewed LOINC code>
+        display: <exact terminology display>
   scoring:
     method: <sum|weighted|algorithm>
     ranges:
       - range: <e.g. "0-4">
         interpretation: <e.g. "Minimal depression">
 ```
+
+When a source defines a score, capture its algorithm rather than only its
+label: exact input items, answer weights or transformation, completion and
+missing/invalid-response policy, output data type and code, numeric range and
+unit, thresholds and interpretations, and evidence for each scoring rule.
+Keep source statements separate from implementation choices. Do not add a
+score or cutoff to an instrument that has none. Do not describe a locally
+derived count as a validated or source-authored scale.
+
+For the supported optional score-to-Observation workflow, add a typed
+`algorithm` and `result` to `sections.scoring`:
+
+```yaml
+sections:
+  scoring:
+    algorithm:
+      method: count_boolean_answers
+      input_items: [q-one, q-two]     # exact linkIds from items[]
+      counted_value: true
+      completion: all_inputs_usable
+      missing_or_invalid: omit_result
+      evidence_traceability_ids: [source-scoring-rule]
+    result:
+      item:                           # formalizer adds this read-only item
+        id: score-total
+        text: Number of affirmative answers
+        type: integer
+        code:
+          system: <reviewed or locally defined system>
+          version: <pinned version>
+          code: <score concept>
+          display: <meaning including the count unit>
+      range: {minimum: 0, maximum: 2}
+    classifications:
+      - id: positive-screen
+        label: At least one affirmative answer
+        operator: greater_than_or_equal
+        threshold: 1
+        evidence_traceability_ids: [source-positive-rule]
+```
+
+The present generic generator supports only `count_boolean_answers` over
+distinct, required Boolean items, and only the listed completion, missingness,
+and threshold operators. It fails closed for other algorithms; it does not
+convert weighted, ordinal, subscale, or instrument-specific methods to a
+Boolean count. Integer `Observation.valueInteger` has no unit field. State the
+count meaning in the authored score code definition; do not add an unsupported
+unit extension to the integer result. The generated Questionnaire score item
+is read-only, has a FHIRPath `calculatedExpression`, and is marked for SDC
+Observation extraction. A score is omitted unless the response has one usable
+Boolean answer for every named input; zero is a valid result when all inputs
+are false. Extraction still requires a completed response.
+
+For example, CDC STEADI states that any yes answer indicates increased risk.
+A local integer count of yes answers from 0 through 3 with a positive
+classification at `>= 1` is a transparent implementation encoding of that
+rule; it must not be presented as a CDC-defined or validated numeric score.
+If a source only defines a Boolean rule, retain that rule without inventing a
+numeric scale unless the workflow explicitly approves the derived encoding.
+
+When `observation_extraction.enabled` is true, `version_algorithm` must be an
+explicitly sourced or previously reviewed Coding because the versioned SDC
+profile requires Questionnaire version-algorithm metadata. Each supported
+Boolean item must also have exactly one complete reviewed Coding with
+`system`, `version`, `code`, and `display`; do not infer or omit it if a
+terminology lookup is unavailable. Without enabled SDC extraction, item Coding
+remains optional unless the source or another workflow requirement calls for it.
 
 #### policy
 

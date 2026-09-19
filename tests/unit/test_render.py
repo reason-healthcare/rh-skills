@@ -9,6 +9,7 @@ from ruamel.yaml import YAML
 from rh_skills.commands.render import (
     render,
     _check_completeness,
+    _care_pathway_step_condition,
     _decision_table_tree,
     REQUIRED_SECTIONS,
 )
@@ -117,6 +118,13 @@ def test_render_missing_artifact_exits_1(tmp_repo):
     result = runner.invoke(render, ["my-skill", "nonexistent"])
     assert result.exit_code == 1
     assert "not found" in result.output.lower()
+
+
+def test_care_pathway_render_condition_includes_all_conjunctive_gates():
+    assert _care_pathway_step_condition({
+        "applicability_condition": "population",
+        "applicability_conditions": ["response-incomplete", "population"],
+    }) == "population; response-incomplete"
 
 
 # ── Missing required sections ───────────────────────────────────────────────────

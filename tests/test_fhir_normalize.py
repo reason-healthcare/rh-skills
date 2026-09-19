@@ -91,7 +91,7 @@ class TestNormalizeResource:
     def test_allowed_resource_types(self):
         expected = {
             "Evidence", "EvidenceVariable", "Citation", "PlanDefinition",
-            "Library", "ActivityDefinition", "ValueSet", "ConceptMap",
+            "Library", "ActivityDefinition", "CodeSystem", "ValueSet", "ConceptMap",
             "Measure", "Questionnaire", "QuestionnaireResponse",
             "ImplementationGuide",
         }

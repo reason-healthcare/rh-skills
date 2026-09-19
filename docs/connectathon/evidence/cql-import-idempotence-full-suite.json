@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-09-18T17:41:01.621378+00:00",
+  "scope": "Root full suite after bounded imported dependency re-import repair",
+  "command": ".venv/bin/python -m pytest -q",
+  "passed": 1062,
+  "skipped": 18,
+  "warnings": 8,
+  "exitCode": 0,
+  "log": "/tmp/connectathon-root-import-idempotence-full.log",
+  "inputs": {
+    "src/rh_skills/commands/cql_library.py": "d2c973b85dcc3a6f18e9126805c980575086f06827cd89eb85955f53764bf1b7",
+    "tests/unit/test_cql.py": "796a7a841ac7f4cb2ba0a4b051a7d86e03c34a9bb1f4f8f03ddcb7c825ce328e"
+  }
+}

@@ -139,13 +139,11 @@ def validate_care_pathway(
                 if claim_id:
                     claim_ids.add(claim_id)
                 strength = entry.get("strength")
-                if strength is None or str(strength).strip() == "":
-                    report_warn(
-                        f"  care-pathway: evidence_traceability entry #{idx} missing recommended 'strength' field"
-                    )
-                    continue
-                normalized_strength = str(strength).strip().lower()
-                if normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
+                if strength is not None and str(strength).strip():
+                    normalized_strength = str(strength).strip().lower()
+                else:
+                    normalized_strength = None
+                if normalized_strength and normalized_strength not in _EVIDENCE_STRENGTH_VALUES:
                     report_error(
                         f"  care-pathway: evidence_traceability entry #{idx} has invalid strength '{strength}' "
                         f"(allowed: {', '.join(sorted(_EVIDENCE_STRENGTH_VALUES))})"
@@ -177,6 +175,33 @@ def validate_care_pathway(
 
         if not phase.get("description"):
             report_warn(f"  care-pathway: phase '{phase_id or idx}' missing recommended 'description' field")
+
+        singular_gate = phase.get("applicability_condition")
+        if singular_gate is not None and (
+            not isinstance(singular_gate, str) or not singular_gate.strip()
+        ):
+            report_error(
+                f"  care-pathway: phase '{phase_id or idx}' applicability_condition must be a non-empty condition ID"
+            )
+        plural_gates = phase.get("applicability_conditions")
+        if plural_gates is not None:
+            if not isinstance(plural_gates, list) or not plural_gates:
+                report_error(
+                    f"  care-pathway: phase '{phase_id or idx}' applicability_conditions must be a non-empty list"
+                )
+            else:
+                seen_gates: set[str] = set()
+                for gate_idx, gate_id in enumerate(plural_gates, start=1):
+                    if not isinstance(gate_id, str) or not gate_id.strip():
+                        report_error(
+                            f"  care-pathway: phase '{phase_id or idx}' applicability_conditions[{gate_idx}] must be a non-empty condition ID"
+                        )
+                    elif gate_id.strip() in seen_gates:
+                        report_error(
+                            f"  care-pathway: phase '{phase_id or idx}' applicability_conditions contains duplicate condition ID '{gate_id.strip()}'"
+                        )
+                    else:
+                        seen_gates.add(gate_id.strip())
 
         parent_id = phase.get("parent_id")
         if isinstance(parent_id, str) and parent_id.strip():

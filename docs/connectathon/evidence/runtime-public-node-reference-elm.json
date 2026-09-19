@@ -1,0 +1,51 @@
+{
+  "checkedAt": "2026-09-18T01:28:29.718Z",
+  "scope": "Public Node/WASM executes CQFramework reference-translated FHIR 4.0.1 ELM, including FHIRHelpers and CalculateAgeAt; three real fixture outcomes.",
+  "wasmNodeSha256": "473bbf7af42704308f3fdb721da7f852cdb4f71ab61a15f65b91eaa3a5ef1a46",
+  "wasmWebSha256": "473bbf7af42704308f3fdb721da7f852cdb4f71ab61a15f65b91eaa3a5ef1a46",
+  "wasmBundlerSha256": "473bbf7af42704308f3fdb721da7f852cdb4f71ab61a15f65b91eaa3a5ef1a46",
+  "results": [
+    {
+      "name": "eligible-unsteady-yes",
+      "expected": [
+        1,
+        1
+      ],
+      "actual": [
+        1,
+        1
+      ],
+      "success": true,
+      "measureCanonical": "http://example.org/Measure/reference-elm-probe|0.2.0",
+      "passed": true
+    },
+    {
+      "name": "eligible-all-no",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "success": true,
+      "measureCanonical": "http://example.org/Measure/reference-elm-probe|0.2.0",
+      "passed": true
+    },
+    {
+      "name": "eligible-incomplete-response",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "success": true,
+      "measureCanonical": "http://example.org/Measure/reference-elm-probe|0.2.0",
+      "passed": true
+    }
+  ]
+}

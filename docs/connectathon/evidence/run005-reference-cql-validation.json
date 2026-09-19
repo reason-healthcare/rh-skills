@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-09-18T19:58:42.824777+00:00",
+  "scope": "Root reviewed exact reference-translation source and JAR hashes and both ELM diagnostics; no independent engine execution claim",
+  "translator": "CQFramework cql-to-elm-cli 3.26.0 reference translator",
+  "workerEvidence": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/workspaces/run-005/evidence/reference-cqf-run005-20260918T000000Z/result.json",
+  "logSha256": "3064cbef41ee9984bd02f37b1db6143f08584f090d7a8095aa2d35f7a78bdbb0",
+  "inputs": {
+    "FallRiskScreeningRecommendationLogic.cql": "f11196ca48fb859ba6c58c44c580d6f274e048bbd2f38c36429686857933a92a",
+    "MeasureMeasure.cql": "bae8b96ab90af5131e71f9e81a5bc41498809098751b6c0c7de780c01bc5f411",
+    "FHIRHelpers-4.0.1.cql": "6748661c16fe66dd07a68f07f77f7fea44e8b933d265dcc3c575964ba8329591",
+    "FHIRCommon.cql": "40ed15194eb5f436c9fdeec9267a74f1ef5f93b3755f431b3bf687d4cf4da28c"
+  },
+  "outputs": {
+    "FallRiskScreeningRecommendationLogic": "4ffa60b8aceef856606c64ecf1f416aae7bd9a5229f089b69793a909b218d3f8",
+    "MeasureMeasure": "6344da2c88e14a104dbd32e0a92275ed1161a5a27b7610b5f792fa03ec8a66ae"
+  },
+  "passed": true
+}

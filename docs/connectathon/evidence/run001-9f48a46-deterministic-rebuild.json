@@ -1,0 +1,56 @@
+{
+  "purpose": "Verify the accepted run-001 executable output is unchanged by the 9f48a46 explicit care-pathway binding fix.",
+  "source_workspace": "/private/tmp/connectathon-live/run-001",
+  "comparison_workspace": "/private/tmp/connectathon-live/run-001-compare-9f48a46",
+  "rh_skills_commit": "9f48a46f91bf2407d46394a0e235908baf9fd11b",
+  "commands": [
+    "LLM_PROVIDER=stub RH_CLI_PATH=/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh /private/tmp/connectathon-live/venv/bin/rh-skills formalize steadi-fall-screening care-pathway --force",
+    "RH_CLI_PATH=/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh /private/tmp/connectathon-live/venv/bin/rh-skills compose-executable steadi-fall-screening --root-canonical 'https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0' --evaluation-date '2026-06-15T09:20:00Z'"
+  ],
+  "bundle": {
+    "source_path": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+    "comparison_path": "/private/tmp/connectathon-live/run-001-compare-9f48a46/topics/steadi-fall-screening/process/package-workspace/executable/executable-bundle.json",
+    "source_sha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a",
+    "comparison_sha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a",
+    "byte_identical": true,
+    "resource_count_source": 18,
+    "resource_count_comparison": 18,
+    "resource_identity_sets_equal": true,
+    "entry_fullurls_identical": true,
+    "resource_json_identical": true,
+    "resource_identities": [
+      "ActivityDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/ActivityDefinition/administer-three-question-screen|0.2.0",
+      "ActivityDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/ActivityDefinition/communicate-positive-screen|0.2.0",
+      "Evidence/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Evidence/evidence-summary|0.2.0",
+      "EvidenceVariable/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/EvidenceVariable/eligibility-criteria|0.2.0",
+      "EvidenceVariable/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/EvidenceVariable/evidence-summary-evidencevariable|0.2.0",
+      "Library/http://hl7.org/fhir/uv/cql/Library/FHIRHelpers|4.0.1",
+      "Library/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Library/fall-screening-and-guidance-recommendation-logic|0.2.0",
+      "Library/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Library/measure-measure|0.2.0",
+      "Measure/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Measure/measure|0.2.0",
+      "PlanDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-offer-screen|0.2.0",
+      "PlanDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation-positive-s-6e0d6cae31|0.2.0",
+      "PlanDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/fall-screening-and-guidance-recommendation|0.2.0",
+      "PlanDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-interpret-phase|0.2.0",
+      "PlanDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-positive-guidance|0.2.0",
+      "PlanDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol-screen-phase|0.2.0",
+      "PlanDefinition/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/older-adult-fall-screening-protocol|0.2.0",
+      "Questionnaire/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Questionnaire/steadi-three-question-screen|0.2.0",
+      "ValueSet/https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/ValueSet/steadi-fall-screening-items|0.2.0"
+    ]
+  },
+  "fixture_index": {
+    "source_path": "/private/tmp/connectathon-live/run-001/topics/steadi-fall-screening/process/package-workspace/executable/fixtures/index.json",
+    "comparison_path": "/private/tmp/connectathon-live/run-001-compare-9f48a46/topics/steadi-fall-screening/process/package-workspace/executable/fixtures/index.json",
+    "source_sha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc",
+    "comparison_sha256": "c3239ac23c98f9ae9f555b82e4d8a40d9fd5f7d1b4bf7f458d8b3d8a831b1edc",
+    "byte_identical": true
+  },
+  "positive_guidance_binding": {
+    "cql_identifier": "PositiveThreeQuestionScreen",
+    "source_cql_definition": "define \\\"PositiveThreeQuestionScreen\\\": \\\"At Increased Fall Risk\\\"",
+    "embedded_elm_definition_present": true,
+    "embedded_elm_expression_ref": "At Increased Fall Risk",
+    "result": "identifier resolves in the Library; no missing-definition defect found"
+  }
+}

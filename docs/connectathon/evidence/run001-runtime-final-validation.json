@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-09-18T04:09:50.877665+00:00",
+  "runtimeCommit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+  "wasmSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320",
+  "knowledgeBundleSha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a",
+  "inputCount": 12,
+  "scope": "Six actual main-pathway apply Bundles and six individual MeasureReports; officialFHIR4.0.1+SDC4.0.0+CPG2.0.0, exact knowledge dependencies, offline terminology",
+  "rawCounts": {
+    "warning": 63,
+    "information": 5,
+    "error": 1
+  },
+  "strictValidatorPassed": false,
+  "documentedExceptions": [
+    {
+      "input": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/run001-runtime-fhir-inputs/younger-than-65--MeasureReport-measure.json",
+      "inputSha256": "044158d751180aa3910eae1059fb484cd7bd010ee06ecb70c24d59c57069f07b",
+      "code": "MEASURE_MR_SCORE_REQUIRED",
+      "expression": [
+        "MeasureReport.group[0]"
+      ],
+      "reason": "R4 optional score is undefined for a zero denominator; validator6.10.2 requires it regardless of population. No score or absent-reason is fabricated."
+    }
+  ],
+  "unacceptedErrors": [],
+  "acceptedForCoreRehearsal": true,
+  "warningCounts": {
+    "Constraint failed: dom-6: 'A resource should have narrative for robust management' (defined in http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)": 38,
+    "The code provided (text/cql-identifier) could not be validated against the maximum value set http://www.rfc-editor.org/bcp/bcp13.txt(which actually refers to 'MimeType' (http://hl7.org/fhir/ValueSet/mimetypes|4.0.1)), (error = No_Service)": 25
+  },
+  "operationOutcomeSha256": "bd76c5b979a7b7793018ed2aa75adb52f624aaa173b44083ee52546d32070075",
+  "inputSha256": {
+    "eligible-no-response--MeasureReport-measure.json": "831406133d4f11352562429f91785168e1ce54f05d1dc49f7a5211fe125c8691",
+    "eligible-unsteady-yes--older-adult-fall-screening-protocol.json": "5bc0ed743724d5449c536794eccd2f1526b31909cec15efabec4b4cf9bc188f2",
+    "eligible-incomplete-response--MeasureReport-measure.json": "c33a50b423eaf55b728224a76dfe476f6c28eb3f0bba10c587e34efc5c9c3dd7",
+    "eligible-prior-fall-yes--MeasureReport-measure.json": "592ac93292e7833b6d0530a10cc8ee23e59e6527b5e97d1e5b55206ac831ad57",
+    "eligible-all-no--older-adult-fall-screening-protocol.json": "5253315165e2318db4869ca78e95631a2d38845448a80248d91c96c5cc1ab060",
+    "eligible-incomplete-response--older-adult-fall-screening-protocol.json": "84cb65e9d4b7284917970b9cad0d20f02bfbde2c9216a143902ca72d3025eb39",
+    "younger-than-65--MeasureReport-measure.json": "044158d751180aa3910eae1059fb484cd7bd010ee06ecb70c24d59c57069f07b",
+    "eligible-prior-fall-yes--older-adult-fall-screening-protocol.json": "18238db9681caf07b82ce2196657968cbe290c2af84cc9b48c20fba7d7385e62",
+    "younger-than-65--older-adult-fall-screening-protocol.json": "fce437e6a86b005611be31fa7a389cde6fa855d4d73334d9f192b4a8ec1a0898",
+    "eligible-all-no--MeasureReport-measure.json": "6ad70c98c521fa0018bb9e63f94fce8f03150b05a97ebb366ef920a603056049",
+    "eligible-no-response--older-adult-fall-screening-protocol.json": "dc1c0df10c11b1b3ac799f56902455a7d05040a5dcd9637c39fdbec74419f932",
+    "eligible-unsteady-yes--MeasureReport-measure.json": "fc44c5d790048f1b5319e33e2f361fd662c80f496c0dce7a6705a751a1b6e132"
+  },
+  "standardsReview": "docs/connectathon/evidence/runtime-output-r4-standards-review.md"
+}

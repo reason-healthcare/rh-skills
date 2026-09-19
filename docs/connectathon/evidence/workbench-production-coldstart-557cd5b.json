@@ -1,0 +1,8 @@
+{
+  "workbenchCommit": "557cd5b",
+  "runtimeCommit": "2917cba6b351bcfb4d18b79cc951cc7b5a7e0d83",
+  "wasmNodeSha256": "25a28d6daeedeb626ea6042a4bba1ca9466da3a4bd1e14ee047a7e41d7ffa320",
+  "build": "npm run build --workspace @reasonhealth/workbench",
+  "start": "DATABASE_URL=postgres://workbench:workbench@127.0.0.1:55432/workbench PORT=9090 HOSTNAME=127.0.0.1 npm run start --workspace @reasonhealth/workbench",
+  "rootGetStatus": 307
+}

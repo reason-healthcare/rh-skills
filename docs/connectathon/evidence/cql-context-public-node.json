@@ -1,0 +1,72 @@
+{
+  "checkedAt": "2026-09-18T17:34:28.464Z",
+  "status": "pass",
+  "scope": "Public Node/WASM Patient and Encounter isolation using official reference-translated FHIRCommon ELM",
+  "assertionMeaning": "Measure counts are Boolean membership. Separate invalid-only cases prove exclusions; a positive mixed-case count alone does not prove exact returned IDs.",
+  "runtime": {
+    "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js",
+    "sha256": "478033b2ddbcab71dd648a59ccd25c07484113c2ccca381ef200fd3e8027f00b"
+  },
+  "wasm": {
+    "rh_cpg.js": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-node/rh_cpg.js",
+      "sha256": "93efd9a8afbad1fa9da3b7127fc159b91beb3e40603e0f5ace5ac7b94438700a"
+    },
+    "rh_cpg_bg.wasm": {
+      "path": "/Users/bkaney/projects/reason-healthcare/rh/packages/cpg/wasm-node/rh_cpg_bg.wasm",
+      "sha256": "d936e08fed0ae47bcc30ad75274ec3d1336ec079a7bf97054de4fa80f1081726"
+    }
+  },
+  "dependencies": {
+    "FHIRCommonReferencesProbe.elm.json": "0a335cfa8cc8a4b5d2effd79da3478f8ce4969d5878449c1c4112cac82351044",
+    "Library-FHIRCommon.pinned-fhirhelpers.json": "d278723f3ea4f9d8e9a8b9bd4c9ef1c0ed17f3806f7bd824c2cd8efe2ba3bf4b",
+    "Library-FHIRHelpers.pinned.json": "0c5e58b599f014e25d834329162530f3dbaa1539cf270a70f5cd7492429ecd17"
+  },
+  "passed": 6,
+  "failed": 0,
+  "cases": [
+    {
+      "name": "correct-only",
+      "expectedMembership": 1,
+      "actualMembership": 1,
+      "reportStatus": "complete",
+      "passed": true
+    },
+    {
+      "name": "mixed-valid-and-invalid",
+      "expectedMembership": 1,
+      "actualMembership": 1,
+      "reportStatus": "complete",
+      "passed": true
+    },
+    {
+      "name": "wrong-encounter-only",
+      "expectedMembership": 0,
+      "actualMembership": 0,
+      "reportStatus": "complete",
+      "passed": true
+    },
+    {
+      "name": "wrong-patient-only",
+      "expectedMembership": 0,
+      "actualMembership": 0,
+      "reportStatus": "complete",
+      "passed": true
+    },
+    {
+      "name": "both-invalid-only",
+      "expectedMembership": 0,
+      "actualMembership": 0,
+      "reportStatus": "complete",
+      "passed": true
+    },
+    {
+      "name": "no-observations",
+      "expectedMembership": 0,
+      "actualMembership": 0,
+      "reportStatus": "complete",
+      "passed": true
+    }
+  ],
+  "sourceRevision": "26716c9319f50ee71aa8456cc8a0ccefe100d7f5"
+}

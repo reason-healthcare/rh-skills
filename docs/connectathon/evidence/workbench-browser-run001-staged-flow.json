@@ -1,0 +1,70 @@
+{
+  "checkedAt": "2026-09-18T03:35:18.616319+00:00",
+  "method": "Coordinator actual authenticated in-app browser interactions; API parity reported separately",
+  "workbenchProject": "connectathon-steadi",
+  "snapshotId": "snap_connectathon-steadi_run001-08a666000842",
+  "bundleSha256": "08a6660008424c694d5b34b3460e34014e184c9d72822756352213130320e89a",
+  "runtimeCommit": "23c69ead34182f7b5859cd1bc66517035ea1235d",
+  "wasmSha256": "078391d125f0c47e3985ee68d1577e5534a3cf76772b6aa54e0d3395e55238e8",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "steps": [
+    {
+      "operation": "Populate eligible-no-response assessment",
+      "observed": "Authored Questionnaire canonical |0.2.0, three unanswered required Boolean items; completion disabled until usable answers supplied",
+      "status": "passed"
+    },
+    {
+      "operation": "Answer unsteady yes; worry no; prior falls no; validate and stage",
+      "observed": "Validation succeeded and staged response bound to selected patient and encounter",
+      "status": "passed"
+    },
+    {
+      "operation": "Measure same scenario with staged response",
+      "observed": {
+        "initialPopulation": 1,
+        "denominator": 1,
+        "numerator": 1,
+        "periodStart": "2026-01-01T00:00:00Z",
+        "periodEnd": "2026-12-31T23:59:59Z"
+      },
+      "status": "passed"
+    },
+    {
+      "operation": "Guideline same scenario with staged response",
+      "observed": "Screening Task and positive-guidance CommunicationRequest; correct subject and authored canonical",
+      "status": "passed"
+    },
+    {
+      "operation": "Restore source scenario from guideline",
+      "observed": "Staged response cleared; old result cleared; rerun yields screening Task without affirmative guidance/CommunicationRequest",
+      "status": "passed"
+    },
+    {
+      "operation": "Measure restored source scenario",
+      "observed": {
+        "initialPopulation": 1,
+        "denominator": 1,
+        "numerator": 0
+      },
+      "status": "passed"
+    },
+    {
+      "operation": "Package and authored inventory",
+      "observed": "18 executable resources and 28 authored artifacts; search FHIRHelpers reveals Library plus original CQL/ELM dependency files; generic Library source expands successfully",
+      "status": "passed"
+    },
+    {
+      "operation": "Keyboard source open and close",
+      "observed": "Enter opens source dialog; Enter on Close dismisses it",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "Screenshots and final production-build responsive/console review pending",
+    "This is run001; second independently authored package remains under semantic correction",
+    "No SDC extraction or independent-engine interoperability claim"
+  ]
+}

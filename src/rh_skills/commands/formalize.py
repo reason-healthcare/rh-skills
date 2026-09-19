@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import json
+import math
 import re
 import sys
 from collections import defaultdict
@@ -35,9 +36,18 @@ from rh_skills.fhir.normalize import (
 )
 from rh_skills.fhir.validate import validate_resource
 from rh_skills.fhir.packaging import load_packager_toml
+from rh_skills.validators.questionnaire import (
+    SDC_CALCULATED_EXPRESSION_EXTENSION,
+    SDC_OBSERVATION_EXTRACTION_EXTENSION,
+    normalize_assessment_scoring,
+    questionnaire_metadata_fields,
+    validate_observation_extraction_items,
+)
 
 _FORMALIZE_TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "formalize"
 FHIR_ID_MAX_LENGTH = 64
+_FHIR_ID_RE = re.compile(r"^[A-Za-z0-9\-.]{1,64}$")
+_PUBLICATION_STATUS_VALUES = {"draft", "active", "retired", "unknown"}
 
 
 # ── CQL Content Embedding ─────────────────────────────────────────────────────
@@ -134,6 +144,64 @@ def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
     resource["content"] = content
     library_path.write_text(json.dumps(resource, indent=2, ensure_ascii=False) + "\n")
     return True
+
+
+def _attach_external_library_dependencies(
+    resources: list[dict[str, Any]],
+    computable_dir: Path,
+    topic_entry: dict[str, Any],
+) -> None:
+    """Preserve pinned imported CQL dependencies when a Library is regenerated."""
+    dependencies: dict[tuple[str, str], dict[str, str]] = {}
+    for entry in topic_entry.get("computable", []) or []:
+        if not isinstance(entry, dict) or entry.get("strategy") != "external-dependency":
+            continue
+        dependency = entry.get("external_dependency")
+        if not isinstance(dependency, dict):
+            continue
+        name = str(dependency.get("name") or "").strip()
+        version = str(dependency.get("version") or "").strip()
+        canonical = str(dependency.get("canonical") or "").strip()
+        if name and version and canonical:
+            dependencies[(name, version)] = {
+                "canonical": canonical,
+                "version": version,
+            }
+    if not dependencies:
+        return
+
+    include_pattern = re.compile(
+        r"^\s*include\s+([A-Za-z_][A-Za-z0-9_]*)\s+version\s+['\"]([^'\"]+)['\"]",
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
+    cql_files = sorted(computable_dir.glob("*.cql"))
+    for resource in resources:
+        if resource.get("resourceType") != "Library":
+            continue
+        cql_file = _find_best_cql(cql_files, str(resource.get("name") or ""))
+        if cql_file is None:
+            continue
+        includes = include_pattern.findall(cql_file.read_text())
+        if not includes:
+            continue
+        related = resource.get("relatedArtifact") or []
+        if not isinstance(related, list):
+            raise ValueError(f"Library/{resource.get('id')} relatedArtifact must be an array")
+        existing = {
+            str(item.get("resource") or "")
+            for item in related
+            if isinstance(item, dict) and item.get("type") == "depends-on"
+        }
+        for name, version in includes:
+            dependency = dependencies.get((name, version))
+            if dependency is None:
+                continue
+            reference = f"{dependency['canonical']}|{dependency['version']}"
+            if reference not in existing:
+                related.append({"type": "depends-on", "resource": reference})
+                existing.add(reference)
+        if related:
+            resource["relatedArtifact"] = related
 
 
 def _fhir_resource_id(value: str, *, max_len: int = FHIR_ID_MAX_LENGTH) -> str:
@@ -236,8 +304,11 @@ STRATEGY_REGISTRY: dict[str, dict] = {
     # Added in L2 schema update — new artifact types
     "eligibility-criteria": {
         "primary": "EvidenceVariable",
-        "supporting": ["ValueSet"],
-        "description": "EvidenceVariable (population characteristics) + ValueSet",
+        # Codeable inclusion sets belong in the companion terminology artifact.
+        # Eligibility criteria without authored coded concepts must not emit an
+        # empty ValueSet shell.
+        "supporting": [],
+        "description": "EvidenceVariable (population characteristics)",
     },
     "risk-factors": {
         "primary": "EvidenceVariable",
@@ -418,8 +489,7 @@ ECA guidance for decision-table and care-pathway conversions:
 - Keep pathway/protocol orchestration separate from executable action definitions (PlanDefinition orchestrates, ActivityDefinition executes).
 
 ActivityDefinition.dynamicValue guidance only:
-- When dynamicValue copies or navigates data already present on the containing ActivityDefinition, use the containing-resource evaluation context with %context.
-- For collect-information Task ActivityDefinitions with cpg-collectWith, use text/cql-identifier with %context.code for input.type and %context.extension.where(url = 'http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value for input.valueCanonical.
+- For collect-information Task ActivityDefinitions with cpg-collectWith, use text/fhirpath with `code` for input[0].type and `extension.where(url = 'http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith').value` for input[0].valueCanonical.
 - Do not emit bare identifiers such as code as text/cql-identifier dynamic values unless they are named Library defines.
 - Use text/cql-identifier for ActivityDefinition.dynamicValue only when the expression is a named CQL expression resolvable from a Library in scope for that ActivityDefinition or another explicitly supported evaluation context.
 - If ActivityDefinition.dynamicValue uses text/cql-identifier for a named Library define, the ActivityDefinition must reference the Library that defines it. Do not emit inline text/cql for generated ActivityDefinition.dynamicValue.
@@ -586,7 +656,7 @@ def _ensure_activity_definition_codes(
     resources: list[dict],
     concept_candidates: list[dict[str, Any]] | None = None,
 ) -> None:
-    """Backfill ActivityDefinition.code from reviewed concepts when available."""
+    """Require approved coding for every executable ActivityDefinition."""
     collect_information_profiles = {
         "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
     }
@@ -619,12 +689,10 @@ def _ensure_activity_definition_codes(
         meta_profiles = resource.get("meta", {}).get("profile") or []
         profile = str(resource.get("profile") or "")
 
-        resolved = _resolve_activity_code_from_concepts(
+        resolved = _resolve_activity_code_from_exact_concept_refs(
             resource,
             action_id=action_id,
             title=title,
-            description=description,
-            kind=kind,
             concept_candidates=concept_candidates,
         )
         if resolved:
@@ -651,11 +719,9 @@ def _ensure_activity_definition_codes(
             }
             continue
 
-        resource["code"] = _activity_unresolved_placeholder_code(
-            kind=kind,
-            action_id=action_id,
-            title=title,
-            description=description,
+        raise ValueError(
+            f"ActivityDefinition/{action_id} ({kind}) requires an authored code/codings "
+            "or exact approved concept_refs; no placeholder or token-inferred code is allowed"
         )
 
 
@@ -723,6 +789,19 @@ def _build_questionnaire_items(artifact_name: str, l2_data: dict | None) -> list
             "type": _questionnaire_item_type(item.get("type")),
         }
 
+        # Preserve omission versus an explicit false value for this optional
+        # FHIR element.
+        if "required" in item:
+            required = item["required"]
+            if not isinstance(required, bool):
+                raise ValueError(
+                    f"Assessment item {link_id!r} required must be a Boolean when present"
+                )
+            questionnaire_item["required"] = required
+
+        if "code" in item:
+            questionnaire_item["code"] = _questionnaire_item_codings(item["code"], link_id)
+
         options = item.get("options") or []
         answer_options = []
         if isinstance(options, list):
@@ -737,6 +816,38 @@ def _build_questionnaire_items(artifact_name: str, l2_data: dict | None) -> list
 
         questionnaire_items.append(questionnaire_item)
 
+    scoring = sections.get("scoring") or {}
+    instrument = sections.get("instrument") or {}
+    score_contract = normalize_assessment_scoring(
+        scoring,
+        items,
+        instrument,
+        sections.get("evidence_traceability"),
+    )
+    if score_contract:
+        score_item = score_contract["result"]["item"]
+        questionnaire_items.append({
+            "linkId": score_item["id"],
+            "text": score_item["text"],
+            "type": "integer",
+            "code": [score_item["code"]],
+            "readOnly": True,
+            "extension": [
+                {
+                    "url": SDC_CALCULATED_EXPRESSION_EXTENSION,
+                    "valueExpression": {
+                        "description": "Calculated assessment score",
+                        "language": "text/fhirpath",
+                        "expression": score_contract["expression"],
+                    },
+                },
+                {
+                    "url": SDC_OBSERVATION_EXTRACTION_EXTENSION,
+                    "valueBoolean": True,
+                },
+            ],
+        })
+
     if questionnaire_items:
         return questionnaire_items
 
@@ -745,6 +856,52 @@ def _build_questionnaire_items(artifact_name: str, l2_data: dict | None) -> list
         "text": "Replace with assessment item text",
         "type": "choice",
     }]
+
+
+def _questionnaire_item_codings(value: Any, link_id: str) -> list[dict[str, str]]:
+    """Validate and preserve supported Coding fields for Questionnaire.item.code."""
+    if isinstance(value, dict):
+        codings = [value]
+    elif isinstance(value, list):
+        codings = value
+    else:
+        raise ValueError(
+            f"Assessment item {link_id!r} code must be a Coding object or list of Coding objects"
+        )
+
+    allowed_fields = {"version", "system", "code", "display"}
+    result: list[dict[str, str]] = []
+    for index, coding in enumerate(codings):
+        if not isinstance(coding, dict):
+            raise ValueError(
+                f"Assessment item {link_id!r} code[{index}] must be a Coding object"
+            )
+        unexpected = set(coding) - allowed_fields
+        if unexpected:
+            raise ValueError(
+                f"Assessment item {link_id!r} code[{index}] has unsupported fields: "
+                f"{', '.join(sorted(map(str, unexpected)))}"
+            )
+        normalized: dict[str, str] = {}
+        for field in ("version", "system", "code", "display"):
+            if field not in coding:
+                continue
+            field_value = coding[field]
+            if not isinstance(field_value, str):
+                raise ValueError(
+                    f"Assessment item {link_id!r} code[{index}].{field} must be a string"
+                )
+            normalized[field] = field_value
+        for required_field in ("system", "code"):
+            if not normalized.get(required_field):
+                raise ValueError(
+                    f"Assessment item {link_id!r} code[{index}].{required_field} is required"
+                )
+        result.append(normalized)
+
+    if not result:
+        raise ValueError(f"Assessment item {link_id!r} code must contain at least one Coding")
+    return result
 
 
 def _formalize_template_env() -> Environment:
@@ -927,6 +1084,7 @@ def _render_care_pathway_plan_definition_resource(
         if child_group_plan
         else "plandefinition/care-pathway-root.json.j2"
     )
+    context.setdefault("library", [])
     return _render_formalize_json_template(template_name, **context)
 
 
@@ -937,6 +1095,22 @@ def _plan_definition_meta_profiles(role: str) -> list[str]:
         "recommendation": ["http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-recommendationdefinition"],
     }
     return mapping.get(role, [])
+
+
+def _cpg_plan_profile_for_actions(role: str, actions: list[dict[str, Any]]) -> list[str]:
+    """Claim a CPG plan profile only when generated actions meet its minimum contract."""
+    def supported(items: list[Any]) -> bool:
+        for action in items:
+            if not isinstance(action, dict) or not action.get("code"):
+                return False
+            if role == "pathway" and action.get("relatedAction"):
+                return False
+            nested = action.get("action")
+            if isinstance(nested, list) and not supported(nested):
+                return False
+        return True
+
+    return _plan_definition_meta_profiles(role) if actions and supported(actions) else []
 
 
 def _render_questionnaire_resource(context: dict[str, Any]) -> dict[str, Any]:
@@ -1008,15 +1182,36 @@ def _build_evidence_variable_characteristics(
             if label:
                 add_description(f"{prefix}: {label}")
 
+    def add_authored_section(section_name: str, prefix: str) -> None:
+        value = sections.get(section_name)
+        values = value if isinstance(value, list) else [value]
+        for entry in values:
+            if isinstance(entry, str) and entry.strip():
+                add_description(f"{prefix}: {entry.strip()}")
+            elif isinstance(entry, dict):
+                text = next(
+                    (
+                        str(entry[field]).strip()
+                        for field in ("description", "statement", "summary", "text", "criterion", "name", "label")
+                        if entry.get(field) and str(entry[field]).strip()
+                    ),
+                    "",
+                )
+                if text:
+                    add_description(f"{prefix}: {text}")
+
+    # These are authored narrative criteria, not terminological assertions. In
+    # R4 they are represented truthfully as definitionCodeableConcept.text.
+    add_authored_section("criteria", "Criteria")
+    add_authored_section("summary_points", "Summary")
+    add_authored_section("summary", "Summary")
+
     if characteristics:
         return characteristics
 
-    fallback_by_type = {
-        "evidence-summary": "Population/intervention/outcome criteria to be refined from the evidence summary",
-        "eligibility-criteria": "Eligibility criterion to be refined into coded inclusion or exclusion logic",
-        "risk-factors": "Risk factor characteristic to be refined into coded exposure logic",
-    }
-    return [{"description": fallback_by_type.get(artifact_type, "Characteristic criteria to be refined")}]
+    raise ValueError(
+        f"{artifact_type} requires authored criteria or summary content to create an EvidenceVariable"
+    )
 
 
 def _activity_definition_kind(raw_type: str | None) -> str:
@@ -1168,7 +1363,6 @@ def _build_care_pathway_actions(
     evidence_claim_index: dict[str, dict[str, Any]] | None = None,
     branch_plan_map: dict[str, str] | None = None,
     recommendation_plan_map: dict[str, str] | None = None,
-    recommendation_candidates: list[dict[str, Any]] | None = None,
     action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
     pathway_condition_context: dict[str, Any] | None = None,
 ) -> list[dict]:
@@ -1258,18 +1452,14 @@ def _build_care_pathway_actions(
                 for sub_action in build_action(child, child_inherited_condition_keys)
             ]
         elif not branch_ref:
-            exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_refs = _resolve_recommendation_references(
                 step,
                 recommendation_plan_map or {},
-                recommendation_candidates or [],
             )
-            if exact_ref and exact_ref not in recommendation_refs:
-                recommendation_refs = [exact_ref, *recommendation_refs]
             action_ref = _resolve_action_reference(step, action_reference_map or {})
             available_refs = [
                 ref for ref in recommendation_refs
-                if ref == exact_ref or ref not in used_recommendation_refs
+                if ref not in used_recommendation_refs
             ]
             if len(available_refs) > 1:
                 grouped_actions = []
@@ -1303,8 +1493,6 @@ def _build_care_pathway_actions(
                 "actionId": to_id,
                 "relationship": "before-start",
             }
-            if transition.get("description"):
-                rel["description"] = str(transition["description"])
             related.append(rel)
         if related:
             action["relatedAction"] = related
@@ -1447,6 +1635,8 @@ def _activity_code_from_concept(concept: dict[str, Any], title: str) -> dict[str
         coding = {"code": code_value}
         if entry.get("system"):
             coding["system"] = str(entry["system"])
+        if entry.get("version"):
+            coding["version"] = str(entry["version"])
         if entry.get("display"):
             coding["display"] = str(entry["display"])
         resolved.append(coding)
@@ -1625,6 +1815,53 @@ def _resolve_activity_code_from_concepts(
         return resolved_code
     return None
 
+
+def _resolve_activity_code_from_exact_concept_refs(
+    action_def: dict[str, Any],
+    *,
+    action_id: str,
+    title: str,
+    concept_candidates: list[dict[str, Any]] | None,
+) -> dict[str, Any] | None:
+    """Resolve only explicit L2 concept_refs, never labels or token similarity."""
+    raw_refs = action_def.get("concept_refs") or []
+    if not isinstance(raw_refs, list):
+        return None
+    refs = [to_kebab_case(str(ref)) for ref in raw_refs if str(ref or "").strip()]
+    if not refs:
+        return None
+    by_id = {
+        str(candidate.get("normalized_id") or ""): candidate
+        for candidate in (concept_candidates or [])
+        if str(candidate.get("normalized_id") or "")
+    }
+    missing = [ref for ref in refs if ref not in by_id]
+    if missing:
+        raise ValueError(
+            f"Decision action '{action_id}' references unapproved concept_refs: "
+            f"{', '.join(missing)}"
+        )
+    codings: list[dict[str, Any]] = []
+    for ref in refs:
+        resolved = by_id[ref].get("code")
+        if not isinstance(resolved, dict):
+            raise ValueError(
+                f"Decision action '{action_id}' concept_ref '{ref}' has no approved coding"
+            )
+        for coding in resolved.get("coding") or []:
+            if (
+                isinstance(coding, dict)
+                and str(coding.get("code") or "").strip()
+                and str(coding.get("system") or "").strip()
+            ):
+                if coding not in codings:
+                    codings.append(dict(coding))
+    if not codings:
+        raise ValueError(
+            f"Decision action '{action_id}' concept_refs have no approved coding"
+        )
+    return {"coding": codings, "text": title}
+
 def _activity_definition_template_context(
     *,
     resource_id: str,
@@ -1672,11 +1909,16 @@ def _resolve_activity_code(action_def: dict[str, Any], *, action_id: str, title:
     """Return explicit activity coding from L2 when present, otherwise None."""
     code = action_def.get("code")
     if isinstance(code, dict):
+        code_value = str(code.get("code") or "").strip()
+        system = str(code.get("system") or "").strip()
+        if not code_value or not system:
+            return None
         coding = {
-            "code": str(code.get("code") or action_id),
+            "code": code_value,
+            "system": system,
         }
-        if code.get("system"):
-            coding["system"] = str(code["system"])
+        if code.get("version"):
+            coding["version"] = str(code["version"])
         if code.get("display"):
             coding["display"] = str(code["display"])
         return {"coding": [coding], "text": title}
@@ -1688,11 +1930,12 @@ def _resolve_activity_code(action_def: dict[str, Any], *, action_id: str, title:
             if not isinstance(entry, dict):
                 continue
             code_value = str(entry.get("code") or "").strip()
-            if not code_value:
+            system = str(entry.get("system") or "").strip()
+            if not code_value or not system:
                 continue
-            coding = {"code": code_value}
-            if entry.get("system"):
-                coding["system"] = str(entry["system"])
+            coding = {"code": code_value, "system": system}
+            if entry.get("version"):
+                coding["version"] = str(entry["version"])
             if entry.get("display"):
                 coding["display"] = str(entry["display"])
             resolved.append(coding)
@@ -1729,30 +1972,71 @@ def _build_questionnaire_resource(
     cfg: dict[str, Any],
 ) -> dict[str, Any]:
     """Build a Questionnaire resource from a related assessment artifact."""
-    questionnaire_id = to_kebab_case(artifact_name) or _deterministic_artifact_base_id(
-        artifact_name,
-        "assessment",
-        topic,
-        assessment_data,
+    questionnaire_id, questionnaire_url, questionnaire_version = _assessment_questionnaire_identity(
+        artifact_name, assessment_data, cfg, topic
     )
     title = str(
         assessment_data.get("title")
         or assessment_data.get("name")
         or artifact_name.replace("-", " ").title()
     )
+    sections = assessment_data.get("sections") or {}
+    instrument = sections.get("instrument") or {}
+    metadata_fields, extraction = questionnaire_metadata_fields(instrument)
+    source_items = sections.get("items") or []
+    validate_observation_extraction_items(source_items, extraction)
+    normalize_assessment_scoring(
+        sections.get("scoring"),
+        source_items,
+        instrument,
+        sections.get("evidence_traceability"),
+    )
     return _render_questionnaire_resource(
         {
             "id": questionnaire_id,
-            "url": f"{cfg['canonical']}/Questionnaire/{questionnaire_id}",
-            "version": cfg["version"],
+            "url": questionnaire_url,
+            "version": questionnaire_version,
             "status": cfg["status"],
             "date": today_date(),
             "name": _pascal_from_kebab(questionnaire_id),
             "title": title,
             "description": str(assessment_data.get("description") or title),
             "item": _build_questionnaire_items(artifact_name, assessment_data),
+            **metadata_fields,
         }
     )
+
+
+def _assessment_questionnaire_identity(
+    artifact_name: str,
+    assessment_data: dict[str, Any],
+    cfg: dict[str, Any],
+    topic: str,
+) -> tuple[str, str, str]:
+    """Use explicit assessment instrument identity when supplied; otherwise use topic defaults."""
+    sections = assessment_data.get("sections") or {}
+    instrument = sections.get("instrument") or {}
+    if not isinstance(instrument, dict):
+        raise ValueError("Assessment sections.instrument must be an object when present")
+
+    default_id = to_kebab_case(artifact_name) or _deterministic_artifact_base_id(
+        artifact_name, "assessment", topic, assessment_data
+    )
+    questionnaire_id = instrument.get("id", default_id)
+    questionnaire_url = instrument.get(
+        "canonical", f"{cfg['canonical']}/Questionnaire/{questionnaire_id}"
+    )
+    questionnaire_version = instrument.get("version", cfg["version"])
+    for field_name, field_value in (
+        ("id", questionnaire_id),
+        ("canonical", questionnaire_url),
+        ("version", questionnaire_version),
+    ):
+        if not isinstance(field_value, str) or not field_value.strip():
+            raise ValueError(
+                f"Assessment instrument {field_name} must be a non-empty string when present"
+            )
+    return questionnaire_id, questionnaire_url, questionnaire_version
 
 
 def _collect_information_dynamic_values(_questionnaire_canonical: str) -> list[dict[str, Any]]:
@@ -1760,17 +2044,17 @@ def _collect_information_dynamic_values(_questionnaire_canonical: str) -> list[d
     collect_with_url = "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith"
     return [
         {
-            "path": "input.type",
+            "path": "input[0].type",
             "expression": {
-                "language": "text/cql-identifier",
-                "expression": "%context.code",
+                "language": "text/fhirpath",
+                "expression": "code",
             },
         },
         {
-            "path": "input.valueCanonical",
+            "path": "input[0].valueCanonical",
             "expression": {
-                "language": "text/cql-identifier",
-                "expression": f"%context.extension.where(url = '{collect_with_url}').value",
+                "language": "text/fhirpath",
+                "expression": f"extension.where(url = '{collect_with_url}').value",
             },
         },
     ]
@@ -1793,6 +2077,13 @@ def _decision_table_action_title(action_def: dict) -> str:
         or action_def.get("id")
         or "Decision table action"
     )
+
+
+def _is_guidance_action(action_def: dict[str, Any] | None) -> bool:
+    """Return whether an L2 action is inline, non-order PlanDefinition guidance."""
+    if not isinstance(action_def, dict):
+        return False
+    return str(action_def.get("kind") or action_def.get("type") or "").strip().lower() == "guidance"
 
 
 def _build_decision_table_activity_definitions(
@@ -1833,6 +2124,10 @@ def _build_decision_table_activity_definitions(
         raw_kind = action_def.get("kind")
         if raw_kind is None:
             raw_kind = action_def.get("type")
+        if _is_guidance_action(action_def):
+            # Guidance remains in the PlanDefinition action tree.  It must not
+            # turn recommendation prose into an ActivityDefinition/order.
+            continue
         kind = _activity_definition_kind(raw_kind)
         description = str(action_def.get("description") or title)
         intent = _activity_definition_intent(action_def.get("intent"))
@@ -1840,12 +2135,10 @@ def _build_decision_table_activity_definitions(
 
         codeable_concept = _resolve_activity_code(action_def, action_id=action_id, title=title)
         if codeable_concept is None:
-            codeable_concept = _resolve_activity_code_from_concepts(
+            codeable_concept = _resolve_activity_code_from_exact_concept_refs(
                 action_def,
                 action_id=action_id,
                 title=title,
-                description=description,
-                kind=kind,
                 concept_candidates=concept_candidates,
             )
 
@@ -1904,32 +2197,43 @@ def _build_decision_table_activity_definitions(
             and isinstance(resolved_assessment_data, dict)
             and _is_assessment_action(action_def)
         ):
-            questionnaire_id = to_kebab_case(resolved_assessment_artifact) or _deterministic_artifact_base_id(
+            _, questionnaire_url, questionnaire_version = _assessment_questionnaire_identity(
                 resolved_assessment_artifact,
-                "assessment",
-                topic,
                 resolved_assessment_data,
+                cfg,
+                topic,
             )
-            questionnaire_canonical = f"{canonical}/Questionnaire/{questionnaire_id}"
+            questionnaire_canonical = f"{questionnaire_url}|{questionnaire_version}"
             template_variant_is_questionnaire = True
             template_context["kind"] = "Task"
             template_context["meta_profile"] = [
                 "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectinformationactivity",
             ]
-            if not template_context.get("code"):
-                template_context["code"] = {
-                    "coding": [{
-                        "system": "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs",
-                        "code": "collect-information",
-                        "display": "Collect information",
-                    }],
-                    "text": title,
-                }
+            template_context["profile"] = (
+                "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-questionnairetask"
+            )
+            # cpg-collectinformationactivity fixes ActivityDefinition.code to
+            # this CPG activity type. Questionnaire item codes remain on the
+            # Questionnaire and must not be substituted here.
+            template_context["code"] = {
+                "coding": [{
+                    "system": "http://hl7.org/fhir/uv/cpg/CodeSystem/cpg-activity-type-cs",
+                    "code": "collect-information",
+                    "display": "Collect information",
+                }],
+                "text": title,
+            }
             template_context["dynamic_value"] = _collect_information_dynamic_values(questionnaire_canonical)
             template_context["extension"] = [{
                 "url": "http://hl7.org/fhir/uv/cpg/StructureDefinition/cpg-collectWith",
                 "valueCanonical": questionnaire_canonical,
             }]
+
+        if not template_variant_is_questionnaire and codeable_concept is None:
+            raise ValueError(
+                f"Decision action '{action_id}' ({kind}) requires an authored code/codings "
+                "or exact approved concept_refs; no title/token code inference is allowed"
+            )
 
         resource = _render_activity_definition_resource(
             template_context,
@@ -1945,7 +2249,7 @@ def _build_decision_table_referenced_actions(
     canonical: str,
     action_index: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Build nested referenced ActivityDefinition actions from a rule's then-ids."""
+    """Build nested action entries; guidance is inline and has no ActivityDefinition."""
     normalized_action_index: dict[str, dict[str, Any]] = {}
     for action_key, action_def in action_index.items():
         if not isinstance(action_def, dict):
@@ -2017,6 +2321,7 @@ def _build_decision_table_referenced_actions(
         entry_id = str(entry.get("id") or "")
         if entry_id:
             ancestor_ids.add(entry_id)
+        action_def = action_for_ref(entry_id)
         children = child_map.get(str(entry.get("id") or ""), [])
         if children:
             child_entries = []
@@ -2030,8 +2335,9 @@ def _build_decision_table_referenced_actions(
             if child_entries:
                 entry["action"] = child_entries
                 return
-            entry["definitionCanonical"] = f"{canonical}/ActivityDefinition/{entry['id']}"
-        else:
+            if not _is_guidance_action(action_def):
+                entry["definitionCanonical"] = f"{canonical}/ActivityDefinition/{entry['id']}"
+        elif not _is_guidance_action(action_def):
             entry["definitionCanonical"] = (
                 f"{canonical}/ActivityDefinition/{entry['id']}"
             )
@@ -2169,7 +2475,12 @@ def _condition_entry_for_id(
         {"when": {condition_id: "Yes"}},
         condition_index,
     )
-    return entries[0] if entries else None
+    if not entries:
+        raise ValueError(
+            f"Care-pathway applicability_condition {condition_id!r} does not reference "
+            "a decision-table condition id"
+        )
+    return entries[0]
 
 
 def _build_pathway_condition_context(
@@ -2183,6 +2494,7 @@ def _build_pathway_condition_context(
     rules = decision_sections.get("rules") or []
     conditions = decision_sections.get("conditions") or []
     applicability = decision_sections.get("applicability") or []
+    events = decision_sections.get("events") or []
     if not isinstance(steps, list):
         steps = []
     if not isinstance(rules, list):
@@ -2198,13 +2510,24 @@ def _build_pathway_condition_context(
         if isinstance(condition, dict) and str(condition.get("id") or "").strip()
     }
     rule_condition_map: dict[str, list[dict[str, Any]]] = {}
+    event_index = {
+        str(event.get("id")): event
+        for event in (events if isinstance(events, list) else [])
+        if isinstance(event, dict) and str(event.get("id") or "").strip()
+    }
     for rule in rules:
         if not isinstance(rule, dict):
             continue
         rule_id = str(rule.get("id") or "").strip()
         if not rule_id:
             continue
-        rule_condition_map[rule_id] = _build_decision_table_rule_conditions(rule, condition_index)
+        event = event_index.get(str(rule.get("event") or "").strip())
+        rule_condition_map[rule_id] = _build_decision_table_rule_conditions(
+            rule,
+            condition_index,
+            event=event,
+            artifact_applicability=applicability,
+        )
 
     step_index = {
         str(step.get("id")): step
@@ -2270,11 +2593,12 @@ def _build_pathway_condition_context(
         placed: list[dict[str, Any]] = []
         if children:
             placed.extend(common_rule_conditions(descendant_rule_refs(step_id)))
+        elif len(direct_refs) == 1:
+            placed.extend(rule_condition_map.get(direct_refs[0], []))
         elif len(direct_refs) > 1:
             placed.extend(common_rule_conditions(direct_refs))
 
-        applicability_id = str(step.get("applicability_condition") or "").strip()
-        if applicability_id:
+        for applicability_id in _step_applicability_refs(step):
             entry = _condition_entry_for_id(applicability_id, condition_index)
             if entry is not None:
                 placed = _merge_action_conditions(placed, [entry])
@@ -2315,6 +2639,21 @@ def _build_pathway_condition_context(
         ancestor_keys_cache[cache_key] = keys
         return keys
 
+    def scope_conditions(step_id: str, *, include_self: bool = True) -> list[dict[str, Any]]:
+        """Return every applicability condition needed to apply this branch alone."""
+        path: list[str] = []
+        current = step_id if include_self else parent_by_step.get(step_id)
+        while current:
+            path.append(current)
+            current = parent_by_step.get(current)
+        merged: list[dict[str, Any]] = []
+        for current_id in reversed(path):
+            merged = _merge_action_conditions(
+                merged,
+                step_conditions.get(current_id, []),
+            )
+        return merged
+
     rule_hoisted_condition_keys: dict[str, set[str]] = defaultdict(set)
     for step_id, step in step_index.items():
         inherited_keys = ancestor_condition_keys(step_id, include_self=True)
@@ -2324,6 +2663,7 @@ def _build_pathway_condition_context(
     return {
         "step_conditions": step_conditions,
         "ancestor_condition_keys": ancestor_condition_keys,
+        "scope_conditions": scope_conditions,
         "rule_hoisted_condition_keys": dict(rule_hoisted_condition_keys),
     }
 
@@ -2361,18 +2701,74 @@ def _apply_pathway_step_conditions(
 def _build_decision_table_rule_conditions(
     rule: dict[str, Any],
     condition_index: dict[str, dict[str, Any]],
+    *,
+    event: dict[str, Any] | None = None,
+    artifact_applicability: list[Any] | None = None,
 ) -> list[dict[str, Any]]:
-    """Build applicability conditions for a single decision-table rule."""
+    """Build rule, event-wide, and artifact-wide CQL conditions for a rule."""
     when_map = rule.get("when") or {}
     condition_entries: list[dict[str, Any]] = []
     if not isinstance(when_map, dict):
-        return condition_entries
+        when_map = {}
 
-    for cond_id, expected in when_map.items():
+    def parse_applicability(entries: Any) -> dict[str, Any]:
+        if entries is None:
+            return {}
+        if not isinstance(entries, list):
+            entries = [entries]
+        result: dict[str, Any] = {}
+        for entry in entries:
+            if isinstance(entry, str):
+                condition_id, expected = entry.strip(), "Yes"
+            elif isinstance(entry, dict):
+                condition_id = str(
+                    entry.get("condition_id") or entry.get("condition") or entry.get("id") or ""
+                ).strip()
+                expected = (
+                    entry.get("value")
+                    if entry.get("value") is not None
+                    else entry.get("expected")
+                    if entry.get("expected") is not None
+                    else entry.get("equals")
+                    if entry.get("equals") is not None
+                    else "Yes"
+                )
+            else:
+                continue
+            if not condition_id:
+                continue
+            previous = result.get(condition_id)
+            if previous is not None and str(previous).strip().lower() != str(expected).strip().lower():
+                raise ValueError(
+                    f"Conflicting applicability values for condition {condition_id!r}"
+                )
+            result[condition_id] = expected
+        return result
+
+    merged_when: dict[str, Any] = {}
+    for mapping in (
+        parse_applicability(artifact_applicability),
+        parse_applicability((event or {}).get("applicability")),
+        when_map,
+    ):
+        for condition_id, expected in mapping.items():
+            previous = merged_when.get(condition_id)
+            if previous is not None and str(previous).strip().lower() != str(expected).strip().lower():
+                raise ValueError(
+                    f"Rule {rule.get('id')!r} conflicts with event or artifact applicability "
+                    f"for condition {condition_id!r}"
+                )
+            merged_when[condition_id] = expected
+
+    for cond_id, expected in merged_when.items():
         normalized_expected = str(expected or "").strip().lower()
         if normalized_expected in {"", "n/a", "na", "*"}:
             continue
         condition = condition_index.get(str(cond_id), {})
+        if not condition:
+            raise ValueError(
+                f"Rule {rule.get('id')!r} references unknown condition id {cond_id!r}"
+            )
         condition_label = str(condition.get("label") or cond_id or "Condition")
 
         cql_name = _generate_polarity_aware_define_name(condition_label, expected)
@@ -2388,6 +2784,117 @@ def _build_decision_table_rule_conditions(
     return condition_entries
 
 
+def _plan_definition_cql_identifiers(actions: Any) -> set[str]:
+    """Collect named CQL identifiers referenced by a nested PlanDefinition action tree."""
+    found: set[str] = set()
+    if not isinstance(actions, list):
+        return found
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        for condition in action.get("condition") or []:
+            if not isinstance(condition, dict):
+                continue
+            expression = condition.get("expression") or {}
+            if (
+                isinstance(expression, dict)
+                and expression.get("language") == "text/cql-identifier"
+                and isinstance(expression.get("expression"), str)
+            ):
+                found.add(expression["expression"].strip())
+        found.update(_plan_definition_cql_identifiers(action.get("action")))
+    return found
+
+
+def _cql_defined_names(source: str) -> set[str]:
+    """Return names declared by CQL define statements, including unquoted identifiers."""
+    quoted = re.findall(r'^\s*define\s+"([^"]+)"\s*:', source, flags=re.MULTILINE | re.IGNORECASE)
+    unquoted = re.findall(r"^\s*define\s+([A-Za-z_][A-Za-z0-9_]*)\s*:", source, flags=re.MULTILINE | re.IGNORECASE)
+    return {name.strip() for name in (*quoted, *unquoted)}
+
+
+def _validate_cql_identifier_links(
+    resources: list[dict[str, Any]],
+    computable_dir: Path,
+) -> list[str]:
+    """Validate generated PlanDefinition CQL identifiers when a matching Library source exists."""
+    libraries: dict[str, dict[str, Any]] = {}
+    for resource in resources:
+        if resource.get("resourceType") == "Library" and resource.get("url"):
+            libraries[str(resource["url"])] = resource
+    for path in sorted(computable_dir.glob("Library-*.json")):
+        try:
+            resource = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if resource.get("resourceType") == "Library" and resource.get("url"):
+            libraries.setdefault(str(resource["url"]), resource)
+
+    cql_files = sorted(computable_dir.glob("*.cql"))
+    warnings: list[str] = []
+    for plan in (resource for resource in resources if resource.get("resourceType") == "PlanDefinition"):
+        identifiers = _plan_definition_cql_identifiers(plan.get("action"))
+        if not identifiers:
+            continue
+        library_refs = plan.get("library") or []
+        if not isinstance(library_refs, list) or not library_refs:
+            raise ValueError(
+                f"PlanDefinition/{plan.get('id')} references CQL identifiers {sorted(identifiers)} "
+                "but does not declare a Library"
+            )
+        available_names: set[str] = set()
+        unresolved_libraries: list[str] = []
+        for reference in library_refs:
+            canonical = str(reference).split("|", 1)[0]
+            library = libraries.get(canonical)
+            if not isinstance(library, dict):
+                unresolved_libraries.append(canonical)
+                continue
+            source = None
+            for content in library.get("content") or []:
+                if not isinstance(content, dict) or content.get("contentType") != "text/cql":
+                    continue
+                try:
+                    source = base64.b64decode(content.get("data") or "", validate=True).decode("utf-8")
+                except (ValueError, UnicodeDecodeError):
+                    source = None
+                if source:
+                    break
+            if source is None:
+                lib_name = str(library.get("name") or "")
+                cql_file = next(
+                    (path for path in cql_files if path.stem == lib_name),
+                    None,
+                )
+                if cql_file is None:
+                    kebab_name = to_kebab_case(lib_name)
+                    cql_file = next(
+                        (path for path in cql_files if to_kebab_case(path.stem) == kebab_name),
+                        None,
+                    )
+                if cql_file is None and len(cql_files) == 1:
+                    cql_file = cql_files[0]
+                if cql_file is not None:
+                    source = cql_file.read_text()
+            if source is None:
+                unresolved_libraries.append(canonical)
+                continue
+            available_names.update(_cql_defined_names(source))
+        if unresolved_libraries:
+            warnings.append(
+                f"PlanDefinition/{plan.get('id')} CQL identifiers could not be linked because "
+                f"Library source was unavailable: {', '.join(unresolved_libraries)}"
+            )
+            continue
+        missing = identifiers - available_names
+        if missing:
+            raise ValueError(
+                f"PlanDefinition/{plan.get('id')} references CQL identifiers not declared "
+                f"by its Library: {', '.join(sorted(missing))}"
+            )
+    return warnings
+
+
 def _build_decision_table_rule_plan_actions(
     rule: dict[str, Any],
     event: dict[str, Any] | None,
@@ -2398,6 +2905,7 @@ def _build_decision_table_rule_plan_actions(
     *,
     fallback_name: str,
     hoisted_condition_keys: set[str] | None = None,
+    artifact_applicability: list[Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Build the action tree for a single rule-level recommendation PlanDefinition."""
     then_ids = rule.get("then") or []
@@ -2407,7 +2915,12 @@ def _build_decision_table_rule_plan_actions(
         else []
     )
     condition_entries = _filter_conditions(
-        _build_decision_table_rule_conditions(rule, condition_index),
+        _build_decision_table_rule_conditions(
+            rule,
+            condition_index,
+            event=event,
+            artifact_applicability=artifact_applicability,
+        ),
         hoisted_condition_keys or set(),
     )
     if len(child_actions) == 1:
@@ -2487,6 +3000,7 @@ def _build_decision_table_plan_actions(
     conditions = sections.get("conditions") or []
     actions = sections.get("actions") or []
     rules = sections.get("rules") or []
+    artifact_applicability = sections.get("applicability") or []
 
     event_index = {
         str(event.get("id")): event
@@ -2520,6 +3034,7 @@ def _build_decision_table_plan_actions(
                 evidence_claim_index,
                 fallback_name=f"rule-{idx}",
                 hoisted_condition_keys=(rule_hoisted_condition_keys or {}).get(str(rule.get("id") or "").strip(), set()),
+                artifact_applicability=artifact_applicability,
             )
             if rule_plan_actions:
                 plan_actions.extend(rule_plan_actions)
@@ -2547,6 +3062,7 @@ def _build_decision_table_stub_plan_definitions(
     conditions = sections.get("conditions") or []
     actions = sections.get("actions") or []
     rules = sections.get("rules") or []
+    artifact_applicability = sections.get("applicability") or []
     today = today_date()
     version = cfg["version"]
     status = cfg["status"]
@@ -2596,6 +3112,7 @@ def _build_decision_table_stub_plan_definitions(
             evidence_claim_index,
             fallback_name=f"rule-{idx}",
             hoisted_condition_keys=(rule_hoisted_condition_keys or {}).get(str(rule.get("id") or "").strip(), set()),
+            artifact_applicability=artifact_applicability,
         )
         child_title = (
             str(child_actions[0].get("title") or "").strip()
@@ -2618,7 +3135,7 @@ def _build_decision_table_stub_plan_definitions(
                 "name": _pascal_from_kebab(child_id),
                 "title": child_title or str((event or {}).get("label") or rule.get("id") or child_id),
                 "description": child_description,
-                "meta_profile": _plan_definition_meta_profiles("recommendation"),
+                "meta_profile": _cpg_plan_profile_for_actions("recommendation", child_actions),
                 "type": _plan_definition_type("eca-rule"),
                 "library": [library_canonical],
                 "action": child_actions or [{
@@ -2629,12 +3146,24 @@ def _build_decision_table_stub_plan_definitions(
             child_event_plan=True,
         )
         child_resources.append(child_plan)
-        root_actions.append({
+        root_action: dict[str, Any] = {
             "id": suffix,
             "title": str(child_plan.get("title") or child_id),
             "description": child_description,
             "definitionCanonical": f"{canonical}/PlanDefinition/{child_id}",
-        })
+        }
+        # The root PlanDefinition is commonly previewed directly. Keep the
+        # same rule and population conditions here as on the child plan so an
+        # inapplicable recommendation is not shown as an unconditional link.
+        root_conditions = _build_decision_table_rule_conditions(
+            rule,
+            condition_index,
+            event=event if isinstance(event, dict) else None,
+            artifact_applicability=artifact_applicability,
+        )
+        if root_conditions:
+            root_action["condition"] = root_conditions
+        root_actions.append(root_action)
 
     return root_actions, child_resources
 
@@ -2680,9 +3209,9 @@ def _build_care_pathway_stub_plan_definitions(
     l2_data: dict | None,
     evidence_claim_index: dict[str, dict[str, Any]] | None = None,
     recommendation_plan_map: dict[str, str] | None = None,
-    recommendation_candidates: list[dict[str, Any]] | None = None,
     action_reference_map: dict[str, list[dict[str, Any]]] | None = None,
     pathway_condition_context: dict[str, Any] | None = None,
+    library_canonical: str | None = None,
 ) -> tuple[list[dict], dict[str, str]]:
     """Build scaffold child PlanDefinitions for likely care-pathway strategy/group nodes."""
     sections = (l2_data or {}).get("sections") or {}
@@ -2776,18 +3305,14 @@ def _build_care_pathway_stub_plan_definitions(
                     child_actions.extend(build_subtree(child, child_inherited_condition_keys))
             action["action"] = child_actions
         else:
-            exact_ref = (recommendation_plan_map or {}).get(step_id)
             recommendation_refs = _resolve_recommendation_references(
                 step,
                 recommendation_plan_map or {},
-                recommendation_candidates or [],
             )
-            if exact_ref and exact_ref not in recommendation_refs:
-                recommendation_refs = [exact_ref, *recommendation_refs]
             action_ref = _resolve_action_reference(step, action_reference_map or {})
             available_refs = [
                 ref for ref in recommendation_refs
-                if ref == exact_ref or ref not in used_recommendation_refs
+                if ref not in used_recommendation_refs
             ]
             if len(available_refs) > 1:
                 grouped_actions = []
@@ -2819,9 +3344,36 @@ def _build_care_pathway_stub_plan_definitions(
         """Start child PlanDefinitions at the first unique descendant action."""
         step_id = str(step.get("id") or "pathway-step")
         children = [child for child in child_map.get(step_id, []) if isinstance(child, dict)]
-        inherited_condition_keys = inherited_keys_for_step(step_id, include_self=True)
+        inherited_condition_keys = inherited_keys_for_step(step_id, include_self=False)
+        scope_condition_resolver = (pathway_condition_context or {}).get("scope_conditions")
         if not children:
-            return build_subtree(step, inherited_condition_keys)
+            branch_actions = build_subtree(step, inherited_condition_keys)
+            branch_conditions = (
+                scope_condition_resolver(step_id)
+                if callable(scope_condition_resolver)
+                else _conditions_for_pathway_step_action(
+                    pathway_condition_context,
+                    step_id,
+                    inherited_condition_keys,
+                )
+            )
+            for branch_action in branch_actions:
+                branch_action["condition"] = _merge_action_conditions(
+                    branch_action.get("condition") or [],
+                    branch_conditions,
+                )
+            return branch_actions
+
+        branch_conditions = (
+            scope_condition_resolver(step_id)
+            if callable(scope_condition_resolver)
+            else _conditions_for_pathway_step_action(
+                pathway_condition_context,
+                step_id,
+                inherited_condition_keys,
+            )
+        )
+        child_inherited_condition_keys = inherited_condition_keys | _condition_keys(branch_conditions)
 
         branch_actions: list[dict] = []
         for child in children:
@@ -2848,11 +3400,19 @@ def _build_care_pathway_stub_plan_definitions(
                     child_action,
                     pathway_condition_context,
                     child_step_id,
-                    inherited_condition_keys,
+                    child_inherited_condition_keys,
                 )
                 branch_actions.append(child_action)
             else:
-                branch_actions.extend(build_subtree(child, inherited_condition_keys))
+                branch_actions.extend(build_subtree(child, child_inherited_condition_keys))
+        # A child PlanDefinition can be selected and applied independently in a
+        # preview. Keep the branch's own applicability inside that resource as
+        # well as on its parent reference so direct application cannot bypass it.
+        for branch_action in branch_actions:
+            branch_action["condition"] = _merge_action_conditions(
+                branch_action.get("condition") or [],
+                branch_conditions,
+            )
         return branch_actions
 
     resources: list[dict] = []
@@ -2863,6 +3423,7 @@ def _build_care_pathway_stub_plan_definitions(
         title = str(step.get("label") or step.get("title") or step_id)
         description = str(step.get("description") or title)
         branch_plan_map[str(step.get("id") or step_id)] = f"{canonical}/PlanDefinition/{child_id}"
+        branch_actions = build_branch_actions(step)
         resource = {
             "id": child_id,
             "url": f"{canonical}/PlanDefinition/{child_id}",
@@ -2872,10 +3433,12 @@ def _build_care_pathway_stub_plan_definitions(
             "name": _pascal_from_kebab(child_id),
             "title": title,
             "description": description,
-            "meta_profile": _plan_definition_meta_profiles("strategy"),
+            "meta_profile": _cpg_plan_profile_for_actions("strategy", branch_actions),
             "type": _plan_definition_type("workflow-definition"),
-            "action": build_branch_actions(step),
+            "action": branch_actions,
         }
+        if library_canonical:
+            resource["library"] = [library_canonical]
         resources.append(
             _render_care_pathway_plan_definition_resource(
                 resource,
@@ -3163,24 +3726,191 @@ def _normalize_legacy_system(system: str) -> str:
 
 
 def _group_value_set_codings(codings: list[dict]) -> list[dict]:
-    grouped: dict[str, dict] = {}
-    seen: set[tuple[str, str]] = set()
+    grouped: dict[tuple[str, str], dict] = {}
+    seen: set[tuple[str, str, str]] = set()
     for coding in codings:
         system = (coding.get("system") or "").strip()
+        version = (coding.get("version") or "").strip()
         code = (coding.get("code") or "").strip()
         if not system or not code:
             continue
-        key = (system.casefold(), code.casefold())
+        key = (system.casefold(), version, code.casefold())
         if key in seen:
             continue
         seen.add(key)
-        include = grouped.setdefault(system, {"system": system, "concept": []})
+        include = grouped.setdefault((system, version), {"system": system, "concept": []})
+        if version:
+            include["version"] = version
         concept_entry = {"code": code}
         display = (coding.get("display") or "").strip()
         if display:
             concept_entry["display"] = display
         include["concept"].append(concept_entry)
     return list(grouped.values())
+
+
+def _canonical_json_sha256(value: Any) -> str:
+    canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+_EXPANSION_PARAMETER_VALUE_FIELDS = {
+    "valueString": str,
+    "valueUri": str,
+    "valueCode": str,
+    "valueBoolean": bool,
+    "valueInteger": int,
+    "valueDecimal": (int, float),
+    "valueDateTime": str,
+}
+
+
+def _validate_expansion_parameters(
+    response: dict[str, Any],
+    expected_membership: dict[tuple[str, str, str], str | None],
+) -> None:
+    """Fail closed on supported ``ValueSet.expansion.parameter`` shapes.
+
+    The complete expansion response remains provenance supplied by its source.
+    FHIR permits a name-only parameter. The one local semantic parameter we
+    interpret, ``used-codesystem``, must pin a canonical/version from compose.
+    """
+    parameters = response.get("parameter")
+    if parameters is None:
+        return
+    if not isinstance(parameters, list):
+        raise ValueError("ValueSet expansion response parameter must be an array")
+
+    expected_system_versions = {(system, version) for system, version, _ in expected_membership}
+    for index, parameter in enumerate(parameters):
+        if not isinstance(parameter, dict):
+            raise ValueError(f"ValueSet expansion parameter[{index}] must be an object")
+        name = parameter.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"ValueSet expansion parameter[{index}] requires a non-empty name")
+        value_fields = [field for field in parameter if field in _EXPANSION_PARAMETER_VALUE_FIELDS]
+        if set(parameter) != {"name", *value_fields} or len(value_fields) > 1:
+            raise ValueError(
+                f"ValueSet expansion parameter[{index}] permits at most one supported value[x]"
+            )
+        if not value_fields:
+            if name == "used-codesystem":
+                raise ValueError(
+                    f"ValueSet expansion parameter[{index}] used-codesystem requires valueUri canonical|version"
+                )
+            continue
+        value_field = value_fields[0]
+        value = parameter[value_field]
+        expected_type = _EXPANSION_PARAMETER_VALUE_FIELDS[value_field]
+        if (
+            not isinstance(value, expected_type)
+            or isinstance(value, bool) and value_field in {"valueInteger", "valueDecimal"}
+            or isinstance(value, str) and not value.strip()
+            or value_field == "valueDecimal" and isinstance(value, float) and not math.isfinite(value)
+        ):
+            raise ValueError(
+                f"ValueSet expansion parameter[{index}].{value_field} has an invalid value"
+            )
+        if name == "used-codesystem":
+            if value_field != "valueUri" or value.count("|") != 1:
+                raise ValueError(
+                    f"ValueSet expansion parameter[{index}] used-codesystem requires valueUri canonical|version"
+                )
+            system, version = value.split("|", 1)
+            if not system or not version or (system, version) not in expected_system_versions:
+                raise ValueError(
+                    f"ValueSet expansion parameter[{index}] used-codesystem does not match pinned compose"
+                )
+
+
+def _verified_value_set_expansion(value_set: dict[str, Any], compose: dict[str, Any]) -> dict[str, Any] | None:
+    """Validate imported terminology-tool expansion evidence and return its FHIR element."""
+    imported = value_set.get("expansion")
+    if imported is None:
+        return None
+    if not isinstance(imported, dict):
+        raise ValueError("ValueSet expansion must be an object with source, requested_compose, and response")
+
+    source = imported.get("source")
+    if not isinstance(source, dict):
+        raise ValueError("ValueSet expansion requires source provenance")
+    for field in ("provider", "reference", "response_timestamp", "response_sha256"):
+        if not isinstance(source.get(field), str) or not source[field].strip():
+            raise ValueError(f"ValueSet expansion source requires non-empty {field}")
+
+    requested_compose = imported.get("requested_compose")
+    if not isinstance(requested_compose, dict):
+        raise ValueError("ValueSet expansion requires requested_compose")
+    if _canonical_json_sha256(requested_compose) != _canonical_json_sha256(compose):
+        raise ValueError("ValueSet expansion requested_compose does not match generated compose")
+
+    response = imported.get("response")
+    if not isinstance(response, dict):
+        raise ValueError("ValueSet expansion requires a response object")
+    if not isinstance(response.get("timestamp"), str) or not response["timestamp"].strip():
+        raise ValueError("ValueSet expansion response requires timestamp")
+    if response["timestamp"] != source["response_timestamp"]:
+        raise ValueError("ValueSet expansion response timestamp does not match provenance")
+    if source["response_sha256"].lower() != _canonical_json_sha256(response):
+        raise ValueError("ValueSet expansion response hash does not match response payload")
+
+    expected_membership: dict[tuple[str, str, str], str | None] = {}
+    includes = compose.get("include")
+    if not isinstance(includes, list) or not includes:
+        raise ValueError("Verified ValueSet expansion requires explicit compose.include concepts")
+    for include_index, include in enumerate(includes):
+        if not isinstance(include, dict):
+            raise ValueError(f"ValueSet compose.include[{include_index}] must be an object")
+        system = include.get("system")
+        version = include.get("version")
+        concepts = include.get("concept")
+        if not isinstance(system, str) or not system.strip():
+            raise ValueError(f"ValueSet compose.include[{include_index}] requires system")
+        if not isinstance(version, str) or not version.strip():
+            raise ValueError(f"ValueSet compose.include[{include_index}] requires a pinned version")
+        if not isinstance(concepts, list) or not concepts:
+            raise ValueError(f"ValueSet compose.include[{include_index}] requires explicit concepts")
+        for concept_index, concept in enumerate(concepts):
+            if not isinstance(concept, dict) or not isinstance(concept.get("code"), str) or not concept["code"].strip():
+                raise ValueError(
+                    f"ValueSet compose.include[{include_index}].concept[{concept_index}] requires code"
+                )
+            key = (system, version, concept["code"])
+            if key in expected_membership:
+                raise ValueError(f"ValueSet compose has duplicate membership {system}|{version}#{concept['code']}")
+            display = concept.get("display")
+            expected_membership[key] = display if isinstance(display, str) else None
+
+    _validate_expansion_parameters(response, expected_membership)
+
+    contains = response.get("contains")
+    if not isinstance(contains, list):
+        raise ValueError("ValueSet expansion response requires contains array")
+    if not isinstance(response.get("total"), int) or isinstance(response.get("total"), bool):
+        raise ValueError("ValueSet expansion response total must be an integer")
+
+    actual_membership: dict[tuple[str, str, str], str | None] = {}
+    for index, entry in enumerate(contains):
+        if not isinstance(entry, dict):
+            raise ValueError(f"ValueSet expansion contains[{index}] must be an object")
+        system, version, code = entry.get("system"), entry.get("version"), entry.get("code")
+        if not all(isinstance(item, str) and item.strip() for item in (system, version, code)):
+            raise ValueError(f"ValueSet expansion contains[{index}] requires system, version, and code")
+        key = (system, version, code)
+        if key in actual_membership:
+            raise ValueError(f"ValueSet expansion has duplicate membership {system}|{version}#{code}")
+        display = entry.get("display")
+        actual_membership[key] = display if isinstance(display, str) else None
+
+    if actual_membership.keys() != expected_membership.keys():
+        raise ValueError("ValueSet expansion membership does not match requested pinned compose")
+    for key, expected_display in expected_membership.items():
+        actual_display = actual_membership[key]
+        if expected_display is not None and actual_display != expected_display:
+            raise ValueError(f"ValueSet expansion display does not match requested compose for {key[0]}|{key[1]}#{key[2]}")
+    if response["total"] != len(actual_membership):
+        raise ValueError("ValueSet expansion total does not match unique contains membership")
+    return response
 
 
 def _build_terminology_stub_resources(
@@ -3204,7 +3934,147 @@ def _build_terminology_stub_resources(
     resources: list[dict] = []
     used_ids: defaultdict[str, int] = defaultdict(int)
 
-    if not isinstance(value_sets, list) or not value_sets:
+    # A local code system must be a complete, authored terminology definition.
+    # Do not synthesize one from a ValueSet: a ValueSet selects codes, while a
+    # CodeSystem defines them and must retain its own canonical/version.
+    code_systems = sections.get("code_systems")
+    if code_systems is not None and not isinstance(code_systems, list):
+        raise ValueError("sections.code_systems must be an array when provided")
+
+    code_system_ids: set[str] = set()
+    code_system_identities: set[tuple[str, str]] = set()
+    for index, code_system in enumerate(code_systems or [], start=1):
+        if not isinstance(code_system, dict):
+            raise ValueError(f"sections.code_systems[{index - 1}] must be an object")
+
+        allowed_fields = {
+            "id", "url", "version", "name", "title", "status", "content",
+            "case_sensitive", "concepts",
+        }
+        unknown_fields = set(code_system) - allowed_fields
+        if unknown_fields:
+            raise ValueError(
+                "sections.code_systems[{}] has unsupported field(s): {}".format(
+                    index - 1,
+                    ", ".join(sorted(unknown_fields)),
+                )
+            )
+
+        def required_string(field: str) -> str:
+            value = code_system.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(
+                    f"sections.code_systems[{index - 1}].{field} must be a non-empty string"
+                )
+            return value.strip()
+
+        code_system_id = required_string("id")
+        code_system_url = required_string("url")
+        code_system_version = required_string("version")
+        if not _FHIR_ID_RE.fullmatch(code_system_id):
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].id must be a valid FHIR id "
+                "([A-Za-z0-9\\-.]{1,64})"
+            )
+        if code_system_id in code_system_ids:
+            raise ValueError(f"sections.code_systems has duplicate id {code_system_id!r}")
+        identity = (code_system_url, code_system_version)
+        if identity in code_system_identities:
+            raise ValueError(
+                "sections.code_systems has duplicate canonical/version "
+                f"{code_system_url}|{code_system_version}"
+            )
+        code_system_ids.add(code_system_id)
+        code_system_identities.add(identity)
+
+        if code_system.get("content") != "complete":
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].content must be complete"
+            )
+        if not isinstance(code_system.get("case_sensitive"), bool):
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].case_sensitive must be boolean"
+            )
+        for field in ("name", "title", "status"):
+            if field in code_system and (
+                not isinstance(code_system[field], str) or not code_system[field].strip()
+            ):
+                raise ValueError(
+                    f"sections.code_systems[{index - 1}].{field} must be a non-empty string"
+                )
+        code_system_status = str(code_system.get("status") or status).strip()
+        if code_system_status not in _PUBLICATION_STATUS_VALUES:
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].status must be a valid publication status"
+            )
+        concepts = code_system.get("concepts")
+        if not isinstance(concepts, list) or not concepts:
+            raise ValueError(
+                f"sections.code_systems[{index - 1}].concepts must be a non-empty array"
+            )
+
+        fhir_concepts: list[dict[str, str]] = []
+        concept_codes: set[str] = set()
+        for concept_index, concept in enumerate(concepts):
+            if not isinstance(concept, dict):
+                raise ValueError(
+                    f"sections.code_systems[{index - 1}].concepts[{concept_index}] must be an object"
+                )
+            unknown_concept_fields = set(concept) - {"code", "display", "definition"}
+            if unknown_concept_fields:
+                raise ValueError(
+                    "sections.code_systems[{}].concepts[{}] has unsupported field(s): {}".format(
+                        index - 1,
+                        concept_index,
+                        ", ".join(sorted(unknown_concept_fields)),
+                    )
+                )
+            normalized_concept: dict[str, str] = {}
+            for field in ("code", "display", "definition"):
+                value = concept.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(
+                        "sections.code_systems[{}].concepts[{}].{} must be a non-empty string".format(
+                            index - 1,
+                            concept_index,
+                            field,
+                        )
+                    )
+                normalized_concept[field] = value.strip()
+            uniqueness_key = (
+                normalized_concept["code"]
+                if code_system["case_sensitive"]
+                else normalized_concept["code"].casefold()
+            )
+            if uniqueness_key in concept_codes:
+                raise ValueError(
+                    "sections.code_systems[{}].concepts has duplicate code {!r}".format(
+                        index - 1,
+                        normalized_concept["code"],
+                    )
+                )
+            concept_codes.add(uniqueness_key)
+            fhir_concepts.append(normalized_concept)
+
+        resource = {
+            "resourceType": "CodeSystem",
+            "id": code_system_id,
+            "url": code_system_url,
+            "version": code_system_version,
+            "status": code_system_status,
+            "content": "complete",
+            "caseSensitive": code_system["case_sensitive"],
+            "name": str(code_system.get("name") or _pascal_from_kebab(code_system_id)).strip(),
+            "title": str(
+                code_system.get("title") or code_system_id.replace("-", " ").title()
+            ).strip(),
+            "concept": fhir_concepts,
+        }
+        resources.append(resource)
+
+    if not isinstance(value_sets, list):
+        value_sets = []
+    if not value_sets and not code_systems:
         value_sets = [{"id": artifact_name, "name": artifact_name}]
 
     for idx, value_set in enumerate(value_sets, start=1):
@@ -3219,15 +4089,17 @@ def _build_terminology_stub_resources(
         codings: list[dict] = []
 
         default_system = _normalize_legacy_system(str(value_set.get("system") or "").strip())
+        default_version = str(value_set.get("version") or "").strip()
         for entry in value_set.get("codes") or []:
             if isinstance(entry, dict):
                 codings.append({
                     "system": _normalize_legacy_system(str(entry.get("system") or default_system)),
+                    "version": str(entry.get("version") or default_version),
                     "code": str(entry.get("code") or ""),
                     "display": str(entry.get("display") or ""),
                 })
             elif isinstance(entry, str):
-                codings.append({"system": default_system, "code": entry, "display": ""})
+                codings.append({"system": default_system, "version": default_version, "code": entry, "display": ""})
 
         for concept_ref in value_set.get("concept_refs") or []:
             concept = concept_index.get(str(concept_ref).strip())
@@ -3237,6 +4109,7 @@ def _build_terminology_stub_resources(
                 if isinstance(entry, dict):
                     codings.append({
                         "system": _normalize_legacy_system(str(entry.get("system") or "")),
+                        "version": str(entry.get("version") or default_version),
                         "code": str(entry.get("code") or ""),
                         "display": str(entry.get("display") or ""),
                     })
@@ -3244,6 +4117,7 @@ def _build_terminology_stub_resources(
                 if isinstance(expansion, dict):
                     codings.append({
                         "system": _normalize_legacy_system(str(expansion.get("system") or default_system)),
+                        "version": str(expansion.get("version") or default_version),
                         "code": str(expansion.get("code") or ""),
                         "display": "",
                     })
@@ -3254,8 +4128,9 @@ def _build_terminology_stub_resources(
             system = _normalize_legacy_system(str(concept.get("system") or default_system))
             code = str(concept.get("code") or "").strip()
             display = str(concept.get("display") or concept.get("term") or "").strip()
+            concept_version = str(concept.get("version") or default_version).strip()
             if code:
-                codings.append({"system": system, "code": code, "display": display})
+                codings.append({"system": system, "version": concept_version, "code": code, "display": display})
             elif display:
                 codings.append({
                     "system": system or "http://snomed.info/sct",
@@ -3270,7 +4145,7 @@ def _build_terminology_stub_resources(
                 "concept": [{"code": "TODO:MCP-UNREACHABLE"}],
             }]
 
-        resources.append({
+        resource = {
             "resourceType": "ValueSet",
             "id": vs_id,
             "url": f"{canonical}/ValueSet/{vs_id}",
@@ -3280,7 +4155,11 @@ def _build_terminology_stub_resources(
             "name": _pascal_from_kebab(vs_id),
             "title": vs_name or artifact_name.replace("-", " ").title(),
             "compose": {"include": includes},
-        })
+        }
+        verified_expansion = _verified_value_set_expansion(value_set, resource["compose"])
+        if verified_expansion is not None:
+            resource["expansion"] = verified_expansion
+        resources.append(resource)
 
     concept_maps = sections.get("concept_maps") or sections.get("concept_mappings") or []
     if isinstance(concept_maps, list):
@@ -3333,6 +4212,11 @@ def _build_stub_resources(
 
     resources = []
     evidence_claim_index = _build_evidence_claim_index(l2_data)
+    source_title = str(
+        (l2_data or {}).get("title")
+        or (l2_data or {}).get("name")
+        or artifact_name.replace("-", " ").title()
+    )
 
     # Primary resource
     child_plan_definitions: list[dict] = []
@@ -3344,7 +4228,7 @@ def _build_stub_resources(
         "status": status,
         "date": today,
         "name": _pascal_from_kebab(resource_id),
-        "title": artifact_name.replace("-", " ").title(),
+        "title": source_title,
     }
 
     # Add type-specific required fields for stubs
@@ -3355,20 +4239,12 @@ def _build_stub_resources(
             lib_id = _deterministic_library_id(resource_id)
             primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
         if artifact_type == "decision-table" and l2_data:
-            related_care_pathway_data = None
-            if topic_entry is not None:
-                _, related_care_pathway_data = _resolve_related_care_pathway(topic, topic_entry, l2_data)
-            pathway_condition_context = _build_pathway_condition_context(
-                related_care_pathway_data,
-                l2_data,
-            ) if related_care_pathway_data else {}
             root_actions, child_plan_definitions = _build_decision_table_stub_plan_definitions(
                 resource_id,
                 canonical,
                 cfg,
                 l2_data,
                 evidence_claim_index,
-                rule_hoisted_condition_keys=pathway_condition_context.get("rule_hoisted_condition_keys", {}),
             )
             primary_resource = _render_decision_table_plan_definition_resource(
                 {
@@ -3378,8 +4254,10 @@ def _build_stub_resources(
                     "status": status,
                     "date": today,
                     "name": _pascal_from_kebab(resource_id),
-                    "title": artifact_name.replace("-", " ").title(),
-                    "meta_profile": _plan_definition_meta_profiles("recommendation"),
+                    "title": source_title,
+                    # The generated action tree has no authored CPG common-process
+                    # codes, so it must remain base R4 rather than claim CPG conformance.
+                    "meta_profile": [],
                     "type": _plan_definition_type(plan_type),
                     "library": [f"{canonical}/Library/{_deterministic_library_id(resource_id)}"],
                     "action": root_actions or _build_decision_table_plan_actions(
@@ -3387,7 +4265,6 @@ def _build_stub_resources(
                         canonical,
                         l2_data,
                         evidence_claim_index,
-                        rule_hoisted_condition_keys=pathway_condition_context.get("rule_hoisted_condition_keys", {}),
                     ),
                 },
             )
@@ -3410,16 +4287,21 @@ def _build_stub_resources(
                 canonical,
                 decision_table_data,
             )
-            recommendation_candidates = _build_decision_table_reference_candidates(
-                canonical,
-                topic,
-                decision_table_name or "decision-table",
-                decision_table_data,
-            )
             pathway_condition_context = _build_pathway_condition_context(
                 l2_data,
                 decision_table_data,
             ) if decision_table_data else {}
+            related_library_canonical = None
+            if decision_table_name and decision_table_data:
+                decision_table_base_id = _deterministic_artifact_base_id(
+                    decision_table_name,
+                    "decision-table",
+                    topic,
+                    decision_table_data,
+                )
+                related_library_canonical = (
+                    f"{canonical}/Library/{_deterministic_library_id(decision_table_base_id)}"
+                )
             child_plan_definitions, branch_plan_map = _build_care_pathway_stub_plan_definitions(
                 resource_id,
                 canonical,
@@ -3427,9 +4309,9 @@ def _build_stub_resources(
                 l2_data,
                 evidence_claim_index,
                 recommendation_plan_map=recommendation_plan_map,
-                recommendation_candidates=recommendation_candidates,
                 action_reference_map=action_reference_map,
                 pathway_condition_context=pathway_condition_context,
+                library_canonical=related_library_canonical,
             )
             root_branch_plan_map = branch_plan_map if _care_pathway_has_hierarchy(l2_data or {}) else {}
             primary_resource = _render_care_pathway_plan_definition_resource(
@@ -3440,9 +4322,12 @@ def _build_stub_resources(
                     "status": status,
                     "date": today,
                     "name": _pascal_from_kebab(resource_id),
-                    "title": artifact_name.replace("-", " ").title(),
-                    "meta_profile": _plan_definition_meta_profiles("pathway"),
+                    "title": source_title,
+                    # Preserve authored transition semantics; cpg-pathwaydefinition
+                    # forbids relatedAction, so do not claim that profile here.
+                    "meta_profile": [],
                     "type": _plan_definition_type(plan_type),
+                    **({"library": [related_library_canonical]} if related_library_canonical else {}),
                     "action": _build_care_pathway_actions(
                         artifact_name,
                         canonical,
@@ -3450,7 +4335,6 @@ def _build_stub_resources(
                         evidence_claim_index=evidence_claim_index,
                         branch_plan_map=root_branch_plan_map,
                         recommendation_plan_map=recommendation_plan_map,
-                        recommendation_candidates=recommendation_candidates,
                         action_reference_map=action_reference_map,
                         pathway_condition_context=pathway_condition_context,
                     ),
@@ -3459,38 +4343,24 @@ def _build_stub_resources(
         else:
             primary_resource["action"] = [{"title": "Initial action", "description": "Stub action"}]
     elif primary == "Measure":
-        primary_resource["scoring"] = {"coding": [{"code": "proportion"}]}
+        primary_resource["scoring"] = {"coding": [{
+            "system": "http://terminology.hl7.org/CodeSystem/measure-scoring",
+            "code": "proportion",
+        }]}
         primary_resource["group"] = [{
-            "population": [
-                {"code": {"coding": [{"code": "numerator"}]}, "criteria": {"language": "text/cql-identifier", "expression": "Numerator"}},
-                {"code": {"coding": [{"code": "denominator"}]}, "criteria": {"language": "text/cql-identifier", "expression": "Denominator"}},
-            ],
+            "population": _build_measure_populations(l2_data or {}),
         }]
         # Populate Measure.library with the canonical URL of the companion Library
         if "Library" in supporting:
             lib_id = f"{resource_id}-measure"
             primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
     elif primary == "Questionnaire":
-        primary_resource = _render_questionnaire_resource(
-            {
-                "id": resource_id,
-                "url": f"{canonical}/{primary}/{resource_id}",
-                "version": version,
-                "status": status,
-                "date": today,
-                "name": _pascal_from_kebab(resource_id),
-                "title": artifact_name.replace("-", " ").title(),
-                "description": str(
-                    (l2_data or {}).get("description")
-                    or artifact_name.replace("-", " ").title()
-                ),
-                "item": _build_questionnaire_items(artifact_name, l2_data),
-            }
-        )
+        primary_resource = _build_questionnaire_resource(topic, artifact_name, l2_data or {}, cfg)
     elif primary == "ValueSet":
         primary_resource["compose"] = {"include": [{"system": "http://snomed.info/sct", "concept": [{"code": "TODO:PLACEHOLDER"}]}]}
     elif primary == "Evidence":
-        primary_resource["certainty"] = [{"rating": {"coding": [{"code": "moderate"}]}}]
+        # Do not fabricate an R4 certainty rating when L2 has no traceable,
+        # coded appraisal to support it.
         primary_resource["exposureBackground"] = {
             "reference": f"EvidenceVariable/{resource_id}-evidencevariable"
         }
@@ -3566,7 +4436,10 @@ def _build_stub_resources(
         }
         # Required fields for stubs
         if sup_type == "Library":
-            sup_resource["type"] = {"coding": [{"code": "logic-library"}]}
+            sup_resource["type"] = {"coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/library-type",
+                "code": "logic-library",
+            }]}
         elif sup_type == "EvidenceVariable":
             sup_resource["characteristic"] = _build_evidence_variable_characteristics(artifact_type, l2_data)
         elif sup_type == "ActivityDefinition":
@@ -3599,6 +4472,63 @@ def _build_stub_resources(
         resources.append(sup_resource)
 
     return resources
+
+
+_MEASURE_POPULATION_CODES = {
+    "initial-population": "Initial Population",
+    "numerator": "Numerator",
+    "numerator-exclusion": "Numerator Exclusion",
+    "denominator": "Denominator",
+    "denominator-exclusion": "Denominator Exclusion",
+    "denominator-exception": "Denominator Exception",
+    "measure-population": "Measure Population",
+    "measure-population-exclusion": "Measure Population Exclusion",
+    "measure-score": "Measure Score",
+}
+
+
+def _build_measure_populations(l2_data: dict) -> list[dict]:
+    """Map every authored L2 measure population to its R4 criteria entry."""
+    sections = l2_data.get("sections") or {}
+    populations = sections.get("populations")
+    if not isinstance(populations, list) or not populations:
+        raise ValueError("Measure formalization requires authored sections.populations[]")
+
+    entries: list[dict] = []
+    seen_ids: set[str] = set()
+    for index, population in enumerate(populations, start=1):
+        if not isinstance(population, dict):
+            raise ValueError(f"Measure population {index} must be an object")
+        population_id = population.get("id")
+        population_type = population.get("type")
+        if not isinstance(population_id, str) or not population_id.strip():
+            raise ValueError(f"Measure population {index} requires a non-empty id")
+        if population_id in seen_ids:
+            raise ValueError(f"Duplicate Measure population id: {population_id}")
+        seen_ids.add(population_id)
+        if not isinstance(population_type, str) or population_type not in _MEASURE_POPULATION_CODES:
+            raise ValueError(
+                f"Measure population {population_id} has unsupported type {population_type!r}"
+            )
+
+        entry: dict = {
+            "code": {
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                    "code": population_type,
+                }]
+            },
+            "criteria": {
+                "language": "text/cql-identifier",
+                "expression": _MEASURE_POPULATION_CODES[population_type],
+            },
+        }
+        description = population.get("description")
+        if isinstance(description, str) and description.strip():
+            entry["description"] = description.strip()
+        entry["id"] = population_id
+        entries.append(entry)
+    return entries
 
 
 # ── Deterministic Builders (CPG-on-FHIR) ──────────────────────────────────────
@@ -3864,6 +4794,92 @@ def _legacy_care_pathway_cleanup_files(
         l2_data,
     )
     return [f"ActivityDefinition-{resource_id}-activity.json"]
+
+
+def _iter_plan_action_tree(actions: Any):
+    if not isinstance(actions, list):
+        return
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        yield action
+        yield from _iter_plan_action_tree(action.get("action"))
+
+
+def _orphaned_decision_table_output_files(
+    computable_dir: Path,
+    canonical: str,
+    resource_id: str,
+    generated_filenames: set[str],
+    resources: list[dict[str, Any]],
+    protected_filenames: set[str],
+) -> list[str]:
+    """Remove stale per-rule plans and their now-unreferenced ActivityDefinitions.
+
+    Tracking can lose ownership history after an earlier generation. The exact
+    deterministic PlanDefinition URL prefix and dependency references provide a
+    bounded recovery path without sweeping unrelated resources from the topic.
+    """
+    root_url_prefix = f"{canonical}/PlanDefinition/{resource_id}-"
+    stale_plan_paths: list[Path] = []
+    for path in sorted(computable_dir.glob(f"PlanDefinition-{resource_id}-*.json")):
+        if path.name in generated_filenames or path.name in protected_filenames:
+            continue
+        try:
+            resource = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (
+            resource.get("resourceType") == "PlanDefinition"
+            and isinstance(resource.get("url"), str)
+            and resource["url"].startswith(root_url_prefix)
+        ):
+            stale_plan_paths.append(path)
+
+    stale_activity_urls: set[str] = set()
+    for path in stale_plan_paths:
+        try:
+            plan = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        for action in _iter_plan_action_tree(plan.get("action")):
+            reference = action.get("definitionCanonical")
+            if isinstance(reference, str) and "/ActivityDefinition/" in reference:
+                stale_activity_urls.add(reference.split("|", 1)[0])
+
+    referenced_elsewhere: set[str] = set()
+    candidates_to_scan: list[dict[str, Any]] = list(resources)
+    stale_names = {path.name for path in stale_plan_paths}
+    for path in sorted(computable_dir.glob("PlanDefinition-*.json")):
+        if path.name in stale_names:
+            continue
+        try:
+            resource = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(resource, dict):
+            candidates_to_scan.append(resource)
+    for plan in candidates_to_scan:
+        if plan.get("resourceType") != "PlanDefinition":
+            continue
+        for action in _iter_plan_action_tree(plan.get("action")):
+            reference = action.get("definitionCanonical")
+            if isinstance(reference, str):
+                referenced_elsewhere.add(reference.split("|", 1)[0])
+
+    stale_names.update(path.name for path in stale_plan_paths)
+    for activity_url in stale_activity_urls - referenced_elsewhere:
+        activity_id = activity_url.rsplit("/ActivityDefinition/", 1)[-1]
+        activity_path = computable_dir / f"ActivityDefinition-{activity_id}.json"
+        if activity_path.name in protected_filenames or not activity_path.is_file():
+            continue
+        try:
+            activity = json.loads(activity_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if activity.get("resourceType") == "ActivityDefinition" and activity.get("url") == activity_url:
+            stale_names.add(activity_path.name)
+    return sorted(stale_names)
 
 
 def _resolve_related_assessment(
@@ -4140,125 +5156,6 @@ def _build_decision_table_action_reference_map(
     return dict(reference_map)
 
 
-def _build_decision_table_reference_candidates(
-    canonical: str,
-    topic: str,
-    decision_table_name: str,
-    decision_table_data: dict[str, Any] | None,
-) -> list[dict[str, Any]]:
-    """Build semantic recommendation-link candidates from a decision table."""
-    if not isinstance(decision_table_data, dict):
-        return []
-
-    sections = decision_table_data.get("sections") or {}
-    events = sections.get("events") or []
-    rules = sections.get("rules") or []
-    actions = sections.get("actions") or []
-    if not isinstance(events, list):
-        events = []
-    if not isinstance(rules, list):
-        rules = []
-    if not isinstance(actions, list):
-        actions = []
-
-    base_id = _deterministic_artifact_base_id(
-        decision_table_name,
-        "decision-table",
-        topic,
-        decision_table_data,
-    )
-    action_index = {
-        str(action.get("id") or "").strip(): action
-        for action in actions
-        if isinstance(action, dict) and str(action.get("id") or "").strip()
-    }
-    suffix_map = _build_decision_table_rule_suffix_map([rule for rule in rules if isinstance(rule, dict)])
-    candidates: list[dict[str, Any]] = []
-    event_index = {
-        str(event.get("id") or "").strip(): event
-        for event in events
-        if isinstance(event, dict) and str(event.get("id") or "").strip()
-    }
-    for idx, rule in enumerate(rules, start=1):
-        if not isinstance(rule, dict):
-            continue
-        event_id = str(rule.get("event") or "").strip()
-        event = event_index.get(event_id) or {}
-        child_id = f"{base_id}-{suffix_map.get(idx) or _decision_table_rule_plan_suffix(rule, idx)}"
-        canonical_ref = _canonical_for_generated_resource(canonical, "PlanDefinition", child_id)
-        alias_values = [
-            rule.get("id"),
-            event_id,
-            event_id.removeprefix("event-"),
-            rule.get("phase"),
-            rule.get("description"),
-            rule.get("rationale"),
-            (event or {}).get("label"),
-            (event or {}).get("title"),
-            (event or {}).get("phase"),
-        ]
-        for action_id in rule.get("then") or []:
-            action_def = action_index.get(str(action_id))
-            alias_values.extend([
-                action_id,
-                (action_def or {}).get("label"),
-                (action_def or {}).get("title"),
-                (action_def or {}).get("description"),
-            ])
-        tokens = _semantic_tokens(*[str(v) for v in alias_values if v])
-        aliases = {to_kebab_case(str(v)) for v in alias_values if isinstance(v, str) and v.strip()}
-        candidates.append({
-            "canonical": canonical_ref,
-            "tokens": tokens,
-            "aliases": aliases,
-        })
-    return candidates
-
-
-def _resolve_recommendation_reference(
-    step: dict[str, Any],
-    recommendation_plan_map: dict[str, str],
-    recommendation_candidates: list[dict[str, Any]],
-) -> str | None:
-    """Resolve the best matching recommendation PlanDefinition for a pathway step."""
-    rule_id = str(step.get("rule_id") or "").strip()
-    if rule_id:
-        mapped_ref = recommendation_plan_map.get(rule_id)
-        if mapped_ref:
-            return mapped_ref
-        log_warn(
-            "  Care-pathway step '%s' references unknown decision-table rule_id '%s'"
-            % (str(step.get("id") or ""), rule_id)
-        )
-
-    step_keys = [
-        str(step.get("id") or ""),
-        str(step.get("label") or ""),
-        str(step.get("title") or ""),
-        str(step.get("description") or ""),
-    ]
-    for key in step_keys[:3]:
-        normalized = to_kebab_case(key)
-        if normalized and normalized in recommendation_plan_map:
-            return recommendation_plan_map[normalized]
-
-    step_tokens = _semantic_tokens(*step_keys)
-    if not step_tokens:
-        return None
-
-    best_match: str | None = None
-    best_score = 0
-    for candidate in recommendation_candidates:
-        overlap = len(step_tokens & set(candidate.get("tokens") or set()))
-        if overlap > best_score:
-            best_score = overlap
-            best_match = candidate.get("canonical")
-
-    if best_score >= 2:
-        return best_match
-    return None
-
-
 def _step_rule_refs(step: dict[str, Any]) -> list[str]:
     refs: list[str] = []
     rule_id = step.get("rule_id")
@@ -4276,6 +5173,29 @@ def _step_rule_refs(step: dict[str, Any]) -> list[str]:
             seen.add(ref)
             deduped.append(ref)
     return deduped
+
+
+def _step_applicability_refs(step: dict[str, Any]) -> list[str]:
+    """Return deduplicated condition IDs authored as step-local AND gates."""
+    refs: list[str] = []
+    singular = step.get("applicability_condition")
+    if singular is not None:
+        if not isinstance(singular, str) or not singular.strip():
+            raise ValueError("Care-pathway applicability_condition must be a non-empty string")
+        refs.append(singular.strip())
+
+    plural = step.get("applicability_conditions")
+    if plural is not None:
+        if not isinstance(plural, list) or not plural:
+            raise ValueError("Care-pathway applicability_conditions must be a non-empty list of condition IDs")
+        for index, value in enumerate(plural, start=1):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(
+                    f"Care-pathway applicability_conditions[{index}] must be a non-empty condition ID"
+                )
+            refs.append(value.strip())
+
+    return list(dict.fromkeys(refs))
 
 
 def _recommendation_child_action_display(
@@ -4331,7 +5251,6 @@ def _recommendation_child_action_display(
 def _resolve_recommendation_references(
     step: dict[str, Any],
     recommendation_plan_map: dict[str, str],
-    recommendation_candidates: list[dict[str, Any]],
 ) -> list[str]:
     resolved: list[str] = []
     for rule_ref in _step_rule_refs(step):
@@ -4344,15 +5263,10 @@ def _resolve_recommendation_references(
                 "  Care-pathway step '%s' references unknown decision-table rule_id '%s'"
                 % (str(step.get("id") or ""), rule_ref)
             )
-    if resolved:
-        return resolved
-
-    fallback = _resolve_recommendation_reference(
-        step,
-        recommendation_plan_map,
-        recommendation_candidates,
-    )
-    return [fallback] if fallback else []
+    # A recommendation canonical is executable pathway wiring. Require an
+    # authored rule_id/rule_ids binding rather than guessing from step prose,
+    # token overlap, or the first plausible recommendation.
+    return resolved
 
 
 def _resolve_action_reference(
@@ -4513,6 +5427,13 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
             l2_data = _yaml.load(l2_content) or {}
         except Exception:
             l2_data = {}
+    canonical = str(cfg.get("canonical") or "").rstrip("/")
+    resource_id = _deterministic_artifact_base_id(
+        artifact,
+        artifact_type,
+        topic,
+        l2_data,
+    )
     concept_candidates = _load_topic_concept_candidates(topic, topic_entry)
 
     # Build prompts and invoke LLM
@@ -4529,16 +5450,19 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
     llm_output = _invoke_llm(system_prompt, user_prompt)
 
     if llm_output == "Stub response":
-        resources = _build_stub_resources(
-            artifact,
-            artifact_type,
-            strategy,
-            topic,
-            cfg,
-            l2_data,
-            topic_entry=topic_entry,
-            concept_candidates=concept_candidates,
-        )
+        try:
+            resources = _build_stub_resources(
+                artifact,
+                artifact_type,
+                strategy,
+                topic,
+                cfg,
+                l2_data,
+                topic_entry=topic_entry,
+                concept_candidates=concept_candidates,
+            )
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
     else:
         resources = _parse_llm_response(llm_output)
         if not resources:
@@ -4550,11 +5474,15 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
 
     # Ensure Measure.library references companion Library resources
     _patch_measure_library_references(resources)
-    _ensure_activity_definition_codes(resources, concept_candidates=concept_candidates)
+    try:
+        _ensure_activity_definition_codes(resources, concept_candidates=concept_candidates)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
     # Normalize + validate
     computable_dir = td / "computable"
     computable_dir.mkdir(parents=True, exist_ok=True)
+    _attach_external_library_dependencies(resources, computable_dir, topic_entry)
     warnings: list[str] = []
 
     for resource in resources:
@@ -4568,24 +5496,69 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
             f"{rewrite['resourceType']}/{rewrite['old_id']} -> {rewrite['new_id']}"
         )
 
+    try:
+        warnings.extend(_validate_cql_identifier_links(resources, computable_dir))
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
     stale_cleanup_files: list[str] = []
+    other_owned_names: set[str] = set()
+    generated_filenames = {
+        f"{resource.get('resourceType', 'Unknown')}-{resource.get('id', 'unknown')}.json"
+        for resource in resources
+    }
+    if force:
+        prior_entries = topic_entry.get("computable", []) or []
+        other_owned_names = {
+            Path(file_path).name
+            for entry in prior_entries
+            if isinstance(entry, dict) and entry.get("name") != artifact
+            for file_path in (entry.get("files") or [])
+            if isinstance(file_path, str)
+        }
+        for entry in prior_entries:
+            if not isinstance(entry, dict) or entry.get("name") != artifact:
+                continue
+            for file_path in entry.get("files") or []:
+                if not isinstance(file_path, str):
+                    continue
+                old_path = Path(file_path)
+                if old_path.parent.as_posix() != f"topics/{topic}/computable":
+                    continue
+                if old_path.suffix.lower() != ".json" or old_path.name in generated_filenames:
+                    continue
+                if old_path.name in other_owned_names:
+                    continue
+                stale_cleanup_files.append(old_path.name)
+
     if artifact_type == "decision-table":
         stale_cleanup_files.extend(
             _legacy_decision_table_questionnaire_cleanup_files(topic, l2_data, topic_entry)
         )
+        if force:
+            stale_cleanup_files.extend(
+                _orphaned_decision_table_output_files(
+                    computable_dir,
+                    canonical,
+                    resource_id,
+                    generated_filenames,
+                    resources,
+                    other_owned_names,
+                )
+            )
     elif artifact_type == "care-pathway":
         stale_cleanup_files.extend(
             _legacy_care_pathway_cleanup_files(artifact, topic, l2_data)
         )
 
-    for stale_name in stale_cleanup_files:
-            stale_path = computable_dir / stale_name
-            if stale_path.exists():
-                try:
-                    stale_path.unlink()
-                    click.echo(f"  ✓ Removed stale {stale_name}")
-                except OSError as exc:
-                    warnings.append(f"  ⚠ {stale_name}: failed to remove stale file ({exc})")
+    for stale_name in sorted(set(stale_cleanup_files)):
+        stale_path = computable_dir / stale_name
+        if stale_path.exists():
+            try:
+                stale_path.unlink()
+                click.echo(f"  ✓ Removed stale {stale_name}")
+            except OSError as exc:
+                warnings.append(f"  ⚠ {stale_name}: failed to remove stale file ({exc})")
 
     written_files: list[str] = []
     checksums: dict[str, str] = {}

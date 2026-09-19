@@ -321,7 +321,18 @@ def _decision_table_case_feature_rows(sections: dict) -> list[dict]:
 
 def _care_pathway_step_condition(step: dict) -> str:
     """Return the canonical care-pathway step applicability condition."""
-    return _format_condition_value(step.get("applicability_condition")) or "-"
+    conditions: list[str] = []
+    singular = step.get("applicability_condition")
+    if isinstance(singular, str) and singular.strip():
+        conditions.append(singular.strip())
+    plural = step.get("applicability_conditions")
+    if isinstance(plural, list):
+        conditions.extend(
+            value.strip()
+            for value in plural
+            if isinstance(value, str) and value.strip()
+        )
+    return _format_condition_value(list(dict.fromkeys(conditions))) or "-"
 
 
 def _care_pathway_step_rows(sections: dict) -> list[dict]:

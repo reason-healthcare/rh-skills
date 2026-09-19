@@ -36,8 +36,30 @@ When risk is High, always pin. When risk is Low, document the assumption.
 Include terminology-focused tests for:
 - in-value-set membership (positive)
 - out-of-value-set membership (negative)
-- missing or unresolved terminology (null behavior)
+- no matching clinical code (false/empty retrieve, with null only when the authored clinical rule says evidence is incomplete)
+- unavailable, incomplete, or wrong-version ValueSet dependency (execution failure, not clinical null)
 - version-sensitive behavior where applicable
+
+Keep the terminology boundary aligned with the resource being evaluated.
+Clinical decision CQL consumes extracted clinical resources, including
+Observations from both scored and unscored assessments; it does not evaluate
+QuestionnaireResponse answers. FHIR R4 `QuestionnaireResponse.item` has a
+`linkId` and answer, not the Questionnaire item's LOINC Coding. An SDC
+Questionnaire-to-Observation workflow carries that Coding onto the extracted
+Observation. Test
+`Observation.code` against the declared ValueSet and separately assert the
+extracted Coding's system, version, code, display, subject, encounter, status,
+and provenance. Preserve source linkage in the extraction output, but do not
+require QuestionnaireResponse or `derivedFrom` to select clinical evidence.
+ValueSet membership tests should vary code and system and should test missing
+or wrong canonical/version resolution. Do not expect changing only
+`Coding.version` or display to change standard CQL membership semantics.
+
+The `rh-skills cql test` runner accepts an optional `input/terminology.json`
+sidecar per case. It may contain one pre-expanded ValueSet or a Bundle of
+pre-expanded ValueSets and is passed to the runtime via `--terminology`. A
+normalized extracted-resource Bundle is an oracle fixture; it does not establish
+that an extraction implementation produced those resources.
 
 Place these in `tests/cql/terminology/`.
 

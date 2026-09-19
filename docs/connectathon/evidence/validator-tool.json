@@ -1,0 +1,8 @@
+{
+  "source": "https://github.com/hapifhir/org.hl7.fhir.core/releases/download/6.10.2/validator_cli.jar",
+  "version": "6.10.2",
+  "bytes": 187697077,
+  "sha256": "a3addadfa18dfa23146a0a243b6ede68eaad92157a5407738c468bb3d7e4ccd6",
+  "javaVersion": "17.0.6",
+  "isolatedUserHome": "/private/tmp/connectathon-live/validator-home"
+}

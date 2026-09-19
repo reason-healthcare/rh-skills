@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-09-18T00:11:22.712560+00:00",
+  "nativeHashMatches": false,
+  "wasmHashesMatch": true,
+  "independentCheck": {
+    "expression": "Three Question Risk",
+    "fixture": "eligible-incomplete-response",
+    "actual": null,
+    "exitCode": 0
+  },
+  "scope": "Runtime feasibility only. Spike completion logic is intentionally incomplete and is not the generated clinical logic or48-assertion acceptance.",
+  "tests": [
+    {
+      "command": "cargo test -p rh-cpg --lib",
+      "output": "/private/tmp/connectathon-live/evidence/runtime-rh-cpg-tests.log",
+      "result": "50 passed"
+    },
+    {
+      "command": "cargo test -p rh-cql --test eval_integration_tests",
+      "output": "/private/tmp/connectathon-live/evidence/runtime-rh-cql-eval-tests.log",
+      "result": "92 passed"
+    },
+    {
+      "command": "cargo test -p rh-cli --test cql_integration_test",
+      "output": "/private/tmp/connectathon-live/evidence/runtime-rh-cli-cql-tests.log",
+      "result": "41 passed"
+    }
+  ],
+  "initialNativeHashMismatch": true,
+  "resolvedAt": "2026-09-18T00:20:16.609645+00:00",
+  "nativeBinary": {
+    "path": "/Users/bkaney/projects/reason-healthcare/rh/target/debug/rh",
+    "sha256": "f9205258599f7a3fda0d5a34438d1cdd6a07d02424285df52a66aac1076249b3"
+  },
+  "runtimeRevision": "88d2846038ce5e8b85ed73f444d0226481c2ae70"
+}

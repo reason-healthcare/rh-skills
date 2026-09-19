@@ -270,7 +270,8 @@ uses `relatedAction[]` with `relationship: after-end` on sibling phase actions.
 - Optional strategy PlanDefinitions only when supported by aligned input structure
 - Nested `action[]` for phase → child-step hierarchy
 - No action has both `definitionCanonical` and child `action[]` (branch OR execute, never both)
-- Substeps reference decision table recommendation PlanDefinitions via canonical URLs
+- Recommendation PlanDefinitions are linked only when the L2 step carries an explicit `rule_id` or `rule_ids[]`; prose similarity is not a cross-artifact binding
+- `applicability_condition` and `applicability_conditions[]` are explicit conjunctive gates; every gate is preserved on standalone branch PlanDefinitions
 - Child strategy PlanDefinitions should begin with the first unique descendant actions, not a duplicate wrapper of the branch node already represented in the parent plan.
 
 **Example Structure**:

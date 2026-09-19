@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-09-18T10:38:09.605100+00:00",
+  "runtimeCommit": "04c96d5c589d895e0a96ce809989ef97a51e3495",
+  "verifier": "root independent rerun",
+  "note": "Initial CLI filter matched zero tests; corrected terminology_loader filter actually executes the three tests. Zero-test run is not acceptance evidence.",
+  "passed": true,
+  "runs": [
+    {
+      "name": "cpg-lib",
+      "results": [
+        [
+          "ok",
+          "64",
+          "0"
+        ]
+      ],
+      "sha256": "2a8ac11e95c13fa109be81109e35053403522985a68f9cf84b431b5b8ac9293b",
+      "log": "dist/connectathon-20260919/verification/root-sdc-runtime-regression/cpg-lib.log"
+    },
+    {
+      "name": "cql-eval",
+      "results": [
+        [
+          "ok",
+          "93",
+          "0"
+        ]
+      ],
+      "sha256": "5e9f1e4472f9e54fd67af2ed61c8285bf3c3397b14d94ab75173779c3cc74298",
+      "log": "dist/connectathon-20260919/verification/root-sdc-runtime-regression/cql-eval.log"
+    },
+    {
+      "name": "native-terminology-corrected",
+      "results": [
+        [
+          "ok",
+          "3",
+          "0"
+        ]
+      ],
+      "sha256": "3d9eff3adc3c9293cab86a810209f7830ae0f494b625b6e55a5dd2c4fe41120e",
+      "log": "dist/connectathon-20260919/verification/root-sdc-runtime-regression/native-terminology-corrected.log"
+    }
+  ]
+}

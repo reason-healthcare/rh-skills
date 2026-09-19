@@ -1,0 +1,52 @@
+{
+  "checkedAt": "2026-09-18T17:48:29.965130+00:00",
+  "scope": "12 actual final run004 outputs: six root-protocol apply Bundles and six individual MeasureReports; R4+SDC4+CPG2 with exact run004 knowledge dependencies and offline terminology",
+  "knowledgeBundleSha256": "d412006a1f1af22054a2a32b0d9a8f8ae88a41e24cbd6f5bb486d71e7b2b4ce0",
+  "rawCounts": {
+    "error": 1,
+    "information": 5,
+    "warning": 48
+  },
+  "strictValidatorPassed": false,
+  "documentedExceptions": [
+    {
+      "input": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/younger-than-65--MeasureReport-measure.json",
+      "inputSha256": "66be762360aa9efed62dff8535ee24c52abba7cbc5d3a08095e099c645aa940d",
+      "code": "MEASURE_MR_SCORE_REQUIRED",
+      "expression": [
+        "MeasureReport.group[0]"
+      ],
+      "counts": {
+        "initial-population": 0,
+        "denominator": 0,
+        "numerator": 0
+      },
+      "measureScorePresent": false,
+      "rootExtensionPresent": false
+    }
+  ],
+  "unacceptedErrors": [],
+  "unresolvedReferenceDiagnostics": [],
+  "acceptedForCoreRehearsal": true,
+  "exceptionReason": "R4 optional score is undefined for zero denominator; validator6.10.2 unconditionally requires numeric proportion score. No score is fabricated.",
+  "warningCounts": {
+    "Constraint failed: dom-6: 'A resource should have narrative for robust management' (defined in http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)": 26,
+    "The code provided (text/cql-identifier) could not be validated against the maximum value set http://www.rfc-editor.org/bcp/bcp13.txt(which actually refers to 'MimeType' (http://hl7.org/fhir/ValueSet/mimetypes|4.0.1)), (error = No_Service)": 22
+  },
+  "inputHashes": {
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-all-no--MeasureReport-measure.json": "704fd02694c675e686034ffa5d00717a2dd8a194cb153e2f82344d2a0bf7991b",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-all-no--steadi-fall-risk-screening-protocol.json": "cf3247d07354968c184c12197f853d0b7b6d37773e2c1963981a17003f89bf5d",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-incomplete-response--MeasureReport-measure.json": "17f9da7f9718b0487bd5a76b06e1733f45ecb29244f83f07c9a2c58c2b47239f",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-incomplete-response--steadi-fall-risk-screening-protocol.json": "ab605560b06d9d1eab014eefe7ccd962635ab12975fd62991bd754f7047443cd",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-no-response--MeasureReport-measure.json": "06798b3c3f54e79555a76a0fd51481060651cd2db53f6c243a6ffe5560ceb654",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-no-response--steadi-fall-risk-screening-protocol.json": "ae73999a9962d47e19578e2103751033e4f19522ccf51829534717944efac0c6",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-prior-fall-yes--MeasureReport-measure.json": "3c69e29f267b6cc7576854af253a68cb59c61d69a993b9b6df4786afbbc92113",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-prior-fall-yes--steadi-fall-risk-screening-protocol.json": "ef798e4839f0cdad0e6322f9e1851205796ee05d4651c8e57b0aaaa31b6c492b",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-unsteady-yes--MeasureReport-measure.json": "433a2e9bd1b6f9e0d4922b7deed18aa1b7b250246444e1397bd8fd00758f9771",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/eligible-unsteady-yes--steadi-fall-risk-screening-protocol.json": "6c1cb177fb226664335474bea89ee0a3abbf8a54f1b7dd82082615309f25d6e8",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/younger-than-65--MeasureReport-measure.json": "66be762360aa9efed62dff8535ee24c52abba7cbc5d3a08095e099c645aa940d",
+    "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-final-run004/direct-node/younger-than-65--steadi-fall-risk-screening-protocol.json": "4545dbedb1184be78a1c52c4fb9e28830d1e853cb8ef64eb10dea7a883b1b2ed"
+  },
+  "operationOutcomeSha256": "cd77aa1296a7e80d7b593daba01a636ff060860f53efc0ddcedefc5c5d23e25e",
+  "command": "/Users/bkaney/projects/reason-healthcare/rh-skills/dist/connectathon-20260919/verification/root-run004-runtime-fhir/command.json"
+}
