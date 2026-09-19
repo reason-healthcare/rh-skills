@@ -175,14 +175,25 @@ SDC Observation-extraction metadata rule:
 
 Order-set and regimen decomposition rule:
 - When the L2 source describes an order set, regimen, or medication bundle,
-  do not keep it as one broad executable medication action if the component
-  orders are named.
+  run an explicit order-set candidate analysis; a general guidance
+  PlanDefinition is not the regimen artifact. Do not keep the regimen as one
+  broad executable medication action if component orders are named.
 - Preserve the grouping logic as orchestration, but break the executable
   content into child leaf actions at the smallest clinically orderable unit,
   usually one `MedicationRequest` per medication.
 - If the grouping itself needs a computable container, represent that container
   as a `PlanDefinition` with order-set semantics rather than collapsing the
   component medications into one action code.
+- Code each named medication leaf through current-run ReasonHub MCP evidence,
+  using RxNorm first. Source fixture or local medication codes remain test-only
+  and cannot be represented as terminology-service-verified substitutes.
+- When the available source supports the regimen name or components but not
+  authoritative dosing or eligibility, emit only a separate draft,
+  `experimental: true` order-set review artifact. Its medication activities use
+  `MedicationRequest` with `intent: proposal`; omit unsupported dose, route,
+  frequency, cycle, sequence, and timing fields. Do not infer those details.
+  Keep this review artifact outside the broader guidance-applicability action
+  tree unless the source independently supports its own applicability criteria.
 
 When creating or editing L2 inputs for provider-backed formalization:
 - keep stable machine IDs for rules, actions, conditions, steps, and phases

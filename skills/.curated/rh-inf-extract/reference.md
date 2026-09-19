@@ -198,6 +198,53 @@ code using a best-guess system and use lookup as the normalization gate:
 For quantitative LOINC codes, use the same lookup response to retrieve
 recommended `EXAMPLE_UCUM_UNITS` when needed.
 
+### Current-run terminology evidence
+
+The declared lookup policy and concept CSV are workflow state, not proof that a
+terminology tool ran. When ReasonHub MCP is available and applicable, retain
+current-run evidence at
+`topics/<topic>/process/reviews/terminology-evidence.json` before finalizing the
+concept review. Use this minimum shape:
+
+```json
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "conceptId": "pembrolizumab",
+      "tool": "mcp__reasonhub__search_rxnorm",
+      "query": "Pembrolizumab",
+      "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+      "version": "<returned or requested release>",
+      "request": {"query": "Pembrolizumab", "top_k": 10},
+      "response": {"result": []},
+      "selected": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "version": "<release>",
+          "code": "<code>",
+          "display": "<canonical display>",
+          "rationale": "<why this candidate matches the source concept>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Preserve the exact request and response returned in the run; do not reconstruct
+them from the chosen code. Omit secrets and authorization headers. Record each
+required system-specific search and the normalization lookup for selected codes.
+An upstream file that says a lookup occurred may be cited as source provenance,
+but it is not current-run MCP execution evidence.
+
+For a source-defined fixture or local CodeSystem, use `--source custom`, label
+the concept and resulting CodeSystem `test-only` and experimental, and cite the
+fixture contract. Do not attach a ReasonHub tool record or claim standardized,
+active, mapped, or terminology-service-verified status unless a separate actual
+lookup or reviewed mapping supports that claim. Keep fixture-only codes out of
+production clinical ValueSets.
+
 ### Extract-Stage Ontology Relationship Policy (Related Rows)
 
 Related rows in the per-concept CSVs under `process/plans/concepts/` are extract-stage scope annotations, not broad ontology expansion.
@@ -259,6 +306,12 @@ Concept deconstruction rule:
 - When a source phrase uses "and", "with", "plus", "combination", "bundle",
   "regimen", "protocol", or "order set", actively check whether the phrase
   should be split before finalizing concept review.
+- A named regimen or order set also requires an **order-set candidate analysis**
+  in the L2 review packet. List the regimen name, named component drugs or
+  classes, source-supported eligibility/sequence/dose/route/timing, and missing
+  details. Resolve each named component through the medication path with RxNorm
+  as the primary executable code system. If the source does not name components,
+  record that gap rather than guessing a regimen composition.
 
 ### Care-pathway structure
 

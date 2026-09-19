@@ -271,6 +271,40 @@ class TestRhInfExtractSkillContract:
         assert "approved" in body and "reviewer_decision" in body
         assert "rh-skills validate" in body and "<topic>" in body
 
+    def test_extract_skill_requires_current_run_reasonhub_evidence(self):
+        skill = Path("skills/.curated/rh-inf-extract/SKILL.md")
+        reference = Path("skills/.curated/rh-inf-extract/reference.md")
+        body = skill_body(skill)
+        details = reference.read_text()
+
+        assert "does not prove that this run called ReasonHub" in body
+        assert "process/reviews/terminology-evidence.json" in body
+        for field in (
+            "tool",
+            "query",
+            "system",
+            "version",
+            "request",
+            "response",
+            "selected code",
+            "display",
+            "selection rationale",
+        ):
+            assert field in body
+        assert "exact request and response returned in the run" in details
+        assert "not current-run MCP execution evidence" in details
+
+    def test_extract_skill_separates_fixture_codes_and_regimen_candidates(self):
+        skill = Path("skills/.curated/rh-inf-extract/SKILL.md")
+        reference = Path("skills/.curated/rh-inf-extract/reference.md")
+        combined = skill_body(skill) + "\n" + reference.read_text()
+
+        assert "test-only" in combined
+        assert "never describe them as standardized or terminology-service-verified" in combined
+        assert "order-set candidate analysis" in combined
+        assert "RxNorm-first MCP path" in combined
+        assert "do not invent components or order details" in combined
+
 
 class TestRhInfFormalizeSkillContract:
     """Focused contract checks for the formalize skill's reviewer-gated L3 flow."""
@@ -292,6 +326,27 @@ class TestRhInfFormalizeSkillContract:
         assert "implementation_target" in body
         assert "rh-skills formalize" in body
         assert "rh-skills validate" in body
+
+    def test_formalize_skill_bounds_draft_regimen_order_sets(self):
+        skill = Path("skills/.curated/rh-inf-formalize/SKILL.md")
+        reference = Path("skills/.curated/rh-inf-formalize/reference.md")
+        combined = skill_body(skill) + "\n" + reference.read_text()
+
+        assert "order-set candidate analysis" in combined
+        assert "using RxNorm first" in combined
+        assert "experimental: true" in combined
+        assert "intent: proposal" in combined
+        for unsupported_detail in (
+            "dose",
+            "route",
+            "frequency",
+            "cycle",
+            "sequence",
+            "timing",
+        ):
+            assert unsupported_detail in combined
+        assert "broader guidance-applicability action" in combined
+        assert "Do not gate" in combined
 
 
 class TestRhInfVerifySkillContract:
@@ -549,3 +604,18 @@ class TestRhCqlSkillContract:
                 "rh-inf-cql reference.md must identify the CMS QMD Pattern Index as "
                 "the preferred FHIR CQL pattern source"
             )
+
+    def test_author_mode_preserves_terminology_and_regimen_boundaries(self):
+        """CQL authoring must consume reviewed terminology and eligibility evidence."""
+        if not self.SKILL_PATH.exists():
+            pytest.skip("rh-inf-cql skill not implemented")
+        body = skill_body(self.SKILL_PATH)
+
+        assert "process/reviews/terminology-evidence.json" in body
+        assert "current-run ReasonHub evidence" in body
+        assert "actual MCP call" in body
+        assert "test-only" in body
+        assert "terminology-service-verified" in body
+        assert "Regimen applicability boundary" in body
+        assert "Do not turn a broad guidance" in body
+        assert "do not invent eligibility, dose, route, timing" in body

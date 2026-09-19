@@ -418,6 +418,23 @@ details, unknown terminology expansions, unverified fixture assumptions.
    4. If a concept needed in CQL has no corresponding terminology L2 artifact,
       that is a gap at the extract stage — raise it rather than inventing a
       ValueSet resource directly.
+   5. Confirm each selected standardized code has current-run ReasonHub evidence
+      at `topics/<topic>/process/reviews/terminology-evidence.json`, including
+      the tool, query, system, version, exact request and response, selected
+      code/display, and selection rationale. A stated lookup policy or copied
+      result is not proof that ReasonHub ran. If authoring discovers a new code
+      selection, return it to extraction for the actual MCP call and review.
+   6. A ValueSet that intentionally uses a source fixture or local CodeSystem
+      must remain labeled `test-only` and experimental. Do not describe those
+      codes as standardized or terminology-service-verified, and do not use
+      them as production terminology without a separate reviewed mapping.
+
+   **Regimen applicability boundary**: Do not turn a broad guidance-
+   applicability expression into eligibility for a named medication regimen.
+   Regimen-specific CQL requires its own source-supported eligibility contract.
+   When that authority is absent, keep the separate draft order-set review
+   artifact non-executable and do not invent eligibility, dose, route, timing,
+   or sequencing logic in CQL.
 
    > 🔖 **Future**: Revisit reusability — well-known public valuesets (e.g., from
    > VSAC, HL7, or FHIR community IGs) should eventually be referenced by their
