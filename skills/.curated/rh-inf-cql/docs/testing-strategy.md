@@ -77,6 +77,14 @@ tests/cql/<LibraryName>/
     notes.md            # Why this case exists; what semantic point it isolates
 ```
 
+Fixture Bundles that will be published by `rh-skills compose-executable` must
+use FHIR R4 `Bundle.type = collection`. Keep synthetic-data handling labels,
+including `HTEST`, in `Bundle.meta.security`. During composition the CLI
+preserves existing metadata and adds a Workbench `test-case` tag plus a stable
+`<topic>/<fixture-id>` Bundle identifier. Keep expected expression results in
+the fixture's expected-output or assertion sidecar; do not encode expected
+clinical outcomes in `meta.tag`.
+
 ## Expression-Level Evaluation
 
 Run the evaluator per expression to isolate failures:

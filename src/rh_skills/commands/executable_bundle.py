@@ -31,6 +31,17 @@ _CANONICAL_KEYS = {
     "valueCanonical",
     "valueSet",
 }
+_WORKBENCH_BUNDLE_PURPOSE_SYSTEM = (
+    "https://reason-healthcare.github.io/fhir/CodeSystem/workbench-bundle-purpose"
+)
+_WORKBENCH_TEST_CASE_IDENTIFIER_SYSTEM = (
+    "https://reason-healthcare.github.io/fhir/identifier/test-case"
+)
+_WORKBENCH_TEST_CASE_TAG = {
+    "system": _WORKBENCH_BUNDLE_PURPOSE_SYSTEM,
+    "code": "test-case",
+    "display": "Workbench test case",
+}
 
 
 class ExecutableBundleError(ValueError):
@@ -725,6 +736,10 @@ def _validate_fixture_bundle(path: Path, patient_id: str) -> dict[str, Any]:
     bundle = _read_json(path)
     if not isinstance(bundle, dict) or bundle.get("resourceType") != "Bundle":
         raise ExecutableBundleError(f"Fixture must be a FHIR Bundle: {path}")
+    if bundle.get("type") != "collection":
+        raise ExecutableBundleError(
+            f"Fixture Bundle must have type 'collection': {path}"
+        )
     patients = [
         resource for resource in _fixture_resources(bundle)
         if resource.get("resourceType") == "Patient" and resource.get("id") == patient_id
@@ -734,6 +749,41 @@ def _validate_fixture_bundle(path: Path, patient_id: str) -> dict[str, Any]:
             f"Fixture {path} must contain exactly one Patient/{patient_id}; found {len(patients)}"
         )
     return bundle
+
+
+def _designate_test_case_bundle(
+    bundle: dict[str, Any], fixture_scope: str, case_id: str
+) -> dict[str, Any]:
+    """Return a self-designating Workbench test-case Bundle copy."""
+    designated = copy.deepcopy(bundle)
+    meta = designated.get("meta")
+    if meta is None:
+        meta = {}
+    elif not isinstance(meta, dict):
+        raise ExecutableBundleError(
+            f"Fixture {case_id} Bundle.meta must be an object"
+        )
+
+    tags = meta.get("tag", [])
+    if not isinstance(tags, list):
+        raise ExecutableBundleError(
+            f"Fixture {case_id} Bundle.meta.tag must be an array"
+        )
+    meta["tag"] = [
+        tag
+        for tag in tags
+        if not (
+            isinstance(tag, dict)
+            and tag.get("system") == _WORKBENCH_BUNDLE_PURPOSE_SYSTEM
+            and tag.get("code") == "test-case"
+        )
+    ] + [copy.deepcopy(_WORKBENCH_TEST_CASE_TAG)]
+    designated["meta"] = meta
+    designated["identifier"] = {
+        "system": _WORKBENCH_TEST_CASE_IDENTIFIER_SYSTEM,
+        "value": f"{fixture_scope}/{case_id}",
+    }
+    return designated
 
 
 def _write_executable_output_atomically(
@@ -801,6 +851,7 @@ def compose_executable_bundle(
     output_dir: Path,
     root_canonical: str,
     evaluation_date: str | None = None,
+    fixture_scope: str | None = None,
 ) -> dict[str, Any]:
     """Create a deterministic Workbench executable Bundle and fixture index."""
     if not computable_dir.is_dir():
@@ -824,6 +875,14 @@ def compose_executable_bundle(
         raise ExecutableBundleError(f"No FHIR JSON resources found in {computable_dir}")
 
     root_resource = _validate_closure(resources, root_canonical)
+    effective_fixture_scope = fixture_scope or root_resource.get("id")
+    if (
+        not isinstance(effective_fixture_scope, str)
+        or not _ID_RE.fullmatch(effective_fixture_scope)
+    ):
+        raise ExecutableBundleError(
+            "Fixture identifier scope must be a non-empty topic or root id"
+        )
     manifest = _read_json(fixture_manifest)
     cases = manifest.get("cases", []) if isinstance(manifest, dict) else []
     if not isinstance(cases, list) or not cases:
@@ -862,7 +921,11 @@ def compose_executable_bundle(
             raise ExecutableBundleError(f"Fixture {case_id} is missing evaluationContext.patientId")
         period = _validate_measurement_period(period, case_id)
 
-        bundle = _validate_fixture_bundle(source_bundle_path, patient_id)
+        bundle = _designate_test_case_bundle(
+            _validate_fixture_bundle(source_bundle_path, patient_id),
+            effective_fixture_scope,
+            case_id,
+        )
         resources_in_fixture = _fixture_resources(bundle)
         encounters: list[dict[str, Any]] = []
         for resource in resources_in_fixture:
@@ -1065,6 +1128,7 @@ def compose_executable(topic, root_canonical, fixture_manifest, fixture_dir, out
             out_root,
             root_canonical,
             evaluation_date,
+            fixture_scope=topic,
         )
     except ExecutableBundleError as exc:
         raise click.ClickException(str(exc)) from exc

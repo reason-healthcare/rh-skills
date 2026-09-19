@@ -11,6 +11,7 @@ from rh_skills.commands.executable_bundle import (
     ExecutableBundleError,
     _elm_definition_names,
     _validate_closure,
+    _validate_fixture_bundle,
     compose_executable_bundle,
 )
 
@@ -348,6 +349,28 @@ def _fixture_bundle() -> dict:
     return {
         "resourceType": "Bundle",
         "type": "collection",
+        "meta": {
+            "source": "https://example.org/source-fixtures/case-one",
+            "security": [
+                {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+                    "code": "HTEST",
+                    "display": "test health data",
+                }
+            ],
+            "tag": [
+                {
+                    "system": "https://example.org/fhir/CodeSystem/fixture-tags",
+                    "code": "regression",
+                    "display": "Regression fixture",
+                },
+                {
+                    "system": "https://reason-healthcare.github.io/fhir/CodeSystem/workbench-bundle-purpose",
+                    "code": "test-case",
+                    "display": "Stale display",
+                },
+            ],
+        },
         "entry": [
             {"resource": {"resourceType": "Patient", "id": "example"}},
             {
@@ -359,6 +382,18 @@ def _fixture_bundle() -> dict:
             },
         ],
     }
+
+
+def test_fixture_bundle_requires_collection_type(tmp_path):
+    fixture_path = tmp_path / "bundle.json"
+    fixture = _fixture_bundle()
+    fixture["type"] = "transaction"
+    _write_json(fixture_path, fixture)
+
+    with pytest.raises(
+        ExecutableBundleError, match="must have type 'collection'"
+    ):
+        _validate_fixture_bundle(fixture_path, "example")
 
 
 def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_path):
@@ -407,7 +442,8 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
     _write_json(computable / "root.json", _root())
     fixture_root = tmp_path / "fixtures"
     case_dir = fixture_root / "case-one"
-    _write_json(case_dir / "bundle.json", _fixture_bundle())
+    source_fixture = _fixture_bundle()
+    _write_json(case_dir / "bundle.json", source_fixture)
     _write_json(
         case_dir / "assertions.json",
         {
@@ -433,6 +469,7 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
         output,
         "https://example.org/fhir/PlanDefinition/root|1.0.0",
         "2026-06-15T09:20:00Z",
+        fixture_scope="example-topic",
     )
 
     fixture_index = json.loads(result["index"].read_text())
@@ -458,7 +495,24 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
             "encounter": "Encounter/visit",
         }
     ]
-    assert json.loads((output / "fixtures" / "case-one.json").read_text()) == _fixture_bundle()
+    fixture_bundle = json.loads((output / "fixtures" / "case-one.json").read_text())
+    assert fixture_bundle["type"] == "collection"
+    assert fixture_bundle["identifier"] == {
+        "system": "https://reason-healthcare.github.io/fhir/identifier/test-case",
+        "value": "example-topic/case-one",
+    }
+    assert fixture_bundle["meta"]["source"] == source_fixture["meta"]["source"]
+    assert fixture_bundle["meta"]["security"] == source_fixture["meta"]["security"]
+    assert fixture_bundle["meta"]["tag"] == [
+        source_fixture["meta"]["tag"][0],
+        {
+            "system": "https://reason-healthcare.github.io/fhir/CodeSystem/workbench-bundle-purpose",
+            "code": "test-case",
+            "display": "Workbench test case",
+        },
+    ]
+    assert set(fixture_bundle["meta"]["tag"][-1]) == {"system", "code", "display"}
+    assert json.loads((case_dir / "bundle.json").read_text()) == source_fixture
     assert all(entry["fullUrl"].startswith("urn:uuid:") for entry in executable_bundle["entry"])
     assert len({entry["fullUrl"] for entry in executable_bundle["entry"]}) == len(executable_bundle["entry"])
     helper_entry = executable_entries[("Library", "fhirhelpers-4-0-1")]
@@ -485,6 +539,7 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
         tmp_path / "executable-repeat",
         "https://example.org/fhir/PlanDefinition/root|1.0.0",
         "2026-06-15T09:20:00Z",
+        fixture_scope="example-topic",
     )
     repeated_bundle = json.loads(repeated["bundle"].read_text())
     assert {
@@ -493,6 +548,9 @@ def test_compose_writes_deterministic_locked_bundle_and_fixture_sidecars(tmp_pat
     } == {
         identity: entry["fullUrl"] for identity, entry in executable_entries.items()
     }
+    assert json.loads(
+        (tmp_path / "executable-repeat" / "fixtures" / "case-one.json").read_text()
+    ) == fixture_bundle
     assert executable_manifest["checksums"]["algorithm"] == "sha256-canonical-json"
     assert len(executable_manifest["checksums"]["rootResourceCanonicalJson"]) == 64
     assert executable_manifest["checksums"]["fixtureBundles"][0]["path"] == "fixtures/case-one.json"
