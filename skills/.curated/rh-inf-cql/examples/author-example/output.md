@@ -25,6 +25,12 @@ using FHIR version '4.0.1'
 
 include FHIRHelpers version '4.0.1' called FHIRHelpers
 
+codesystem "Condition Clinical Status Codes":
+  'http://terminology.hl7.org/CodeSystem/condition-clinical'
+
+code "Active":
+  'active' from "Condition Clinical Status Codes" display 'Active'
+
 valueset "Hyperlipidemia":
   'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.103.12.1001'
   // version '20230101'
@@ -40,12 +46,15 @@ context Patient
 
 // ── Retrieve Defines ─────────────────────────────────────────────────────────
 
-/** Active hyperlipidemia conditions for this patient */
+/**
+ * Hyperlipidemia conditions currently active at evaluation time.
+ * This does not establish activity during the Measurement Period; use the CMS
+ * QMD prevalenceInterval() pattern when period prevalence is required.
+ */
 define "Hyperlipidemia Conditions":
   [Condition: "Hyperlipidemia"] C
   where exists (C.clinicalStatus.coding S
-    where S.system.value = 'http://terminology.hl7.org/CodeSystem/condition-clinical'
-      and S.code.value = 'active')
+    where S ~ "Active")
 
 /** LDL-C observations within the measurement period */
 define "LDL Observations in Period":

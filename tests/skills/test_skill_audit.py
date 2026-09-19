@@ -364,6 +364,8 @@ class TestRhCqlSkillContract:
     SKILL_PATH = Path("skills/.curated/rh-inf-cql/SKILL.md")
     REF_PATH = Path("skills/.curated/rh-inf-cql/reference.md")
     EXAMPLES_DIR = Path("skills/.curated/rh-inf-cql/examples")
+    AUTHOR_OUTPUT_PATH = EXAMPLES_DIR / "author-example" / "output.md"
+    REVIEW_OUTPUT_PATH = EXAMPLES_DIR / "review-example" / "output.md"
 
     # ── SKILL.md — four mode headings ─────────────────────────────────────────
 
@@ -456,6 +458,35 @@ class TestRhCqlSkillContract:
         if not path.parent.exists():
             pytest.skip("rh-inf-cql examples/review-example/ not implemented")
         assert path.exists(), "rh-inf-cql: examples/review-example/output.md must exist"
+
+    def test_condition_status_examples_use_typed_terminology_comparison(self):
+        """Canonical examples must preserve system and code as one typed identity."""
+        for path in (self.AUTHOR_OUTPUT_PATH, self.REVIEW_OUTPUT_PATH):
+            if not path.exists():
+                pytest.skip(f"rh-inf-cql example not implemented: {path}")
+
+            content = path.read_text()
+            assert not re.search(r"\.system(?:\.value)?\s*=", content), (
+                f"{path}: do not split coded identity into a system string predicate"
+            )
+            assert not re.search(r"\.code(?:\.value)?\s*=", content), (
+                f"{path}: do not split coded identity into a code string predicate"
+            )
+            assert not re.search(
+                r"clinicalStatus\s*~\s*['\"]active['\"]", content, re.IGNORECASE
+            ), (
+                f"{path}: do not compare clinicalStatus to a systemless string"
+            )
+            assert 'codesystem "Condition Clinical Status Codes":' in content
+            assert (
+                "'http://terminology.hl7.org/CodeSystem/condition-clinical'"
+                in content
+            )
+            assert 'code "Active":' in content
+            assert "'active' from \"Condition Clinical Status Codes\"" in content
+            assert 'where S ~ "Active"' in content
+            assert re.search(r"evaluation[- ]time", content)
+            assert "prevalenceInterval()" in content
 
     # ── CLI boundary ──────────────────────────────────────────────────────────
 

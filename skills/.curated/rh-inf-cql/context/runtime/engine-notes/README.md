@@ -17,8 +17,11 @@ identity, add the FHIR Library, and record dependency provenance. The primary
 FHIR Library must declare the helper in `relatedArtifact`.
 
 For choice elements, use FHIR logical types (for example,
-`(A.value as FHIR.boolean).value`). Traverse CodeableConcept `coding` and match
-both system and code. Validate portable CQL with a reference translator too.
+`(A.value as FHIR.boolean).value`). Traverse CodeableConcept `coding` and compare
+each Coding to a declared Code (for example, `S ~ "Active"`) so system and code
+are matched through typed CQL terminology semantics. Do not reproduce that
+identity with separate `.system.value` and `.code.value` string predicates.
+Validate portable CQL with a reference translator too.
 
 ### Terminology Resolution
 
