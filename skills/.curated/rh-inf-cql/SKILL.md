@@ -5,7 +5,7 @@ compatibility: "Requires rh-skills project with topics/<topic>/computable/ struc
 applyTo: "**/*.cql, **/*.xml, **/Library-*.json, **/Measure-*.json, **/PlanDefinition-*.json, **/ActivityDefinition-*.json, **/tests/cql/**/*.json, **/tests/cql/**/*.yaml, **/skills/.curated/rh-inf-cql/**"
 metadata:
   author: "rh-skills"
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 ## User Input
@@ -37,6 +37,7 @@ Before producing any output:
 3. For **author** mode: confirm the structured artifact YAML exists at `topics/<topic>/structured/<artifact>.yaml`.
 4. For **review**/**debug**/**test-plan** modes: confirm the `.cql` source file exists at `topics/<topic>/computable/<LibraryName>.cql`.
 5. For any CQL expression involving **intervals, date/time, null semantics, or operators whose behavior is uncertain**: **first check the Critical Authoring Patterns table** (search this file for `## Critical Authoring Patterns`). Only call `reasonhub-search_spec_content` (source: `cql`) if the specific pattern is not already covered there.
+6. **Before authoring CQL, consult the [CMS FHIR Quality Measure Development IG Pattern Index](https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html)**. When it covers the requested category (patient, condition, encounter, observation, medication, device, procedure, or related quality-measure domain), use that pattern as the first-choice structure. Record the chosen pattern and why local guidance required a material deviation, if any.
 
 **Author mode — prohibited diagnostic commands**: Do **not** run `ls`, `git status`, `git diff`, or `rg --files` as part of the authoring workflow. The directory structure is confirmed by steps 1–4 above. Any exec call not in the author workflow steps below is wasted work.
 
@@ -50,6 +51,7 @@ If any check fails, report the missing resource and halt. Do NOT proceed with a 
 - **Ownership boundary**: `rh-inf-cql` owns `.cql` source files and fixture cases. FHIR JSON packaging is outside scope.
 - **Human confirmation for conflicts**: any ambiguity, inconsistency, or multi-option decision MUST be surfaced to the human before the agent proceeds. Silent resolution is not permitted.
 - **Portable FHIR CQL**: declare `using FHIR version '4.0.1'`, include the versioned `FHIRHelpers` library for FHIR primitive/choice conversions, and use FHIR logical-model types that translate in both `rh` and the reference translator. Do not claim interoperability from one engine alone.
+- **CMS QMD patterns first**: For FHIR CQL, prefer the [CMS QMD Pattern Index](https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html) over improvised logic when a listed pattern covers the clinical/data category. Apply the project's portability and terminology rules; if a CMS QMD pattern is not portable under the pinned runtime, keep its intent and record the tested replacement.
 
 ---
 
@@ -450,7 +452,8 @@ details, unknown terminology expansions, unverified fixture assumptions.
 2. **Read the [CQL Style Guide](docs/cql-style-guide.md)** and apply the
    **authoring rubric** (see Authoring Rubric below) before writing or reviewing
    code. The guide is the source of truth for Patient-context retrieval,
-   terminology operators, FHIR primitive handling, and provenance joins.
+   terminology operators, FHIR primitive handling, provenance joins, and the
+   CMS QMD authoring-pattern precedence rule.
 
 3. **Draft the CQL library** using the template for the artifact type:
 

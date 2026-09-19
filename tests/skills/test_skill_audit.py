@@ -496,3 +496,25 @@ class TestRhCqlSkillContract:
             "rh-inf-cql SKILL.md must explicitly reject parameter-only decision-table "
             "libraries as acceptable finished authoring"
         )
+
+    def test_skill_md_requires_cms_qmd_pattern_index_before_authoring(self):
+        """CMS QMD patterns are the first-choice FHIR CQL baseline."""
+        if not self.SKILL_PATH.exists():
+            pytest.skip("rh-inf-cql skill not implemented")
+        body = skill_body(self.SKILL_PATH)
+        assert "CMS QMD patterns first" in body, (
+            "rh-inf-cql SKILL.md must make CMS QMD patterns the first-choice "
+            "FHIR CQL authoring baseline"
+        )
+        assert (
+            "https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html"
+            in body
+        ), "rh-inf-cql SKILL.md must link the CMS QMD Pattern Index"
+
+        reference = self.REF_PATH
+        if reference.exists():
+            reference_body = reference.read_text()
+            assert "CMS QMD Pattern Index" in reference_body, (
+                "rh-inf-cql reference.md must identify the CMS QMD Pattern Index as "
+                "the preferred FHIR CQL pattern source"
+            )

@@ -2,7 +2,11 @@
 
 Use this checklist for pull requests, library reviews, and agent-generated change proposals.
 Read the [CQL Style Guide](cql-style-guide.md) for Patient-context and typed
-terminology examples before reviewing those patterns.
+terminology examples before reviewing those patterns. Before writing findings,
+also check the
+[CMS QMD Pattern Index](https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html)
+and flag nonconforming logic when a listed pattern covers the clinical/data
+category; allow only documented, tested runtime adaptations.
 
 ## Environment and Packaging
 

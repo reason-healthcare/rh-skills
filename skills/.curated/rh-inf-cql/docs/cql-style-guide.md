@@ -8,6 +8,17 @@ apply here. FHIR model metadata defines which coded path a retrieve filter
 uses. The rules below describe CQL semantics where stated; retrieve factoring
 and helper layout are house-style preferences, not language restrictions.
 
+For FHIR CQL, the CMS QMD Pattern Index is the first-choice
+pattern source:
+
+[https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html](https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html)
+
+Before drafting logic, locate the closest clinical/data category and use the
+corresponding CMS QMD pattern when available. Deviate only when the pattern is
+not covered, the pinned FHIR/CQL version cannot express it, or the runtime
+conformance requires an adaptation; preserve the CMS QMD pattern's intent,
+and state the reason in the review or output.
+
 ## Patient context is part of the query
 
 Declare `context Patient` for patient-specific decision support and measure

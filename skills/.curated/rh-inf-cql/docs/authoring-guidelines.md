@@ -5,6 +5,7 @@ These guidelines define how CQL should be written in this environment.
 ## Goals
 
 - make logic readable and reviewable
+- follow CMS QMD authoring patterns first for FHIR CQL
 - make runtime assumptions explicit
 - reduce ambiguity around dates, intervals, nulls, and terminology
 - make test design straightforward
