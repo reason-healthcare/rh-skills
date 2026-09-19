@@ -97,7 +97,7 @@
     "database": "Imported transactionally: 34 artifacts (6 L2, 28 L3), 13 fixtures, one executable bundle; 13/13 fixtures are collection, tagged, identified, and subject-resolved",
     "workbenchInventory": "Snapshot overview visibly shows 6 structured, 28 computable, 22 lineage, 15 canonical-dependency relationships, and 13 tagged test cases",
     "runtime": {
-      "rhCommit": "7ded0e6d1b5cd075cedaf5ba82722f65f5697a7d",
+      "rhCommit": "365990299c9a1e5866b9c67f3bf12b524a59e136",
       "nodeWasmSha256": "e373215b3ea8cf940f4afadc16cd626312bad5749b520ea54b7c4f7d6d32af92",
       "cpgNodeTests": "7/7 passed",
       "positiveFixture": "tnbc-t1c-n0: HTTP 200; RequestGroup Bundle; 2 generated resources; 1 total action; Surface neoadjuvant TNBC guidance for oncology review",
@@ -112,7 +112,7 @@
     "cql-test-probe-first-focus.log: passing probe superseded by the accepted final log after adding PlanDefinition identifier aliases",
     "compose-executable initial attempt: ValueSet expansions absent",
     "compose-executable-probe-missing-measurement-period.log: source assertions lacked the executable fixture contract's required measurement period",
-    "initial live Workbench apply: Condition Patient-compartment retrieve was unsupported before RH 7ded0e6d"
+    "initial live Workbench apply: Condition Patient-compartment retrieve was unsupported before RH 36599029"
   ],
   "knownConstraints": [
     "The use case and 13 fixtures are on the remote breast-cancer feature branch, not origin/main; the branch includes current origin/main and was consumed read-only.",
