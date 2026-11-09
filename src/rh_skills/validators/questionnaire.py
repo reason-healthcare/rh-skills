@@ -338,27 +338,68 @@ def normalize_observation_extraction(instrument: Any) -> dict[str, Any] | None:
             "Assessment instrument observation_extraction.category is required when extraction is enabled"
         )
     if category is not None:
-        if not isinstance(category, dict):
-            raise ValueError("Assessment instrument observation_extraction.category must be an object")
-        unknown_category_fields = set(category) - {"system", "code", "display"}
-        if unknown_category_fields:
-            raise ValueError(
-                "Assessment instrument observation_extraction.category has unsupported field(s): "
-                + ", ".join(sorted(unknown_category_fields))
-            )
-        if any(
-            not isinstance(category.get(field), str) or not category[field].strip()
-            for field in ("system", "code", "display")
-        ):
-            raise ValueError(
-                "Assessment instrument observation_extraction.category requires non-empty system, code, and display strings"
-            )
+        category = _observation_category(
+            category, "Assessment instrument observation_extraction.category"
+        )
 
     return {
         "enabled": enabled,
         "profile": profile,
         "category": dict(category) if isinstance(category, dict) else None,
     }
+
+
+def _observation_category(value: Any, label: str) -> dict[str, str]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be an object")
+    unknown = set(value) - {"system", "code", "display"}
+    if unknown:
+        raise ValueError(f"{label} has unsupported field(s): {', '.join(sorted(unknown))}")
+    if any(
+        not isinstance(value.get(field), str) or not value[field].strip()
+        for field in ("system", "code", "display")
+    ):
+        raise ValueError(f"{label} requires non-empty system, code, and display strings")
+    return dict(value)
+
+
+def observation_extraction_item_extensions(item: dict[str, Any]) -> list[dict[str, Any]]:
+    """Preserve an explicit item category override for mixed clinical forms."""
+    if "observation_extraction" not in item:
+        return []
+    label = f"Assessment item {item.get('id')!r} observation_extraction"
+    config = item["observation_extraction"]
+    if not isinstance(config, dict) or set(config) != {"category"}:
+        raise ValueError(f"{label} must contain only category")
+    category = _observation_category(config["category"], f"{label}.category")
+    return [{
+        "url": SDC_OBSERVATION_CATEGORY_EXTENSION,
+        "valueCodeableConcept": {"coding": [category]},
+    }]
+
+
+def questionnaire_answer_coding(option: dict[str, Any]) -> dict[str, str] | None:
+    """Validate an explicitly coded answer without replacing its terminology identity."""
+    if "valueCoding" not in option:
+        return None
+    if set(option) != {"valueCoding"}:
+        raise ValueError("Assessment answer option valueCoding cannot be combined with other option fields")
+    coding = option["valueCoding"]
+    if not isinstance(coding, dict):
+        raise ValueError("Assessment answer option valueCoding must be a Coding object")
+    unknown = set(coding) - {"system", "version", "code", "display"}
+    if unknown:
+        raise ValueError(
+            "Assessment answer option valueCoding has unsupported field(s): "
+            + ", ".join(sorted(unknown))
+        )
+    for field, value in coding.items():
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"Assessment answer option valueCoding.{field} must be a non-empty string")
+    for field in ("system", "code"):
+        if field not in coding:
+            raise ValueError(f"Assessment answer option valueCoding.{field} is required")
+    return dict(coding)
 
 
 def observation_extraction_questionnaire_fields(config: dict[str, Any] | None) -> dict[str, Any]:
@@ -429,8 +470,12 @@ def questionnaire_metadata_fields(instrument: Any) -> tuple[dict[str, Any], dict
 
 
 def validate_observation_extraction_items(items: Any, config: dict[str, Any] | None) -> None:
-    """Validate the Boolean, versioned-Coding subset supported by extraction."""
+    """Validate typed clinical answers and terminology used by SDC extraction."""
     if not config or not config["enabled"]:
+        if isinstance(items, list) and any(
+            isinstance(item, dict) and "observation_extraction" in item for item in items
+        ):
+            raise ValueError("Item observation_extraction requires enabled instrument observation_extraction")
         return
     if not isinstance(items, list) or not items:
         raise ValueError(
@@ -447,10 +492,13 @@ def validate_observation_extraction_items(items: Any, config: dict[str, Any] | N
         if link_id in seen_link_ids:
             raise ValueError(f"SDC extraction assessment item linkId {link_id!r} is duplicated")
         seen_link_ids.add(link_id)
-        if item.get("type") != "boolean":
+        item_type = item.get("type")
+        supported_types = {"boolean", "choice", "ordinal", "likert"}
+        if item_type not in supported_types:
             raise ValueError(
-                f"SDC Observation extraction supports Boolean items only; {link_id!r} is not type boolean"
+                f"SDC extraction item {link_id!r} has unsupported response type {item_type!r}"
             )
+        observation_extraction_item_extensions(item)
 
         codings = item.get("code")
         if isinstance(codings, dict):
@@ -465,3 +513,21 @@ def validate_observation_extraction_items(items: Any, config: dict[str, Any] | N
                 raise ValueError(
                     f"SDC extraction item {link_id!r} Coding requires non-empty {field}"
                 )
+        if item_type in {"choice", "ordinal", "likert"}:
+            options = item.get("options")
+            if not isinstance(options, list) or not options:
+                raise ValueError(f"SDC extraction choice item {link_id!r} requires coded options")
+            seen_answers: set[tuple[str, str, str]] = set()
+            for option in options:
+                answer = questionnaire_answer_coding(option) if isinstance(option, dict) else None
+                if answer is None:
+                    raise ValueError(f"SDC extraction choice item {link_id!r} requires valueCoding options")
+                for field in ("system", "code", "display"):
+                    if field not in answer:
+                        raise ValueError(
+                            f"SDC extraction choice item {link_id!r} answer Coding requires non-empty {field}"
+                        )
+                identity = (answer["system"], answer.get("version", ""), answer["code"])
+                if identity in seen_answers:
+                    raise ValueError(f"SDC extraction choice item {link_id!r} has a duplicate answer Coding")
+                seen_answers.add(identity)

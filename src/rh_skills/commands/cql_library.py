@@ -11,6 +11,12 @@ from urllib.parse import urlparse
 
 import click
 
+from rh_skills.cql_identity import (
+    CqlLibraryIdentityError,
+    parse_cql_context,
+    subject_for_cql_context,
+    validate_fhir_library_identity,
+)
 from rh_skills.common import (
     append_topic_event,
     now_iso,
@@ -158,6 +164,19 @@ def _load_manifest(path: Path) -> dict:
         raise click.ClickException(
             f"CQL library identifier/version mismatch: expected {(name, version)}, got {actual}"
         )
+    try:
+        subject = subject_for_cql_context(parse_cql_context(cql_path))
+        validate_fhir_library_identity(
+            {
+                "name": name,
+                "version": version,
+                "url": canonical,
+                "subjectCodeableConcept": subject,
+            },
+            cql_path=cql_path,
+        )
+    except CqlLibraryIdentityError as exc:
+        raise click.ClickException(str(exc)) from exc
     if not isinstance(elm_document, dict) or not isinstance(elm_document.get("library"), dict):
         raise click.ClickException("ELM JSON must contain a library object")
     identifier = elm_document["library"].get("identifier")
@@ -192,6 +211,7 @@ def _load_manifest(path: Path) -> dict:
 
     return {
         "resource": {"id": resource_id, "name": name, "version": version, "url": canonical},
+        "subject": subject,
         "source": source_metadata,
         "cql_path": cql_path,
         "cql_bytes": cql_path.read_bytes(),
@@ -212,6 +232,7 @@ def _fhir_library(imported: dict) -> dict:
         "version": resource["version"],
         "name": resource["name"],
         "status": "active",
+        "subjectCodeableConcept": imported["subject"],
         "type": {
             "coding": [{
                 "system": "http://terminology.hl7.org/CodeSystem/library-type",
@@ -394,6 +415,11 @@ def _existing_tracked_dependency_library_matches(
 
     comparable = dict(existing)
     comparable.pop("relatedArtifact", None)
+    if (
+        "subjectCodeableConcept" not in comparable
+        and expected_library.get("subjectCodeableConcept") == subject_for_cql_context("Patient")
+    ):
+        comparable["subjectCodeableConcept"] = expected_library["subjectCodeableConcept"]
     if comparable != expected_library:
         raise click.ClickException(
             f"Existing dependency Library {path} identity or CQL/ELM attachments differ from its import manifest"

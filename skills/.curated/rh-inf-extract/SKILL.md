@@ -75,6 +75,22 @@ lookups. CLI commands do not perform live MCP lookup on your behalf.
 `rh-skills promote concept enrich` only records already-collected lookup
 results into the review packet.
 
+Terminology execution-evidence gate:
+- A lookup policy, source claim, copied terminology file, or `--lookup-notes`
+  value does not prove that this run called ReasonHub. When ReasonHub MCP is
+  available and applies to the concept type, make the required MCP calls in the
+  current run and retain the exact request and response under
+  `topics/<topic>/process/reviews/terminology-evidence.json`.
+- Each selected standardized code must trace to a record containing the MCP
+  tool, exact query, system, version, request, response, selected code and
+  display, and selection rationale. Do not finalize concept review or claim
+  lookup completion while that trace is missing. Never persist credentials or
+  authorization headers in the evidence file.
+- Source-defined fixture or local codes are allowed for test contracts only.
+  Mark them `test-only` and experimental, record their source contract, and
+  never describe them as standardized or terminology-service-verified unless
+  an explicit reviewed mapping establishes that separate claim.
+
 > **Never inspect `rh-skills` source code** (Python files, test files, or
 > installed package contents). If CLI behavior is unclear, consult `SKILL.md`
 > and `reference.md` only. Inspecting source code wastes context and introduces
@@ -192,7 +208,7 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      | `evidence-summary` | Each distinct finding, conclusion, or evidence grade reported; each PICOTS frame if present |
      | `care-pathway` | Each named clinical phase/step, actor assignment, parent-child step relationship (`parent_id`), and transition condition |
      | `measure` | Each defined outcome, population definition, numerator/denominator specification |
-     | `assessment` | Each instrument domain, scored item, or response scale described |
+     | `assessment` | Each instrument domain, diagnostic data requirement, scored item, or response scale described |
      | `terminology` | Each clinical concept, code system reference, or value set boundary mentioned |
 
      Record these as a numbered list per artifact. This list is the **coverage
@@ -200,6 +216,17 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      derived artifact (a condition/action pair, a finding, a step, a population,
      an item, or a code). Use it in step 4's completeness check and carry it
      forward to implement mode.
+
+   - **Create an assessment artifact for clinical data collection or review.**
+     Its Questionnaire is required even when answers represent diagnostic
+     results already available as Observations. Author clinician-entered or
+     clinician-reviewed items where appropriate; a Questionnaire does not make
+     the evidence patient-reported. Include reviewed item codes (prefer LOINC
+     where it fits), coded answer choices, and explicit SDC extraction metadata
+     when the answers feed Observation-based logic. Use the clinical category
+     for each result, such as laboratory or exam, rather than defaulting all
+     forms to survey. Preserve source/provenance and tumor or other focus
+     requirements in the assessment's data contract.
 
    - **Keep source type, recommendation grade, and evidence certainty distinct.**
      Preserve an explicitly reported recommendation grade as that grade (for
@@ -213,6 +240,15 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    - **Specific cross-source disagreements** — exact values, thresholds, or
      recommendations that differ between sources (e.g., "source A: HbA1c <7.0%;
      source B: <=6.5%"). These become `concerns[]` entries at approve time.
+
+   - **Named medication regimens and order sets** — perform an explicit
+     order-set candidate analysis. Record the source-supported regimen name,
+     component medications or classes, eligibility, sequence, and dosing
+     details, plus every missing element. A named component medication is a
+     separate `medication` concept and must follow the RxNorm-first MCP path.
+     Do not let a broad guidance-applicability action stand in for the regimen
+     candidate, and do not invent components or order details absent from the
+     source.
 
 3. Run `rh-skills promote plan <topic>` to generate the plan files. Use `--force` to
    overwrite an existing plan. Do not manually edit `extract-plan.yaml` — use
@@ -383,13 +419,19 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    an exact source-authored item Coding or a pinned Coding already reviewed in
    the topic terminology artifact, including `system`, `version`, `code`, and
    `display`. If the assessment declares
-   `sections.instrument.observation_extraction`, every supported Boolean item
+   `sections.instrument.observation_extraction`, every supported Boolean or coded choice item
    must have exactly one such reviewed Coding; if a required Coding is not
    available or reviewed, record the terminology gap as blocking and do not
    claim the assessment is extraction-ready. An MCP outage does not erase a
    Coding that was already reviewed and pinned. Enabled extraction also
    requires an explicitly sourced or reviewed `sections.instrument.version_algorithm`
    Coding; never infer an algorithm from the Questionnaire version string.
+   Coded choices use `options[].valueCoding` with reviewed `system`, `code`,
+   and `display`, plus `version` when verified; do not infer an answer version
+   from the question's code-system version. The item code identifies the observation and the
+   selected answer code identifies its value. Mixed forms can override category
+   with item `observation_extraction.category`. See the
+   [assessment contract](reference.md#assessment).
 
    **Assessment scoring is optional and source-bound.** If the source defines
    scoring, preserve its exact input items, weights/transforms, completion and

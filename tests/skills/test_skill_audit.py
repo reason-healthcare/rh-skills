@@ -271,6 +271,40 @@ class TestRhInfExtractSkillContract:
         assert "approved" in body and "reviewer_decision" in body
         assert "rh-skills validate" in body and "<topic>" in body
 
+    def test_extract_skill_requires_current_run_reasonhub_evidence(self):
+        skill = Path("skills/.curated/rh-inf-extract/SKILL.md")
+        reference = Path("skills/.curated/rh-inf-extract/reference.md")
+        body = skill_body(skill)
+        details = reference.read_text()
+
+        assert "does not prove that this run called ReasonHub" in body
+        assert "process/reviews/terminology-evidence.json" in body
+        for field in (
+            "tool",
+            "query",
+            "system",
+            "version",
+            "request",
+            "response",
+            "selected code",
+            "display",
+            "selection rationale",
+        ):
+            assert field in body
+        assert "exact request and response returned in the run" in details
+        assert "not current-run MCP execution evidence" in details
+
+    def test_extract_skill_separates_fixture_codes_and_regimen_candidates(self):
+        skill = Path("skills/.curated/rh-inf-extract/SKILL.md")
+        reference = Path("skills/.curated/rh-inf-extract/reference.md")
+        combined = skill_body(skill) + "\n" + reference.read_text()
+
+        assert "test-only" in combined
+        assert "never describe them as standardized or terminology-service-verified" in combined
+        assert "order-set candidate analysis" in combined
+        assert "RxNorm-first MCP path" in combined
+        assert "do not invent components or order details" in combined
+
 
 class TestRhInfFormalizeSkillContract:
     """Focused contract checks for the formalize skill's reviewer-gated L3 flow."""
@@ -292,6 +326,41 @@ class TestRhInfFormalizeSkillContract:
         assert "implementation_target" in body
         assert "rh-skills formalize" in body
         assert "rh-skills validate" in body
+
+    def test_formalize_skill_bounds_draft_regimen_order_sets(self):
+        skill = Path("skills/.curated/rh-inf-formalize/SKILL.md")
+        reference = Path("skills/.curated/rh-inf-formalize/reference.md")
+        combined = skill_body(skill) + "\n" + reference.read_text()
+
+        assert "order-set candidate analysis" in combined
+        assert "using RxNorm first" in combined
+        assert "experimental: true" in combined
+        assert "intent: proposal" in combined
+        for unsupported_detail in (
+            "dose",
+            "route",
+            "frequency",
+            "cycle",
+            "sequence",
+            "timing",
+        ):
+            assert unsupported_detail in combined
+        assert "broader guidance-applicability action" in combined
+        assert "Do not gate" in combined
+
+    def test_formalize_skill_requires_cql_library_identity_conformance(self):
+        body = skill_body(Path("skills/.curated/rh-inf-formalize/SKILL.md"))
+        assert "conformance.html#conformance-requirement-4-2" in body
+        for requirement in (
+            "Library.url",
+            "Library.subject",
+            "IG.packageId",
+            "IG.canonicalBase",
+            "cql-namespaceUri",
+            "underscores",
+            "64 characters",
+        ):
+            assert requirement in body
 
 
 class TestRhInfVerifySkillContract:
@@ -363,6 +432,16 @@ class TestRhCqlSkillContract:
 
     SKILL_PATH = Path("skills/.curated/rh-inf-cql/SKILL.md")
     REF_PATH = Path("skills/.curated/rh-inf-cql/reference.md")
+    STYLE_GUIDE_PATH = Path(
+        "skills/.curated/rh-inf-cql/docs/cql-style-guide.md"
+    )
+    REVIEW_CHECKLIST_PATH = Path(
+        "skills/.curated/rh-inf-cql/docs/review-checklist.md"
+    )
+    TERMINOLOGY_POLICY_PATH = Path(
+        "skills/.curated/rh-inf-cql/docs/terminology-policy.md"
+    )
+    TERMINOLOGY_TEST_README_PATH = Path("tests/cql/terminology/README.md")
     EXAMPLES_DIR = Path("skills/.curated/rh-inf-cql/examples")
     AUTHOR_OUTPUT_PATH = EXAMPLES_DIR / "author-example" / "output.md"
     REVIEW_OUTPUT_PATH = EXAMPLES_DIR / "review-example" / "output.md"
@@ -549,3 +628,184 @@ class TestRhCqlSkillContract:
                 "rh-inf-cql reference.md must identify the CMS QMD Pattern Index as "
                 "the preferred FHIR CQL pattern source"
             )
+
+    def test_author_mode_preserves_terminology_and_regimen_boundaries(self):
+        """CQL authoring must consume reviewed terminology and eligibility evidence."""
+        if not self.SKILL_PATH.exists():
+            pytest.skip("rh-inf-cql skill not implemented")
+        body = skill_body(self.SKILL_PATH)
+
+        assert "process/reviews/terminology-evidence.json" in body
+        assert "current-run ReasonHub evidence" in body
+        assert "actual MCP call" in body
+        assert "test-only" in body
+        assert "terminology-service-verified" in body
+        assert "Regimen applicability boundary" in body
+        assert "Do not turn a broad guidance" in body
+        assert "do not invent eligibility, dose, route, timing" in body
+
+    def test_skill_enforces_cql_ig_library_identity_contract(self):
+        body = skill_body(self.SKILL_PATH)
+        reference = self.REF_PATH.read_text()
+        combined = body + "\n" + reference
+
+        assert "conformance.html#conformance-requirement-4-2" in combined
+        for requirement in (
+            "Library.name",
+            "Library.version",
+            "Library.url",
+            "Library.subject",
+            "IG.packageId",
+            "IG.canonicalBase",
+            "cql-namespaceUri",
+            "no underscores",
+            "64 characters",
+            "<LibraryName>-<LibraryVersion>.cql",
+        ):
+            assert requirement in combined
+
+    def test_skill_enforces_fhircommon_references_fluent_invocation(self):
+        """FHIRCommon.references must use its published fluent-call syntax."""
+        skill = skill_body(self.SKILL_PATH)
+        style = self.STYLE_GUIDE_PATH.read_text()
+        checklist = self.REVIEW_CHECKLIST_PATH.read_text()
+        combined = "\n".join((skill, style, checklist))
+
+        assert "O.encounter.references(E)" in skill
+        assert "FHIRCommon.references(O.encounter, E)" in skill
+        assert "(First(O.focus) as FHIR.Reference).references(C)" in style
+        assert "fluent function" in checklist
+        assert "namespace-style" in combined
+
+    def test_skill_uses_namespaced_external_cql_source_and_retranslates_elm(self):
+        """External package CQL is namespaced source, never trusted package ELM."""
+        paths = (
+            self.SKILL_PATH,
+            self.REF_PATH,
+            self.STYLE_GUIDE_PATH,
+            self.REVIEW_CHECKLIST_PATH,
+            Path("skills/.curated/rh-inf-cql/docs/runtime-assumptions.md"),
+            Path("skills/.curated/rh-inf-cql/docs/authoring-guidelines.md"),
+            Path(
+                "skills/.curated/rh-inf-cql/context/runtime/"
+                "engine-notes/README.md"
+            ),
+            Path(
+                "skills/.curated/rh-inf-cql/context/runtime/"
+                "translator-options/README.md"
+            ),
+            self.AUTHOR_OUTPUT_PATH,
+        )
+        combined = "\n".join(path.read_text() for path in paths)
+
+        assert "fhir.cqf.common@4.0.1" in combined
+        assert (
+            "include fhir.cqf.common.FHIRHelpers version '4.0.1' "
+            "called FHIRHelpers"
+        ) in combined
+        assert (
+            "include fhir.cqf.common.FHIRCommon version '4.0.1' "
+            "called FHIRCommon"
+        ) in combined
+        assert "The namespace is the package ID" in combined
+        assert "package-supplied ELM" in combined
+        assert "rh-skills cql translate" in combined
+        assert "source CQL checksum" in combined
+        assert "generated ELM checksum" in combined
+        assert "do not create a local" in combined.lower()
+        assert "Do not copy helper/common source into first-party" in combined
+
+        for path in paths:
+            assert not re.search(
+                r"(?m)^\s*include\s+(?:FHIRHelpers|FHIRCommon)\b",
+                path.read_text(),
+            ), f"{path}: external includes must use their package namespace"
+
+        assert "does not declare the fluent" in combined
+        assert "references" in combined
+        assert (
+            "include hl7.fhir.uv.cql.FHIRCommon version '2.0.0' "
+            "called FHIRCommon"
+        ) in self.STYLE_GUIDE_PATH.read_text()
+        dependencies = Path(
+            "skills/.curated/rh-inf-cql/src/manifests/dependencies.yaml"
+        ).read_text()
+        assert "hl7.fhir.uv.cql" in dependencies
+        assert "hl7.fhir.uv.cql.FHIRCommon|2.0.0" in dependencies
+        assert "optionalPackages" in dependencies
+
+    def test_skill_uses_valuesets_for_multicode_result_classification(self):
+        """Multi-code FHIR results use Concept membership, not direct-code chains."""
+        skill = skill_body(self.SKILL_PATH)
+        style = self.STYLE_GUIDE_PATH.read_text()
+        checklist = self.REVIEW_CHECKLIST_PATH.read_text()
+        terminology = self.TERMINOLOGY_POLICY_PATH.read_text()
+        test_matrix = self.TERMINOLOGY_TEST_README_PATH.read_text()
+        combined = "\n".join((skill, style, checklist, terminology, test_matrix))
+
+        assert 'FHIRHelpers.ToConcept(V) in "Clinical T1c Or Higher"' in skill
+        assert style.count("version '1.0.0'") >= 2
+        assert '"Clinical T Concept" in "Clinical T1c Or Higher"' in style
+        assert '"Clinical T Concept" in "Clinical T Below T1c"' in style
+        assert 'if "Clinical T Concept" is null then null' in style
+        assert 'and not "Clinical T Is Below T1c"' in style
+        assert 'and not "Clinical T Is T1c Or Higher"' in style
+        assert "then true" in style
+        assert "then false" in style
+        assert "else null" in style
+        assert "any code in that Concept" in style
+        assert "not a FHIR `CodeableConcept`" in style
+        assert "repeated direct-code `or` chains" in checklist
+        assert "matches both sets" in terminology
+        assert "false/contrasting ValueSet" in terminology
+        assert "absence or non-membership" in terminology
+        for case_type in (
+            "paired-positive",
+            "paired-negative",
+            "paired-neither",
+            "paired-conflict",
+            "paired-wrong-type",
+            "paired-unresolved",
+        ):
+            assert case_type in test_matrix
+        assert "expect execution failure" in test_matrix
+        assert "does not infer" in combined
+
+    def test_skill_inventories_all_coded_categorical_classifiers(self):
+        """Every coded Boolean/enum category uses one Concept and ValueSets."""
+        skill = skill_body(self.SKILL_PATH)
+        style = self.STYLE_GUIDE_PATH.read_text()
+        checklist = self.REVIEW_CHECKLIST_PATH.read_text()
+        terminology = self.TERMINOLOGY_POLICY_PATH.read_text()
+
+        for document in (skill, style, checklist, terminology):
+            assert "categorical classifier inventory" in document.lower()
+            assert "one code" in document.lower()
+
+        for document in (skill, style, terminology):
+            assert re.search(r"exact\s+single-concept predicate", document)
+        assert re.search(r"exact\s+single-concept predicates", checklist)
+        assert "Applying this pattern to one prominent category" in skill
+        assert "applying the ValueSet pattern to one" in style
+        assert "converting one category" in terminology
+
+        assert 'valueset "Positive Interpretation":' in style
+        assert 'valueset "Negative Interpretation":' in style
+        assert style.count(
+            'FHIRHelpers.ToConcept(First("Selected Result".interpretation))'
+        ) == 1
+        assert 'define "Interpretation Is Positive":' in style
+        assert 'define "Interpretation Is Negative":' in style
+        assert 'else if "Interpretation Is Positive" then' in style
+        assert 'else if "Interpretation Is Negative" then' in style
+
+        assert 'valueset "Qualitative Result Detected":' in style
+        assert "source-specific result CodeSystem" in style
+        assert 'define "Qualitative Result Concept":' in style
+        assert 'define "Qualitative Result Is Detected":' in style
+        assert (
+            '"Qualitative Result Concept" in "Qualitative Result Detected"'
+            in style
+        )
+        assert "category branches using named membership" in checklist
+        assert "they do not compare raw Codes" in terminology

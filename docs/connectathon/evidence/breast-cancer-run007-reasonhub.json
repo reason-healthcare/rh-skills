@@ -1,0 +1,7847 @@
+{
+	"schemaVersion": 1,
+	"createdAt": "2026-09-19T20:14:59.093Z",
+	"purpose": "ReasonHub MCP discovery and exact-code lookup evidence for the breast-cancer run007 terminology correction and evidence-derived regimen review order set.",
+	"historicalAudit": {
+		"run006Session": "/Users/bkaney/.codex/sessions/2026/09/19/rollout-2026-09-19T14-09-10-01a0badb-9ff8-7563-8c4c-b498cdfa8c6d.jsonl",
+		"finding": "Run006 made zero mcp__reasonhub calls. It manually promoted source-supplied local and LOINC codes and recorded no provider request/response payload.",
+		"upstreamSourceAuthoringSession": "/Users/bkaney/.codex/sessions/2026/09/19/rollout-2026-09-19T11-17-18-01a0ba3e-4770-7b20-954a-e32837a8f60b.jsonl",
+		"upstreamFinding": "The upstream source-authoring session used mcp__reasonhub__codesystem_lookup to verify eight preselected LOINC codes. Five observation codes resolved; three answer codes did not. It did not perform semantic discovery for SNOMED CT, RxNorm, invasive breast cancer, TNBC, stage concepts, or regimen drugs.",
+		"sourceEvidence": "source-corpus/use-cases/breast-cancer/validation/terminology-lookups.json",
+		"correction": "This run calls ReasonHub search tools for discovery and CodeSystem lookup for exact selected code/version verification."
+	},
+	"versionDiscovery": {
+		"tool": "mcp__reasonhub__list_available_codesystem_versions",
+		"response": [
+			{
+				"url": "http://snomed.info/sct",
+				"version": "http://snomed.info/sct/731000124108/version/20240901",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://snomed.info/sct",
+				"version": "http://snomed.info/sct/731000124108/version/20250901",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://snomed.info/sct",
+				"version": "http://snomed.info/sct/900000000000207008/version/20260401",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://loinc.org",
+				"version": "2.80",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://loinc.org",
+				"version": "2.81",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://hl7.org/fhir/sid/icd-10-cm",
+				"version": "2025",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://hl7.org/fhir/sid/icd-10-cm",
+				"version": "2026",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "10062025",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			},
+			{
+				"url": "http://unitsofmeasure.org",
+				"version": "2.2",
+				"name": null,
+				"title": null,
+				"status": null,
+				"coding_count": null
+			}
+		]
+	},
+	"terminologyProvider": "ReasonHub MCP",
+	"selections": [
+		{
+			"concept": "pembrolizumab",
+			"discoveryTool": "mcp__reasonhub__search_rxnorm",
+			"searchRequest": {
+				"query": "pembrolizumab ingredient",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "01052026"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "1657745",
+						"display": "pembrolizumab Injection",
+						"distance": 0.13505435005365207,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1547545",
+						"display": "Product containing pembrolizumab (medicinal product)",
+						"distance": 0.14746762191853935,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "194279",
+						"display": "Palivizumab-containing product",
+						"distance": 0.22988383539046098,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2010631",
+						"display": "Pascolizumab",
+						"distance": 0.2508862749164743,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2169884",
+						"display": "Prasinezumab",
+						"distance": 0.2543030526671851,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "281152",
+						"display": "Pexelizumab",
+						"distance": 0.26268101705707025,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1547547",
+						"display": "Pembrolizumab-containing product in parenteral dose form",
+						"distance": 0.2636527498576008,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2114697",
+						"display": "Pembrolizumab only product",
+						"distance": 0.27368022369755474,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1657748",
+						"display": "pembrolizumab Injection [Keytruda]",
+						"distance": 0.29199918315973616,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1513934",
+						"display": "Pidilizumab",
+						"distance": 0.30355019006977413,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "1547545"
+			},
+			"selected": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "1547545",
+				"display": "Product containing pembrolizumab (medicinal product)",
+				"inactive": false,
+				"termTypes": [
+					"FN",
+					"GN",
+					"IN",
+					"PT",
+					"SU",
+					"SY"
+				]
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "RxNorm"
+					},
+					{
+						"name": "version",
+						"valueString": "01052026"
+					},
+					{
+						"name": "display",
+						"valueString": "Product containing pembrolizumab (medicinal product)"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the concept is obsolete (all RXNCONSO rows have SUPPRESS=O)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "FN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "GN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "IN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "PT"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SU"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "ATC"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "DRUGBANK"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "GS"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MMSL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MTHSPL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "NDDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "RXNORM"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "SNOMEDCT_US"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "VANDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "015666"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "30533"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "4033703"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "5342"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "716125002"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "763541003"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "d08287"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "DB09037"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "DPT0O3T46P"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "L01FF02"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "2723753"
+							},
+							{
+								"name": "description",
+								"valueString": "pembrolizumab-pmph"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1547546"
+							},
+							{
+								"name": "description",
+								"valueString": "pembrolizumab 25 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1547547"
+							},
+							{
+								"name": "description",
+								"valueString": "Pembrolizumab-containing product in parenteral dose form"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1657744"
+							},
+							{
+								"name": "description",
+								"valueString": "pembrolizumab 50 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1657745"
+							},
+							{
+								"name": "description",
+								"valueString": "pembrolizumab Injection"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "2723754"
+							},
+							{
+								"name": "description",
+								"valueString": "pembrolizumab-pmph 165 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "2723758"
+							},
+							{
+								"name": "description",
+								"valueString": "berahyaluronidase alfa / pembrolizumab Injectable Product"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "2723759"
+							},
+							{
+								"name": "description",
+								"valueString": "berahyaluronidase alfa / pembrolizumab Injection"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_part"
+							},
+							{
+								"name": "value",
+								"valueCode": "2723757"
+							},
+							{
+								"name": "description",
+								"valueString": "berahyaluronidase alfa / pembrolizumab"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "1547550"
+							},
+							{
+								"name": "description",
+								"valueString": "Keytruda"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "2723764"
+							},
+							{
+								"name": "description",
+								"valueString": "Keytruda Qlex"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "paclitaxel",
+			"discoveryTool": "mcp__reasonhub__search_rxnorm",
+			"searchRequest": {
+				"query": "paclitaxel ingredient",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "01052026"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "56946",
+						"display": "Paclitaxel",
+						"distance": 0.09022729995014456,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1663181",
+						"display": "paclitaxel Injection",
+						"distance": 0.11195791830269386,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2330467",
+						"display": "Paclitaxel Injection",
+						"distance": 0.11195791830269386,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1546599",
+						"display": "paclitaxel Injectable Solution [Paccal]",
+						"distance": 0.20586850169944437,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1163532",
+						"display": "Paclitaxel-containing product in parenteral dose form",
+						"distance": 0.20912002344270442,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2645014",
+						"display": "liposomal encapsulated paclitaxel",
+						"distance": 0.22368229768907588,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2473230",
+						"display": "PACLITAXEL POLIGLUMEX",
+						"distance": 0.22552317567776925,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "377111",
+						"display": "paclitaxel Injectable Solution",
+						"distance": 0.23904799561564893,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1663184",
+						"display": "paclitaxel Injection [Abraxane]",
+						"distance": 0.2535231125948251,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1546598",
+						"display": "paclitaxel 1 MG/ML [Paccal]",
+						"distance": 0.2572326357844055,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "56946"
+			},
+			"selected": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "56946",
+				"display": "Paclitaxel",
+				"inactive": false,
+				"termTypes": [
+					"BN",
+					"FN",
+					"GN",
+					"IN",
+					"PT",
+					"SU",
+					"SY",
+					"TMSY"
+				]
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "RxNorm"
+					},
+					{
+						"name": "version",
+						"valueString": "01052026"
+					},
+					{
+						"name": "display",
+						"valueString": "Paclitaxel"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the concept is obsolete (all RXNCONSO rows have SUPPRESS=O)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "BN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "FN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "GN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "IN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "PT"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SU"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "TMSY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "ATC"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "DRUGBANK"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "GS"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MMSL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MTHSPL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "NDDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "RXNORM"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "SNOMEDCT_US"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "USP"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "VANDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "004116"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "1442"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "387374002"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "4020736"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "42243"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "5224"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "67735003"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "d01376"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "DB01229"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "L01CD01"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "m60190"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "P88XT4IS4D"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "2473230"
+							},
+							{
+								"name": "description",
+								"valueString": "PACLITAXEL POLIGLUMEX"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "486610"
+							},
+							{
+								"name": "description",
+								"valueString": "Paclitaxel, albumin-bound (human)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1163532"
+							},
+							{
+								"name": "description",
+								"valueString": "Paclitaxel-containing product in parenteral dose form"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1546595"
+							},
+							{
+								"name": "description",
+								"valueString": "paclitaxel 1 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1663180"
+							},
+							{
+								"name": "description",
+								"valueString": "paclitaxel 100 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1663181"
+							},
+							{
+								"name": "description",
+								"valueString": "paclitaxel Injection"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "316429"
+							},
+							{
+								"name": "description",
+								"valueString": "paclitaxel 6 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "329138"
+							},
+							{
+								"name": "description",
+								"valueString": "paclitaxel 5.88 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "377111"
+							},
+							{
+								"name": "description",
+								"valueString": "paclitaxel Injectable Solution"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "1546597"
+							},
+							{
+								"name": "description",
+								"valueString": "Paccal"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "196466"
+							},
+							{
+								"name": "description",
+								"valueString": "Taxol"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "284817"
+							},
+							{
+								"name": "description",
+								"valueString": "Onxol"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "589511"
+							},
+							{
+								"name": "description",
+								"valueString": "Abraxane"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "carboplatin",
+			"discoveryTool": "mcp__reasonhub__search_rxnorm",
+			"searchRequest": {
+				"query": "carboplatin ingredient",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "01052026"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "40048",
+						"display": "Carboplatin",
+						"distance": 0.10515516084077225,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2181868",
+						"display": "Carboplatin Injection",
+						"distance": 0.14873097856539075,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2563575",
+						"display": "Carboplatin for Injection",
+						"distance": 0.17324628487540505,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "93698",
+						"display": "carboplatin Injectable Solution [Paraplatin]",
+						"distance": 0.18156579169699139,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1156104",
+						"display": "Carboplatin-containing product in parenteral dose form",
+						"distance": 0.19555586870881803,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "378363",
+						"display": "carboplatin Injectable Solution",
+						"distance": 0.20377495950029334,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2555",
+						"display": "Cisplatin",
+						"distance": 0.23515219730000803,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1736856",
+						"display": "cisplatin Injection [Platinol]",
+						"distance": 0.2554683112477423,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1736853",
+						"display": "cisplatin Injection",
+						"distance": 0.2589325858480481,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2477548",
+						"display": "Cisplatin Injection",
+						"distance": 0.2589325858480481,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "40048"
+			},
+			"selected": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "40048",
+				"display": "Carboplatin",
+				"inactive": false,
+				"termTypes": [
+					"BN",
+					"FN",
+					"FSY",
+					"GN",
+					"IN",
+					"PT",
+					"SU",
+					"SY",
+					"TMSY"
+				]
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "RxNorm"
+					},
+					{
+						"name": "version",
+						"valueString": "01052026"
+					},
+					{
+						"name": "display",
+						"valueString": "Carboplatin"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the concept is obsolete (all RXNCONSO rows have SUPPRESS=O)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "BN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "FN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "FSY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "GN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "IN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "PT"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SU"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "TMSY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "ATC"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "DRUGBANK"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "GS"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MMSL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MTHSPL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "NDDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "RXNORM"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "SNOMEDCT_US"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "USP"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "VANDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "002643"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "108759002"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "37674"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "386905002"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "4019478"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "416"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "4357"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "BG3F62OND5"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "d00185"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "DB00958"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "L01XA02"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "m13120"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1156104"
+							},
+							{
+								"name": "description",
+								"valueString": "Carboplatin-containing product in parenteral dose form"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "346209"
+							},
+							{
+								"name": "description",
+								"valueString": "carboplatin 10 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "378363"
+							},
+							{
+								"name": "description",
+								"valueString": "carboplatin Injectable Solution"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "545125"
+							},
+							{
+								"name": "description",
+								"valueString": "carboplatin 5 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "152200"
+							},
+							{
+								"name": "description",
+								"valueString": "Paraplatin"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "2721598"
+							},
+							{
+								"name": "description",
+								"valueString": "Kyxata"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "doxorubicin",
+			"discoveryTool": "mcp__reasonhub__search_rxnorm",
+			"searchRequest": {
+				"query": "doxorubicin ingredient",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "01052026"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "3639",
+						"display": "Doxorubicin",
+						"distance": 0.11157271395155766,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1790094",
+						"display": "doxorubicin Injection",
+						"distance": 0.1325337672547484,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "600629",
+						"display": "DOXOrubicin compounding powder",
+						"distance": 0.15979567013851703,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2284506",
+						"display": "DOXOrubicin Injection [Doxil]",
+						"distance": 0.16519053774291959,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "214525",
+						"display": "Doxorubicin, Liposomal",
+						"distance": 0.21732326662418866,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2284504",
+						"display": "DOXOrubicin Injection [LipoDox]",
+						"distance": 0.22396270042217925,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "374376",
+						"display": "doxorubicin Injectable Solution",
+						"distance": 0.24736733876749917,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "142433",
+						"display": "Doxorubicin Hydrochloride",
+						"distance": 0.2488397802911665,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1160774",
+						"display": "Doxorubicin-containing product in parenteral dose form",
+						"distance": 0.2529762291011409,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2675324",
+						"display": "doxorubicin Injection [Caelyx]",
+						"distance": 0.270476724191249,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "3639"
+			},
+			"selected": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "3639",
+				"display": "Doxorubicin",
+				"inactive": false,
+				"termTypes": [
+					"FN",
+					"FSY",
+					"GN",
+					"IN",
+					"PT",
+					"SU",
+					"SY",
+					"TMSY"
+				]
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "RxNorm"
+					},
+					{
+						"name": "version",
+						"valueString": "01052026"
+					},
+					{
+						"name": "display",
+						"valueString": "Doxorubicin"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the concept is obsolete (all RXNCONSO rows have SUPPRESS=O)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "FN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "FSY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "GN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "IN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "PT"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SU"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "TMSY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "ATC"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "DRUGBANK"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "GS"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MMSL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MTHSPL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "NDDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "RXNORM"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "SNOMEDCT_US"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "VANDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "004818"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "372817009"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "4019737"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "4193"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "68444001"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "80168379AG"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "d00218"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "DB00997"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "L01DB01"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "142433"
+							},
+							{
+								"name": "description",
+								"valueString": "Doxorubicin Hydrochloride"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "214525"
+							},
+							{
+								"name": "description",
+								"valueString": "Doxorubicin, Liposomal"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "466523"
+							},
+							{
+								"name": "description",
+								"valueString": "Daunorubicin hydrochloride liposome"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1160774"
+							},
+							{
+								"name": "description",
+								"valueString": "Doxorubicin-containing product in parenteral dose form"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1191137"
+							},
+							{
+								"name": "description",
+								"valueString": "doxorubicin hydrochloride 2 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1191495"
+							},
+							{
+								"name": "description",
+								"valueString": "doxorubicin hydrochloride liposome 2 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1790093"
+							},
+							{
+								"name": "description",
+								"valueString": "doxorubicin hydrochloride 50 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1790094"
+							},
+							{
+								"name": "description",
+								"valueString": "doxorubicin Injection"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1790102"
+							},
+							{
+								"name": "description",
+								"valueString": "doxorubicin hydrochloride 10 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1872061"
+							},
+							{
+								"name": "description",
+								"valueString": "doxorubicin hydrochloride 20 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "374376"
+							},
+							{
+								"name": "description",
+								"valueString": "doxorubicin Injectable Solution"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "1274581"
+							},
+							{
+								"name": "description",
+								"valueString": "Lipodox"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "2675321"
+							},
+							{
+								"name": "description",
+								"valueString": "Caelyx"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "42512"
+							},
+							{
+								"name": "description",
+								"valueString": "Adriamycine"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "80773"
+							},
+							{
+								"name": "description",
+								"valueString": "Doxil"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "cyclophosphamide",
+			"discoveryTool": "mcp__reasonhub__search_rxnorm",
+			"searchRequest": {
+				"query": "cyclophosphamide ingredient",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "01052026"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "3002",
+						"display": "Cyclophosphamide",
+						"distance": 0.09703537711883448,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1734916",
+						"display": "cyclophosphamide Injection",
+						"distance": 0.10848027487804623,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "371664",
+						"display": "Cyclophosphamide Tablets",
+						"distance": 0.11134674822811086,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1156183",
+						"display": "cyclophosphamide Pill",
+						"distance": 0.11229286316206011,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1437967",
+						"display": "Cyclophosphamide Capsules",
+						"distance": 0.1212341165577766,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2059690",
+						"display": "Cyclophosphamide Bulk powder",
+						"distance": 0.12916791919651183,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1156182",
+						"display": "Cyclophosphamide-containing product in oral dose form",
+						"distance": 0.14127781688217012,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "2181692",
+						"display": "Cyclophosphamide for Injection",
+						"distance": 0.14169237877161145,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "1156181",
+						"display": "Cyclophosphamide-containing product in parenteral dose form",
+						"distance": 0.1541917853238568,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					},
+					{
+						"code": "221085",
+						"display": "cyclophosphamide lyophilized",
+						"distance": 0.16681970260070367,
+						"providerSystemId": "5d81ff33-871a-4f75-927d-a5f31731f9ff"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "3002"
+			},
+			"selected": {
+				"system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+				"version": "01052026",
+				"code": "3002",
+				"display": "Cyclophosphamide",
+				"inactive": false,
+				"termTypes": [
+					"BN",
+					"FN",
+					"FSY",
+					"GN",
+					"IN",
+					"PT",
+					"SU",
+					"SY",
+					"TMSY"
+				]
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "RxNorm"
+					},
+					{
+						"name": "version",
+						"valueString": "01052026"
+					},
+					{
+						"name": "display",
+						"valueString": "Cyclophosphamide"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the concept is obsolete (all RXNCONSO rows have SUPPRESS=O)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "BN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "FN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "FSY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "GN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "IN"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "PT"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SU"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "SY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TTY"
+							},
+							{
+								"name": "value",
+								"valueString": "TMSY"
+							},
+							{
+								"name": "description",
+								"valueString": "Term Type (IN=Ingredient, SCD=Clinical Drug, SBD=Branded Drug, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "ATC"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "DRUGBANK"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "GS"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MMSL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "MTHSPL"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "NDDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "RXNORM"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "SNOMEDCT_US"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SAB"
+							},
+							{
+								"name": "value",
+								"valueString": "VANDF"
+							},
+							{
+								"name": "description",
+								"valueString": "Source Abbreviation (RXNORM, MTHSPL, etc.)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "002631"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "31952"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "387420009"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "4018114"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "4519"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "74470007"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "8N3DW7272P"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "945"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "d00036"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "DB00531"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CODE"
+							},
+							{
+								"name": "value",
+								"valueString": "L01AA01"
+							},
+							{
+								"name": "description",
+								"valueString": "Code in source vocabulary (e.g., UNII codes)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "1545988"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide anhydrous"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "221085"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide lyophilized"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "form_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "2679071"
+							},
+							{
+								"name": "description",
+								"valueString": "(±)-2-(BIS(2-CHLOROETHYL)AMINO)TETRAHYDRO-2H-1,3,2-OXAZAPHOSPHORINE 2-OXIDE MONOHYDRATE"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1156180"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide / mannitol Injectable Product"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1156181"
+							},
+							{
+								"name": "description",
+								"valueString": "Cyclophosphamide-containing product in parenteral dose form"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1156182"
+							},
+							{
+								"name": "description",
+								"valueString": "Cyclophosphamide-containing product in oral dose form"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1156183"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide Pill"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1437967"
+							},
+							{
+								"name": "description",
+								"valueString": "Cyclophosphamide Capsules"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1734915"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 500 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1734916"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide Injection"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1734918"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 1000 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "1734920"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 2000 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "2386858"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 200 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "2644737"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 500 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "2679072"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 100 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "315746"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 25 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "315747"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 50 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "329664"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 20 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "358855"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 10 MG"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "371664"
+							},
+							{
+								"name": "description",
+								"valueString": "Cyclophosphamide Tablets"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "376666"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide Injectable Solution"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "377238"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide / mannitol Injectable Solution"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "438828"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 10 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "438830"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 5 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_ingredient"
+							},
+							{
+								"name": "value",
+								"valueCode": "438831"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide 7.5 MG/ML"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "has_part"
+							},
+							{
+								"name": "value",
+								"valueCode": "690313"
+							},
+							{
+								"name": "description",
+								"valueString": "cyclophosphamide / mannitol"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "202588"
+							},
+							{
+								"name": "description",
+								"valueString": "Endoxana"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "202589"
+							},
+							{
+								"name": "description",
+								"valueString": "Cytoxan"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "tradename_of"
+							},
+							{
+								"name": "value",
+								"valueCode": "2703028"
+							},
+							{
+								"name": "description",
+								"valueString": "Frindovyx"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "invasive-breast-carcinoma",
+			"discoveryTool": "mcp__reasonhub__search_snomed",
+			"searchRequest": {
+				"query": "invasive carcinoma of breast",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "http://snomed.info/sct/731000124108/version/20250901"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "713609000",
+						"display": "Invasive carcinoma of breast",
+						"distance": 8.021841546579367E-8,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "278053004",
+						"display": "Intraductal carcinoma of breast",
+						"distance": 0.12212715990078926,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "154513000",
+						"display": "Carcinoma of breast",
+						"distance": 0.12738821822779522,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "254838004",
+						"display": "Carcinoma of breast",
+						"distance": 0.12738821822779522,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "1259590008",
+						"display": "Primary infiltrating duct carcinoma of breast",
+						"distance": 0.13113046198161626,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "408643008",
+						"display": "Infiltrating duct carcinoma of breast",
+						"distance": 0.13574386605240796,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "422399001",
+						"display": "Infiltrating ductal carcinoma of breast, stage 1",
+						"distance": 0.15139086816445224,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "48901000119103",
+						"display": "History of invasive malignant neoplasm of breast",
+						"distance": 0.15308566181642658,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "1259455003",
+						"display": "Primary infiltrating duct carcinoma of female breast",
+						"distance": 0.15407073588354325,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "722524005",
+						"display": "Primary invasive pleomorphic lobular carcinoma of breast",
+						"distance": 0.1611428456788443,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://snomed.info/sct",
+				"version": "http://snomed.info/sct/731000124108/version/20250901",
+				"code": "713609000"
+			},
+			"selected": {
+				"system": "http://snomed.info/sct",
+				"version": "http://snomed.info/sct/731000124108/version/20250901",
+				"code": "713609000",
+				"display": "Invasive carcinoma of breast",
+				"inactive": false,
+				"termTypes": []
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "SNOMED CT (US Edition)"
+					},
+					{
+						"name": "version",
+						"valueString": "http://snomed.info/sct/731000124108/version/20250901"
+					},
+					{
+						"name": "display",
+						"valueString": "Invasive carcinoma of breast"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "254838004"
+							},
+							{
+								"name": "description",
+								"valueString": "Carcinoma of breast"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "sufficientlyDefined"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "True if the concept is fully defined (has sufficient conditions for classification)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "moduleId"
+							},
+							{
+								"name": "value",
+								"valueCode": "900000000000207008"
+							},
+							{
+								"name": "description",
+								"valueString": "SNOMED CT core"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "effectiveTime"
+							},
+							{
+								"name": "value",
+								"valueDateTime": "2016-01-31"
+							},
+							{
+								"name": "description",
+								"valueString": "Date when this concept version became effective"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "semanticTag"
+							},
+							{
+								"name": "value",
+								"valueCode": "disorder"
+							},
+							{
+								"name": "description",
+								"valueString": "The semantic tag from the Fully Specified Name (e.g., \"disorder\", \"finding\", \"procedure\")"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the code is inactive (derived from RF2 Concept.active)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "designation.FSN"
+							},
+							{
+								"name": "value",
+								"valueString": "Invasive carcinoma of breast (disorder)"
+							},
+							{
+								"name": "description",
+								"valueString": "Fully Specified Name"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "designation.synonym"
+							},
+							{
+								"name": "value",
+								"valueString": "Invasive carcinoma of breast"
+							},
+							{
+								"name": "description",
+								"valueString": "Synonym"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "116676008"
+							},
+							{
+								"name": "value",
+								"valueCode": "1187425009"
+							},
+							{
+								"name": "description",
+								"valueString": "Carcinoma"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "363698007"
+							},
+							{
+								"name": "value",
+								"valueCode": "76752008"
+							},
+							{
+								"name": "description",
+								"valueString": "Breast structure"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "triple-negative-breast-cancer",
+			"discoveryTool": "mcp__reasonhub__search_snomed",
+			"searchRequest": {
+				"query": "triple negative breast cancer",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "http://snomed.info/sct/731000124108/version/20250901"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "706970001",
+						"display": "Triple-negative breast cancer",
+						"distance": 0.016841623210873347,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "431396003",
+						"display": "Human epidermal growth factor 2 negative carcinoma of breast",
+						"distance": 0.2502071382211254,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "286898006",
+						"display": "Carcinoma of breast NOS",
+						"distance": 0.2759797640659881,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "767444009",
+						"display": "Germline BRCA-mutated, HER2-negative metastatic breast cancer",
+						"distance": 0.2959343368260896,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "438628005",
+						"display": "Hormone receptor negative neoplasm",
+						"distance": 0.32784955022585904,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "313376005",
+						"display": "No FH: breast carcinoma",
+						"distance": 0.3409625685733033,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "137680002",
+						"display": "No FH: breast carcinoma",
+						"distance": 0.3409625685733033,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "160277003",
+						"display": "No FH: breast carcinoma",
+						"distance": 0.3409625685733033,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "436121000124104",
+						"display": "Neoplasm of breast regional lymph node staging category pN0(i-): No regional lymph node metastasis histologically, negative immunohistochemically",
+						"distance": 0.34144736115652263,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					},
+					{
+						"code": "441118006",
+						"display": "Progesterone receptor negative neoplasm",
+						"distance": 0.34240444024986194,
+						"providerSystemId": "14336da6-14a8-4d05-98cc-0f53ee49d1f1"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://snomed.info/sct",
+				"version": "http://snomed.info/sct/731000124108/version/20250901",
+				"code": "706970001"
+			},
+			"selected": {
+				"system": "http://snomed.info/sct",
+				"version": "http://snomed.info/sct/731000124108/version/20250901",
+				"code": "706970001",
+				"display": "Triple-negative breast cancer",
+				"inactive": false,
+				"termTypes": []
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "SNOMED CT (US Edition)"
+					},
+					{
+						"name": "version",
+						"valueString": "http://snomed.info/sct/731000124108/version/20250901"
+					},
+					{
+						"name": "display",
+						"valueString": "Triple-negative breast cancer"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "431396003"
+							},
+							{
+								"name": "description",
+								"valueString": "Human epidermal growth factor 2 negative carcinoma of breast"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "438628005"
+							},
+							{
+								"name": "description",
+								"valueString": "Hormone receptor negative neoplasm"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "sufficientlyDefined"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "True if the concept is fully defined (has sufficient conditions for classification)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "moduleId"
+							},
+							{
+								"name": "value",
+								"valueCode": "900000000000207008"
+							},
+							{
+								"name": "description",
+								"valueString": "SNOMED CT core"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "effectiveTime"
+							},
+							{
+								"name": "value",
+								"valueDateTime": "2015-01-31"
+							},
+							{
+								"name": "description",
+								"valueString": "Date when this concept version became effective"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "semanticTag"
+							},
+							{
+								"name": "value",
+								"valueCode": "disorder"
+							},
+							{
+								"name": "description",
+								"valueString": "The semantic tag from the Fully Specified Name (e.g., \"disorder\", \"finding\", \"procedure\")"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the code is inactive (derived from RF2 Concept.active)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "designation.FSN"
+							},
+							{
+								"name": "value",
+								"valueString": "Triple negative malignant neoplasm of breast (disorder)"
+							},
+							{
+								"name": "description",
+								"valueString": "Fully Specified Name"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "designation.synonym"
+							},
+							{
+								"name": "value",
+								"valueString": "TNBC - Triple-negative breast cancer"
+							},
+							{
+								"name": "description",
+								"valueString": "Synonym"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "designation.synonym"
+							},
+							{
+								"name": "value",
+								"valueString": "Triple-negative breast cancer"
+							},
+							{
+								"name": "description",
+								"valueString": "Synonym"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "designation.synonym"
+							},
+							{
+								"name": "value",
+								"valueString": "Triple negative malignant neoplasm of breast"
+							},
+							{
+								"name": "description",
+								"valueString": "Synonym"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "designation.definition"
+							},
+							{
+								"name": "value",
+								"valueString": "The absence of staining for estrogen receptor, progesterone receptor, and hormone epidermal growth factor receptor 2 (HER2/neu)."
+							},
+							{
+								"name": "description",
+								"valueString": "Text Definition"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "designation.definition"
+							},
+							{
+								"name": "value",
+								"valueString": "The absence of staining for oestrogen receptor, progesterone receptor, and hormone epidermal growth factor receptor 2 (HER2/neu)."
+							},
+							{
+								"name": "description",
+								"valueString": "Text Definition"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "116676008"
+							},
+							{
+								"name": "value",
+								"valueCode": "1187225007"
+							},
+							{
+								"name": "description",
+								"valueString": "Malignant epithelial neoplasm"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "363698007"
+							},
+							{
+								"name": "value",
+								"valueCode": "76752008"
+							},
+							{
+								"name": "description",
+								"valueString": "Breast structure"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "estrogen-receptor-status",
+			"discoveryTool": "mcp__reasonhub__search_loinc",
+			"searchRequest": {
+				"query": "estrogen receptor status breast cancer",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "2.81"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "85337-4",
+						"display": "Estrogen receptor antigen, Breast cancer specimen",
+						"distance": 0.12351351929401466,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85310-1",
+						"display": "Estrogen receptor fluorescence intensity, Breast cancer specimen",
+						"distance": 0.15352183328880264,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85310-1",
+						"display": "Estrogen receptor fluorescence intensity, Breast cancer specimen",
+						"distance": 0.15352183328880264,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85329-1",
+						"display": "Cells.estrogen receptor/cells, Breast cancer specimen",
+						"distance": 0.1629578172525623,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85329-1",
+						"display": "Cells.estrogen receptor/cells, Breast cancer specimen",
+						"distance": 0.1629578172525623,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "LP402220-0",
+						"display": "Estrogen receptor Ag | Breast cancer specimen | Pathology",
+						"distance": 0.17886856690537056,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "LP402002-2",
+						"display": "Estrogen receptor fluorescence intensity | Breast cancer specimen | Pathology",
+						"distance": 0.18690891256532316,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85337-4",
+						"display": "Estrogen receptor Ag [Presence] in Breast cancer specimen by Immune stain",
+						"distance": 0.21311822116192858,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85310-1",
+						"display": "Estrogen receptor fluorescence intensity [Type] in Breast cancer specimen by Immune stain",
+						"distance": 0.21700454686222492,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "16112-5",
+						"display": "Estrogen receptor, Tissue",
+						"distance": 0.2377283021876161,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://loinc.org",
+				"version": "2.81",
+				"code": "85337-4"
+			},
+			"selected": {
+				"system": "http://loinc.org",
+				"version": "2.81",
+				"code": "85337-4",
+				"display": "Estrogen receptor Ag [Presence] in Breast cancer specimen by Immune stain",
+				"inactive": false,
+				"termTypes": []
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+					},
+					{
+						"name": "version",
+						"valueString": "2.81"
+					},
+					{
+						"name": "display",
+						"valueString": "Estrogen receptor Ag [Presence] in Breast cancer specimen by Immune stain"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "COMPONENT"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP38115-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Estrogen receptor Ag"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "PROPERTY"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP217195-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Second axis: kind of property observed (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TIME_ASPCT"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Third axis: timing of measurement (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SYSTEM"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP247851-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SCALE_TYP"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7751-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Fifth axis: type of scale (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "METHOD_TYP"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6333-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Sixth axis: method of measurement (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CLASS"
+							},
+							{
+								"name": "value",
+								"valueString": "PATH"
+							},
+							{
+								"name": "description",
+								"valueString": "Classification for grouping observations"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CLASSTYPE"
+							},
+							{
+								"name": "value",
+								"valueString": "1"
+							},
+							{
+								"name": "description",
+								"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "ORDER_OBS"
+							},
+							{
+								"name": "value",
+								"valueString": "Observation"
+							},
+							{
+								"name": "description",
+								"valueString": "Intended use categorization (Order, Observation, Both)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "STATUS"
+							},
+							{
+								"name": "value",
+								"valueString": "ACTIVE"
+							},
+							{
+								"name": "description",
+								"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "VersionFirstReleased"
+							},
+							{
+								"name": "value",
+								"valueString": "2.61"
+							},
+							{
+								"name": "description",
+								"valueString": "LOINC version when term was first released"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "VersionLastChanged"
+							},
+							{
+								"name": "value",
+								"valueString": "2.61"
+							},
+							{
+								"name": "description",
+								"valueString": "LOINC version when term was last changed"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP248770-2"
+							},
+							{
+								"name": "description",
+								"valueString": "Lab terms not yet categorized"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "85904-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Cancer pathology panel - Breast cancer specimen by CAP cancer protocols"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "answer-list"
+							},
+							{
+								"name": "value",
+								"valueCode": "LL2038-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Associated answer list (LOINC LL code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP217195-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP247851-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP38115-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Estrogen receptor Ag"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6333-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7751-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP14661-0"
+							},
+							{
+								"name": "description",
+								"valueString": "Estrogen"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP18567-5"
+							},
+							{
+								"name": "description",
+								"valueString": "Estrogen receptor"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP186995-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP20666-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP217195-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP247830-5"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP247851-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP281735-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP281773-4"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP29693-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Laboratory"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP29849-4"
+							},
+							{
+								"name": "description",
+								"valueString": "Breast"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP38115-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Estrogen receptor Ag"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6333-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7106-0"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7593-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7751-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7839-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Pathology"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "progesterone-receptor-status",
+			"discoveryTool": "mcp__reasonhub__search_loinc",
+			"searchRequest": {
+				"query": "progesterone receptor status breast cancer",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "2.81"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "85339-0",
+						"display": "Progesterone receptor antigen, Breast cancer specimen",
+						"distance": 0.10599722844791382,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "LP402317-4",
+						"display": "Progesterone receptor Ag | Breast cancer specimen | Pathology",
+						"distance": 0.14607316398900827,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85325-9",
+						"display": "Cells.progesterone receptor/cells, Breast cancer specimen",
+						"distance": 0.15297068722193785,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85325-9",
+						"display": "Cells.progesterone receptor/cells, Breast cancer specimen",
+						"distance": 0.15297068722193785,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85331-7",
+						"display": "Progesterone receptor fluorescence intensity, Breast cancer specimen",
+						"distance": 0.158930334143913,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85331-7",
+						"display": "Progesterone receptor fluorescence intensity, Breast cancer specimen",
+						"distance": 0.158930334143913,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "LP402109-5",
+						"display": "Progesterone receptor fluorescence intensity | Breast cancer specimen | Pathology",
+						"distance": 0.17738225345827607,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85339-0",
+						"display": "Progesterone receptor Ag [Presence] in Breast cancer specimen by Immune stain",
+						"distance": 0.19822422257263173,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "LP14902-8",
+						"display": "Progesterone receptor",
+						"distance": 0.20838961450419757,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85325-9",
+						"display": "Cells.progesterone receptor/cells in Breast cancer specimen by Immune stain",
+						"distance": 0.22618071681133778,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://loinc.org",
+				"version": "2.81",
+				"code": "85339-0"
+			},
+			"selected": {
+				"system": "http://loinc.org",
+				"version": "2.81",
+				"code": "85339-0",
+				"display": "Progesterone receptor Ag [Presence] in Breast cancer specimen by Immune stain",
+				"inactive": false,
+				"termTypes": []
+			},
+			"rationale": "Selected exact or closest clinically named standard concept returned by ReasonHub and confirmed active by exact lookup.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+					},
+					{
+						"name": "version",
+						"valueString": "2.81"
+					},
+					{
+						"name": "display",
+						"valueString": "Progesterone receptor Ag [Presence] in Breast cancer specimen by Immune stain"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "COMPONENT"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP39481-4"
+							},
+							{
+								"name": "description",
+								"valueString": "Progesterone receptor Ag"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "PROPERTY"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP217195-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Second axis: kind of property observed (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TIME_ASPCT"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Third axis: timing of measurement (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SYSTEM"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP247851-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SCALE_TYP"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7751-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Fifth axis: type of scale (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "METHOD_TYP"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6333-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Sixth axis: method of measurement (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CLASS"
+							},
+							{
+								"name": "value",
+								"valueString": "PATH"
+							},
+							{
+								"name": "description",
+								"valueString": "Classification for grouping observations"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CLASSTYPE"
+							},
+							{
+								"name": "value",
+								"valueString": "1"
+							},
+							{
+								"name": "description",
+								"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "ORDER_OBS"
+							},
+							{
+								"name": "value",
+								"valueString": "Observation"
+							},
+							{
+								"name": "description",
+								"valueString": "Intended use categorization (Order, Observation, Both)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "STATUS"
+							},
+							{
+								"name": "value",
+								"valueString": "ACTIVE"
+							},
+							{
+								"name": "description",
+								"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "VersionFirstReleased"
+							},
+							{
+								"name": "value",
+								"valueString": "2.61"
+							},
+							{
+								"name": "description",
+								"valueString": "LOINC version when term was first released"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "VersionLastChanged"
+							},
+							{
+								"name": "value",
+								"valueString": "2.61"
+							},
+							{
+								"name": "description",
+								"valueString": "LOINC version when term was last changed"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP248770-2"
+							},
+							{
+								"name": "description",
+								"valueString": "Lab terms not yet categorized"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "85904-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Cancer pathology panel - Breast cancer specimen by CAP cancer protocols"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "answer-list"
+							},
+							{
+								"name": "value",
+								"valueCode": "LL2038-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Associated answer list (LOINC LL code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP217195-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP247851-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP39481-4"
+							},
+							{
+								"name": "description",
+								"valueString": "Progesterone receptor Ag"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6333-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7751-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP14041-5"
+							},
+							{
+								"name": "description",
+								"valueString": "Progesterone"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP14902-8"
+							},
+							{
+								"name": "description",
+								"valueString": "Progesterone receptor"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP186995-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP20666-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP217195-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP247830-5"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP247851-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP281735-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP281773-4"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP29693-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Laboratory"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP29849-4"
+							},
+							{
+								"name": "description",
+								"valueString": "Breast"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP39481-4"
+							},
+							{
+								"name": "description",
+								"valueString": "Progesterone receptor Ag"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6333-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7106-0"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7593-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7751-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7839-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Pathology"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "her2-status",
+			"discoveryTool": "mcp__reasonhub__search_loinc",
+			"searchRequest": {
+				"query": "HER2 receptor status breast cancer",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "2.81"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "85319-2",
+						"display": "HER2, Breast cancer specimen",
+						"distance": 0.12485009946396275,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85319-2",
+						"display": "HER2, Breast cancer specimen",
+						"distance": 0.12485009946396275,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85319-2",
+						"display": "HER2 [Presence] in Breast cancer specimen by Immune stain",
+						"distance": 0.21094713365773532,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "LP402016-2",
+						"display": "HER2 | Breast cancer specimen | Pathology",
+						"distance": 0.21224776635767562,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "18474-7",
+						"display": "HER2 antigen, Tissue",
+						"distance": 0.2669110067457824,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85328-3",
+						"display": "Cells.HER2 Uniform Intense Membrane Staining/cells, Breast cancer specimen",
+						"distance": 0.28648707486673686,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85318-4",
+						"display": "ERBB2 gene duplication analysis, Breast cancer specimen",
+						"distance": 0.2959263297049891,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85318-4",
+						"display": "ERBB2 gene duplication analysis, Breast cancer specimen",
+						"distance": 0.2959263297049891,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "LP427898-4",
+						"display": "ERBB2 gene duplication | Breast cancer specimen | Molecular pathology",
+						"distance": 0.3020823079601582,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "85328-3",
+						"display": "Cells.HER2 uniform intense membrane staining/cells in Breast cancer specimen by Immune stain",
+						"distance": 0.307176966029307,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://loinc.org",
+				"version": "2.81",
+				"code": "48676-1"
+			},
+			"selected": {
+				"system": "http://loinc.org",
+				"version": "2.81",
+				"code": "48676-1",
+				"display": "HER2 [Interpretation] in Tissue",
+				"inactive": false,
+				"termTypes": []
+			},
+			"rationale": "Retains the fixture's existing code after active exact lookup; the semantic search result list did not rank the exact code first, so no silent semantic substitution was made.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+					},
+					{
+						"name": "version",
+						"valueString": "2.81"
+					},
+					{
+						"name": "display",
+						"valueString": "HER2 [Interpretation] in Tissue"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "COMPONENT"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP28442-9"
+							},
+							{
+								"name": "description",
+								"valueString": "HER2"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "PROPERTY"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6819-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Second axis: kind of property observed (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TIME_ASPCT"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Third axis: timing of measurement (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SYSTEM"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7641-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SCALE_TYP"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7750-5"
+							},
+							{
+								"name": "description",
+								"valueString": "Fifth axis: type of scale (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CLASS"
+							},
+							{
+								"name": "value",
+								"valueString": "PATH"
+							},
+							{
+								"name": "description",
+								"valueString": "Classification for grouping observations"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CLASSTYPE"
+							},
+							{
+								"name": "value",
+								"valueString": "1"
+							},
+							{
+								"name": "description",
+								"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "ORDER_OBS"
+							},
+							{
+								"name": "value",
+								"valueString": "Observation"
+							},
+							{
+								"name": "description",
+								"valueString": "Intended use categorization (Order, Observation, Both)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "STATUS"
+							},
+							{
+								"name": "value",
+								"valueString": "ACTIVE"
+							},
+							{
+								"name": "description",
+								"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "VersionFirstReleased"
+							},
+							{
+								"name": "value",
+								"valueString": "2.21"
+							},
+							{
+								"name": "description",
+								"valueString": "LOINC version when term was first released"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "VersionLastChanged"
+							},
+							{
+								"name": "value",
+								"valueString": "2.73"
+							},
+							{
+								"name": "description",
+								"valueString": "LOINC version when term was last changed"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP402018-8"
+							},
+							{
+								"name": "description",
+								"valueString": "HER2 | Tissue and Smears | Pathology"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "74293-2"
+							},
+							{
+								"name": "description",
+								"valueString": "Oncology plan of care and summary - recommended CDA set"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP28442-9"
+							},
+							{
+								"name": "description",
+								"valueString": "HER2"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6819-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7641-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7750-5"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP186995-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP28442-9"
+							},
+							{
+								"name": "description",
+								"valueString": "HER2"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP29693-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Laboratory"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6819-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7641-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7750-5"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7839-6"
+							},
+							{
+								"name": "description",
+								"valueString": "Pathology"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"concept": "tumor-size",
+			"discoveryTool": "mcp__reasonhub__search_loinc",
+			"searchRequest": {
+				"query": "breast tumor size",
+				"top_k": 10,
+				"user_context": "For the breast cancer use case, use standardized coding and create an order-set PlanDefinition for the source-stated neoadjuvant KEYNOTE-522 sequence.",
+				"version": "2.81"
+			},
+			"searchResponse": {
+				"candidates": [
+					{
+						"code": "44629-4",
+						"display": "Specimen size.maximum dimension in Breast tumor",
+						"distance": 0.2533592036081488,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44635-1",
+						"display": "Invasive component size.maximum dimension [Length] in Breast tumor",
+						"distance": 0.27803263836358416,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44629-4",
+						"display": "Specimen size.maximum dimension, Breast Tumor",
+						"distance": 0.2876632312941546,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44629-4",
+						"display": "Specimen size.maximum dimension, Breast Tumor",
+						"distance": 0.2876633601519869,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44638-5",
+						"display": "Histologic type in Breast tumor",
+						"distance": 0.29803943347409734,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44635-1",
+						"display": "Invasive component size.maximum dimension, Breast Tumor",
+						"distance": 0.29885830097615207,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44635-1",
+						"display": "Invasive component size.maximum dimension, Breast Tumor",
+						"distance": 0.29885846022820006,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44638-5",
+						"display": "Histologic type, Breast Tumor",
+						"distance": 0.30064184766436697,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44638-5",
+						"display": "Histologic type, Breast Tumor",
+						"distance": 0.30064184766436697,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					},
+					{
+						"code": "44669-0",
+						"display": "Margin involvement, Breast Tumor",
+						"distance": 0.30690176887557497,
+						"providerSystemId": "05e02b5a-c946-405f-8299-7d8fd799e188"
+					}
+				]
+			},
+			"lookupTool": "mcp__reasonhub__codesystem_lookup",
+			"lookupRequest": {
+				"system": "http://loinc.org",
+				"version": "2.81",
+				"code": "21889-1"
+			},
+			"selected": {
+				"system": "http://loinc.org",
+				"version": "2.81",
+				"code": "21889-1",
+				"display": "Size Tumor",
+				"inactive": false,
+				"termTypes": []
+			},
+			"rationale": "Retains the fixture's active LOINC code after ReasonHub lookup. Semantic search also found more breast-specific pathology concepts; changing fixture semantics requires separate clinical review.",
+			"lookupResponse": {
+				"resourceType": "Parameters",
+				"parameter": [
+					{
+						"name": "name",
+						"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+					},
+					{
+						"name": "version",
+						"valueString": "2.81"
+					},
+					{
+						"name": "display",
+						"valueString": "Size Tumor"
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "COMPONENT"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP18013-0"
+							},
+							{
+								"name": "description",
+								"valueString": "Size"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "PROPERTY"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6822-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Second axis: kind of property observed (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "TIME_ASPCT"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Third axis: timing of measurement (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SYSTEM"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7664-8"
+							},
+							{
+								"name": "description",
+								"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "SCALE_TYP"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7753-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Fifth axis: type of scale (LOINC Part code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CLASS"
+							},
+							{
+								"name": "value",
+								"valueString": "TUMRRGT"
+							},
+							{
+								"name": "description",
+								"valueString": "Classification for grouping observations"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "CLASSTYPE"
+							},
+							{
+								"name": "value",
+								"valueString": "2"
+							},
+							{
+								"name": "description",
+								"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "STATUS"
+							},
+							{
+								"name": "value",
+								"valueString": "ACTIVE"
+							},
+							{
+								"name": "description",
+								"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "VersionFirstReleased"
+							},
+							{
+								"name": "value",
+								"valueString": "1.0m"
+							},
+							{
+								"name": "description",
+								"valueString": "LOINC version when term was first released"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "VersionLastChanged"
+							},
+							{
+								"name": "value",
+								"valueString": "2.73"
+							},
+							{
+								"name": "description",
+								"valueString": "LOINC version when term was last changed"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "inactive"
+							},
+							{
+								"name": "value",
+								"valueBoolean": false
+							},
+							{
+								"name": "description",
+								"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP248771-0"
+							},
+							{
+								"name": "description",
+								"valueString": "Clinical terms not yet categorized"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "46448-7"
+							},
+							{
+								"name": "description",
+								"valueString": "Stage/prognostic factors section Set NAACCR v.11"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "60508-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Stage/prognostic factors section Set NAACCR v.12"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "76546-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Breast cancer 10-year risk of distant recurrence panel"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "81186-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Cancer pathology panel, Stomach cancer"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "85904-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Cancer pathology panel, Breast cancer specimen"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "panel-parent"
+							},
+							{
+								"name": "value",
+								"valueCode": "95556-7"
+							},
+							{
+								"name": "description",
+								"valueString": "Adrenal cancer risk assessment and urine steroid fractions panel"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP18013-0"
+							},
+							{
+								"name": "description",
+								"valueString": "Size"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6822-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7664-8"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7753-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Primary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP18013-0"
+							},
+							{
+								"name": "description",
+								"valueString": "Size"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP186995-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6822-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP6960-1"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7664-8"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7753-9"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7787-7"
+							},
+							{
+								"name": "description",
+								"valueString": "Clinical"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "part-link-supplementary"
+							},
+							{
+								"name": "value",
+								"valueCode": "LP7850-3"
+							},
+							{
+								"name": "description",
+								"valueString": "Supplementary part link (LOINC LP code)"
+							}
+						]
+					},
+					{
+						"name": "property",
+						"part": [
+							{
+								"name": "code",
+								"valueCode": "EXAMPLE_UCUM_UNITS"
+							},
+							{
+								"name": "value",
+								"valueString": "mm"
+							},
+							{
+								"name": "description",
+								"valueString": "Example UCUM units for quantitative LOINC terms"
+							}
+						]
+					}
+				]
+			}
+		}
+	],
+	"knowledgeArtifactSearch": {
+		"planDefinitionTool": "mcp__reasonhub__search_plandefinitions",
+		"activityDefinitionTool": "mcp__reasonhub__search_activitydefinitions",
+		"query": "KEYNOTE-522 neoadjuvant triple negative breast cancer pembrolizumab paclitaxel carboplatin doxorubicin cyclophosphamide",
+		"finding": "No reusable KEYNOTE-522 PlanDefinition or ActivityDefinition was returned. The nearest PlanDefinition result was an unrelated Gemcitabine/CARBOplatin artifact; ActivityDefinition search returned no results. Run007 therefore authors a source-bounded local draft rather than claiming reuse of an existing canonical artifact."
+	},
+	"evidenceContract": "Every discovery and lookup entry retains the exact structured request and response returned by the ReasonHub MCP. Authentication material is excluded."
+}

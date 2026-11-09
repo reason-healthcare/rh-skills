@@ -9,6 +9,7 @@ import click
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
+from rh_skills.cql_identity import CqlLibraryIdentityError, parse_cql_library_identity
 from rh_skills.common import (
     load_schema,
     log_error,
@@ -199,19 +200,23 @@ def _tracked_json_files_for_topic(
     return tracked_files or list(computable_dir.glob("*.json"))
 
 
-def _find_best_cql_path(cql_files: list[Path], library_name: str) -> Path | None:
-    if not cql_files:
-        return None
-    if len(cql_files) == 1:
-        return cql_files[0]
+def _find_best_cql_path(
+    cql_files: list[Path],
+    library_name: str,
+    library_version: str | None = None,
+) -> Path | None:
+    """Return only a CQL source whose declaration matches the Library identity."""
     for path in cql_files:
-        if path.stem == library_name:
+        try:
+            identity = parse_cql_library_identity(path)
+        except CqlLibraryIdentityError:
+            continue
+        if (
+            identity.name == library_name
+            and (library_version is None or identity.version == library_version)
+        ):
             return path
-    library_lower = library_name.lower()
-    for path in cql_files:
-        if path.stem.lower() == library_lower:
-            return path
-    return cql_files[0]
+    return None
 
 
 def _load_decision_table_cql_source(topic: str, artifact_data: dict | None = None) -> tuple[str | None, str | None]:
@@ -242,9 +247,11 @@ def _load_decision_table_cql_source(topic: str, artifact_data: dict | None = Non
         return None, None
 
     library_name = ""
+    library_version = None
     if isinstance(library_resource, dict):
         library_name = str(library_resource.get("name") or library_resource.get("id") or "").strip()
-    chosen = _find_best_cql_path(cql_files, library_name)
+        library_version = str(library_resource.get("version") or "").strip() or None
+    chosen = _find_best_cql_path(cql_files, library_name, library_version)
     if chosen is None:
         return None, None
     try:
@@ -312,7 +319,8 @@ def _load_library_cql_source(topic: str, resource: dict) -> str | None:
         library_name = str(candidate_name or "").strip()
         if not library_name:
             continue
-        cql_path = _find_best_cql_path(cql_files, library_name)
+        library_version = str(resource.get("version") or "").strip() or None
+        cql_path = _find_best_cql_path(cql_files, library_name, library_version)
         if cql_path is None:
             continue
         try:

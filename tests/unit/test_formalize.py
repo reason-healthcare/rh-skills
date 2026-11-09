@@ -32,10 +32,12 @@ from rh_skills.commands.formalize import (
     _build_stub_resources,
     _canonical_json_sha256,
     _collect_information_dynamic_values,
+    _deterministic_library_name,
     _embed_cql_in_library,
     _attach_external_library_dependencies,
     _enforce_generated_fhir_ids,
     _fhir_resource_id,
+    _find_best_cql,
     _get_strategy,
     _hoist_plan_definition_action_conditions,
     _normalize_activity_codeable_concept,
@@ -48,6 +50,13 @@ from rh_skills.commands.formalize import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def test_find_best_cql_does_not_bind_the_only_unrelated_library(tmp_path):
+    other = tmp_path / "OtherLogic-1.0.0.cql"
+    other.write_text("library OtherLogic version '1.0.0'\n")
+
+    assert _find_best_cql([other], "NewLogic", "1.0.0") is None
 
 
 def test_activity_definition_kind_normalizes_supported_l2_action_kinds():
@@ -85,6 +94,9 @@ def test_decision_guidance_remains_inline_without_activity_definition():
     assert "definitionCanonical" not in action
     assert action["condition"][0]["expression"]["expression"] == "PositiveScreen"
     library = next(resource for resource in resources if resource.get("resourceType") == "Library")
+    assert library["name"] == "FallScreenLogic"
+    assert library["version"] == "1"
+    assert library["url"] == "https://example.org/fhir/Library/FallScreenLogic"
     assert library["type"]["coding"] == [{
         "system": "http://terminology.hl7.org/CodeSystem/library-type",
         "code": "logic-library",
@@ -555,6 +567,36 @@ def test_cql_link_validation_accepts_identifier_defined_in_linked_library(tmp_pa
     (tmp_path / "logic.cql").write_text('library Logic version \'1.0.0\'\ndefine "PositiveScreen": true\n')
 
     assert _validate_cql_identifier_links(resources, tmp_path) == []
+
+
+@pytest.mark.parametrize("version", ["1.0.0", "2.0.0"])
+def test_cql_link_validation_resolves_versioned_source_with_dependencies(tmp_path, version):
+    resources = [
+        {
+            "resourceType": "Library", "id": "logic", "name": "Logic", "version": version,
+            "url": "https://example.org/Library/Logic",
+        },
+        {
+            "resourceType": "PlanDefinition", "id": "plan",
+            "library": ["https://example.org/Library/Logic"],
+            "action": [{"condition": [{"expression": {
+                "language": "text/cql-identifier", "expression": "Missing",
+            }}]}],
+        },
+    ]
+    (tmp_path / "Logic-1.0.0.cql").write_text(
+        "library Logic version '1.0.0'\ndefine Present: true\n"
+    )
+    (tmp_path / "FHIRHelpers-4.0.1.cql").write_text(
+        "library FHIRHelpers version '4.0.1'\ndefine Missing: true\n"
+    )
+    if version == "1.0.0":
+        with pytest.raises(ValueError, match="Missing"):
+            _validate_cql_identifier_links(resources, tmp_path)
+    else:
+        warnings = _validate_cql_identifier_links(resources, tmp_path)
+        assert len(warnings) == 1
+        assert "source was unavailable" in warnings[0]
 
 
 def test_decision_table_orphan_cleanup_removes_only_stale_children_and_unreferenced_activities(tmp_path):
@@ -1177,6 +1219,16 @@ def test_fhir_resource_id_preserves_short_ids_and_shortens_long_ids_deterministi
     assert shortened.startswith("adult-crs-surgical-management-recommendation")
 
 
+def test_generated_library_names_shorten_deterministically_without_collisions():
+    artifact = "adult-crs-surgical-management-recommendation-for-revision-surgery-candidacy-review"
+    name = _deterministic_library_name(artifact)
+    assert len(name) == 64
+    assert name.isalnum()
+    assert name == _deterministic_library_name(artifact)
+    assert name != _deterministic_library_name(artifact + "-followup")
+    assert _deterministic_library_name("example") == "ExampleLogic"
+
+
 def test_enforce_generated_fhir_ids_rewrites_canonical_and_relative_references():
     long_plan_id = (
         "adult-crs-surgical-management-recommendation-for-revision-surgery-"
@@ -1227,6 +1279,8 @@ def test_embed_cql_in_library_also_embeds_matching_elm_json(tmp_path):
     library_path.write_text(json.dumps({
         "resourceType": "Library",
         "id": "example-logic",
+        "url": "https://example.org/fhir/Library/ExampleLogic",
+        "version": "1.0.0",
         "name": "ExampleLogic",
         "content": [{"contentType": "text/plain", "data": "keep"}],
     }))
@@ -1256,6 +1310,8 @@ def test_embed_cql_in_library_ignores_root_level_elm_json(tmp_path):
     library_path.write_text(json.dumps({
         "resourceType": "Library",
         "id": "example-logic",
+        "url": "https://example.org/fhir/Library/ExampleLogic",
+        "version": "1.0.0",
         "name": "ExampleLogic",
     }))
     (tmp_path / "ExampleLogic.cql").write_text("library ExampleLogic version '1.0.0'\n")
@@ -1268,6 +1324,60 @@ def test_embed_cql_in_library_ignores_root_level_elm_json(tmp_path):
     library = json.loads(library_path.read_text())
     content_types = [entry["contentType"] for entry in library["content"]]
     assert content_types == ["text/cql"]
+
+
+def test_embed_cql_in_library_selects_elm_by_exact_name_and_version(tmp_path):
+    library_path = tmp_path / "Library-example-logic.json"
+    library_path.write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "example-logic",
+        "url": "https://example.org/fhir/Library/ExampleLogic",
+        "version": "2.0.0",
+        "name": "ExampleLogic",
+    }))
+    (tmp_path / "ExampleLogic-2.0.0.cql").write_text("library ExampleLogic version '2.0.0'\n")
+    elm_dir = tmp_path / "elm"
+    elm_dir.mkdir()
+    # A legacy filename and an older version must not outrank the declaration.
+    for filename, name, version in [
+        ("ExampleLogic.json", "OtherLogic", "2.0.0"),
+        ("ExampleLogic-1.0.0.json", "ExampleLogic", "1.0.0"),
+        ("ExampleLogic-2.0.0.json", "ExampleLogic", "2.0.0"),
+    ]:
+        (elm_dir / filename).write_text(json.dumps({
+            "library": {"identifier": {"id": name, "version": version}},
+        }))
+
+    assert _embed_cql_in_library(library_path, tmp_path) is True
+
+    library = json.loads(library_path.read_text())
+    elm_entry = next(entry for entry in library["content"] if entry["contentType"] == "application/elm+json")
+    decoded = json.loads(base64.b64decode(elm_entry["data"]))
+    assert decoded["library"]["identifier"] == {"id": "ExampleLogic", "version": "2.0.0"}
+
+
+@pytest.mark.parametrize("has_cql", [False, True])
+def test_embed_cql_in_library_skips_stale_only_elm(tmp_path, has_cql):
+    library_path = tmp_path / "Library-example-logic.json"
+    library_path.write_text(json.dumps({
+        "resourceType": "Library",
+        "id": "example-logic",
+        "url": "https://example.org/fhir/Library/ExampleLogic",
+        "version": "2.0.0",
+        "name": "ExampleLogic",
+    }))
+    if has_cql:
+        (tmp_path / "ExampleLogic-2.0.0.cql").write_text("library ExampleLogic version '2.0.0'\n")
+    elm_dir = tmp_path / "elm"
+    elm_dir.mkdir()
+    (elm_dir / "ExampleLogic.json").write_text(json.dumps({
+        "library": {"identifier": {"id": "ExampleLogic", "version": "1.0.0"}},
+    }))
+
+    assert _embed_cql_in_library(library_path, tmp_path) is has_cql
+
+    library = json.loads(library_path.read_text())
+    assert [entry["contentType"] for entry in library.get("content", [])] == (["text/cql"] if has_cql else [])
 
 
 def test_plan_definition_condition_hoisting_moves_shared_sibling_conditions_to_parent():

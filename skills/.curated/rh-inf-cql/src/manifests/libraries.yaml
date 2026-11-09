@@ -9,12 +9,17 @@ libraries:
   #   model: FHIR
   #   modelVersion: "4.0.1"
   #   includes:
-  #     - id: FHIRHelpers
+  #     - namespace: fhir.cqf.common
+  #       id: FHIRHelpers
   #       version: "4.0.1"
+  #       package: fhir.cqf.common@4.0.1
+  #       sourceSha256: <verified CQL checksum>
+  #       generatedElmSha256: <locally translated ELM checksum>
   #   terminology:
   #     - url: http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1011
   #       version: "20230101"
   #   translatorOptions:
   #     - EnableAnnotations
   #     - EnableLocators
+  #   # Never populate generatedElmSha256 from package-supplied ELM.
   #   notes: Lipid monitoring logic for primary prevention.

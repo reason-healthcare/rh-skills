@@ -22,8 +22,13 @@ error: could not resolve library 'FHIRHelpers'
 ```
 
 **Category**: `translation`
-**Cause**: `FHIRHelpers` or another included library is not on the include path.
-**Fix**: Confirm the exact versioned CQL include exists in the topic's `computable/` directory. For a pinned external helper, use `rh-skills cql import-library <topic> <manifest.json>`; do not rely on implicit downloads.
+**Cause**: `FHIRHelpers` or another included library is not on the include path,
+or its package namespace was omitted.
+**Fix**: Confirm the exact versioned package CQL resolves through the configured
+package/cache include closure and the include uses the package namespace, for example
+`fhir.cqf.common.FHIRHelpers`. Do not rely on implicit downloads, a locally
+shadowed helper, copied first-party helper source, or package-supplied ELM.
+Resolve the verified package source and run `rh-skills cql translate`.
 
 ---
 

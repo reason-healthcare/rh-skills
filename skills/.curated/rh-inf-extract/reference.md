@@ -198,6 +198,53 @@ code using a best-guess system and use lookup as the normalization gate:
 For quantitative LOINC codes, use the same lookup response to retrieve
 recommended `EXAMPLE_UCUM_UNITS` when needed.
 
+### Current-run terminology evidence
+
+The declared lookup policy and concept CSV are workflow state, not proof that a
+terminology tool ran. When ReasonHub MCP is available and applicable, retain
+current-run evidence at
+`topics/<topic>/process/reviews/terminology-evidence.json` before finalizing the
+concept review. Use this minimum shape:
+
+```json
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "conceptId": "pembrolizumab",
+      "tool": "mcp__reasonhub__search_rxnorm",
+      "query": "Pembrolizumab",
+      "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+      "version": "<returned or requested release>",
+      "request": {"query": "Pembrolizumab", "top_k": 10},
+      "response": {"result": []},
+      "selected": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "version": "<release>",
+          "code": "<code>",
+          "display": "<canonical display>",
+          "rationale": "<why this candidate matches the source concept>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Preserve the exact request and response returned in the run; do not reconstruct
+them from the chosen code. Omit secrets and authorization headers. Record each
+required system-specific search and the normalization lookup for selected codes.
+An upstream file that says a lookup occurred may be cited as source provenance,
+but it is not current-run MCP execution evidence.
+
+For a source-defined fixture or local CodeSystem, use `--source custom`, label
+the concept and resulting CodeSystem `test-only` and experimental, and cite the
+fixture contract. Do not attach a ReasonHub tool record or claim standardized,
+active, mapped, or terminology-service-verified status unless a separate actual
+lookup or reviewed mapping supports that claim. Keep fixture-only codes out of
+production clinical ValueSets.
+
 ### Extract-Stage Ontology Relationship Policy (Related Rows)
 
 Related rows in the per-concept CSVs under `process/plans/concepts/` are extract-stage scope annotations, not broad ontology expansion.
@@ -259,6 +306,12 @@ Concept deconstruction rule:
 - When a source phrase uses "and", "with", "plus", "combination", "bundle",
   "regimen", "protocol", or "order set", actively check whether the phrase
   should be split before finalizing concept review.
+- A named regimen or order set also requires an **order-set candidate analysis**
+  in the L2 review packet. List the regimen name, named component drugs or
+  classes, source-supported eligibility/sequence/dose/route/timing, and missing
+  details. Resolve each named component through the medication path with RxNorm
+  as the primary executable code system. If the source does not name components,
+  record that gap rather than guessing a regimen composition.
 
 ### Care-pathway structure
 
@@ -905,7 +958,9 @@ sections:
 
 #### assessment
 
-This is a general assessment shape. Ordinary assessments may use supported
+Every assessment formalizes to a Questionnaire, including clinician-entered
+diagnostic data and review of existing results. This is a general assessment shape.
+Ordinary assessments may use supported
 response types, answer options, and scoring without SDC extraction metadata or
 item Coding requirements. The SDC Observation-extraction fields below are a
 conditional subset for workflows that explicitly use that profile.
@@ -929,7 +984,7 @@ sections:
   items:
     - id: <source linkId>
       text: <exact source question text>
-      type: boolean                 # current SDC Observation extractor supports Boolean items
+      type: boolean                 # source-answer extraction supports Boolean or coded choice
       required: true
       code:                         # direct Coding or list of Coding; not CodeableConcept
         system: http://loinc.org
@@ -1005,10 +1060,37 @@ numeric scale unless the workflow explicitly approves the derived encoding.
 When `observation_extraction.enabled` is true, `version_algorithm` must be an
 explicitly sourced or previously reviewed Coding because the versioned SDC
 profile requires Questionnaire version-algorithm metadata. Each supported
-Boolean item must also have exactly one complete reviewed Coding with
+Boolean or coded choice item must also have exactly one complete reviewed Coding with
 `system`, `version`, `code`, and `display`; do not infer or omit it if a
 terminology lookup is unavailable. Without enabled SDC extraction, item Coding
 remains optional unless the source or another workflow requirement calls for it.
+
+For diagnostic results or other coded answers, use `type: choice` and explicit
+typed options. The item Coding identifies `Observation.code`; the selected
+answer Coding becomes `Observation.valueCodeableConcept`. Preserve all authored Coding
+fields instead of replacing them with a display label or a Boolean:
+
+```yaml
+    - id: <stable result item id>
+      text: <clinician data-entry or review prompt>
+      type: choice
+      code: {system: <observable system>, version: <version>, code: <observable code>, display: <display>}
+      options:
+        - valueCoding: {system: <answer system>, code: <answer code>, display: <display>}
+      observation_extraction:
+        category:
+          system: http://terminology.hl7.org/CodeSystem/observation-category
+          code: laboratory
+          display: Laboratory
+```
+
+Answer Coding `version` is optional: include it when verified, and do not infer
+it from the question's terminology version. The optional item category overrides the instrument category and requires
+enabled instrument extraction. Use the clinical category for the result;
+Questionnaire capture does not imply `survey` or patient-reported evidence.
+Preserve review/source provenance and any required clinical focus, such as the
+tumor being staged, in the runtime data contract. Missing or unreviewed coding
+blocks extraction readiness, not creation of the assessment artifact.
 
 #### policy
 

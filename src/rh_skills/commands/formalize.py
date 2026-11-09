@@ -15,6 +15,14 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from ruamel.yaml import YAML
 
 from rh_skills.commands.formalize_config import load_formalize_config
+from rh_skills.cql_identity import (
+    CqlLibraryIdentityError,
+    apply_cql_namespace_extensions,
+    parse_cql_context,
+    parse_cql_library_identity,
+    subject_for_cql_context,
+    validate_fhir_library_identity,
+)
 from rh_skills.common import (
     append_topic_event,
     config_value,
@@ -35,11 +43,13 @@ from rh_skills.fhir.normalize import (
     to_kebab_case,
 )
 from rh_skills.fhir.validate import validate_resource
-from rh_skills.fhir.packaging import load_packager_toml
+from rh_skills.fhir.packaging import infer_package_id, load_packager_toml
 from rh_skills.validators.questionnaire import (
     SDC_CALCULATED_EXPRESSION_EXTENSION,
     SDC_OBSERVATION_EXTRACTION_EXTENSION,
     normalize_assessment_scoring,
+    observation_extraction_item_extensions,
+    questionnaire_answer_coding,
     questionnaire_metadata_fields,
     validate_observation_extraction_items,
 )
@@ -52,24 +62,35 @@ _PUBLICATION_STATUS_VALUES = {"draft", "active", "retired", "unknown"}
 
 # ── CQL Content Embedding ─────────────────────────────────────────────────────
 
-def _find_best_cql(cql_files: list[Path], lib_name: str) -> Path | None:
-    """Return the CQL file that best matches a Library resource name."""
+def _find_best_cql(
+    cql_files: list[Path],
+    lib_name: str,
+    lib_version: str | None = None,
+) -> Path | None:
+    """Return the CQL file whose declared identity matches a Library resource."""
     if not cql_files:
         return None
-    if len(cql_files) == 1:
-        return cql_files[0]
-    for f in cql_files:
-        if f.stem == lib_name:
-            return f
-    lib_lower = lib_name.lower()
-    for f in cql_files:
-        if f.stem.lower() == lib_lower:
-            return f
-    return cql_files[0]
+    for path in cql_files:
+        try:
+            identity = parse_cql_library_identity(path)
+        except CqlLibraryIdentityError:
+            continue
+        if identity.name == lib_name and (lib_version is None or identity.version == lib_version):
+            return path
+
+    # Return a filename match so the caller can report an exact declaration or
+    # version mismatch instead of silently treating the source as absent.
+    expected_stems = {lib_name}
+    if lib_version:
+        expected_stems.add(f"{lib_name}-{lib_version}")
+    for path in cql_files:
+        if path.stem in expected_stems:
+            return path
+    return None
 
 
-def _elm_identifier(path: Path) -> str | None:
-    """Return the ELM library identifier for a compiled ELM JSON file."""
+def _elm_identifier(path: Path) -> tuple[str, str] | None:
+    """Return the declared ELM library name and version, ignoring filenames."""
     try:
         data = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
@@ -80,33 +101,23 @@ def _elm_identifier(path: Path) -> str | None:
     identifier = library.get("identifier")
     if not isinstance(identifier, dict):
         return None
-    value = identifier.get("id")
-    return str(value).strip() if value else None
+    name, version = identifier.get("id"), identifier.get("version")
+    if not isinstance(name, str) or not name or not isinstance(version, str) or not version:
+        return None
+    return name, version
 
 
-def _find_best_elm_json(computable_dir: Path, lib_name: str) -> Path | None:
-    """Return the compiled ELM JSON file matching a Library resource name."""
-    candidates: list[tuple[Path, str]] = []
+def _find_best_elm_json(
+    computable_dir: Path,
+    lib_name: str,
+    lib_version: str | None,
+) -> Path | None:
+    """Return only compiled ELM matching the exact FHIR Library identity."""
+    if lib_version is None:
+        return None
     elm_dir = computable_dir / "elm"
-    if not elm_dir.exists():
-        return None
     for path in sorted(elm_dir.glob("*.json")):
-        identifier = _elm_identifier(path)
-        if identifier:
-            candidates.append((path, identifier))
-    if not candidates:
-        return None
-
-    for path, identifier in candidates:
-        if path.stem == lib_name or identifier == lib_name:
-            return path
-    lib_lower = lib_name.lower()
-    for path, identifier in candidates:
-        if path.stem.lower() == lib_lower or identifier.lower() == lib_lower:
-            return path
-    lib_kebab = to_kebab_case(lib_name)
-    for path, identifier in candidates:
-        if to_kebab_case(path.stem) == lib_kebab or to_kebab_case(identifier) == lib_kebab:
+        if _elm_identifier(path) == (lib_name, lib_version):
             return path
     return None
 
@@ -122,10 +133,14 @@ def _embed_cql_in_library(library_path: Path, computable_dir: Path) -> bool:
         return False
 
     lib_name = str(resource.get("name") or "")
-    cql_file = _find_best_cql(cql_files, lib_name)
-    elm_file = _find_best_elm_json(computable_dir, lib_name)
+    lib_version = str(resource.get("version") or "") or None
+    cql_file = _find_best_cql(cql_files, lib_name, lib_version)
+    elm_file = _find_best_elm_json(computable_dir, lib_name, lib_version)
     if cql_file is None and elm_file is None:
         return False
+
+    if cql_file is not None:
+        validate_fhir_library_identity(resource, cql_path=cql_file)
 
     content = [
         c for c in resource.get("content", [])
@@ -178,7 +193,11 @@ def _attach_external_library_dependencies(
     for resource in resources:
         if resource.get("resourceType") != "Library":
             continue
-        cql_file = _find_best_cql(cql_files, str(resource.get("name") or ""))
+        cql_file = _find_best_cql(
+            cql_files,
+            str(resource.get("name") or ""),
+            str(resource.get("version") or "") or None,
+        )
         if cql_file is None:
             continue
         includes = include_pattern.findall(cql_file.read_text())
@@ -565,6 +584,77 @@ def _patch_measure_library_references(resources: list[dict]) -> None:
             resource["library"] = library_urls
 
 
+def _align_generated_library_identity(
+    resources: list[dict],
+    *,
+    canonical: str,
+    resource_id: str,
+    version: str,
+    namespace_name: str,
+) -> None:
+    """Apply the deterministic CQL identity to generated companion Libraries.
+
+    CQL IG Conformance Requirement 4.2 makes the CQL declaration authoritative
+    for Library.name and Library.version, and requires Library.url to use the
+    CQL namespace URL and library name. The first formalize pass establishes
+    that identity for the CQL author; a later pass validates the authored source
+    against it before embedding.
+    """
+    expected_name = _deterministic_library_name(resource_id)
+    expected_url = f"{canonical}/Library/{expected_name}"
+    replacements: dict[str, str] = {}
+    for resource in resources:
+        if resource.get("resourceType") != "Library":
+            continue
+        old_url = resource.get("url")
+        if isinstance(old_url, str) and old_url and old_url != expected_url:
+            replacements[old_url] = expected_url
+        resource["url"] = expected_url
+        resource["name"] = expected_name
+        resource["version"] = version
+        resource["subjectCodeableConcept"] = subject_for_cql_context("Patient")
+        apply_cql_namespace_extensions(
+            resource,
+            namespace_name=namespace_name,
+            namespace_url=canonical,
+        )
+
+    if replacements:
+        for index, resource in enumerate(resources):
+            resources[index] = _rewrite_resource_identity_strings(resource, replacements)
+
+
+def _validate_generated_library_identities(
+    resources: list[dict],
+    computable_dir: Path,
+    *,
+    canonical: str,
+    namespace_name: str,
+) -> list[str]:
+    """Validate CQL IG 4.2 identity invariants before writing generated JSON."""
+    cql_files = sorted(computable_dir.glob("*.cql"))
+    warnings: list[str] = []
+    for resource in resources:
+        if resource.get("resourceType") != "Library":
+            continue
+        name = str(resource.get("name") or "")
+        version = str(resource.get("version") or "") or None
+        cql_file = _find_best_cql(cql_files, name, version)
+        if cql_file is not None:
+            resource["subjectCodeableConcept"] = subject_for_cql_context(
+                parse_cql_context(cql_file)
+            )
+        warnings.extend(
+            validate_fhir_library_identity(
+                resource,
+                namespace_name=namespace_name,
+                namespace_url=canonical,
+                cql_path=cql_file,
+            )
+        )
+    return warnings
+
+
 def _is_generic_activity_kind_code(codeable_concept: Any) -> bool:
     if not isinstance(codeable_concept, dict):
         return False
@@ -745,6 +835,9 @@ def _questionnaire_item_type(raw_type: str | None) -> str:
 
 def _answer_option_value(option: dict) -> dict | None:
     """Build a FHIR answerOption.value[x] from an L2 option entry."""
+    coding = questionnaire_answer_coding(option)
+    if coding is not None:
+        return {"valueCoding": coding}
     label = option.get("label")
     value = option.get("value", label)
     if label is not None:
@@ -801,6 +894,10 @@ def _build_questionnaire_items(artifact_name: str, l2_data: dict | None) -> list
 
         if "code" in item:
             questionnaire_item["code"] = _questionnaire_item_codings(item["code"], link_id)
+
+        extraction_extensions = observation_extraction_item_extensions(item)
+        if extraction_extensions:
+            questionnaire_item["extension"] = extraction_extensions
 
         options = item.get("options") or []
         answer_options = []
@@ -2862,19 +2959,15 @@ def _validate_cql_identifier_links(
                     break
             if source is None:
                 lib_name = str(library.get("name") or "")
-                cql_file = next(
-                    (path for path in cql_files if path.stem == lib_name),
-                    None,
-                )
-                if cql_file is None:
-                    kebab_name = to_kebab_case(lib_name)
-                    cql_file = next(
-                        (path for path in cql_files if to_kebab_case(path.stem) == kebab_name),
-                        None,
-                    )
-                if cql_file is None and len(cql_files) == 1:
-                    cql_file = cql_files[0]
+                lib_version = str(library.get("version") or "") or None
+                cql_file = _find_best_cql(cql_files, lib_name, lib_version)
                 if cql_file is not None:
+                    identity = parse_cql_library_identity(cql_file)
+                    if identity.name != lib_name or (
+                        lib_version is not None and identity.version != lib_version
+                    ):
+                        unresolved_libraries.append(canonical)
+                        continue
                     source = cql_file.read_text()
             if source is None:
                 unresolved_libraries.append(canonical)
@@ -3066,7 +3159,7 @@ def _build_decision_table_stub_plan_definitions(
     today = today_date()
     version = cfg["version"]
     status = cfg["status"]
-    library_canonical = f"{canonical}/Library/{_deterministic_library_id(resource_id)}"
+    library_canonical = f"{canonical}/Library/{_deterministic_library_name(resource_id)}"
 
     if not isinstance(events, list):
         events = []
@@ -4206,6 +4299,8 @@ def _build_stub_resources(
     canonical = cfg["canonical"]
     version = cfg["version"]
     status = cfg["status"]
+    library_name = _deterministic_library_name(resource_id)
+    library_canonical = f"{canonical}/Library/{library_name}"
 
     if artifact_type == "terminology":
         return _build_terminology_stub_resources(artifact_name, cfg, l2_data)
@@ -4236,8 +4331,7 @@ def _build_stub_resources(
         plan_type = "eca-rule" if artifact_type in ("decision-table", "policy") else "clinical-protocol"
         primary_resource["type"] = _plan_definition_type(plan_type)
         if artifact_type == "decision-table" and "Library" in supporting:
-            lib_id = _deterministic_library_id(resource_id)
-            primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
+            primary_resource["library"] = [library_canonical]
         if artifact_type == "decision-table" and l2_data:
             root_actions, child_plan_definitions = _build_decision_table_stub_plan_definitions(
                 resource_id,
@@ -4259,7 +4353,7 @@ def _build_stub_resources(
                     # codes, so it must remain base R4 rather than claim CPG conformance.
                     "meta_profile": [],
                     "type": _plan_definition_type(plan_type),
-                    "library": [f"{canonical}/Library/{_deterministic_library_id(resource_id)}"],
+                    "library": [library_canonical],
                     "action": root_actions or _build_decision_table_plan_actions(
                         artifact_name,
                         canonical,
@@ -4300,7 +4394,7 @@ def _build_stub_resources(
                     decision_table_data,
                 )
                 related_library_canonical = (
-                    f"{canonical}/Library/{_deterministic_library_id(decision_table_base_id)}"
+                    f"{canonical}/Library/{_deterministic_library_name(decision_table_base_id)}"
                 )
             child_plan_definitions, branch_plan_map = _build_care_pathway_stub_plan_definitions(
                 resource_id,
@@ -4352,8 +4446,7 @@ def _build_stub_resources(
         }]
         # Populate Measure.library with the canonical URL of the companion Library
         if "Library" in supporting:
-            lib_id = f"{resource_id}-measure"
-            primary_resource["library"] = [f"{canonical}/Library/{lib_id}"]
+            primary_resource["library"] = [library_canonical]
     elif primary == "Questionnaire":
         primary_resource = _build_questionnaire_resource(topic, artifact_name, l2_data or {}, cfg)
     elif primary == "ValueSet":
@@ -4427,11 +4520,11 @@ def _build_stub_resources(
         sup_resource: dict = {
             "resourceType": sup_type,
             "id": sup_id,
-            "url": f"{canonical}/{sup_type}/{sup_id}",
+            "url": library_canonical if sup_type == "Library" else f"{canonical}/{sup_type}/{sup_id}",
             "version": version,
             "status": status,
             "date": today,
-            "name": _pascal_from_kebab(sup_id),
+            "name": library_name if sup_type == "Library" else _pascal_from_kebab(sup_id),
             "title": f"{artifact_name} {sup_type}".replace("-", " ").title(),
         }
         # Required fields for stubs
@@ -5013,6 +5106,15 @@ def _deterministic_library_id(base_id: str) -> str:
     return f"{base_id}-logic"
 
 
+def _deterministic_library_name(base_id: str) -> str:
+    """Return the CQL identifier used by the companion FHIR Library."""
+    name = _pascal_from_kebab(_deterministic_library_id(base_id))
+    if len(name) <= 64:
+        return name
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:10]
+    return f"{name[:64 - len(digest)]}{digest}"
+
+
 def _canonical_for_generated_resource(canonical: str, resource_type: str, raw_id: str) -> str:
     """Return the canonical URL after applying generated FHIR id normalization."""
     return f"{canonical}/{resource_type}/{_fhir_resource_id(raw_id)}"
@@ -5472,6 +5574,14 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
     for resource in resources:
         _hoist_plan_definition_action_conditions(resource)
 
+    _align_generated_library_identity(
+        resources,
+        canonical=canonical,
+        resource_id=resource_id,
+        version=str(cfg.get("version") or ""),
+        namespace_name=infer_package_id(str(cfg.get("id") or topic)),
+    )
+
     # Ensure Measure.library references companion Library resources
     _patch_measure_library_references(resources)
     try:
@@ -5482,8 +5592,19 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
     # Normalize + validate
     computable_dir = td / "computable"
     computable_dir.mkdir(parents=True, exist_ok=True)
-    _attach_external_library_dependencies(resources, computable_dir, topic_entry)
     warnings: list[str] = []
+    try:
+        warnings.extend(
+            _validate_generated_library_identities(
+                resources,
+                computable_dir,
+                canonical=canonical,
+                namespace_name=infer_package_id(str(cfg.get("id") or topic)),
+            )
+        )
+    except CqlLibraryIdentityError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _attach_external_library_dependencies(resources, computable_dir, topic_entry)
 
     for resource in resources:
         normalize_resource(resource)
@@ -5602,7 +5723,6 @@ def formalize(topic, artifact, dry_run, force, generate_strategies):
         embedded_any = False
         for lib_path in library_files:
             if lib_path.exists() and _embed_cql_in_library(lib_path, computable_dir):
-                cql_used = _find_best_cql(sorted(computable_dir.glob("*.cql")), "")
                 click.echo(f"  ✓ Embedded CQL source in {lib_path.name}")
                 embedded_any = True
         if not embedded_any:

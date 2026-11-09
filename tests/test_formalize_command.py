@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from rh_skills.commands.formalize import formalize, STRATEGY_REGISTRY, _fhir_resource_id
+from rh_skills.commands.formalize import formalize, STRATEGY_REGISTRY, _deterministic_library_name, _fhir_resource_id
 from tests.conftest import make_tracking, load_tracking
 
 
@@ -451,8 +451,8 @@ class TestCqlEmbedding:
         import base64
 
         computable_dir = self._make_measure_topic(tmp_repo)
-        cql_source = b"library TestMeasureLogic version '1.0.0'\nusing FHIR version '4.0.1'\n"
-        (computable_dir / "TestMeasureLogic.cql").write_bytes(cql_source)
+        cql_source = b"library TestMeasureLogic version '0.1.0'\nusing FHIR version '4.0.1'\n"
+        (computable_dir / "TestMeasureLogic-0.1.0.cql").write_bytes(cql_source)
 
         os.environ["LLM_PROVIDER"] = "stub"
         try:
@@ -464,11 +464,71 @@ class TestCqlEmbedding:
             lib_files = list(computable_dir.glob("Library-*.json"))
             assert len(lib_files) == 1, "Expected exactly one Library JSON"
             library = json.loads(lib_files[0].read_text())
+            assert library["name"] == "TestMeasureLogic"
+            assert library["version"] == "0.1.0"
+            assert library["url"] == "http://example.org/fhir/Library/TestMeasureLogic"
+            assert library["subjectCodeableConcept"]["coding"][0] == {
+                "system": "http://hl7.org/fhir/resource-types",
+                "code": "Patient",
+                "display": "Patient",
+            }
+            namespace_extensions = {
+                extension["url"]: extension
+                for extension in library["extension"]
+                if extension["url"].endswith(("cql-namespace", "cql-namespaceUri"))
+            }
+            assert namespace_extensions[
+                "http://hl7.org/fhir/uv/cql/StructureDefinition/cql-namespace"
+            ]["valueString"] == "reason.test-measure"
+            assert namespace_extensions[
+                "http://hl7.org/fhir/uv/cql/StructureDefinition/cql-namespaceUri"
+            ]["valueUri"] == "http://example.org/fhir"
             content = library.get("content", [])
             cql_items = [c for c in content if c.get("contentType") == "text/cql"]
             assert len(cql_items) == 1, "Expected one text/cql content item"
             decoded = base64.b64decode(cql_items[0]["data"])
             assert decoded == cql_source
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_cql_identity_mismatch_blocks_library_wrapper(self, tmp_repo):
+        computable_dir = self._make_measure_topic(tmp_repo)
+        (computable_dir / "TestMeasureLogic-0.1.0.cql").write_text(
+            "library TestMeasureLogic version '9.9.9'\ncontext Patient\n"
+        )
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            result = CliRunner().invoke(formalize, ["test-measure", "test-measure"])
+            assert result.exit_code != 0
+            assert "does not match CQL declaration" in result.output
+            assert list(computable_dir.glob("Library-*.json")) == []
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_long_artifact_name_keeps_library_cql_and_measure_identity_aligned(self, tmp_repo):
+        computable_dir = self._make_measure_topic(tmp_repo)
+        artifact = "adult-crs-surgical-management-recommendation-for-revision-surgery-candidacy-review"
+        tracking = load_tracking(tmp_repo)
+        tracking["topics"][0]["structured"][0]["name"] = artifact
+        make_tracking(tmp_repo, topics=tracking["topics"])
+        name = _deterministic_library_name(artifact)
+        source = f"library {name} version '0.1.0'\ncontext Patient\n"
+        (computable_dir / f"{name}-0.1.0.cql").write_text(source)
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            result = CliRunner().invoke(formalize, ["test-measure", artifact])
+            assert result.exit_code == 0, result.output
+            library = json.loads(next(computable_dir.glob("Library-*.json")).read_text())
+            measure = json.loads(next(computable_dir.glob("Measure-*.json")).read_text())
+            assert len(library["name"]) <= 64
+            assert library["name"] == name
+            assert library["url"] == f"http://example.org/fhir/Library/{name}"
+            assert measure["library"] == [library["url"]]
+            import base64
+            content = next(item for item in library["content"] if item["contentType"] == "text/cql")
+            assert base64.b64decode(content["data"]).decode() == source
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 
@@ -594,9 +654,9 @@ sections:
             plan = json.loads((computable / "PlanDefinition-dt.json").read_text())
             child_plan = json.loads((computable / "PlanDefinition-dt-intake.json").read_text())
             assert len(plan["action"]) == 2
-            assert plan["library"][0].endswith("/Library/dt-logic")
+            assert plan["library"][0].endswith("/Library/DtLogic")
             assert plan["action"][0]["definitionCanonical"].endswith("/PlanDefinition/dt-intake")
-            assert child_plan["library"][0].endswith("/Library/dt-logic")
+            assert child_plan["library"][0].endswith("/Library/DtLogic")
             # The generated tree lacks the CPG common-process coding required
             # to claim the recommendation profile.
             assert "meta" not in plan
@@ -1982,8 +2042,8 @@ sections:
         import base64
 
         computable_dir = self._make_measure_topic(tmp_repo)
-        cql_source = b"library TestMeasureLogic version '1.0.0'\n"
-        (computable_dir / "TestMeasureLogic.cql").write_bytes(cql_source)
+        cql_source = b"library TestMeasureLogic version '0.1.0'\n"
+        (computable_dir / "TestMeasureLogic-0.1.0.cql").write_bytes(cql_source)
 
         os.environ["LLM_PROVIDER"] = "stub"
         try:

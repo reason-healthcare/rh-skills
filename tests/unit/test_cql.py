@@ -168,6 +168,41 @@ def test_validate_success_exits_zero(tmp_path, monkeypatch):
     ]
 
 
+def test_validate_resolves_cql_ig_versioned_source_name(tmp_path, monkeypatch):
+    computable = tmp_path / "topics" / "test-topic" / "computable"
+    computable.mkdir(parents=True)
+    versioned = computable / "TestLib-1.0.0.cql"
+    versioned.write_text("library TestLib version '1.0.0'\ncontext Patient\n")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code == 0
+    assert mock_run.call_args[0][0][3] == str(versioned)
+    assert "should be named" not in result.output
+
+
+def test_validate_rejects_coexisting_legacy_and_versioned_sources(tmp_path, monkeypatch):
+    computable = tmp_path / "topics" / "test-topic" / "computable"
+    computable.mkdir(parents=True)
+    (computable / "TestLib.cql").write_text(
+        "library TestLib version '0.9.0'\ncontext Patient\n"
+    )
+    (computable / "TestLib-1.0.0.cql").write_text(
+        "library TestLib version '1.0.0'\ncontext Patient\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
+
+    result = CliRunner().invoke(cql, ["validate", "test-topic", "TestLib"])
+
+    assert result.exit_code != 0
+    assert "Ambiguous CQL sources" in result.output
+
+
 def test_validate_errors_exits_nonzero(tmp_path, monkeypatch):
     monkeypatch.chdir(_make_topic(tmp_path))
     monkeypatch.setenv("RH_CLI_PATH", "/fake/rh")
@@ -754,6 +789,38 @@ def test_import_library_reimport_rejects_tampered_or_untracked_library_changes(
 
     assert result.exit_code != 0
     assert "undeclared or duplicate dependency" in result.output or "identity or CQL/ELM attachments differ" in result.output
+
+
+def test_import_library_reimport_accepts_omitted_default_patient_subject(tmp_path, monkeypatch):
+    _, common_manifest, common_library = _import_fhircommon_dependency_chain(tmp_path, monkeypatch)
+    resource = json.loads(common_library.read_text())
+    resource.pop("subjectCodeableConcept")
+    common_library.write_text(json.dumps(resource, indent=2) + "\n")
+    _update_tracked_file_checksum(
+        tmp_path,
+        common_library,
+        "external-library-FHIRCommon-2.0.0",
+    )
+
+    result = CliRunner().invoke(
+        cql, ["import-library", "test-topic", str(common_manifest)]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "already imported" in result.output
+
+
+def test_import_library_rejects_nonconformant_library_url(tmp_path, monkeypatch):
+    manifest = _make_library_import_workspace(tmp_path)
+    data = json.loads(manifest.read_text())
+    data["resource"]["url"] = "http://hl7.org/fhir/uv/cql/Library/fhirhelpers"
+    manifest.write_text(json.dumps(data))
+    monkeypatch.chdir(tmp_path)
+
+    result = CliRunner().invoke(cql, ["import-library", "test-topic", str(manifest)])
+
+    assert result.exit_code != 0
+    assert "Library.url" in result.output
 
 
 def test_import_library_rejects_bad_hash_before_writing(tmp_path, monkeypatch):

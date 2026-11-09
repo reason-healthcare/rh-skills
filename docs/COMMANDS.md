@@ -620,8 +620,32 @@ process/package-workspace/executable/
 The command validates canonical/version closure, embedded Library CQL and ELM,
 pinned complete ValueSet expansions, and all fixture bundle/context fields. It
 rejects missing or ambiguous dependencies, placeholders, malformed fixtures,
-and path escapes. `fixtures/index.json` contains only fixture metadata and
-references full patient bundles using `dataBundlePath`; patient data is never
+non-`collection` fixture Bundles, and path escapes. Each emitted fixture Bundle
+preserves its existing `meta` fields and receives this portable Workbench test
+case designation:
+
+```json
+{
+  "meta": {
+    "tag": [{
+      "system": "https://reason-healthcare.github.io/fhir/CodeSystem/workbench-bundle-purpose",
+      "code": "test-case",
+      "display": "Workbench test case"
+    }]
+  },
+  "identifier": {
+    "system": "https://reason-healthcare.github.io/fhir/identifier/test-case",
+    "value": "<topic>/<fixture-id>"
+  },
+  "type": "collection"
+}
+```
+
+The designation tag states the Bundle's workflow purpose. It does not replace
+the `HTEST` security label, which identifies synthetic test health data, and it
+does not encode expected clinical results. `fixtures/index.json` contains only
+fixture display and runtime metadata and references full patient Bundles using
+`dataBundlePath`; assertions remain separate sidecars and patient data is never
 placed in the executable knowledge Bundle. The manifest records deterministic
 SHA-256 checksums for the root, resources, Bundle, and fixture index. Output is
 staged and directory-swapped only after validation succeeds, preserving the

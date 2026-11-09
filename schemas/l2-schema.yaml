@@ -283,9 +283,10 @@ artifact_type_sections:
 
   assessment:
     description: >
-      Structured assessment instrument and response semantics. Questionnaire
-      extraction metadata is optional and must be explicit when downstream
-      workflows require SDC Observation extraction.
+      Structured assessment instrument and response semantics. Every assessment
+      formalizes to a Questionnaire, including clinician-entered diagnostic data
+      and review of existing results. Questionnaire extraction metadata is
+      explicit when downstream workflows require SDC Observation extraction.
     recommended_sections:
       - summary
       - instrument
@@ -310,13 +311,23 @@ artifact_type_sections:
         and category extension. Omit the field when extraction is not part of
         the workflow.
       items: >
-        Questionnaire items: {id, text, type, required?, code?}. Preserve
+        Questionnaire items: {id, text, type, required?, code?, options?,
+        observation_extraction?}. Preserve
         source linkIds, answer types, requiredness, and full Coding identity
         including system, version, code, and display. Under SDC extraction,
         item codings are the terminology bindings copied to Observation.code.
-        The currently supported extraction subset is Boolean items with
+        The currently supported extraction subset is Boolean or coded choice
+        items (including ordinal/likert aliases), with
         exactly one reviewed Coding per item; that Coding requires system,
-        version, code, and display. Do not infer a Coding when one is absent.
+        version, code, and display. Coded choice options are authored as
+        {valueCoding: {system, version?, code, display}}; preserve the authored
+        identity in answerOption.valueCoding so extraction can populate
+        Observation.valueCodeableConcept. Do not replace codes with labels or
+        infer a Coding or answer version when one is absent. Optional item observation_extraction:
+        {category: {system, code, display}} overrides the instrument category,
+        for example laboratory results and exam findings in one assessment.
+        Item overrides require enabled instrument extraction. A clinical form
+        does not imply survey category or patient-reported evidence.
       scoring: >
         Scoring narrative remains optional for ordinary assessments. An
         assessment that publishes a calculated score Observation may use this

@@ -9,12 +9,19 @@ Behavior specific to the `rh` CQL evaluator.
 The `rh` evaluator does not inject FHIRHelpers automatically. Portable CQL
 declares a versioned include:
 
-`include FHIRHelpers version '4.0.1' called FHIRHelpers`
+`include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers`
 
-Resolve the include from pinned local CQL/ELM files. Use
-`rh-skills cql import-library <topic> <manifest.json>` to verify hashes and
-identity, add the FHIR Library, and record dependency provenance. The primary
-FHIR Library must declare the helper in `relatedArtifact`.
+Prefer `fhir.cqf.common@4.0.1`; do not create local `FHIRHelpers` or
+`FHIRCommon` shadow libraries. Resolve the namespaced include directly from the
+verified package or package cache; do not copy helper/common CQL into
+first-party computable content. Ignore ELM supplied by the package and run
+`rh-skills cql translate` with the pinned project translator. Record package
+and source hashes, translator identity/options/model, and generated ELM hash.
+The primary FHIR Library must declare the helper in `relatedArtifact`.
+
+`fhir.cqf.common@4.0.1` does not publish the fluent `references` functions. If
+logic needs them, pin a package/version that does publish them and keep the
+external include package-qualified; do not patch a local `FHIRCommon`.
 
 For choice elements, use FHIR logical types (for example,
 `(A.value as FHIR.boolean).value`). Traverse CodeableConcept `coding` and compare

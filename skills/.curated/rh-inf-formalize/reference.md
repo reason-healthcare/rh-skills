@@ -222,6 +222,15 @@ Order-set and regimen decomposition rule:
 - When a computable grouping artifact is needed for the parent bundle, it may
   be represented as a `PlanDefinition` using `type.coding.code = order-set`,
   while the executable medication leaves remain separate activities.
+- Treat every named regimen as an order-set candidate even when the surrounding
+  guideline artifact only surfaces content for review. Record the candidate
+  decision and do not substitute the broader guidance PlanDefinition for it.
+- If the source does not establish dosing or regimen-specific eligibility,
+  publish only a separate `status: draft`, `experimental: true` review
+  PlanDefinition. Use proposal-intent MedicationRequest activities for named,
+  RxNorm-first medication leaves and omit dose, route, frequency, cycle,
+  sequence, duration, and timing that the source does not support. Do not gate
+  or invoke this order set with the broader guidance-applicability expression.
 
 If formalize emits recommendation-scoped child PlanDefinitions, each child that
 contains `condition[].expression` entries must also include the same

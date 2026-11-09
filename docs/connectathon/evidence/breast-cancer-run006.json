@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-19T19:05:00Z",
+  "status": "accepted_local_technical_rehearsal",
+  "runId": "breast-cancer-run006",
+  "request": "Fresh breast-cancer Connectathon generation, executable CPG packaging, tagged fixture import, and Workbench positive/negative runtime verification",
+  "source": {
+    "repository": "/Users/bkaney/projects/reason-healthcare/hl7-agentic-knowledge-connectathon",
+    "originMain": "57f9e1a822108f7f2a13e9033a0ed5103f369b71",
+    "remoteFeature": "origin/codex/breast-cancer-neoadjuvant-case",
+    "remoteFeatureCommit": "5034ccd6bc5971aa7e366b6b0df0b23caffe4f46",
+    "mainRelationship": "remote feature is 3 commits ahead and 0 behind origin/main",
+    "path": "use-cases/breast-cancer",
+    "useCases": 1,
+    "fixtures": 13,
+    "expressionsPerFixture": 8,
+    "typedAssertions": 104,
+    "checkoutUnchanged": true,
+    "checkoutCleanAfterRun": true,
+    "sourceInventorySha256": "51cde90ec0205ccfab189c61f42a9830bf5e489ee2a166b8d55ad76e3ccdf8e0"
+  },
+  "workspace": {
+    "rhSkillsWorktree": "/Users/bkaney/projects/reason-healthcare/rh-skills-breast-cancer-run006",
+    "branch": "codex/breast-cancer-run006",
+    "baseCommit": "8e11422b10b2c533fc0ea89ab00648118a81bd12",
+    "includesOriginMain": "78d8a8cef055df358c7353151ee47a57a60fb25f",
+    "path": "/Users/bkaney/projects/reason-healthcare/rh-skills-breast-cancer-run006/dist/connectathon-20260919/workspaces/breast-cancer-20260919T200000Z",
+    "topic": "breast-cancer-neoadjuvant-review"
+  },
+  "content": {
+    "l2Artifacts": 6,
+    "l2Types": [
+      "assessment",
+      "care-pathway",
+      "decision-table",
+      "eligibility-criteria",
+      "evidence-summary",
+      "terminology"
+    ],
+    "workbenchL3Artifacts": 28,
+    "packageFhirResources": 25,
+    "packageCqlSources": 3,
+    "assessmentContract": "Observation data requirements only; no Questionnaire or QuestionnaireResponse was formalized",
+    "cqlSourceSha256": "2410c688dcca440ece8bd93c154bce23d7dcc09230e749d63481e40020f42c82",
+    "elmSha256": "31293a0eab69427f26369524c52bcaf579c591235c69685f137a51b0b614a025",
+    "cqlStyle": [
+      "Patient context supplies patient scoping; no manually constructed Patient references",
+      "typed ValueSet retrieves and code equivalence are used instead of manual system/code string checks",
+      "FHIRCommon.references links Observation.focus to the indexed Condition",
+      "Questionnaire and QuestionnaireResponse are absent from clinical CQL"
+    ],
+    "runtimeAdaptation": "The pinned translator exposes Observation.focus as Any, so accepted CQL uses FHIRCommon.references(First(O.focus) as FHIR.Reference, C). Every source fixture has exactly one indexed-tumor focus."
+  },
+  "distribution": {
+    "package": "/Users/bkaney/projects/reason-healthcare/rh-skills-breast-cancer-run006/dist/connectathon-20260919/workspaces/breast-cancer-20260919T200000Z/topics/breast-cancer-neoadjuvant-review/process/package-workspace/output/reason.breast-cancer-neoadjuvant-review-1.0.0.tgz",
+    "packageSha256": "3ad371a185b136f371a79619d4acb152a82544adf1ae02f7e444511903495b6d",
+    "executableBundle": "/Users/bkaney/projects/reason-healthcare/rh-skills-breast-cancer-run006/dist/connectathon-20260919/workspaces/breast-cancer-20260919T200000Z/topics/breast-cancer-neoadjuvant-review/process/package-workspace/executable/executable-bundle.json",
+    "executableBundleSha256": "674debb0a9b4c6b1ea00868630775e16549ec31a34a50554a848718cdb1a52b1",
+    "fixtureIndex": "/Users/bkaney/projects/reason-healthcare/rh-skills-breast-cancer-run006/dist/connectathon-20260919/workspaces/breast-cancer-20260919T200000Z/topics/breast-cancer-neoadjuvant-review/process/package-workspace/executable/fixtures/index.json",
+    "fixtureIndexSha256": "3cd28ed3a72a6328bb49bdf9f37acea85bd5771031a6d004a59ac7165a427271",
+    "rootCanonical": "https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/PlanDefinition/neoadjuvant-tnbc-oncology-review-pathway-protocol|1.0.0",
+    "terminology": "Nine explicit, version-pinned ValueSet compose members received complete deterministic local expansions. No remote terminology API was needed for the source-defined local CodeSystem and pinned LOINC members.",
+    "fixtureAdaptation": "A derived copy adds an inclusive 2026 measurement period required by the executable fixture contract. Source fixtures remain byte-unchanged, and the clinical CQL does not consume Measurement Period."
+  },
+  "snapshot": {
+    "id": "snap_connectathon-breast-cancer_run006-5034ccd-8e11422b10b2",
+    "projectId": "connectathon-breast-cancer",
+    "directory": "/Users/bkaney/projects/reason-healthcare/rh-skills-breast-cancer-run006/dist/connectathon-20260919/snapshots/connectathon-breast-cancer-run006-5034ccd-8e11422b10b2-snapshot",
+    "zip": "/Users/bkaney/projects/reason-healthcare/rh-skills-breast-cancer-run006/dist/connectathon-20260919/snapshots/connectathon-breast-cancer-run006-5034ccd-8e11422b10b2-snapshot.zip",
+    "url": "http://localhost:9090/projects/connectathon-breast-cancer/snapshots/snap_connectathon-breast-cancer_run006-5034ccd-8e11422b10b2",
+    "manifestSha256": "5da886caa2b0b0e8cf8d40126b89393a48b8ffd9793636c4deb5b12c0ce5c86f",
+    "zipSha256": "05b48ea8424e723ac53e3195d52b1d33ac9fbe1bb394946b2c32c1a7978ff20a",
+    "treeInventorySha256": "084127006b246be394ea101a34e2d7ff127f6ecc31e09c2d5a06a14a6deb7d90",
+    "artifacts": 34,
+    "sources": 6,
+    "l2": 6,
+    "l3": 28,
+    "fixtures": 13,
+    "executableBundles": 1
+  },
+  "validation": {
+    "sourceFixtures": "13/13 passed references, coding, dates, boundaries, unit equivalence, and 104 typed assertions",
+    "cql": {
+      "result": "104/104 assertions passed across 13/13 cases; 0 failures",
+      "acceptedLog": "dist/connectathon-20260919/workspaces/breast-cancer-20260919T200000Z/evidence/cql-test-acceptance.log",
+      "acceptedLogSha256": "521c7a126e6c89298448e81acb519d6cc676c4bd96e87eb355c702cb62554ae5"
+    },
+    "l2": "All six artifacts valid; care-pathway refresh removed the stale incomplete-data decision-rule binding",
+    "l3": "Five approved formalization groups valid; care-pathway reports only optional tracking/target warnings",
+    "fhir": {
+      "validator": "FHIR Validator CLI 6.10.2 with FHIR R4 4.0.1 and CPG 2.0.0, terminology disabled",
+      "result": "25/25 resources validated; 0 issues",
+      "operationOutcomeSha256": "4c42fdddb78bb74df615f862da509478d5454e306ffd666e5d818bf5aa6018f8"
+    },
+    "executableFixtures": "13/13 are collection Bundles with the Workbench test-case tag, deterministic identifier, HTEST security label, and exactly one resolved subject Patient",
+    "snapshotImporter": "Directory and ZIP validation both passed: 34 artifacts, one fixture index, 13 fixture files",
+    "database": "Imported transactionally: 34 artifacts (6 L2, 28 L3), 13 fixtures, one executable bundle; 13/13 fixtures are collection, tagged, identified, and subject-resolved",
+    "workbenchInventory": "Snapshot overview visibly shows 6 structured, 28 computable, 22 lineage, 15 canonical-dependency relationships, and 13 tagged test cases",
+    "runtime": {
+      "rhCommit": "365990299c9a1e5866b9c67f3bf12b524a59e136",
+      "nodeWasmSha256": "e373215b3ea8cf940f4afadc16cd626312bad5749b520ea54b7c4f7d6d32af92",
+      "cpgNodeTests": "7/7 passed",
+      "positiveFixture": "tnbc-t1c-n0: HTTP 200; RequestGroup Bundle; 2 generated resources; 1 total action; Surface neoadjuvant TNBC guidance for oncology review",
+      "negativeFixture": "er-positive: HTTP 200; selected Patient subject preserved; 1 generated resource; No executable actions were returned"
+    }
+  },
+  "excludedIntermediateDiagnostics": [
+    "cql-test.log: initial Coding/Code comparison failures",
+    "cql-test-second.log: intermediate authoring failures",
+    "cql-test-third.log: 81 failures from translator emitting query alias F as a Library alias",
+    "cql-test-probe-list-cast.log: 74 failures because the pinned runtime evaluated the cast Observation.focus list as null",
+    "cql-test-probe-first-focus.log: passing probe superseded by the accepted final log after adding PlanDefinition identifier aliases",
+    "compose-executable initial attempt: ValueSet expansions absent",
+    "compose-executable-probe-missing-measurement-period.log: source assertions lacked the executable fixture contract's required measurement period",
+    "initial live Workbench apply: Condition Patient-compartment retrieve was unsupported before RH 36599029"
+  ],
+  "knownConstraints": [
+    "The use case and 13 fixtures are on the remote breast-cancer feature branch, not origin/main; the branch includes current origin/main and was consumed read-only.",
+    "The breast-cancer assessment is an Observation data-requirements artifact, not a Questionnaire workflow.",
+    "No Measure was authored because the source use case defines CPG applicability rather than a quality measure.",
+    "Clinical correctness was not independently approved; this is a technical Connectathon rehearsal.",
+    "The package was not tested against an independent second CQL evaluator or two independent FHIR servers.",
+    "Workbench's focused apply unit suite retains one stale title-versus-note assertion against the current CPG runtime; live positive and negative responses are the acceptance evidence.",
+    "No remote push, merge, deployment, or protected-source mutation occurred."
+  ]
+}

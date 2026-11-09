@@ -317,8 +317,11 @@ def test_validate_l3_decision_table_skips_intermediate_section_checks_for_direct
     (computable_dir / "Library-my-skill.json").write_text(json.dumps({
         "resourceType": "Library",
         "id": "my-skill",
+        "url": "http://example.org/fhir/Library/MySkill",
+        "version": "1.0.0",
+        "name": "MySkill",
         "status": "draft",
-        "type": {"text": "logic-library"},
+        "type": {"coding": [{"code": "logic-library"}]},
     }))
 
     y = YAML()
@@ -401,8 +404,11 @@ def test_validate_l3_decision_table_errors_when_condition_expression_missing(tmp
     (computable_dir / "Library-my-skill.json").write_text(json.dumps({
         "resourceType": "Library",
         "id": "my-skill",
+        "url": "http://example.org/fhir/Library/MySkill",
+        "version": "1.0.0",
+        "name": "MySkill",
         "status": "draft",
-        "type": {"text": "logic-library"},
+        "type": {"coding": [{"code": "logic-library"}]},
     }))
 
     y = YAML()
@@ -491,8 +497,11 @@ def test_validate_l3_decision_table_errors_when_condition_define_missing_from_cq
     (computable_dir / "Library-my-skill.json").write_text(json.dumps({
         "resourceType": "Library",
         "id": "my-skill",
+        "url": "http://example.org/fhir/Library/MySkill",
+        "version": "1.0.0",
+        "name": "MySkill",
         "status": "draft",
-        "type": {"text": "logic-library"},
+        "type": {"coding": [{"code": "logic-library"}]},
     }))
     (computable_dir / "MySkill.cql").write_text("""\
 library MySkill version '1.0.0'
@@ -766,7 +775,7 @@ define CollectInformationTaskInput:
         "status": "draft",
         "kind": "Task",
         "code": {"coding": [{"system": "http://snomed.info/sct", "code": "386053000", "display": "Evaluation procedure"}]},
-        "library": ["http://example.org/fhir/Library/my-logic"],
+        "library": ["http://example.org/fhir/Library/MyLogic"],
         "dynamicValue": [{
             "path": "input",
             "expression": {
@@ -778,7 +787,8 @@ define CollectInformationTaskInput:
     library_file.write_text(json.dumps({
         "resourceType": "Library",
         "id": "my-logic",
-        "url": "http://example.org/fhir/Library/my-logic",
+        "url": "http://example.org/fhir/Library/MyLogic",
+        "version": "0.1.0",
         "name": "MyLogic",
         "status": "draft",
         "type": {"coding": [{"code": "logic-library"}]},
@@ -849,8 +859,11 @@ def test_validate_l3_decision_table_warns_when_condition_define_looks_parameter_
     (computable_dir / "Library-my-skill.json").write_text(json.dumps({
         "resourceType": "Library",
         "id": "my-skill",
+        "url": "http://example.org/fhir/Library/MySkill",
+        "version": "1.0.0",
+        "name": "MySkill",
         "status": "draft",
-        "type": {"text": "logic-library"},
+        "type": {"coding": [{"code": "logic-library"}]},
     }))
     (computable_dir / "MySkill.cql").write_text("""\
 library MySkill version '1.0.0'

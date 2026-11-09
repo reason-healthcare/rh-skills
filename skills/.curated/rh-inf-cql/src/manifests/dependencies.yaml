@@ -1,7 +1,20 @@
 dependencies:
+  # External CQL libraries are resolved from verified package source and
+  # translated locally; package-supplied ELM is never used as execution input.
+  packages:
+    - id: fhir.cqf.common
+      version: "4.0.1"
   # Core runtime dependencies expected to be present for all CQL evaluation.
   libraries:
-    - FHIRHelpers|4.0.1
+    - fhir.cqf.common.FHIRHelpers|4.0.1
+    - fhir.cqf.common.FHIRCommon|4.0.1
+  # Add only when logic uses the fluent references overloads, which are absent
+  # from fhir.cqf.common@4.0.1. Translate this package's CQL locally too.
+  optionalPackages:
+    - id: hl7.fhir.uv.cql
+      version: "2.0.0"
+  optionalLibraries:
+    - hl7.fhir.uv.cql.FHIRCommon|2.0.0
   modelInfo:
     - FHIR-ModelInfo|4.0.1
   external:
