@@ -27,7 +27,7 @@ def _library(
     name: str = "Logic",
     version: str = "1.0.0",
     resource_id: str = "logic",
-    url: str = "https://example.org/fhir/Library/logic",
+    url: str = "https://example.org/fhir/Library/Logic",
     cql: str | None = 'library Logic version \'1.0.0\'\ndefine "Eligible": true\n',
     elm: dict | None = None,
 ) -> dict:
@@ -60,7 +60,7 @@ def _root(*, expression: str = "Eligible", version: str = "1.0.0") -> dict:
         "id": "root",
         "url": "https://example.org/fhir/PlanDefinition/root",
         "version": version,
-        "library": ["https://example.org/fhir/Library/logic|1.0.0"],
+        "library": ["https://example.org/fhir/Library/Logic|1.0.0"],
         "action": [{
             "condition": [{
                 "expression": {"language": "text/cql-identifier", "expression": expression},
@@ -78,6 +78,32 @@ def test_closure_reads_real_library_content_shape_and_cql_expression_names():
     )
 
     assert root["id"] == "root"
+
+
+def test_closure_rejects_cql_library_url_name_mismatch():
+    library = _library(url="https://example.org/fhir/Library/logic")
+
+    with pytest.raises(ExecutableBundleError, match="Library.url"):
+        _validate_closure(
+            [library, _root()],
+            "https://example.org/fhir/PlanDefinition/root|1.0.0",
+        )
+
+
+def test_closure_uses_shared_cql_identity_parser():
+    name = "Example.Logic"
+    library = _library(
+        name=name,
+        url=f"https://example.org/fhir/Library/{name}",
+        cql=f'library {name} version "1.0.0"\ndefine "Eligible": true\n',
+    )
+    root = _root()
+    root["library"] = [f"https://example.org/fhir/Library/{name}|1.0.0"]
+
+    assert _validate_closure(
+        [library, root],
+        "https://example.org/fhir/PlanDefinition/root|1.0.0",
+    )["id"] == "root"
 
 
 def test_closure_rejects_missing_elm_for_embedded_cql():
@@ -246,7 +272,7 @@ def test_closure_rejects_measure_population_expression_missing_from_elm():
         "id": "measure",
         "url": "https://example.org/fhir/Measure/measure",
         "version": "1.0.0",
-        "library": ["https://example.org/fhir/Library/logic|1.0.0"],
+        "library": ["https://example.org/fhir/Library/Logic|1.0.0"],
         "group": [{"population": [{"criteria": {"language": "text/cql-identifier", "expression": "Missing"}}]}],
     }
 

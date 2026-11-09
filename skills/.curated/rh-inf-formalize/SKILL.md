@@ -161,6 +161,7 @@ Care-pathway condition and linkage rules:
 - Do not add a default condition when the L2 pathway omits one. Report a missing or ambiguous clinical gate for L2 review.
 
 Questionnaire identity rule:
+- Generate a Questionnaire for every approved assessment artifact, including clinician-entered diagnostic data and review of existing results. Existing Observations are not a reason to omit the form. The Questionnaire describes data collection; the respondent, clinical category, source provenance, and focus determine the meaning of the extracted evidence.
 - When an approved L2 assessment's `sections.instrument` provides `id`, `canonical`, and `version`, preserve those values on the generated Questionnaire. This keeps the authored form identity stable for response capture and extraction. Clinical CQL consumes the resulting coded clinical Observations; it must not require the QuestionnaireResponse or its identifier to select evidence. Generate Questionnaire content from the L2 items; do not replace the generated resource with a copied source Questionnaire. If no identity is supplied, use the topic's formalize configuration defaults.
 
 SDC Observation-extraction metadata rule:
@@ -168,6 +169,8 @@ SDC Observation-extraction metadata rule:
 - Emit the profile in `Questionnaire.meta.profile`, `sdc-questionnaire-observationExtract` as `valueBoolean: true`, and `sdc-questionnaire-observation-extract-category` as a `valueCodeableConcept` with the authored Coding. The generic L2 validator/formalizer rejects unsupported fields; never add arbitrary extensions by editing generated JSON.
 - If SDC Observation extraction is enabled, require an explicitly authored `sections.instrument.version_algorithm: {system, code, display?}` and preserve it in the standard `artifact-versionAlgorithm` extension. Do not invent an algorithm; the versioned SDC profile requires this metadata. For ordinary assessments without enabled SDC extraction, version-algorithm metadata remains optional.
 - Preserve each item's LOINC Coding directly in `Questionnaire.item.code[]`, including its system, version, code, and display. This is a FHIR `Coding[]`, not a nested `CodeableConcept`.
+- Preserve `options[].valueCoding` as `answerOption[].valueCoding`, including system, code, display, and version when authored. Answer version is optional; never infer it from the question's version. Coded choices extract to `Observation.valueCodeableConcept`; do not turn a coded clinical value into a Boolean or discard its system. The supported source-answer extraction types are Boolean and coded choice (including ordinal/likert aliases); keep other types as an explicit extraction capability gap.
+- Preserve item `observation_extraction.category` as the SDC category extension on that item, overriding the instrument category. Use the authored clinical categories for diagnostic results and staging; a Questionnaire does not imply `survey` category. Verify source provenance and required focus in the extraction/runtime workflow.
 - Structured assessment scoring is opt-in. When `sections.scoring.algorithm` is present, validate its supported method, source item references, requiredness, evidence claims, output range and versioned score Coding before generating the Questionnaire. The current bounded method is `count_boolean_answers`; it generates a read-only integer score item with one `sdc-questionnaire-calculatedExpression` (`text/fhirpath`) and item-level `sdc-questionnaire-observationExtract: true`. Missing/invalid answers omit the score, while a complete count of zero is retained. Do not calculate a score for an ordinary assessment that has no structured algorithm. Unsupported methods must fail with an explicit capability error rather than be translated into a Boolean count.
 - FHIR `Observation.valueInteger` has no unit field. Do not add a unit extension to an integer Questionnaire score item; the authored score Coding definition must explain what is counted. A future quantity-scoring contract needs separate implementation and validation.
 - Formalization emits the Questionnaire metadata and item expression; it does not itself extract or create score Observations. Verify that the SDC/runtime path recomputes exactly one integral result, rejects conflicting prefilled values, and emits the final score Observation only for a completed response with all source inputs usable. Keep runtime extraction evidence distinct from examples or fixture oracles.
@@ -453,7 +456,12 @@ FHIR files directly.
    - **Mode**: author
    - **Input**: `topics/<topic>/structured/<artifact>.yaml` — the L2 artifact is
      the authoritative source for logic, populations, conditions, and valuesets
-   - **Output**: `topics/<topic>/computable/<LibraryName>.cql`
+   - **Identity input**: the companion `Library-*.json` from the first formalize
+     pass. Its `name`, `version`, canonical namespace URL, and subject are the
+     contract for the CQL declaration and context.
+   - **Output**: `topics/<topic>/computable/<LibraryName>-<version>.cql`
+
+   Conform to [CQL IG Requirement 4.2](https://build.fhir.org/ig/HL7/cql-ig/en/conformance.html#conformance-requirement-4-2): `Library.url` is `<IG canonicalBase>/Library/<CQL name>`, `name` and `version` exactly match the CQL declaration, the name has no underscores and is at most 64 characters, the versioned filename is preferred, and `Library.subject` corresponds to the single CQL context. `IG.packageId` is the CQL namespace name and `IG.canonicalBase` is its namespace URL; preserve them in the standard `cql-namespace` and `cql-namespaceUri` extensions.
 
    After the sub-agent completes, confirm the library compiles and embed both
    CQL and ELM into the FHIR Library resource:

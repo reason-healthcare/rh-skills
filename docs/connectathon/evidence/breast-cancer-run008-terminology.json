@@ -1,0 +1,4094 @@
+{
+	"searches": [
+		{
+			"request": {
+				"query": "Breast cancer clinical primary tumor regional lymph nodes distant metastases TNM category",
+				"version": "2.81",
+				"top_k": 10
+			},
+			"response": {
+				"content": [
+					{
+						"type": "text",
+						"text": "[{\"id\":4120551,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44666-6\",\"display\":\"M Stage of Distant Metastasis, Breast Tumor\",\"distance\":0.17641841182638196},{\"id\":4114552,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44667-4\",\"display\":\"Site of distant metastasis in Breast tumor\",\"distance\":0.2078320748833371},{\"id\":5070057,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44667-4\",\"display\":\"Site of distant metastasis, Breast Tumor\",\"distance\":0.22483732142060664},{\"id\":4120552,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44667-4\",\"display\":\"Site of distant metastasis, Breast Tumor\",\"distance\":0.22483732142060664},{\"id\":708065,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"107338-6\",\"display\":\"Breast cancer molecular subtype, Tissue\",\"distance\":0.2782376276747023},{\"id\":4114551,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44666-6\",\"display\":\"Deprecated M stage of distant metastasis in Breast tumor Qualitative by CAP cancer protocols\",\"distance\":0.28375339181741865},{\"id\":4110443,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44622-9\",\"display\":\"Regional Lymph Nodes Containing Metastases, Specimen\",\"distance\":0.2929986568012807},{\"id\":4120548,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44663-3\",\"display\":\"T Classification, Breast Tumor\",\"distance\":0.29517931597297864},{\"id\":1061952,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"21920-4\",\"display\":\"Site of distant metastasis Cancer\",\"distance\":0.3007347903766463},{\"id\":5227589,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"92831-7\",\"display\":\"Lymph nodes with metastasis, Cancer specimen\",\"distance\":0.30572628437930827}]"
+					}
+				],
+				"structuredContent": {
+					"result": [
+						{
+							"id": 4120551,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44666-6",
+							"display": "M Stage of Distant Metastasis, Breast Tumor",
+							"distance": 0.17641841182638196
+						},
+						{
+							"id": 4114552,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44667-4",
+							"display": "Site of distant metastasis in Breast tumor",
+							"distance": 0.2078320748833371
+						},
+						{
+							"id": 5070057,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44667-4",
+							"display": "Site of distant metastasis, Breast Tumor",
+							"distance": 0.22483732142060664
+						},
+						{
+							"id": 4120552,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44667-4",
+							"display": "Site of distant metastasis, Breast Tumor",
+							"distance": 0.22483732142060664
+						},
+						{
+							"id": 708065,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "107338-6",
+							"display": "Breast cancer molecular subtype, Tissue",
+							"distance": 0.2782376276747023
+						},
+						{
+							"id": 4114551,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44666-6",
+							"display": "Deprecated M stage of distant metastasis in Breast tumor Qualitative by CAP cancer protocols",
+							"distance": 0.28375339181741865
+						},
+						{
+							"id": 4110443,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44622-9",
+							"display": "Regional Lymph Nodes Containing Metastases, Specimen",
+							"distance": 0.2929986568012807
+						},
+						{
+							"id": 4120548,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44663-3",
+							"display": "T Classification, Breast Tumor",
+							"distance": 0.29517931597297864
+						},
+						{
+							"id": 1061952,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "21920-4",
+							"display": "Site of distant metastasis Cancer",
+							"distance": 0.3007347903766463
+						},
+						{
+							"id": 5227589,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "92831-7",
+							"display": "Lymph nodes with metastasis, Cancer specimen",
+							"distance": 0.30572628437930827
+						}
+					]
+				},
+				"isError": false
+			}
+		},
+		{
+			"request": {
+				"query": "Primary tumor clinical TNM stage",
+				"version": "2.81",
+				"top_k": 5
+			},
+			"response": {
+				"content": [
+					{
+						"type": "text",
+						"text": "[{\"id\":4214807,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"75621-3\",\"display\":\"TNM pathologic staging after surgery panel Cancer\",\"distance\":0.2332114010576295},{\"id\":4214806,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"75620-5\",\"display\":\"TNM clinical staging before treatment panel Cancer\",\"distance\":0.2682866267475883},{\"id\":4189037,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"67205-5\",\"display\":\"Deprecated TNM clinical staging - primary tumor - T [PhenX]\",\"distance\":0.3229074030931449},{\"id\":4189042,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"67209-7\",\"display\":\"Deprecated TNM pathologic staging - primary tumor - T [PhenX]\",\"distance\":0.32928362632321795},{\"id\":1061929,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"21899-0\",\"display\":\"Primary tumor.pathology Cancer\",\"distance\":0.3444361044345423}]"
+					}
+				],
+				"structuredContent": {
+					"result": [
+						{
+							"id": 4214807,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "75621-3",
+							"display": "TNM pathologic staging after surgery panel Cancer",
+							"distance": 0.2332114010576295
+						},
+						{
+							"id": 4214806,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "75620-5",
+							"display": "TNM clinical staging before treatment panel Cancer",
+							"distance": 0.2682866267475883
+						},
+						{
+							"id": 4189037,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "67205-5",
+							"display": "Deprecated TNM clinical staging - primary tumor - T [PhenX]",
+							"distance": 0.3229074030931449
+						},
+						{
+							"id": 4189042,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "67209-7",
+							"display": "Deprecated TNM pathologic staging - primary tumor - T [PhenX]",
+							"distance": 0.32928362632321795
+						},
+						{
+							"id": 1061929,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "21899-0",
+							"display": "Primary tumor.pathology Cancer",
+							"distance": 0.3444361044345423
+						}
+					]
+				},
+				"isError": false
+			}
+		},
+		{
+			"request": {
+				"query": "Regional lymph nodes clinical TNM stage",
+				"version": "2.81",
+				"top_k": 5
+			},
+			"response": {
+				"content": [
+					{
+						"type": "text",
+						"text": "[{\"id\":4214807,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"75621-3\",\"display\":\"TNM pathologic staging after surgery panel Cancer\",\"distance\":0.22557825638994544},{\"id\":1061936,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"21906-3\",\"display\":\"Regional lymph nodes.clinical [Class] Cancer\",\"distance\":0.26349195732983677},{\"id\":4110442,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44621-1\",\"display\":\"Regional lymph nodes examined, Specimen\",\"distance\":0.2706787594168324},{\"id\":4110443,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44622-9\",\"display\":\"Regional Lymph Nodes Containing Metastases, Specimen\",\"distance\":0.27324918725030534},{\"id\":697404,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"105602-7\",\"display\":\"Lymph node involvement, Tissue\",\"distance\":0.2746099666073465}]"
+					}
+				],
+				"structuredContent": {
+					"result": [
+						{
+							"id": 4214807,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "75621-3",
+							"display": "TNM pathologic staging after surgery panel Cancer",
+							"distance": 0.22557825638994544
+						},
+						{
+							"id": 1061936,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "21906-3",
+							"display": "Regional lymph nodes.clinical [Class] Cancer",
+							"distance": 0.26349195732983677
+						},
+						{
+							"id": 4110442,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44621-1",
+							"display": "Regional lymph nodes examined, Specimen",
+							"distance": 0.2706787594168324
+						},
+						{
+							"id": 4110443,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44622-9",
+							"display": "Regional Lymph Nodes Containing Metastases, Specimen",
+							"distance": 0.27324918725030534
+						},
+						{
+							"id": 697404,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "105602-7",
+							"display": "Lymph node involvement, Tissue",
+							"distance": 0.2746099666073465
+						}
+					]
+				},
+				"isError": false
+			}
+		},
+		{
+			"request": {
+				"query": "Distant metastases clinical TNM stage",
+				"version": "2.81",
+				"top_k": 5
+			},
+			"response": {
+				"content": [
+					{
+						"type": "text",
+						"text": "[{\"id\":4189040,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"67207-1\",\"display\":\"Deprecated TNM clinical staging - distant metastases - M [PhenX]\",\"distance\":0.26196755182908404},{\"id\":1061952,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"21920-4\",\"display\":\"Site of distant metastasis Cancer\",\"distance\":0.267221125510822},{\"id\":561383,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"LP222093-9\",\"display\":\"Distant metastases confirmed by histology\",\"distance\":0.27095922362641167},{\"id\":4214807,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"75621-3\",\"display\":\"TNM pathologic staging after surgery panel Cancer\",\"distance\":0.2710261517070722},{\"id\":4120551,\"system\":\"05e02b5a-c946-405f-8299-7d8fd799e188\",\"code\":\"44666-6\",\"display\":\"M Stage of Distant Metastasis, Breast Tumor\",\"distance\":0.2715484496527196}]"
+					}
+				],
+				"structuredContent": {
+					"result": [
+						{
+							"id": 4189040,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "67207-1",
+							"display": "Deprecated TNM clinical staging - distant metastases - M [PhenX]",
+							"distance": 0.26196755182908404
+						},
+						{
+							"id": 1061952,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "21920-4",
+							"display": "Site of distant metastasis Cancer",
+							"distance": 0.267221125510822
+						},
+						{
+							"id": 561383,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "LP222093-9",
+							"display": "Distant metastases confirmed by histology",
+							"distance": 0.27095922362641167
+						},
+						{
+							"id": 4214807,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "75621-3",
+							"display": "TNM pathologic staging after surgery panel Cancer",
+							"distance": 0.2710261517070722
+						},
+						{
+							"id": 4120551,
+							"system": "05e02b5a-c946-405f-8299-7d8fd799e188",
+							"code": "44666-6",
+							"display": "M Stage of Distant Metastasis, Breast Tumor",
+							"distance": 0.2715484496527196
+						}
+					]
+				},
+				"isError": false
+			}
+		}
+	],
+	"date": "2026-09-20",
+	"purpose": "Breast cancer run008 Questionnaire and coded SDC extraction",
+	"questionCodeVersion": "2.81",
+	"lookups": [
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "21905-5",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"name\",\"valueString\":\"Logical Observation Identifiers Names and Codes (LOINC)\"},{\"name\":\"version\",\"valueString\":\"2.81\"},{\"name\":\"display\",\"valueString\":\"Primary tumor.clinical [Class] Cancer\"},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"COMPONENT\"},{\"name\":\"value\",\"valueCode\":\"LP73181-7\"},{\"name\":\"description\",\"valueString\":\"First axis: analyte/component measured (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"PROPERTY\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Second axis: kind of property observed (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"TIME_ASPCT\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Third axis: timing of measurement (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SYSTEM\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Fourth axis: specimen/system type (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SCALE_TYP\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Fifth axis: type of scale (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASS\"},{\"name\":\"value\",\"valueString\":\"TUMRRGT\"},{\"name\":\"description\",\"valueString\":\"Classification for grouping observations\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASSTYPE\"},{\"name\":\"value\",\"valueString\":\"2\"},{\"name\":\"description\",\"valueString\":\"Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"STATUS\"},{\"name\":\"value\",\"valueString\":\"ACTIVE\"},{\"name\":\"description\",\"valueString\":\"Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionFirstReleased\"},{\"name\":\"value\",\"valueString\":\"1.0m\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was first released\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionLastChanged\"},{\"name\":\"value\",\"valueString\":\"2.27\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was last changed\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"inactive\"},{\"name\":\"value\",\"valueBoolean\":false},{\"name\":\"description\",\"valueString\":\"Whether the code is inactive (STATUS=DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"parent\"},{\"name\":\"value\",\"valueCode\":\"LP248771-0\"},{\"name\":\"description\",\"valueString\":\"Clinical terms not yet categorized\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"46448-7\"},{\"name\":\"description\",\"valueString\":\"Stage/prognostic factors section Set NAACCR v.11\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"60508-9\"},{\"name\":\"description\",\"valueString\":\"Stage/prognostic factors section Set NAACCR v.12\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"75620-5\"},{\"name\":\"description\",\"valueString\":\"TNM clinical staging before treatment panel Cancer\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"answer-list\"},{\"name\":\"value\",\"valueCode\":\"LL237-9\"},{\"name\":\"description\",\"valueString\":\"Associated answer list (LOINC LL code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP73181-7\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP186995-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP281735-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7106-0\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP73181-7\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7735-6\"},{\"name\":\"description\",\"valueString\":\"XXX\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7787-7\"},{\"name\":\"description\",\"valueString\":\"Clinical\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7850-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]}]}"
+						}
+					],
+					"structuredContent": {
+						"resourceType": "Parameters",
+						"parameter": [
+							{
+								"name": "name",
+								"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+							},
+							{
+								"name": "version",
+								"valueString": "2.81"
+							},
+							{
+								"name": "display",
+								"valueString": "Primary tumor.clinical [Class] Cancer"
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "COMPONENT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP73181-7"
+									},
+									{
+										"name": "description",
+										"valueString": "First axis: analyte/component measured (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "PROPERTY"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Second axis: kind of property observed (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "TIME_ASPCT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Third axis: timing of measurement (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SYSTEM"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SCALE_TYP"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Fifth axis: type of scale (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASS"
+									},
+									{
+										"name": "value",
+										"valueString": "TUMRRGT"
+									},
+									{
+										"name": "description",
+										"valueString": "Classification for grouping observations"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASSTYPE"
+									},
+									{
+										"name": "value",
+										"valueString": "2"
+									},
+									{
+										"name": "description",
+										"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "STATUS"
+									},
+									{
+										"name": "value",
+										"valueString": "ACTIVE"
+									},
+									{
+										"name": "description",
+										"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionFirstReleased"
+									},
+									{
+										"name": "value",
+										"valueString": "1.0m"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was first released"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionLastChanged"
+									},
+									{
+										"name": "value",
+										"valueString": "2.27"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was last changed"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "inactive"
+									},
+									{
+										"name": "value",
+										"valueBoolean": false
+									},
+									{
+										"name": "description",
+										"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP248771-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Clinical terms not yet categorized"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "46448-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Stage/prognostic factors section Set NAACCR v.11"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "60508-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Stage/prognostic factors section Set NAACCR v.12"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "75620-5"
+									},
+									{
+										"name": "description",
+										"valueString": "TNM clinical staging before treatment panel Cancer"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "answer-list"
+									},
+									{
+										"name": "value",
+										"valueCode": "LL237-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Associated answer list (LOINC LL code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP73181-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP186995-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP281735-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7106-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP73181-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7735-6"
+									},
+									{
+										"name": "description",
+										"valueString": "XXX"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7787-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Clinical"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7850-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							}
+						]
+					},
+					"isError": false
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "21906-3",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"name\",\"valueString\":\"Logical Observation Identifiers Names and Codes (LOINC)\"},{\"name\":\"version\",\"valueString\":\"2.81\"},{\"name\":\"display\",\"valueString\":\"Regional lymph nodes.clinical [Class] Cancer\"},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"COMPONENT\"},{\"name\":\"value\",\"valueCode\":\"LP73268-2\"},{\"name\":\"description\",\"valueString\":\"First axis: analyte/component measured (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"PROPERTY\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Second axis: kind of property observed (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"TIME_ASPCT\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Third axis: timing of measurement (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SYSTEM\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Fourth axis: specimen/system type (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SCALE_TYP\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Fifth axis: type of scale (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASS\"},{\"name\":\"value\",\"valueString\":\"TUMRRGT\"},{\"name\":\"description\",\"valueString\":\"Classification for grouping observations\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASSTYPE\"},{\"name\":\"value\",\"valueString\":\"2\"},{\"name\":\"description\",\"valueString\":\"Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"STATUS\"},{\"name\":\"value\",\"valueString\":\"ACTIVE\"},{\"name\":\"description\",\"valueString\":\"Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionFirstReleased\"},{\"name\":\"value\",\"valueString\":\"1.0m\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was first released\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionLastChanged\"},{\"name\":\"value\",\"valueString\":\"2.32\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was last changed\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"inactive\"},{\"name\":\"value\",\"valueBoolean\":false},{\"name\":\"description\",\"valueString\":\"Whether the code is inactive (STATUS=DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"parent\"},{\"name\":\"value\",\"valueCode\":\"LP248771-0\"},{\"name\":\"description\",\"valueString\":\"Clinical terms not yet categorized\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"46448-7\"},{\"name\":\"description\",\"valueString\":\"Stage/prognostic factors section Set NAACCR v.11\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"60508-9\"},{\"name\":\"description\",\"valueString\":\"Stage/prognostic factors section Set NAACCR v.12\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"75620-5\"},{\"name\":\"description\",\"valueString\":\"TNM clinical staging before treatment panel Cancer\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"answer-list\"},{\"name\":\"value\",\"valueCode\":\"LL238-7\"},{\"name\":\"description\",\"valueString\":\"Associated answer list (LOINC LL code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP73268-2\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP186995-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP281735-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7106-0\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP73268-2\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7735-6\"},{\"name\":\"description\",\"valueString\":\"XXX\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7787-7\"},{\"name\":\"description\",\"valueString\":\"Clinical\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7850-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]}]}"
+						}
+					],
+					"structuredContent": {
+						"resourceType": "Parameters",
+						"parameter": [
+							{
+								"name": "name",
+								"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+							},
+							{
+								"name": "version",
+								"valueString": "2.81"
+							},
+							{
+								"name": "display",
+								"valueString": "Regional lymph nodes.clinical [Class] Cancer"
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "COMPONENT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP73268-2"
+									},
+									{
+										"name": "description",
+										"valueString": "First axis: analyte/component measured (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "PROPERTY"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Second axis: kind of property observed (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "TIME_ASPCT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Third axis: timing of measurement (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SYSTEM"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SCALE_TYP"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Fifth axis: type of scale (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASS"
+									},
+									{
+										"name": "value",
+										"valueString": "TUMRRGT"
+									},
+									{
+										"name": "description",
+										"valueString": "Classification for grouping observations"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASSTYPE"
+									},
+									{
+										"name": "value",
+										"valueString": "2"
+									},
+									{
+										"name": "description",
+										"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "STATUS"
+									},
+									{
+										"name": "value",
+										"valueString": "ACTIVE"
+									},
+									{
+										"name": "description",
+										"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionFirstReleased"
+									},
+									{
+										"name": "value",
+										"valueString": "1.0m"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was first released"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionLastChanged"
+									},
+									{
+										"name": "value",
+										"valueString": "2.32"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was last changed"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "inactive"
+									},
+									{
+										"name": "value",
+										"valueBoolean": false
+									},
+									{
+										"name": "description",
+										"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP248771-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Clinical terms not yet categorized"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "46448-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Stage/prognostic factors section Set NAACCR v.11"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "60508-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Stage/prognostic factors section Set NAACCR v.12"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "75620-5"
+									},
+									{
+										"name": "description",
+										"valueString": "TNM clinical staging before treatment panel Cancer"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "answer-list"
+									},
+									{
+										"name": "value",
+										"valueCode": "LL238-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Associated answer list (LOINC LL code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP73268-2"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP186995-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP281735-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7106-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP73268-2"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7735-6"
+									},
+									{
+										"name": "description",
+										"valueString": "XXX"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7787-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Clinical"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7850-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							}
+						]
+					},
+					"isError": false
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "21907-1",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"name\",\"valueString\":\"Logical Observation Identifiers Names and Codes (LOINC)\"},{\"name\":\"version\",\"valueString\":\"2.81\"},{\"name\":\"display\",\"valueString\":\"Distant metastases.clinical [Class] Cancer\"},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"COMPONENT\"},{\"name\":\"value\",\"valueCode\":\"LP72482-0\"},{\"name\":\"description\",\"valueString\":\"First axis: analyte/component measured (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"PROPERTY\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Second axis: kind of property observed (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"TIME_ASPCT\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Third axis: timing of measurement (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SYSTEM\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Fourth axis: specimen/system type (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SCALE_TYP\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Fifth axis: type of scale (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASS\"},{\"name\":\"value\",\"valueString\":\"TUMRRGT\"},{\"name\":\"description\",\"valueString\":\"Classification for grouping observations\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASSTYPE\"},{\"name\":\"value\",\"valueString\":\"2\"},{\"name\":\"description\",\"valueString\":\"Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"STATUS\"},{\"name\":\"value\",\"valueString\":\"ACTIVE\"},{\"name\":\"description\",\"valueString\":\"Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionFirstReleased\"},{\"name\":\"value\",\"valueString\":\"1.0m\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was first released\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionLastChanged\"},{\"name\":\"value\",\"valueString\":\"2.27\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was last changed\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"inactive\"},{\"name\":\"value\",\"valueBoolean\":false},{\"name\":\"description\",\"valueString\":\"Whether the code is inactive (STATUS=DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"parent\"},{\"name\":\"value\",\"valueCode\":\"LP248771-0\"},{\"name\":\"description\",\"valueString\":\"Clinical terms not yet categorized\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"46448-7\"},{\"name\":\"description\",\"valueString\":\"Stage/prognostic factors section Set NAACCR v.11\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"60508-9\"},{\"name\":\"description\",\"valueString\":\"Stage/prognostic factors section Set NAACCR v.12\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"75620-5\"},{\"name\":\"description\",\"valueString\":\"TNM clinical staging before treatment panel Cancer\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"answer-list\"},{\"name\":\"value\",\"valueCode\":\"LL239-5\"},{\"name\":\"description\",\"valueString\":\"Associated answer list (LOINC LL code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP72482-0\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP186995-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP281735-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6795-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7102-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7106-0\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP72482-0\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7735-6\"},{\"name\":\"description\",\"valueString\":\"XXX\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7787-7\"},{\"name\":\"description\",\"valueString\":\"Clinical\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7850-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]}]}"
+						}
+					],
+					"structuredContent": {
+						"resourceType": "Parameters",
+						"parameter": [
+							{
+								"name": "name",
+								"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+							},
+							{
+								"name": "version",
+								"valueString": "2.81"
+							},
+							{
+								"name": "display",
+								"valueString": "Distant metastases.clinical [Class] Cancer"
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "COMPONENT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP72482-0"
+									},
+									{
+										"name": "description",
+										"valueString": "First axis: analyte/component measured (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "PROPERTY"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Second axis: kind of property observed (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "TIME_ASPCT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Third axis: timing of measurement (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SYSTEM"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SCALE_TYP"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Fifth axis: type of scale (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASS"
+									},
+									{
+										"name": "value",
+										"valueString": "TUMRRGT"
+									},
+									{
+										"name": "description",
+										"valueString": "Classification for grouping observations"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASSTYPE"
+									},
+									{
+										"name": "value",
+										"valueString": "2"
+									},
+									{
+										"name": "description",
+										"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "STATUS"
+									},
+									{
+										"name": "value",
+										"valueString": "ACTIVE"
+									},
+									{
+										"name": "description",
+										"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionFirstReleased"
+									},
+									{
+										"name": "value",
+										"valueString": "1.0m"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was first released"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionLastChanged"
+									},
+									{
+										"name": "value",
+										"valueString": "2.27"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was last changed"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "inactive"
+									},
+									{
+										"name": "value",
+										"valueBoolean": false
+									},
+									{
+										"name": "description",
+										"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP248771-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Clinical terms not yet categorized"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "46448-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Stage/prognostic factors section Set NAACCR v.11"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "60508-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Stage/prognostic factors section Set NAACCR v.12"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "75620-5"
+									},
+									{
+										"name": "description",
+										"valueString": "TNM clinical staging before treatment panel Cancer"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "answer-list"
+									},
+									{
+										"name": "value",
+										"valueCode": "LL239-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Associated answer list (LOINC LL code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP72482-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP186995-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP281735-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6795-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7102-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7106-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP72482-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7735-6"
+									},
+									{
+										"name": "description",
+										"valueString": "XXX"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7787-7"
+									},
+									{
+										"name": "description",
+										"valueString": "Clinical"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7850-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							}
+						]
+					},
+					"isError": false
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "85337-4",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"name\",\"valueString\":\"Logical Observation Identifiers Names and Codes (LOINC)\"},{\"name\":\"version\",\"valueString\":\"2.81\"},{\"name\":\"display\",\"valueString\":\"Estrogen receptor Ag [Presence] in Breast cancer specimen by Immune stain\"},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"COMPONENT\"},{\"name\":\"value\",\"valueCode\":\"LP38115-9\"},{\"name\":\"description\",\"valueString\":\"Estrogen receptor Ag\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"PROPERTY\"},{\"name\":\"value\",\"valueCode\":\"LP217195-9\"},{\"name\":\"description\",\"valueString\":\"Second axis: kind of property observed (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"TIME_ASPCT\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Third axis: timing of measurement (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SYSTEM\"},{\"name\":\"value\",\"valueCode\":\"LP247851-1\"},{\"name\":\"description\",\"valueString\":\"Fourth axis: specimen/system type (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SCALE_TYP\"},{\"name\":\"value\",\"valueCode\":\"LP7751-3\"},{\"name\":\"description\",\"valueString\":\"Fifth axis: type of scale (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"METHOD_TYP\"},{\"name\":\"value\",\"valueCode\":\"LP6333-1\"},{\"name\":\"description\",\"valueString\":\"Sixth axis: method of measurement (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASS\"},{\"name\":\"value\",\"valueString\":\"PATH\"},{\"name\":\"description\",\"valueString\":\"Classification for grouping observations\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASSTYPE\"},{\"name\":\"value\",\"valueString\":\"1\"},{\"name\":\"description\",\"valueString\":\"Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"ORDER_OBS\"},{\"name\":\"value\",\"valueString\":\"Observation\"},{\"name\":\"description\",\"valueString\":\"Intended use categorization (Order, Observation, Both)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"STATUS\"},{\"name\":\"value\",\"valueString\":\"ACTIVE\"},{\"name\":\"description\",\"valueString\":\"Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionFirstReleased\"},{\"name\":\"value\",\"valueString\":\"2.61\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was first released\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionLastChanged\"},{\"name\":\"value\",\"valueString\":\"2.61\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was last changed\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"inactive\"},{\"name\":\"value\",\"valueBoolean\":false},{\"name\":\"description\",\"valueString\":\"Whether the code is inactive (STATUS=DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"parent\"},{\"name\":\"value\",\"valueCode\":\"LP248770-2\"},{\"name\":\"description\",\"valueString\":\"Lab terms not yet categorized\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"85904-1\"},{\"name\":\"description\",\"valueString\":\"Cancer pathology panel - Breast cancer specimen by CAP cancer protocols\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"answer-list\"},{\"name\":\"value\",\"valueCode\":\"LL2038-9\"},{\"name\":\"description\",\"valueString\":\"Associated answer list (LOINC LL code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP217195-9\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP247851-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP38115-9\"},{\"name\":\"description\",\"valueString\":\"Estrogen receptor Ag\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6333-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7751-3\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP14661-0\"},{\"name\":\"description\",\"valueString\":\"Estrogen\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP18567-5\"},{\"name\":\"description\",\"valueString\":\"Estrogen receptor\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP186995-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP20666-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP217195-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP247830-5\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP247851-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP281735-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP281773-4\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP29693-6\"},{\"name\":\"description\",\"valueString\":\"Laboratory\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP29849-4\"},{\"name\":\"description\",\"valueString\":\"Breast\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP38115-9\"},{\"name\":\"description\",\"valueString\":\"Estrogen receptor Ag\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6333-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7106-0\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7593-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7751-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7839-6\"},{\"name\":\"description\",\"valueString\":\"Pathology\"}]}]}"
+						}
+					],
+					"structuredContent": {
+						"resourceType": "Parameters",
+						"parameter": [
+							{
+								"name": "name",
+								"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+							},
+							{
+								"name": "version",
+								"valueString": "2.81"
+							},
+							{
+								"name": "display",
+								"valueString": "Estrogen receptor Ag [Presence] in Breast cancer specimen by Immune stain"
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "COMPONENT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP38115-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Estrogen receptor Ag"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "PROPERTY"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP217195-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Second axis: kind of property observed (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "TIME_ASPCT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Third axis: timing of measurement (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SYSTEM"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP247851-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SCALE_TYP"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7751-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Fifth axis: type of scale (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "METHOD_TYP"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6333-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Sixth axis: method of measurement (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASS"
+									},
+									{
+										"name": "value",
+										"valueString": "PATH"
+									},
+									{
+										"name": "description",
+										"valueString": "Classification for grouping observations"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASSTYPE"
+									},
+									{
+										"name": "value",
+										"valueString": "1"
+									},
+									{
+										"name": "description",
+										"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "ORDER_OBS"
+									},
+									{
+										"name": "value",
+										"valueString": "Observation"
+									},
+									{
+										"name": "description",
+										"valueString": "Intended use categorization (Order, Observation, Both)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "STATUS"
+									},
+									{
+										"name": "value",
+										"valueString": "ACTIVE"
+									},
+									{
+										"name": "description",
+										"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionFirstReleased"
+									},
+									{
+										"name": "value",
+										"valueString": "2.61"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was first released"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionLastChanged"
+									},
+									{
+										"name": "value",
+										"valueString": "2.61"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was last changed"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "inactive"
+									},
+									{
+										"name": "value",
+										"valueBoolean": false
+									},
+									{
+										"name": "description",
+										"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP248770-2"
+									},
+									{
+										"name": "description",
+										"valueString": "Lab terms not yet categorized"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "85904-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Cancer pathology panel - Breast cancer specimen by CAP cancer protocols"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "answer-list"
+									},
+									{
+										"name": "value",
+										"valueCode": "LL2038-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Associated answer list (LOINC LL code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP217195-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP247851-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP38115-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Estrogen receptor Ag"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6333-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7751-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP14661-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Estrogen"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP18567-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Estrogen receptor"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP186995-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP20666-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP217195-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP247830-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP247851-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP281735-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP281773-4"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP29693-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Laboratory"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP29849-4"
+									},
+									{
+										"name": "description",
+										"valueString": "Breast"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP38115-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Estrogen receptor Ag"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6333-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7106-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7593-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7751-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7839-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Pathology"
+									}
+								]
+							}
+						]
+					},
+					"isError": false
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "85339-0",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"name\",\"valueString\":\"Logical Observation Identifiers Names and Codes (LOINC)\"},{\"name\":\"version\",\"valueString\":\"2.81\"},{\"name\":\"display\",\"valueString\":\"Progesterone receptor Ag [Presence] in Breast cancer specimen by Immune stain\"},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"COMPONENT\"},{\"name\":\"value\",\"valueCode\":\"LP39481-4\"},{\"name\":\"description\",\"valueString\":\"Progesterone receptor Ag\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"PROPERTY\"},{\"name\":\"value\",\"valueCode\":\"LP217195-9\"},{\"name\":\"description\",\"valueString\":\"Second axis: kind of property observed (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"TIME_ASPCT\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Third axis: timing of measurement (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SYSTEM\"},{\"name\":\"value\",\"valueCode\":\"LP247851-1\"},{\"name\":\"description\",\"valueString\":\"Fourth axis: specimen/system type (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SCALE_TYP\"},{\"name\":\"value\",\"valueCode\":\"LP7751-3\"},{\"name\":\"description\",\"valueString\":\"Fifth axis: type of scale (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"METHOD_TYP\"},{\"name\":\"value\",\"valueCode\":\"LP6333-1\"},{\"name\":\"description\",\"valueString\":\"Sixth axis: method of measurement (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASS\"},{\"name\":\"value\",\"valueString\":\"PATH\"},{\"name\":\"description\",\"valueString\":\"Classification for grouping observations\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASSTYPE\"},{\"name\":\"value\",\"valueString\":\"1\"},{\"name\":\"description\",\"valueString\":\"Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"ORDER_OBS\"},{\"name\":\"value\",\"valueString\":\"Observation\"},{\"name\":\"description\",\"valueString\":\"Intended use categorization (Order, Observation, Both)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"STATUS\"},{\"name\":\"value\",\"valueString\":\"ACTIVE\"},{\"name\":\"description\",\"valueString\":\"Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionFirstReleased\"},{\"name\":\"value\",\"valueString\":\"2.61\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was first released\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionLastChanged\"},{\"name\":\"value\",\"valueString\":\"2.61\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was last changed\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"inactive\"},{\"name\":\"value\",\"valueBoolean\":false},{\"name\":\"description\",\"valueString\":\"Whether the code is inactive (STATUS=DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"parent\"},{\"name\":\"value\",\"valueCode\":\"LP248770-2\"},{\"name\":\"description\",\"valueString\":\"Lab terms not yet categorized\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"85904-1\"},{\"name\":\"description\",\"valueString\":\"Cancer pathology panel - Breast cancer specimen by CAP cancer protocols\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"answer-list\"},{\"name\":\"value\",\"valueCode\":\"LL2038-9\"},{\"name\":\"description\",\"valueString\":\"Associated answer list (LOINC LL code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP217195-9\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP247851-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP39481-4\"},{\"name\":\"description\",\"valueString\":\"Progesterone receptor Ag\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6333-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7751-3\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP14041-5\"},{\"name\":\"description\",\"valueString\":\"Progesterone\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP14902-8\"},{\"name\":\"description\",\"valueString\":\"Progesterone receptor\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP186995-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP20666-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP217195-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP247830-5\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP247851-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP281735-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP281773-4\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP29693-6\"},{\"name\":\"description\",\"valueString\":\"Laboratory\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP29849-4\"},{\"name\":\"description\",\"valueString\":\"Breast\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP39481-4\"},{\"name\":\"description\",\"valueString\":\"Progesterone receptor Ag\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6333-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7106-0\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7593-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7751-3\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7839-6\"},{\"name\":\"description\",\"valueString\":\"Pathology\"}]}]}"
+						}
+					],
+					"structuredContent": {
+						"resourceType": "Parameters",
+						"parameter": [
+							{
+								"name": "name",
+								"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+							},
+							{
+								"name": "version",
+								"valueString": "2.81"
+							},
+							{
+								"name": "display",
+								"valueString": "Progesterone receptor Ag [Presence] in Breast cancer specimen by Immune stain"
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "COMPONENT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP39481-4"
+									},
+									{
+										"name": "description",
+										"valueString": "Progesterone receptor Ag"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "PROPERTY"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP217195-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Second axis: kind of property observed (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "TIME_ASPCT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Third axis: timing of measurement (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SYSTEM"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP247851-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SCALE_TYP"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7751-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Fifth axis: type of scale (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "METHOD_TYP"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6333-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Sixth axis: method of measurement (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASS"
+									},
+									{
+										"name": "value",
+										"valueString": "PATH"
+									},
+									{
+										"name": "description",
+										"valueString": "Classification for grouping observations"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASSTYPE"
+									},
+									{
+										"name": "value",
+										"valueString": "1"
+									},
+									{
+										"name": "description",
+										"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "ORDER_OBS"
+									},
+									{
+										"name": "value",
+										"valueString": "Observation"
+									},
+									{
+										"name": "description",
+										"valueString": "Intended use categorization (Order, Observation, Both)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "STATUS"
+									},
+									{
+										"name": "value",
+										"valueString": "ACTIVE"
+									},
+									{
+										"name": "description",
+										"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionFirstReleased"
+									},
+									{
+										"name": "value",
+										"valueString": "2.61"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was first released"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionLastChanged"
+									},
+									{
+										"name": "value",
+										"valueString": "2.61"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was last changed"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "inactive"
+									},
+									{
+										"name": "value",
+										"valueBoolean": false
+									},
+									{
+										"name": "description",
+										"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP248770-2"
+									},
+									{
+										"name": "description",
+										"valueString": "Lab terms not yet categorized"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "85904-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Cancer pathology panel - Breast cancer specimen by CAP cancer protocols"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "answer-list"
+									},
+									{
+										"name": "value",
+										"valueCode": "LL2038-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Associated answer list (LOINC LL code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP217195-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP247851-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP39481-4"
+									},
+									{
+										"name": "description",
+										"valueString": "Progesterone receptor Ag"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6333-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7751-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP14041-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Progesterone"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP14902-8"
+									},
+									{
+										"name": "description",
+										"valueString": "Progesterone receptor"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP186995-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP20666-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP217195-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP247830-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP247851-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP281735-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP281773-4"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP29693-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Laboratory"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP29849-4"
+									},
+									{
+										"name": "description",
+										"valueString": "Breast"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP39481-4"
+									},
+									{
+										"name": "description",
+										"valueString": "Progesterone receptor Ag"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6333-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7106-0"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7593-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7751-3"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7839-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Pathology"
+									}
+								]
+							}
+						]
+					},
+					"isError": false
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "48676-1",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"name\",\"valueString\":\"Logical Observation Identifiers Names and Codes (LOINC)\"},{\"name\":\"version\",\"valueString\":\"2.81\"},{\"name\":\"display\",\"valueString\":\"HER2 [Interpretation] in Tissue\"},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"COMPONENT\"},{\"name\":\"value\",\"valueCode\":\"LP28442-9\"},{\"name\":\"description\",\"valueString\":\"HER2\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"PROPERTY\"},{\"name\":\"value\",\"valueCode\":\"LP6819-9\"},{\"name\":\"description\",\"valueString\":\"Second axis: kind of property observed (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"TIME_ASPCT\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Third axis: timing of measurement (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SYSTEM\"},{\"name\":\"value\",\"valueCode\":\"LP7641-6\"},{\"name\":\"description\",\"valueString\":\"Fourth axis: specimen/system type (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"SCALE_TYP\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Fifth axis: type of scale (LOINC Part code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASS\"},{\"name\":\"value\",\"valueString\":\"PATH\"},{\"name\":\"description\",\"valueString\":\"Classification for grouping observations\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"CLASSTYPE\"},{\"name\":\"value\",\"valueString\":\"1\"},{\"name\":\"description\",\"valueString\":\"Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"ORDER_OBS\"},{\"name\":\"value\",\"valueString\":\"Observation\"},{\"name\":\"description\",\"valueString\":\"Intended use categorization (Order, Observation, Both)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"STATUS\"},{\"name\":\"value\",\"valueString\":\"ACTIVE\"},{\"name\":\"description\",\"valueString\":\"Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionFirstReleased\"},{\"name\":\"value\",\"valueString\":\"2.21\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was first released\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"VersionLastChanged\"},{\"name\":\"value\",\"valueString\":\"2.73\"},{\"name\":\"description\",\"valueString\":\"LOINC version when term was last changed\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"inactive\"},{\"name\":\"value\",\"valueBoolean\":false},{\"name\":\"description\",\"valueString\":\"Whether the code is inactive (STATUS=DEPRECATED)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"parent\"},{\"name\":\"value\",\"valueCode\":\"LP402018-8\"},{\"name\":\"description\",\"valueString\":\"HER2 | Tissue and Smears | Pathology\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"panel-parent\"},{\"name\":\"value\",\"valueCode\":\"74293-2\"},{\"name\":\"description\",\"valueString\":\"Oncology plan of care and summary - recommended CDA set\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP28442-9\"},{\"name\":\"description\",\"valueString\":\"HER2\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6819-9\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7641-6\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Primary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP186995-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP28442-9\"},{\"name\":\"description\",\"valueString\":\"HER2\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP29693-6\"},{\"name\":\"description\",\"valueString\":\"Laboratory\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6819-9\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP6960-1\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7641-6\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7750-5\"},{\"name\":\"description\",\"valueString\":\"Supplementary part link (LOINC LP code)\"}]},{\"name\":\"property\",\"part\":[{\"name\":\"code\",\"valueCode\":\"part-link-supplementary\"},{\"name\":\"value\",\"valueCode\":\"LP7839-6\"},{\"name\":\"description\",\"valueString\":\"Pathology\"}]}]}"
+						}
+					],
+					"structuredContent": {
+						"resourceType": "Parameters",
+						"parameter": [
+							{
+								"name": "name",
+								"valueString": "Logical Observation Identifiers Names and Codes (LOINC)"
+							},
+							{
+								"name": "version",
+								"valueString": "2.81"
+							},
+							{
+								"name": "display",
+								"valueString": "HER2 [Interpretation] in Tissue"
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "COMPONENT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP28442-9"
+									},
+									{
+										"name": "description",
+										"valueString": "HER2"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "PROPERTY"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6819-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Second axis: kind of property observed (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "TIME_ASPCT"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Third axis: timing of measurement (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SYSTEM"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7641-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Fourth axis: specimen/system type (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "SCALE_TYP"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Fifth axis: type of scale (LOINC Part code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASS"
+									},
+									{
+										"name": "value",
+										"valueString": "PATH"
+									},
+									{
+										"name": "description",
+										"valueString": "Classification for grouping observations"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "CLASSTYPE"
+									},
+									{
+										"name": "value",
+										"valueString": "1"
+									},
+									{
+										"name": "description",
+										"valueString": "Class type (1=Laboratory, 2=Clinical, 3=Claims, 4=Survey)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "ORDER_OBS"
+									},
+									{
+										"name": "value",
+										"valueString": "Observation"
+									},
+									{
+										"name": "description",
+										"valueString": "Intended use categorization (Order, Observation, Both)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "STATUS"
+									},
+									{
+										"name": "value",
+										"valueString": "ACTIVE"
+									},
+									{
+										"name": "description",
+										"valueString": "Term status (ACTIVE, TRIAL, DISCOURAGED, DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionFirstReleased"
+									},
+									{
+										"name": "value",
+										"valueString": "2.21"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was first released"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "VersionLastChanged"
+									},
+									{
+										"name": "value",
+										"valueString": "2.73"
+									},
+									{
+										"name": "description",
+										"valueString": "LOINC version when term was last changed"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "inactive"
+									},
+									{
+										"name": "value",
+										"valueBoolean": false
+									},
+									{
+										"name": "description",
+										"valueString": "Whether the code is inactive (STATUS=DEPRECATED)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP402018-8"
+									},
+									{
+										"name": "description",
+										"valueString": "HER2 | Tissue and Smears | Pathology"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "panel-parent"
+									},
+									{
+										"name": "value",
+										"valueCode": "74293-2"
+									},
+									{
+										"name": "description",
+										"valueString": "Oncology plan of care and summary - recommended CDA set"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP28442-9"
+									},
+									{
+										"name": "description",
+										"valueString": "HER2"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6819-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7641-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Primary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP186995-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP28442-9"
+									},
+									{
+										"name": "description",
+										"valueString": "HER2"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP29693-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Laboratory"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6819-9"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP6960-1"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7641-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7750-5"
+									},
+									{
+										"name": "description",
+										"valueString": "Supplementary part link (LOINC LP code)"
+									}
+								]
+							},
+							{
+								"name": "property",
+								"part": [
+									{
+										"name": "code",
+										"valueCode": "part-link-supplementary"
+									},
+									{
+										"name": "value",
+										"valueCode": "LP7839-6"
+									},
+									{
+										"name": "description",
+										"valueString": "Pathology"
+									}
+								]
+							}
+						]
+					},
+					"isError": false
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "LA6577-6",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "Error calling tool 'codesystem_lookup': codesystem_lookup failed with HTTP 404. URL: http://reasonhub-medplum/fhir/R4/CodeSystem/$lookup, Params: {'code': 'LA6577-6', 'system': 'http://loinc.org', 'version': '2.81'}. Response: {\"resourceType\":\"OperationOutcome\",\"id\":\"not-found\",\"issue\":[{\"severity\":\"error\",\"code\":\"not-found\",\"details\":{\"text\":\"Code 'LA6577-6' not found in CodeSystem 'http://loinc.org' version '2.81'\"}}],\"extension\":[{\"url\":\"https://medplum.com/fhir/StructureDefinition/tracing\",\"extension\":[{\"url\":\"requestId\",\"valueId\":\"4b6488e3-bd00-4101-a6b8-6e91a7ef43ce\"},{\"url\":\"traceId\",\"valueId\":\"00-6aafe32f1b86a072ff12952df5e7a63e-ba3beaed1d0178de-00\"}]}]}. Check if the code/system/url values are valid and the resource exists in Medplum."
+						}
+					],
+					"isError": true
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "LA6576-8",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "Error calling tool 'codesystem_lookup': codesystem_lookup failed with HTTP 404. URL: http://reasonhub-medplum/fhir/R4/CodeSystem/$lookup, Params: {'code': 'LA6576-8', 'system': 'http://loinc.org', 'version': '2.81'}. Response: {\"resourceType\":\"OperationOutcome\",\"id\":\"not-found\",\"issue\":[{\"severity\":\"error\",\"code\":\"not-found\",\"details\":{\"text\":\"Code 'LA6576-8' not found in CodeSystem 'http://loinc.org' version '2.81'\"}}],\"extension\":[{\"url\":\"https://medplum.com/fhir/StructureDefinition/tracing\",\"extension\":[{\"url\":\"requestId\",\"valueId\":\"582637bb-1264-4097-8c46-40a3501e0ebb\"},{\"url\":\"traceId\",\"valueId\":\"00-6aafe32fa01589eb197672f36ab528b0-400ca6ff4bb64755-00\"}]}]}. Check if the code/system/url values are valid and the resource exists in Medplum."
+						}
+					],
+					"isError": true
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "LA11884-6",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "Error calling tool 'codesystem_lookup': codesystem_lookup failed with HTTP 404. URL: http://reasonhub-medplum/fhir/R4/CodeSystem/$lookup, Params: {'code': 'LA11884-6', 'system': 'http://loinc.org', 'version': '2.81'}. Response: {\"resourceType\":\"OperationOutcome\",\"id\":\"not-found\",\"issue\":[{\"severity\":\"error\",\"code\":\"not-found\",\"details\":{\"text\":\"Code 'LA11884-6' not found in CodeSystem 'http://loinc.org' version '2.81'\"}}],\"extension\":[{\"url\":\"https://medplum.com/fhir/StructureDefinition/tracing\",\"extension\":[{\"url\":\"requestId\",\"valueId\":\"0515e1c3-df12-4fda-9085-bf2af1eac349\"},{\"url\":\"traceId\",\"valueId\":\"00-6aafe330f9fb58d2f1598e0b48806d55-a59c58a7b25a6f8c-00\"}]}]}. Check if the code/system/url values are valid and the resource exists in Medplum."
+						}
+					],
+					"isError": true
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "LL237-9",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "Error calling tool 'codesystem_lookup': codesystem_lookup failed with HTTP 404. URL: http://reasonhub-medplum/fhir/R4/CodeSystem/$lookup, Params: {'code': 'LL237-9', 'system': 'http://loinc.org', 'version': '2.81'}. Response: {\"resourceType\":\"OperationOutcome\",\"id\":\"not-found\",\"issue\":[{\"severity\":\"error\",\"code\":\"not-found\",\"details\":{\"text\":\"Code 'LL237-9' not found in CodeSystem 'http://loinc.org' version '2.81'\"}}],\"extension\":[{\"url\":\"https://medplum.com/fhir/StructureDefinition/tracing\",\"extension\":[{\"url\":\"requestId\",\"valueId\":\"b0f12144-b71a-43fd-a542-a3221b986a31\"},{\"url\":\"traceId\",\"valueId\":\"00-6aafe32fce476dd6ddc3775e973bd0f0-176ad99fdb9b3877-00\"}]}]}. Check if the code/system/url values are valid and the resource exists in Medplum."
+						}
+					],
+					"isError": true
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "LL238-7",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "Error calling tool 'codesystem_lookup': codesystem_lookup failed with HTTP 404. URL: http://reasonhub-medplum/fhir/R4/CodeSystem/$lookup, Params: {'code': 'LL238-7', 'system': 'http://loinc.org', 'version': '2.81'}. Response: {\"resourceType\":\"OperationOutcome\",\"id\":\"not-found\",\"issue\":[{\"severity\":\"error\",\"code\":\"not-found\",\"details\":{\"text\":\"Code 'LL238-7' not found in CodeSystem 'http://loinc.org' version '2.81'\"}}],\"extension\":[{\"url\":\"https://medplum.com/fhir/StructureDefinition/tracing\",\"extension\":[{\"url\":\"requestId\",\"valueId\":\"9ed7809e-d9ac-4399-8ead-2f0085869314\"},{\"url\":\"traceId\",\"valueId\":\"00-6aafe3308044b5315bc0fc9e391553fe-84d3b82bebde5c9a-00\"}]}]}. Check if the code/system/url values are valid and the resource exists in Medplum."
+						}
+					],
+					"isError": true
+				}
+			}
+		},
+		{
+			"request": {
+				"system": "http://loinc.org",
+				"code": "LL239-5",
+				"version": "2.81"
+			},
+			"response": {
+				"status": "fulfilled",
+				"value": {
+					"content": [
+						{
+							"type": "text",
+							"text": "Error calling tool 'codesystem_lookup': codesystem_lookup failed with HTTP 404. URL: http://reasonhub-medplum/fhir/R4/CodeSystem/$lookup, Params: {'code': 'LL239-5', 'system': 'http://loinc.org', 'version': '2.81'}. Response: {\"resourceType\":\"OperationOutcome\",\"id\":\"not-found\",\"issue\":[{\"severity\":\"error\",\"code\":\"not-found\",\"details\":{\"text\":\"Code 'LL239-5' not found in CodeSystem 'http://loinc.org' version '2.81'\"}}],\"extension\":[{\"url\":\"https://medplum.com/fhir/StructureDefinition/tracing\",\"extension\":[{\"url\":\"requestId\",\"valueId\":\"a42d5154-19e4-4967-a42e-84f918c4e12d\"},{\"url\":\"traceId\",\"valueId\":\"00-6aafe330d456cf22275529d0944fc37b-e7aae8d39cbe3811-00\"}]}]}. Check if the code/system/url values are valid and the resource exists in Medplum."
+						}
+					],
+					"isError": true
+				}
+			}
+		}
+	],
+	"answerSources": [
+		{
+			"url": "https://loinc.org/LL237-9/",
+			"selections": {
+				"LA3633-0": "T1b",
+				"LA3630-6": "T1c",
+				"LA3628-0": "T2",
+				"LA21854-7": "T1mi",
+				"LA3636-3": "T1a",
+				"LA3624-9": "T3",
+				"LA3620-7": "T4"
+			}
+		},
+		{
+			"url": "https://loinc.org/LL238-7/",
+			"selections": {
+				"LA4368-2": "N0",
+				"LA4537-2": "N1",
+				"LA4534-9": "N2",
+				"LA4545-5": "N3"
+			}
+		},
+		{
+			"url": "https://loinc.org/LL239-5/",
+			"selections": {
+				"LA4629-7": "M0",
+				"LA4628-9": "M1"
+			}
+		},
+		{
+			"url": "https://loinc.org/LL2009-0/",
+			"selections": {
+				"LA6577-6": "Negative",
+				"LA6576-8": "Positive",
+				"LA11885-3": "Equivocal"
+			}
+		},
+		{
+			"url": "https://loinc.org/LA11884-6/",
+			"selections": {
+				"LA11884-6": "Indeterminate"
+			}
+		}
+	],
+	"notes": [
+		"ReasonHub verified all six question codes active in LOINC 2.81.",
+		"ReasonHub LA and LL lookups returned 404; this is a server coverage gap, not evidence of invalid codes. Official LOINC pages supply answer identities.",
+		"Answer pages are not consistently versioned 2.81; do not claim these were verified against the 2.81 answer release. Answer coding versions are omitted rather than fabricated."
+	]
+}

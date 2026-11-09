@@ -9,6 +9,7 @@ from pathlib import Path
 
 import click
 
+from rh_skills.cql_identity import CqlLibraryIdentityError, parse_cql_library_identity
 from rh_skills.common import config_value, repo_root, require_topic, require_tracking, sha256_file, tracking_file
 from rh_skills.commands.cql_library import _load_manifest, import_library
 
@@ -32,9 +33,54 @@ def _resolve_rh_binary() -> str:
 
 
 def _cql_path(topic: str, library: str) -> Path:
-    """Return the canonical .cql file path for a topic/library."""
+    """Resolve a logical library name to legacy or IG-versioned CQL source."""
     root = repo_root()
-    return root / "topics" / topic / "computable" / f"{library}.cql"
+    computable_dir = root / "topics" / topic / "computable"
+    legacy_path = computable_dir / f"{library}.cql"
+
+    matches: list[Path] = []
+    for path in sorted(computable_dir.glob(f"{library}-*.cql")):
+        try:
+            identity = parse_cql_library_identity(path)
+        except CqlLibraryIdentityError:
+            continue
+        if identity.name == library and path.name == f"{identity.name}-{identity.version}.cql":
+            matches.append(path)
+    if legacy_path.exists() and matches:
+        choices = ", ".join([legacy_path.name, *(path.name for path in matches)])
+        raise click.ClickException(
+            f"Ambiguous CQL sources found for {library!r}: {choices}; retain one active source"
+        )
+    if len(matches) > 1:
+        choices = ", ".join(path.name for path in matches)
+        raise click.ClickException(
+            f"Multiple versioned CQL sources found for {library!r}: {choices}; retain one active version"
+        )
+    return legacy_path if legacy_path.exists() else (matches[0] if matches else legacy_path)
+
+
+def _check_authored_cql_identity(cql_file: Path, library: str) -> None:
+    """Enforce CQL IG 4.2 name constraints and report its SHOULD guidance."""
+    try:
+        identity = parse_cql_library_identity(cql_file)
+    except CqlLibraryIdentityError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if identity.name != library:
+        raise click.ClickException(
+            f"CQL declaration name {identity.name!r} does not match requested library {library!r}"
+        )
+    if len(identity.name) > 30:
+        click.echo(
+            f"Warning: CQL library name {identity.name!r} is longer than the recommended 30 characters",
+            err=True,
+        )
+    expected_filename = f"{identity.name}-{identity.version}.cql"
+    if cql_file.name != expected_filename:
+        click.echo(
+            f"Warning: CQL source should be named {expected_filename!r} per CQL IG 4.2; "
+            f"found {cql_file.name!r}",
+            err=True,
+        )
 
 
 def _versioned_includes(cql_path: Path) -> set[tuple[str, str]]:
@@ -544,6 +590,7 @@ def validate(topic: str, library: str) -> None:
     cql_file = _cql_path(topic, library)
     if not cql_file.exists():
         raise click.ClickException(f"CQL file not found: {cql_file}")
+    _check_authored_cql_identity(cql_file, library)
     _verify_pinned_dependencies(topic, cql_file)
     rh = _resolve_rh_binary()
 
@@ -562,12 +609,13 @@ def translate(topic: str, library: str) -> None:
     cql_file = _cql_path(topic, library)
     if not cql_file.exists():
         raise click.ClickException(f"CQL file not found: {cql_file}")
+    _check_authored_cql_identity(cql_file, library)
     _verify_pinned_dependencies(topic, cql_file)
     rh = _resolve_rh_binary()
 
     elm_dir = cql_file.parent / "elm"
     elm_dir.mkdir(exist_ok=True)
-    elm_file = elm_dir / f"{library}.json"
+    elm_file = elm_dir / f"{cql_file.stem}.json"
     result = subprocess.run(
         [rh, "cql", "compile", str(cql_file), "--output", str(elm_file), "--lib-path", str(cql_file.parent)],
         capture_output=False,
@@ -585,6 +633,7 @@ def test(topic: str, library: str) -> None:
     cql_file = _cql_path(topic, library)
     if not cql_file.exists():
         raise click.ClickException(f"CQL file not found: {cql_file}")
+    _check_authored_cql_identity(cql_file, library)
     _verify_pinned_dependencies(topic, cql_file)
     rh = _resolve_rh_binary()
 

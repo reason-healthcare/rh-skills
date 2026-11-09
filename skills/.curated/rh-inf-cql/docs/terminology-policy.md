@@ -63,6 +63,60 @@ that an extraction implementation produced those resources.
 
 Place these in `tests/cql/terminology/`.
 
+## Categorical classifier inventory
+
+Before authoring CQL, inventory every Boolean or enum classifier over a FHIR
+`Coding` or `CodeableConcept`. The inventory includes positive/negative,
+normal/abnormal, detected/not-detected, stage, grade, status, interpretation,
+and local categories. It must cover the whole library; converting one category
+does not satisfy the authoring inventory. A category whose reviewed ValueSet
+currently contains one code is still part of the inventory.
+
+Each inventory row records the source path, output category, reviewed ValueSet
+canonical/version, current-run terminology evidence, the one named Concept
+conversion helper, named membership Booleans, and null/neither/both policy.
+When one or many codes or coding systems express an authored category, define
+that category with a reviewed, versioned ValueSet rather than direct-reference
+Code comparisons. For each classified FHIR element, call the pinned
+`FHIRHelpers.ToConcept()` exactly once in one named helper, then reuse the
+resulting CQL `Concept` in every named membership Boolean.
+
+Direct comparison with a declared `Code` is limited to a true exact
+single-concept predicate that is not functioning as a Boolean or enum category.
+Document why it is exact. Positive or negative meaning is categorical even
+when represented by one code, so it requires a ValueSet.
+
+Use `if`/`else if`/`case` only to preserve cardinality, null, type, conflict,
+or three-valued semantics. Category branches reference named membership
+Booleans; they do not compare raw Codes or repeat `FHIRHelpers.ToConcept()`.
+
+Concept membership succeeds when any code in the Concept belongs to the
+ValueSet. It does not infer order, severity, stage hierarchy, or subsumption
+from the ValueSet's name. Each classification ValueSet must explicitly select
+the intended system/code identities through its reviewed definition and
+complete runtime expansion.
+
+For true/false classifications represented by two ValueSets:
+
+- require a source-backed clinical contract that defines both categories; do
+  not invent the false/contrasting ValueSet from absence or non-membership;
+- require the sets to be mutually exclusive by definition;
+- return `null` for an absent or non-`CodeableConcept` value;
+- return `null`, or otherwise raise a separately authored data-quality result,
+  when a multi-coded Concept matches both sets;
+- return `null` when the Concept matches neither set; and
+- treat an unresolved, incomplete, or wrong-version ValueSet as an execution
+  failure rather than clinical uncertainty.
+
+Test at least one member from each intended coding system, one member of the
+contrasting category, an out-of-set code, an absent/wrong-type value, a
+multi-coded input whose codings agree, and a conflicting multi-coded input.
+For intentionally one-code positive/negative interpretation ValueSets, test the
+single current member and an out-of-set code, and retain the same ValueSet
+contract when later terminology review adds synonyms. For a cross-system
+category, test at least one member from every included system and prove that
+the named membership Boolean produces the same category for each.
+
 ## Manifesting
 
 Record major terminology dependencies in:

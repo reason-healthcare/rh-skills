@@ -30,9 +30,12 @@ interact with FHIR types and how translator options are expressed.
 |--------|-----|---------|-------------|
 | Using CQL with FHIR IG | https://hl7.org/fhir/uv/cql/ | current | Any CQL that uses FHIR data model |
 | FHIR Clinical Reasoning Module | https://hl7.org/fhir/R4/clinicalreasoning-module.html | R4 | Understanding Library/Measure resource structure |
-| FHIRHelpers | https://hl7.org/fhir/uv/cql/Library-FHIRHelpers.html | 4.0.1 | FHIR↔CQL type conversion library; pin CQL, ELM, and Library identity |
+| CQF Common package | https://www.fhir.org/guides/cqf/common/4.0.1/artifacts.html | `fhir.cqf.common@4.0.1` | Preferred published source for FHIRHelpers/FHIRCommon; qualify includes with the package ID namespace and regenerate ELM locally |
+| FHIRHelpers | https://www.fhir.org/guides/cqf/common/4.0.1/Library-FHIRHelpers.html | 4.0.1 | FHIR↔CQL type conversion source from `fhir.cqf.common`; never replace it with a local shadow library or execute packaged ELM without local translation |
+| STU2 FHIRCommon | https://hl7.org/fhir/uv/cql/Library-FHIRCommon.html | `hl7.fhir.uv.cql@2.0.0` | Optional source for the fluent `references` overloads, which are absent from `fhir.cqf.common@4.0.1`; use the `hl7.fhir.uv.cql.FHIRCommon` identifier and translate source locally |
 | FHIR ModelInfo | https://build.fhir.org/ig/HL7/cql-ig/ | current | Understanding model declarations and type resolution |
 | CQL Translator Options | https://build.fhir.org/ig/HL7/cql-ig/using-elm.html | current | Declaring reproducible translator options in Library |
+| CQL IG Conformance Requirement 4.2 | https://build.fhir.org/ig/HL7/cql-ig/en/conformance.html#conformance-requirement-4-2 | current CI build | FHIR Library name, version, canonical namespace, source filename, and subject/context identity |
 | CMS QMD Pattern Index | https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html | current | **Preferred first-choice FHIR CQL patterns** |
 
 > **CMS QMD pattern precedence**: When authoring or revising FHIR CQL, first
@@ -45,10 +48,24 @@ interact with FHIR types and how translator options are expressed.
 > index does not cover or for environment-specific behavior.
 
 > **rh-inf-cql note**: The runtime does not automatically inject FHIRHelpers.
-> When source includes a helper, import its pinned CQL/ELM/FHIR Library through
-> `rh-skills cql import-library`; reference the helper canonical and version in
-> the primary Library's `relatedArtifact`. For FHIR choices and primitives,
-> use logical FHIR types and verify the same ELM with a reference translator.
+> Prefer `fhir.cqf.common@4.0.1`, reference external libraries with the package
+> namespace (for example, `fhir.cqf.common.FHIRHelpers`), and include the helper
+> canonical/version in the primary Library's `relatedArtifact`. Treat packaged
+> CQL as source: ignore packaged ELM, compile the source with the pinned project
+> translator, and record source and generated-ELM checksums with translator
+> provenance. For FHIR choices and primitives, use logical FHIR types and
+> validate the locally generated ELM with a reference translator.
+
+> **CQL Library wrapper identity**: Treat the CQL declaration as one identity
+> with its FHIR Library wrapper. `Library.name` and `Library.version` match the
+> CQL name/version exactly; `Library.url` is `<IG canonicalBase>/Library/<CQL
+> name>`; the IG package ID and canonical base define the CQL namespace; names
+> have no underscores and are at most 64 characters (prefer at most 30); source
+> files should be `<name>-<version>.cql`; and `Library.subject` represents the
+> single CQL context. Omitted subject defaults only to Patient. Generated IG
+> wrappers record `cql-namespace = IG.packageId` and `cql-namespaceUri =
+> IG.canonicalBase` using the standard CQL IG extensions. The linked page
+> is a mutable CI build, so re-check it when revising this contract.
 
 ---
 

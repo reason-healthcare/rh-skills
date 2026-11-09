@@ -35,7 +35,7 @@ Before producing any output:
 1. Confirm the `rh` CLI binary is reachable (via `RH_CLI_PATH`, `.rh-skills.toml [cql] rh_cli_path`, or `rh` on PATH). If absent, halt and show `cargo install rh` hint.
 2. Confirm the topic directory `topics/<topic>/` exists. If it does not, halt and prompt the user to run `rh-skills init <topic>` or correct the topic name.
 3. For **author** mode: confirm the structured artifact YAML exists at `topics/<topic>/structured/<artifact>.yaml`.
-4. For **review**/**debug**/**test-plan** modes: confirm the `.cql` source file exists at `topics/<topic>/computable/<LibraryName>.cql`.
+4. For **review**/**debug**/**test-plan** modes: confirm the `.cql` source file exists at the CQL IG name `topics/<topic>/computable/<LibraryName>-<version>.cql` (a legacy unversioned filename may still be read, but is a conformance warning).
 5. For any CQL expression involving **intervals, date/time, null semantics, or operators whose behavior is uncertain**: **first check the Critical Authoring Patterns table** (search this file for `## Critical Authoring Patterns`). Only call `reasonhub-search_spec_content` (source: `cql`) if the specific pattern is not already covered there.
 6. **Before authoring CQL, consult the [CMS FHIR Quality Measure Development IG Pattern Index](https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html)**. When it covers the requested category (patient, condition, encounter, observation, medication, device, procedure, or related quality-measure domain), use that pattern as the first-choice structure. Record the chosen pattern and why local guidance required a material deviation, if any.
 
@@ -50,8 +50,12 @@ If any check fails, report the missing resource and halt. Do NOT proceed with a 
 - **Deterministic work via CLI**: validation (`rh-skills cql validate`), compilation (`rh-skills cql translate`), and test execution (`rh-skills cql test`) are always delegated to the `rh-skills` CLI. The agent reasons about CQL but does not replace the CLI for deterministic operations.
 - **Ownership boundary**: `rh-inf-cql` owns `.cql` source files and fixture cases. FHIR JSON packaging is outside scope.
 - **Human confirmation for conflicts**: any ambiguity, inconsistency, or multi-option decision MUST be surfaced to the human before the agent proceeds. Silent resolution is not permitted.
-- **Portable FHIR CQL**: declare `using FHIR version '4.0.1'`, include the versioned `FHIRHelpers` library for FHIR primitive/choice conversions, and use FHIR logical-model types that translate in both `rh` and the reference translator. Do not claim interoperability from one engine alone.
+- **Portable FHIR CQL**: declare `using FHIR version '4.0.1'`, prefer the published `fhir.cqf.common@4.0.1` package for `FHIRHelpers` and `FHIRCommon`, include external libraries with their package namespace, and use FHIR logical-model types that translate in both `rh` and the reference translator. Do not create local shadow libraries named `FHIRHelpers` or `FHIRCommon`, and do not claim interoperability from one engine alone.
+- **External CQL is source, not executable evidence**: for every external FHIR package, resolve immutable `text/cql` source directly from the verified package or package cache, ignore any packaged ELM as an execution input, and run `rh-skills cql translate` with the project's pinned translator, model, and options. Do not copy helper/common source into first-party computable content. Record the package ID/version, source checksum, translator identity/options, and generated ELM checksum together.
 - **CMS QMD patterns first**: For FHIR CQL, prefer the [CMS QMD Pattern Index](https://build.fhir.org/ig/cqframework/cms-qmd/branches/main/pattern_index.html) over improvised logic when a listed pattern covers the clinical/data category. Apply the project's portability and terminology rules; if a CMS QMD pattern is not portable under the pinned runtime, keep its intent and record the tested replacement.
+- **CQL/FHIR Library identity**: Follow [CQL IG Conformance Requirement 4.2](https://build.fhir.org/ig/HL7/cql-ig/en/conformance.html#conformance-requirement-4-2). The CQL declaration, source filename, FHIR Library `name`/`version`/`url`, IG namespace, and CQL context/Library subject must describe one identity. Generated IG Libraries carry the CQL namespace name (`IG.packageId`) and URI (`IG.canonicalBase`) in the standard `cql-namespace` and `cql-namespaceUri` extensions.
+- **Categorical terminology is an inventory, not a spot fix**: Before drafting, inventory every Boolean or enum classifier over a FHIR `Coding` or `CodeableConcept`. Every category, including a positive or negative category currently represented by one code, uses a reviewed, versioned ValueSet. For each classified source element, convert it once in one named `FHIRHelpers.ToConcept()` helper and make named membership Booleans reuse that helper. Applying this pattern to one prominent category does not satisfy the inventory.
+- **No PHI in artifacts or output**: Use synthetic or properly de-identified fixtures. PHI must not appear in CQL, fixture data, review reports, logs, tracking artifacts, or user-facing output; remove or redact patient and personal identifiers before writing them.
 
 ---
 
@@ -95,6 +99,8 @@ Parameter-only decision-table libraries are scaffold artifacts and are not accep
 | `O.valueBoolean = true` | `(O.value as FHIR.boolean).value = true` | Observation value is a FHIR choice; use its FHIR logical type for portable translation |
 | `V.expansion.contains E where E.code = 'X'` | `C.code in "ValueSetName"` | Use typed membership; separately supply the complete pinned expansion through the runtime's terminology input or packaged knowledge Bundle |
 | `[Encounter: "Ambulatory"]` | `[Encounter: class ~ "Ambulatory"]` | The FHIR R4 Encounter retrieve's primary code path is `type`; name the non-primary `class` path explicitly |
+| `FHIRCommon.references(O.encounter, E)` | `O.encounter.references(E)` | When the selected external library actually declares `references` as fluent, the receiver supplies the first argument; a namespace-style two-argument call does not bind the published overload. `fhir.cqf.common@4.0.1` does not declare this function. |
+| `V ~ "cT1c" or V ~ "cT2" or ...` | `FHIRHelpers.ToConcept(V) in "Clinical T1c Or Higher"` | Put every coded Boolean/enum category in a reviewed, versioned ValueSet, including one-code positive/negative categories; inventory the whole library rather than fixing only this example |
 | `C.clinicalStatus.value = 'active'` | `exists (C.clinicalStatus.coding S where S ~ "Active")` | Compare the typed Coding with a declared Code and CodeSystem; do not split terminology identity into string predicates |
 | `define function "F"(p Interval<DateTime>): ... p ...` | `define "F": Interval[ToDate(start of ...), ToDate(end of ...)]` | Typed function parameters with complex types (`Interval<>`, `FHIR.*`) fail to resolve in the `rh` translator; use named `define` expressions instead |
 | `[Condition] C where C.recordedDate is not null` | `[Condition: "BellsPalsyValueSet"] C` when the coded concept defines selection | Broad retrieves can include unrelated resources. A terminology filter is appropriate when code membership defines the concept; a narrow context/relationship retrieve may be intentional if its scope is explicit and tested |
@@ -253,6 +259,9 @@ When CQL is embedded or referenced from FHIR artifacts:
 - confirm the intended expression context (Library, Measure, PlanDefinition, etc.)
 - identify whether the content is computable, executable, publishable, or shareable
 - verify references to Library resources and their version declarations
+- verify `Library.name` and `Library.version` exactly match the CQL declaration, `Library.url` is `<IG canonicalBase>/Library/<CQL name>`, and `Library.subject` matches the CQL context (an omitted subject defaults only to `Patient`)
+- verify the `cql-namespace` extension equals `IG.packageId` and `cql-namespaceUri` equals `IG.canonicalBase`
+- reject names longer than 64 characters or containing underscores; report names over 30 characters and non-versioned source filenames as conformance warnings
 - verify parameter and data expectations
 - confirm terminology and model assumptions are compatible with the surrounding artifact
 - flag any packaging that obscures executable dependencies
@@ -282,6 +291,18 @@ Apply every time unless the user asks for something narrower. See
 ### Retrieves and Terminology
 - [ ] Are retrieves scoped appropriately? Use a ValueSet/code filter when a coded concept defines the selection; document and test intentional context or relationship retrieves.
 - [ ] Are value sets and codes declared explicitly?
+- [ ] Are multi-code or cross-system result classifications represented by
+      reviewed, versioned ValueSets instead of repeated direct-code `or` chains?
+- [ ] Is there a complete categorical classifier inventory covering every
+      Boolean or enum decision over a FHIR `Coding`/`CodeableConcept`, including
+      one-code positive and negative categories, with no category omitted just
+      because it currently contains one code?
+- [ ] Does each classified source element have exactly one named
+      `FHIRHelpers.ToConcept()` helper, with named membership Booleans reused by
+      any `if`/`case` expression instead of raw code comparisons in branches?
+- [ ] When a FHIR `CodeableConcept` value is tested for membership, is it
+      converted with the pinned `FHIRHelpers.ToConcept()` function, with
+      unknown, conflicting, and out-of-set results handled explicitly?
 - [ ] Is each declared ValueSet used by the evaluated resource path, or is its non-use justified by the actual coded resources being selected?
 - [ ] Are terminology versions pinned where reproducibility matters?
 - [ ] Is value set membership assumed too loosely anywhere?
@@ -380,13 +401,18 @@ details, unknown terminology expansions, unverified fixture assumptions.
 
 ### Inputs
 - L2 structured artifact YAML from `topics/<topic>/structured/<artifact>.yaml`
-- The topic name and library name (infer from artifact if not stated)
+- The companion FHIR Library JSON from the first `rh-skills formalize` pass; its `name`, `version`, `url`, and default subject are the packaging contract
 - Optionally: existing CQL libraries to include (pinned versions required)
 
 ### Workflow
 
-1. **Read the structured artifact** — extract:
-   - Measure/concept name → becomes the `library` identifier
+1. **Read the generated Library identity, then the structured artifact**:
+   - Use the generated FHIR Library `name` and `version` exactly in the CQL `library` declaration. Do not infer a competing identity from the artifact title.
+   - Require `Library.url` to equal `<topic/IG canonicalBase>/Library/<Library.name>`; for a packaged IG, the CQL namespace name is `IG.packageId` and namespace URL is `IG.canonicalBase`.
+   - Use a name with no underscores, at most 64 characters and preferably at most 30.
+   - Preserve one CQL context. `Library.subject` must represent it; omission means `Patient` only.
+   - Write the source as `<LibraryName>-<LibraryVersion>.cql`.
+   - From the L2 artifact, extract:
    - FHIR R4 model version
    - Valuesets (name, OID/URL, version) — all must be pinned
    - Logic statements → map to CQL `define` names
@@ -428,6 +454,30 @@ details, unknown terminology expansions, unverified fixture assumptions.
       must remain labeled `test-only` and experimental. Do not describe those
       codes as standardized or terminology-service-verified, and do not use
       them as production terminology without a separate reviewed mapping.
+
+   **Categorical classifier inventory**: Before writing decision logic, record
+   every expression that turns a FHIR `Coding` or `CodeableConcept` into a
+   Boolean or enum category. The inventory must include positive/negative,
+   normal/abnormal, detected/not-detected, stage, grade, status, interpretation,
+   and any local category even when its current definition contains one code.
+   For every inventory row, record the source path, output category, reviewed
+   ValueSet canonical/version, terminology evidence, the one named Concept
+   conversion helper, named membership Boolean(s), and null/neither/both policy.
+   Resolve missing ValueSets through the terminology L2 workflow before CQL
+   authoring; converting only one conspicuous classifier is not completion.
+
+   A declared `Code` comparison remains permitted only for a true exact
+   single-concept predicate that is not functioning as a category, such as an
+   exact workflow/status identity. Document why the predicate is exact rather
+   than categorical. A category is not exempt merely because its reviewed
+   ValueSet currently contains one code.
+
+   After the inventory is complete, create exactly one named
+   `FHIRHelpers.ToConcept()` helper for each classified source element. Reuse
+   that helper in named membership Booleans. `if`/`else if`/`case` may preserve
+   only cardinality, null, type, conflict, or three-valued semantics; its
+   category branches must reference the named membership Booleans and must not
+   compare raw codes.
 
    **Regimen applicability boundary**: Do not turn a broad guidance-
    applicability expression into eligibility for a named medication regimen.
@@ -479,16 +529,16 @@ details, unknown terminology expansions, unverified fixture assumptions.
    ```cql
    /**
     * Library: <LibraryName>
-    * Version: 1.0.0
+    * Version: <LibraryVersion>
     * Description: <one-line description from artifact>
     * Author: rh-inf-cql (generated from structured artifact)
     * Date: <today>
     */
-   library <LibraryName> version '1.0.0'
+   library <LibraryName> version '<LibraryVersion>'
 
    using FHIR version '4.0.1'
 
-   include FHIRHelpers version '4.0.1' called FHIRHelpers
+   include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
 
    codesystem "<SystemName>": '<system-url>'
 
@@ -541,16 +591,16 @@ details, unknown terminology expansions, unverified fixture assumptions.
    ```cql
    /**
     * Library: <LibraryName>
-    * Version: 1.0.0
+    * Version: <LibraryVersion>
     * Description: <one-line description from artifact>
     * Author: rh-inf-cql (generated from structured artifact)
     * Date: <today>
     */
-   library <LibraryName> version '1.0.0'
+   library <LibraryName> version '<LibraryVersion>'
 
    using FHIR version '4.0.1'
 
-   include FHIRHelpers version '4.0.1' called FHIRHelpers
+   include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
 
    codesystem "<SystemName>": '<system-url>'
 
@@ -588,53 +638,46 @@ details, unknown terminology expansions, unverified fixture assumptions.
      corpus (`skills/.curated/rh-inf-cql/context/`) or ReasonHub MCP spec tools
      (`reasonhub-search_spec_content` with `source_id: "cql"`).
 
-   **Pinned FHIRHelpers dependency:**
-   When a CQL library includes FHIRHelpers, provide a local manifest that pins
-   the helper's source URL/tag/license, CQL and ELM hashes, canonical, version,
-   and translator options. Import it with
-   `rh-skills cql import-library <topic> <manifest.json>`. The command copies
-   the exact helper CQL, ELM, and FHIR Library into computable/, links each
-   including Library through `relatedArtifact[type=depends-on]`, and records
-   an external dependency in tracking. No runtime network lookup is assumed.
+   **Pinned external CQL package dependency:**
+   Prefer `fhir.cqf.common@4.0.1` for its published `FHIRHelpers` and
+   `FHIRCommon` sources. Reference them with their FHIR package namespace:
 
-   The manifest pins identity and local, relative inputs:
-
-   ```json
-   {
-     "resource": {
-       "id": "fhir-helpers-4-0-1",
-       "name": "FHIRHelpers",
-       "version": "4.0.1",
-       "url": "http://hl7.org/fhir/uv/cql/Library/FHIRHelpers"
-     },
-     "source": {
-       "url": "https://example.invalid/pinned-source",
-       "tag": "vX.Y.Z",
-       "license": "Apache-2.0",
-       "compile_tool": {
-         "name": "cql-to-elm-cli",
-         "version": "X.Y.Z",
-         "options": [],
-         "inputs": []
-       }
-     },
-     "cql": { "path": "FHIRHelpers-4.0.1.cql", "sha256": "<64 lowercase hex characters>" },
-     "elm": { "path": "FHIRHelpers-4.0.1.json", "sha256": "<64 lowercase hex characters>" }
-   }
+   ```cql
+   include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
+   include fhir.cqf.common.FHIRCommon version '4.0.1' called FHIRCommon
    ```
 
-   Replace every example value with verified metadata and digests. The
-   importer rejects hash, identity, version, or path mismatches and never
-   downloads dependencies.
+   The namespace is the package ID. Do not create local libraries that shadow
+   either identity. Verify the package ID/version and package checksum, resolve
+   the exact `text/cql` source plus its FHIR Library metadata directly from the
+   immutable package or package cache, and run
+   `rh-skills cql translate` for each external library in dependency order.
+   Packaged `application/elm+json` or `application/elm+xml` is never accepted
+   as the executable input: regenerate ELM with the pinned project translator,
+   FHIR ModelInfo, and translator options even when the package ships ELM.
 
-6. The `.cql` file is now ready. FHIR packaging (Library JSON wrapper, Measure
-   JSON) is outside `rh-inf-cql`'s scope — hand off to whatever packaging step
-   is appropriate for the context.
+   Record the package ID/version, CQL namespace/name/version/canonical, package
+   checksum, source CQL checksum, translator version/options/model, and newly
+   generated ELM checksum. Link the included Library through
+   `relatedArtifact[type=depends-on]`. Do not copy or modify helper/common CQL
+   as first-party content. If the configured package resolver cannot provide
+   verified source to the translator, stop rather than falling back to packaged
+   ELM or an implicit network lookup.
+
+   `fhir.cqf.common@4.0.1`'s `FHIRCommon` does not declare the fluent
+   `references` overloads. Do not add those functions to a local shadow copy.
+   Logic that needs `references` must select and pin an external package/version
+   that actually publishes the function, qualify the include with that
+   package's namespace, and retain fluent dot invocation.
+
+6. The `.cql` file is now ready. FHIR packaging remains outside
+   `rh-inf-cql`'s scope: hand the exact logical name to `rh-inf-formalize`, which
+   deterministically verifies Requirement 4.2 and embeds the source/ELM.
 
 ### Output contract
-- `.cql` file at `topics/<topic>/computable/<LibraryName>.cql`
-- Passes `rh-skills cql validate` with zero errors, with explicit versioned
-  includes present locally
+- `.cql` file at `topics/<topic>/computable/<LibraryName>-<LibraryVersion>.cql`
+- Passes `rh-skills cql validate` with zero errors, with explicit versioned,
+  package-qualified includes resolved from the pinned package/cache
 - Follows all style guide and rubric requirements
 
 ---
@@ -941,7 +984,10 @@ change patient scope or coded clinical meaning.
 ### Library naming and versioning
 - Library identifiers use PascalCase: `LipidManagementLogic`, `PHQ9AssessmentLogic`
 - Version follows semantic versioning: `version '1.0.0'`
-- Match the library filename: `LipidManagementLogic.cql` → `library LipidManagementLogic`
+- First-party Library identifiers use alphanumeric PascalCase. Requirement 4.2 prohibits underscores in every Library name, limits names to 64 characters, and recommends at most 30 characters; qualified external identifiers remain valid when the runtime supports them.
+- Match the versioned filename: `LipidManagementLogic-1.0.0.cql` → `library LipidManagementLogic version '1.0.0'`
+- Match the wrapper: `Library.name = LipidManagementLogic`, `Library.version = 1.0.0`, and `Library.url = <IG canonicalBase>/Library/LipidManagementLogic`
+- Match context and subject: `context Patient` maps to the Patient subject (or its defined omission default); `context Unfiltered` must use the CQL context-declaration code, never the Patient default
 
 ### Terminology declaration rules
 - Always pin valueset versions in production libraries
@@ -966,17 +1012,38 @@ change patient scope or coded clinical meaning.
 - Declare a `valueset`, `codesystem`, or `code` and use typed terminology
   operators (`in`, `~`, or exact `=`). Do not decompose a `Coding` or
   `CodeableConcept` comparison into separate system/code string checks.
+- Inventory every Boolean or enum classification over a FHIR `Coding` or
+  `CodeableConcept` and represent each category as a reviewed, versioned
+  ValueSet, including positive/negative categories currently containing one
+  code. For each classified element, convert once in one named
+  `FHIRHelpers.ToConcept()` helper and test the resulting CQL `Concept` in
+  named membership Booleans. Membership succeeds when any code in the Concept
+  is a member; it does not infer ordering, staging hierarchy, or subsumption
+  from the ValueSet name. Keep category ValueSets disjoint, test conflicting
+  multi-coded inputs, and return unknown rather than relying on branch order.
+  Direct declared-Code comparison is reserved for an exact single-concept
+  predicate that is not functioning as a category. Control flow may handle
+  cardinality, null, type, conflict, and three-valued semantics, but category
+  branches must use the named membership Booleans rather than raw codes.
 - Name non-primary coded paths in the retrieve filter. FHIR R4 Encounter's
   primary code path is `type`; `class` is a separate `Coding`, so
   `[Encounter: "Ambulatory"]` does not filter `class`.
 - Preserve independent status, date, and encounter-linkage conditions.
   `derivedFrom` is producer provenance, not a default clinical selection
   predicate. Patient context does not replace clinical joins.
-- For an Observation-to-Encounter reference join, prefer the pinned
-  `FHIRCommon.references()` fluent function when its same-source-server,
-  resource-id semantics match the input contract. Include and package the
-  versioned Library/ELM dependency; do not replace the relationship with a
-  manually assembled reference string.
+- For an Observation-to-Encounter reference join, prefer
+  `O.encounter.references(E)` only when the pinned external library actually
+  publishes that fluent overload and its same-source-server, resource-id
+  semantics match the input contract.
+  Because `references` is declared as a fluent function, invoke it on the
+  reference expression: the receiver supplies the first argument. Never write
+  `FHIRCommon.references(O.encounter, E)`. For a cast expression, parenthesize
+  the receiver, for example `(First(O.focus) as FHIR.Reference).references(C)`.
+  `fhir.cqf.common@4.0.1` does not publish `references`; do not create a local
+  `FHIRCommon` to fill that gap. Select a verified external package/version
+  that publishes it, use a package-qualified include, compile its CQL source
+  locally, and do not replace the relationship with a manually assembled
+  reference string.
 - Explicit patient-reference checks may be valid in `context Unfiltered` or a
   deliberate cross-patient query; state that context and purpose. See the
   [CQL context guidance](https://cql.hl7.org/02-authorsguide.html#context) and
@@ -1006,6 +1073,9 @@ change patient scope or coded clinical meaning.
 - ❌ Reconstruct a CodeableConcept/Coding terminology comparison with separate system/code string predicates — declare the CodeSystem and Code and compare with `~`, or use a reviewed ValueSet
 - ❌ Manual ValueSet expansion matching (`V.expansion.contains E where E.system = ... and E.code = ...`) — use `code in "ValueSetName"` instead
 - ❌ Match only a code or display while ignoring its coding system — use a verified ValueSet for a concept set, or a declared CodeSystem/Code with a typed terminology operator for one named code
+- ❌ Repeat direct-code equivalence checks with `or` for every code/system representation of one clinical category — convert the FHIR `CodeableConcept` with `FHIRHelpers.ToConcept()` and use a reviewed, versioned ValueSet
+- ❌ Leave one-code positive/negative or enum categories out of the categorical classifier inventory, or branch on their declared Codes — one-code categories still use reviewed, versioned ValueSets and named membership Booleans
+- ❌ `FHIRCommon.references(O.encounter, E)` — `references` is fluent; invoke it as `O.encounter.references(E)`, or parenthesize a cast receiver before `.references(...)`
 - ❌ `define function "F"(p Interval<DateTime>): ...` — typed function parameters with `Interval<>` or `FHIR.*` types fail to compile; use a named `define` expression with inline logic instead
 
 ---
@@ -1013,15 +1083,19 @@ change patient scope or coded clinical meaning.
 ## CLI Commands (Deterministic Boundary)
 
 Use the CLI for deterministic validation, compilation, test execution, and
-pinned external-library import. Do not manually edit generated ELM or FHIR
-Library resources.
+pinned external-library source import. Do not manually edit generated ELM or
+FHIR Library resources, and never execute packaged external ELM without first
+regenerating it from the package's CQL source.
 
 | Action | Command | Status |
 |--------|---------|--------|
 | Validate CQL syntax and semantics | `rh-skills cql validate <topic> <library>` | ✓ active (`rh cql validate`) |
 | Compile CQL to ELM JSON | `rh-skills cql translate <topic> <library>` | ✓ active (`rh cql compile`) |
 | Run fixture-based test cases | `rh-skills cql test <topic> <library>` | ✓ active (`rh cql eval` per expected expression) |
-| Import pinned external CQL/ELM/FHIR Library | `rh-skills cql import-library <topic> <manifest.json>` | ✓ verifies hashes and identity; updates tracking |
+Package resolution is a prerequisite rather than a license to vendor helper
+source: resolve external CQL from the verified package/cache, then run
+`rh-skills cql translate`. Do not use a file importer that copies helper/common
+CQL into first-party computable content or accepts packaged ELM as executable.
 
 `rh-skills cql test` discovers fixture cases under `tests/cql/<Library>/case-*/`,
 passes the topic `computable/` directory as the include path, forwards each
@@ -1088,8 +1162,8 @@ FHIR Clinical Reasoning rules.
 | Operation | Path | Command |
 |-----------|------|---------|
 | Read structured artifact | `topics/<topic>/structured/<artifact>.yaml` | direct read |
-| Write CQL source | `topics/<topic>/computable/<Library>.cql` | direct write |
-| Write ELM JSON | `topics/<topic>/computable/<Library>.json` | via `rh-skills cql translate` |
+| Write CQL source | `topics/<topic>/computable/<Library>-<version>.cql` | direct write |
+| Write ELM JSON | `topics/<topic>/computable/elm/<Library>-<version>.json` | via `rh-skills cql translate` |
 | Write review report | `topics/<topic>/process/reviews/<Library>-review.md` | direct write |
 | Write test plan | `topics/<topic>/process/test-plans/<Library>-test-plan.md` | direct write |
 | Write fixture cases | `tests/cql/<LibraryName>/case-NNN-<desc>/` | direct write |

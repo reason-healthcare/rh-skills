@@ -16,6 +16,7 @@ from uuid import NAMESPACE_URL, uuid5
 
 import click
 
+from rh_skills.cql_identity import CqlLibraryIdentityError, validate_fhir_library_identity
 from rh_skills.common import require_topic, require_tracking, repo_root, topic_dir
 
 
@@ -293,21 +294,12 @@ def _validate_library_content(
                 raise ExecutableBundleError(
                     f"Library/{resource.get('id')}: CQL source is not UTF-8"
                 ) from exc
-            identity_match = re.search(
-                r"^\s*library\s+([A-Za-z_][A-Za-z0-9_]*)\s+version\s+'([^']+)'",
-                source,
-                flags=re.MULTILINE | re.IGNORECASE,
-            )
-            if not identity_match:
+            try:
+                validate_fhir_library_identity(resource, cql_source=source)
+            except CqlLibraryIdentityError as exc:
                 raise ExecutableBundleError(
-                    f"Library/{resource.get('id')}: CQL source is missing `library Name version 'x'` identity"
-                )
-            cql_name, cql_version = identity_match.groups()
-            if cql_name != resource.get("name") or cql_version != resource.get("version"):
-                raise ExecutableBundleError(
-                    f"Library/{resource.get('id')}: CQL identity {cql_name}|{cql_version} does not match "
-                    f"FHIR Library identity {resource.get('name')}|{resource.get('version')}"
-                )
+                    f"Library/{resource.get('id')}: {exc}"
+                ) from exc
             cql_names = set(re.findall(
                 r'^\s*define\s+"([^"]+)"\s*:', source, flags=re.MULTILINE | re.IGNORECASE
             ))

@@ -1,5 +1,7 @@
 """Tests for FHIR structural validation."""
 
+import base64
+
 from rh_skills.fhir.validate import validate_resource, validate_resources
 
 
@@ -278,6 +280,48 @@ class TestNegativeVerifyCases:
             "id": "cql-lib",
         })
         assert any("type" in e.lower() for e in errors)
+
+    def test_cql_library_rejects_url_name_mismatch(self):
+        errors = validate_resource({
+            "resourceType": "Library",
+            "id": "example-logic",
+            "url": "https://example.org/fhir/Library/example-logic",
+            "version": "1.0.0",
+            "name": "ExampleLogic",
+            "type": {"coding": [{"code": "logic-library"}]},
+        })
+        assert any("Library.url" in error for error in errors)
+
+    def test_library_type_shape_returns_error_instead_of_crashing(self):
+        errors = validate_resource({
+            "resourceType": "Library",
+            "id": "example-logic",
+            "type": "logic-library",
+        })
+        assert errors == ["Library.type must be a CodeableConcept object"]
+
+    def test_cql_library_rejects_subject_context_mismatch(self):
+        cql = base64.b64encode(
+            b"library ExampleLogic version '1.0.0'\ncontext Unfiltered\n"
+        ).decode("ascii")
+        errors = validate_resource({
+            "resourceType": "Library",
+            "id": "example-logic",
+            "url": "https://example.org/fhir/Library/ExampleLogic",
+            "version": "1.0.0",
+            "name": "ExampleLogic",
+            "subjectCodeableConcept": {
+                "coding": [{
+                    "system": "http://hl7.org/fhir/resource-types",
+                    "code": "Patient",
+                    "display": "Patient",
+                }],
+                "text": "Patient",
+            },
+            "type": {"coding": [{"code": "logic-library"}]},
+            "content": [{"contentType": "text/cql", "data": cql}],
+        })
+        assert any("context 'Unfiltered'" in error for error in errors)
 
     def test_concept_map_missing_group(self):
         errors = validate_resource({

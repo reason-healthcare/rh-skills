@@ -103,10 +103,17 @@ in the retrieve filter. Primitive status codes such as
 [CQL Style Guide](cql-style-guide.md) for before/after examples and model-path
 checks.
 
-Resolve the include through the topic's checked-in dependency files. For a
-pinned external library, use `rh-skills cql import-library <topic>
-<manifest.json>`; do not fetch helper source as an unverified side effect of
-validation or packaging.
+Prefer the published `fhir.cqf.common@4.0.1` package over creating local
+`FHIRHelpers` or `FHIRCommon` libraries, and qualify external includes with the
+package namespace (for example,
+`include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers`).
+Resolve external libraries directly from a verified, immutable package or
+package cache. Do not copy or modify helper/common CQL as first-party
+computable content. Ignore package-supplied ELM and always run
+`rh-skills cql translate` on the packaged CQL with the pinned project
+translator. Record package/source and generated ELM checksums with translator
+provenance; do not fetch source as an unverified side effect of validation or
+packaging.
 
 ## Documentation expectations
 

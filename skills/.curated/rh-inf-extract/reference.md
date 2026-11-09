@@ -958,7 +958,9 @@ sections:
 
 #### assessment
 
-This is a general assessment shape. Ordinary assessments may use supported
+Every assessment formalizes to a Questionnaire, including clinician-entered
+diagnostic data and review of existing results. This is a general assessment shape.
+Ordinary assessments may use supported
 response types, answer options, and scoring without SDC extraction metadata or
 item Coding requirements. The SDC Observation-extraction fields below are a
 conditional subset for workflows that explicitly use that profile.
@@ -982,7 +984,7 @@ sections:
   items:
     - id: <source linkId>
       text: <exact source question text>
-      type: boolean                 # current SDC Observation extractor supports Boolean items
+      type: boolean                 # source-answer extraction supports Boolean or coded choice
       required: true
       code:                         # direct Coding or list of Coding; not CodeableConcept
         system: http://loinc.org
@@ -1058,10 +1060,37 @@ numeric scale unless the workflow explicitly approves the derived encoding.
 When `observation_extraction.enabled` is true, `version_algorithm` must be an
 explicitly sourced or previously reviewed Coding because the versioned SDC
 profile requires Questionnaire version-algorithm metadata. Each supported
-Boolean item must also have exactly one complete reviewed Coding with
+Boolean or coded choice item must also have exactly one complete reviewed Coding with
 `system`, `version`, `code`, and `display`; do not infer or omit it if a
 terminology lookup is unavailable. Without enabled SDC extraction, item Coding
 remains optional unless the source or another workflow requirement calls for it.
+
+For diagnostic results or other coded answers, use `type: choice` and explicit
+typed options. The item Coding identifies `Observation.code`; the selected
+answer Coding becomes `Observation.valueCodeableConcept`. Preserve all authored Coding
+fields instead of replacing them with a display label or a Boolean:
+
+```yaml
+    - id: <stable result item id>
+      text: <clinician data-entry or review prompt>
+      type: choice
+      code: {system: <observable system>, version: <version>, code: <observable code>, display: <display>}
+      options:
+        - valueCoding: {system: <answer system>, code: <answer code>, display: <display>}
+      observation_extraction:
+        category:
+          system: http://terminology.hl7.org/CodeSystem/observation-category
+          code: laboratory
+          display: Laboratory
+```
+
+Answer Coding `version` is optional: include it when verified, and do not infer
+it from the question's terminology version. The optional item category overrides the instrument category and requires
+enabled instrument extraction. Use the clinical category for the result;
+Questionnaire capture does not imply `survey` or patient-reported evidence.
+Preserve review/source provenance and any required clinical focus, such as the
+tumor being staged, in the runtime data contract. Missing or unreviewed coding
+blocks extraction readiness, not creation of the assessment artifact.
 
 #### policy
 

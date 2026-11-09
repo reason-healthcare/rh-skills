@@ -31,7 +31,7 @@ honors it. Do not repeat that intended scope by comparing
 ```cql
 library EncounterClassFilter version '1.0.0'
 using FHIR version '4.0.1'
-include FHIRHelpers version '4.0.1' called FHIRHelpers
+include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
 
 codesystem "ActCode":
   'http://terminology.hl7.org/CodeSystem/v3-ActCode'
@@ -76,16 +76,17 @@ the engine/model contract is broken; do not hide it with an author-side filter.
 When the source rule links an Observation to a selected Encounter, preserve
 that relationship with a reference join. The HL7 Using CQL with FHIR STU2
 `FHIRCommon` library provides a fluent `references()` function for this
-pattern. Pin the included library and carry its matching Library/ELM dependency
-through normal package closure:
+pattern. It is not the `FHIRCommon` published in `fhir.cqf.common@4.0.1`, which
+does not define `references`. Pin the package that actually publishes the
+function, use its namespace in the include, and compile its CQL source locally:
 
 ```cql
 library ScreeningReferenceJoin version '1.0.0'
 
 using FHIR version '4.0.1'
 
-include FHIRHelpers version '4.0.1' called FHIRHelpers
-include FHIRCommon version '2.0.0'
+include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
+include hl7.fhir.uv.cql.FHIRCommon version '2.0.0' called FHIRCommon
 
 codesystem "ActCode":
   'http://terminology.hl7.org/CodeSystem/v3-ActCode'
@@ -110,6 +111,23 @@ define "Unsteadiness Observations":
       such that O.encounter.references(E)
 ```
 
+`references` is declared as a `fluent function`. Invoke it with dot syntax:
+the receiver is the function's first argument and the values inside
+`references(...)` supply the remaining arguments. Therefore
+`O.encounter.references(E)` binds the published `(Reference, Resource)`
+overload; `FHIRCommon.references(O.encounter, E)` does not. Including
+`FHIRCommon` makes the fluent declaration available, but does not turn it into
+a namespace-style function call. When the receiver is a cast or another
+compound expression, parenthesize it:
+
+```cql
+// Correct
+(First(O.focus) as FHIR.Reference).references(C)
+
+// Wrong: a fluent function is not invoked through the library namespace
+FHIRCommon.references(First(O.focus) as FHIR.Reference, C)
+```
+
 The `references(Reference, Resource)` overload compares the reference's final
 slash-delimited component with `resource.id`; it assumes both resources come
 from the same source server. It does not check reference type, base URL,
@@ -124,22 +142,26 @@ that lineage.
 
 This specific function is provided by the pinned
 [FHIRCommon 2.0.0 library](https://hl7.org/fhir/uv/cql/Library-FHIRCommon.html)
-at canonical `http://hl7.org/fhir/uv/cql/Library/FHIRCommon|2.0.0`. Its
-source and ELM must be available to the translator/runtime as a versioned
-dependency; declaring only the include does not package the dependency. When a
-local closure compiles the published source against a pinned FHIRHelpers
-version, retain that exact helper source, ELM, model version, compiler options,
-and resulting Library identity together.
+at canonical `http://hl7.org/fhir/uv/cql/Library/FHIRCommon|2.0.0` in package
+namespace `hl7.fhir.uv.cql`. Do not create a local `FHIRCommon` that merges
+functions from different releases. Resolve the exact package CQL source and
+FHIR Library metadata from the immutable package/cache without copying it into
+first-party computable content, ignore the package's generated ELM, and run the
+project translator. Record package/source checksums, FHIR ModelInfo, translator
+version and options, and the locally generated ELM checksum as one provenance
+record.
 
-For the Connectathon's pinned closure, the imported source is the HL7 CQL IG
-2.0.0 package. The local FHIRCommon ELM was compiled from its published CQL
-with CQFramework `cql-to-elm-cli` 3.26.0 (`--signatures Overloads`), FHIR R4
-4.0.1 ModelInfo, and the pinned FHIRHelpers 4.0.1 CQL/ELM. The derivative ELM
-SHA-256 is
-`5b735bf1807df3518d365206797b7c1693cacc996d9e022eab5bd6ca11264817`; the
-published package ELM is retained separately because its bundled helper bytes
-differ. Import and link the derivative through `rh-skills cql import-library`
-using its checksum manifest, rather than substituting same-version bytes.
+For ordinary FHIR conversion helpers and common functions that are actually
+present there, prefer `fhir.cqf.common@4.0.1` and qualify both includes:
+
+```cql
+include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
+include fhir.cqf.common.FHIRCommon version '4.0.1' called FHIRCommon
+```
+
+The namespace is the FHIR package ID. Do not accept package-supplied
+`application/elm+json` or `application/elm+xml` as execution input; always
+translate the packaged `text/cql` with the pinned project translator.
 
 ## Consume a calculated assessment score
 
@@ -225,6 +247,165 @@ validation even when standard CQL membership is defined by the ValueSet.
 See the [CQL retrieve guide](https://cql.hl7.org/02-authorsguide.html#retrieve)
 and the FHIR R4 [Encounter.class definition](https://hl7.org/fhir/R4/encounter-definitions.html#Encounter.class).
 
+## Inventory and classify every coded category with reviewed ValueSets
+
+Before authoring, inventory every Boolean or enum classifier whose input is a
+FHIR `Coding` or `CodeableConcept`. Include every positive/negative,
+normal/abnormal, detected/not-detected, stage, grade, status, interpretation,
+and local category. A category is not exempt because its reviewed definition
+currently contains only one code, and applying the ValueSet pattern to one
+prominent classifier does not complete the inventory.
+Treat this categorical classifier inventory as a required authoring artifact,
+not an informal scan.
+
+For each inventory row, record the FHIR source path, output category, reviewed
+ValueSet canonical and version, terminology evidence, null/neither/both policy,
+and the named conversion and membership definitions. For each classified
+source element, define exactly one named helper that calls
+`FHIRHelpers.ToConcept()`; all category memberships reuse that Concept. Keep
+the mappings in reviewed, versioned ValueSets and do not repeat conversion or
+direct-reference code comparisons in decision logic.
+
+A direct declared `Code` comparison is allowed only when the expression is a
+true exact single-concept predicate and is not functioning as a Boolean or enum
+category. Document that distinction. A positive, negative, or other category
+with one code remains a category and therefore still uses a ValueSet.
+
+Control flow does not establish terminology meaning. Use `if`/`else if`/`case`
+only for cardinality, null, wrong-type, conflict, or other three-valued
+semantics. Category branches must reference named membership Booleans, never
+raw codes. Convert a FHIR `CodeableConcept` result to a CQL `Concept` with the
+pinned `FHIRHelpers.ToConcept()` function, then use ValueSet membership:
+
+The example assumes `"Clinical T Result"` is a separately defined, single
+selected `Observation`, not a list of Observations. Its selection logic still
+owns the required observation code, status, date, encounter, and ambiguity
+rules.
+
+```cql
+valueset "Clinical T1c Or Higher":
+  'https://example.org/fhir/ValueSet/clinical-t1c-or-higher'
+    version '1.0.0'
+
+valueset "Clinical T Below T1c":
+  'https://example.org/fhir/ValueSet/clinical-t-below-t1c'
+    version '1.0.0'
+
+define "Clinical T Concept":
+  if "Clinical T Result" is null then null
+  else FHIRHelpers.ToConcept(
+    "Clinical T Result".value as FHIR.CodeableConcept
+  )
+
+define "Clinical T Is T1c Or Higher":
+  "Clinical T Concept" in "Clinical T1c Or Higher"
+
+define "Clinical T Is Below T1c":
+  "Clinical T Concept" in "Clinical T Below T1c"
+
+define "Has Clinical T1c Or Higher":
+  if "Clinical T Concept" is null then null
+  else if "Clinical T Is T1c Or Higher"
+      and not "Clinical T Is Below T1c" then true
+  else if "Clinical T Is Below T1c"
+      and not "Clinical T Is T1c Or Higher" then false
+  else null
+```
+
+`FHIRHelpers.ToConcept()` carries every `Coding` in the FHIR
+`CodeableConcept` into the CQL `Concept`. Concept-in-ValueSet membership is
+true when any code in that Concept is a member. This removes local-code versus
+standard-code `or` branches while preserving each code's system identity.
+If `Observation.value[x]` is not a FHIR `CodeableConcept`, the `as` expression
+returns `null`, and `ToConcept(null)` remains `null`. The final definition's
+Concept-null guard is therefore required to preserve wrong-type or absent
+evidence as unknown; raw ValueSet membership on a null code argument is false.
+
+The two classification ValueSets must use verified system/code identities and
+must be reviewed as mutually exclusive. The conflict-safe form above returns
+`null` when the value is in neither set or when a multi-coded concept matches
+both sets; it does not silently make branch order clinically meaningful. A
+shorter `if higher then true else if below then false` form is acceptable only
+when both terminology membership and the input profile enforce that the two
+matches cannot coexist.
+
+Do not invent the contrasting ValueSet merely to obtain a Boolean result. Use
+the two-ValueSet pattern only when the source-backed clinical contract defines
+both categories. Missing, wrong-type, out-of-both, or unavailable terminology
+is not evidence for the false category.
+
+ValueSet membership does not infer numeric order, stage order, hierarchy, or
+subsumption from a ValueSet name such as `Or Higher`. The ValueSet definition
+must explicitly select every intended code through reviewed compose or
+expansion semantics. Use actual canonical system and code values; labels such
+as `LOINC cT1c` are not terminology identities. An unresolved or wrong-version
+ValueSet is an execution error, not a clinical `null` result.
+
+### Non-staging examples: one-code interpretations and cross-system categories
+
+One-code positive and negative interpretation categories are reusable
+terminology assets, not permission to branch on declared Codes. The following
+illustrative ValueSets are assumed to have reviewed terminology L2 artifacts;
+the example canonicals do not establish their content:
+
+```cql
+valueset "Positive Interpretation":
+  'https://example.org/fhir/ValueSet/positive-interpretation'
+    version '1.0.0'
+
+valueset "Negative Interpretation":
+  'https://example.org/fhir/ValueSet/negative-interpretation'
+    version '1.0.0'
+
+define "Selected Result Interpretation Concept":
+  if "Selected Result" is null
+      or Count("Selected Result".interpretation) != 1 then null
+  else FHIRHelpers.ToConcept(First("Selected Result".interpretation))
+
+define "Interpretation Is Positive":
+  "Selected Result Interpretation Concept" in "Positive Interpretation"
+
+define "Interpretation Is Negative":
+  "Selected Result Interpretation Concept" in "Negative Interpretation"
+
+define "Interpretation Category":
+  if "Selected Result Interpretation Concept" is null then null
+  else if "Interpretation Is Positive" and "Interpretation Is Negative" then null
+  else if "Interpretation Is Positive" then 'positive'
+  else if "Interpretation Is Negative" then 'negative'
+  else null
+```
+
+The cardinality guard and final control flow preserve unknown/conflicting
+semantics. The category branches use named membership Booleans; they do not
+compare interpretation codes. This rule still applies when each ValueSet
+contains exactly one code today.
+
+A category whose accepted representations span systems also remains one
+reviewed ValueSet. For example, a qualitative result contract may accept
+reviewed representations from both a standard interpretation system and a
+source-specific result CodeSystem:
+
+```cql
+valueset "Qualitative Result Detected":
+  'https://example.org/fhir/ValueSet/qualitative-result-detected'
+    version '2.1.0'
+
+define "Qualitative Result Concept":
+  if "Selected Result" is null then null
+  else FHIRHelpers.ToConcept(
+    "Selected Result".value as FHIR.CodeableConcept
+  )
+
+define "Qualitative Result Is Detected":
+  "Qualitative Result Concept" in "Qualitative Result Detected"
+```
+
+The reviewed `Qualitative Result Detected` ValueSet, not the CQL branches,
+owns that cross-system mapping. If the surrounding clinical output requires a
+false or contrasting category, define and review its ValueSet too; do not turn
+non-membership into clinical false.
+
 ## Convert FHIR values only when the type requires it
 
 Keep FHIR model types explicit. Include the pinned FHIRHelpers dependency when
@@ -233,7 +414,7 @@ choice-type conversion; do not add helper calls to fields already compared in
 their native model type.
 
 ```cql
-include FHIRHelpers version '4.0.1' called FHIRHelpers
+include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
 
 // FHIR dateTime to CQL DateTime
 FHIRHelpers.ToDateTime(E.period.start)
@@ -244,9 +425,10 @@ FHIRHelpers.ToDateTime(E.period.start)
 
 Use `Interval<Date>` for date-only rules and `Interval<DateTime>` for timestamp
 rules. Document precision, timezone, open/closed boundaries, and the clock used
-for age or other time-sensitive logic. Keep the FHIRHelpers source, ELM, and
-FHIR Library canonical/version pinned through the normal import and package
-flow.
+for age or other time-sensitive logic. Keep the package identity, FHIRHelpers
+CQL source, FHIR Library canonical/version, translator provenance, and locally
+generated ELM checksum pinned through the normal import and package flow; never
+substitute package-supplied ELM.
 
 ## Keep unknown distinct from false
 

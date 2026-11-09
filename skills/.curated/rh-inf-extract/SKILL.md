@@ -208,7 +208,7 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      | `evidence-summary` | Each distinct finding, conclusion, or evidence grade reported; each PICOTS frame if present |
      | `care-pathway` | Each named clinical phase/step, actor assignment, parent-child step relationship (`parent_id`), and transition condition |
      | `measure` | Each defined outcome, population definition, numerator/denominator specification |
-     | `assessment` | Each instrument domain, scored item, or response scale described |
+     | `assessment` | Each instrument domain, diagnostic data requirement, scored item, or response scale described |
      | `terminology` | Each clinical concept, code system reference, or value set boundary mentioned |
 
      Record these as a numbered list per artifact. This list is the **coverage
@@ -216,6 +216,17 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
      derived artifact (a condition/action pair, a finding, a step, a population,
      an item, or a code). Use it in step 4's completeness check and carry it
      forward to implement mode.
+
+   - **Create an assessment artifact for clinical data collection or review.**
+     Its Questionnaire is required even when answers represent diagnostic
+     results already available as Observations. Author clinician-entered or
+     clinician-reviewed items where appropriate; a Questionnaire does not make
+     the evidence patient-reported. Include reviewed item codes (prefer LOINC
+     where it fits), coded answer choices, and explicit SDC extraction metadata
+     when the answers feed Observation-based logic. Use the clinical category
+     for each result, such as laboratory or exam, rather than defaulting all
+     forms to survey. Preserve source/provenance and tumor or other focus
+     requirements in the assessment's data contract.
 
    - **Keep source type, recommendation grade, and evidence certainty distinct.**
      Preserve an explicitly reported recommendation grade as that grade (for
@@ -408,13 +419,19 @@ Plan-mode steps below focus on search, lookup, and candidate recording.
    an exact source-authored item Coding or a pinned Coding already reviewed in
    the topic terminology artifact, including `system`, `version`, `code`, and
    `display`. If the assessment declares
-   `sections.instrument.observation_extraction`, every supported Boolean item
+   `sections.instrument.observation_extraction`, every supported Boolean or coded choice item
    must have exactly one such reviewed Coding; if a required Coding is not
    available or reviewed, record the terminology gap as blocking and do not
    claim the assessment is extraction-ready. An MCP outage does not erase a
    Coding that was already reviewed and pinned. Enabled extraction also
    requires an explicitly sourced or reviewed `sections.instrument.version_algorithm`
    Coding; never infer an algorithm from the Questionnaire version string.
+   Coded choices use `options[].valueCoding` with reviewed `system`, `code`,
+   and `display`, plus `version` when verified; do not infer an answer version
+   from the question's code-system version. The item code identifies the observation and the
+   selected answer code identifies its value. Mixed forms can override category
+   with item `observation_extraction.category`. See the
+   [assessment contract](reference.md#assessment).
 
    **Assessment scoring is optional and source-bound.** If the source defines
    scoring, preserve its exact input items, weights/transforms, completion and

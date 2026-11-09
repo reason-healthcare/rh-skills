@@ -36,13 +36,24 @@ The runtime does not inject helper calls. When converting FHIR primitive values,
 date/time values, or choice types, include the versioned helper explicitly:
 
 ```cql
-include FHIRHelpers version '4.0.1' called FHIRHelpers
+include fhir.cqf.common.FHIRHelpers version '4.0.1' called FHIRHelpers
 ```
 
-This include must resolve to a pinned local dependency during validation and
-evaluation. Use the supported `rh-skills cql import-library` workflow to import
-the CQL, ELM, and FHIR Library together. Do not assume an engine will find a
-helper through a network lookup or auto-inject conversions.
+Prefer the published `fhir.cqf.common@4.0.1` package rather than creating a
+local `FHIRHelpers` or `FHIRCommon`; the package ID is the CQL namespace for
+external includes. Resolve the include directly from the verified package or
+package cache during validation and evaluation; do not copy helper/common CQL
+into first-party computable content. Ignore package-supplied ELM and run
+`rh-skills cql translate` with the pinned project translator, model, and
+options. Do not assume an engine will find a helper through a network lookup or
+auto-inject conversions.
+
+The same source-first rule applies to every external CQL package: record the
+package and source checksums, translator provenance, and generated ELM checksum
+together. If the required function is absent from the selected package version,
+do not add it to a local shadow library; select a verified package that actually
+publishes it or report the dependency gap. In particular,
+`fhir.cqf.common@4.0.1`'s `FHIRCommon` does not define `references`.
 
 For FHIR choice elements, use the FHIR logical type so ELM remains portable;
 for example, `(O.value as FHIR.boolean).value` for a Boolean

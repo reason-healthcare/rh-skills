@@ -6,9 +6,12 @@ error strings.  Detects ``TODO:MCP-UNREACHABLE`` placeholders as errors.
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 from typing import Any
+
+from rh_skills.cql_identity import CqlLibraryIdentityError, validate_fhir_library_identity
 
 _MCP_UNREACHABLE_RE = re.compile(r"TODO:MCP-UNREACHABLE", re.IGNORECASE)
 
@@ -99,6 +102,41 @@ def _check_library(r: dict) -> list[str]:
     errors = []
     if e := _has_field(r, "type", "Library.type"):
         errors.append(e)
+        return errors
+
+    library_type = r.get("type")
+    if not isinstance(library_type, dict):
+        return ["Library.type must be a CodeableConcept object"]
+    codings = library_type.get("coding") or []
+    if not isinstance(codings, list):
+        return ["Library.type.coding must be an array"]
+    type_codes = {
+        coding.get("code")
+        for coding in codings
+        if isinstance(coding, dict)
+    }
+    content = r.get("content") or []
+    cql_attachments = [
+        item for item in content
+        if isinstance(item, dict)
+        and isinstance(item.get("contentType"), str)
+        and item["contentType"].startswith("text/cql")
+    ]
+    if "logic-library" not in type_codes and not cql_attachments:
+        return errors
+
+    cql_source = None
+    if cql_attachments:
+        encoded = cql_attachments[0].get("data")
+        if isinstance(encoded, str):
+            try:
+                cql_source = base64.b64decode(encoded, validate=True).decode("utf-8")
+            except (ValueError, UnicodeDecodeError) as exc:
+                errors.append(f"Library text/cql content is not valid base64 UTF-8: {exc}")
+    try:
+        validate_fhir_library_identity(r, cql_source=cql_source)
+    except CqlLibraryIdentityError as exc:
+        errors.append(str(exc))
     return errors
 
 

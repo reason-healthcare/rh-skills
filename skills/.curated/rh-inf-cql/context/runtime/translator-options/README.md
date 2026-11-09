@@ -27,5 +27,10 @@ options used for each library in `src/manifests/libraries.yaml`.
 ## Notes
 
 - The `rh` evaluator reads ELM directly if it exists alongside the `.cql` file.
-- Always re-generate ELM after changing CQL source; stale ELM causes silent
-  behavior differences.
+- For external FHIR packages, packaged ELM is never an execution input. Resolve
+  verified `text/cql` directly from the package/cache and always regenerate ELM with
+  `rh-skills cql translate`, even when the package already contains ELM.
+- Re-generate ELM after every source or translator-option change; stale or
+  foreign-generated ELM causes silent behavior differences.
+- Record package ID/version and checksum, source CQL checksum, translator
+  version/options/model, and generated ELM checksum as one provenance record.
