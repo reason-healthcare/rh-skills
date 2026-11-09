@@ -133,6 +133,26 @@ def test_identity_shall_constraints_fail(tmp_path, overrides, message):
         validate_fhir_library_identity(_library(**overrides), cql_path=cql)
 
 
+@pytest.mark.parametrize("name", [
+    "1Logic", "Example-Logic", "Example Logic", "Example/Logic", "Example\nLogic", "ÉxampleLogic",
+])
+def test_library_metadata_rejects_invalid_identifier_without_cql_source(name):
+    library = _library(name=name, url=f"https://example.org/fhir/Library/{name}")
+
+    with pytest.raises(CqlLibraryIdentityError, match="must start with an ASCII letter"):
+        validate_fhir_library_identity(library)
+    with pytest.raises(CqlLibraryIdentityError):
+        parse_cql_library_identity_text(f"library {name} version '1.0.0'\n")
+
+
+@pytest.mark.parametrize("name", ["ExampleLogic", "Example2Logic", "Common.ExampleLogic"])
+def test_library_metadata_and_parser_accept_supported_identifiers(name):
+    library = _library(name=name, url=f"https://example.org/fhir/Library/{name}")
+
+    assert validate_fhir_library_identity(library) == []
+    assert parse_cql_library_identity_text(f"library {name} version '1.0.0'\n").name == name
+
+
 def test_should_guidance_returns_warnings(tmp_path):
     long_name = "LongButStillValidLibraryName12345"
     cql = _write_cql(

@@ -8,8 +8,9 @@ from pathlib import Path
 from typing import Any
 
 
+_CQL_LIBRARY_NAME_PATTERN = r"[A-Za-z][A-Za-z0-9_.]*"
 _CQL_LIBRARY_RE = re.compile(
-    r"^\s*library\s+([A-Za-z][A-Za-z0-9_.]*)\s+version\s+['\"]([^'\"]+)['\"]",
+    rf"^\s*library\s+({_CQL_LIBRARY_NAME_PATTERN})\s+version\s+['\"]([^'\"]+)['\"]",
     re.IGNORECASE | re.MULTILINE,
 )
 _CQL_TOKEN_RE = re.compile(
@@ -175,6 +176,11 @@ def validate_cql_library_name(name: str) -> None:
     if "_" in name:
         raise CqlLibraryIdentityError(
             f"CQL library name {name!r} must not contain underscores"
+        )
+    if re.fullmatch(_CQL_LIBRARY_NAME_PATTERN, name) is None:
+        raise CqlLibraryIdentityError(
+            f"CQL library name {name!r} must start with an ASCII letter and contain "
+            "only ASCII letters, digits, or dots"
         )
 
 
