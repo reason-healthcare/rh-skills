@@ -44,9 +44,12 @@ Parent-task evidence separately records official FHIR validation and browser acc
 
 ## Reproduction
 
-Use the main rh-skills Python environment and these checked-in scripts:
+Use the main rh-skills Python environment, compatible rh/Workbench builds, and
+these checked-in scripts. Set `RH_CLI_PATH` to the rh binary to use rather than
+relying on the historical binary path copied from run007:
 
 ```sh
+export RH_CLI_PATH=/path/to/compatible/rh
 .venv/bin/python docs/connectathon/tools/build-breast-cancer-run008.py \
   --source <immutable-run007-workspace> --workspace <new-run008-workspace> --phase prepare
 .venv/bin/python docs/connectathon/tools/build-breast-cancer-run008.py \
@@ -54,10 +57,16 @@ Use the main rh-skills Python environment and these checked-in scripts:
 node docs/connectathon/tools/verify-breast-cancer-run008.mjs \
   --workspace <new-run008-workspace> \
   --runtime /Users/bkaney/projects/reason-healthcare/rh/packages/cpg/dist/node.js \
-  --cli /Users/bkaney/projects/reason-healthcare/rh/target/debug/rh
+  --cli "$RH_CLI_PATH"
 .venv/bin/python docs/connectathon/tools/build-breast-cancer-run008.py \
   --source <immutable-run007-workspace> --workspace <new-run008-workspace> --phase snapshot
 ```
+
+The current builder migrates the historical Library canonical to
+`https://reason-healthcare.github.io/hl7-agentic-knowledge-connectathon/fhir/Library/NeoadjuvantTnbcOncologyReviewRecommendationLogic`
+and updates its dependent PlanDefinition references for current CQL identity
+validation. A replay therefore produces a new candidate and content hash; the
+September acceptance hashes below describe the preserved original snapshot.
 
 The builder refuses to overwrite a workspace during preparation or an existing snapshot. It invokes the current source generator through `PYTHONPATH`; it never edits run007. Build logs, exact generated CQL/ELM and terminology evidence are retained in the new workspace. The snapshot suffix hashes all source, L2, L3, package and fixture inputs; `evidence/snapshot-location.json` records its full digest and input inventory. Final import used Workbench's `scripts/load-aao-snapshot.mjs` against the existing local PostgreSQL on port `55432`.
 

@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 from ruamel.yaml import YAML
 
-from rh_skills.commands.formalize import formalize, STRATEGY_REGISTRY, _fhir_resource_id
+from rh_skills.commands.formalize import formalize, STRATEGY_REGISTRY, _deterministic_library_name, _fhir_resource_id
 from tests.conftest import make_tracking, load_tracking
 
 
@@ -503,6 +503,32 @@ class TestCqlEmbedding:
             assert result.exit_code != 0
             assert "does not match CQL declaration" in result.output
             assert list(computable_dir.glob("Library-*.json")) == []
+        finally:
+            os.environ.pop("LLM_PROVIDER", None)
+
+    def test_long_artifact_name_keeps_library_cql_and_measure_identity_aligned(self, tmp_repo):
+        computable_dir = self._make_measure_topic(tmp_repo)
+        artifact = "adult-crs-surgical-management-recommendation-for-revision-surgery-candidacy-review"
+        tracking = load_tracking(tmp_repo)
+        tracking["topics"][0]["structured"][0]["name"] = artifact
+        make_tracking(tmp_repo, topics=tracking["topics"])
+        name = _deterministic_library_name(artifact)
+        source = f"library {name} version '0.1.0'\ncontext Patient\n"
+        (computable_dir / f"{name}-0.1.0.cql").write_text(source)
+
+        os.environ["LLM_PROVIDER"] = "stub"
+        try:
+            result = CliRunner().invoke(formalize, ["test-measure", artifact])
+            assert result.exit_code == 0, result.output
+            library = json.loads(next(computable_dir.glob("Library-*.json")).read_text())
+            measure = json.loads(next(computable_dir.glob("Measure-*.json")).read_text())
+            assert len(library["name"]) <= 64
+            assert library["name"] == name
+            assert library["url"] == f"http://example.org/fhir/Library/{name}"
+            assert measure["library"] == [library["url"]]
+            import base64
+            content = next(item for item in library["content"] if item["contentType"] == "text/cql")
+            assert base64.b64decode(content["data"]).decode() == source
         finally:
             os.environ.pop("LLM_PROVIDER", None)
 

@@ -276,14 +276,21 @@ def version_changed_content(workspace):
     write_yaml(assessment_path, assessment)
     changed_vs = {"clinical-tumor-category", "clinical-node-category",
                   "clinical-metastasis-category", "distant-metastasis-assessment"}
-    logic_url = CANONICAL + "/Library/neoadjuvant-tnbc-oncology-review-recommendation-logic"
+    legacy_logic_url = CANONICAL + "/Library/neoadjuvant-tnbc-oncology-review-recommendation-logic"
+    logic_url = CANONICAL + "/Library/" + LIBRARY
+    logic_urls = {legacy_logic_url, logic_url}
     resources = {path: read_json(path) for path in computable.glob("*.json")}
     changed_urls = {resource["url"] for resource in resources.values()
-        if resource.get("id") in changed_vs or resource.get("url") == logic_url
-        or logic_url in resource.get("library", []) or logic_url + "|1.1.0" in resource.get("library", [])}
+        if resource.get("id") in changed_vs or resource.get("url") in logic_urls
+        or any(reference.split("|")[0] in logic_urls for reference in resource.get("library", []))}
     def pin(value):
         if isinstance(value, str):
-            return value.split("|")[0] + "|1.1.0" if value.split("|")[0] in changed_urls else value
+            canonical = value.split("|")[0]
+            if canonical in changed_urls:
+                # Current CQL identity validation uses the declared Library.name
+                # in its canonical. Rewrite dependents with the same migration.
+                return (logic_url if canonical in logic_urls else canonical) + "|1.1.0"
+            return value
         if isinstance(value, list):
             return [pin(item) for item in value]
         if isinstance(value, dict):
@@ -292,6 +299,8 @@ def version_changed_content(workspace):
     for path, resource in resources.items():
         if resource.get("url") in changed_urls:
             resource = pin(resource)
+            if resource["url"] in logic_urls:
+                resource["url"] = logic_url
             resource["version"] = "1.1.0"
             resource["date"] = "2026-09-20"
             write_json(path, resource)

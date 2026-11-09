@@ -8,6 +8,8 @@ from rh_skills.cql_identity import (
     CqlLibraryIdentityError,
     apply_cql_namespace_extensions,
     parse_cql_context,
+    parse_cql_context_text,
+    parse_cql_library_identity_text,
     subject_for_cql_context,
     validate_fhir_library_identity,
 )
@@ -162,3 +164,49 @@ def test_context_parser_ignores_comments_and_rejects_multiple_contexts(tmp_path)
     )
     with pytest.raises(CqlLibraryIdentityError, match="multiple contexts"):
         parse_cql_context(cql)
+
+
+@pytest.mark.parametrize("declaration", [
+    "context Unfiltered define Yes: true",
+    "context/* context Patient */Unfiltered\ndefine Yes: true",
+    "context\nUnfiltered\ndefine Yes: true",
+    'context "Unfiltered"\ndefine Yes: true',
+])
+def test_context_parser_uses_tokens_instead_of_line_layout(declaration):
+    source = f"library ExampleLogic version '1.0.0'\n{declaration}\n"
+    assert parse_cql_context_text(source) == "Unfiltered"
+    with pytest.raises(CqlLibraryIdentityError, match="context 'Unfiltered'"):
+        validate_fhir_library_identity(_library(), cql_source=source)
+
+
+def test_context_parser_ignores_context_text_in_literals():
+    source = '''library ExampleLogic version '1.0.0'
+context Patient
+define "context Device": 'context Unfiltered'
+'''
+    assert parse_cql_context_text(source) == "Patient"
+    with pytest.raises(CqlLibraryIdentityError, match="multiple contexts"):
+        parse_cql_context_text(source + "context Unfiltered define Yes: true\n")
+
+
+def test_comments_separate_library_declaration_tokens():
+    identity = parse_cql_library_identity_text(
+        "library/* note */ExampleLogic version '1.0.0'\n"
+    )
+    assert (identity.name, identity.version) == ("ExampleLogic", "1.0.0")
+
+
+@pytest.mark.parametrize("expression", [
+    "Tuple { context: 1 }. context + 1",
+    "Tuple { context: 1 }. context as Integer",
+    "context as Integer",
+    "from context Patient",
+    "context Patient",
+])
+def test_context_parser_does_not_treat_member_or_expression_references_as_declarations(expression):
+    source = f'''library ExampleLogic version '1.0.0'
+context Patient
+define context: {{1}}
+define Yes: {expression}
+'''
+    assert parse_cql_context_text(source) == "Patient"

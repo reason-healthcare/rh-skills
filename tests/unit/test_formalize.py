@@ -32,6 +32,7 @@ from rh_skills.commands.formalize import (
     _build_stub_resources,
     _canonical_json_sha256,
     _collect_information_dynamic_values,
+    _deterministic_library_name,
     _embed_cql_in_library,
     _attach_external_library_dependencies,
     _enforce_generated_fhir_ids,
@@ -566,6 +567,36 @@ def test_cql_link_validation_accepts_identifier_defined_in_linked_library(tmp_pa
     (tmp_path / "logic.cql").write_text('library Logic version \'1.0.0\'\ndefine "PositiveScreen": true\n')
 
     assert _validate_cql_identifier_links(resources, tmp_path) == []
+
+
+@pytest.mark.parametrize("version", ["1.0.0", "2.0.0"])
+def test_cql_link_validation_resolves_versioned_source_with_dependencies(tmp_path, version):
+    resources = [
+        {
+            "resourceType": "Library", "id": "logic", "name": "Logic", "version": version,
+            "url": "https://example.org/Library/Logic",
+        },
+        {
+            "resourceType": "PlanDefinition", "id": "plan",
+            "library": ["https://example.org/Library/Logic"],
+            "action": [{"condition": [{"expression": {
+                "language": "text/cql-identifier", "expression": "Missing",
+            }}]}],
+        },
+    ]
+    (tmp_path / "Logic-1.0.0.cql").write_text(
+        "library Logic version '1.0.0'\ndefine Present: true\n"
+    )
+    (tmp_path / "FHIRHelpers-4.0.1.cql").write_text(
+        "library FHIRHelpers version '4.0.1'\ndefine Missing: true\n"
+    )
+    if version == "1.0.0":
+        with pytest.raises(ValueError, match="Missing"):
+            _validate_cql_identifier_links(resources, tmp_path)
+    else:
+        warnings = _validate_cql_identifier_links(resources, tmp_path)
+        assert len(warnings) == 1
+        assert "source was unavailable" in warnings[0]
 
 
 def test_decision_table_orphan_cleanup_removes_only_stale_children_and_unreferenced_activities(tmp_path):
@@ -1186,6 +1217,16 @@ def test_fhir_resource_id_preserves_short_ids_and_shortens_long_ids_deterministi
     assert len(shortened) <= 64
     assert shortened == _fhir_resource_id(long_id)
     assert shortened.startswith("adult-crs-surgical-management-recommendation")
+
+
+def test_generated_library_names_shorten_deterministically_without_collisions():
+    artifact = "adult-crs-surgical-management-recommendation-for-revision-surgery-candidacy-review"
+    name = _deterministic_library_name(artifact)
+    assert len(name) == 64
+    assert name.isalnum()
+    assert name == _deterministic_library_name(artifact)
+    assert name != _deterministic_library_name(artifact + "-followup")
+    assert _deterministic_library_name("example") == "ExampleLogic"
 
 
 def test_enforce_generated_fhir_ids_rewrites_canonical_and_relative_references():

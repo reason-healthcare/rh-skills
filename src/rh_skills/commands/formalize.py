@@ -2959,19 +2959,15 @@ def _validate_cql_identifier_links(
                     break
             if source is None:
                 lib_name = str(library.get("name") or "")
-                cql_file = next(
-                    (path for path in cql_files if path.stem == lib_name),
-                    None,
-                )
-                if cql_file is None:
-                    kebab_name = to_kebab_case(lib_name)
-                    cql_file = next(
-                        (path for path in cql_files if to_kebab_case(path.stem) == kebab_name),
-                        None,
-                    )
-                if cql_file is None and len(cql_files) == 1:
-                    cql_file = cql_files[0]
+                lib_version = str(library.get("version") or "") or None
+                cql_file = _find_best_cql(cql_files, lib_name, lib_version)
                 if cql_file is not None:
+                    identity = parse_cql_library_identity(cql_file)
+                    if identity.name != lib_name or (
+                        lib_version is not None and identity.version != lib_version
+                    ):
+                        unresolved_libraries.append(canonical)
+                        continue
                     source = cql_file.read_text()
             if source is None:
                 unresolved_libraries.append(canonical)
@@ -5112,7 +5108,11 @@ def _deterministic_library_id(base_id: str) -> str:
 
 def _deterministic_library_name(base_id: str) -> str:
     """Return the CQL identifier used by the companion FHIR Library."""
-    return _pascal_from_kebab(_deterministic_library_id(base_id))
+    name = _pascal_from_kebab(_deterministic_library_id(base_id))
+    if len(name) <= 64:
+        return name
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:10]
+    return f"{name[:64 - len(digest)]}{digest}"
 
 
 def _canonical_for_generated_resource(canonical: str, resource_type: str, raw_id: str) -> str:

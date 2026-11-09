@@ -12,9 +12,8 @@ _CQL_LIBRARY_RE = re.compile(
     r"^\s*library\s+([A-Za-z][A-Za-z0-9_.]*)\s+version\s+['\"]([^'\"]+)['\"]",
     re.IGNORECASE | re.MULTILINE,
 )
-_CQL_CONTEXT_RE = re.compile(
-    r"^\s*context\s+([A-Za-z][A-Za-z0-9.]*)\s*$",
-    re.IGNORECASE | re.MULTILINE,
+_CQL_TOKEN_RE = re.compile(
+    r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|`(?:\\.|[^`\\])*`|[A-Za-z][A-Za-z0-9.]*|\S"
 )
 _FHIR_CONTEXT_SYSTEM = "http://hl7.org/fhir/resource-types"
 _CQL_CONTEXT_SYSTEM = "http://cql.hl7.org/CodeSystem/cql-context-declaration-codes"
@@ -64,9 +63,9 @@ def _without_cql_comments(source: str) -> str:
         if source.startswith("/*", index):
             end = source.find("*/", index + 2)
             if end < 0:
-                result.extend("\n" for character in source[index:] if character == "\n")
+                result.extend("\n" if character == "\n" else " " for character in source[index:])
                 break
-            result.extend("\n" for character in source[index:end + 2] if character == "\n")
+            result.extend("\n" if character == "\n" else " " for character in source[index:end + 2])
             index = end + 2
             continue
         character = source[index]
@@ -104,7 +103,24 @@ def parse_cql_library_identity(path: Path) -> CqlLibraryIdentity:
 
 def parse_cql_context_text(source: str, *, label: str = "embedded CQL source") -> str:
     """Return the single declared context, defaulting an omission to Patient."""
-    contexts = _CQL_CONTEXT_RE.findall(_without_cql_comments(source))
+    # Context declarations are tokens, not lines. Keep literals atomic so
+    # prose and quoted expression names cannot be mistaken for declarations.
+    tokens = _CQL_TOKEN_RE.findall(_without_cql_comments(source))
+    contexts = []
+    for index, token in enumerate(tokens[:-1]):
+        if token.lower() != "context":
+            continue
+        if index > 0 and tokens[index - 1].lower() in {".", ":", ",", "from"}:
+            continue
+        # A context declaration ends after its type. An operator, cast, or
+        # other expression token after it identifies a reference named context.
+        if index + 2 < len(tokens) and tokens[index + 2].lower() not in {"define", "context"}:
+            continue
+        context = tokens[index + 1]
+        if len(context) >= 2 and context[0] in {'"', '`'} and context[-1] == context[0]:
+            context = context[1:-1]
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9.]*", context):
+            contexts.append(context)
     if len(contexts) > 1:
         raise CqlLibraryIdentityError(
             f"{label} declares multiple contexts; FHIR CQL libraries allow at most one"
